@@ -117,7 +117,7 @@ function Wxbicfa_onDisplay()
     EUCountries= "'AT', 'BE', 'BG', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR', 'HU', 'IE', 'IT', 'LT', 'LU', 'LV', 'MT', 'NL', 'PL', 'PT', 'RO', 'SE', 'SI', 'SK', 'QP', 'QR', 'QV'";
     if(local== 'S' || local== 'B')
     {
-        EUCountries= EUCountries+",HR";
+        EUCountries= EUCountries+",'HR'";
     }
     sqlNaDan = ovagod_h + "-12-31";
     sqlOdDana = string(int(ovagod_h) - 1) + "-01-01";
@@ -289,7 +289,16 @@ function gbCashFlow2@clicked()
 
 function gbExit@clicked()
 {
-    quit;
+    if(Size(args) > 2)
+    {
+        //comming from tas
+        exit;
+    }
+    else
+    {    
+        //comming from mainmenu
+        quit;
+    }
 }
 
 //--------------------------------------------------
@@ -760,7 +769,7 @@ function setWeekComparison()
     if (partner!= ''){ sql_str += " AND kdib_ln_partner= '"+partner+"'";}
     if (domaca_dn  ){ sql_str += " AND nksc_drzava= '"+kpsy_po_freight+"'";}
     elif (eu_dn  ){ sql_str += " AND nksc_drzava IN ("+eucountries+")";}
-    elif (izvoz_dn  ){ sql_str += " AND nksc_drzava != '"+kpsy_po_freight+"' AND NOT nksc_drzava IN ("+eucountries+")";}
+    elif (izvoz_dn  ){ sql_str += " AND nksc_drzava <> '"+kpsy_po_freight+"' AND NOT nksc_drzava IN ("+eucountries+")";}
 
 	sql_str  += " AND ((wk_ISOWeek = datepart(ISO_week , '" + danas +"')) OR (wk_ISOWeek = datepart(ISO_week , '" + danas+"')-1)) AND year('"+danas+"') = wk_year";
 	sql_str  += " GROUP BY [wk_FirstOfWeek]";

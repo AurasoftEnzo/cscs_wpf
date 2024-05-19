@@ -72,6 +72,7 @@ function setBankPieChart()
         sql_str += " ROW_NUMBER() OVER( ORDER BY sum(CASE WHEN kdib_ln_dp =  'P' THEN kdib_ln_iznos ELSE 0 END) DESC ) As Num";
         sql_str += " FROM " + trenutnaGodinaBaza + " .dbo.kpkdibgl";
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
+    	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
 		sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka= kpsy_bnk_code";
         sql_str += " WHERE kdib_gl_banka<> '' AND YEAR(kdib_gl_datem)= " + ovagod_h;
         if (do_mjeseca2  )
@@ -327,6 +328,7 @@ function setTop10Products()
     sql_str += " ISNULL(ROUND(SUM(CASE WHEN kdib_ln_dp= 'P' THEN kdib_ln_iznos ELSE 0 END),0), 0)";
     sql_str += " FROM "+trenutnaGodinaBaza+".dbo.kpkdibgl";
     sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.kpkdibln ON kdib_gl_num= kdib_ln_num";
+   	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
     sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkgkacct ON kdib_ln_konto= gk_ac_konto";
     sql_str += " WHERE 1=1 AND kdib_gl_banka<> ''";
     if (mjesec_h!= "")
@@ -366,6 +368,7 @@ function setTop10Products()
     sql_str += " ISNULL(ROUND(SUM(CASE WHEN kdib_ln_dp= 'P' THEN kdib_ln_iznos ELSE 0 END),0), 0) as sales2";
 	sql_str += " FROM "+proslaGodinaBaza+".dbo.kpkdibgl";
     sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.kpkdibln ON kdib_gl_num= kdib_ln_num";
+   	sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
     sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.nkgkacct ON kdib_ln_konto= gk_ac_konto";
     sql_str += " WHERE kdib_gl_banka<> '' AND kdib_ln_konto IN ("+in_string+") ";
     if (mjesec_h != "")
@@ -455,9 +458,9 @@ function fillProductsArrays2(){
 
 		for(i = 0; i < Size(salesArt1_ar); i++){
 			if(salesart1_ar[i] > salesart2_ar[i]){
-				imageArt_ar[i] = strtrim(ipath()) + "green.png";
+				imageArt_ar[i] = strtrim(ipath()) + "green16.png";
 			}elif(salesart1_ar[i] < salesart2_ar[i]){
-				imageArt_ar[i] = strtrim(ipath()) + "red.png";
+				imageArt_ar[i] = strtrim(ipath()) + "red16.png";
 			}else{
 				imageArt_ar[i] = "";
 			}
@@ -527,6 +530,7 @@ function setCustomerDataGrid()
     }
     sql_str += " FROM "+proslaGodinaBaza+".dbo.kpkdibgl";
     sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.kpkdibln ON kdib_gl_num= kdib_ln_num";
+   	sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
     sql_str += " WHERE kdib_gl_banka<> '' AND kdib_ln_partner IN ("+in_string+") ";
     if (mjesec_h != "")
 	{

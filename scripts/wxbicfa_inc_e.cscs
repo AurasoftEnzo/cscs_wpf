@@ -43,14 +43,11 @@ function setChartByDaysOfMonthCF()
     sql_str += ", Odliv = ISNULL(ROUND(SUM(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END),0) , 0)";
     sql_str += " FROM " + CommonDBGet()+ ".dbo.Kalendar a";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibgl ON [Wk_Date] = kdib_gl_datum ";
+    sql_str += " AND kdib_gl_banka<> '' ";
     
     if (BANKA_str != "")
     {
         sql_str += " AND kdib_gl_banka IN (" + BANKA_str + ")";
-    }
-    if (KONTO_str != "")
-    {
-        sql_str += " AND kdib_ln_konto IN (" + KONTO_str + ")";
     }
     if (Izvadak != "")
     {
@@ -62,10 +59,24 @@ function setChartByDaysOfMonthCF()
     {
         sql_str += " AND kdib_ln_partner = '" + partner + "'";
     }
-    
-    sql_str += " WHERE 1 = 1 AND kdib_gl_banka<> '' ";
-    
-
+    if (KONTO_str != "")
+    {
+        sql_str += " AND kdib_ln_konto IN (" + KONTO_str + ")";
+    }
+   	sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
+    if (domaca_dn )
+    {
+        sql_str += " AND nksc_drzava= '"+kpsy_po_freight+"'";
+    }
+    elif (eu_dn )
+    {
+        sql_str +=  " AND nksc_drzava IN ("+eucountries+")";
+    }
+    elif (izvoz_dn )
+    {
+        sql_str += " AND nksc_drzava <> '"+kpsy_po_freight+"' AND NOT nksc_drzava IN ("+eucountries+")";
+    }
+    sql_str += " WHERE 1 = 1 ";
     if (do_mjeseca)
     {
             sql_str += " AND [wk_Month]< = '" + mjesec_h + "' AND wk_Year = '" + ovagod_h + "'";
@@ -112,6 +123,7 @@ function setCustomerAndInvoiceCounts()
         sql_str += " FROM " + proslaGodinaBaza + ".dbo.nkprinv";
         sql_str += " LEFT JOIN " + proslaGodinaBaza+".dbo.nkprinvl ON nkpr_gl_num= nkpr_ln_invnm";
         sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.nkmkarti ON nkpr_ln_pcode= arti_artikl";
+    	sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
         if (regija != "")
         {
             sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.nkscpart g ON nkpr_gl_cuscod= g.nksc_partcode";
@@ -130,7 +142,7 @@ function setCustomerAndInvoiceCounts()
                 sql_str += " AND YEAR(nkpr_gl_datem)= " + lani_h;
             }
         }
-        //filterPart();
+        filterPart();
         sqlResult = SqlQuery(sql_str);
         
         RunOnMain(setCustomerAndInvoiceCounts2); 
@@ -141,6 +153,7 @@ function setCustomerAndInvoiceCounts()
     //sql_str += " ,count(CASE WHEN nkpr_gl_rts= 'N' THEN 1 END) as br_wait, COUNT(CASE WHEN nkpr_gl_invcd= '' THEN 1 END) as br_neazur";
     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkprinv";
     sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkprinvl ON nkpr_gl_num= nkpr_ln_invnm";
+   	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
     sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkmkarti ON nkpr_ln_pcode= arti_artikl";
     if(regija != "")
     {
@@ -161,7 +174,7 @@ function setCustomerAndInvoiceCounts()
         }
     }
     //sql_str= sql_str* " AND DATEDIFF(day,nkpr_gl_invdte, CURRENT_TIMESTAMP) BETWEEN 0 AND 31"
-    //filterPart();
+    filterPart();
     sqlResult = SqlQuery(sql_str);
     
     RunOnMain("setCustomerAndInvoiceCounts3");

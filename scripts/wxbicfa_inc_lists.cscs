@@ -295,13 +295,13 @@ function ceKonto@clicked()
 
 function cePartner@clicked()
 {
-    F2ListQueryString = "SELECT distinct kdib_ln_partner, [NKSC_PARTNAME] FROM  " + trenutnaGodinaBaza + ".[dbo].[kpkdibln] LEFT JOIN  " + trenutnaGodinaBaza + ".[dbo].nkscpart on kdib_ln_partner = nksc_partcode where NKSC_PARTCODE like '%{var1}%' and NKSC_PARTNAME like '%{var2}%' ORDER BY kdib_ln_partner";
+    F2ListQueryString = "SELECT distinct kdib_ln_partner, [NKSC_PARTNAME], CASE WHEN nksc_cust_vend= 'K' THEN 'Kupac' WHEN nksc_cust_vend= 'D' THEN 'Dobavljač' ELSE 'Kup/Dob' END as PartnerTip FROM  " + trenutnaGodinaBaza + ".[dbo].[kpkdibln] LEFT JOIN  " + trenutnaGodinaBaza + ".[dbo].nkscpart on kdib_ln_partner = nksc_partcode where NKSC_PARTCODE like '%{var1}%' and NKSC_PARTNAME like '%{var2}%' ORDER BY kdib_ln_partner";
     
     sifraFieldPointer -> partner;
     NazivFieldPointer -> PartnerNaziv;
 
     windowTitle = "F2 lista Partnera";
-    headersArray = {"Šifra partnera    ", "Naziv partnera"};
+    headersArray = {"Šifra partnera    ", "Naziv partnera", "Kupac/Dobavljač"};
     ShowF2List();
     
     if(&sifraFieldPointer != ""){

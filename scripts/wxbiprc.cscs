@@ -2,9 +2,12 @@
 
 Import(strTrim(mpath()) + "CSCS.Math.dll");
 
-include(strTrim(tpath()) + "wxbiprc_inc_lists.cscs");
-include(strTrim(tpath()) + "wxbiprc_inc_a.cscs");
-include(strTrim(tpath()) + "wxbiprc_inc_b.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiprc_inc_lists.cscs") : strTrim(tpath()) + "wxbiprc_inc_lists.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiprc_inc_a.cscs") : strTrim(tpath()) + "wxbiprc_inc_a.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiprc_inc_b.cscs") : strTrim(tpath()) + "wxbiprc_inc_b.cscs");
+// include(strTrim(tpath()) + "wxbiprc_inc_lists.cscs");
+// include(strTrim(tpath()) + "wxbiprc_inc_a.cscs");
+// include(strTrim(tpath()) + "wxbiprc_inc_b.cscs");
 // IncludeScript("wxbiprc_inc_lists.cscs"); //look-up lists
 // IncludeScript("wxbiprc_inc_a.cscs"); //look-up lists
 // IncludeScript("wxbiprc_inc_b.cscs"); //look-up lists
@@ -234,7 +237,16 @@ function gbProdaja2@clicked()
 
 function gbExit@clicked()
 {
-    quit;
+    if(Size(args) > 2)
+    {
+        //comming from tas
+        exit;
+    }
+    else
+    {    
+        //comming from mainmenu
+        quit;
+    }
 }
 
 //next routines is work out of above

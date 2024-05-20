@@ -283,13 +283,13 @@ function ceArtikl@post()
 //==============================================================
 function cePartner@clicked()
 {
-    F2ListQueryString = "SELECT [NKSC_PARTCODE]  ,[NKSC_PARTNAME] FROM  " + trenutnaGodinaBaza + ".[dbo].[NKSCPART] where NKSC_PARTCODE like '%{var1}%' and NKSC_PARTNAME like '%{var2}%' ORDER BY nksc_partcode";
+    F2ListQueryString = "SELECT [NKSC_PARTCODE], [NKSC_PARTNAME], CASE WHEN nksc_cust_vend= 'K' THEN 'Kupac' WHEN nksc_cust_vend= 'D' THEN 'Dobavljač' ELSE 'Kup/Dob' END as PartnerTip FROM  " + trenutnaGodinaBaza + ".[dbo].[NKSCPART] where NKSC_PARTCODE like '%{var1}%' and NKSC_PARTNAME like '%{var2}%' ORDER BY nksc_partcode";
     
     sifraFieldPointer -> partner;
     NazivFieldPointer -> PartnerNaziv;
 
     windowTitle = "F2 lista Partnera";
-    headersArray = {"Šifra partnera", "Naziv partnera"};
+    headersArray = {"Šifra partnera", "Naziv partnera", "Kupac/Dobavljač"};
     ShowF2List();
     
     if(&sifraFieldPointer != ""){

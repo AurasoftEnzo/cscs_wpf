@@ -2,10 +2,14 @@
 
 Import(strTrim(mpath()) + "CSCS.Math.dll");
 
-include(strTrim(tpath()) + "wxbiposa_inc_lists.cscs");
-include(strTrim(tpath()) + "wxbiposa_inc_a.cscs");
-include(strTrim(tpath()) + "wxbiposa_inc_b.cscs");
-include(strTrim(tpath()) + "wxbiposa_inc_c.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiposa_inc_lists.cscs") : strTrim(tpath()) + "wxbiposa_inc_lists.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiposa_inc_a.cscs") : strTrim(tpath()) + "wxbiposa_inc_a.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiposa_inc_b.cscs") : strTrim(tpath()) + "wxbiposa_inc_b.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiposa_inc_c.cscs") : strTrim(tpath()) + "wxbiposa_inc_c.cscs");
+// include(strTrim(tpath()) + "wxbiposa_inc_lists.cscs");
+// include(strTrim(tpath()) + "wxbiposa_inc_a.cscs");
+// include(strTrim(tpath()) + "wxbiposa_inc_b.cscs");
+// include(strTrim(tpath()) + "wxbiposa_inc_c.cscs");
 // IncludeScript("wxbiposa_inc_lists.cscs"); //look-up lists
 // IncludeScript("wxbiposa_inc_a.cscs"); //look-up lists
 // IncludeScript("wxbiposa_inc_b.cscs"); //look-up lists
@@ -222,7 +226,16 @@ function gbProdaja3@clicked()
 
 function gbExit@clicked()
 {
-    quit;
+    if(Size(args) > 2)
+    {
+        //comming from tas
+        exit;
+    }
+    else
+    {    
+        //comming from mainmenu
+        quit;
+    }
 }
 
 //next routines is work out of above

@@ -4,12 +4,18 @@
 
 Import(strTrim(mpath()) + "CSCS.Math.dll");
 
-include(strTrim(tpath()) + "wxbicfa_inc_lists.cscs");
-include(strTrim(tpath()) + "wxbicfa_inc_a.cscs");
-include(strTrim(tpath()) + "wxbicfa_inc_b.cscs");
-include(strTrim(tpath()) + "wxbicfa_inc_c.cscs");
-include(strTrim(tpath()) + "wxbicfa_inc_d.cscs");
-include(strTrim(tpath()) + "wxbicfa_inc_e.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbicfa_inc_lists.cscs") : strTrim(tpath()) + "wxbicfa_inc_lists.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbicfa_inc_a.cscs") : strTrim(tpath()) + "wxbicfa_inc_a.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbicfa_inc_b.cscs") : strTrim(tpath()) + "wxbicfa_inc_b.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbicfa_inc_c.cscs") : strTrim(tpath()) + "wxbicfa_inc_c.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbicfa_inc_d.cscs") : strTrim(tpath()) + "wxbicfa_inc_d.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbicfa_inc_e.cscs") : strTrim(tpath()) + "wxbicfa_inc_e.cscs");
+// include(strTrim(tpath()) + "wxbicfa_inc_lists.cscs");
+// include(strTrim(tpath()) + "wxbicfa_inc_a.cscs");
+// include(strTrim(tpath()) + "wxbicfa_inc_b.cscs");
+// include(strTrim(tpath()) + "wxbicfa_inc_c.cscs");
+// include(strTrim(tpath()) + "wxbicfa_inc_d.cscs");
+// include(strTrim(tpath()) + "wxbicfa_inc_e.cscs");
 // IncludeScript("wxbicfa_inc_lists.cscs"); //look-up lists
 // IncludeScript("wxbicfa_inc_a.cscs"); //look-up lists
 // IncludeScript("wxbicfa_inc_b.cscs"); //look-up lists
@@ -546,14 +552,14 @@ function setHorizontalBars1(){
 
     //MessageBox("aaaa :"+100*tot_ovagod_priliv/(tot_ovagod_priliv + tot_ovagod_odliv));
     
-    // GaugeChart("GaugeChartOmjerProdaje", "value", Math.round(100*tot_ovagod_priliv/(tot_ovagod_priliv + tot_ovagod_odliv)), 25, 30);
-    // GaugeChart("GaugeChartOmjerProdaje", "color", "#118888");
+    GaugeChart("GaugeChartOmjerProdaje", "value", Math.round(100*tot_ovagod_priliv/(tot_ovagod_priliv + tot_ovagod_odliv)), 25, 30);
+    GaugeChart("GaugeChartOmjerProdaje", "color", "#118888");
    
-    PieChart("PieChartOmjerProdaje", "init");
-    PieChart("PieChartOmjerProdaje", "seriesType", "pie");  
-	PieChart("PieChartOmjerProdaje", "values", tot_ovagod_priliv , "Priliv");
-	PieChart("PieChartOmjerProdaje", "values", tot_ovagod_odliv , "Odliv");
-	PieChart("PieChartOmjerProdaje", "colors", {"#FF69A627", "#FFE0582F"});
+    // PieChart("PieChartOmjerProdaje", "init");
+    // PieChart("PieChartOmjerProdaje", "seriesType", "pie");  
+	// PieChart("PieChartOmjerProdaje", "values", tot_ovagod_priliv , "Priliv");
+	// PieChart("PieChartOmjerProdaje", "values", tot_ovagod_odliv , "Odliv");
+	// PieChart("PieChartOmjerProdaje", "colors", {"#FF69A627", "#FFE0582F"});
 
     Format("pocetnoStanjeOvagod", "nofd", recv: "tot_pocetnoStanjeOvagod");
     HorizontalBar("HorizontalBarPocetnoStanje", "Text", tot_pocetnoStanjeOvagod);

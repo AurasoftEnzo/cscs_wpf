@@ -433,7 +433,7 @@ namespace WpfCSCS
 
                     if (optionString == "value")
                     {
-                        if (valueVariable.Value > 0)
+                        if (valueVariable.Value >= 0)
                         {
                             pieWidget.Series = GaugeGenerator.BuildSolidGauge(
                                 new GaugeItem(

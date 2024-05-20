@@ -283,7 +283,7 @@ function ceArtikl@post()
 //==============================================================
 function cePartner@clicked()
 {
-    F2ListQueryString = "SELECT [NKSC_PARTCODE], [NKSC_PARTNAME], CASE WHEN nksc_cust_vend= 'K' THEN 'Kupac' WHEN nksc_cust_vend= 'D' THEN 'Dobavljač' ELSE 'Kup/Dob' END as PartnerTip FROM  " + trenutnaGodinaBaza + ".[dbo].[NKSCPART] where NKSC_PARTCODE like '%{var1}%' and NKSC_PARTNAME like '%{var2}%' ORDER BY nksc_partcode";
+    F2ListQueryString = "SELECT distinct [nkpr_gl_cuscod], [NKSC_PARTNAME], CASE WHEN nksc_cust_vend= 'K' THEN 'Kupac' WHEN nksc_cust_vend= 'D' THEN 'Dobavljač' ELSE 'Kup/Dob' END as PartnerTip FROM  " + trenutnaGodinaBaza + ".[dbo].[nkprglnr] LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkscpart] ON nkpr_gl_cuscod = nksc_partcode WHERE NKSC_PARTCODE like '%{var1}%' and NKSC_PARTNAME like '%{var2}%' AND YEAR(nkpr_gl_orddte) = " + ovagod_h + " ORDER BY nkpr_gl_cuscod";
     
     sifraFieldPointer -> partner;
     NazivFieldPointer -> PartnerNaziv;
@@ -339,7 +339,7 @@ function ceIsporuka@clicked()
         return;
     }
 
-    F2ListQueryString = "SELECT [NKSP_AD_CODEINT]  ,[NKSP_ad_naziv1] FROM  " + trenutnaGodinaBaza + ".[dbo].[NKSPADRS] where nksp_ad_code = " + partner + " AND NKSP_AD_CODEINT like '%{var1}%' and NKSP_AD_NAZIV1 like '%{var2}%' ORDER BY nksp_ad_codeint";
+    F2ListQueryString = "SELECT [NKSP_AD_CODEINT], [NKSP_ad_naziv1] FROM  " + trenutnaGodinaBaza + ".[dbo].[NKSPADRS] where nksp_ad_code = " + partner + " AND NKSP_AD_CODEINT like '%{var1}%' and NKSP_AD_NAZIV1 like '%{var2}%' ORDER BY nksp_ad_codeint";
     sifraFieldPointer -> isporuka;
     NazivFieldPointer -> isporukaNaziv;
 

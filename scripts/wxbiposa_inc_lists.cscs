@@ -279,7 +279,7 @@ function ceArtikl@post()
 //==============================================================
 function cePartner@clicked()
 {
-    F2ListQueryString = "SELECT [NKSC_PARTCODE], [NKSC_PARTNAME], CASE WHEN nksc_cust_vend= 'K' THEN 'Kupac' WHEN nksc_cust_vend= 'D' THEN 'Dobavljač' ELSE 'Kup/Dob' END as PartnerTip FROM  " + trenutnaGodinaBaza + ".[dbo].[NKSCPART] where NKSC_PARTCODE like '%{var1}%' and NKSC_PARTNAME like '%{var2}%' ORDER BY nksc_partcode";
+    F2ListQueryString = "SELECT distinct [ks_ig_kupac], [NKSC_PARTNAME], CASE WHEN nksc_cust_vend= 'K' THEN 'Kupac' WHEN nksc_cust_vend= 'D' THEN 'Dobavljač' ELSE 'Kup/Dob' END as PartnerTip FROM  " + trenutnaGodinaBaza + ".[dbo].[NKKSINVG] LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[NKSCPART] ON ks_ig_kupac = nksc_partcode where NKSC_PARTCODE like '%{var1}%' and NKSC_PARTNAME like '%{var2}%' ORDER BY ks_ig_kupac";
     
     sifraFieldPointer -> partner;
     NazivFieldPointer -> PartnerNaziv;

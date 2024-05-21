@@ -5,12 +5,15 @@ Import(strTrim(mpath()) + "CSCS.Math.dll");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiprd_inc_lists.cscs") : strTrim(tpath()) + "wxbiprd_inc_lists.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiprd_inc_a.cscs") : strTrim(tpath()) + "wxbiprd_inc_a.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiprd_inc_b.cscs") : strTrim(tpath()) + "wxbiprd_inc_b.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiprd_inc_c.cscs") : strTrim(tpath()) + "wxbiprd_inc_c.cscs");
 // include(strTrim(tpath()) + "wxbiprd_inc_lists.cscs");
 // include(strTrim(tpath()) + "wxbiprd_inc_a.cscs");
 // include(strTrim(tpath()) + "wxbiprd_inc_b.cscs");
+// include(strTrim(tpath()) + "wxbiprd_inc_c.cscs");
 // IncludeScript("wxbiprd_inc_lists.cscs"); //look-up lists
 // IncludeScript("wxbiprd_inc_a.cscs"); //look-up lists
 // IncludeScript("wxbiprd_inc_b.cscs"); //look-up lists
+// IncludeScript("wxbiprd_inc_c.cscs"); //look-up lists
 
 CreateWindow(strTrim(tpath()) + "wxbiprd.xaml");
 // CreateWindowXaml("wxbiprd.xaml");
@@ -227,6 +230,24 @@ function gbProdaja2@clicked()
     //     (
     //         lock{
             result = modalWindow(strTrim(tpath()) +"wxbiprdb.xaml");
+    //        }
+    //    )
+    }
+    else
+    {
+        MessageBox("Molim pripremite osnovne podatke prije nastavka!"); 
+        setfocus("gbPripremi");
+    }    
+}
+
+function gbProdaja3@clicked()
+{
+    if (pripremljeno   )
+    {
+    //     thread
+    //     (
+    //         lock{
+            result = modalWindow(strTrim(tpath()) +"wxbiprdc.xaml");
     //        }
     //    )
     }

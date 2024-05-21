@@ -92,6 +92,9 @@ namespace SplitAndMerge
 			interpreter.RegisterFunction("SetText", new SetTextWidgetFunction());
 			interpreter.RegisterFunction("AddWidgetData", new AddWidgetDataFunction());
 			interpreter.RegisterFunction("SetWidgetOptions", new SetWidgetOptionsFunction());
+
+			interpreter.RegisterFunction("SetWindowOptions", new SetWindowOptionsFunction());
+
 			interpreter.RegisterFunction("Get_comp_year", new Get_comp_yearFunction());
 			interpreter.RegisterFunction("Get_dbase", new Get_dbaseFunction());
 			interpreter.RegisterFunction("GetSelected", new GetSelectedFunction());
@@ -4434,6 +4437,31 @@ namespace WpfCSCS
 
 	//}
 
+	class SetWindowOptionsFunction : ParserFunction
+	{
+		protected override Variable Evaluate(ParsingScript script)
+		{
+			List<Variable> args = script.GetFunctionArgs();
+			Utils.CheckArgs(args.Count, 2, m_name);
+			var windowName = Utils.GetSafeString(args, 0).ToLower();
+			var option = Utils.GetSafeString(args, 1).ToLower();
+			
+			var gui = CSCS_GUI.GetInstance(script);
+
+			Window window = CSCS_GUI.Window2File.Keys.FirstOrDefault(p => p.Name.ToLower() == windowName);
+			
+			var parameter = Utils.GetSafeString(args, 2).ToLower();
+			
+			// try generically
+			foreach (var prop in window.GetType().GetProperties())
+				if (prop.Name.ToLower() == option.ToLower())
+					prop.SetValue(window, Convert.ChangeType(parameter, prop.PropertyType), null);
+
+
+			return new Variable(true);
+		}
+	}
+	
 	class SetWidgetOptionsFunction : ParserFunction
 	{
 		//emin

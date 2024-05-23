@@ -17,8 +17,6 @@ CreateWindow(strTrim(tpath()) + "wxbiprb.xaml");
 
 function Wxbiprb_onDisplay()
 {
-    SetWindowOptions("wxbiprbWindow", "title", "hahahahhaha" + ovagod_h);
-
     SetWidgetOptions("EllipseProdajaUGodini", "Visible", false);
     SetWidgetOptions("EllipseProdajaUMjesecu", "Visible", false);
     SetWidgetOptions("EllipseProdajaUTjednu", "Visible", false);
@@ -93,7 +91,7 @@ function Wxbiprb_onDisplay()
         local = sqlResult[1][3];
     } 
     neto_dn = true;
-
+    SetWindowOptions("wxbiprbWindow", "title", nazivFirme+" - " + ovagod_h+ " godina");
     //kasnije zamijenit sa funkcijom, kada se bude koristi adictionary
     sqlQueryString = "select SY_CC_DBASE from " + CommonDBGet() + ".dbo.NKSYCCYR WHERE SY_CC_USER = '" + imeFirme + "' AND SY_CC_YEAR = '" + (int(ovagod_h) - 1) + "'";
     try

@@ -105,6 +105,7 @@ function Wxbicfa_onDisplay()
         local = sqlResult[1][3];
     } 
     neto_dn = true;
+    SetWindowOptions("wxbicfaWindow", "title", nazivFirme+" - " + ovagod_h+ " godina");
 
     //kasnije zamijenit sa funkcijom, kada se bude koristi adictionary
     sqlQueryString = "select SY_CC_DBASE from " + CommonDBGet() + ".dbo.NKSYCCYR WHERE SY_CC_USER = '" + imeFirme + "' AND SY_CC_YEAR = '" + (int(ovagod_h) - 1) + "'";

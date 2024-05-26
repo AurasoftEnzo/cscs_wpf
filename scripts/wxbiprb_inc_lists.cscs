@@ -230,13 +230,15 @@ function ceSkladiste@clicked()
 
 function ceArtikl@clicked()
 {
-    F2ListQueryString = "SELECT ARTI_ARTIKL, ARTI_NAZIV, ARTI_TEZINA, ARTI_JED_MJERE, ARTI_TIP FROM " + trenutnaGodinaBaza + ".[dbo].[NKMKARTI] where ARTI_ARTIKL like '%{var1}%' and ARTI_NAZIV like '%{var2}%' ORDER BY arti_artikl";
+    F2ListQueryString = "SELECT DISTINCT nkpr_ln_pcode, ARTI_NAZIV, ARTI_TEZINA, ARTI_JED_MJERE, ARTI_TIP FROM " + trenutnaGodinaBaza + ".[dbo].[NKPRINVL]";
+    F2ListQueryString += " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].NKMKARTI ON arti_artikl= nkpr_ln_pcode";
+    F2ListQueryString += " where nkpr_ln_pcode like '%{var1}%' and ARTI_NAZIV like '%{var2}%' ORDER BY nkpr_ln_pcode";
     
     sifraFieldPointer -> artikl;
     NazivFieldPointer -> ArtiklNaziv;
 
     windowTitle = "F2 list ARTIKLI";
-    headersArray = {"Šifra artikla", "Naziv Artikla", "težina", "jedinica mjere", "TIP"};
+    headersArray = {"Šifra artikla", "Naziv Artikla", "Težina", "Jedinica mjere", "TIP"};
     ShowF2List();
     
     if(&sifraFieldPointer != ""){
@@ -337,7 +339,7 @@ function ceIsporuka@clicked()
         return;
     }
 
-    F2ListQueryString = "SELECT [NKSP_AD_CODEINT]  ,[NKSP_ad_naziv1] FROM  " + trenutnaGodinaBaza + ".[dbo].[NKSPADRS] where nksp_ad_code = " + partner + " AND NKSP_AD_CODEINT like '%{var1}%' and NKSP_AD_NAZIV1 like '%{var2}%' ORDER BY nksp_ad_codeint";
+    F2ListQueryString = "SELECT DISTINCT nkpr_gl_shpcod  ,[NKSP_ad_naziv1] FROM  " + trenutnaGodinaBaza + ".[dbo].nkprinv LEFT JOIN   " + trenutnaGodinaBaza + ".[dbo].[NKSPADRS] ON [NKSP_AD_CODEINT]= nkpr_gl_shpcod where nksp_ad_code = " + partner + " AND NKSP_AD_CODEINT like '%{var1}%' and NKSP_AD_NAZIV1 like '%{var2}%' ORDER BY nkpr_gl_shpcod";
     sifraFieldPointer -> isporuka;
     NazivFieldPointer -> isporukaNaziv;
 

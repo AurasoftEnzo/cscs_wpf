@@ -1,3 +1,4 @@
+//DASHBOARD - Ponude
 //include(strTrim(tpath()) +"chainLib.cscs");
 
 Import(strTrim(mpath()) + "CSCS.Math.dll");
@@ -1067,20 +1068,20 @@ function setSalesRatio(){
     sql_str = "SELECT '1' as tip,CONVERT(varchar(6),KS_IG_DATUM,112) as yyyymm, ";
     if (neto_dn)
     {
-        sql_str += "Sales = cast(ISNULL(SUM(KS_IL_TOTAL - KS_IL_POREZ) , 0) as decimal(10,0)) ";
+        sql_str += "Sales = ISNULL(round(SUM(KS_IL_TOTAL - KS_IL_POREZ), 0),0) ";
     }
     elif (razlikaUCijeniField)
     {
-        sql_str += " Sales = cast(ISNULL(SUM(KS_IL_TOTAL - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0)as decimal (10))";
+        sql_str += " Sales = ISNULL(round(SUM(KS_IL_TOTAL - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0),0)";
     }
     else
     {
-        sql_str += " Sales = cast(ISNULL(SUM(KS_IL_TOTAL) , 0) as decimal (10))"; //" + cast(ISNULL(SUM(CASE WHEN c.nkpr_gl_dviza = 'D' THEN c.nkpr_gl_tecaj * e.nkpr_ln_pext ELSE e.nkpr_ln_pext END) , 0)as decimal (10))";
+        sql_str += " Sales = ISNULL(round(SUM(KS_IL_TOTAL) , 0),0)"; //" + cast(ISNULL(SUM(CASE WHEN c.nkpr_gl_dviza = 'D' THEN c.nkpr_gl_tecaj * e.nkpr_ln_pext ELSE e.nkpr_ln_pext END) , 0)as decimal (10))";
     }
     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKKSINVG"; // b ON a.[Wk_Date] = DATEADD(month , DATEDIFF(month , 0 , b.nkpr_gl_orddte) , 0) AND year(b.nkpr_gl_orddte)='" + (int(ovagod_h) - 1) + "' ";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON KS_IG_KUPAC = nksc_partcode";
     
-    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.NKKSINVL ON KS_IG_RACUN = KS_IL_RACUN";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.NKKSINVL ON KS_IG_RACUN = KS_IL_RACUN AND ks_il_otprem<> 0 AND ks_ig_pracun <> 0";
     sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkmkarti ON KS_IL_PCODE = arti_artikl";
     sql_str += " WHERE 1=1 AND year(KS_IG_DATUM) = " + ovagod_h; //BETWEEN '"+sqlDate(od_danaLG)+"' AND '"+sqlDate(do_danaLG)+"'"  ";
     filterPart2();
@@ -1122,6 +1123,9 @@ function setGaugeChartRatio(){
     }
 
     //Format("tot_ovagod", "nofd", recv: "tot_ovajTj_string");
+    DEFINE tot_ovagod_vp type n size 14;
+    tot_ovagod_vp= tot_ovagod- tot_ovagod_mp;
+    Format("tot_ovagod_vp", "nofd", recv: "tot_ovagod_string");
 	HorizontalBar("HorizontalBarOGVP", "Text", tot_ovagod_string);
 	//HorizontalBar("HorizontalBarOGVP", "Color", bojeArrayTJ);
 
@@ -1129,14 +1133,14 @@ function setGaugeChartRatio(){
 	HorizontalBar("HorizontalBarOGMP", "Text", tot_ovagod_mp_string);
 	//HorizontalBar("HorizontalBarOGMP", "Color", bojeArrayTJ);
 	
-    tot_ovagod_ukupno = tot_ovagod + tot_ovagod_mp;
+    tot_ovagod_ukupno = tot_ovagod_vp + tot_ovagod_mp;
 
     Format("tot_ovagod_ukupno", "nofd", recv: "tot_ovagod_ukupno_string");
 	HorizontalBar("HorizontalBarOGUkupno", "Text", tot_ovagod_ukupno_string);
 	//HorizontalBar("HorizontalBarOGUkupno", "Color", bojeArrayTJ);
 
 
-    GaugeChart("GaugeChartOmjerProdaje", "value", Math.round(100*tot_ovagod/(tot_ovagod + tot_ovagod_mp)), 25, 30);
+    GaugeChart("GaugeChartOmjerProdaje", "value", Math.round(100*tot_ovagod_vp/(tot_ovagod_vp + tot_ovagod_mp)), 25, 30);
     GaugeChart("GaugeChartOmjerProdaje", "color", "#118888");
 }
 //---------------------------------------------------------------

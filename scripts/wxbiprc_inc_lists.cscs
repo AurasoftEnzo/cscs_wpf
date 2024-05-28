@@ -206,16 +206,28 @@
 // // F2 SKLADISTA
 function ceSkladiste@clicked()
 {
-    F2ListQueryString = "SELECT [PKMK_SKL_CODE], [PKMK_SKL_NAZIV] FROM  " + trenutnaGodinaBaza + ".[dbo].[PKMKSKLA] where PKMK_SKL_NAZIV like '%{var2}%' and PKMK_SKL_CODE like '{var1}%'";
-    //if(searchSklSifra != 0){
-    //    F2ListQueryString += " and PKMK_SKL_CODE = '{var1}'";
-    //}
-    F2ListQueryString += " ORDER BY pkmk_skl_code";
+    // F2ListQueryString = "SELECT [PKMK_SKL_CODE], [PKMK_SKL_NAZIV] FROM  " + trenutnaGodinaBaza + ".[dbo].[PKMKSKLA] where PKMK_SKL_NAZIV like '%{var2}%' and PKMK_SKL_CODE like '{var1}%'";
+    // //if(searchSklSifra != 0){
+    // //    F2ListQueryString += " and PKMK_SKL_CODE = '{var1}'";
+    // //}
+    // F2ListQueryString += " ORDER BY pkmk_skl_code";
+
+    // F2ListQueryString = "WITH skladista AS("
+    // + "SELECT DISTINCT pkmk_skl_code, pkmk_skl_naziv "
+    // + " FROM " + trenutnaGodinaBaza + ".[dbo].[nkksinvl]"
+    // + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[pkmkskla] ON pkmk_skl_code = ks_il_sklad"
+    // + " WHERE pkmk_skl_naziv LIKE '%{var2}%' AND pkmk_skl_code LIKE '{var1}%'"
+    // + ")"
+    // + " SELECT ROW_NUMBER() OVER(ORDER BY pkmk_skl_code ASC) AS RowNumber, pkmk_skl_code, pkmk_skl_naziv"
+    // + " FROM skladista ORDER BY RowNumber";
+
+    //!!!!!!!!!!!!!!!!!!!!!!
+
     skladiste = "";
     sifraFieldPointer -> skladiste;
     NazivFieldPointer -> SkladisteNaziv; 
     windowTitle = "F2 lista skladišta";
-    headersArray = {"Skladište", "Naziv skladišta"};
+    headersArray = {"R.br.", "Skladište", "Naziv skladišta"};
     ShowF2List();
     
     if(&sifraFieldPointer != ""){

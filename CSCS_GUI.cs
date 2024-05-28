@@ -4450,7 +4450,7 @@ namespace WpfCSCS
 
 			Window window = CSCS_GUI.Window2File.Keys.FirstOrDefault(p => p.Name.ToLower() == windowName);
 			
-			var parameter = Utils.GetSafeString(args, 2).ToLower();
+			var parameter = Utils.GetSafeString(args, 2);
 			
 			// try generically
 			foreach (var prop in window.GetType().GetProperties())

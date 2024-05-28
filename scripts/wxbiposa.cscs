@@ -35,13 +35,13 @@ function Wxbiposa_onDisplay()
     }
     sqlQueryString = "select SY_CC_USER, SY_CC_YEAR, SY_CC_DBASE from " + strtrim(CommonDBGet()) + ".dbo.NKSYCCYR WHERE SY_CC_CODE = '" + companyCode + "'";
     try
-        {
+    {
         sqlResult = sqlQuery(sqlQueryString);
-        }
+    }
     catch(exc)
-        {
+    {
         MessageBox(exc);
-        }
+    }
     if (ffile(strTrim(tpath())+"CompanyLogo.jpg",'f') == "CompanyLogo.jpg")
     { 
         setimage("Logo",strTrim(tpath())+"CompanyLogo.jpg");
@@ -78,13 +78,13 @@ function Wxbiposa_onDisplay()
     trenutnaGodinaBaza = sqlResult[1][2].trim(); // ime baze
     sqlQueryString = " SELECT TOP 1 kpsy_comp_name,kpsy_po_freight,FORMAT([KPSY_FISCAL_YR], 'yyyy-MM-dd'),kpsy_ku_pnb FROM " + trenutnaGodinaBaza + ".[dbo].[KPSYMSTR]";
     try
-        {
+    {
         sqlResult = sqlQuery(sqlQueryString);
-        }
+    }
     catch(exc)
-        {
+    {
         MessageBox(exc);
-        }
+    }
     if (size(sqlResult) > 1)
     {
         proslaGodina = (int(ovagod_h) - 1);
@@ -94,7 +94,7 @@ function Wxbiposa_onDisplay()
         local = sqlResult[1][3];
     } 
     neto_dn = true;
-    SetWindowOptions("wxbiposabWindow", "title", nazivFirme+" - " + ovagod_h+ " godina");
+    SetWindowOptions("wxbiposaWindow", "title", "Dashboard - POS kasa za " + nazivFirme + " - " + ovagod_h+ ". godina");
     //kasnije zamijenit sa funkcijom, kada se bude koristi adictionary
     sqlQueryString = "select SY_CC_DBASE from " + CommonDBGet() + ".dbo.NKSYCCYR WHERE SY_CC_USER = '" + imeFirme + "' AND SY_CC_YEAR = '" + (int(ovagod_h) - 1) + "'";
     try

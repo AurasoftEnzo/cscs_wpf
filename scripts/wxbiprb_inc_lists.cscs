@@ -310,7 +310,7 @@ function cePartner@clicked()
     + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkscpart] ON nksc_partcode = nkpr_gl_cuscod"
     + " WHERE nksc_partcode LIKE '%{var1}%' AND nksc_partname LIKE '%{var2}%' AND YEAR(nkpr_gl_datem) = " + ovagod_h
     + ")"
-    + " SELECT ROW_NUMBER() OVER(ORDER BY NKPR_GL_CUSCOD ASC) AS RowNumber, nkpr_gl_cuscod, nksc_partname, PartnerTip"
+    + " SELECT ROW_NUMBER() OVER(ORDER BY nkpr_gl_cuscod ASC) AS RowNumber, nkpr_gl_cuscod, nksc_partname, PartnerTip"
     + " FROM partneri ORDER BY RowNumber";
 
     sifraFieldPointer -> partner;

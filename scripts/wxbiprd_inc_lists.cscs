@@ -204,16 +204,26 @@
 // // F2 SKLADISTA
 function ceSkladiste@clicked()
 {
-    F2ListQueryString = "SELECT [PKMK_SKL_CODE], [PKMK_SKL_NAZIV] FROM  " + trenutnaGodinaBaza + ".[dbo].[PKMKSKLA] where PKMK_SKL_NAZIV like '%{var2}%' and PKMK_SKL_CODE like '{var1}%'";
-    //if(searchSklSifra != 0){
-    //    F2ListQueryString += " and PKMK_SKL_CODE = '{var1}'";
-    //}
-    F2ListQueryString += " ORDER BY pkmk_skl_code";
+    // F2ListQueryString = "SELECT [PKMK_SKL_CODE], [PKMK_SKL_NAZIV] FROM  " + trenutnaGodinaBaza + ".[dbo].[PKMKSKLA] where PKMK_SKL_NAZIV like '%{var2}%' and PKMK_SKL_CODE like '{var1}%'";
+    // //if(searchSklSifra != 0){
+    // //    F2ListQueryString += " and PKMK_SKL_CODE = '{var1}'";
+    // //}
+    // F2ListQueryString += " ORDER BY pkmk_skl_code";
+
+    F2ListQueryString = "WITH skladista AS("
+    + " SELECT DISTINCT nkpr_ln_loc, pkmk_skl_naziv"
+    + " FROM  " + trenutnaGodinaBaza + ".[dbo].[nkprlnnr] "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[pkmkskla] ON pkmk_skl_code = nkpr_ln_loc"
+    + " WHERE nkpr_ln_loc LIKE '{var1}%' AND pkmk_skl_naziv LIKE '%{var2}%'"
+    + ")"
+    + " SELECT ROW_NUMBER() OVER(ORDER BY nkpr_ln_loc ASC) AS RowNumber, nkpr_ln_loc, pkmk_skl_naziv"
+    + " FROM skladista ORDER BY RowNumber";
+
     skladiste = "";
     sifraFieldPointer -> skladiste;
     NazivFieldPointer -> SkladisteNaziv; 
     windowTitle = "F2 lista skladišta";
-    headersArray = {"Skladište", "Naziv skladišta"};
+    headersArray = {"R.br.", "Skladište", "Naziv skladišta"};
     ShowF2List();
     
     if(&sifraFieldPointer != ""){
@@ -232,13 +242,22 @@ function ceSkladiste@clicked()
 
 function ceArtikl@clicked()
 {
-    F2ListQueryString = "SELECT ARTI_ARTIKL, ARTI_NAZIV, ARTI_TEZINA, ARTI_JED_MJERE, ARTI_TIP FROM " + trenutnaGodinaBaza + ".[dbo].[NKMKARTI] where ARTI_ARTIKL like '%{var1}%' and ARTI_NAZIV like '%{var2}%' ORDER BY arti_artikl";
+    //F2ListQueryString = "SELECT ARTI_ARTIKL, ARTI_NAZIV, ARTI_TEZINA, ARTI_JED_MJERE, ARTI_TIP FROM " + trenutnaGodinaBaza + ".[dbo].[NKMKARTI] where ARTI_ARTIKL like '%{var1}%' and ARTI_NAZIV like '%{var2}%' ORDER BY arti_artikl";
     
+    F2ListQueryString = "WITH artikli AS("
+    + " SELECT DISTINCT nkpr_ln_pcode, arti_naziv, arti_tezina, arti_jed_mjere, arti_tip"
+    + " FROM " + trenutnaGodinaBaza + ".[dbo].[nkprlnnr] "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkmkarti] ON nkpr_ln_pcode = arti_artikl"
+    + " WHERE nkpr_ln_pcode LIKE '%{var1}%' AND arti_naziv LIKE '%{var2}%'"
+    + ")"
+    + " SELECT ROW_NUMBER() OVER(ORDER BY nkpr_ln_pcode ASC) AS RowNumber, nkpr_ln_pcode, arti_naziv, arti_tezina, arti_jed_mjere, arti_tip"
+    + " FROM artikli ORDER BY RowNumber";
+
     sifraFieldPointer -> artikl;
     NazivFieldPointer -> ArtiklNaziv;
 
     windowTitle = "F2 list ARTIKLI";
-    headersArray = {"Šifra artikla", "Naziv Artikla", "težina", "jedinica mjere", "TIP"};
+    headersArray = {"R.br.", "Šifra artikla", "Naziv Artikla", "težina", "jedinica mjere", "TIP"};
     ShowF2List();
     
     if(&sifraFieldPointer != ""){
@@ -262,7 +281,7 @@ function ceArtikl@post()
     }
     else{
         sqlResult = {};
-        sqlString = "SELECT TOP 1 ARTI_NAZIV FROM " + trenutnaGodinaBaza + ".[dbo].[NKMKARTI] where ARTI_ARTIKL = '" + artikl + "' order by ARTI_ARTIKL";
+        sqlString = "SELECT TOP 1 arti_naziv FROM " + trenutnaGodinaBaza + ".[dbo].[nkmkarti] WHERE arti_artikl = '" + artikl + "' ORDER BY arti_artikl";
         try{
             sqlResult = SqlQuery(sqlString);
         }catch(ex){
@@ -283,13 +302,22 @@ function ceArtikl@post()
 //==============================================================
 function cePartner@clicked()
 {
-    F2ListQueryString = "SELECT distinct [nkpr_gl_cuscod], [NKSC_PARTNAME], CASE WHEN nksc_cust_vend= 'K' THEN 'Kupac' WHEN nksc_cust_vend= 'D' THEN 'Dobavljač' ELSE 'Kup/Dob' END as PartnerTip FROM  " + trenutnaGodinaBaza + ".[dbo].[nkprglnr] LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkscpart] ON nkpr_gl_cuscod = nksc_partcode WHERE NKSC_PARTCODE like '%{var1}%' and NKSC_PARTNAME like '%{var2}%' AND YEAR(nkpr_gl_orddte) = " + ovagod_h + " ORDER BY nkpr_gl_cuscod";
+    //F2ListQueryString = "SELECT distinct [nkpr_gl_cuscod], [NKSC_PARTNAME], CASE WHEN nksc_cust_vend= 'K' THEN 'Kupac' WHEN nksc_cust_vend= 'D' THEN 'Dobavljač' ELSE 'Kup/Dob' END as PartnerTip FROM  " + trenutnaGodinaBaza + ".[dbo].[nkprglnr] LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkscpart] ON nkpr_gl_cuscod = nksc_partcode WHERE NKSC_PARTCODE like '%{var1}%' and NKSC_PARTNAME like '%{var2}%' AND YEAR(nkpr_gl_orddte) = " + ovagod_h + " ORDER BY nkpr_gl_cuscod";
     
+    F2ListQueryString = "WITH partneri AS("
+    + " SELECT DISTINCT nkpr_gl_cuscod, nksc_partname, CASE WHEN nksc_cust_vend = 'K' THEN 'Kupac' WHEN nksc_cust_vend = 'D' THEN 'Dobavljač' ELSE 'Kup/Dob' END AS PartnerTip "
+    + " FROM " + trenutnaGodinaBaza + ".[dbo].[nkprglnr] "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkscpart] ON nksc_partcode = nkpr_gl_cuscod"
+    + " WHERE nksc_partcode LIKE '%{var1}%' AND nksc_partname LIKE '%{var2}%' AND YEAR(nkpr_gl_orddte) = " + ovagod_h
+    + ")"
+    + " SELECT ROW_NUMBER() OVER(ORDER BY nkpr_gl_cuscod ASC) AS RowNumber, nkpr_gl_cuscod, nksc_partname, PartnerTip"
+    + " FROM partneri ORDER BY RowNumber";
+
     sifraFieldPointer -> partner;
     NazivFieldPointer -> PartnerNaziv;
 
     windowTitle = "F2 lista Partnera";
-    headersArray = {"Šifra partnera", "Naziv partnera", "Kupac/Dobavljač"};
+    headersArray = {"R.br.", "Šifra partnera", "Naziv partnera", "Kupac/Dobavljač"};
     ShowF2List();
     
     if(&sifraFieldPointer != ""){
@@ -313,7 +341,7 @@ function cePartner@post()
     }
     else{
         sqlResult = {};
-        sqlString = "SELECT TOP 1 NKSC_PARTNAME FROM  " + trenutnaGodinaBaza + ".[dbo].[NKSCPART] where NKSC_PARTCODE = '" + partner + "' ORDER BY nksc_partcode";
+        sqlString = "SELECT TOP 1 nksc_partname FROM  " + trenutnaGodinaBaza + ".[dbo].[nkscpart] WHERE nksc_partcode = '" + partner + "' ORDER BY nksc_partcode";
         try{
             sqlResult = SqlQuery(sqlString);
         }catch(ex){
@@ -339,12 +367,22 @@ function ceIsporuka@clicked()
         return;
     }
 
-    F2ListQueryString = "SELECT [NKSP_AD_CODEINT], [NKSP_ad_naziv1] FROM  " + trenutnaGodinaBaza + ".[dbo].[NKSPADRS] where nksp_ad_code = " + partner + " AND NKSP_AD_CODEINT like '%{var1}%' and NKSP_AD_NAZIV1 like '%{var2}%' ORDER BY nksp_ad_codeint";
+    //F2ListQueryString = "SELECT [NKSP_AD_CODEINT], [NKSP_ad_naziv1] FROM  " + trenutnaGodinaBaza + ".[dbo].[NKSPADRS] where nksp_ad_code = " + partner + " AND NKSP_AD_CODEINT like '%{var1}%' and NKSP_AD_NAZIV1 like '%{var2}%' ORDER BY nksp_ad_codeint";
+    
+    F2ListQueryString = "WITH isporucnaMjesta AS("
+    + " SELECT DISTINCT nkpr_gl_shpcod, nksp_ad_naziv1 "
+    + " FROM " + trenutnaGodinaBaza + ".[dbo].nkprglnr "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkspadrs] ON nksp_ad_codeint = nkpr_gl_shpcod AND nksp_ad_code = nkpr_gl_cuscod"
+    + " WHERE nksp_ad_code = " + partner + " AND nksp_ad_codeint LIKE '%{var1}%' AND nksp_ad_naziv1 LIKE '%{var2}%' "
+    + ")"
+    + " SELECT ROW_NUMBER() OVER(ORDER BY nkpr_gl_shpcod ASC) AS RowNumber, nkpr_gl_shpcod, nksp_ad_naziv1"
+    + " FROM isporucnaMjesta ORDER BY RowNumber";
+    
     sifraFieldPointer -> isporuka;
     NazivFieldPointer -> isporukaNaziv;
 
     windowTitle = "F2 lista isporuka za partnera: " + partner;
-    headersArray = {"Šifra isporuke", "Naziv isporučnog mjesta"};
+    headersArray = {"R.br.", "Šifra isporuke", "Naziv isporučnog mjesta"};
     ShowF2List();
     
     if(&sifraFieldPointer != ""){
@@ -376,7 +414,7 @@ function ceIsporuka@post()
         }
 
         sqlResult = {};
-        sqlString = "SELECT TOP 1 [NKSP_ad_naziv1] FROM  " + trenutnaGodinaBaza + ".[dbo].[NKSPADRS] where nksp_ad_code = " + partner + " AND NKSP_AD_CODEINT = '" + isporuka + "' ORDER BY nksp_ad_codeint";
+        sqlString = "SELECT TOP 1 [nksp_ad_naziv1] FROM  " + trenutnaGodinaBaza + ".[dbo].[nkspadrs] WHERE nksp_ad_code = " + partner + " AND nksp_ad_codeint = '" + isporuka + "' ORDER BY nksp_ad_codeint";
         try{
             sqlResult = SqlQuery(sqlString);
         }catch(ex){
@@ -397,13 +435,23 @@ function ceIsporuka@post()
 //===================================================================
 function ceRegija@clicked()
 {
-    F2ListQueryString = "SELECT [KSDU_SF_CODE], [KSDU_SF_OPIS1] FROM  " + trenutnaGodinaBaza + ".[dbo].[KPSYSIFA] WHERE [KSDU_SF_TIP] ='V' and KSDU_SF_CODE like '%{var1}%' and KSDU_SF_OPIS1 like '%{var2}%' ORDER BY ksdu_sf_code";
+    //F2ListQueryString = "SELECT [KSDU_SF_CODE], [KSDU_SF_OPIS1] FROM  " + trenutnaGodinaBaza + ".[dbo].[KPSYSIFA] WHERE [KSDU_SF_TIP] ='V' and KSDU_SF_CODE like '%{var1}%' and KSDU_SF_OPIS1 like '%{var2}%' ORDER BY ksdu_sf_code";
     
+    F2ListQueryString = "WITH regije AS("
+    + " SELECT DISTINCT ksdu_sf_code, ksdu_sf_opis1 "
+    + " FROM " + trenutnaGodinaBaza + ".[dbo].[nkprglnr] "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkscpart] ON nksc_partcode = nkpr_gl_cuscod "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[kpsysifa] ON nksc_regija = ksdu_sf_code "
+    + " WHERE ksdu_sf_tip ='V' AND ksdu_sf_code LIKE '%{var1}%' AND ksdu_sf_opis1 LIKE '%{var2}%' "
+    + ")"
+    + " SELECT ROW_NUMBER() OVER(ORDER BY ksdu_sf_code ASC) AS RowNumber, ksdu_sf_code, ksdu_sf_opis1"
+    + " FROM regije ORDER BY RowNumber";
+
     sifraFieldPointer -> regija;
     NazivFieldPointer -> RegijaNaziv;
 
     windowTitle = "F2 lista Regija";
-    headersArray = {"Šifra Regije", "Naziv Regije"};
+    headersArray = {"R.br.", "Šifra Regije", "Naziv Regije"};
     ShowF2List();
     if(&sifraFieldPointer != ""){
         regija= strtrim(&sifraFieldPointer);
@@ -425,7 +473,7 @@ function ceRegija@post()
     }
     else{
         sqlResult = {};
-        sqlString = "SELECT TOP 1 [KSDU_SF_OPIS1] FROM  " + trenutnaGodinaBaza + ".[dbo].[KPSYSIFA] WHERE [KSDU_SF_TIP] ='V' and KSDU_SF_CODE = '" + regija + "' ORDER BY ksdu_sf_code";
+        sqlString = "SELECT TOP 1 [ksdu_sf_opis1] FROM  " + trenutnaGodinaBaza + ".[dbo].[kpsysifa] WHERE [ksdu_sf_tip] ='V' and ksdu_sf_code = '" + regija + "' ORDER BY ksdu_sf_code";
         try{
             sqlResult = SqlQuery(sqlString);
         }catch(ex){
@@ -446,13 +494,23 @@ function ceRegija@post()
 //===================================================================
 function ceKategorija@clicked()
 {
-    F2ListQueryString = "SELECT mkgr_grupa, SUBSTRING(mkgr_rezerva,1,50) as mkgr_rezerva FROM  " + trenutnaGodinaBaza + ".[dbo].[pkmkgrup] WHERE [mkgr_vrsta] ='K' and mkgr_grupa like '%{var1}%' AND SUBSTRING(mkgr_rezerva,1,50) like '%{var2}%' ORDER BY mkgr_grupa";
+    //F2ListQueryString = "SELECT mkgr_grupa, SUBSTRING(mkgr_rezerva,1,50) as mkgr_rezerva FROM  " + trenutnaGodinaBaza + ".[dbo].[pkmkgrup] WHERE [mkgr_vrsta] ='K' and mkgr_grupa like '%{var1}%' AND SUBSTRING(mkgr_rezerva,1,50) like '%{var2}%' ORDER BY mkgr_grupa";
     
+    F2ListQueryString = "WITH kategorije AS("
+    + " SELECT DISTINCT mkgr_grupa, CASE WHEN SUBSTRING(mkgr_rezerva,1,50) <> '' THEN SUBSTRING(mkgr_rezerva,1,50) ELSE mkgr_naziv END AS naziv "
+    + " FROM  " + trenutnaGodinaBaza + ".[dbo].[nkprlnnr] "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkmkarti] ON arti_artikl = nkpr_ln_pcode "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[pkmkgrup] ON arti_kategorija = mkgr_grupa AND mkgr_vrsta ='K'"
+    + " WHERE mkgr_grupa LIKE '%{var1}%' "
+    + ")"
+    + " SELECT ROW_NUMBER() OVER(ORDER BY mkgr_grupa ASC) AS RowNumber, mkgr_grupa, naziv"
+    + " FROM kategorije WHERE naziv LIKE '%{var2}%' ORDER BY RowNumber";
+
     sifraFieldPointer -> kategorija;
     NazivFieldPointer -> kategNaziv;
 
     windowTitle = "F2 lista Kategorija";
-    headersArray = {"Kategorija", "Naziv kategorije"};
+    headersArray = {"R.br.", "Kategorija", "Naziv kategorije"};
     ShowF2List();
     if(&sifraFieldPointer != ""){
         kategorija= strtrim(&sifraFieldPointer);
@@ -474,7 +532,7 @@ function ceKategorija@post()
     }
     else{
         sqlResult = {};
-        sqlString = "SELECT TOP 1 SUBSTRING(mkgr_rezerva,1,50) as mkgr_rezerva FROM  " + trenutnaGodinaBaza + ".[dbo].[pkmkgrup] WHERE [mkgr_vrsta] ='K' and mkgr_grupa = '" + kategorija + "' ORDER BY mkgr_grupa";
+        sqlString = "SELECT TOP 1 CASE WHEN SUBSTRING(mkgr_rezerva,1,50) <> '' THEN SUBSTRING(mkgr_rezerva,1,50) ELSE mkgr_naziv END AS naziv FROM  " + trenutnaGodinaBaza + ".[dbo].[pkmkgrup] WHERE [mkgr_vrsta] ='K' and mkgr_grupa = '" + kategorija + "' ORDER BY mkgr_grupa";
         try{
             sqlResult = SqlQuery(sqlString);
         }catch(ex){
@@ -495,13 +553,23 @@ function ceKategorija@post()
 //====================================================================
 function ceKlasa@clicked()
 {
-    F2ListQueryString = "SELECT mkgr_grupa, SUBSTRING(mkgr_rezerva,1,50) FROM  " + trenutnaGodinaBaza + ".[dbo].[pkmkgrup] WHERE [mkgr_vrsta] ='L' and mkgr_grupa like '%{var1}%' AND SUBSTRING(mkgr_rezerva,1,50) like '%{var2}%' ORDER BY mkgr_grupa";
+    //F2ListQueryString = "SELECT mkgr_grupa, SUBSTRING(mkgr_rezerva,1,50) FROM  " + trenutnaGodinaBaza + ".[dbo].[pkmkgrup] WHERE [mkgr_vrsta] ='L' and mkgr_grupa like '%{var1}%' AND SUBSTRING(mkgr_rezerva,1,50) like '%{var2}%' ORDER BY mkgr_grupa";
     
+    F2ListQueryString = "WITH klase AS("
+    + " SELECT DISTINCT mkgr_grupa, CASE WHEN SUBSTRING(mkgr_rezerva,1,50) <> '' THEN SUBSTRING(mkgr_rezerva,1,50) ELSE mkgr_naziv END AS naziv "
+    + " FROM  " + trenutnaGodinaBaza + ".[dbo].[nkprlnnr] "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkmkarti] ON arti_artikl = nkpr_ln_pcode "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[pkmkgrup] ON arti_kategorija = mkgr_grupa AND [mkgr_vrsta] ='L'"
+    + " WHERE mkgr_grupa LIKE '%{var1}%'"
+    + ")"
+    + " SELECT ROW_NUMBER() OVER(ORDER BY mkgr_grupa ASC) AS RowNumber, mkgr_grupa, naziv"
+    + " FROM klase WHERE naziv LIKE '%{var2}%' ORDER BY RowNumber";
+
     sifraFieldPointer -> klasa;
     NazivFieldPointer -> klasaNaziv;
 
     windowTitle = "F2 lista Klasa";
-    headersArray = {"Klasa", "Naziv klase"};
+    headersArray = {"R.br.", "Klasa", "Naziv klase"};
     ShowF2List();
     if(&sifraFieldPointer != ""){
         klasa= strtrim(&sifraFieldPointer);
@@ -523,7 +591,7 @@ function ceKlasa@post()
     }
     else{
         sqlResult = {};
-        sqlString = "SELECT TOP 1 SUBSTRING(mkgr_rezerva,1,50) FROM  " + trenutnaGodinaBaza + ".[dbo].[pkmkgrup] WHERE [mkgr_vrsta] ='L' and mkgr_grupa = '" + klasa + "' ORDER BY mkgr_grupa";
+        sqlString = "SELECT TOP 1 CASE WHEN SUBSTRING(mkgr_rezerva,1,50) <> '' THEN SUBSTRING(mkgr_rezerva,1,50) ELSE mkgr_naziv END AS naziv FROM  " + trenutnaGodinaBaza + ".[dbo].[pkmkgrup] WHERE [mkgr_vrsta] ='L' and mkgr_grupa = '" + klasa + "' ORDER BY mkgr_grupa";
         try{
             sqlResult = SqlQuery(sqlString);
         }catch(ex){
@@ -544,13 +612,22 @@ function ceKlasa@post()
 //====================================================================
 function neKomercijalist@clicked()
 {
-    F2ListQueryString = "SELECT kppr_rf_code, kppr_rf_prezime+ ' '+kppr_rf_ime FROM  " + trenutnaGodinaBaza + ".[dbo].[kpprrefr] WHERE kppr_rf_code like '%{var1}%' AND kppr_rf_prezime like '%{var2}%' ORDER BY kppr_rf_code";
+    //F2ListQueryString = "SELECT kppr_rf_code, kppr_rf_prezime+ ' '+kppr_rf_ime FROM  " + trenutnaGodinaBaza + ".[dbo].[kpprrefr] WHERE kppr_rf_code like '%{var1}%' AND kppr_rf_prezime like '%{var2}%' ORDER BY kppr_rf_code";
     
+    F2ListQueryString = "WITH komercijalisti AS("
+    + " SELECT DISTINCT kppr_rf_code, TRIM(kppr_rf_prezime) + ' ' + TRIM(kppr_rf_ime) as PrezimeIme "
+    + " FROM  " + trenutnaGodinaBaza + ".[dbo].[nkprglnr]"
+    + " LEFT JOIN  " + trenutnaGodinaBaza + ".[dbo].[kpprrefr] ON nkpr_gl_slsp = kppr_rf_code"
+    + " WHERE kppr_rf_code LIKE '%{var1}%' AND (kppr_rf_prezime LIKE '%{var2}%' OR kppr_rf_ime LIKE '%{var2}%') "
+    + ")"
+    + " SELECT ROW_NUMBER() OVER(ORDER BY kppr_rf_code ASC) AS RowNumber, kppr_rf_code, PrezimeIme"
+    + " FROM komercijalisti ORDER BY RowNumber";
+
     sifraFieldPointer -> komercijalist;
     NazivFieldPointer -> komercNaziv;
 
     windowTitle = "F2 lista komercijalista";
-    headersArray = {"Šifra", "Naziv komercijalista"};
+    headersArray = {"R.br.", "Šifra", "Naziv komercijalista"};
     ShowF2List();
     if(&sifraFieldPointer != ""){
         komercijalist= strtrim(&sifraFieldPointer);
@@ -572,7 +649,7 @@ function neKomercijalist@post()
     }
     else{
         sqlResult = {};
-        sqlString = "SELECT TOP 1 kppr_rf_prezime + ' ' + kppr_rf_ime FROM  " + trenutnaGodinaBaza + ".[dbo].[kpprrefr] WHERE kppr_rf_code = '" + komercijalist + "' ORDER BY kppr_rf_code";
+        sqlString = "SELECT TOP 1 TRIM(kppr_rf_prezime) + ' ' + TRIM(kppr_rf_ime) FROM  " + trenutnaGodinaBaza + ".[dbo].[kpprrefr] WHERE kppr_rf_code = '" + komercijalist + "' ORDER BY kppr_rf_code";
         try{
             sqlResult = SqlQuery(sqlString);
         }catch(ex){
@@ -593,13 +670,22 @@ function neKomercijalist@post()
 //====================================================================
 function neRnalog@clicked()
 {
-    F2ListQueryString = "SELECT nkpr_gl_nalog, nkpr_gl_cusnme FROM  " + trenutnaGodinaBaza + ".[dbo].[nkprglnl] WHERE nkpr_gl_nalog like '{var1}%' AND nkpr_gl_cusnme like '%{var2}%' ORDER BY nkpr_gl_nalog";
+    //F2ListQueryString = "SELECT nkpr_gl_nalog, nkpr_gl_cusnme FROM  " + trenutnaGodinaBaza + ".[dbo].[nkprglnl] WHERE nkpr_gl_nalog like '{var1}%' AND nkpr_gl_cusnme like '%{var2}%' ORDER BY nkpr_gl_nalog";
     
+    F2ListQueryString = "WITH radniNalozi AS("
+    + " SELECT DISTINCT nkpr_gl_nalog, nkpr_gl_cusnme "
+    + " FROM  " + trenutnaGodinaBaza + ".[dbo].[nkprlnnr]"
+    + " LEFT JOIN  " + trenutnaGodinaBaza + ".[dbo].[nkprglnl] ON nkpr_ln_rnalg = nkpr_gl_nalog"
+    + " WHERE nkpr_gl_nalog LIKE '{var1}%' AND nkpr_gl_cusnme LIKE '%{var2}%' "
+    + ")"
+    + " SELECT ROW_NUMBER() OVER(ORDER BY nkpr_gl_nalog ASC) AS RowNumber, nkpr_gl_nalog, nkpr_gl_cusnme"
+    + " FROM radniNalozi ORDER BY RowNumber";
+
     sifraFieldPointer -> rnalog;
     NazivFieldPointer -> rnalogNaziv;
 
     windowTitle = "F2 lista Radnih naloga";
-    headersArray = {"Broj", "Naziv kupca"};
+    headersArray = {"R.br.", "Broj", "Naziv kupca"};
     ShowF2List();
     if(&sifraFieldPointer != ""){
         rnalog= strtrim(&sifraFieldPointer);

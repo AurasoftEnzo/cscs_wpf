@@ -10,11 +10,10 @@
         Height="675"
         Width="1200" WindowStartupLocation="CenterScreen"  MinHeight="540" MinWidth="960">
     <Viewbox Stretch="Uniform">
-        <Grid 
-            Margin="10,30,10,30">
+        <Grid Width="1162" Margin="15">
             <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
+                <RowDefinition Height="300"/>
+                <RowDefinition Height="330"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -29,18 +28,18 @@
                             Grid.Row="0"
                             Margin="5,45,5,10" LegendPosition="Top" />
             <Label HorizontalAlignment="Left" Content="Ponude po danima" Grid.Row="0" Grid.Column="1" VerticalAlignment="Top" Width="193" FontSize="16" FontWeight="Bold" Margin="24,5,0,0" BorderBrush="{x:Null}" Background="{x:Null}"/>
-            <Label HorizontalAlignment="Left" Content="Najnovije ponude" Grid.Row="1" Grid.Column="0" VerticalAlignment="Top" Width="193" FontSize="16" FontWeight="Bold" Margin="23,5,0,0" BorderBrush="{x:Null}"/>
+            <Label HorizontalAlignment="Left" Content="Neotpremljene narudžbe po artiklima" Grid.Row="1" Grid.Column="0" VerticalAlignment="Top" Width="308" FontSize="16" FontWeight="Bold" Margin="23,5,0,0" BorderBrush="{x:Null}"/>
 
-            <DataGrid GridLinesVisibility="Vertical"
-                  VerticalGridLinesBrush="LightGray"
+            <DataGrid GridLinesVisibility="Horizontal"
+                      HorizontalGridLinesBrush="LightGray"
                   Margin="23,32,23,14"
                   IsReadOnly="true"
-                  x:Name="dgRacuniLast"
-                  AlternatingRowBackground="LightBlue"
+                  x:Name="dgTop10NotSentProducts"
                   HorizontalScrollBarVisibility="Auto"
                   VerticalScrollBarVisibility="Auto"
                   Background="White"
                   Grid.Row="1"
+                  FontSize="16"
                   TabIndex="4" BorderThickness="0,0,0,0">
                 <DataGrid.Resources>
                     <Style TargetType="{x:Type DataGridColumnHeader}">
@@ -53,87 +52,89 @@
                 </DataGrid.Resources>
                 <DataGrid.Columns>
                     <DataGridTemplateColumn Header="No."
-                                        Width="28">
+                                        Width="24">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="T10CNTRZ_AR"
+                                <wcl:ASGridCell FieldName="Top10NoArt_ar"
                                             Editor="edDefault"
                                             EditLength="0" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Ponuda"
-                                        Width="69">
+                    <DataGridTemplateColumn Header="Artikl"
+                                        Width="50">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="T10RACUNZ_AR"
-                                            HorizontalContentAlignment="Right"
+                                <wcl:ASGridCell FieldName="CodeNoArt_ar"
+                                            HorizontalContentAlignment="Left"
                                             Editor="edNumeric"
                                             EditLength="0" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Datum"
-                                        Width="63">
+                    <DataGridTemplateColumn Header="Naziv artikla"
+                                        Width="190">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="T10DATUMZ_AR"
-                                            HorizontalContentAlignment="Center"
-                                            Editor="edDefault"
-                                            EditLength="8" />
+                                <wcl:ASGridCell FieldName="NameNoArt_ar"
+                                                />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Sat"
-                                        Width="50">
+                    <DataGridTemplateColumn Header="Naručeno"
+                                        Width="80">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="T10TIMEZ_AR"
-                                            HorizontalContentAlignment="Center"
-                                            Editor="edDefault"
-                                            EditLength="0" />
+                                <wcl:ASGridCell FieldName="NarNoArt_ar"
+                                            HorizontalContentAlignment="Right" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Kupac"
-                                        Width="210">
+                    <DataGridTemplateColumn Header="Otpremljeno"
+                                        Width="80">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="T10NAMEZ_AR"
-                                            Editor="edDefault"
-                                            Thousands="True"
-                                            EditLength="0" />
+                                <wcl:ASGridCell FieldName="OtpNoArt_ar"
+                                            HorizontalContentAlignment="Right" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Ukupno"
-                                        Width="90">
+                    <DataGridTemplateColumn Header="Razlika"
+                                        Width="80">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="T10IZNOSZ_AR"
-                                            Editor="edEditBtn"
-                                            EditLength="0"
-                                            x:Name="clickTest"
-                                            Size="10"
-                                            DecimalChrs="2"
+                                <wcl:ASGridCell FieldName="DiffNoArt_ar"
+                                            HorizontalContentAlignment="Right" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header=""
+                                        Width="20">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="imageArt_ar" 
+                                                IsImage="True"
+                                                Margin="2"
                                             HorizontalContentAlignment="Right" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
-            <Label HorizontalAlignment="Left" Content="Najveće ponude" Grid.Row="1" Grid.Column="1" VerticalAlignment="Top" Width="193" FontSize="16" FontWeight="Bold" Margin="24,5,0,0" BorderBrush="{x:Null}"/>
+            <Label HorizontalAlignment="Left" Content="Neotpremljene narudžbe po kupcima" Grid.Row="1" Grid.Column="1" VerticalAlignment="Top" Width="292" FontSize="16" FontWeight="Bold" Margin="24,5,0,0" BorderBrush="{x:Null}"/>
             <Label HorizontalAlignment="Left" Content="Ponude po mjesecima (x 1.000)" VerticalAlignment="Top" Width="272" FontSize="16" FontWeight="Bold" Margin="23,10,0,0" BorderBrush="{x:Null}" Background="{x:Null}"/>
-            <DataGrid GridLinesVisibility="None"
+            <DataGrid
                   Margin="24,32,20,14"
                   IsReadOnly="true"
-                  x:Name="dgRacuniMjesec"
-                  AlternatingRowBackground="LightGray"
+                  x:Name="dgTop10NotSentCustomers"
+                      GridLinesVisibility="Horizontal"
+                      HorizontalGridLinesBrush="LightGray"
                   HorizontalScrollBarVisibility="Auto"
                   VerticalScrollBarVisibility="Auto"
                   Background="White"
                   Grid.Column="1"
                   Grid.Row="1"
+                      FontSize="16"
                   TabIndex="3" BorderThickness="0,0,0,0" CanUserAddRows="False" CanUserDeleteRows="False" CanUserResizeRows="False">
                 <DataGrid.Resources>
                     <Style TargetType="{x:Type DataGridColumnHeader}">
@@ -146,59 +147,72 @@
                 </DataGrid.Resources>
                 <DataGrid.Columns>
                     <DataGridTemplateColumn Header="No."
-                                        Width="28">
+                                        Width="24">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="T10CNTRMJ_AR"
+                                <wcl:ASGridCell FieldName="Top10NoPart_ar"
                                             Editor="edDefault"
                                             EditLength="0" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Ponuda"
-                                        Width="69">
+                    <DataGridTemplateColumn Header="Partner"
+                                       Width="90" >
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="T10RACUNMJ_AR"
+                                <wcl:ASGridCell FieldName="CodeNoPart_ar"
                                             Editor="edNumeric"
-                                            HorizontalContentAlignment="Right"
+                                            HorizontalContentAlignment="Left"
                                             EditLength="0" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Datum"
-                                        Width="63">
+                    <DataGridTemplateColumn Header="Naziv partnera"
+                                        Width="150">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="T10DATUMMJ_AR"
-                                            HorizontalContentAlignment="Center"
+                                <wcl:ASGridCell FieldName="NameNoPart_ar"
                                             Editor="edDefault"
                                             EditLength="8" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Kupac"
-                                        Width="250">
+                    <DataGridTemplateColumn Header="Naručeno"
+                                        Width="80">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="T10NAMEMJ_AR"
+                                <wcl:ASGridCell FieldName="NarNoPart_ar"
                                             Editor="edDefault"
-                                            EditLength="0" />
+                                            EditLength="0" 
+                                                HorizontalContentAlignment="Right"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Iznos"
-                                        Width="90">
+                    <DataGridTemplateColumn Header="Otpremljeno"
+                                       Width="80">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="T10IZNOSMJ_AR"
-                                            Editor="edEditBtn"
-                                            EditLength="0"
-                                            x:Name="clickTest"
-                                            Thousands="True"
-                                            Size="10"
-                                            DecimalChrs="2"
+                                <wcl:ASGridCell FieldName="OtpNoPart_ar"
                                             HorizontalContentAlignment="Right" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Razlika"
+                                        Width="80">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="DiffNoPart_ar"
+                                            HorizontalContentAlignment="Right" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header=""
+                                        Width="20">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="imagePart_ar"
+                                            IsImage="True"
+                                                Margin="2"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -213,7 +227,7 @@ Visibility="Visible"
 BorderBrush="Transparent"
 BorderThickness="0"
 Padding="-8"
-x:Name="gbPrint1"
+x:Name="gbPrint3"
 Background="gray"
 TabIndex="35"
 Foreground="#FFFDFDFD"

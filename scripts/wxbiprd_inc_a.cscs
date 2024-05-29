@@ -338,9 +338,7 @@ function setChartByDaysOfMonth()
     if ( regija != "" )
     {
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart g ON c.nkpr_gl_cuscod = g.nksc_partcode";
-    {
         sql_str += " AND g.nksc_regija= '"+regija+"'";
-    }
     }
     sql_str += " WHERE 1 = 1";
     if (do_mjeseca)

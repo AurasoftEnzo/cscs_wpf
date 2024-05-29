@@ -777,79 +777,80 @@ function setCustomerDataGrid()
 
     if (proslaGodinaBaza != "")
 	{
+		RunOnMain("setCntr2");
 
-    RunOnMain("setCntr2");
-
-    //sql_str= "";
-	
-    sql_str= " SELECT nkpr_gl_cuscod,";
-	
-    if (neto_dn )
-	{
-		sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_gl_dviza= 'D' THEN nkpr_gl_tecaj*nkpr_ln_amt ELSE nkpr_ln_amt END),0), 0) as sales2";
-	}
-    elif (razlikaUCijeniField)
-	{
-		sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_gl_dviza= 'D' THEN nkpr_gl_tecaj*(nkpr_ln_amt-nkpr_ln_cenan*nkpr_ln_qtyz) ELSE nkpr_ln_amt-nkpr_ln_cenan*nkpr_ln_qtyz END),0), 0) as sales2";
-	}
-    elif (tezina_dn )
-	{
-		sql_str += " ISNULL(ROUND(SUM(nkpr_ln_tezinan),0), 0) as sales2";
-	}
-    elif (mx3_dn )
-	{
-		sql_str += " ISNULL(ROUND(SUM(nkpr_ln_metx3),0), 0) as sales2";
-	}
-    elif (mx2_dn )
-	{
-		sql_str += " ISNULL(ROUND(SUM(nkpr_ln_metx2),0), 0) as sales2";
-	}
-    elif (met_dn )
-	{
-		sql_str += " ISNULL(ROUND(SUM(nkpr_ln_met),0), 0) as sales2";
-	}
-    elif (kom_dn )
-	{
-		sql_str += " ISNULL(ROUND(SUM(nkpr_ln_kom),0), 0) as sales2";
-	}
-    else
-	{
-		sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_gl_dviza= 'D' THEN nkpr_gl_tecaj*nkpr_ln_pext ELSE nkpr_ln_pext END),0), 0) as sales2";
-	}
-    }
-
-    sql_str += " FROM "+proslaGodinaBaza+".dbo.nkprglnr";
-    sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.nkprlnnr ON nkpr_gl_sonum= nkpr_ln_invnm";
-    if (regija != "")
-	{
-        sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.nkscpart g ON nkpr_gl_cuscod= g.nksc_partcode";
-    }
-    sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.nkmkarti ON nkpr_ln_pcode= arti_artikl";
-    sql_str += " WHERE nkpr_gl_cuscod IN ("+in_string+") ";
-    if (mjesec_h != "")
-	{
-        if (do_mjeseca )
+		//sql_str= "";
+		
+		sql_str= " SELECT nkpr_gl_cuscod,";
+		
+		if (neto_dn )
 		{
-            sql_str += " AND month(nkpr_gl_orddte)<= "+mjesec_h;
-            sql_str += " AND YEAR(nkpr_gl_orddte)= "+lani_h;
+			sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_gl_dviza= 'D' THEN nkpr_gl_tecaj*nkpr_ln_amt ELSE nkpr_ln_amt END),0), 0) as sales2";
 		}
-        else
+		elif (razlikaUCijeniField)
 		{
-            sql_str += " AND month(nkpr_gl_orddte)= "+mjesec_h;
-            sql_str += " AND YEAR(nkpr_gl_orddte)= "+lani_h;
-        }
-    }
+			sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_gl_dviza= 'D' THEN nkpr_gl_tecaj*(nkpr_ln_amt-nkpr_ln_cenan*nkpr_ln_qtyz) ELSE nkpr_ln_amt-nkpr_ln_cenan*nkpr_ln_qtyz END),0), 0) as sales2";
+		}
+		elif (tezina_dn )
+		{
+			sql_str += " ISNULL(ROUND(SUM(nkpr_ln_tezinan),0), 0) as sales2";
+		}
+		elif (mx3_dn )
+		{
+			sql_str += " ISNULL(ROUND(SUM(nkpr_ln_metx3),0), 0) as sales2";
+		}
+		elif (mx2_dn )
+		{
+			sql_str += " ISNULL(ROUND(SUM(nkpr_ln_metx2),0), 0) as sales2";
+		}
+		elif (met_dn )
+		{
+			sql_str += " ISNULL(ROUND(SUM(nkpr_ln_met),0), 0) as sales2";
+		}
+		elif (kom_dn )
+		{
+			sql_str += " ISNULL(ROUND(SUM(nkpr_ln_kom),0), 0) as sales2";
+		}
+		else
+		{
+			sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_gl_dviza= 'D' THEN nkpr_gl_tecaj*nkpr_ln_pext ELSE nkpr_ln_pext END),0), 0) as sales2";
+		}
+    
 
-    filterPart();
-    sql_str += " GROUP BY NKPR_GL_CUSCOD";
-    sql_str += " ORDER BY NKPR_GL_CUSCOD";
-	try	{
-		sqlResult = sqlQuery(sql_str);
-	}catch(exc){
-		MessageBox(exc);
+		sql_str += " FROM "+proslaGodinaBaza+".dbo.nkprglnr";
+		sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.nkprlnnr ON nkpr_gl_sonum= nkpr_ln_invnm";
+		if (regija != "")
+		{
+			sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.nkscpart g ON nkpr_gl_cuscod= g.nksc_partcode";
+		}
+		sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.nkmkarti ON nkpr_ln_pcode= arti_artikl";
+		sql_str += " WHERE nkpr_gl_cuscod IN ("+in_string+") ";
+		if (mjesec_h != "")
+		{
+			if (do_mjeseca )
+			{
+				sql_str += " AND month(nkpr_gl_orddte)<= "+mjesec_h;
+				sql_str += " AND YEAR(nkpr_gl_orddte)= "+lani_h;
+			}
+			else
+			{
+				sql_str += " AND month(nkpr_gl_orddte)= "+mjesec_h;
+				sql_str += " AND YEAR(nkpr_gl_orddte)= "+lani_h;
+			}
+		}
+
+		filterPart();
+		sql_str += " GROUP BY NKPR_GL_CUSCOD";
+		sql_str += " ORDER BY NKPR_GL_CUSCOD";
+		try	{
+			sqlResult = sqlQuery(sql_str);
+		}catch(exc){
+			MessageBox(exc);
+		}
+		
+		RunOnMain("fillCustomerArrays2");
+
 	}
-	
-	RunOnMain("fillCustomerArrays2");
 
 	RunOnMain("customerDataGrid");
 }

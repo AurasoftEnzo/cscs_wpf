@@ -30,7 +30,7 @@
     DEFINE PKMK_SKL_CODE_arr type i size 3 array 300;
 
     DEFINE PKMK_SKL_NAZIV_arr type a size 50 array 300;
-    DEFINE cntr1,cntr2,cntr3,cntr4 type i;
+    DEFINE cntr1,cntr2,cntr3,cntr4, cntr5, cntr6 type i;
     define ovagod_h,lani_h type a size 4;
 
     DEFINE tot_ovagod type n size 14 dec 0 ;
@@ -114,6 +114,20 @@
 	define t10CntrMj_ar type i size 2 array 10;
 	define t10DatumMj_ar type d size 8 array 10;
 	define t10RacunMj_ar type r size 8 array 10;
+	
+    define Top10NoArt_ar type r size 2 array 10;
+    define CodeNoArt_ar type a size 15 array 10;
+    define NameNoArt_ar type a size 50 array 10;
+    define NarNoArt_ar type n size 12 dec 0 array 10;
+    define OtpNoArt_ar type n size 12 dec 0 array 10;
+    define DiffNoArt_ar type n size 12 dec 0 array 10;
+	
+    define Top10NoPart_ar type r size 2 array 10;
+    define CodeNoPart_ar type a size 15 array 10;
+    define NameNoPart_ar type a size 50 array 10;
+    define NarNoPart_ar type n size 12 dec 0 array 10;
+    define OtpNoPart_ar type n size 12 dec 0 array 10;
+    define DiffNoPart_ar type n size 12 dec 0 array 10;
 
     define T10CntrMj type i;
 	define T10Cntrz type i;
@@ -844,7 +858,6 @@ function filterPart()
 
 function filterPart2()
 {
-
     if (sklad_str != "")
 	{
         sql_str += " AND KS_IG_SKLAD IN ("+sklad_str+")";

@@ -6274,43 +6274,26 @@ namespace WpfCSCS
 	{
 		protected override Variable Evaluate(ParsingScript script)
 		{
-            var imagePath = Path.Combine(App.GetConfiguration("ImagesPath", ""), "tempScreenshot.jpg");
-            ScreenShot(imagePath);
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
 
-			PrintImage(imagePath);
+            var fileName = Utils.GetSafeString(args, 0);
+			var imagesPath = App.GetConfiguration("ImagesPath", "");
+            var imagePath = Path.Combine(imagesPath, "screenshots", fileName);
+
+			if(!Directory.Exists(Path.Combine(imagesPath, "screenshots")))
+			{
+				Directory.CreateDirectory(Path.Combine(imagesPath, "screenshots"));
+			}
+
+            screenShot(imagePath);
+
+			printImage(imagePath);
 
             return Variable.EmptyInstance;
         }
 
-        private void PrintImage(string path)
-        {
-            string fileName = path;//pass in or whatever you need
-            var p = new Process();
-            p.StartInfo.FileName = fileName;
-            p.StartInfo.Verb = "Print";
-            p.Start();
-
-
-			//var bi = new BitmapImage();
-			//bi.BeginInit();
-			//bi.CacheOption = BitmapCacheOption.OnLoad;
-			//bi.UriSource = new Uri(path);
-			//bi.EndInit();
-
-			//var vis = new DrawingVisual();
-			//using (var dc = vis.RenderOpen())
-			//{
-			//	dc.DrawImage(bi, new Rect { Width = bi.Width, Height = bi.Height });
-			//}
-
-			//var pdialog = new PrintDialog();
-			//if (pdialog.ShowDialog() == true)
-			//{
-			//	pdialog.PrintVisual(vis, "My Image");
-			//}
-		}
-
-        public bool ScreenShot(string saveAs)
+        public bool screenShot(string saveAs)
         {
             try
             {
@@ -6337,6 +6320,44 @@ namespace WpfCSCS
             {
                 return false;
             }
+        }
+
+        private void printImage(string path)
+        {
+            string fileName = path;//pass in or whatever you need
+            var p = new Process();
+            p.StartInfo.FileName = fileName;
+            p.StartInfo.Verb = "Print";
+            //p.EnableRaisingEvents = true;
+            //p.Exited += delegate
+            //{
+            //    try
+            //    {
+            //        File.Delete(path);
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //    }
+            //};
+            p.Start();
+
+            //var bi = new BitmapImage();
+            //bi.BeginInit();
+            //bi.CacheOption = BitmapCacheOption.OnLoad;
+            //bi.UriSource = new Uri(path);
+            //bi.EndInit();
+
+            //var vis = new DrawingVisual();
+            //using (var dc = vis.RenderOpen())
+            //{
+            //	dc.DrawImage(bi, new Rect { Width = bi.Width, Height = bi.Height });
+            //}
+
+            //var pdialog = new PrintDialog();
+            //if (pdialog.ShowDialog() == true)
+            //{
+            //	pdialog.PrintVisual(vis, "My Image");
+            //}
         }
     }
 	

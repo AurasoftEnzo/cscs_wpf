@@ -207,7 +207,8 @@
 
     DEFINE pripremljeno type l;
     define in_string type a size 300;
-    DEFINE companyCode type a size 3 up;   
+    DEFINE companyCode type a size 3 up;
+    DEFINE userCode type a size 20;    
     define proslaGodinaBaza type a size 200; 
 
     DEFINE sqlNaDan type a size 10;  
@@ -243,6 +244,7 @@ function ceBanka@clicked()
     + " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl "
     + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code"
     + " WHERE kpsy_bnk_ime LIKE '%{var2}%' AND kpsy_bnk_ime <> '' AND kpsy_bnk_code <> '' AND kpsy_bnk_blag <> 'D'"
+    + " AND YEAR(kdib_gl_datem) = " + ovagod_h
     + ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY kpsy_bnk_code ASC) AS RowNumber, kpsy_bnk_code, kpsy_bnk_ime"
     + " FROM banke ORDER BY RowNumber";
@@ -280,9 +282,11 @@ function ceKonto@clicked()
     
     F2ListQueryString = "WITH konta AS("
     + " SELECT DISTINCT gk_ac_konto, gk_ac_opis, CASE WHEN kdib_ln_dp= 'D' THEN 'Odliv' ELSE 'Priliv' END as Trans"
-    + " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibln "
+    + " FROM  " + trenutnaGodinaBaza + ".[dbo].[kpkdibgl] "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[kpkdibln] ON kdib_gl_num = kdib_ln_num "
     + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkacct ON kdib_ln_konto = gk_ac_konto "
     + " WHERE gk_ac_konto like '{var1}%' AND gk_ac_opis like '%{var2}%'"
+    + " AND YEAR(kdib_gl_datem) = " + ovagod_h
     + ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY gk_ac_konto ASC) AS RowNumber, gk_ac_konto, gk_ac_opis, Trans"
     + " FROM konta ORDER BY RowNumber";
@@ -320,7 +324,8 @@ function cePartner@clicked()
     + " FROM " + trenutnaGodinaBaza + ".[dbo].[kpkdibln] "
     + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].nkscpart on kdib_ln_partner = nksc_partcode"
     + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].kpkdibgl ON kdib_gl_num = kdib_ln_num"
-    + " WHERE nksc_partcode LIKE '%{var1}%' AND nksc_partname LIKE '%{var2}%' AND YEAR(kdib_gl_datem) = " + ovagod_h
+    + " WHERE nksc_partcode LIKE '%{var1}%' AND nksc_partname LIKE '%{var2}%'"
+    + " AND YEAR(kdib_gl_datem) = " + ovagod_h
     + ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY kdib_ln_partner ASC) AS RowNumber, kdib_ln_partner, nksc_partname, PartnerTip"
     + " FROM partneri ORDER BY RowNumber";
@@ -382,6 +387,7 @@ function ceIzvadak@clicked()
     + " FROM " + trenutnaGodinaBaza + ".[dbo].kpkdibgl"
     + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].kpsybank ON kdib_gl_banka = kpsy_bnk_code"
     + " WHERE kpsy_bnk_blag <> 'D' AND kdib_gl_num LIKE '{var1}%' AND kpsy_bnk_ime LIKE '%{var2}%'"
+    + " AND YEAR(kdib_gl_datem) = " + ovagod_h
     + ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY kdib_gl_num ASC) AS RowNumber, kdib_gl_num, datBank, kdib_gl_banka"
     + " FROM izvatci ORDER BY RowNumber";

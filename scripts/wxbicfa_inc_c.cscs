@@ -267,7 +267,7 @@ function setChartByDaysOfMonthOdliv()
 
 function setLast10InvoicesDataGridOdliv()
 {
-    sql_str = "SELECT TOP 10 kdib_gl_num, kpsy_bnk_ime, SUBSTRING(kdib_gl_rez , 2, 8) , SUBSTRING(kdib_gl_rez , 10, 8), sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END) as odliv"; // sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END) as odliv"; 
+    sql_str = "SELECT TOP 10 kdib_gl_num, kpsy_bnk_ime, REPLACE(SUBSTRING(kdib_gl_rez , 2, 8), '.', '/') , SUBSTRING(kdib_gl_rez , 10, 8), sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END) as odliv"; // sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END) as odliv"; 
     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
    	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
@@ -282,8 +282,8 @@ function setLast10InvoicesDataGridOdliv()
 		sql_str += " AND month(kdib_gl_datem) =  " + mjesec_h;
 	}
     filterPart();
-	sql_str += " GROUP BY kdib_gl_num, kpsy_bnk_ime, SUBSTRING(kdib_gl_rez , 2, 8), SUBSTRING(kdib_gl_rez , 10, 8)" ;
-	sql_str += " ORDER BY CONVERT(date, SUBSTRING(kdib_gl_rez , 2, 8), 3) DESC, SUBSTRING(kdib_gl_rez , 10, 8) DESC" ;
+	sql_str += " GROUP BY kdib_gl_num, kpsy_bnk_ime, REPLACE(SUBSTRING(kdib_gl_rez , 2, 8), '.', '/'), SUBSTRING(kdib_gl_rez , 10, 8)" ;
+	sql_str += " ORDER BY CONVERT(date, REPLACE(SUBSTRING(kdib_gl_rez , 2, 8), '.', '/'), 3) DESC, SUBSTRING(kdib_gl_rez , 10, 8) DESC" ;
 	
     //SaveFile(sql_str);
 	try	{

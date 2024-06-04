@@ -229,6 +229,8 @@ function setTop10ProductsOdliv()
 		MessageBox(exc);
 	}
 
+	size = Size(sqlResult) - 1;
+
 	RunOnMain("fillProductsArraysOdliv");
 
     if (proslaGodinaBaza != "")
@@ -270,6 +272,17 @@ function setTop10ProductsOdliv()
 }
 
 function fillProductsArraysOdliv(){
+	for ( i = 0; i < 10; i++ )
+	{
+		IndexArt_ar[i] =  0;
+		nameart_ar[i] =  "";
+		codeart_ar[i] =  "";
+		salesart1_ar[i] =  0; 
+		salesart2_ar[i] =  0; 
+		top10art_ar[i] =  0;
+		imageArt_ar[i] = "";
+	}	
+
 	if(Size(sqlResult) > 1)
 	{
 		for ( i = 1; i < Size(sqlResult); i++ )
@@ -298,10 +311,6 @@ function fillProductsArraysOdliv(){
 }
 
 function fillProductsArrays2Odliv(){
-	for ( i = 0; i < 10; i++ )
-	{
-		IndexArt_ar[i] =  0;
-	}	    
 	if(Size(sqlResult) > 1)
 	{
 		for ( i = 1; i < Size(sqlResult); i++ )
@@ -342,7 +351,7 @@ function top10ProductsOdliv(){
 	Format("SALESART2_AR", "nofd");
 	Format("SALESART1_AR", "nofd");
 	
-	DisplayArraySetup("dgArtikliOdliv", counterFld: "cntr4", activeElements: Size(codeart_ar), maxElements: 10);
+	DisplayArraySetup("dgArtikliOdliv", counterFld: "cntr4", activeElements: size, maxElements: 10);
 }
 
 //---------------------------------------------------------------------------
@@ -383,6 +392,8 @@ function setCustomerDataGridOdliv()
 	}catch(exc){
 		MessageBox(exc);
 	}
+
+	size = Size(sqlResult) - 1;
 
 	//SaveFile(sql_str);
 	RunOnMain("fillCustomerArraysOdliv");
@@ -429,7 +440,18 @@ function setCustomerDataGridOdliv()
 	RunOnMain("customerDataGridOdliv");
 }
 
-function fillCustomerArraysOdliv(){
+function fillCustomerArraysOdliv(){	
+	for ( i = 0; i < 10; i++ )
+	{
+		namePart_ar[i] =  "";
+		codePart_ar[i] =  "";
+		salesPart1_ar[i] =  0;
+		salesPart2_ar[i] =  0;
+		top10Part_ar[i] =  0;
+		IndexPart_ar[i] =  0;
+		imagePart_ar[i] = "";
+	}	
+
 	if(Size(sqlResult) > 1)
 	{
 		for ( i = 1; i < Size(sqlResult); i++ )
@@ -461,11 +483,7 @@ function setCntr2Odliv(){
 	cntr2= 0;
 }
 
-function fillCustomerArrays2Odliv(){
-	for ( i = 0; i < 10; i++ )
-	{
-		IndexPart_ar[i] =  0;
-	}	    
+function fillCustomerArrays2Odliv(){    
 	if(Size(sqlResult) > 1)
 	{
 		for ( i = 1; i < Size(sqlResult); i++ )
@@ -505,11 +523,9 @@ function customerDataGridOdliv(){
 	DisplayArray("dgStavkeOdliv", "close");
 	Format("SALESPART2_AR", "nofd");
 	Format("SALESPART1_AR", "nofd");
-	DisplayArraySetup("dgStavkeOdliv", counterFld: "cntr1", activeElements: Size(codePart_ar), maxElements: 10);
+	DisplayArraySetup("dgStavkeOdliv", counterFld: "cntr1", activeElements: size, maxElements: 10);
 }
 
 //-----------------------------------------------------------
 
 
-
-//-----------------------------------------------------------

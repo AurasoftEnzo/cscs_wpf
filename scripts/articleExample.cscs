@@ -1,0 +1,47 @@
+// sample code for simple CHAIN functionality
+CHAIN "D:/scripts/scriptName.cscs";
+// in such case program will run script that will be found on this speceific path
+
+// in another case we can specify the scripts folder path in config file by adding the following line in appSettings
+<add key="ScriptsPath" value="D:/scripts/"/>
+// this can be used as follows that will enable dynamically running of any script
+CHAIN strTrim(tpath()) + "scriptName.cscs";
+// tpath() is function that will return path from the config file
+// strtrim() is another function that will trim a string leading and trailing spaces
+
+// we can provide parameters for the chained-to script in a simple way:
+CHAIN strTrim(tpath()) + "scriptName.cscs" WITH "arg1" variable2 userFunction() {arg2, arg3, arg4};
+// arg1 is a constant
+// variable2 can be variable of any type, and it may be even array variable of any size
+// userFunction will provide a parameter returned from function
+// Tuple structure can have a parameters of any type
+
+// on the other side chained program can receive provided parameters in a line of code as follows:
+PARAM(param1, param2, param3, param4);
+// you can easily use any parameter in new script, for example you can test them by MessageBox()
+MessageBox(param1);
+
+// It is important to know that chained script is fully independent and isolated from any other script opened before.
+// This means that chained script can use functions and variables with the same name without conflicts with previous script.
+// At the same time any variable value from previous script can still be reachable in another useful way using ResetField function:
+ResetField("scriptName", "variable2");
+// If variable2 was changed in chained-to script, the value will be changed in previous script too.
+// This means that parent and child script can communicate in both ways in a controlable way.
+
+// It is possible to use script chaining to any level deep, i.e. you can script from MainMenu to script1 then from script1 to script2, and so on.
+// When you quit any script(Quit command) script execution will proceed with a next line after Chain command in previous script.
+// Such way will enable even huge application made with many isolated scripts. This is a great advantage for programmers as they can independently develop a script without conflicting with script from another programmer.
+// Also updating any application may be very easy with simple change single script and not whole application
+// WpfCSCS is loosely and/or strongly typed language. Because of any variable is isolated from another scripts, you can use both types as you can have more control of used variables.
+
+// All chained scripts will run in the same process. If you want to run the script in another process there is another syntax of chain command:
+CHAIN strTrim(tpath()) + "scriptName.cscs" NEWRUNTIME WITH "arg1" "arg2" "arg3" "arg4";
+// In this line NEWRUNTIME means that the script will be running in another process.
+
+// Such paradigm using chaining feature enables a programmer or a group of progammers to make very complex programs very easily and possibillity of confilcts in code is very small.
+// In such scenario a script can do one specific job that is in same time self-dependent and isolated from other scripts, but can use related data from other scripts only when needed.
+// In real world a script can do invoice preparing, another script can print invoice, third one can post the invoice, next one can send e-invoice, and so on.
+
+// Base of such type of application is menu-system. WpfCSCS is using MDI interface wich means that you can at the same time have opened more scripts.
+
+// Any script can have it's own user interface or can be without UI.

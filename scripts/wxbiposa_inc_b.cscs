@@ -290,6 +290,8 @@ function setTop10Products()
 		MessageBox(exc);
 	}
 
+	size = Size(sqlResult) - 1;
+
 	RunOnMain("fillProductsArrays");
 
     if (proslaGodinaBaza != "")
@@ -341,6 +343,17 @@ function setTop10Products()
 }
 
 function fillProductsArrays(){
+	for ( i = 0; i < 10; i++ )
+	{
+		IndexArt_ar[i] =  0;
+		nameart_ar[i] =  "";
+		codeart_ar[i] =  "";
+		salesart1_ar[i] =  0; 
+		salesart2_ar[i] =  0; 
+		top10art_ar[i] =  0;
+		imageArt_ar[i] = "";
+	}	
+	
 	if(Size(sqlResult) > 1)
 	{
 		for ( i = 1; i < Size(sqlResult); i++ )
@@ -368,13 +381,8 @@ function fillProductsArrays(){
 }
 
 function fillProductsArrays2(){
-	for ( i = 0; i < 10; i++ )
-	{    
-		Indexart_ar[i] =  0;
-	}
 	if(Size(sqlResult) > 1)
 	{
-
 		for ( i = 1; i < Size(sqlResult); i++ )
 		{    
 			cntr2= find_index(codeart_ar,sqlResult[i][0]);    
@@ -409,7 +417,7 @@ function top10Products(){
 	Format("SALESART2_AR", "nofd");
 	Format("SALESART1_AR", "nofd");
 	
-	DisplayArraySetup("dgArtikli", counterFld: "cntr4", activeElements: Size(codeart_ar), maxElements: 10);
+	DisplayArraySetup("dgArtikli", counterFld: "cntr4", activeElements: size, maxElements: 10);
 }
 
 //---------------------------------------------------------------------------
@@ -480,6 +488,8 @@ function setCustomerDataGrid()
 		MessageBox(exc);
 	}
 
+	size = Size(sqlResult) - 1;
+	
 	//SaveFile(sql_str);
 	RunOnMain("fillCustomerArrays");
 
@@ -541,6 +551,17 @@ function setCustomerDataGrid()
 }
 
 function fillCustomerArrays(){
+	for ( i = 0; i < 10; i++ )
+	{
+		namePart_ar[i] =  "";
+		codePart_ar[i] =  "";
+		salesPart1_ar[i] =  0;
+		salesPart2_ar[i] =  0;
+		top10Part_ar[i] =  0;
+		IndexPart_ar[i] =  0;
+		imagePart_ar[i] = "";
+	}	
+
 	if(Size(sqlResult) > 1)
 	{
 		for ( i = 1; i < Size(sqlResult); i++ )
@@ -573,10 +594,6 @@ function setCntr2(){
 }
 
 function fillCustomerArrays2(){
-	for ( i = 0; i < 10; i++ )
-	{    
-		IndexPart_ar[i] =  0;
-	}
 	if(Size(sqlResult) > 1)
 	{
 		for ( i = 1; i < Size(sqlResult); i++ )
@@ -612,7 +629,7 @@ function customerDataGrid(){
 	DisplayArray("dgStavke", "close");
 	Format("SALESPART2_AR", "nofd");
 	Format("SALESPART1_AR", "nofd");
-	DisplayArraySetup("dgStavke", counterFld: "cntr1", activeElements: Size(codePart_ar), maxElements: 10);
+	DisplayArraySetup("dgStavke", counterFld: "cntr1", activeElements: size, maxElements: 10);
 }
 
 //-----------------------------------------------------------

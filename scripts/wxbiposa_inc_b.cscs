@@ -63,8 +63,8 @@ function setChartByHours()
     }
     elif (razlikaUCijeniField)
     {
-            sql_str = "SELECT datepart(hour,ks_ig_sat) as Hour  , SalesDay = ISNULL(SUM(KS_IL_TOTAL - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0)";
-            sql_str += ", ISNULL(ROUND(AVG(SUM(KS_IL_TOTAL - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.')))) OVER(ORDER BY datepart(hour,ks_ig_sat) ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 0),0) AS moving_average_3_days";
+            sql_str = "SELECT datepart(hour,ks_ig_sat) as Hour  , SalesDay = ISNULL(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0)";
+            sql_str += ", ISNULL(ROUND(AVG(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.')))) OVER(ORDER BY datepart(hour,ks_ig_sat) ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 0),0) AS moving_average_3_days";
     }
     else
     {
@@ -162,8 +162,8 @@ function setKategPieChart()
 	}	
 	elif (razlikaUCijeniField  )
 	{
-		sql_str += " sum(KS_IL_TOTAL - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) AS Suma,";
-		sql_str += " ROW_NUMBER() OVER( ORDER BY sum(KS_IL_TOTAL - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) DESC ) As Num";
+		sql_str += " sum(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) AS Suma,";
+		sql_str += " ROW_NUMBER() OVER( ORDER BY sum(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) DESC ) As Num";
 	}
 	else
 	{
@@ -234,7 +234,7 @@ function setTop10Products()
 	}
     elif (razlikaUCijeniField)
 	{
-        sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))), 0), 0)";
+        sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))), 0), 0)";
 	}
     else
 	{
@@ -303,7 +303,7 @@ function setTop10Products()
 		}
     	elif (razlikaUCijeniField)
 		{
-			sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))),0), 0) as sales2";
+			sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))),0), 0) as sales2";
 		}
     	else
 		{
@@ -433,7 +433,7 @@ function setCustomerDataGrid()
 	}
     elif (razlikaUCijeniField)
 	{
-        sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))), 0), 0)";
+        sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))), 0), 0)";
 	}
     else
 	{
@@ -509,7 +509,7 @@ function setCustomerDataGrid()
 	}
     elif (razlikaUCijeniField)
 	{
-		sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))),0), 0) as sales2";
+		sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))),0), 0) as sales2";
 	}
     else
 	{

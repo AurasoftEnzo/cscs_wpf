@@ -60,8 +60,8 @@ function setSellersPieChart(){
 	}	
 	elif (razlikaUCijeniField  )
 	{
-		sql_str += " sum(KS_IL_TOTAL - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) AS Suma,";
-		sql_str += " ROW_NUMBER() OVER( ORDER BY sum(KS_IL_TOTAL - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) DESC ) As Num";
+		sql_str += " sum(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) AS Suma,";
+		sql_str += " ROW_NUMBER() OVER( ORDER BY sum(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) DESC ) As Num";
 	}	
 	else
 	{

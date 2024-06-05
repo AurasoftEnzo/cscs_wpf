@@ -103,8 +103,8 @@ function setChartByDaysOfMonth()
     }
     elif (razlikaUCijeniField)
     {
-            sql_str = "SELECT [wk_day] as dan2 , SalesDay = ISNULL(SUM(KS_IL_TOTAL - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0)";
-            sql_str += ", ISNULL(ROUND(AVG(SUM(KS_IL_TOTAL - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.')))) OVER(ORDER BY wk_day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 0),0) AS moving_average_3_days";
+            sql_str = "SELECT [wk_day] as dan2 , SalesDay = ISNULL(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0)";
+            sql_str += ", ISNULL(ROUND(AVG(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.')))) OVER(ORDER BY wk_day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 0),0) AS moving_average_3_days";
     }
     else
     {
@@ -169,7 +169,7 @@ function setChartByMonth()
         }
         elif (razlikaUCijeniField)
         {
-            sql_str += " Sales = round(ISNULL(SUM(KS_IL_TOTAL - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0), 2)";
+            sql_str += " Sales = round(ISNULL(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0), 2)";
         }
         else
         {
@@ -248,7 +248,7 @@ function setChartByMonth()
     }
     elif (razlikaUCijeniField)
     {
-        sql_str += " Sales = round(ISNULL(SUM(KS_IL_TOTAL - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0), 2)";
+        sql_str += " Sales = round(ISNULL(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0), 2)";
     }
     else
     {
@@ -327,7 +327,7 @@ function setLast10InvoicesDataGrid()
 	}
     elif (razlikaUCijeniField)
 	{
-        sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))), 2), 0)";
+        sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))), 2), 0)";
 	}
     else
 	{
@@ -383,7 +383,7 @@ function setTop10InvoicesDataGrid()
 	}
     elif (razlikaUCijeniField)
 	{
-        sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))), 2), 0)";
+        sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))), 2), 0)";
 	}
     else
 	{

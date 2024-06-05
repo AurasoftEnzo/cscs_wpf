@@ -936,7 +936,7 @@ function setWeekComparison()
 	}
 	elif ( razlikaUCijeniField == true )
 	{
-		sql_str = sql_str + " Sales = round(ISNULL(SUM(KS_IL_TOTAL - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0),0)";
+		sql_str = sql_str + " Sales = round(ISNULL(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0),0)";
 	}
 	else 
 	{
@@ -1148,7 +1148,7 @@ function setCash(){
 
 function setSalesRatio(){
 
-    sql_str = "SELECT '1' as tip,CONVERT(varchar(6),nkpr_gl_datem,112) as yyyymm, ";
+    sql_str = "SELECT '1' as tip, CONVERT(varchar(6),nkpr_gl_datem,112) as yyyymm, ";
     if (neto_dn)
     {
         sql_str += "Sales = cast(ISNULL(SUM(CASE WHEN nkpr_gl_dviza = 'D' THEN nkpr_gl_tecaj * nkpr_ln_amt ELSE nkpr_ln_amt END) , 0) as decimal(10,0)) ";

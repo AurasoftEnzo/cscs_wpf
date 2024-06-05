@@ -74,7 +74,7 @@ function setBankPieChart()
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
     	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
 		sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka= kpsy_bnk_code";
-        sql_str += " WHERE kdib_gl_banka<> '' AND YEAR(kdib_gl_datem)= " + ovagod_h;
+        sql_str += " WHERE kpsy_bnk_blag <> 'D' AND YEAR(kdib_gl_datem)= " + ovagod_h;
         if (do_mjeseca2  )
 		{
             sql_str += " AND Month(kdib_gl_datem)<=" + mjesec_h;
@@ -124,8 +124,8 @@ function setRegionPieChart()
         sql_str += " FROM " + trenutnaGodinaBaza + " .dbo.kpkdibgl";
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
 		sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner= nksc_partcode";
-        //sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkmkarti ON arti_artikl = nkpr_ln_pcode";
-        sql_str += " WHERE kdib_gl_banka<> '' AND YEAR(kdib_gl_datem)= " + ovagod_h;
+		sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
+        sql_str += " WHERE kpsy_bnk_blag <> 'D' AND YEAR(kdib_gl_datem)= " + ovagod_h;
         if (do_mjeseca2  )
 		{
             sql_str += " AND Month(kdib_gl_datem)<=" + mjesec_h;
@@ -147,9 +147,10 @@ function setRegionPieChart()
         sql_str +=" ROW_NUMBER() OVER( ORDER BY sum(CASE WHEN kdib_ln_dp =  'P' THEN kdib_ln_iznos ELSE 0 END) DESC ) As Num";
         sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl AS U ";
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
-		sql_str += " LEFT JOIN " + trenutnaGodinaBaza + " .dbo.nkscpart ON kdib_ln_partner= nksc_partcode"; 
+		sql_str += " LEFT JOIN " + trenutnaGodinaBaza + " .dbo.nkscpart ON kdib_ln_partner = nksc_partcode"; 
         sql_str += " LEFT JOIN " + CommonDBGet() + ".dbo.KPSYSIFA a ON NKSC_REGIJA = a.ksdu_sf_code AND ksdu_sf_tip = 'V'";
-        sql_str += " WHERE kdib_gl_banka<> '' AND YEAR(kdib_gl_datem)= "+ ovagod_h;
+		sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
+        sql_str += " WHERE kpsy_bnk_blag <> 'D' AND YEAR(kdib_gl_datem) = "+ ovagod_h;
         if (do_mjeseca2)
 		{
             sql_str += " AND Month(kdib_gl_datem)<="+mjesec_h;
@@ -174,7 +175,8 @@ function setRegionPieChart()
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
 		sql_str += " LEFT JOIN " + trenutnaGodinaBaza + " .dbo.nkscpart ON kdib_ln_partner= nksc_partcode"; 
         sql_str += " LEFT JOIN " + CommonDBGet() + ".dbo.KPSYSIFA ON CASE WHEN nksc_drzava= '' THEN nksc_model ELSE nksc_drzava END = ksdu_sf_code AND ksdu_sf_tip = 'H'";
-        sql_str += " WHERE kdib_gl_banka<> '' AND YEAR(kdib_gl_datem)= " + ovagod_h;
+		sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
+        sql_str += " WHERE kpsy_bnk_blag <> 'D' AND YEAR(kdib_gl_datem)= " + ovagod_h;
         if (razlikaUCijeniField)
 		{
             sql_str += " AND kdib_gl_invcd= 'D'";
@@ -326,11 +328,12 @@ function setTop10Products()
     sql_str += "WITH sales AS (";
     sql_str += " SELECT TOP 10 kdib_ln_konto as codeart, gk_ac_opis as Nameart, Sales1=";
     sql_str += " ISNULL(ROUND(SUM(CASE WHEN kdib_ln_dp= 'P' THEN kdib_ln_iznos ELSE 0 END),0), 0)";
-    sql_str += " FROM "+trenutnaGodinaBaza+".dbo.kpkdibgl";
-    sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.kpkdibln ON kdib_gl_num= kdib_ln_num";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num= kdib_ln_num";
    	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
-    sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkgkacct ON kdib_ln_konto= gk_ac_konto";
-    sql_str += " WHERE 1=1 AND kdib_gl_banka<> ''";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkacct ON kdib_ln_konto= gk_ac_konto";
+	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
+    sql_str += " WHERE 1 = 1 AND kpsy_bnk_blag <> 'D'";
     if (mjesec_h!= "")
 	{
         if (do_mjeseca )
@@ -372,7 +375,8 @@ function setTop10Products()
     sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.kpkdibln ON kdib_gl_num= kdib_ln_num";
    	sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
     sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.nkgkacct ON kdib_ln_konto= gk_ac_konto";
-    sql_str += " WHERE kdib_gl_banka<> '' AND kdib_ln_konto IN ("+in_string+") ";
+	sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
+    sql_str += " WHERE kpsy_bnk_blag <> 'D' AND kdib_ln_konto IN ("+in_string+") ";
     if (mjesec_h != "")
 	{
         if (do_mjeseca )
@@ -495,7 +499,8 @@ function setCustomerDataGrid()
     sql_str += " FROM "+trenutnaGodinaBaza+".dbo.kpkdibgl";
     sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.kpkdibln ON kdib_gl_num= kdib_ln_num";
     sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkscpart ON kdib_ln_partner= nksc_partcode";
-    sql_str += " WHERE 1=1 AND kdib_gl_banka<> '' AND kdib_ln_partner<> ''";
+	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
+    sql_str += " WHERE 1=1 AND kpsy_bnk_blag <> 'D' AND kdib_ln_partner<> ''";
     if (mjesec_h!= "")
 	{
         if (do_mjeseca )
@@ -541,7 +546,8 @@ function setCustomerDataGrid()
     sql_str += " FROM "+proslaGodinaBaza+".dbo.kpkdibgl";
     sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.kpkdibln ON kdib_gl_num= kdib_ln_num";
    	sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
-    sql_str += " WHERE kdib_gl_banka<> '' AND kdib_ln_partner IN ("+in_string+") ";
+	sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
+    sql_str += " WHERE kpsy_bnk_blag <> 'D' AND kdib_ln_partner IN ("+in_string+") ";
     if (mjesec_h != "")
 	{
         if (do_mjeseca )

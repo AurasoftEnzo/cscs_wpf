@@ -63,7 +63,8 @@ function setChartByDaysOfMonth()
     sql_str += ", ISNULL(ROUND(AVG(SUM(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END)) OVER(ORDER BY wk_day ROWS BETWEEN 6 PRECEDING AND CURRENT ROW), 0),0) AS moving_average_3_days";
     sql_str += " FROM " + CommonDBGet()+ ".dbo.Kalendar a";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibgl ON [Wk_Date] = kdib_gl_datum ";
-    sql_str += " AND kdib_gl_banka<> ''"; 
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
+    sql_str += " AND kpsy_bnk_blag <> 'D' "; 
     if (BANKA_str != "")
     {
         sql_str += " AND kdib_gl_banka IN (" + BANKA_str + ")";
@@ -134,7 +135,8 @@ function setChartByMonth()
         sql_str += " FROM " + proslaGodinaBaza + ".dbo.kpkdibgl"; 
         sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num= kdib_ln_num";
     	sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
-        sql_str += " WHERE 1=1 AND kdib_gl_banka<> '' AND year(kdib_gl_datum) = " + lani_h; 
+    	sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
+        sql_str += " WHERE 1 = 1 AND kpsy_bnk_blag <> 'D' AND year(kdib_gl_datum) = " + lani_h; 
         filterPart();
         sql_str += " GROUP BY CONVERT(varchar(6),kdib_gl_datum,112)";
         sql_str += " ORDER BY CONVERT(varchar(6),kdib_gl_datum,112);";
@@ -156,7 +158,8 @@ function setChartByMonth()
     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl"; 
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
 	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
-    sql_str += " WHERE 1 = 1 AND kdib_gl_banka<> '' AND year(kdib_gl_datum) = " + ovagod_h; 
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
+    sql_str += " WHERE 1 = 1 AND kpsy_bnk_blag <> 'D' AND year(kdib_gl_datum) = " + ovagod_h; 
     filterPart();
     sql_str += " GROUP BY CONVERT(varchar(6), kdib_gl_datum, 112)";
     sql_str += " ORDER BY CONVERT(varchar(6), kdib_gl_datum, 112);";
@@ -270,9 +273,9 @@ function setLast10InvoicesDataGrid()
     sql_str = "SELECT TOP 10 kdib_gl_num, kpsy_bnk_ime, REPLACE(SUBSTRING(kdib_gl_rez , 2, 8), '.', '/'), SUBSTRING(kdib_gl_rez , 10, 8), sum(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END) as priliv";
     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
-   	sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
+   	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
-	sql_str += " WHERE 1=1 AND kdib_gl_banka<> '' AND YEAR(kdib_gl_datem) =  '" + ovagod_h+"'"  ;
+	sql_str += " WHERE 1=1 AND kpsy_bnk_blag <> 'D' AND YEAR(kdib_gl_datem) =  '" + ovagod_h+"'"  ;
 	if (do_mjeseca)
 	{
 		sql_str +=" AND month(kdib_gl_datem)< =  '" + mjesec_h+"'"  ;
@@ -310,7 +313,7 @@ function setTop10InvoicesDataGrid()
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner= nksc_partcode";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
-	sql_str += " WHERE 1=1 AND kdib_gl_banka<> '' AND YEAR(kdib_gl_datem) =  '" + ovagod_h+"'"  ;
+	sql_str += " WHERE 1=1 AND kpsy_bnk_blag <> 'D' AND YEAR(kdib_gl_datem) =  '" + ovagod_h+"'"  ;
 	if (do_mjeseca)
 	{
 		sql_str +=" AND month(kdib_gl_datem)< =  '" + mjesec_h+"'"  ;

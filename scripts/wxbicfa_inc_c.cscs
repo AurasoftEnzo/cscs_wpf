@@ -64,7 +64,8 @@ function setChartByDaysOfMonthOdliv()
     sql_str += ", ISNULL(ROUND(AVG(SUM(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END)) OVER(ORDER BY wk_day ROWS BETWEEN 6 PRECEDING AND CURRENT ROW), 0),0) AS moving_average_3_days";
     sql_str += " FROM " + CommonDBGet()+ ".dbo.Kalendar a";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibgl ON [Wk_Date] = kdib_gl_datum ";
-    sql_str += " AND kdib_gl_banka<> '' ";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
+    sql_str += " AND kpsy_bnk_blag <> 'D' ";
         if (BANKA_str != "")
     {
         sql_str += " AND kdib_gl_banka IN (" + BANKA_str + ")";
@@ -272,7 +273,7 @@ function setLast10InvoicesDataGridOdliv()
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
    	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
-	sql_str += " WHERE 1=1 AND kdib_gl_banka <> '' AND YEAR(kdib_gl_datem) =  " + ovagod_h  ;
+	sql_str += " WHERE 1=1 AND kpsy_bnk_blag <> 'D' AND YEAR(kdib_gl_datem) =  " + ovagod_h  ;
 	if (do_mjeseca)
 	{
 		sql_str +=" AND month(kdib_gl_datem) <=  " + mjesec_h  ;
@@ -319,7 +320,7 @@ function setTop10InvoicesDataGridOdliv()
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner= nksc_partcode";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
-	sql_str += " WHERE 1=1 AND kdib_gl_banka<> '' AND YEAR(kdib_gl_datem) =  " + ovagod_h  ;
+	sql_str += " WHERE 1=1 AND kpsy_bnk_blag <> 'D' AND YEAR(kdib_gl_datem) =  " + ovagod_h  ;
 	if (do_mjeseca)
 	{
 		sql_str +=" AND month(kdib_gl_datem) < =  " + mjesec_h  ;

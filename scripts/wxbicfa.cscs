@@ -771,7 +771,8 @@ function setWeekComparison()
 	sql_str  += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibgl ON [Wk_date] = kdib_gl_datem "; //ON a.[Wk_Week] = datepart(week , b.nkpr_gl_datem) ";
 	sql_str  += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
 	sql_str  += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
-    sql_str  += " WHERE kdib_gl_banka<> '' AND wk_year = " + ovagod_h;
+    sql_str  += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
+    sql_str  += " WHERE kpsy_bnk_blag <> 'D' AND wk_year = " + ovagod_h;
 	sql_str  += " AND kdib_gl_datem >= '" + fiscal_yr + "'";
     filterPart();
     if (partner!= ''){ sql_str += " AND kdib_ln_partner= '"+partner+"'";}

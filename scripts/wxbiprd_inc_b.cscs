@@ -119,7 +119,7 @@ function setRegionPieChart()
             sql_str += " FROM (SELECT ISNULL(nkpr_gl_cuscty,'Nema oznake') as City, sum(CASE WHEN nkpr_gl_dviza =  'D' THEN nkpr_gl_tecaj * nkpr_ln_pext ELSE nkpr_ln_pext END) AS Suma,";
             sql_str += " ROW_NUMBER() OVER( ORDER BY sum(CASE WHEN nkpr_gl_dviza =  'D' THEN nkpr_gl_tecaj * nkpr_ln_pext ELSE nkpr_ln_pext END) DESC ) As Num";
 		}
-        sql_str += " FROM " + trenutnaGodinaBaza + " .dbo.nkprglnr AS U LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON nkpr_gl_cuscod= nksc_partcode";
+        sql_str += " FROM " + trenutnaGodinaBaza + " .dbo.nkprglnr AS U LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart g ON nkpr_gl_cuscod= nksc_partcode";
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprlnnr ON nkpr_gl_sonum = nkpr_ln_invnm";
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkmkarti ON arti_artikl = nkpr_ln_pcode";
         sql_str += " WHERE YEAR(nkpr_gl_orddte)= " + ovagod_h;
@@ -188,7 +188,7 @@ function setRegionPieChart()
             sql_str += " FROM (SELECT ISNULL(ksdu_sf_opis1,'Nema oznake') as Country, sum(CASE WHEN nkpr_gl_dviza =  'D' THEN nkpr_gl_tecaj * nkpr_ln_pext ELSE nkpr_ln_pext END) AS Suma,";
             sql_str += " ROW_NUMBER() OVER( ORDER BY sum(CASE WHEN nkpr_gl_dviza =  'D' THEN nkpr_gl_tecaj * nkpr_ln_pext ELSE nkpr_ln_pext END) DESC ) As Num";
 		}	
-        sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkprglnr AS U LEFT JOIN " + trenutnaGodinaBaza + " .dbo.nkscpart ON nkpr_gl_cuscod= nksc_partcode ";
+        sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkprglnr AS U LEFT JOIN " + trenutnaGodinaBaza + " .dbo.nkscpart g ON nkpr_gl_cuscod= nksc_partcode ";
         sql_str += " LEFT JOIN " + CommonDBGet() + ".dbo.KPSYSIFA a ON NKSC_REGIJA = a.ksdu_sf_code AND ksdu_sf_tip = 'V'";
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprlnnr ON nkpr_gl_sonum = nkpr_ln_invnm";
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkmkarti ON arti_artikl = nkpr_ln_pcode";
@@ -281,6 +281,7 @@ function setRegionPieChart()
         sql_str += " LEFT JOIN " + CommonDBGet() + ".dbo.KPSYSIFA ON CASE WHEN nkpr_gl_drzava= '' THEN nkpr_gl_cusst ELSE nkpr_gl_drzava END = ksdu_sf_code AND ksdu_sf_tip = 'H'";
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprlnnr ON nkpr_gl_sonum = nkpr_ln_invnm";
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkmkarti ON arti_artikl = nkpr_ln_pcode";
+        sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart g ON nkpr_gl_cuscod = nksc_partcode";
 		/*
         if (kategorija != '' | klasa != '')
 		{
@@ -390,6 +391,7 @@ function setKategPieChart()
 	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprlnnr ON nkpr_gl_sonum = nkpr_ln_invnm";
 	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkmkarti ON arti_artikl = nkpr_ln_pcode";
 	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.pkmkgrup ON arti_kategorija= mkgr_grupa AND mkgr_vrsta= 'K'";
+	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart g ON nkpr_gl_cuscod = nksc_partcode";
 	sql_str += " WHERE YEAR(nkpr_gl_orddte)=" + ovagod_h ;
 	if (do_mjeseca  )
 	{

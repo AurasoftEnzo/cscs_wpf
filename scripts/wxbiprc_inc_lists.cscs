@@ -381,7 +381,7 @@ function ceIsporuka@clicked()
     + " SELECT DISTINCT nkpr_gl_shpcod, nksp_ad_naziv1 "
     + " FROM " + trenutnaGodinaBaza + ".[dbo].nkprglot "
     + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkspadrs] ON nksp_ad_codeint = nkpr_gl_shpcod AND nksp_ad_code = nkpr_gl_cuscod"
-    + " WHERE nksp_ad_code = " + partner + " AND nksp_ad_codeint LIKE '%{var1}%' AND nksp_ad_naziv1 LIKE '%{var2}%' "
+    + " WHERE nksp_ad_code = '" + partner + "' AND nksp_ad_codeint LIKE '%{var1}%' AND nksp_ad_naziv1 LIKE '%{var2}%' "
     + " AND YEAR(nkpr_gl_esd) = " + ovagod_h
     + ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY nkpr_gl_shpcod ASC) AS RowNumber, nkpr_gl_shpcod, nksp_ad_naziv1"
@@ -423,7 +423,7 @@ function ceIsporuka@post()
         }
 
         sqlResult = {};
-        sqlString = "SELECT TOP 1 [nksp_ad_naziv1] FROM  " + trenutnaGodinaBaza + ".[dbo].[nkspadrs] WHERE nksp_ad_code = " + partner + " AND nksp_ad_codeint = '" + isporuka + "' ORDER BY nksp_ad_codeint";
+        sqlString = "SELECT TOP 1 [nksp_ad_naziv1] FROM  " + trenutnaGodinaBaza + ".[dbo].[nkspadrs] WHERE nksp_ad_code = '" + partner + "' AND nksp_ad_codeint = '" + isporuka + "' ORDER BY nksp_ad_codeint";
         try{
             sqlResult = SqlQuery(sqlString);
         }catch(ex){
@@ -450,7 +450,7 @@ function ceRegija@clicked()
     + " SELECT DISTINCT ksdu_sf_code, ksdu_sf_opis1 "
     + " FROM " + trenutnaGodinaBaza + ".[dbo].[nkprglot] "
     + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkscpart] ON nksc_partcode = nkpr_gl_cuscod "
-    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[kpsysifa] ON nksc_regija = ksdu_sf_code "
+    + " LEFT JOIN " + CommonDBGet() + ".[dbo].[kpsysifa] ON nksc_regija = ksdu_sf_code "
     + " WHERE ksdu_sf_tip ='V' AND ksdu_sf_code LIKE '%{var1}%' AND ksdu_sf_opis1 LIKE '%{var2}%' "
     + " AND YEAR(nkpr_gl_esd) = " + ovagod_h
     + ")"
@@ -483,7 +483,7 @@ function ceRegija@post()
     }
     else{
         sqlResult = {};
-        sqlString = "SELECT TOP 1 [ksdu_sf_opis1] FROM  " + trenutnaGodinaBaza + ".[dbo].[kpsysifa] WHERE [ksdu_sf_tip] ='V' and ksdu_sf_code = '" + regija + "' ORDER BY ksdu_sf_code";
+        sqlString = "SELECT TOP 1 [ksdu_sf_opis1] FROM  " + CommonDBGet() + ".[dbo].[kpsysifa] WHERE [ksdu_sf_tip] ='V' and ksdu_sf_code = '" + regija + "' ORDER BY ksdu_sf_code";
         try{
             sqlResult = SqlQuery(sqlString);
         }catch(ex){

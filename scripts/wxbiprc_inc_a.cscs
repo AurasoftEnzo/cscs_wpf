@@ -405,7 +405,7 @@ function setChartByMonth()
         sql_str += " FROM " + proslaGodinaBaza + ".dbo.nkprglot"; // b ON a.[Wk_Date] = DATEADD(month , DATEDIFF(month , 0 , b.nkpr_gl_esd) , 0) AND year(b.nkpr_gl_esd)='" + (int(ovagod_h) - 1) + "' ";
         if ( regija != "" )
         {
-            sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.nkscpart ON nkpr_gl_cuscod = nksc_partcode";
+            sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.nkscpart g ON nkpr_gl_cuscod = nksc_partcode";
             
         }
         sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.nkprlnot ON nkpr_gl_brotp = nkpr_ln_invnm";
@@ -464,7 +464,7 @@ function setChartByMonth()
     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkprglot"; // b ON a.[Wk_Date] = DATEADD(month , DATEDIFF(month , 0 , b.nkpr_gl_esd) , 0) AND year(b.nkpr_gl_esd)='" + (int(ovagod_h) - 1) + "' ";
     if ( regija != "" )
     {
-        sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON nkpr_gl_cuscod = nksc_partcode";
+        sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart g ON nkpr_gl_cuscod = nksc_partcode";
         
     }
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprlnot ON nkpr_gl_brotp = nkpr_ln_invnm";

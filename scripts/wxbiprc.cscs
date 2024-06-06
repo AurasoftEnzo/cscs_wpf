@@ -974,7 +974,7 @@ function setWeekComparison()
     sql_str  += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkmkarti ON arti_artikl = c.nkpr_ln_pcode";
     if (regija != '')
     {
-        sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkscpart ON nkpr_gl_cuscod = nksc_partcode"; // AND g.nksc_regija= '"+regija*"'"
+        sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkscpart g ON nkpr_gl_cuscod = nksc_partcode"; // AND g.nksc_regija= '"+regija*"'"
     }
 	//WHERE a.[Wk_Week]  =  datepart(week , b.nkpr_gl_invdte) AND nkpr_gl_invdte>= '" +  sqlDate(kpsy_fiscal_yr) + "')"
 	//sql_str =  sql_str +  " WHERE [wk_Week]>=  datepart(week , '" + sqlDate(danas) * "') - 1 AND wk_Week<=  datepart(week , '" + sqlDate(danas) * "') AND wk_ISOyear = " +  year(kpsy_fiscal_yr)

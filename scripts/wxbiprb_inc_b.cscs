@@ -121,14 +121,14 @@ function setRegionPieChart(){
         sql_str += " FROM " + trenutnaGodinaBaza + " .dbo.nkprinv AS U LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON nkpr_gl_cuscod= nksc_partcode";
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprinvl ON nkpr_gl_num = nkpr_ln_invnm";
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkmkarti ON arti_artikl = nkpr_ln_pcode";
-        sql_str += " WHERE YEAR(nkpr_gl_datem)= " + ovagod_h;
+        sql_str += " WHERE nkpr_gl_cuscod <> '" + vlFirma + "' AND YEAR(nkpr_gl_datem) = " + ovagod_h;
         if (do_mjeseca  )
 		{
-            sql_str += " AND Month(nkpr_gl_datem)<=" + mjesec_h;
+            sql_str += " AND Month(nkpr_gl_datem) <=" + mjesec_h;
 		}	
         else
 		{
-            sql_str += " AND Month(nkpr_gl_datem)=" + mjesec_h;
+            sql_str += " AND Month(nkpr_gl_datem) =" + mjesec_h;
 		}	
         filterPart();
         sql_str += " GROUP BY nkpr_gl_cuscty) t";
@@ -210,7 +210,7 @@ function setRegionPieChart(){
 		}
 		*/
         //sql_str= sql_str* " LEFT JOIN "+dbase_new*".dbo.pkmkgrup as grKateg on grKateg.mkgr_grupa= arti_kategorija AND grKateg.mkgr_vrsta='K'"
-        sql_str += " WHERE YEAR(nkpr_gl_datem)= "+ ovagod_h;
+        sql_str += " WHERE nkpr_gl_cuscod <> '" + vlFirma + "' AND YEAR(nkpr_gl_datem)= "+ ovagod_h;
         if (do_mjeseca)
 		{
             sql_str += " AND Month(nkpr_gl_datem)<="+mjesec_h;
@@ -298,7 +298,7 @@ function setRegionPieChart(){
 			}
 		}
 		*/
-        sql_str += " WHERE YEAR(nkpr_gl_datem)= " + ovagod_h;
+        sql_str += " WHERE nkpr_gl_cuscod <> '" + vlFirma + "' AND YEAR(nkpr_gl_datem)= " + ovagod_h;
         if (razlikaUCijeniField)
 		{
             sql_str += " AND nkpr_gl_invcd= 'D'";
@@ -388,7 +388,7 @@ function setKategPieChart(){
 	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprinvl ON nkpr_gl_num = nkpr_ln_invnm";
 	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkmkarti ON arti_artikl = nkpr_ln_pcode";
 	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.pkmkgrup ON arti_kategorija= mkgr_grupa AND mkgr_vrsta= 'K'";
-	sql_str += " WHERE YEAR(nkpr_gl_datem)=" + ovagod_h ;
+	sql_str += " WHERE nkpr_gl_cuscod <> '" + vlFirma + "' AND YEAR(nkpr_gl_datem)=" + ovagod_h ;
 	if (do_mjeseca  )
 	{
 		sql_str += " AND Month(nkpr_gl_datem)<=" + mjesec_h;
@@ -482,7 +482,7 @@ function setTop10Products()
     }
     sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkprinvl ON nkpr_gl_num = nkpr_ln_invnm";
     sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkmkarti ON nkpr_ln_pcode = arti_artikl";
-    sql_str += " WHERE 1 = 1";
+    sql_str += " WHERE nkpr_gl_cuscod <> '" + vlFirma + "'";
     if (mjesec_h!= "")
 	{
         if (do_mjeseca )
@@ -580,7 +580,7 @@ function setTop10Products()
         sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.nkscpart g ON nkpr_gl_cuscod= g.nksc_partcode";
     }
     sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.nkmkarti ON nkpr_ln_pcode= arti_artikl";
-    sql_str += " WHERE nkpr_ln_pcode IN ("+in_string+") ";
+    sql_str += " WHERE nkpr_gl_cuscod <> '" + vlFirma + "' AND nkpr_ln_pcode IN ("+in_string+") ";
     if (mjesec_h != "")
 	{
         if (do_mjeseca )
@@ -739,7 +739,7 @@ function setCustomerDataGrid()
     }
     sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkprinvl ON nkpr_gl_num= nkpr_ln_invnm";
     sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkmkarti ON nkpr_ln_pcode= arti_artikl";
-    sql_str += " WHERE 1=1";
+    sql_str += " WHERE nkpr_gl_cuscod <> '" + vlFirma + "'";
     if (mjesec_h!= "")
 	{
         if (do_mjeseca )
@@ -838,7 +838,7 @@ function setCustomerDataGrid()
         sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.nkscpart g ON nkpr_gl_cuscod= g.nksc_partcode";
     }
     sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.nkmkarti ON nkpr_ln_pcode= arti_artikl";
-    sql_str += " WHERE nkpr_gl_cuscod IN ("+in_string+") ";
+    sql_str += " WHERE nkpr_gl_cuscod <> '" + vlFirma + "' AND nkpr_gl_cuscod IN ("+in_string+") ";
     if (mjesec_h != "")
 	{
         if (do_mjeseca )

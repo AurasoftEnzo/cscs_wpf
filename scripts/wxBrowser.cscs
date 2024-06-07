@@ -1,0 +1,26 @@
+CreateWindow(DownloadScripts() == true ? Download(ServerAddress() + "wxBrowser.xaml") : strTrim(tpath()) + "wxBrowser.xaml");
+
+function wxBrowser_onDisplay(){
+    args = CommandLineArgs(); 
+    if(Size(args) > 2){
+        webAddress = args[2];
+    }else{
+        webAddress = "https://www.aurasoft.hr";
+    }
+    SetWidgetOptions("WebView1", "Source", webAddress);
+
+    if(Size(args) > 3){
+        windowWidth = args[3];
+    }else{
+        windowWidth = 1200;
+    }
+    SetWindowOptions("wxBrowser", "Width", windowWidth);
+
+    if(Size(args) > 4){
+        windowHeight = args[4];
+    }else{
+        windowHeight = 800;
+    }
+    SetWindowOptions("wxBrowser", "Height", windowHeight);
+}
+

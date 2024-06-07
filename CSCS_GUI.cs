@@ -4517,6 +4517,10 @@ namespace WpfCSCS
                     // fix for Enabled
                     prop_by_prop_mapped.SetValue(widget, Set(parameter), null);
                 }
+				else if (option.StartsWith("Source".ToLower())) // from WidgetPropertyMap
+                {
+                    prop_by_prop_mapped.SetValue(widget, new Uri(parameter), null);
+                }
                 else
                 {
                     // try by name directly
@@ -4544,62 +4548,64 @@ namespace WpfCSCS
 		}
 
 		private static List<(string, string, string)> WidgetPropertyMap = new List<(string, string, string)>
-		  {
-               // common
-               ("*", "Text", "Content"),
-			   ("*", "Text.Hover", "ToolTip"),
-			   ("*", "Color", "Foreground"),
-			   ("*", "Color", "Color.Foreground"),
-			   ("*", "Color.Border", "BorderBrush"),
-			   ("*", "Color.Text", "Foreground"),
-			   ("*", "Color.Background", "Background"),
-			   ("*", "Enabled", "IsEnabled"),
-			   ("*", "Visible", "Visibility"),
+		{
+			// common
+			("*", "Text", "Content"),
+			("*", "Text.Hover", "ToolTip"),
+			("*", "Color", "Foreground"),
+			("*", "Color", "Color.Foreground"),
+			("*", "Color.Border", "BorderBrush"),
+			("*", "Color.Text", "Foreground"),
+			("*", "Color.Background", "Background"),
+			("*", "Enabled", "IsEnabled"),
+			("*", "Visible", "Visibility"),
 
-               //charts
-               ("*", "Color.Series", "Series"),
-			   ("*", "Text.SeriesNames", "Series"),
+			//charts
+			("*", "Color.Series", "Series"),
+			("*", "Text.SeriesNames", "Series"),
 
 
-			   ("Button", "Text.Description", ""),
-			   ("Button", "Text.Size", ""),
-			   ("Button", "Text.Name", ""),
-			   ("Button", "Text.Style", ""),
+			("Button", "Text.Description", ""),
+			("Button", "Text.Size", ""),
+			("Button", "Text.Name", ""),
+			("Button", "Text.Style", ""),
 
-			   ("Label", "Text.Description", ""),
-			   ("Label", "Text.Size", ""),
-			   ("Label", "Text.Name", ""),
-			   ("Label", "Text.Style", ""),
+			("Label", "Text.Description", ""),
+			("Label", "Text.Size", ""),
+			("Label", "Text.Name", ""),
+			("Label", "Text.Style", ""),
 
-			   ("Grid", "Text.Description", ""),
-			   ("Grid", "Text.Size", ""),
-			   ("Grid", "Text.Name", ""),
-			   ("Grid", "Text.Style", ""),
+			("Grid", "Text.Description", ""),
+			("Grid", "Text.Size", ""),
+			("Grid", "Text.Name", ""),
+			("Grid", "Text.Style", ""),
 
-			   ("Ellipse", "Color", "Fill"),
-			   ("Ellipse", "Color.Background", "Fill"),
-			   ("Ellipse", "Color.Foreground", "Fill"),
-			   ("Ellipse", "Color.Border", "Stroke"),
-			   ("Ellipse", "Text.Description", ""),
-			   ("Ellipse", "Text.Size", ""),
-			   ("Ellipse", "Text.Name", ""),
-			   ("Ellipse", "Text.Style", ""),
+			("Ellipse", "Color", "Fill"),
+			("Ellipse", "Color.Background", "Fill"),
+			("Ellipse", "Color.Foreground", "Fill"),
+			("Ellipse", "Color.Border", "Stroke"),
+			("Ellipse", "Text.Description", ""),
+			("Ellipse", "Text.Size", ""),
+			("Ellipse", "Text.Name", ""),
+			("Ellipse", "Text.Style", ""),
 
-               //("CartesianChart", "Color.Series", "Series"),
-               //("CartesianChart", "Text.SeriesNames", "Series")
+			("WebView2", "Source", "Source"),
 
-               //("PlaceholderToCopy", "Color", ""),
-               //("PlaceholderToCopy", "Color.Foreground", ""),
-               //("PlaceholderToCopy", "Color.Background", ""),
-               //("PlaceholderToCopy", "Color.Border", ""),
-               //("PlaceholderToCopy", "Color.Text", ""),
-               //("PlaceholderToCopy", "Text", ""),
-               //("PlaceholderToCopy", "Text.Description", ""),
-               //("PlaceholderToCopy", "Text.Hover", ""),
-               //("PlaceholderToCopy", "Text.Size", ""),
-               //("PlaceholderToCopy", "Text.Name", ""),
-               //("PlaceholderToCopy", "Text.Style", ""),
-          };
+			//("CartesianChart", "Color.Series", "Series"),
+			//("CartesianChart", "Text.SeriesNames", "Series")
+
+			//("PlaceholderToCopy", "Color", ""),
+			//("PlaceholderToCopy", "Color.Foreground", ""),
+			//("PlaceholderToCopy", "Color.Background", ""),
+			//("PlaceholderToCopy", "Color.Border", ""),
+			//("PlaceholderToCopy", "Color.Text", ""),
+			//("PlaceholderToCopy", "Text", ""),
+			//("PlaceholderToCopy", "Text.Description", ""),
+			//("PlaceholderToCopy", "Text.Hover", ""),
+			//("PlaceholderToCopy", "Text.Size", ""),
+			//("PlaceholderToCopy", "Text.Name", ""),
+			//("PlaceholderToCopy", "Text.Style", ""),
+		};
 
 		public static bool ClearWidget(CSCS_GUI gui, string widgetName, FrameworkElement widget = null)
 		{

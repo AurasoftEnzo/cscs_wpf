@@ -423,7 +423,7 @@ function ceIsporuka@post()
         }
 
         sqlResult = {};
-        sqlString = "SELECT TOP 1 [nksp_ad_naziv1] FROM  " + trenutnaGodinaBaza + ".[dbo].[nkspadrs] WHERE nksp_ad_code = '" + partner + "' AND nksp_ad_codeint = '" + isporuka + "' ORDER BY nksp_ad_codeint";
+        sqlString = "SELECT TOP 1 TRIM(nksp_ad_naziv1) + ' ' + TRIM(nksp_ad_naziv) as naziv FROM  " + trenutnaGodinaBaza + ".[dbo].[nkspadrs] WHERE nksp_ad_code = '" + partner + "' AND nksp_ad_codeint = '" + isporuka + "' ORDER BY nksp_ad_codeint";
         try{
             sqlResult = SqlQuery(sqlString);
         }catch(ex){

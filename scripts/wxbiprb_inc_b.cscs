@@ -197,15 +197,15 @@ function setRegionPieChart(){
             sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.pkmkgrup as grKateg on";
             if (kategorija != '' & klasa != '')
 			{
-                sql_str += " (grKateg.mkgr_grupa= arti_kategorija AND grKateg.mkgr_vrsta='K') OR (grKateg.mkgr_grupa= arti_klasa AND grKateg.mkgr_vrsta='L')";
+                sql_str += " (mkgr_grupa= arti_kategorija AND grKateg.mkgr_vrsta='K') OR (grKateg.mkgr_grupa= arti_klasa AND grKateg.mkgr_vrsta='L')";
 			}	
             elif (kategorija != "")
 			{
-                sql_str += " grKateg.mkgr_grupa= arti_kategorija AND grKateg.mkgr_vrsta='K'";
+                sql_str += " mkgr_grupa= arti_kategorija AND grKateg.mkgr_vrsta='K'";
 			}	
             elif (klasa != "")
 			{
-                sql_str += " grKateg.mkgr_grupa= arti_klasa AND grKateg.mkgr_vrsta='L'";
+                sql_str += " .mkgr_grupa= arti_klasa AND grKateg.mkgr_vrsta='L'";
 			}	
 		}
 		*/
@@ -281,24 +281,6 @@ function setRegionPieChart(){
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprinvl ON nkpr_gl_num = nkpr_ln_invnm";
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkmkarti ON arti_artikl = nkpr_ln_pcode";
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart g ON nkpr_gl_cuscod = nksc_partcode";
-		/*
-        if (kategorija != '' | klasa != '')
-		{
-            sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.pkmkgrup as grKateg on";
-            if (kategorija != '' & klasa != '')
-			{
-                sql_str += " (grKateg.mkgr_grupa= arti_kategorija AND grKateg.mkgr_vrsta='K') OR (grKateg.mkgr_grupa= arti_klasa AND grKateg.mkgr_vrsta='L')";
-			}	
-            elif ( kategorija != '')
-			{
-                sql_str += " grKateg.mkgr_grupa= arti_kategorija AND grKateg.mkgr_vrsta='K'";
-			}	
-            elif ( klasa != '')
-			{
-                sql_str += " grKateg.mkgr_grupa= arti_klasa AND grKateg.mkgr_vrsta='L'";
-			}
-		}
-		*/
         sql_str += " WHERE nkpr_gl_cuscod <> '" + vlFirma + "' AND YEAR(nkpr_gl_datem)= " + ovagod_h;
         if (razlikaUCijeniField)
 		{
@@ -401,21 +383,21 @@ function setKategPieChart(){
 	}	
 	if (kategorija != '' & klasa != '')
 	{
-		sql_str += " (grKateg.mkgr_grupa= arti_kategorija AND grKateg.mkgr_vrsta='K') OR (grKateg.mkgr_grupa= arti_klasa AND grKateg.mkgr_vrsta='L')";
+		sql_str += " AND (mkgr_grupa= arti_kategorija AND mkgr_vrsta='K') OR (mkgr_grupa= arti_klasa AND mkgr_vrsta='L')";
 	}	
 	elif ( kategorija != '')
 	{
-		sql_str += " grKateg.mkgr_grupa= arti_kategorija AND grKateg.mkgr_vrsta='K'";
+		sql_str += " AND mkgr_grupa= arti_kategorija AND mkgr_vrsta='K'";
 	}	
 	elif ( klasa != '')
 	{
-		sql_str += " grKateg.mkgr_grupa= arti_klasa AND grKateg.mkgr_vrsta='L'";
+		sql_str += " AND mkgr_grupa= arti_klasa AND mkgr_vrsta='L'";
 	}
 	filterPart();
 	sql_str += " GROUP BY SUBSTRING(mkgr_rezerva,1,50),mkgr_naziv) t";
 	sql_str += " GROUP BY CASE WHEN num <= 5 THEN Naziv ELSE 'Ostali' END";
 	sql_str += " ORDER BY origin desc";
-	//SaveFile(sql_str);
+	SaveFile(sql_str);
 	try	{
 		queryResult = sqlquery(sql_str);
 	}
@@ -573,7 +555,6 @@ function setTop10Products()
 		{
 			sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_gl_dviza= 'D' THEN nkpr_gl_tecaj*nkpr_ln_pext ELSE nkpr_ln_pext END),0), 0) as sales2";
 		}
-    }
 
     sql_str += " FROM "+proslaGodinaBaza+".dbo.NKPRINV";
     sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.nkprinvl ON nkpr_gl_num= nkpr_ln_invnm";
@@ -599,7 +580,7 @@ function setTop10Products()
     filterPart();
     sql_str += " GROUP BY arti_artikl";
     sql_str += " ORDER BY arti_artikl";
-	
+	//SaveFile(sql_str);
 	try	{
 		sqlResult = sqlQuery(sql_str);
 	}catch(exc){
@@ -607,6 +588,7 @@ function setTop10Products()
 	}
 	
 	RunOnMain("fillProductsArrays2");
+    }
 
 	RunOnMain("top10Products");
 }
@@ -831,7 +813,6 @@ function setCustomerDataGrid()
 	{
 		sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_gl_dviza= 'D' THEN nkpr_gl_tecaj*nkpr_ln_pext ELSE nkpr_ln_pext END),0), 0) as sales2";
 	}
-    }
 
     sql_str += " FROM "+proslaGodinaBaza+".dbo.NKPRINV";
     sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.nkprinvl ON nkpr_gl_num= nkpr_ln_invnm";
@@ -865,7 +846,7 @@ function setCustomerDataGrid()
 	}
 	
 	RunOnMain("fillCustomerArrays2");
-
+    }
 	RunOnMain("customerDataGrid");
 }
 

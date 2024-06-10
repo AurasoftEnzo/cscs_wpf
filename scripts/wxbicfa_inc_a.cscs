@@ -59,60 +59,39 @@ function buty@clicked()
 }    
 function setChartByDaysOfMonth()
 {
-    sql_str = "SELECT [wk_day] as dan2 , SalesDay = ISNULL(ROUND(SUM(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END),0) , 0)";
-    sql_str += ", ISNULL(ROUND(AVG(SUM(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END)) OVER(ORDER BY wk_day ROWS BETWEEN 6 PRECEDING AND CURRENT ROW), 0),0) AS moving_average_3_days";
-    sql_str += " FROM " + CommonDBGet()+ ".dbo.Kalendar a";
-    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibgl ON [Wk_Date] = kdib_gl_datum ";
+    sql_str = "WITH cte AS (";
+    sql_str += " SELECT DAY(kdib_gl_datum) as dan2, SalesDay=ISNULL(SUM(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END), 0) ";
+    
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl ";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_ln_num = kdib_gl_num";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
-    sql_str += " AND kpsy_bnk_blag <> 'D' "; 
-    if (BANKA_str != "")
-    {
-        sql_str += " AND kdib_gl_banka IN (" + BANKA_str + ")";
-    }
-    if (Izvadak != "")
-    {
-        sql_str += " AND kdib_gl_num = '" + Izvadak + "'";
-    }
-    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_ln_num = kdib_gl_num ";
-    if (partner != "")
-    {
-        sql_str += " AND kdib_ln_partner = '" + partner + "'";
-    }
-    if (KONTO_str != "")
-    {
-        sql_str += " AND kdib_ln_konto IN (" + KONTO_str + ")";
-    }
-	sql_str  += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
-    if (domaca_dn )
-    {
-        sql_str += "  AND nksc_drzava <> '' AND AND nksc_drzava= '"+kpsy_po_freight+"'";
-    }
-    elif (eu_dn )
-    {
-        sql_str +=  " AND nksc_drzava <> '' AND nksc_drzava IN ("+eucountries+")";
-    }
-    elif (izvoz_dn )
-    {
-        sql_str += " AND  AND nksc_drzava <> '' AND nksc_drzava <> '"+kpsy_po_freight+"' AND NOT nksc_drzava IN ("+eucountries+")";
-    }
-    sql_str += " WHERE 1 = 1 ";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
+    sql_str += " WHERE 1 = 1";
     if (do_mjeseca)
     {
-        sql_str += " AND [wk_Month]< = '" + mjesec_h + "' AND wk_Year = '" + ovagod_h + "'";
+        sql_str += " AND MONTH(kdib_gl_datum) <= '" + mjesec_h + "' AND YEAR(kdib_gl_datum) = '" + ovagod_h + "'";
     }
     else
     {
-        sql_str += " AND [wk_Month] = '" + mjesec_h + "' AND wk_Year = '" + ovagod_h + "'";
+        sql_str += " AND MONTH(kdib_gl_datum) = '" + mjesec_h + "' AND YEAR(kdib_gl_datum) = '" + ovagod_h + "'";
     }
-    //filterPart();
-    sql_str += " GROUP BY Wk_day";
-    sql_str += " ORDER BY [Wk_day]";
+    filterPart();
+    sql_str += " GROUP BY DAY(kdib_gl_datum)";
+    sql_str += ")";
+    sql_str += "SELECT wk_day,ISNULL(max(salesday), 0) as salesday";
+    sql_str += ",ISNULL(AVG(max(salesday)) OVER(ORDER BY wk_day ROWS BETWEEN 6 PRECEDING AND CURRENT ROW), 0) AS moving_average_3_days";
+    sql_str += " FROM " + CommonDBGet() + ".dbo.Kalendar";
+    sql_str += " LEFT JOIN cte ON wk_day = dan2";
+    sql_str += " WHERE WK_month <= '" + mjesec_h + "' and wk_Year= '" + ovagod_h + "'";
+    sql_str += " GROUP BY wk_day";
+    sql_str += " ORDER BY wk_day";
+    ///-----------------------------------------------
     try
     {
         queryResult = sqlquery(sql_str);
     }catch(exc)
     {
-            MessageBox(exc);
+        MessageBox(exc);
     }
     
     arrayDani = {};

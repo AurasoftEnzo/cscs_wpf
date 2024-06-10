@@ -183,18 +183,18 @@ function setKategPieChart()
 	{
 		sql_str += " AND Month(KS_IG_DATUM)=" + mjesec_h;
 	}	
-	if (kategorija != '' & klasa != '')
-	{
-		sql_str += " AND (mkgr_grupa= arti_kategorija AND mkgr_vrsta='K') OR (mkgr_grupa= arti_klasa AND mkgr_vrsta='L')";
-	}	
-	elif ( kategorija != '')
-	{
-		sql_str += " AND mkgr_grupa= arti_kategorija AND mkgr_vrsta='K'";
-	}	
-	elif ( klasa != '')
-	{
-		sql_str += " AND mkgr_grupa= arti_klasa AND mkgr_vrsta='L'";
-	}
+	// if (kategorija != '' & klasa != '')
+	// {
+	// 	sql_str += " AND (mkgr_grupa= arti_kategorija AND mkgr_vrsta='K') OR (mkgr_grupa= arti_klasa AND mkgr_vrsta='L')";
+	// }	
+	// elif ( kategorija != '')
+	// {
+	// 	sql_str += " AND mkgr_grupa= arti_kategorija AND mkgr_vrsta='K'";
+	// }	
+	// elif ( klasa != '')
+	// {
+	// 	sql_str += " AND mkgr_grupa= arti_klasa AND mkgr_vrsta='L'";
+	// }
 	filterPart();
 	sql_str += " GROUP BY SUBSTRING(mkgr_rezerva,1,50),mkgr_naziv) t";
 	sql_str += " GROUP BY CASE WHEN num <= 5 THEN Naziv ELSE 'Ostali' END";

@@ -194,7 +194,7 @@ function setTop10InvoicesDataGrid()
 
 }
 */
-function setChartByDaysOfMonth()
+function setChartByDaysOfMonthNotSent()
 {
     if (neto_dn)
     {
@@ -383,7 +383,7 @@ function setChartByDaysOfMonth()
 
 //--------------------------------------------------------
 
-function setChartByMonth()
+function setChartByMonthNotSent()
 {
     SQL_str = "SET query_governor_cost_limit 0;";
     if ( proslaGodinaBaza != "" )
@@ -429,7 +429,7 @@ function setChartByMonth()
         }
         sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.nkprlnnr ON nkpr_gl_sonum = nkpr_ln_invnm";
         sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.nkmkarti ON nkpr_ln_pcode= arti_artikl";
-        sql_str += " WHERE 1=1 AND year(nkpr_gl_orddte) = " + lani_h; //BETWEEN '"+sqlDate(od_danaLG)+"' AND '"+sqlDate(do_danaLG)+"'"  ";
+        sql_str += " WHERE 1 = 1 AND year(nkpr_gl_orddte) = " + lani_h; //BETWEEN '"+sqlDate(od_danaLG)+"' AND '"+sqlDate(do_danaLG)+"'"  ";
         filterPart();
         sql_str += " GROUP BY CONVERT(varchar(6),nkpr_gl_orddte,112)";
         sql_str += " ORDER BY CONVERT(varchar(6),nkpr_gl_orddte,112);";
@@ -443,7 +443,7 @@ function setChartByMonth()
             MessageBox(exc);
         }
         
-        RunOnMain("setChartByMonth1");
+        RunOnMain("setChartByMonthNotSent1");
     }
     
     //sada tekuća godina
@@ -487,8 +487,8 @@ function setChartByMonth()
         
     }
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprlnnr ON nkpr_gl_sonum = nkpr_ln_invnm";
-    sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkmkarti ON nkpr_ln_pcode= arti_artikl";
-    sql_str += " WHERE 1=1 AND year(nkpr_gl_orddte) = " + ovagod_h; //BETWEEN '"+sqlDate(od_danaLG)+"' AND '"+sqlDate(do_danaLG)+"'"  ";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkmkarti ON nkpr_ln_pcode= arti_artikl";
+    sql_str += " WHERE 1 = 1 AND year(nkpr_gl_orddte) = " + ovagod_h; //BETWEEN '"+sqlDate(od_danaLG)+"' AND '"+sqlDate(do_danaLG)+"'"  ";
     filterPart();
     sql_str += " GROUP BY CONVERT(varchar(6),nkpr_gl_orddte,112)";
     sql_str += " ORDER BY CONVERT(varchar(6),nkpr_gl_orddte,112);";
@@ -502,10 +502,10 @@ function setChartByMonth()
         MessageBox(exc);
     }
 
-    RunOnMain("setChartByMonth2");
+    RunOnMain("setChartByMonthNotSent2");
 }
 
-function setChartByMonth1(){
+function setChartByMonthNotSent1(){
     tot_proslimj = 0;
     tot_ovajmj = 0;
     tot_ovagod = 0;
@@ -561,7 +561,7 @@ function setChartByMonth1(){
     }
 }
 
-function setChartByMonth2(){
+function setChartByMonthNotSent2(){
     tot_proslimj = 0;
     tot_ovajmj = 0;
     //cntry= 0;

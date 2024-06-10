@@ -188,86 +188,86 @@ function setTop10InvoicesDataGrid()
 }
 */
 function setChartByDaysOfMonth()
+{
+    sql_str = "WITH cte AS (";
+    if (neto_dn)
     {
-        sql_str = "WITH cte AS (";
-        if (neto_dn)
-        {
-             sql_str += "SELECT DAY(nkpr_gl_datem) as dan2 , SalesDay = ISNULL(ROUND(SUM(CASE WHEN c.nkpr_gl_dviza = 'D' THEN c.nkpr_gl_tecaj * e.nkpr_ln_amt ELSE e.nkpr_ln_amt END),0) , 0)";
-        }
-        elif (razlikaUCijeniField)
-        {
-             sql_str += "SELECT DAY(nkpr_gl_datem) as dan2 , SalesDay = ISNULL(SUM(CASE WHEN c.nkpr_gl_dviza = 'D' THEN c.nkpr_gl_tecaj * (e.nkpr_ln_amt - e.nkpr_ln_cenan * e.nkpr_ln_qtyz) ELSE e.nkpr_ln_amt - e.nkpr_ln_cenan * e.nkpr_ln_qtyz END) , 0)";
-        }
-        elif (tezina_dn)
-        {
-             sql_str += " SELECT DAY(nkpr_gl_datem) as dan2, SalesDay=ISNULL(SUM(e.nkpr_ln_tezinan), 0) ";
-        }
-        elif (mx3_dn)
-        {
-             sql_str += " SELECT DAY(nkpr_gl_datem) as dan2, SalesDay=ISNULL(SUM(e.nkpr_ln_metx3), 0) ";
-        }
-        elif (mx2_dn)
-        {
-             sql_str += " SELECT DAY(nkpr_gl_datem) as dan2, SalesDay=ISNULL(SUM(e.nkpr_ln_metx2), 0) ";
-        }
-        elif (met_dn)
-        {
-             sql_str += " SELECT DAY(nkpr_gl_datem) as dan2, SalesDay=ISNULL(SUM(e.nkpr_ln_met), 0) ";
-        }
-        elif (kom_dn)
-        {
-             sql_str += " SELECT DAY(nkpr_gl_datem) as dan2, SalesDay=ISNULL(SUM(e.nkpr_ln_kom), 0) ";
-        }
-        else
-        {
-             sql_str += "SELECT DAY(nkpr_gl_datem) as dan2 , SalesDay = ISNULL(SUM(CASE WHEN c.nkpr_gl_dviza = 'D' THEN c.nkpr_gl_tecaj * e.nkpr_ln_pext ELSE e.nkpr_ln_pext END) , 0)";
-        }
-        sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkprinv c"; // c ON a.[Wk_Date] = c.nkpr_gl_datem ";
-        sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprinvl e ON c.nkpr_gl_num = e.nkpr_ln_invnm";
-        sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkmkarti ON nkpr_ln_pcode= arti_artikl";
-        if ( regija != "" )
-        {
-            sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart g ON c.nkpr_gl_cuscod = g.nksc_partcode";
-        }
-        sql_str += " WHERE 1 = 1";
-        if (do_mjeseca)
-        {
-             sql_str += " AND MONTH(nkpr_gl_datem)< = '" + mjesec_h + "' AND YEAR(nkpr_gl_datem) = '" + ovagod_h + "'";
-        }
-        else
-        {
-             sql_str += " AND MONTH(nkpr_gl_datem) = '" + mjesec_h + "' AND YEAR(nkpr_gl_datem) = '" + ovagod_h + "'";
-        }
-        filterPart();
-        sql_str += " GROUP BY DAY(nkpr_gl_datem)";
-        sql_str += ")";
-        sql_str += "SELECT wk_day,ISNULL(round(max(salesday),0),0) as salesday";
-        sql_str += ",ISNULL(round(AVG(max(salesday)) OVER(ORDER BY wk_day ROWS BETWEEN 6 PRECEDING AND CURRENT ROW), 0),0) AS moving_average_3_days";
-        sql_str += " FROM " + CommonDBGet() + ".dbo.Kalendar";
-        sql_str += " LEFT JOIN cte ON wk_day= dan2";
-        sql_str += " WHERE WK_month<= '" + mjesec_h + "' and wk_Year= '" + ovagod_h + "'";
-        sql_str += " GROUP BY wk_day";
-        sql_str += " ORDER BY wk_day";
-        try
-        {
-            //SaveFile(sql_str);
-
-             queryResult = sqlquery(sql_str);
-        }catch(exc)
-        {
-              MessageBox(exc);
-        }
-      
-        arrayDani = {};
-        arrayVrijednosti = {};
-        arrayAvr = {};
-            for(i = 1; i < queryResult.length; i++)
-            {
-                arrayDani.add(string(queryResult[i][0]));
-                arrayVrijednosti.add(queryResult[i][1]);
-                arrayAvr.add(queryResult[i][2]);
-            }
+        sql_str += "SELECT DAY(nkpr_gl_datem) as dan2 , SalesDay = ISNULL(ROUND(SUM(CASE WHEN c.nkpr_gl_dviza = 'D' THEN c.nkpr_gl_tecaj * e.nkpr_ln_amt ELSE e.nkpr_ln_amt END),0) , 0)";
     }
+    elif (razlikaUCijeniField)
+    {
+        sql_str += "SELECT DAY(nkpr_gl_datem) as dan2 , SalesDay = ISNULL(SUM(CASE WHEN c.nkpr_gl_dviza = 'D' THEN c.nkpr_gl_tecaj * (e.nkpr_ln_amt - e.nkpr_ln_cenan * e.nkpr_ln_qtyz) ELSE e.nkpr_ln_amt - e.nkpr_ln_cenan * e.nkpr_ln_qtyz END) , 0)";
+    }
+    elif (tezina_dn)
+    {
+        sql_str += " SELECT DAY(nkpr_gl_datem) as dan2, SalesDay=ISNULL(SUM(e.nkpr_ln_tezinan), 0) ";
+    }
+    elif (mx3_dn)
+    {
+        sql_str += " SELECT DAY(nkpr_gl_datem) as dan2, SalesDay=ISNULL(SUM(e.nkpr_ln_metx3), 0) ";
+    }
+    elif (mx2_dn)
+    {
+        sql_str += " SELECT DAY(nkpr_gl_datem) as dan2, SalesDay=ISNULL(SUM(e.nkpr_ln_metx2), 0) ";
+    }
+    elif (met_dn)
+    {
+        sql_str += " SELECT DAY(nkpr_gl_datem) as dan2, SalesDay=ISNULL(SUM(e.nkpr_ln_met), 0) ";
+    }
+    elif (kom_dn)
+    {
+        sql_str += " SELECT DAY(nkpr_gl_datem) as dan2, SalesDay=ISNULL(SUM(e.nkpr_ln_kom), 0) ";
+    }
+    else
+    {
+        sql_str += "SELECT DAY(nkpr_gl_datem) as dan2 , SalesDay = ISNULL(SUM(CASE WHEN c.nkpr_gl_dviza = 'D' THEN c.nkpr_gl_tecaj * e.nkpr_ln_pext ELSE e.nkpr_ln_pext END) , 0)";
+    }
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkprinv c"; // c ON a.[Wk_Date] = c.nkpr_gl_datem ";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprinvl e ON c.nkpr_gl_num = e.nkpr_ln_invnm";
+    sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkmkarti ON nkpr_ln_pcode= arti_artikl";
+    if ( regija != "" )
+    {
+        sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart g ON c.nkpr_gl_cuscod = g.nksc_partcode";
+    }
+    sql_str += " WHERE 1 = 1";
+    if (do_mjeseca)
+    {
+        sql_str += " AND MONTH(nkpr_gl_datem) <= '" + mjesec_h + "' AND YEAR(nkpr_gl_datem) = '" + ovagod_h + "'";
+    }
+    else
+    {
+        sql_str += " AND MONTH(nkpr_gl_datem) = '" + mjesec_h + "' AND YEAR(nkpr_gl_datem) = '" + ovagod_h + "'";
+    }
+    filterPart();
+    sql_str += " GROUP BY DAY(nkpr_gl_datem)";
+    sql_str += ")";
+    sql_str += "SELECT wk_day,ISNULL(max(salesday), 0) as salesday";
+    sql_str += ",ISNULL(AVG(max(salesday)) OVER(ORDER BY wk_day ROWS BETWEEN 6 PRECEDING AND CURRENT ROW), 0) AS moving_average_3_days";
+    sql_str += " FROM " + CommonDBGet() + ".dbo.Kalendar";
+    sql_str += " LEFT JOIN cte ON wk_day = dan2";
+    sql_str += " WHERE WK_month <= '" + mjesec_h + "' and wk_Year= '" + ovagod_h + "'";
+    sql_str += " GROUP BY wk_day";
+    sql_str += " ORDER BY wk_day";
+    try
+    {
+        //SaveFile(sql_str);
+
+        queryResult = sqlquery(sql_str);
+    }catch(exc)
+    {
+        MessageBox(exc);
+    }
+    
+    arrayDani = {};
+    arrayVrijednosti = {};
+    arrayAvr = {};
+    for(i = 1; i < queryResult.length; i++)
+    {
+        arrayDani.add(string(queryResult[i][0]));
+        arrayVrijednosti.add(queryResult[i][1]);
+        arrayAvr.add(queryResult[i][2]);
+    }
+}
 
 function setChartByMonth()
 {

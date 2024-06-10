@@ -185,15 +185,15 @@ function setKategPieChart()
 	}	
 	if (kategorija != '' & klasa != '')
 	{
-		sql_str += " (grKateg.mkgr_grupa= arti_kategorija AND grKateg.mkgr_vrsta='K') OR (grKateg.mkgr_grupa= arti_klasa AND grKateg.mkgr_vrsta='L')";
+		sql_str += " AND (mkgr_grupa= arti_kategorija AND mkgr_vrsta='K') OR (mkgr_grupa= arti_klasa AND mkgr_vrsta='L')";
 	}	
 	elif ( kategorija != '')
 	{
-		sql_str += " grKateg.mkgr_grupa= arti_kategorija AND grKateg.mkgr_vrsta='K'";
+		sql_str += " AND mkgr_grupa= arti_kategorija AND mkgr_vrsta='K'";
 	}	
 	elif ( klasa != '')
 	{
-		sql_str += " grKateg.mkgr_grupa= arti_klasa AND grKateg.mkgr_vrsta='L'";
+		sql_str += " AND mkgr_grupa= arti_klasa AND mkgr_vrsta='L'";
 	}
 	filterPart();
 	sql_str += " GROUP BY SUBSTRING(mkgr_rezerva,1,50),mkgr_naziv) t";
@@ -223,8 +223,7 @@ function DisplayKategPieChart(){
 
 //-------------------------------------------------------
 
-function setTop10Products()
-{
+function setTop10Products(){
 	SQL_str ="SET query_governor_cost_limit 0;";
     sql_str += "WITH sales AS (";
     sql_str += " SELECT TOP 10 arti_artikl as codeart, arti_naziv as Nameart, Sales1=";
@@ -495,57 +494,56 @@ function setCustomerDataGrid()
 
     if (proslaGodinaBaza != "")
 	{
+		RunOnMain("setCntr2");
 
-    RunOnMain("setCntr2");
-
-    //sql_str= "";
-	if (proslaGodinaBaza != "")
-	{
-    sql_str= " SELECT KS_IG_KUPAC,";
-	
-    if (neto_dn )
-	{
-		sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL - KS_IL_POREZ),0), 0) as sales2";
-	}
-    elif (razlikaUCijeniField)
-	{
-		sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))),0), 0) as sales2";
-	}
-    else
-	{
-		sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL),0), 0) as sales2";
-	}
-    sql_str += " FROM " + proslaGodinaBaza + ".dbo.NKKSINVG";
-    sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.NKKSINVL ON KS_IG_RACUN = KS_IL_RACUN";
-    
-    //sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.nkscpart g ON KS_IG_KUPAC = g.nksc_partcode";
-    
-    sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.nkmkarti ON KS_IL_PCODE = arti_artikl";
-    sql_str += " WHERE KS_IG_KUPAC IN ("+in_string+") ";
-    if (mjesec_h != "")
-	{
-        if (do_mjeseca )
+		//sql_str= "";
+		if (proslaGodinaBaza != "")
 		{
-            sql_str += " AND month(KS_IG_DATUM)<= "+mjesec_h;
-            sql_str += " AND YEAR(KS_IG_DATUM)= "+lani_h;
+			sql_str= " SELECT KS_IG_KUPAC,";
+			
+			if (neto_dn )
+			{
+				sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL - KS_IL_POREZ),0), 0) as sales2";
+			}
+			elif (razlikaUCijeniField)
+			{
+				sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))),0), 0) as sales2";
+			}
+			else
+			{
+				sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL),0), 0) as sales2";
+			}
+			sql_str += " FROM " + proslaGodinaBaza + ".dbo.NKKSINVG";
+			sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.NKKSINVL ON KS_IG_RACUN = KS_IL_RACUN";
+			
+			//sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.nkscpart g ON KS_IG_KUPAC = g.nksc_partcode";
+			
+			sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.nkmkarti ON KS_IL_PCODE = arti_artikl";
+			sql_str += " WHERE KS_IG_KUPAC IN ("+in_string+") ";
+			if (mjesec_h != "")
+			{
+				if (do_mjeseca )
+				{
+					sql_str += " AND month(KS_IG_DATUM)<= "+mjesec_h;
+					sql_str += " AND YEAR(KS_IG_DATUM)= "+lani_h;
+				}
+				else
+				{
+					sql_str += " AND month(KS_IG_DATUM)= "+mjesec_h;
+					sql_str += " AND YEAR(KS_IG_DATUM)= "+lani_h;
+				}
+			}
+
+			filterPart();
+			sql_str += " GROUP BY KS_IG_KUPAC";
+			sql_str += " ORDER BY KS_IG_KUPAC";
+			try	{
+				sqlResult = sqlQuery(sql_str);
+			}catch(exc){
+				MessageBox(exc);
+			}
 		}
-        else
-		{
-            sql_str += " AND month(KS_IG_DATUM)= "+mjesec_h;
-            sql_str += " AND YEAR(KS_IG_DATUM)= "+lani_h;
-        }
-    }
-
-    filterPart();
-    sql_str += " GROUP BY KS_IG_KUPAC";
-    sql_str += " ORDER BY KS_IG_KUPAC";
-	try	{
-		sqlResult = sqlQuery(sql_str);
-	}catch(exc){
-		MessageBox(exc);
-	}
-	}
-	RunOnMain("fillCustomerArrays2");
+		RunOnMain("fillCustomerArrays2");
     }
 	RunOnMain("customerDataGrid");
 }

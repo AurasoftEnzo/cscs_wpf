@@ -403,15 +403,15 @@ function setKategPieChart()
 	}	
 	if (kategorija != '' & klasa != '')
 	{
-		sql_str += " (grKateg.mkgr_grupa= arti_kategorija AND grKateg.mkgr_vrsta='K') OR (grKateg.mkgr_grupa= arti_klasa AND grKateg.mkgr_vrsta='L')";
+		sql_str += " AND (mkgr_grupa = arti_kategorija AND mkgr_vrsta = 'K') OR (mkgr_grupa = arti_klasa AND mkgr_vrsta = 'L')";
 	}	
 	elif ( kategorija != '')
 	{
-		sql_str += " grKateg.mkgr_grupa= arti_kategorija AND grKateg.mkgr_vrsta='K'";
+		sql_str += " AND mkgr_grupa = arti_kategorija AND mkgr_vrsta = 'K'";
 	}	
 	elif ( klasa != '')
 	{
-		sql_str += " grKateg.mkgr_grupa= arti_klasa AND grKateg.mkgr_vrsta='L'";
+		sql_str += " AND mkgr_grupa = arti_klasa AND mkgr_vrsta = 'L'";
 	}
 	filterPart();
 	sql_str += " GROUP BY SUBSTRING(mkgr_rezerva,1,50),mkgr_naziv) t";
@@ -829,7 +829,6 @@ function setCustomerDataGrid()
 			sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_gl_dviza= 'D' THEN nkpr_gl_tecaj*nkpr_ln_pext ELSE nkpr_ln_pext END),0), 0) as sales2";
 		}
     
-
 		sql_str += " FROM "+proslaGodinaBaza+".dbo.nkprglnr";
 		sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.nkprlnnr ON nkpr_gl_sonum= nkpr_ln_invnm";
 		if (regija != "")

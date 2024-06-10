@@ -142,7 +142,7 @@ function Wxbiprb_onDisplay()
 
     gradoviRB= true;
 
-    sqlQueryString = " SELECT TOP 1 sy_sp_vl_firma FROM " + trenutnaGodinaBaza + ".[dbo].[kpsystem]";
+    sqlQueryString = " SELECT TOP 1 trim(sy_sp_vl_firma) FROM " + trenutnaGodinaBaza + ".[dbo].[kpsystem]";
     try
     {
         sqlResult = sqlQuery(sqlQueryString);

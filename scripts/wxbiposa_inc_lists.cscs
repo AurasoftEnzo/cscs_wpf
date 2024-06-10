@@ -370,7 +370,7 @@ function ceKategorija@clicked()
     + " WHERE mkgr_grupa LIKE '%{var1}%'"
     + ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY mkgr_grupa ASC) AS RowNumber, mkgr_grupa, naziv"
-    + " FROM kategorije WHERE naziv LIKE '%{var2}%' ORDER BY RowNumber";
+    + " FROM kategorije WHERE mkgr_grupa IS NOT NULL AND naziv LIKE '%{var2}%' ORDER BY RowNumber";
 
     sifraFieldPointer -> kategorija;
     NazivFieldPointer -> kategNaziv;
@@ -425,11 +425,11 @@ function ceKlasa@clicked()
     + " SELECT DISTINCT mkgr_grupa, CASE WHEN SUBSTRING(mkgr_rezerva,1,50) <> '' THEN SUBSTRING(mkgr_rezerva,1,50) ELSE mkgr_naziv END as naziv "
     + " FROM  " + trenutnaGodinaBaza + ".[dbo].[nkksinvl]"
     + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkmkarti] ON arti_artikl = ks_il_pcode "
-    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[pkmkgrup] ON arti_kategorija = mkgr_grupa AND [mkgr_vrsta] ='L'"
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[pkmkgrup] ON arti_klasa = mkgr_grupa AND [mkgr_vrsta] ='L'"
     + " WHERE mkgr_grupa LIKE '%{var1}%'"
     + ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY mkgr_grupa ASC) AS RowNumber, mkgr_grupa, naziv"
-    + " FROM klase WHERE naziv LIKE '%{var2}%' ORDER BY RowNumber";
+    + " FROM klase WHERE mkgr_grupa IS NOT NULL AND naziv LIKE '%{var2}%' ORDER BY RowNumber";
 
     sifraFieldPointer -> klasa;
     NazivFieldPointer -> klasaNaziv;

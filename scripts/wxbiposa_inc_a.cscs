@@ -72,7 +72,7 @@ function setTop10InvoicesDataGrid()
 		{
 			sql_str += " AND month(KS_IG_DATUM) =  " + mjesec_h ;
 			sql_str += " AND YEAR(KS_IG_DATUM) =  " + ovagod_h ;
-			}
+        }
 	}
 	
 	sql_str += " ORDER BY KS_IG_TOTAL DESC";
@@ -98,18 +98,18 @@ function setChartByDaysOfMonth()
 {
     if (neto_dn)
     {
-            sql_str = "SELECT [wk_day] as dan2 , SalesDay = ISNULL(ROUND(SUM(KS_IL_TOTAL - KS_IL_POREZ),0) , 0)";
-            sql_str += ", ISNULL(ROUND(AVG(SUM(KS_IL_TOTAL - KS_IL_POREZ)) OVER(ORDER BY wk_day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 0),0) AS moving_average_3_days";
+        sql_str = "SELECT [wk_day] as dan2 , SalesDay = ISNULL(ROUND(SUM(KS_IL_TOTAL - KS_IL_POREZ),0) , 0)";
+        sql_str += ", ISNULL(ROUND(AVG(SUM(KS_IL_TOTAL - KS_IL_POREZ)) OVER(ORDER BY wk_day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 0),0) AS moving_average_3_days";
     }
     elif (razlikaUCijeniField)
     {
-            sql_str = "SELECT [wk_day] as dan2 , SalesDay = ISNULL(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0)";
-            sql_str += ", ISNULL(ROUND(AVG(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.')))) OVER(ORDER BY wk_day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 0),0) AS moving_average_3_days";
+        sql_str = "SELECT [wk_day] as dan2 , SalesDay = ISNULL(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0)";
+        sql_str += ", ISNULL(ROUND(AVG(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.')))) OVER(ORDER BY wk_day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 0),0) AS moving_average_3_days";
     }
     else
     {
-            sql_str = "SELECT [wk_day] as dan2 , SalesDay = ISNULL(SUM(KS_IL_TOTAL) , 0)";
-            sql_str += ", ISNULL(ROUND(AVG(SUM(KS_IL_TOTAL)) OVER(ORDER BY wk_day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 0), 0) AS moving_average_3_days";
+        sql_str = "SELECT [wk_day] as dan2 , SalesDay = ISNULL(SUM(KS_IL_TOTAL) , 0)";
+        sql_str += ", ISNULL(ROUND(AVG(SUM(KS_IL_TOTAL)) OVER(ORDER BY wk_day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 0), 0) AS moving_average_3_days";
     }
     sql_str += " FROM " + CommonDBGet()+ ".dbo.Kalendar a";
     //sql_str =  sql_str +  " LEFT JOIN " + ovagod_h * ".dbo.nkprinv b ON a.[Wk_Date]  =  DATEADD(month ,  DATEDIFF(month ,  0 ,  b.nkpr_gl_invdte) ,  0)"

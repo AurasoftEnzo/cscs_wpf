@@ -189,38 +189,38 @@ function setTop10InvoicesDataGrid()
 */
 function setChartByDaysOfMonth()
     {
-        sql_str= "WITH cte AS (";
+        sql_str = "WITH cte AS (";
         if (neto_dn)
         {
              sql_str += "SELECT DAY(nkpr_gl_datem) as dan2 , SalesDay = ISNULL(ROUND(SUM(CASE WHEN c.nkpr_gl_dviza = 'D' THEN c.nkpr_gl_tecaj * e.nkpr_ln_amt ELSE e.nkpr_ln_amt END),0) , 0)";
         }
         elif (razlikaUCijeniField)
         {
-             sql_str = "SELECT DAY(nkpr_gl_datem) as dan2 , SalesDay = ISNULL(SUM(CASE WHEN c.nkpr_gl_dviza = 'D' THEN c.nkpr_gl_tecaj * (e.nkpr_ln_amt - e.nkpr_ln_cenan * e.nkpr_ln_qtyz) ELSE e.nkpr_ln_amt - e.nkpr_ln_cenan * e.nkpr_ln_qtyz END) , 0)";
+             sql_str += "SELECT DAY(nkpr_gl_datem) as dan2 , SalesDay = ISNULL(SUM(CASE WHEN c.nkpr_gl_dviza = 'D' THEN c.nkpr_gl_tecaj * (e.nkpr_ln_amt - e.nkpr_ln_cenan * e.nkpr_ln_qtyz) ELSE e.nkpr_ln_amt - e.nkpr_ln_cenan * e.nkpr_ln_qtyz END) , 0)";
         }
         elif (tezina_dn)
         {
-             sql_str = " SELECT DAY(nkpr_gl_datem) as dan2, SalesDay=ISNULL(SUM(e.nkpr_ln_tezinan), 0) ";
+             sql_str += " SELECT DAY(nkpr_gl_datem) as dan2, SalesDay=ISNULL(SUM(e.nkpr_ln_tezinan), 0) ";
         }
         elif (mx3_dn)
         {
-             sql_str = " SELECT DAY(nkpr_gl_datem) as dan2, SalesDay=ISNULL(SUM(e.nkpr_ln_metx3), 0) ";
+             sql_str += " SELECT DAY(nkpr_gl_datem) as dan2, SalesDay=ISNULL(SUM(e.nkpr_ln_metx3), 0) ";
         }
         elif (mx2_dn)
         {
-             sql_str = " SELECT DAY(nkpr_gl_datem) as dan2, SalesDay=ISNULL(SUM(e.nkpr_ln_metx2), 0) ";
+             sql_str += " SELECT DAY(nkpr_gl_datem) as dan2, SalesDay=ISNULL(SUM(e.nkpr_ln_metx2), 0) ";
         }
         elif (met_dn)
         {
-             sql_str = " SELECT DAY(nkpr_gl_datem) as dan2, SalesDay=ISNULL(SUM(e.nkpr_ln_met), 0) ";
+             sql_str += " SELECT DAY(nkpr_gl_datem) as dan2, SalesDay=ISNULL(SUM(e.nkpr_ln_met), 0) ";
         }
         elif (kom_dn)
         {
-             sql_str = " SELECT DAY(nkpr_gl_datem) as dan2, SalesDay=ISNULL(SUM(e.nkpr_ln_kom), 0) ";
+             sql_str += " SELECT DAY(nkpr_gl_datem) as dan2, SalesDay=ISNULL(SUM(e.nkpr_ln_kom), 0) ";
         }
         else
         {
-             sql_str = "SELECT DAY(nkpr_gl_datem) as dan2 , SalesDay = ISNULL(SUM(CASE WHEN c.nkpr_gl_dviza = 'D' THEN c.nkpr_gl_tecaj * e.nkpr_ln_pext ELSE e.nkpr_ln_pext END) , 0)";
+             sql_str += "SELECT DAY(nkpr_gl_datem) as dan2 , SalesDay = ISNULL(SUM(CASE WHEN c.nkpr_gl_dviza = 'D' THEN c.nkpr_gl_tecaj * e.nkpr_ln_pext ELSE e.nkpr_ln_pext END) , 0)";
         }
         sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkprinv c"; // c ON a.[Wk_Date] = c.nkpr_gl_datem ";
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprinvl e ON c.nkpr_gl_num = e.nkpr_ln_invnm";

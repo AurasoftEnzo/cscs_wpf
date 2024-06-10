@@ -324,7 +324,7 @@ function DisplayKategPieChart(){
 
 function setTop10Products()
 {
-	SQL_str ="SET query_governor_cost_limit 0;";
+	SQL_str = "SET query_governor_cost_limit 0;";
     sql_str += "WITH sales AS (";
     sql_str += " SELECT TOP 10 kdib_ln_konto as codeart, gk_ac_opis as Nameart, Sales1=";
     sql_str += " ISNULL(ROUND(SUM(CASE WHEN kdib_ln_dp= 'P' THEN kdib_ln_iznos ELSE 0 END),0), 0)";
@@ -369,7 +369,7 @@ function setTop10Products()
 	{
     // cntr2= 0;
     //sql_str= "";
-    sql_str= " SELECT gk_ac_konto,";
+    sql_str = " SELECT gk_ac_konto,";
     sql_str += " ISNULL(ROUND(SUM(CASE WHEN kdib_ln_dp= 'P' THEN kdib_ln_iznos ELSE 0 END),0), 0) as sales2";
 	sql_str += " FROM "+proslaGodinaBaza+".dbo.kpkdibgl";
     sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.kpkdibln ON kdib_gl_num= kdib_ln_num";
@@ -540,7 +540,7 @@ function setCustomerDataGrid()
 
     //sql_str= "";
 	
-    sql_str= " SELECT kdib_ln_partner,";
+    sql_str = " SELECT kdib_ln_partner,";
 	sql_str += " ISNULL(ROUND(SUM(CASE WHEN kdib_ln_dp= 'P' THEN kdib_ln_iznos ELSE 0 END),0), 0) as sales2";
     }
     sql_str += " FROM "+proslaGodinaBaza+".dbo.kpkdibgl";

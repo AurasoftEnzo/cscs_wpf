@@ -644,7 +644,7 @@ function setTop10InvoicesDataGrid()
 	{
         sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_gl_dviza= 'D' THEN nkpr_gl_tecaj*nkpr_ln_pext ELSE nkpr_ln_pext END), 2), 0)";
 	}
-	sql_str += " AS iznos FROM " + trenutnaGodinaBaza + ".dbo.nkprglot" ;
+	sql_str += " AS iznos FROM " + trenutnaGodinaBaza + ".dbo.nkprglot";
     if (regija!= "")
 	{
         sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkscpart g ON nkpr_gl_cuscod= g.nksc_partcode";

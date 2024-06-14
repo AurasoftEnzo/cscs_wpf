@@ -103,7 +103,7 @@ function setChartByDaysOfMonth()
     }
     elif (razlikaUCijeniField)
     {
-        sql_str += "SELECT DAY(ks_ig_datum) as dan2 , SalesDay = ISNULL(SUM((KS_IL_TOTAL * (1- ks_il_ukupno/100) - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0)";
+        sql_str += "SELECT DAY(ks_ig_datum) as dan2 , SalesDay = ISNULL(SUM(KS_IL_TOTAL *(1 - ks_ig_popust/100) - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0)";
     }
     else
     {
@@ -167,15 +167,15 @@ function setChartByMonth()
         sql_str += "SELECT '0' as tip,CONVERT(varchar(6),KS_IG_DATUM,112) as yyyymm, ";
         if (neto_dn)
         {
-            sql_str += "Sales = round(ISNULL(SUM(KS_IL_TOTAL - KS_IL_POREZ) , 0), 2) ";
+            sql_str += "Sales = round(ISNULL(SUM(KS_IL_TOTAL*(1 - ks_ig_popust/100) - KS_IL_POREZ) , 0), 2) ";
         }
         elif (razlikaUCijeniField)
         {
-            sql_str += " Sales = round(ISNULL(SUM((KS_IL_TOTAL * (1 - ks_il_ukupno/100) - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0), 2)";
+            sql_str += " Sales = round(ISNULL(SUM(KS_IL_TOTAL *(1 - ks_ig_popust/100) - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0), 2)";
         }
         else
         {
-            sql_str += " Sales = round(ISNULL(SUM(KS_IL_TOTAL) , 0), 2)"; //" + cast(ISNULL(SUM(CASE WHEN c.nkpr_gl_dviza = 'D' THEN c.nkpr_gl_tecaj * e.nkpr_ln_pext ELSE e.nkpr_ln_pext END) , 0)as decimal (10))";
+            sql_str += " Sales = round(ISNULL(SUM(KS_IL_TOTAL*(1 - ks_ig_popust/100)) , 0), 2)"; //" + cast(ISNULL(SUM(CASE WHEN c.nkpr_gl_dviza = 'D' THEN c.nkpr_gl_tecaj * e.nkpr_ln_pext ELSE e.nkpr_ln_pext END) , 0)as decimal (10))";
         }
         sql_str += " FROM " + proslaGodinaBaza + ".dbo.NKKSINVG"; // b ON a.[Wk_Date] = DATEADD(month , DATEDIFF(month , 0 , b.nkpr_gl_datem) , 0) AND year(b.nkpr_gl_datem)='" + (int(ovagod_h) - 1) + "' ";
         sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.nkscpart ON KS_IG_KUPAC = nksc_partcode";
@@ -246,15 +246,15 @@ function setChartByMonth()
     sql_str = "SELECT '1' as tip,CONVERT(varchar(6),KS_IG_DATUM,112) as yyyymm, ";
     if (neto_dn)
     {
-        sql_str += "Sales = round(ISNULL(SUM(KS_IL_TOTAL - KS_IL_POREZ) , 0), 2) ";
+        sql_str += "Sales = round(ISNULL(SUM(KS_IL_TOTAL*(1 - ks_ig_popust/100) - KS_IL_POREZ) , 0), 2) ";
     }
     elif (razlikaUCijeniField)
     {
-        sql_str += " Sales = round(ISNULL(SUM((KS_IL_TOTAL*(1 - ks_il_ukupno/100) - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0), 2)";
+        sql_str += " Sales = round(ISNULL(SUM(KS_IL_TOTAL**(1 - ks_ig_popust/100) - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0), 2)";
     }
     else
     {
-        sql_str += " Sales = round(ISNULL(SUM(KS_IL_TOTAL) , 0), 2)"; //" + cast(ISNULL(SUM(CASE WHEN c.nkpr_gl_dviza = 'D' THEN c.nkpr_gl_tecaj * e.nkpr_ln_pext ELSE e.nkpr_ln_pext END) , 0)as decimal (10))";
+        sql_str += " Sales = round(ISNULL(SUM(KS_IL_TOTAL*(1 - ks_ig_popust/100)) , 0), 2)"; //" + cast(ISNULL(SUM(CASE WHEN c.nkpr_gl_dviza = 'D' THEN c.nkpr_gl_tecaj * e.nkpr_ln_pext ELSE e.nkpr_ln_pext END) , 0)as decimal (10))";
     }
     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKKSINVG"; // b ON a.[Wk_Date] = DATEADD(month , DATEDIFF(month , 0 , b.nkpr_gl_datem) , 0) AND year(b.nkpr_gl_datem)='" + (int(ovagod_h) - 1) + "' ";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON KS_IG_KUPAC = nksc_partcode";
@@ -325,15 +325,15 @@ function setLast10InvoicesDataGrid()
 	
     if (neto_dn)
 	{
-        sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL - KS_IL_POREZ),2), 0)";
+        sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL*(1 - ks_ig_popust/100) - KS_IL_POREZ),2), 0)";
 	}
     elif (razlikaUCijeniField)
 	{
-        sql_str += " ISNULL(ROUND(SUM((KS_IL_TOTAL*(1 - ks_il_ukupno/100) - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))), 2), 0)";
+        sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL*(1 - ks_ig_popust/100) - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))), 2), 0)";
 	}
     else
 	{
-        sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL), 2), 0)";
+        sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL*(1 - ks_ig_popust/100)), 2), 0)";
 	}
 	sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKKSINVG" ;
     sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkscpart g ON KS_IG_KUPAC = g.nksc_partcode";
@@ -381,15 +381,15 @@ function setTop10InvoicesDataGrid()
     sql_str =  "SELECT TOP 10 KS_IG_RACUN , NKSC_PARTNAME , CONVERT(char(8) ,  KS_IG_DATUM , 3) AS datecr , ";
     if (neto_dn)
 	{
-        sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL - KS_IL_POREZ),2), 0)";
+        sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL*(1 - ks_ig_popust/100) - KS_IL_POREZ),2), 0)";
 	}
     elif (razlikaUCijeniField)
 	{
-        sql_str += " ISNULL(ROUND(SUM((KS_IL_TOTAL*(1 - ks_il_ukupno/100) - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))), 2), 0)";
+        sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL*(1 - ks_ig_popust/100) - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))), 2), 0)";
 	}
     else
 	{
-        sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL), 2), 0)";
+        sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL*(1 - ks_ig_popust/100)), 2), 0)";
 	}
 	sql_str += " AS iznos FROM " + trenutnaGodinaBaza + ".dbo.NKKSINVG" ;
     sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkscpart g ON KS_IG_KUPAC = g.nksc_partcode";

@@ -951,79 +951,79 @@ function filterPart2()
 
 }
 
-function filterPartNeisporuceno()
+function filterPartNeisporucenoNarudzbe()
 {
     if (sklad_str != "")
 	{
-        sql_str += " AND lnnr.nkpr_ln_loc IN ("+sklad_str+")";
+        sql_str += " AND lnnr.nkpr_ln_loc IN (" + sklad_str + ")";
 	}
-    if ( razlikaUCijeniField   )
+    if (razlikaUCijeniField)
     {
-        sql_str += " AND glnr.nkpr_gl_invcd != ''" ;
+        sql_str += " AND glnr.nkpr_gl_invcd != ''";
         //da bi dobili ruc ,  treba ra?un biti a?uriran
     }
     if (artikl != "")
 	{
-        sql_str += " AND lnnr.nkpr_ln_pcode= '"+artikl+"'";
+        sql_str += " AND lnnr.nkpr_ln_pcode = '" + artikl + "'";
 	}
 
-    if (roba_dn )
+    if (roba_dn)
 	{
         sql_str += " AND lnnr.nkpr_ln_ma_us IN ( 'R','G','S')";
 	}
-    elif (usluge_dn )
+    elif (usluge_dn)
 	{
-        sql_str += " AND lnnr.nkpr_ln_ma_us= 'N'";
+        sql_str += " AND lnnr.nkpr_ln_ma_us = 'N'";
 	}
-    elif (povnak_dn )
+    elif (povnak_dn)
 	{
-        sql_str += " AND lnnr.nkpr_ln_ma_us= 'P'";
+        sql_str += " AND lnnr.nkpr_ln_ma_us = 'P'";
 	}
-    elif (avans_dn )
+    elif (avans_dn)
 	{
-        sql_str += " AND lnnr.nkpr_ln_ma_us= 'A'";
+        sql_str += " AND lnnr.nkpr_ln_ma_us = 'A'";
 	}
 
     if (kategorija != "")
 	{
-        sql_str += " AND arti.arti_kategorija = '"+kategorija+"'";
+        sql_str += " AND arti.arti_kategorija = '" + kategorija + "'";
 	}
     if (klasa != "")
 	{
-        sql_str += " AND arti.arti_klasa='"+klasa+"'";
+        sql_str += " AND arti.arti_klasa ='" + klasa + "'";
 	}
     if (regija != "")
 	{
-        sql_str += " AND part.nksc_regija= '"+regija+"'";
+        sql_str += " AND part.nksc_regija = '" + regija + "'";
 	}
     if (partner != "")
 	{
-        sql_str += " AND glnr.nkpr_gl_cuscod= '"+partner+"'";
+        sql_str += " AND glnr.nkpr_gl_cuscod = '" + partner + "'";
 	}
     if (isporuka != "")
 	{
-        sql_str += " AND glnr.nkpr_gl_shpcod= '"+isporuka+"'";
+        sql_str += " AND glnr.nkpr_gl_shpcod = '" + isporuka + "'";
 	}
     if (komercijalist != "")
 	{
-        sql_str += " AND glnr.nkpr_gl_slsp= "+komercijalist;
+        sql_str += " AND glnr.nkpr_gl_slsp = " + komercijalist;
 	}
     if (rnalog != "")
 	{
-        sql_str += " AND lnnr.nkpr_ln_rnalg= "+rnalog;
+        sql_str += " AND lnnr.nkpr_ln_rnalg = " + rnalog;
 	}
 
-    if (domaca_dn )
+    if (domaca_dn)
 	{
-        sql_str += " AND glnr.nkpr_gl_drzava= '"+kpsy_po_freight+"'";
+        sql_str += " AND glnr.nkpr_gl_drzava= '" + kpsy_po_freight + "'";
 	}
-    elif (eu_dn )
+    elif (eu_dn)
 	{
-        sql_str +=  " AND glnr.nkpr_gl_drzava IN ("+eucountries+")";
+        sql_str +=  " AND glnr.nkpr_gl_drzava IN (" + eucountries + ")";
 	}
-    elif (izvoz_dn )
+    elif (izvoz_dn)
 	{
-        sql_str += " AND glnr.nkpr_gl_drzava != '"+kpsy_po_freight+"' AND NOT glnr.nkpr_gl_drzava IN ("+eucountries+")";
+        sql_str += " AND glnr.nkpr_gl_drzava != '" + kpsy_po_freight + "' AND NOT glnr.nkpr_gl_drzava IN (" + eucountries + ")";
 	}
 
     if (faktDa)
@@ -1032,7 +1032,7 @@ function filterPartNeisporuceno()
 	}
     elif (faktNe)
 	{
-        sql_str +=  " AND glnr.nkpr_gl_num = 0 ";
+        sql_str += " AND glnr.nkpr_gl_num = 0 ";
 	}
     
     if (otprDa)
@@ -1041,7 +1041,7 @@ function filterPartNeisporuceno()
 	}
     elif (otprNe)
 	{
-        sql_str +=  " AND glnr.nkpr_gl_brotp = 0 ";
+        sql_str += " AND glnr.nkpr_gl_brotp = 0 ";
 	}
 
     if (gl_oznaka != "")
@@ -1051,7 +1051,7 @@ function filterPartNeisporuceno()
             sql_str += " AND glnr.nkpr_gl_oznaka = '" + gl_oznaka + "'";
             sql_str += " AND lnnr.nkpr_ln_pext < 0";
 		}
-        elif (gl_oznaka== "P")
+        elif (gl_oznaka == "P")
         {
             //ide i plus i minus
             sql_str += " AND lnnr.nkpr_ln_ma_us = 'A'"; //avans
@@ -1060,6 +1060,119 @@ function filterPartNeisporuceno()
 		{
             sql_str += " AND glnr.nkpr_gl_oznaka = '" + gl_oznaka + "'";
             sql_str += " AND lnnr.nkpr_ln_pext >= 0";
+		}
+	}
+}
+
+function filterPartNeisporucenoOtpremnice()
+{
+    if (sklad_str != "")
+	{
+        sql_str += " AND lnot.nkpr_ln_loc IN (" + sklad_str + ")";
+	}
+    if (razlikaUCijeniField)
+    {
+        sql_str += " AND glot.nkpr_gl_invcd != ''";
+        //da bi dobili ruc ,  treba ra?un biti a?uriran
+    }
+    if (artikl != "")
+	{
+        sql_str += " AND lnot.nkpr_ln_pcode = '" + artikl + "'";
+	}
+
+    if (roba_dn)
+	{
+        sql_str += " AND lnot.nkpr_ln_ma_us IN ( 'R','G','S')";
+	}
+    elif (usluge_dn)
+	{
+        sql_str += " AND lnot.nkpr_ln_ma_us = 'N'";
+	}
+    elif (povnak_dn)
+	{
+        sql_str += " AND lnot.nkpr_ln_ma_us = 'P'";
+	}
+    elif (avans_dn)
+	{
+        sql_str += " AND lnot.nkpr_ln_ma_us = 'A'";
+	}
+
+    if (kategorija != "")
+	{
+        sql_str += " AND arti.arti_kategorija = '" + kategorija + "'";
+	}
+    if (klasa != "")
+	{
+        sql_str += " AND arti.arti_klasa ='" + klasa + "'";
+	}
+    if (regija != "")
+	{
+        sql_str += " AND part.nksc_regija = '" + regija + "'";
+	}
+    if (partner != "")
+	{
+        sql_str += " AND glot.nkpr_gl_cuscod = '" + partner + "'";
+	}
+    if (isporuka != "")
+	{
+        sql_str += " AND glot.nkpr_gl_shpcod = '" + isporuka + "'";
+	}
+    if (komercijalist != "")
+	{
+        sql_str += " AND glot.nkpr_gl_slsp = " + komercijalist;
+	}
+    if (rnalog != "")
+	{
+        sql_str += " AND lnot.nkpr_ln_rnalg = " + rnalog;
+	}
+
+    if (domaca_dn)
+	{
+        sql_str += " AND glot.nkpr_gl_drzava= '" + kpsy_po_freight + "'";
+	}
+    elif (eu_dn)
+	{
+        sql_str +=  " AND glot.nkpr_gl_drzava IN (" + eucountries + ")";
+	}
+    elif (izvoz_dn)
+	{
+        sql_str += " AND glot.nkpr_gl_drzava != '" + kpsy_po_freight + "' AND NOT glot.nkpr_gl_drzava IN (" + eucountries + ")";
+	}
+
+    if (faktDa)
+	{
+        sql_str += " AND glot.nkpr_gl_num != 0 ";
+	}
+    elif (faktNe)
+	{
+        sql_str += " AND glot.nkpr_gl_num = 0 ";
+	}
+    
+    if (otprDa)
+	{
+        sql_str += " AND glot.nkpr_gl_brotp != 0 ";
+	}
+    elif (otprNe)
+	{
+        sql_str += " AND glot.nkpr_gl_brotp = 0 ";
+	}
+
+    if (gl_oznaka != "")
+	{
+	    if (GL_oznaka == "X" || GL_oznaka == "O" || GL_oznaka == "R" )  //ako je to storno, odobrenje ili reklamacija neka okrene
+		{
+            sql_str += " AND glot.nkpr_gl_oznaka = '" + gl_oznaka + "'";
+            sql_str += " AND lnot.nkpr_ln_pext < 0";
+		}
+        elif (gl_oznaka == "P")
+        {
+            //ide i plus i minus
+            sql_str += " AND lnot.nkpr_ln_ma_us = 'A'"; //avans
+        }
+        else
+		{
+            sql_str += " AND glot.nkpr_gl_oznaka = '" + gl_oznaka + "'";
+            sql_str += " AND lnot.nkpr_ln_pext >= 0";
 		}
 	}
 }

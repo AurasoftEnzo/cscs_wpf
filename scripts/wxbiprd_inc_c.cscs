@@ -18,7 +18,8 @@ function wxbiprdc_onStart()
     // cntr3= 0;
 	// DisplayArraySetup("dgRacuniMjesec", counterFld: cntr3, activeElements: Size(sqlResult) - 1, maxElements: 10);
 
-    AsyncCall("setChartByMonthNotSent", "setChartByMonthNotSentDone");
+    setChartByDaysOfMonthNotSentDone();
+    //AsyncCall("setChartByMonthNotSent", "setChartByMonthNotSentDone");
 }
 
 function setChartByMonthNotSentDone(){
@@ -178,7 +179,7 @@ function setChartByDaysOfMonthNotSent(){
     if (neto_dn)
     {
         sql_str += " ROUND(ROUND(ISNULL(SUM(CASE WHEN glot.nkpr_gl_dviza = 'D' THEN glot.nkpr_gl_tecaj * lnot.nkpr_ln_amt ELSE lnot.nkpr_ln_amt END), 0), 2)";
-        sql_str += "- ROUND(ISNULL(SUM(CASE WHEN glnr.nkpr_gl_dviza = 'D' THEN glnr.nkpr_gl_tecaj * lnnr.nkpr_ln_amt ELSE lnnr.nkpr_ln_amt END), 0), 2), 2) as diff";
+        sql_str += " - ROUND(ISNULL(SUM(CASE WHEN glnr.nkpr_gl_dviza = 'D' THEN glnr.nkpr_gl_tecaj * lnnr.nkpr_ln_amt ELSE lnnr.nkpr_ln_amt END), 0), 2), 2) as diff";
     }
     elif (razlikaUCijeniField)
     {
@@ -228,7 +229,15 @@ function setChartByDaysOfMonthNotSent(){
 
     sql_str += " WHERE 1 = 1";
     sql_str += " AND YEAR(glnr.nkpr_gl_orddte) = " + ovagod_h;
-    
+    if (do_mjeseca)
+	{
+		sql_str +=" AND MONTH(glnr.nkpr_gl_orddte) <=  " + mjesec_h;
+	}
+	else 
+	{
+		sql_str += " AND MONTH(glnr.nkpr_gl_orddte) =  " + mjesec_h;
+	}
+
     //filterPart();
     filterPartNeisporuceno();
     
@@ -285,7 +294,7 @@ function setChartByMonthNotSent()
         if (neto_dn)
         {
             sql_str += " ROUND(ROUND(ISNULL(SUM(CASE WHEN glot.nkpr_gl_dviza = 'D' THEN glot.nkpr_gl_tecaj * lnot.nkpr_ln_amt ELSE lnot.nkpr_ln_amt END), 0), 2)";
-            sql_str += "- ROUND(ISNULL(SUM(CASE WHEN glnr.nkpr_gl_dviza = 'D' THEN glnr.nkpr_gl_tecaj * lnnr.nkpr_ln_amt ELSE lnnr.nkpr_ln_amt END), 0), 2), 2) as diff";
+            sql_str += " - ROUND(ISNULL(SUM(CASE WHEN glnr.nkpr_gl_dviza = 'D' THEN glnr.nkpr_gl_tecaj * lnnr.nkpr_ln_amt ELSE lnnr.nkpr_ln_amt END), 0), 2), 2) as diff";
         }
         elif (razlikaUCijeniField)
         {
@@ -365,7 +374,7 @@ function setChartByMonthNotSent()
     if (neto_dn)
     {
         sql_str += " ROUND(ROUND(ISNULL(SUM(CASE WHEN glot.nkpr_gl_dviza = 'D' THEN glot.nkpr_gl_tecaj * lnot.nkpr_ln_amt ELSE lnot.nkpr_ln_amt END), 0), 2)";
-        sql_str += "- ROUND(ISNULL(SUM(CASE WHEN glnr.nkpr_gl_dviza = 'D' THEN glnr.nkpr_gl_tecaj * lnnr.nkpr_ln_amt ELSE lnnr.nkpr_ln_amt END), 0), 2), 2) as diff";
+        sql_str += " - ROUND(ISNULL(SUM(CASE WHEN glnr.nkpr_gl_dviza = 'D' THEN glnr.nkpr_gl_tecaj * lnnr.nkpr_ln_amt ELSE lnnr.nkpr_ln_amt END), 0), 2), 2) as diff";
     }
     elif (razlikaUCijeniField)
     {
@@ -485,79 +494,103 @@ function setChartByMonthNotSentSetupChart(){
 
 function setNotSentProductsDataGrid()
 {
-    sql_str = "WITH ukupno AS (";
-    sql_str += " SELECT b.nkpr_ln_pcode as artikl, ";
+    sql_str = "WITH rezultati AS(";
+    sql_str += " SELECT nkpr_ln_pcode, arti_naziv,";
+    
     if (neto_dn )
 	{
-        sql_str += " ROUND(sum(CASE WHEN a.nkpr_gl_dviza= 'D' THEN a.nkpr_gl_tecaj * b.nkpr_ln_amt ELSE b.nkpr_ln_amt END), 0) as kol_nar, kol_otp = ROUND(isnull((SELECT sum(CASE WHEN c.nkpr_gl_dviza= 'D' THEN c.nkpr_gl_tecaj * d.nkpr_ln_amt ELSE d.nkpr_ln_amt END) as kol_otp";
+        sql_str += " ROUND(ISNULL(SUM(CASE WHEN glnr.nkpr_gl_dviza = 'D' THEN glnr.nkpr_gl_tecaj * lnnr.nkpr_ln_amt ELSE lnnr.nkpr_ln_amt END), 0), 2) as kolNaruceno,";
+        sql_str += " ISNULL((";
+        sql_str += " SELECT ROUND(ISNULL(SUM(CASE WHEN glot.nkpr_gl_dviza = 'D' THEN glot.nkpr_gl_tecaj * lnot.nkpr_ln_amt ELSE lnot.nkpr_ln_amt END), 0), 2)";
 	}
     elif (razlikaUCijeniField)
 	{
-        sql_str += " ROUND(sum(CASE WHEN a.nkpr_gl_dviza= 'D' THEN a.nkpr_gl_tecaj * (b.nkpr_ln_amt - b.nkpr_ln_cenan * b.nkpr_ln_qtyz) ELSE b.nkpr_ln_amt - b.nkpr_ln_cenan * b.nkpr_ln_qtyz END), 0) as kol_nar, kol_otp= ROUND(isnull((SELECT sum(CASE WHEN c.nkpr_gl_dviza= 'D' THEN c.nkpr_gl_tecaj * (d.nkpr_ln_amt - d.nkpr_ln_cenan * d.nkpr_ln_qtyz) ELSE d.nkpr_ln_amt - d.nkpr_ln_cenan * d.nkpr_ln_qtyz END) as kol_otp";
+        sql_str += " ROUND(ISNULL(SUM(CASE WHEN glnr.nkpr_gl_dviza = 'D' THEN glnr.nkpr_gl_tecaj * (lnnr.nkpr_ln_amt - lnnr.nkpr_ln_cenan * lnnr.nkpr_ln_qtyz) ELSE lnnr.nkpr_ln_amt - lnnr.nkpr_ln_cenan * lnnr.nkpr_ln_qtyz END), 0), 2) as kolNaruceno,";
+        sql_str += " ISNULL((";
+        sql_str += " SELECT ROUND(ISNULL(SUM(CASE WHEN glot.nkpr_gl_dviza = 'D' THEN glot.nkpr_gl_tecaj * (lnot.nkpr_ln_amt - lnot.nkpr_ln_cenan * lnot.nkpr_ln_qtyz) ELSE lnot.nkpr_ln_amt - lnot.nkpr_ln_cenan * lnot.nkpr_ln_qtyz END), 0), 2)";
 	}
     elif (tezina_dn )
 	{
-        sql_str += " ROUND(sum(b.nkpr_ln_tezinan), 0) as kol_nar, kol_otp = ROUND(isnull((SELECT sum(d.nkpr_ln_tezinan) as kol_otp";
+        sql_str += " ROUND(ISNULL(SUM(lnnr.nkpr_ln_tezinan), 0), 2) as kolNaruceno,";
+        sql_str += " ISNULL((";
+        sql_str += " SELECT ROUND(ISNULL(SUM(lnot.nkpr_ln_tezinan), 0), 2)";
 	}	
     elif (mx3_dn )
 	{
-        sql_str += " ROUND(sum(b.nkpr_ln_metx3), 0) as kol_nar, kol_otp = ROUND(isnull((SELECT sum(d.nkpr_ln_metx3) as kol_otp";
+        sql_str += " ROUND(ISNULL(SUM(lnnr.nkpr_ln_metx3), 0), 2) as kolNaruceno,";
+        sql_str += " ISNULL((";
+        sql_str += " SELECT ROUND(ISNULL(SUM(lnot.nkpr_ln_metx3), 0), 2)";
 	}	
     elif (mx2_dn )
 	{
-        sql_str += " ROUND(sum(b.nkpr_ln_metx2), 0) as kol_nar, kol_otp = ROUND(isnull((SELECT sum(d.nkpr_ln_metx2) as kol_otp";
+        sql_str += " ROUND(ISNULL(SUM(lnnr.nkpr_ln_metx2), 0), 2) as kolNaruceno,";
+        sql_str += " ISNULL((";
+        sql_str += " SELECT ROUND(ISNULL(SUM(lnot.nkpr_ln_metx2), 0), 2)";
 	}	
     elif (met_dn )
 	{
-        sql_str += " ROUND(sum(b.nkpr_ln_met), 0) as kol_nar, kol_otp = ROUND(isnull((SELECT sum(d.nkpr_ln_met) as kol_otp";
+        sql_str += " ROUND(ISNULL(SUM(lnnr.nkpr_ln_met), 0), 2) as kolNaruceno,";
+        sql_str += " ISNULL((";
+        sql_str += " SELECT ROUND(ISNULL(SUM(lnot.nkpr_ln_met), 0), 2)";
 	}	
     elif (kom_dn )
 	{
-        sql_str += " ROUND(sum(b.nkpr_ln_kom), 0) as kol_nar, kol_otp = ROUND(isnull((SELECT sum(d.nkpr_ln_kom) as kol_otp";
+        // SUM(CASE WHEN lnot.nkpr_ln_jedmj = 'KOM' THEN lnot.nkpr_ln_pqty ELSE lnot.nkpr_ln_kom END)
+        
+        // sql_str += " ROUND(ISNULL(SUM(lnnr.nkpr_ln_kom), 0), 2) as kolNaruceno,";
+        // sql_str += " ISNULL((";
+        // sql_str += " SELECT ROUND(ISNULL(SUM(lnot.nkpr_ln_kom), 0), 2)";
+        
+        sql_str += " ROUND(ISNULL(SUM(CASE WHEN lnnr.nkpr_ln_jedmj = 'KOM' THEN lnnr.nkpr_ln_pqty ELSE lnnr.nkpr_ln_kom END), 0), 2) as kolNaruceno,";
+        sql_str += " ISNULL((";
+        sql_str += " SELECT ROUND(ISNULL(SUM(CASE WHEN lnot.nkpr_ln_jedmj = 'KOM' THEN lnot.nkpr_ln_pqty ELSE lnot.nkpr_ln_kom END), 0), 2)";
 	}	
     else
 	{
-        sql_str += " ROUND(sum(CASE WHEN a.nkpr_gl_dviza= 'D' THEN a.nkpr_gl_tecaj * b.nkpr_ln_pext ELSE b.nkpr_ln_pext END), 0) as kol_nar, kol_otp = ROUND(isnull((SELECT sum(CASE WHEN c.nkpr_gl_dviza= 'D' THEN c.nkpr_gl_tecaj * d.nkpr_ln_pext ELSE d.nkpr_ln_pext END) as kol_otp";
+        sql_str += " ROUND(ISNULL(SUM(CASE WHEN glnr.nkpr_gl_dviza = 'D' THEN glnr.nkpr_gl_tecaj * lnnr.nkpr_ln_pext ELSE lnnr.nkpr_ln_pext END), 0), 2) as kolNaruceno,";
+        sql_str += " ISNULL((";
+        sql_str += " SELECT ROUND(ISNULL(SUM(CASE WHEN glot.nkpr_gl_dviza = 'D' THEN glot.nkpr_gl_tecaj * lnot.nkpr_ln_pext ELSE lnot.nkpr_ln_pext END), 0), 2)";
 	}
-    sql_str += " FROM "+trenutnaGodinaBaza+".dbo.nkprglot c ";
-    sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkprlnot d ON c.nkpr_gl_brotp = d.nkpr_ln_invnm";
-    sql_str += " WHERE d.nkpr_ln_pcode = b.nkpr_ln_pcode AND d.nkpr_ln_ma_us IN('R','G','S')";
-    sql_str += " ),0), 0)";
+
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkprglot glot ";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprlnot lnot ON glot.nkpr_gl_brotp = lnot.nkpr_ln_invnm";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkmkarti arti ON lnot.nkpr_ln_pcode = arti.arti_artikl";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart part ON glot.nkpr_gl_cuscod = part.nksc_partcode";
+
+    sql_str += " WHERE 1 = 1";
+    sql_str += " AND lnot.nkpr_ln_ma_us IN ('R','G','S')";
+    sql_str += " AND lnot.nkpr_ln_amt > 0";
+    equalSign = (do_mjeseca ? "<=" : "=");
+    sql_str += " AND glot.nkpr_gl_sonum IN (SELECT DISTINCT x.nkpr_gl_sonum FROM " + trenutnaGodinaBaza + ".dbo.nkprglnr x WHERE MONTH(x.nkpr_gl_orddte) " + equalSign + " " + mjesec_h + " AND YEAR(x.nkpr_gl_orddte) = " + ovagod_h + ")";
+    sql_str += " AND lnot.nkpr_ln_pcode = lnnr.nkpr_ln_pcode";
+    sql_str += " AND lnot.nkpr_ln_pcode IN (SELECT DISTINCT y.nkpr_ln_pcode FROM " + trenutnaGodinaBaza + ".dbo.nkprlnnr y WHERE y.nkpr_ln_invnm = glot.nkpr_gl_sonum)";
     
-    sql_str += " FROM "+trenutnaGodinaBaza+".dbo.nkprglnr a";
-    sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkprlnnr b ON a.nkpr_gl_sonum= b.nkpr_ln_invnm";
-    if (regija!= "")
-	{
-        sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkscpart g ON a.nkpr_gl_cuscod = g.nksc_partcode";
-    }
-    sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkmkarti ON b.nkpr_ln_pcode = arti_artikl";
+    filterPartNeisporucenoOtpremnice();
 
-    sql_str += " WHERE b.nkpr_ln_ma_us IN('R','G','S') AND b.nkpr_ln_amt > 0";
-    
-    if (mjesec_h!= "")
-	{
-        if (do_mjeseca )
-		{
-            sql_str += " AND month(nkpr_gl_orddte)<= "+mjesec_h;
-            sql_str += " AND YEAR(nkpr_gl_orddte)= "+ovagod_h;
-		}	
-        else
-		{
-            sql_str += " AND month(nkpr_gl_orddte)= "+mjesec_h;
-            sql_str += " AND YEAR(nkpr_gl_orddte)= "+ovagod_h;
-        }
-    }
+    sql_str += " GROUP BY lnot.nkpr_ln_pcode";
+    sql_str += " ), 0) as kolOtpremljeno";
 
-    filterPart();
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkprglnr glnr ";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprlnnr lnnr ON glnr.nkpr_gl_sonum = lnnr.nkpr_ln_invnm";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkmkarti arti ON lnnr.nkpr_ln_pcode = arti.arti_artikl";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart part ON glnr.nkpr_gl_cuscod = part.nksc_partcode";
 
-    sql_str += " GROUP BY b.nkpr_ln_pcode";
+    sql_str += " WHERE 1 = 1";
+    sql_str += " AND lnnr.nkpr_ln_ma_us IN ('R','G','S')";
+    sql_str += " AND lnnr.nkpr_ln_amt > 0";
+    sql_str += " AND YEAR(glnr.nkpr_gl_orddte) = " + ovagod_h;
+    equalSign = (do_mjeseca ? "<=" : "=");
+    sql_str += " AND MONTH(glnr.nkpr_gl_orddte) " + equalSign + " " + mjesec_h;
+
+    filterPartNeisporucenoNarudzbe();
+
+    sql_str += " GROUP BY nkpr_ln_pcode, arti_naziv";
     sql_str += " )";
-    
-    sql_str += "SELECT TOP 10 artikl, arti_naziv, kol_nar, kol_otp, kol_otp - kol_nar as diff"
-    + " FROM ukupno"
-    + " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkmkarti ON artikl = arti_artikl"
-    + " WHERE kol_nar <> kol_otp"
-    + " ORDER BY ABS(kol_nar - kol_otp) DESC";
+
+    sql_str += " SELECT TOP 10 *, Round(kolOtpremljeno - kolNaruceno, 2) as diff";
+    sql_str += " FROM rezultati";
+    sql_str += " WHERE Round(kolOtpremljeno - kolNaruceno, 2) <> 0";
+    sql_str += " ORDER BY ABS(Round(kolOtpremljeno - kolNaruceno, 2)) desc";
     
     try	{
 		sqlResult = sqlQuery(sql_str);
@@ -610,93 +643,115 @@ function NotSentProductsDataGrid(){
 	DisplayArraySetup("dgTop10NotSentProducts", counterFld: "cntr5", activeElements: Size(sqlResult) - 1, maxElements: 10);
 }
 
-
 //--------------------------------------------------------
-
 
 function setNotSentCustomersDataGrid()
 {
-    sql_str = "WITH ukupno AS (";
-    sql_str += " SELECT a.nkpr_gl_cuscod as partner, ";
+    sql_str = "WITH rezultati AS(";
+    sql_str += " SELECT nkpr_gl_cuscod, nksc_partname, ";
+    
     if (neto_dn )
 	{
-        sql_str += " ROUND(sum(CASE WHEN a.nkpr_gl_dviza= 'D' THEN a.nkpr_gl_tecaj * b.nkpr_ln_amt ELSE b.nkpr_ln_amt END), 0) as kol_nar, kol_otp = ROUND(isnull((SELECT sum(CASE WHEN c.nkpr_gl_dviza= 'D' THEN c.nkpr_gl_tecaj * d.nkpr_ln_amt ELSE d.nkpr_ln_amt END) as kol_otp";
+        sql_str += " ROUND(ISNULL(SUM(CASE WHEN glnr.nkpr_gl_dviza = 'D' THEN glnr.nkpr_gl_tecaj * lnnr.nkpr_ln_amt ELSE lnnr.nkpr_ln_amt END), 0), 2) as kolNaruceno,";
+        sql_str += " ISNULL((";
+        sql_str += " SELECT ROUND(ISNULL(SUM(CASE WHEN glot.nkpr_gl_dviza = 'D' THEN glot.nkpr_gl_tecaj * lnot.nkpr_ln_amt ELSE lnot.nkpr_ln_amt END), 0), 2)";
 	}
     elif (razlikaUCijeniField)
 	{
-        sql_str += " ROUND(sum(CASE WHEN a.nkpr_gl_dviza= 'D' THEN a.nkpr_gl_tecaj * (b.nkpr_ln_amt - b.nkpr_ln_cenan * b.nkpr_ln_qtyz) ELSE b.nkpr_ln_amt - b.nkpr_ln_cenan * b.nkpr_ln_qtyz END), 0) as kol_nar, kol_otp= ROUND(isnull((SELECT sum(CASE WHEN c.nkpr_gl_dviza= 'D' THEN c.nkpr_gl_tecaj * (d.nkpr_ln_amt - d.nkpr_ln_cenan * d.nkpr_ln_qtyz) ELSE d.nkpr_ln_amt - d.nkpr_ln_cenan * d.nkpr_ln_qtyz END) as kol_otp";
+        sql_str += " ROUND(ISNULL(SUM(CASE WHEN glnr.nkpr_gl_dviza = 'D' THEN glnr.nkpr_gl_tecaj * (lnnr.nkpr_ln_amt - lnnr.nkpr_ln_cenan * lnnr.nkpr_ln_qtyz) ELSE lnnr.nkpr_ln_amt - lnnr.nkpr_ln_cenan * lnnr.nkpr_ln_qtyz END), 0), 2) as kolNaruceno,";
+        sql_str += " ISNULL((";
+        sql_str += " SELECT ROUND(ISNULL(SUM(CASE WHEN glot.nkpr_gl_dviza = 'D' THEN glot.nkpr_gl_tecaj * (lnot.nkpr_ln_amt - lnot.nkpr_ln_cenan * lnot.nkpr_ln_qtyz) ELSE lnot.nkpr_ln_amt - lnot.nkpr_ln_cenan * lnot.nkpr_ln_qtyz END), 0), 2)";
 	}
     elif (tezina_dn )
 	{
-        sql_str += " ROUND(sum(b.nkpr_ln_tezinan), 0) as kol_nar, kol_otp = ROUND(isnull((SELECT sum(d.nkpr_ln_tezinan) as kol_otp";
+        sql_str += " ROUND(ISNULL(SUM(lnnr.nkpr_ln_tezinan), 0), 2) as kolNaruceno,";
+        sql_str += " ISNULL((";
+        sql_str += " SELECT ROUND(ISNULL(SUM(lnot.nkpr_ln_tezinan), 0), 2)";
 	}	
     elif (mx3_dn )
 	{
-        sql_str += " ROUND(sum(b.nkpr_ln_metx3), 0) as kol_nar, kol_otp = ROUND(isnull((SELECT sum(d.nkpr_ln_metx3) as kol_otp";
+        sql_str += " ROUND(ISNULL(SUM(lnnr.nkpr_ln_metx3), 0), 2) as kolNaruceno,";
+        sql_str += " ISNULL((";
+        sql_str += " SELECT ROUND(ISNULL(SUM(lnot.nkpr_ln_metx3), 0), 2)";
 	}	
     elif (mx2_dn )
 	{
-        sql_str += " ROUND(sum(b.nkpr_ln_metx2), 0) as kol_nar, kol_otp = ROUND(isnull((SELECT sum(d.nkpr_ln_metx2) as kol_otp";
+        sql_str += " ROUND(ISNULL(SUM(lnnr.nkpr_ln_metx2), 0), 2) as kolNaruceno,";
+        sql_str += " ISNULL((";
+        sql_str += " SELECT ROUND(ISNULL(SUM(lnot.nkpr_ln_metx2), 0), 2)";
 	}	
     elif (met_dn )
 	{
-        sql_str += " ROUND(sum(b.nkpr_ln_met), 0) as kol_nar, kol_otp = ROUND(isnull((SELECT sum(d.nkpr_ln_met) as kol_otp";
+        sql_str += " ROUND(ISNULL(SUM(lnnr.nkpr_ln_met), 0), 2) as kolNaruceno,";
+        sql_str += " ISNULL((";
+        sql_str += " SELECT ROUND(ISNULL(SUM(lnot.nkpr_ln_met), 0), 2)";
 	}	
     elif (kom_dn )
 	{
-        sql_str += " ROUND(sum(b.nkpr_ln_kom), 0) as kol_nar, kol_otp = ROUND(isnull((SELECT sum(d.nkpr_ln_kom) as kol_otp";
+        // SUM(CASE WHEN lnot.nkpr_ln_jedmj = 'KOM' THEN lnot.nkpr_ln_pqty ELSE lnot.nkpr_ln_kom END)
+        
+        // sql_str += " ROUND(ISNULL(SUM(lnnr.nkpr_ln_kom), 0), 2) as kolNaruceno,";
+        // sql_str += " ISNULL((";
+        // sql_str += " SELECT ROUND(ISNULL(SUM(lnot.nkpr_ln_kom), 0), 2)";
+        
+        sql_str += " ROUND(ISNULL(SUM(CASE WHEN lnnr.nkpr_ln_jedmj = 'KOM' THEN lnnr.nkpr_ln_pqty ELSE lnnr.nkpr_ln_kom END), 0), 2) as kolNaruceno,";
+        sql_str += " ISNULL((";
+        sql_str += " SELECT ROUND(ISNULL(SUM(CASE WHEN lnot.nkpr_ln_jedmj = 'KOM' THEN lnot.nkpr_ln_pqty ELSE lnot.nkpr_ln_kom END), 0), 2)";
 	}	
     else
 	{
-        sql_str += " ROUND(sum(CASE WHEN a.nkpr_gl_dviza= 'D' THEN a.nkpr_gl_tecaj * b.nkpr_ln_pext ELSE b.nkpr_ln_pext END), 0) as kol_nar, kol_otp = ROUND(isnull((SELECT sum(CASE WHEN c.nkpr_gl_dviza= 'D' THEN c.nkpr_gl_tecaj * d.nkpr_ln_pext ELSE d.nkpr_ln_pext END) as kol_otp";
+        sql_str += " ROUND(ISNULL(SUM(CASE WHEN glnr.nkpr_gl_dviza = 'D' THEN glnr.nkpr_gl_tecaj * lnnr.nkpr_ln_pext ELSE lnnr.nkpr_ln_pext END), 0), 2) as kolNaruceno,";
+        sql_str += " ISNULL((";
+        sql_str += " SELECT ROUND(ISNULL(SUM(CASE WHEN glot.nkpr_gl_dviza = 'D' THEN glot.nkpr_gl_tecaj * lnot.nkpr_ln_pext ELSE lnot.nkpr_ln_pext END), 0), 2)";
 	}
-    sql_str += " FROM "+trenutnaGodinaBaza+".dbo.nkprglot c ";
-    sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkprlnot d ON c.nkpr_gl_brotp = d.nkpr_ln_invnm";
-    sql_str += " WHERE c.nkpr_gl_cuscod = a.nkpr_gl_cuscod AND d.nkpr_ln_ma_us IN('R','G','S')";
-    sql_str += " ),0), 0)";
+
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkprglot glot ";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprlnot lnot ON glot.nkpr_gl_brotp = lnot.nkpr_ln_invnm";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkmkarti arti ON lnot.nkpr_ln_pcode = arti.arti_artikl";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart part ON glot.nkpr_gl_cuscod = part.nksc_partcode";
+
+    sql_str += " WHERE 1 = 1";
+    sql_str += " AND lnot.nkpr_ln_ma_us IN ('R','G','S')";
+    sql_str += " AND lnot.nkpr_ln_amt > 0";
+    equalSign = (do_mjeseca ? "<=" : "=");
+    sql_str += " AND glot.nkpr_gl_sonum IN (SELECT DISTINCT x.nkpr_gl_sonum FROM " + trenutnaGodinaBaza + ".dbo.nkprglnr x WHERE MONTH(x.nkpr_gl_orddte) " + equalSign + " " + mjesec_h + " AND YEAR(x.nkpr_gl_orddte) = " + ovagod_h + ")";
+    sql_str += " AND glot.nkpr_gl_cuscod = glnr.nkpr_gl_cuscod";
+    sql_str += " AND lnot.nkpr_ln_pcode IN (SELECT DISTINCT y.nkpr_ln_pcode FROM " + trenutnaGodinaBaza + ".dbo.nkprlnnr y WHERE y.nkpr_ln_invnm = glot.nkpr_gl_sonum)";
     
-    sql_str += " FROM "+trenutnaGodinaBaza+".dbo.nkprglnr a";
-    sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkprlnnr b ON a.nkpr_gl_sonum = b.nkpr_ln_invnm";
-    if (regija!= "")
-	{
-        sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkscpart g ON a.nkpr_gl_cuscod = g.nksc_partcode";
-    }
-    sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkmkarti ON b.nkpr_ln_pcode = arti_artikl";
+    filterPartNeisporucenoOtpremnice();
 
-    sql_str += " WHERE b.nkpr_ln_ma_us IN('R','G','S') AND b.nkpr_ln_amt > 0";
-    
-    if (mjesec_h!= "")
-	{
-        if (do_mjeseca )
-		{
-            sql_str += " AND month(nkpr_gl_orddte)<= "+mjesec_h;
-            sql_str += " AND YEAR(nkpr_gl_orddte)= "+ovagod_h;
-		}	
-        else
-		{
-            sql_str += " AND month(nkpr_gl_orddte)= "+mjesec_h;
-            sql_str += " AND YEAR(nkpr_gl_orddte)= "+ovagod_h;
-        }
-    }
+    sql_str += " GROUP BY glot.nkpr_gl_cuscod";
+    sql_str += " ), 0) as kolOtpremljeno";
 
-    filterPart();
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkprglnr glnr ";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprlnnr lnnr ON glnr.nkpr_gl_sonum = lnnr.nkpr_ln_invnm";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkmkarti arti ON lnnr.nkpr_ln_pcode = arti.arti_artikl";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart part ON glnr.nkpr_gl_cuscod = part.nksc_partcode";
 
-    sql_str += " GROUP BY a.nkpr_gl_cuscod";
+    sql_str += " WHERE 1 = 1";
+    sql_str += " AND lnnr.nkpr_ln_ma_us IN ('R','G','S')";
+    sql_str += " AND lnnr.nkpr_ln_amt > 0";
+    sql_str += " AND YEAR(glnr.nkpr_gl_orddte) = " + ovagod_h;
+    equalSign = (do_mjeseca ? "<=" : "=");
+    sql_str += " AND MONTH(glnr.nkpr_gl_orddte) " + equalSign + " " + mjesec_h;
+
+    filterPartNeisporucenoNarudzbe();
+
+    sql_str += " GROUP BY nkpr_gl_cuscod, nksc_partname";
     sql_str += " )";
-    
-    sql_str += "SELECT TOP 10 partner, nksc_partname, kol_nar, kol_otp, kol_otp - kol_nar as diff"
-    + " FROM ukupno"
-    + " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkscpart ON partner = nksc_partcode"
-    + " WHERE kol_nar <> kol_otp"
-    + " ORDER BY ABS(kol_nar - kol_otp) DESC";
-    
+
+    sql_str += " SELECT TOP 10 *, Round(kolOtpremljeno - kolNaruceno, 2) as diff";
+    sql_str += " FROM rezultati";
+    sql_str += " WHERE Round(kolOtpremljeno - kolNaruceno, 2) <> 0";
+    sql_str += " ORDER BY ABS(Round(kolOtpremljeno - kolNaruceno, 2)) desc";
+
     try	{
 		sqlResult = sqlQuery(sql_str);
 	}catch(exc){
 		MessageBox(exc);
 	}
 
-	//SaveFile(sql_str);
+	// SaveFile(sql_str);
 	RunOnMain("fillNotSentCustomersArrays");
 
 	RunOnMain("NotSentCustomersDataGrid");

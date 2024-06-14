@@ -275,7 +275,7 @@ function setChartByDaysOfMonthNotSent(){
 
     sql_str += " rezultati3 AS(";
     sql_str += " SELECT Wk_Day, ISNULL(sumKolOtpremljeno - sumKolNaruceno, 0) as diff";
-    sql_str += " FROM (SELECT DISTINCT Wk_Day FROM D__DATAX__B.dbo.Kalendar) x";
+    sql_str += " FROM (SELECT DISTINCT Wk_Day FROM " + CommonDBGet() + ".dbo.Kalendar) x";
     sql_str += " LEFT JOIN rezultati2 ON Wk_Day = dan";
     sql_str += " )";
     
@@ -424,7 +424,7 @@ function setChartByMonthNotSent()
 
         sql_str += " rezultati3 AS(";
         sql_str += " SELECT Wk_Month, ISNULL(sumKolOtpremljeno - sumKolNaruceno, 0) as diff";
-        sql_str += " FROM (SELECT DISTINCT Wk_Month FROM D__DATAX__B.dbo.Kalendar) x";
+        sql_str += " FROM (SELECT DISTINCT Wk_Month FROM " + CommonDBGet() + ".dbo.Kalendar) x";
         sql_str += " LEFT JOIN rezultati2 ON Wk_Month = mjesec";
         sql_str += " )";
         
@@ -546,7 +546,7 @@ function setChartByMonthNotSent()
 
     sql_str += " rezultati3 AS(";
     sql_str += " SELECT Wk_Month, ISNULL(sumKolOtpremljeno - sumKolNaruceno, 0) as diff";
-    sql_str += " FROM (SELECT DISTINCT Wk_Month FROM D__DATAX__B.dbo.Kalendar) x";
+    sql_str += " FROM (SELECT DISTINCT Wk_Month FROM " + CommonDBGet() + ".dbo.Kalendar) x";
     sql_str += " LEFT JOIN rezultati2 ON Wk_Month = mjesec";
     sql_str += " )";
     

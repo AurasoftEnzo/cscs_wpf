@@ -103,7 +103,7 @@ function setChartByDaysOfMonth()
     }
     elif (razlikaUCijeniField)
     {
-        sql_str += "SELECT DAY(ks_ig_datum) as dan2 , SalesDay = ISNULL(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0)";
+        sql_str += "SELECT DAY(ks_ig_datum) as dan2 , SalesDay = ISNULL(SUM((KS_IL_TOTAL * (1- ks_il_ukupno/100) - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0)";
     }
     else
     {
@@ -171,7 +171,7 @@ function setChartByMonth()
         }
         elif (razlikaUCijeniField)
         {
-            sql_str += " Sales = round(ISNULL(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0), 2)";
+            sql_str += " Sales = round(ISNULL(SUM((KS_IL_TOTAL * (1 - ks_il_ukupno/100) - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0), 2)";
         }
         else
         {
@@ -250,7 +250,7 @@ function setChartByMonth()
     }
     elif (razlikaUCijeniField)
     {
-        sql_str += " Sales = round(ISNULL(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0), 2)";
+        sql_str += " Sales = round(ISNULL(SUM((KS_IL_TOTAL*(1 - ks_il_ukupno/100) - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0), 2)";
     }
     else
     {
@@ -329,7 +329,7 @@ function setLast10InvoicesDataGrid()
 	}
     elif (razlikaUCijeniField)
 	{
-        sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))), 2), 0)";
+        sql_str += " ISNULL(ROUND(SUM((KS_IL_TOTAL*(1 - ks_il_ukupno/100) - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))), 2), 0)";
 	}
     else
 	{
@@ -385,7 +385,7 @@ function setTop10InvoicesDataGrid()
 	}
     elif (razlikaUCijeniField)
 	{
-        sql_str += " ISNULL(ROUND(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))), 2), 0)";
+        sql_str += " ISNULL(ROUND(SUM((KS_IL_TOTAL*(1 - ks_il_ukupno/100) - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))), 2), 0)";
 	}
     else
 	{

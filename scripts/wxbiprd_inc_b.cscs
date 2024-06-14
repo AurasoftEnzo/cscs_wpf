@@ -379,8 +379,8 @@ function setKategPieChart()
 	}	
 	elif (kom_dn  )
 	{
-		sql_str += " sum(nkpr_ln_kom) AS Suma,";
-		sql_str += " ROW_NUMBER() OVER( ORDER BY sum(nkpr_ln_kom) DESC ) As Num";
+		sql_str += " sum(CASE WHEN nkpr_ln_jedmj = 'KOM' THEN nkpr_ln_pqty ELSE nkpr_ln_kom END) AS Suma,";
+		sql_str += " ROW_NUMBER() OVER( ORDER BY sum(CASE WHEN nkpr_ln_jedmj = 'KOM' THEN nkpr_ln_pqty ELSE nkpr_ln_kom END) DESC ) As Num";
 	}	
 	else
 	{

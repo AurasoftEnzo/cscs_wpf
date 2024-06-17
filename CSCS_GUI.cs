@@ -103,6 +103,8 @@ namespace SplitAndMerge
 			interpreter.RegisterFunction("DisplayArrFunc", new DisplayArrFuncFunction());
 
 			interpreter.RegisterFunction("MessageBox", new MessageBoxFunction());
+			interpreter.RegisterFunction("msg", new MessageBoxFunction());
+
 			interpreter.RegisterFunction("SendToPrinter", new PrintFunction());
 
 			interpreter.RegisterFunction("AddMenuItem", new AddMenuEntryFunction(false));

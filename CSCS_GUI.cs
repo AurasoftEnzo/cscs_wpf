@@ -103,6 +103,8 @@ namespace SplitAndMerge
 			interpreter.RegisterFunction("DisplayArrFunc", new DisplayArrFuncFunction());
 
 			interpreter.RegisterFunction("MessageBox", new MessageBoxFunction());
+			interpreter.RegisterFunction("msg", new MessageBoxFunction());
+
 			interpreter.RegisterFunction("SendToPrinter", new PrintFunction());
 
 			interpreter.RegisterFunction("AddMenuItem", new AddMenuEntryFunction(false));
@@ -364,7 +366,7 @@ namespace WpfCSCS
 	{
 		public NavigatorClass NavigatorClass { get; set; } = new NavigatorClass();
 		public Btrieve Btrieve { get; set; } = new Btrieve();
-		public TasFunctions TasFunctions { get; set; } = new TasFunctions();
+		//public TasFunctions TasFunctions { get; set; } = new TasFunctions();
 
 		public string LastObjWidgetName;
 		public string LastObjClickedWidgetName;
@@ -523,7 +525,8 @@ namespace WpfCSCS
 		internal CSCS_SQL SQLInstance { get; set; } = new CSCS_SQL();
 		internal Btrieve BtrieveInstance { get; set; } = new Btrieve();
 		internal TasFunctions TasFunctionsInstance { get; set; } = new TasFunctions();
-		internal Charts ChartsInstance { get; set; } = new Charts();
+        public NewCSCSFunctions NewCSCSFunctionsInstance { get; set; } = new NewCSCSFunctions();
+        internal Charts ChartsInstance { get; set; } = new Charts();
 		internal NavigatorClass NavigatorClassInstance { get; set; } = new NavigatorClass();
 		internal Commands CommandsInstance { get; set; } = new Commands();
 
@@ -606,7 +609,8 @@ namespace WpfCSCS
 
 			BtrieveInstance.Init(this);
 			TasFunctionsInstance.Init(this);
-			ChartsInstance.Init(this);
+			NewCSCSFunctionsInstance.Init(this);
+            ChartsInstance.Init(this);
 			ReportFunction.Init(Interpreter);
 			Excel.Init(Interpreter);
 			NavigatorClassInstance.Init(Interpreter);

@@ -216,7 +216,7 @@ function setChartByDaysOfMonth()
     }
     elif (kom_dn)
     {
-        sql_str += " SELECT DAY(nkpr_gl_esd) as dan2, SalesDay=ISNULL(SUM(e.nkpr_ln_kom), 0) ";
+        sql_str += " SELECT DAY(nkpr_gl_esd) as dan2, SalesDay=ISNULL(SUM(CASE WHEN e.nkpr_ln_jedmj = 'KOM' THEN e.nkpr_ln_pqty ELSE e.nkpr_ln_kom END), 0) ";
     }
     else
     {
@@ -301,7 +301,7 @@ function setChartByMonth()
         }
         elif (kom_dn)
         {
-            sql_str += " Sales = cast(ISNULL(SUM(CASE WHEN nkpr_ln_jedmj='KOM' THEN nkpr_ln_pqty ELSE nkpr_ln_kom END),0) as decimal (10))"; //" + cast(ISNULL(SUM(CASE WHEN e.nkpr_ln_jmj='KOM' THEN e.nkpr_ln_pqty ELSE e.nkpr_ln_kom END) , 0) as decimal (10))";
+            sql_str += " Sales = cast(ISNULL(SUM(CASE WHEN nkpr_ln_jedmj = 'KOM' THEN nkpr_ln_pqty ELSE nkpr_ln_kom END), 0) as decimal (10))"; //" + cast(ISNULL(SUM(CASE WHEN e.nkpr_ln_jmj='KOM' THEN e.nkpr_ln_pqty ELSE e.nkpr_ln_kom END) , 0) as decimal (10))";
         }
         else
         {
@@ -360,7 +360,7 @@ function setChartByMonth()
     }
     elif ( kom_dn)
     {
-        sql_str += " Sales = cast(ISNULL(SUM(CASE WHEN nkpr_ln_jedmj='KOM' THEN nkpr_ln_pqty ELSE nkpr_ln_kom END), 0) as decimal (10))"; //" + cast(ISNULL(SUM(CASE WHEN e.nkpr_ln_jmj='KOM' THEN e.nkpr_ln_pqty ELSE e.nkpr_ln_kom END) , 0) as decimal (10))";
+        sql_str += " Sales = cast(ISNULL(SUM(CASE WHEN nkpr_ln_jedmj = 'KOM' THEN nkpr_ln_pqty ELSE nkpr_ln_kom END), 0) as decimal (10))"; //" + cast(ISNULL(SUM(CASE WHEN e.nkpr_ln_jmj='KOM' THEN e.nkpr_ln_pqty ELSE e.nkpr_ln_kom END) , 0) as decimal (10))";
     }
     else
     {
@@ -526,7 +526,7 @@ function setLast10InvoicesDataGrid()
 	}	
     elif (kom_dn )
 	{
-        sql_str += " ISNULL(ROUND(SUM(nkpr_ln_kom), 0), 0)";
+        sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_ln_jedmj = 'KOM' THEN nkpr_ln_pqty ELSE nkpr_ln_kom END), 0), 0)";
 	}	
     else
 	{
@@ -638,7 +638,7 @@ function setTop10InvoicesDataGrid()
 	}	
     elif (kom_dn )
 	{
-        sql_str += " ISNULL(ROUND(SUM(nkpr_ln_kom), 2), 0)";
+        sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_ln_jedmj = 'KOM' THEN nkpr_ln_pqty ELSE nkpr_ln_kom END), 2), 0)";
 	}	
     else
 	{

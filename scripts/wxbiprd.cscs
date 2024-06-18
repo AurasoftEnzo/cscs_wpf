@@ -910,7 +910,7 @@ function setWeekComparison()
 	}
 	elif (kom_dn)
 	{
-		sql_str  += " Sales = ISNULL(SUM(c.nkpr_ln_kom) , 0)";
+		sql_str  += " Sales = ISNULL(SUM(CASE WHEN c.nkpr_ln_jedmj = 'KOM' THEN c.nkpr_ln_pqty ELSE c.nkpr_ln_kom END) , 0)";
 	}
 	else 
 	{

@@ -1,11 +1,14 @@
-﻿using SplitAndMerge;
+﻿using LiveChartsCore.SkiaSharpView.Painting;
+using SplitAndMerge;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 
 namespace WpfCSCS
 {
@@ -37,13 +40,23 @@ namespace WpfCSCS
 
             var gui = CSCS_GUI.GetInstance(script);
             var menuDC = Utils.GetSafeString(args, 0);
+            var menuAction = Utils.GetSafeString(args, 1);
             var menu = gui.GetWidget(menuDC) as Menu;
             if (menu == null || !(menu is Menu))
             {
                 return Variable.EmptyInstance;
             }
 
+            gui.Control2Window.TryGetValue(menu as FrameworkElement, out Window win);
+
             menu.Items.Clear();
+
+            var firstMenuItem = new MenuItem();
+            firstMenuItem.Name = "firstMenuItem";
+            firstMenuItem.DataContext = "firstMenuItem";
+            firstMenuItem.Header = "_Programi";
+
+            menu.Items.Add(firstMenuItem);
 
             List<string> wxmenuLines = File.ReadAllLines(App.GetConfiguration("ScriptsPath", "") + "wxmenu.ini").ToList();
 
@@ -77,17 +90,31 @@ namespace WpfCSCS
                     continue;
                 }
 
-                splitted[2] = splitted[2].Replace("/", "_").Replace("&", "").Replace("-", "");
+                
 
                 if (splitted[0] == "0")
                 {
                     var newMenuItem = new MenuItem();
+
+                    splitted[2] = splitted[2].Replace("&", "_");
+
                     newMenuItem.Header = splitted[2];
+
+                    splitted[2] = splitted[2].Replace("/", "").Replace("_", "").Replace("-", "");
+
                     newMenuItem.Name = splitted[2];
                     newMenuItem.DataContext = splitted[2];
                     lastLevels[0] = splitted[2];
 
                     menu.Items.Add(newMenuItem);
+                    gui.CacheControl(newMenuItem, win);
+
+                    //var clone = CloneMenuItem(newMenuItem);
+                    //clone.Header = splitted[1];
+                    //clone.Name = splitted[2] + "_firstMenuItem";
+                    //clone.DataContext = splitted[2];
+                    //FindMenuItemByName(menu, "firstMenuItem").Items.Add(clone);
+                    //gui.CacheControl(clone, win);
 
                     continue;
                 }
@@ -96,23 +123,138 @@ namespace WpfCSCS
                 {
                     var lastParentLevel = Convert.ToInt32(splitted[0]) - 1;
 
+                    splitted[2] = splitted[2].Replace("&", "").Replace("-", "").Replace("/", "");//.Replace("_", "");
+
                     if (splitted[1].Trim() == "-")
                     {
                         FindMenuItemByName(menu, lastLevels[lastParentLevel]).Items.Add(new Separator());
+                        //FindMenuItemByName(menu, lastLevels[lastParentLevel] + "_firstMenuItem").Items.Add(new Separator());
+                        continue;
                     }
                     else
                     {
                         var newMenuItem = new MenuItem();
+
                         newMenuItem.Header = splitted[1];
                         newMenuItem.Name = splitted[2];
                         newMenuItem.DataContext = splitted[2];
                         lastLevels[Convert.ToInt32(splitted[0])] = splitted[2];
 
-                        var destinationMenuItem = FindMenuItemByName(menu, lastLevels[lastParentLevel]);
-                        destinationMenuItem.Items.Add(newMenuItem);
+                        if (splitted[2].ToLower().StartsWith("wk"))
+                        {
+                            newMenuItem.Click += (sender, eventArgs) =>
+                            {
+                                gui.Interpreter.Run(menuAction, new Variable(splitted[2]), new Variable(eventArgs.Source.ToString()), null, script);
+                            };
+                        }
+                        FindMenuItemByName(menu, lastLevels[lastParentLevel]).Items.Add(newMenuItem);
+                        gui.CacheControl(newMenuItem, win);
+
+                        //var clone = CloneMenuItem(newMenuItem);
+                        //clone.Name = splitted[2] + "_firstMenuItem";
+                        //clone.DataContext = splitted[2];
+                        //FindMenuItemByName(menu, lastLevels[lastParentLevel] + "_firstMenuItem").Items.Add(clone);
+                        //gui.CacheControl(clone, win);
+
+                        continue;
                     }
+                }
+
+            }
+
+            //foreach (MenuItem menuItem in menu.Items)
+            //{
+            //    if (menuItem.Name == "firstMenuItem")
+            //    {
+            //        continue;
+            //    }
+
+            //    var newItem = CloneMenuItem(menuItem);
+            //    FindMenuItemByName(menu, "firstMenuItem").Items.Add(newItem);
+            //}
+
+            foreach (var line in wxmenuLines)
+            {
+                if (line.Length < 1)
+                {
+                    continue;
+                }
+
+                if (line.Substring(0, 1) == ";" || line.Substring(0, 1) == @"\")
+                {
+                    continue;
+                }
+
+                var splitted = line.Split(',');
+                for (int i = 0; i < splitted.Length; i++)
+                {
+                    splitted[i] = splitted[i].Trim();
+                }
+
+                if (splitted.Length < 4)
+                {
+                    continue;
+                }
+
+                if (splitted[3] == "0")
+                {
+                    continue;
+                }
+
+
+
+                if (splitted[0] == "0")
+                {
+                    var newMenuItem = new MenuItem();
+
+                    splitted[2] = splitted[2].Replace("&", "_");
+
+                    newMenuItem.Header = splitted[1];
+
+                    splitted[2] = splitted[2].Replace("/", "").Replace("_", "").Replace("-", "");
+
+                    newMenuItem.Name = splitted[2] + "_firstMenuItem";
+                    newMenuItem.DataContext = splitted[2];
+                    lastLevels[0] = splitted[2] + "_firstMenuItem";
+
+                    FindMenuItemByName(menu, "firstMenuItem").Items.Add(newMenuItem);
+                    gui.CacheControl(newMenuItem, win);
 
                     continue;
+                }
+
+                if (Convert.ToInt32(splitted[0]) > 0)
+                {
+                    var lastParentLevel = Convert.ToInt32(splitted[0]) - 1;
+
+                    splitted[2] = splitted[2].Replace("&", "").Replace("-", "").Replace("/", "");//.Replace("_", "");
+
+                    if (splitted[1].Trim() == "-")
+                    {
+                        FindMenuItemByName(menu, lastLevels[lastParentLevel]).Items.Add(new Separator());
+                        continue;
+                    }
+                    else
+                    {
+                        var newMenuItem = new MenuItem();
+
+                        newMenuItem.Header = splitted[1];
+                        newMenuItem.Name = splitted[2] + "_firstMenuItem";
+                        newMenuItem.DataContext = splitted[2];
+                        lastLevels[Convert.ToInt32(splitted[0])] = splitted[2] + "_firstMenuItem";
+
+                        if (splitted[2].ToLower().StartsWith("wk"))
+                        {
+                            newMenuItem.Click += (sender, eventArgs) =>
+                            {
+                                gui.Interpreter.Run(menuAction, new Variable(splitted[2]), new Variable(eventArgs.Source.ToString()), null, script);
+                            };
+                        }
+                        FindMenuItemByName(menu, lastLevels[lastParentLevel]).Items.Add(newMenuItem);
+                        gui.CacheControl(newMenuItem, win);
+
+                        continue;
+                    }
                 }
 
             }
@@ -149,5 +291,55 @@ namespace WpfCSCS
             // Return null if the MenuItem is not found
             return null;
         }
+
+        public static MenuItem CloneMenuItem(MenuItem source)
+        {
+            if (source == null) return null;
+
+            // Create a new MenuItem
+            MenuItem newMenuItem = new MenuItem
+            {
+                Header = source.Header,
+                InputGestureText = source.InputGestureText,
+                IsCheckable = source.IsCheckable,
+                IsChecked = source.IsChecked,
+                IsEnabled = source.IsEnabled,
+                StaysOpenOnClick = source.StaysOpenOnClick
+            };
+
+            try
+            {
+                // Copy over the event handlers
+                newMenuItem.Click += (RoutedEventHandler)source.GetType().GetEvent("Click").EventHandlerType
+                    .GetField("Delegate", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                    .GetValue(source);
+            }
+            catch (Exception)
+            {
+
+            }
+
+            // Recursively clone and add sub-items
+            foreach (var item in source.Items)
+            {
+                if (item is MenuItem subMenuItem)
+                {
+                    newMenuItem.Items.Add(CloneMenuItem(subMenuItem));
+                }
+                else if(item is Separator)
+                {
+                    newMenuItem.Items.Add(new Separator());
+                }
+                else
+                {
+                    newMenuItem.Items.Add(item);
+                }
+            }
+
+            return newMenuItem;
+        }
     }
+
+
+
 }

@@ -2947,6 +2947,24 @@ namespace WpfCSCS
 						}
 					}
 				}
+				else if (child is ToolBarTray)
+				{
+					var tbTray = child as ToolBarTray;
+					var toolbars = tbTray.ToolBars;
+
+					foreach (var toolbar in toolbars)
+					{
+						foreach (var item in toolbar.Items)
+						{
+							if(item is Button)
+							{
+                                CacheControl(item as FrameworkElement, win, controls);
+                            }
+						}
+					}
+                    //CacheControl(insideButton as FrameworkElement, win, controls);
+                    //CacheASButton(asButton as FrameworkElement, win, controls, insideButton);
+				}
 				else if (child is ASButton)
 				{
 					var asButton = child as ASButton;

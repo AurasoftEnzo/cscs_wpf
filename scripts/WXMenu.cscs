@@ -4,16 +4,18 @@ CreateWindow(strtrim(tpath()) + "WXMenu.xaml");
 //StartDebugger(13337, true, "*");
 
 function runScript(sender, load){
-    CHAIN strTrim(tpath())+strTrim(sender);
+    try{
+        CHAIN strTrim(tpath())+strTrim(sender)+".cscs";
+    }catch(ex){
+        msg(ex);
+    }
 }
 
 function WXMenu_OnDisplay(){
 
-    setMainMenu("mainMenuDC");
+    setMainMenu("mainMenuDC", "runScript");
 
     return;
-
-
 
     // read = readfile(strtrim(tpath())+"wxmenu.ini");
     // i = 0;
@@ -67,4 +69,32 @@ function WXMenu_OnDisplay(){
     //         continue;
     //     }
     // }
+}
+
+function btnLogin@clicked(){
+    MessageBox("not implemented");
+}
+function btnKorisnici@clicked(){
+    MessageBox("not implemented");
+}
+function btnGodine@clicked(){
+    MessageBox("not implemented");
+}
+function btnBackUp@clicked(){
+    MessageBox("not implemented");
+}
+function btnKontakti@clicked(){
+    MessageBox("not implemented");
+}
+function btnNovosti@clicked(){
+    MessageBox("not implemented");
+}
+function btnFavoriti@clicked(){
+    MessageBox("not implemented");
+}
+function btnInfo@clicked(){
+    MessageBox("not implemented");
+}
+function btnIzlaz@clicked(){
+    exit;
 }

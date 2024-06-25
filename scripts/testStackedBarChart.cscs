@@ -1,0 +1,26 @@
+CreateWindow(strtrim(tpath())+"testStackedBarChart.xaml");
+
+function testStackedBarChart_onDisplay(){
+    Chart("StackedBarChart1", "init");
+    
+    //Chart("StackedBarChart1", "seriesType", "Columnseries");
+    //Chart("StackedBarChart1", "title", "Naslov grafa", 20);
+    // Chart("StackedBarChart1", "labels", "y", 13);
+    // Chart("StackedBarChart1", "labels", "x", 13, {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"});
+    // Chart("StackedBarChart1", "xlabelsRotation", 0);
+
+    Chart("StackedBarChart1", "values", "stacked", {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, "prvi dio 2023.", 0, 10); // !
+    Chart("StackedBarChart1", "values", "stacked", {2, 4, 2, 4, 2, 4, 2, 4, 2, 4, 2, 4}, "drugi dio 2023.", 0, 10); //!
+    Chart("StackedBarChart1", "values", "stacked", {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5}, "treci dio 2023.", 0, 10); //!
+    Chart("StackedBarChart1", "values", "stacked", {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, "prvi dio 2024.", 1, 10); //!
+    Chart("StackedBarChart1", "values", "stacked", {3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3}, "drugi dio 2024.", 1, 10); //!
+
+    Chart("StackedBarChart1", "SeparatorStep", 1);
+
+    //Chart("StackedBarChart1", "Margins", {50, 20, 0, 30});
+
+    Chart("StackedBarChart1", "TooltipDecimalPlaces", 0);
+    Chart("StackedBarChart1", "Color.Series", { "#333333", "#333999", "#333666", "#999111", "#999444"}); 
+
+    Chart("StackedBarChart1", "labels", "x", 13, {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"});
+}

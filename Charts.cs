@@ -70,6 +70,12 @@ namespace WpfCSCS
                 var value3Variable = Utils.GetSafeVariable(args, 4);
                 if (value3Variable == null)
                     value3Variable = new Variable();
+                var value4Variable = Utils.GetSafeVariable(args, 5);
+                if (value4Variable == null)
+                    value4Variable = new Variable();
+                var value5Variable = Utils.GetSafeVariable(args, 6);
+                if (value5Variable == null)
+                    value5Variable = new Variable();
 
                 var widget = gui.GetWidget(widgetName);
                 if (widget is CartesianChart)
@@ -105,6 +111,34 @@ namespace WpfCSCS
                                 });
                                 //Debug.WriteLine("temp.Count = " + temp.Count);
                             }
+                            else if (valueVariable.String.ToLower() == "stacked")
+                            {
+                                int stackGroup = 0;
+                                Int32.TryParse(value4Variable.Value.ToString(), out stackGroup);
+                                
+                                int maxBarWidth = 22;
+                                Int32.TryParse(value5Variable.Value.ToString(), out maxBarWidth);
+                                
+                                temp.Add(new StackedColumnSeries<double>()
+                                {
+                                    Values = newList,
+                                    StackGroup = stackGroup,
+                                    //TooltipLabelFormatter = (chartPoint) => $"{newList[(int)chartPoint.Context.Series.Name.SecondaryValue]}" + $": chartPoint.Context.Series.Name}: {chartPoint.PrimaryValue:C0}"
+                                    //TooltipLabelFormatter = (chartPoint) => $"{chartPoint.Context.Series.Name} - {} - {newList[(int)chartPoint.SecondaryValue]}"
+                                    YToolTipLabelFormatter = (chartPoint) => $"{newList[(int)chartPoint.Coordinate.SecondaryValue].ToString("N")}",
+                                    //Fill = new SolidColorPaint(SKColors.Transparent)
+                                    
+                                    //Fill = null,
+
+                                    //Stroke = new SolidColorPaint(new SKColor(100, 100, 100), 3),
+
+                                    //GeometryFill = null,
+
+                                    //GeometryStroke = new SolidColorPaint(new SKColor(100, 100, 100), 3),
+                                    //GeometrySize = 0
+                                    MaxBarWidth = maxBarWidth
+                                });
+                            }
                             //else if (chartsTypes[widgetName] == "lineseries")
                             else if (valueVariable.String.ToLower() == "line")
                             {
@@ -123,6 +157,7 @@ namespace WpfCSCS
 
                                 });
                             }
+                            
                             if (!string.IsNullOrEmpty(value3Variable.String))
                             {
                                 temp.Last().Name = value3Variable.String;
@@ -200,6 +235,10 @@ namespace WpfCSCS
                             {
                                 (series as LineSeries<double>).YToolTipLabelFormatter = (chartPoint) => $"{chartPoint.Coordinate.PrimaryValue.ToString($"N{valueVariable.Value}")}";
                             }
+                            else if (series is StackedColumnSeries<double>)
+                            {
+                                (series as StackedColumnSeries<double>).YToolTipLabelFormatter = (chartPoint) => $"{chartPoint.Coordinate.PrimaryValue.ToString($"N{valueVariable.Value}")}";
+                            }
                         }
                     }
                     else if (optionString == "color.series")
@@ -220,6 +259,12 @@ namespace WpfCSCS
                             {
                                 item.GetType().GetProperty("Stroke").SetValue(item, new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColor.Parse(ToHex((Color)ColorConverter.ConvertFromString(g[i]))), 3), null);
                                 item.GetType().GetProperty("GeometryStroke").SetValue(item, new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColor.Parse(ToHex((Color)ColorConverter.ConvertFromString(g[i++]))), 3), null);
+                            }
+                            else if(item is StackedColumnSeries<double>)
+                            {
+                                item.GetType().GetProperty("Fill").SetValue(item, new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColor.Parse(ToHex((Color)ColorConverter.ConvertFromString(g[i++])))), null);
+                                //item.GetType().GetProperty("Stroke").SetValue(item, new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColor.Parse(ToHex((Color)ColorConverter.ConvertFromString(g[i]))), 3), null);
+                                //item.GetType().GetProperty("GeometryStroke").SetValue(item, new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColor.Parse(ToHex((Color)ColorConverter.ConvertFromString(g[i++]))), 3), null);
                             }
                         }
                     }

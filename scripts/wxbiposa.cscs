@@ -368,7 +368,8 @@ function setCustomerAndInvoiceCounts()
     }
 
     // bojeArray = {250, 100, 250};
-    bojeArray = {111, 207, 247};
+    // bojeArray = {111, 207, 247};
+    bojeArray = {106, 177, 135};
     Format("br_kupaca_og", "nofd", recv: "br_kupaca_og_string");
     HorizontalBar("HorizontalBarBrKupacaOG", "Text", br_kupaca_og_string);
     HorizontalBar("HorizontalBarBrKupacaOG", "Color", bojeArray);
@@ -437,7 +438,8 @@ function setCustomerAndInvoiceCounts()
     }
 
     // bojeArray = {220, 150, 250};
-    bojeArray = {111, 207, 247};
+    // bojeArray = {111, 207, 247};
+    bojeArray = {106, 177, 135};
     Format("broj_rac_og", "nofd", recv: "broj_rac_og_string");
     HorizontalBar("HorizontalBarBrRacunaOG", "Text", broj_rac_og_string);
     HorizontalBar("HorizontalBarBrRacunaOG", "Color", bojeArray);
@@ -532,7 +534,7 @@ function setCustomerAndInvoiceCounts()
     }
 
     // bojeArray = {150, 190, 250};
-    bojeArray = {111, 207, 247};
+    bojeArray = {106, 177, 135};
     Format("prodaja_kup_og", "nofd", recv: "prodaja_kup_og_string");
     HorizontalBar("HorizontalBarProdajaKupOG", "Text", prodaja_kup_og_string);
     HorizontalBar("HorizontalBarProdajaKupOG", "Color", bojeArray);
@@ -755,8 +757,8 @@ function setHorizontalBars()
 {
     //  bojeArray = {196, 224, 138};
     //  bojeArray2 = {200, 170, 80};
-    bojeArray = {111, 207, 247};
-    bojeArray2 = {111, 207, 247};
+    bojeArray = {106, 177, 135};
+    bojeArray2 = {106, 177, 135};
     if (Math.Abs(tot_ovagod)>Math.Abs(tot_lani))
     {
         if(tot_lani != 0)
@@ -829,8 +831,8 @@ function setHorizontalBars()
     HorizontalBar("HorizontalBarLG", "Color", bojeArray);
 //  bojeArrayMJ = {76, 168, 168};
 //  bojeArrayMJ2 = {230, 60, 80};
-    bojeArrayMJ = {111, 207, 247};
-    bojeArrayMJ2 = {111, 207, 247};
+    bojeArrayMJ = {106, 177, 135};
+    bojeArrayMJ2 = {106, 177, 135};
     if (Math.Abs(tot_ovajmj) > Math.Abs(tot_proslimj))
     {
         if(tot_proslimj != 0)
@@ -985,10 +987,8 @@ function setWeekComparison()
 	sql_str = sql_str + " GROUP BY [wk_FirstOfWeek]";
 	sql_str = sql_str + " ORDER BY [wk_FirstOfWeek] DESC";
 	
-    
     //SaveFile(sql_str);
 	
-
     try	{
 		sqlResult = sqlQuery(sql_str);
         //MessageBox(sqlResult);
@@ -1014,8 +1014,8 @@ function setWeekComparison()
 	}
 	// bojeArrayTJ = {252, 192, 131};
 	// bojeArrayTJ2 = {55, 153, 176};
-	bojeArrayTJ = {111, 207, 247};
-	bojeArrayTJ2 = {111, 207, 247};
+	bojeArrayTJ = {106, 177, 135};
+	bojeArrayTJ2 = {106, 177, 135};
     define a type n size 14 dec 2;
 	if (Math.Abs(tot_ovajTj) > Math.Abs(tot_ProsliTj))
 	{
@@ -1202,7 +1202,7 @@ function setSalesRatio(){
     {
         MessageBox(exc);
     }
-
+    
     tot_ovagod_vp = 0;
 
     for(i = 1; i <= Size(queryResult)-1; i++)
@@ -1245,7 +1245,7 @@ function setSalesRatio(){
 
 
     GaugeChart("GaugeChartOmjerProdaje", "value", Math.round(100*tot_ovagod/(tot_ovagod + tot_ovagod_vp)), 25, 30);
-    GaugeChart("GaugeChartOmjerProdaje", "color", "red");
+    GaugeChart("GaugeChartOmjerProdaje", "color", "#D32D41");
 }
 
 function deNadan@LostFocus(){

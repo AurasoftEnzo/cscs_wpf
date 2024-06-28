@@ -16,7 +16,7 @@ function wxbiposaa_onStart()
     Chart("ChartPoMjesecima", "SeparatorStep", 1);
     //Chart("ChartPoMjesecima", "Margins", {50, 20, 0, 30});
     Chart("ChartPoMjesecima", "TooltipDecimalPlaces", 0);
-    Chart("ChartPoMjesecima", "Color.Series", { "#1C4E80", "#EA6A47"}); 
+    Chart("ChartPoMjesecima", "Color.Series", { "#CED2CC", "#4CB5F5"}); 
 
     Chart("ChartPoMjesecima", "labels", "x", 13, {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"});
 
@@ -31,7 +31,7 @@ function wxbiposaa_onStart()
     Chart("ChartPoDanima", "SeparatorStep", 1);
     Chart("ChartPoDanima", "values", "line", arrayVrijednosti, "Dnevno");
     Chart("ChartPoDanima", "values", "line", arrayAvr, "Prosjek7dana");
-    Chart("ChartPoDanima", "Color.Series", { "#7E909A", "#0091D5"}); 
+    Chart("ChartPoDanima", "Color.Series", { "#6AB187", "#1F3F49"}); 
     //Chart("ChartPoDanima", "Margins", {60, 20, 0, 30});
     //
     cntr2= 0;
@@ -250,7 +250,7 @@ function setChartByMonth()
     }
     elif (razlikaUCijeniField)
     {
-        sql_str += " Sales = round(ISNULL(SUM(KS_IL_TOTAL**(1 - ks_ig_popust/100) - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0), 2)";
+        sql_str += " Sales = round(ISNULL(SUM(KS_IL_TOTAL*(1 - ks_ig_popust/100) - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0), 2)";
     }
     else
     {

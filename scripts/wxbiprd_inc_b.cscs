@@ -345,11 +345,11 @@ function setKategPieChart()
 {
 	//	MessageBox( pieChartStr);
 	sql_str = "";
-	sql_str += " SELECT CASE WHEN num<= 5 THEN Naziv ELSE 'Ostali' END AS Kategorija , round(sum(suma),0) as Origin";
-	sql_str += " FROM (SELECT ISNULL(CASE WHEN SUBSTRING(mkgr_rezerva,1,50)> '' THEN SUBSTRING(mkgr_rezerva,1,50) ELSE mkgr_naziv END,'NEDEFINIRANO') as naziv,";
+	sql_str += " SELECT CASE WHEN num <= 5 THEN Naziv ELSE 'Ostali' END AS Kategorija , round(sum(suma),0) as Origin";
+	sql_str += " FROM (SELECT ISNULL(CASE WHEN SUBSTRING(mkgr_rezerva,1,50) <> '' THEN SUBSTRING(mkgr_rezerva,1,50) ELSE mkgr_naziv END,'NEDEFINIRANO') as naziv,";
 	if (neto_dn)
 	{
-		sql_str += " sum(CASE WHEN nkpr_gl_dviza =  'D' THEN nkpr_gl_tecaj * nkpr_ln_amt ELSE nkpr_ln_amt END) AS Suma,";
+		sql_str += " sum(CASE WHEN nkpr_gl_dviza = 'D' THEN nkpr_gl_tecaj * nkpr_ln_amt ELSE nkpr_ln_amt END) AS Suma,";
 		sql_str += " ROW_NUMBER() OVER( ORDER BY sum(CASE WHEN nkpr_gl_dviza =  'D' THEN nkpr_gl_tecaj * nkpr_ln_amt ELSE nkpr_ln_amt END) DESC ) As Num";
 	}	
 	elif (razlikaUCijeniField  )
@@ -384,8 +384,8 @@ function setKategPieChart()
 	}	
 	else
 	{
-		sql_str += " sum(CASE WHEN nkpr_gl_dviza =  'D' THEN nkpr_gl_tecaj * nkpr_ln_pext ELSE nkpr_ln_pext END) AS Suma,";
-		sql_str += " ROW_NUMBER() OVER( ORDER BY sum(CASE WHEN nkpr_gl_dviza =  'D' THEN nkpr_gl_tecaj * nkpr_ln_pext ELSE nkpr_ln_pext END) DESC ) As Num";
+		sql_str += " sum(CASE WHEN nkpr_gl_dviza = 'D' THEN nkpr_gl_tecaj * nkpr_ln_pext ELSE nkpr_ln_pext END) AS Suma,";
+		sql_str += " ROW_NUMBER() OVER(ORDER BY sum(CASE WHEN nkpr_gl_dviza =  'D' THEN nkpr_gl_tecaj * nkpr_ln_pext ELSE nkpr_ln_pext END) DESC ) As Num";
 	}
 	sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkprglnr AS U";
 	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprlnnr ON nkpr_gl_sonum = nkpr_ln_invnm";
@@ -424,7 +424,7 @@ function setKategPieChart()
 	catch(exc){
 		MessageBox(exc);
 	}
-
+	
 	RunOnMain("DisplayKategPieChart");
 }
 

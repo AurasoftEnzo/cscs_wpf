@@ -1,4 +1,5 @@
 ﻿using LiveChartsCore.SkiaSharpView.Painting;
+using MapControl;
 using SplitAndMerge;
 using System;
 using System.Collections.Generic;
@@ -9,6 +10,8 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Data;
+using System.Windows.Media;
 
 namespace WpfCSCS
 {
@@ -22,12 +25,17 @@ namespace WpfCSCS
             Interpreter interpreter = gui.Interpreter;
 
             interpreter.RegisterFunction(Constants.SET_MAIN_MENU, new SetMainMenuFunction());
+
+            interpreter.RegisterFunction(Constants.MAP_SETUP, new MapFunction(MapFunctionOption.Setup));
+            interpreter.RegisterFunction(Constants.MAP_ADD_POINT, new MapFunction(MapFunctionOption.AddItem));
             
         }
         public partial class Constants
         {
             public const string SET_MAIN_MENU = "SetMainMenu";
-            
+
+            public const string MAP_SETUP = "MapSetup";
+            public const string MAP_ADD_POINT = "MapAddPoint";
         }
     }
 
@@ -339,7 +347,114 @@ namespace WpfCSCS
             return newMenuItem;
         }
     }
+    
+    enum MapFunctionOption
+    {
+        Setup,
+        AddItem
+    }
 
+    class MapFunction : ParserFunction
+    {
+        MapFunctionOption option;
+        public MapFunction(MapFunctionOption _option)
+        {
+            option = _option;
+        }
 
+        class PointItem
+        {
+            public string Name { get; set; }
+            public Location Location { get; set; }
+        }
+
+        static List<PointItem> Points { get; } = new List<PointItem>();
+        
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            if(option == MapFunctionOption.Setup)
+            {
+                List<Variable> args = script.GetFunctionArgs();
+                Utils.CheckArgs(args.Count, 1, m_name);
+
+                var gui = CSCS_GUI.GetInstance(script);
+
+                var mapName = Utils.GetSafeString(args, 0);
+
+                var map = gui.GetWidget(mapName) as Map;
+                if (map == null || !(map is Map))
+                {
+                    return Variable.EmptyInstance;
+                }
+
+                map.MapLayer = new MapTileLayer()
+                {
+                    //Description = "[OpenStreetMap contributors](http://www.openstreetmap.org/copyright)",
+                    TileSource = new TileSource() { UriTemplate = "https://tile.openstreetmap.org/{z}/{x}/{y}.png" }
+                };
+
+                var mic = new MapItemsControl();
+                var ics = new Style(typeof(MapItem));
+                ics.Setters.Add(new Setter(MapItem.LocationProperty, new Binding("Location")));
+                ics.Setters.Add(new Setter(MapItem.ContentProperty, new Binding("Name")));
+
+                var ct = new ControlTemplate(typeof(MapItem));
+
+                //FrameworkElementFactory mapItemFactory = new FrameworkElementFactory(typeof(Canvas));
+                
+                //mapItemFactory.SetValue(Canvas.HeightProperty, 200);
+                //mapItemFactory.SetValue(Canvas.WidthProperty, 200);
+
+                FrameworkElementFactory mapItemFactoryChild = new FrameworkElementFactory(typeof(System.Windows.Shapes.Path));
+
+                //mapItemFactoryChild.SetValue(System.Windows.Shapes.Path.WidthProperty, 50);
+                //mapItemFactoryChild.SetValue(System.Windows.Shapes.Path.HeightProperty, 50);
+                mapItemFactoryChild.SetValue(System.Windows.Shapes.Path.DataProperty, new EllipseGeometry() { RadiusX = 20, RadiusY = 20});
+                mapItemFactoryChild.SetValue(System.Windows.Shapes.Path.StrokeProperty, Brushes.DarkGray);
+                mapItemFactoryChild.SetValue(System.Windows.Shapes.Path.FillProperty, Brushes.DodgerBlue);
+                mapItemFactoryChild.SetValue(System.Windows.Shapes.Path.OpacityProperty, 0.7);
+
+                //mapItemFactory.AppendChild(mapItemFactoryChild);
+
+                ct.VisualTree = mapItemFactoryChild;
+
+                ics.Setters.Add(new Setter(MapItem.TemplateProperty, ct));
+
+                mic.ItemContainerStyle = ics;
+
+                mic.ItemsSource = Points;
+                map.Children.Add(mic);
+
+                return Variable.EmptyInstance;
+            }
+            else if (option == MapFunctionOption.AddItem)
+            {
+                List<Variable> args = script.GetFunctionArgs();
+                Utils.CheckArgs(args.Count, 2, m_name);
+
+                var gui = CSCS_GUI.GetInstance(script);
+
+                var xcoo = Utils.GetSafeDouble(args, 0);
+                var ycoo = Utils.GetSafeDouble(args, 1);
+                var pointName = Utils.GetSafeString(args, 2);
+                if(pointName.Length == 0)
+                {
+                    pointName = "Point " + Points.Count;
+                }
+
+                var map = gui.GetWidget("map") as Map;
+                if (map == null || !(map is Map))
+                {
+                    return Variable.EmptyInstance;
+                }
+
+                Points.Add(new PointItem { Name = pointName, Location = new Location(xcoo, ycoo) });
+
+                return Variable.EmptyInstance;
+            }
+
+            return Variable.EmptyInstance;
+        }
+    }
 
 }

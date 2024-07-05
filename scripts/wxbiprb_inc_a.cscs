@@ -17,6 +17,10 @@ function wxbiprba_onStart()
     //Chart("ChartPoMjesecima", "Margins", {50, 20, 0, 30});
     Chart("ChartPoMjesecima", "TooltipDecimalPlaces", 0);
     Chart("ChartPoMjesecima", "Color.Series", { "#7E909A", "#EA6A47", "#654321"}); 
+    MessageBox(lastMonthWithDataIndex);
+    for(i = lastMonthWithDataIndex; i < 11; i++){
+        Chart("ChartPoMjesecima", "Color.Point", 1, i, "#FF0000");
+    }
 
     Chart("ChartPoMjesecima", "labels", "x", 13, {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"});
 
@@ -380,7 +384,7 @@ function setChartByMonth()
     sql_str += " ORDER BY CONVERT(varchar(6),nkpr_gl_datem,112);";
     try
     {
-            //SaveFile(sql_str);
+        //SaveFile(sql_str);
         queryResult = sqlquery(SQL_str);
     }
     catch(exc)
@@ -389,6 +393,8 @@ function setChartByMonth()
     }
 
     RunOnMain("setChartByMonth2");
+
+    RunOnMain("setChartByMonth3");
 }
 
 function setChartByMonth1(){
@@ -433,7 +439,7 @@ function setChartByMonth1(){
             {
                 if(ar_cntr == int(mjesec_h))
                 {   
-                    tot_lani =  queryResult[i][2] ;   
+                    tot_lani =  queryResult[i][2];
                 }
             }
         //}
@@ -454,8 +460,8 @@ function setChartByMonth2(){
     for(i = 1; i <= Size(queryResult)-1; i++)
     {
         ar_cntr= int(substring(queryResult[i][1],4,2)); //nađimo koji je to mjesec
-        arrayTrenutna[ar_cntr-1]= math.round(queryResult[i][2]/1000,0); 
-        sales_month_ar[ar_cntr-1]=queryResult[i][2];
+        arrayTrenutna[ar_cntr-1] = math.round(queryResult[i][2]/1000,0); 
+        sales_month_ar[ar_cntr-1] = queryResult[i][2];
         mjesec_h0X = mjesec_h.length == 1 ? "0" + mjesec_h : mjesec_h;
         proslimjesec = string(int(mjesec_h) - 1); // 1
         proslimjesec0X = proslimjesec.length == 1 ? "0" + proslimjesec : proslimjesec;
@@ -482,6 +488,34 @@ function setChartByMonth2(){
         {
             tot_proslimj = queryResult[i][2];
         }
+    }
+}
+
+function setChartByMonth3(){
+    // monthNow = int(now("MM"));
+    // lastMonth = monthNow - 1;
+    // if(lastMonth == 0){
+    //     return;
+    // }
+
+    lastMonthWithDataIndex = 11;
+
+    for(i = 11; i >= 0; i--){
+        if(arrayTrenutna[i] > 0){
+            lastMonthWithDataIndex = i;
+            break;
+        }
+    }
+
+    sumaLani = 0;
+    sumaOvaGod = 0;
+    for(i = 0; i < lastMonthWithDataIndex; i++){
+        sumaLani += arrayProsla[i];
+        sumaOvaGod += arrayTrenutna[i];
+    }
+
+    for(i = lastMonthWithDataIndex; i < 12; i++){
+        arrayTrenutna[i] = arrayProsla[i] * (1 + (sumaOvaGod - sumaLani)/sumaLani * 1.0);
     }
 }
 

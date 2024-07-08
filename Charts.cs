@@ -8,9 +8,11 @@
 //using LiveChartsCore.SkiaSharpView.WPF;
 using LiveCharts.Defaults;
 using LiveChartsCore;
+using LiveChartsCore.ConditionalDraw;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.Kernel;
 using LiveChartsCore.SkiaSharpView;
+using LiveChartsCore.SkiaSharpView.Drawing;
 using LiveChartsCore.SkiaSharpView.Drawing.Geometries;
 using LiveChartsCore.SkiaSharpView.Extensions;
 using LiveChartsCore.SkiaSharpView.Painting;
@@ -274,7 +276,7 @@ namespace WpfCSCS
                         var pointNumber = value2Variable.Value;
                         var pointColor = value3Variable.String;
 
-                        var parameter = Utils.GetSafeString(args, 2);
+                        //var parameter = Utils.GetSafeString(args, 2);
 
                         var series_ienum_property = widget.GetType().GetProperty("Series");
                         
@@ -290,28 +292,17 @@ namespace WpfCSCS
                                 continue;
                             }
 
-                            var indexPoints = 0;
-
                             if(item is ColumnSeries<double>)
                             {
-                                (item as ColumnSeries<double>).WhenPointMeasured = (point) =>
-                                {
-                                    if (point.Visual is null) return;
-                                    if (indexPoints == pointNumber) point.Visual.Fill = new SolidColorPaint(SkiaSharp.SKColor.Parse(ToHex((Color)ColorConverter.ConvertFromString(pointColor))));
-                                    indexPoints++;
-                                };
+                                //(item as ColumnSeries<double>).PointMeasured += ChartFunction_PointMeasured;
+
+                                (item as ColumnSeries<double>).OnPointMeasured(point =>
+                                    {
+                                        if (point.Visual is null) return;
+                                        if (point.Index == pointNumber) point.Visual.Fill = new SolidColorPaint(SkiaSharp.SKColor.Parse(ToHex((Color)ColorConverter.ConvertFromString(pointColor))));
+                                    }
+                                );
                             }
-                            //else if(item is LineSeries<double>)
-                            //{
-                            //    item.GetType().GetProperty("Stroke").SetValue(item, new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColor.Parse(ToHex((Color)ColorConverter.ConvertFromString(g[i]))), 3), null);
-                            //    item.GetType().GetProperty("GeometryStroke").SetValue(item, new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColor.Parse(ToHex((Color)ColorConverter.ConvertFromString(g[i++]))), 3), null);
-                            //}
-                            //else if(item is StackedColumnSeries<double>)
-                            //{
-                            //    item.GetType().GetProperty("Fill").SetValue(item, new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColor.Parse(ToHex((Color)ColorConverter.ConvertFromString(g[i++])))), null);
-                            //    //item.GetType().GetProperty("Stroke").SetValue(item, new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColor.Parse(ToHex((Color)ColorConverter.ConvertFromString(g[i]))), 3), null);
-                            //    //item.GetType().GetProperty("GeometryStroke").SetValue(item, new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColor.Parse(ToHex((Color)ColorConverter.ConvertFromString(g[i++]))), 3), null);
-                            //}
                         }
                     }
                     else if (optionString == "text.seriesnames")

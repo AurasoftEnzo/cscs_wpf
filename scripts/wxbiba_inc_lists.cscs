@@ -81,8 +81,8 @@
     define prodaja_kup_og, prodaja_kup_lg type n size 14;
     define broj_rac_og, broj_rac_lg type r size 6;
     define prod_kup_indx type n size 10 dec 2;
-    DEFINE arrayProsla type n size 14 array 12;
-    DEFINE arrayTrenutna type n size 14 array 12;
+    DEFINE arrayProsla, arrayProslaKontiranje type n size 14 array 12;
+    DEFINE arrayTrenutna, arrayTrenutnaKontiranje type n size 14 array 12;
 
 	define tot_ovajTj type n size 14;
 	define tot_prosliTj type n size 14;
@@ -916,5 +916,60 @@ function filterPart2()
             sql_str += " AND (KS_IL_TOTAL >= 0 AND KS_IG_VRSTA <> 'U')";
 		}
 	}
+
+}
+
+
+function filterPartKontiranje()
+{
+    if (roba_dn )
+	{
+        sql_str += " AND 1 = 0";
+	}
+    elif (usluge_dn )
+	{
+        sql_str += " AND 1 = 1";
+	}
+    elif (povnak_dn )
+	{
+        sql_str += " AND 1 = 0";
+	}
+    elif (avans_dn )
+	{
+        sql_str += " AND KPSP_GL_OZNAKA = 'P'";
+	}
+
+    if (regija != "")
+	{
+        sql_str += " AND g.nksc_regija= '"+regija+"'";
+	}
+    if (partner != "")
+	{
+        sql_str += " AND kpsp_gl_partner = '" + partner+"'";
+	}
+    
+    // if (komercijalist != "")
+	// {
+    //     sql_str += " AND nkpr_gl_slsp = " + komercijalist;
+	// }
+    
+
+    if (domaca_dn )
+	{
+        sql_str += " AND substring(kpsp_gl_rez, 4, 2) = '" + kpsy_po_freight + "'";
+	}
+    elif (eu_dn )
+	{
+        sql_str += " AND substring(kpsp_gl_rez, 4, 2) IN (" + eucountries + ")";
+	}
+    elif (izvoz_dn )
+	{
+        sql_str += " AND substring(kpsp_gl_rez, 4, 2) != '"+kpsy_po_freight+"' AND NOT substring(kpsp_gl_rez, 4, 2) IN ("+eucountries+")";
+	}
+    
+    // if (gl_oznaka != "")
+	// {
+    //      sql_str += " AND nkpr_gl_oznaka= '"+gl_oznaka+"'";
+	// }
 
 }

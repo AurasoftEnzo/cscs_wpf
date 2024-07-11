@@ -63,7 +63,7 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="221" />
+                <RowDefinition Height="180" />
                 <RowDefinition />
                 <RowDefinition Height="0" />
             </Grid.RowDefinitions>
@@ -163,7 +163,7 @@
                            RadiusY="7"
                            StrokeThickness="0"
                            Grid.ColumnSpan="3"
-                           Height="148"
+                           Height="145"
                            VerticalAlignment="Center"
                            HorizontalAlignment="Left"
                            Width="715" />
@@ -177,7 +177,7 @@
                            FontSize="22"
                            FontWeight="Bold"
                            Foreground="black"
-                           Text="Prosj. nabava po dobavljaču"
+                           Text="Prosj. nabava po dobavlj."
                            Grid.Column="2"
                            Grid.Row="1" />
                 <wcl:ASHorizontalBar HorizontalAlignment="Left"
@@ -221,7 +221,6 @@
                            Grid.Row="1" />
                 <wcl:ASNumericBox HorizontalAlignment="Left"
                                   VerticalAlignment="Top"
-                                  FontWeight="Bold"
                                   ButtonSize="0"
                                   Dec="2"
                                   Height="26"
@@ -818,20 +817,20 @@
                                 Grid.Column="2"
                                 Grid.Row="1"
                                 IsReadOnly="True" />
-                <!--<Label x:Name="label_Copy"
-                       Content="Omjer prodaje VP/MP"
+                <Label x:Name="label_Copy"
+                       Content="Broj računa nabava/kontiranje"
                        Margin="169,15,0,0"
                        FontFamily="Lato"
                        FontSize="22"
                        FontWeight="Bold"
                        HorizontalAlignment="Left"
-                       Width="251"
+                       Width="331"
                        Height="36"
                        VerticalAlignment="Top"
                        Grid.Row="2"
                        Grid.ColumnSpan="2" />
-                <wcl:ASHorizontalBar x:Name="HorizontalBarOGVP"
-                                     Margin="77,50,0,0"
+                <wcl:ASHorizontalBar x:Name="HorizontalBarBRN"
+                                     Margin="63,56,0,0"
                                      FontSize="20"
                                      Grid.Row="2"
                                      FontFamily="lato"
@@ -843,8 +842,8 @@
                                      HorizontalAlignment="Left"
                                      Width="180"
                                      Grid.Column="1" />
-                <wcl:ASHorizontalBar x:Name="HorizontalBarOGMP"
-                                     Margin="77,85,0,0"
+                <wcl:ASHorizontalBar x:Name="HorizontalBarBRK"
+                                     Margin="63,91,0,0"
                                      FontSize="20"
                                      Grid.Row="2"
                                      FontFamily="lato"
@@ -857,30 +856,31 @@
                                      Width="180"
                                      Grid.Column="1" />
                 <TextBlock HorizontalAlignment="Left"
-                           VerticalAlignment="Top"
+                           VerticalAlignment="Center"
                            Height="32"
                            Width="111"
-                           Margin="318,55,0,0"
+                           Margin="304,0,0,0"
                            FontFamily="Lato"
                            x:Name="Label2_Copy1"
                            FontSize="14"
                            Foreground="black"
                            TextWrapping="Wrap"
                            Grid.Row="2"
-                           Grid.ColumnSpan="2" Text="Veleprodaja: "/>
+                           Grid.ColumnSpan="2" Text="Modul Nabava: "/>
                 <TextBlock HorizontalAlignment="Left"
                            VerticalAlignment="Top"
                            Height="32"
-                           Width="111"
-                           Margin="318,90,0,0"
+                           Width="126"
+                           Margin="289,96,0,0"
                            FontFamily="Lato"
                            x:Name="Label2_Copy2"
                            FontSize="14"
                            Foreground="black"
                            TextWrapping="Wrap"
                            Grid.Row="2"
-                           Grid.ColumnSpan="2"><Run Text="Maloprodaja: "/></TextBlock>
-                <TextBlock HorizontalAlignment="Left"
+                           Grid.ColumnSpan="2"
+                           Text="Modul Kontiranje:"/>
+                <!--<TextBlock HorizontalAlignment="Left"
                            VerticalAlignment="Top"
                            Height="22"
                            Width="111"
@@ -962,7 +962,7 @@
                     TabIndex="34" />
             <Rectangle Fill="#e3fae9"
                        Grid.Column="1"
-                       Height="221"
+                       Height="206"
                        VerticalAlignment="Top"
                        HorizontalAlignment="Center"
                        Width="1040" />
@@ -1061,7 +1061,7 @@
                        VerticalAlignment="Top"
                        Height="18"
                        Width="108"
-                       Margin="875,154,0,0"
+                       Margin="875,149,0,0"
                        FontFamily="lato"
                        x:Name="Label22"
                        FontSize="14"
@@ -1072,7 +1072,7 @@
                        VerticalAlignment="Top"
                        Height="15"
                        Width="50"
-                       Margin="411,180,0,0"
+                       Margin="410,176,0,0"
                        FontFamily="lato"
                        x:Name="Label21"
                        FontSize="14"
@@ -1624,7 +1624,7 @@
                             Case="Normal"
                             Height="22"
                             Width="207"
-                            Margin="194,0,0,174"
+                            Margin="194,0,0,150"
                             FontFamily="lato"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Bottom"
@@ -1647,7 +1647,7 @@
                               DataContext="do_mjeseca"
                               Foreground="Black"
                               Content="Do mjeseca"
-                              Margin="10,6,0,10"
+                              Margin="12,-1,0,17"
                               TabIndex="20" />
                 </Grid>
             </GroupBox>
@@ -1735,21 +1735,21 @@
                       DataContext="Tip_racuna"
                       Grid.Column="1"
                       HorizontalAlignment="Right"
-                      Margin="0,176,16,0"
+                      Margin="0,167,16,0"
                       VerticalAlignment="Top"
                       Width="149"
                       Height="22"
                       TabIndex="30" />
-            <!--<lvc:PieChart x:Name="GaugeChartOmjerProdaje"
+            <lvc:PieChart x:Name="GaugeChartOmjerBrRacuna"
                           InitialRotation="90"
                           MinValue="0"
                           MaxValue="100"
-                          Margin="605,323,255,0"
+                          Margin="595,314,280,0"
                           Grid.Column="1"
                           Grid.Row="1"
-                          Height="160"
+                          Height="136"
                           VerticalAlignment="Top" 
-                          IsTabStop="False"/>-->
+                          IsTabStop="False"/>
             <Ellipse x:Name="EllipseProdajaUTjednu"
                      HorizontalAlignment="Left"
                      Height="20"
@@ -1793,7 +1793,7 @@
             <Ellipse x:Name="EllipseProsjProdajaPoKupcu"
                      HorizontalAlignment="Left"
                      Height="20"
-                     Margin="990,180,0,0"
+                     Margin="990,169,0,0"
                      VerticalAlignment="Top"
                      Width="20"
                      Grid.Column="1"
@@ -1802,7 +1802,7 @@
                       DataContext="mjesec_h"
                       Grid.Column="1"
                       HorizontalAlignment="Right"
-                      Margin="0,178,535,0"
+                      Margin="0,171,535,0"
                       VerticalAlignment="Top"
                       Width="45"
                       Height="22"

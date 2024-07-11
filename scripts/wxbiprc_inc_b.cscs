@@ -335,7 +335,7 @@ function setPieChart(){
     PieChart("PieChart1", "title", "Pie Chart Title", 20);    
 	for(i = 1; i < queryResult.length; i++)
 	{
-		PieChart("PieChart1", "values", int(queryResult[i][1]) , substring(string(queryResult[i][0].trim()), 0, 30), 50);
+		PieChart("PieChart1", "values", int(queryResult[i][1]), queryResult[i][0].trim() == "" ? "Nema oznake" : substring(string(queryResult[i][0].trim()), 0, 30), 50);
 	}
 }
 

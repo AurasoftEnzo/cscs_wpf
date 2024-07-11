@@ -80,7 +80,7 @@ function setRegionPieChart()
         elif (razlikaUCijeniField  )
 		{
             sql_str += " SELECT CASE WHEN num<= 5 THEN City ELSE 'Ostali' END AS CountryID , round(sum(suma),0) as Origin ";
-            sql_str += " FROM (SELECT nkpr_gISNULL(nkpr_gl_cuscty,'Nema oznake') as Cityl_cuscty, sum(CASE WHEN nkpr_gl_dviza =  'D' THEN nkpr_gl_tecaj * nkpr_ln_amt - nkpr_ln_cenan * nkpr_ln_qtyz ELSE nkpr_ln_amt - nkpr_ln_cenan * nkpr_ln_qtyz END) AS Suma,";
+            sql_str += " FROM (SELECT ISNULL(nkpr_gl_cuscty,'Nema oznake') as Cityl_cuscty, sum(CASE WHEN nkpr_gl_dviza =  'D' THEN nkpr_gl_tecaj * nkpr_ln_amt - nkpr_ln_cenan * nkpr_ln_qtyz ELSE nkpr_ln_amt - nkpr_ln_cenan * nkpr_ln_qtyz END) AS Suma,";
             sql_str += " ROW_NUMBER() OVER( ORDER BY sum(CASE WHEN nkpr_gl_dviza =  'D' THEN nkpr_gl_tecaj * nkpr_ln_amt - nkpr_ln_cenan * nkpr_ln_qtyz ELSE nkpr_ln_amt - nkpr_ln_cenan * nkpr_ln_qtyz END) DESC ) As Num";
 		}	
         elif (tezina_dn  )
@@ -135,6 +135,8 @@ function setRegionPieChart()
         sql_str += " GROUP BY nkpr_gl_cuscty) t";
         sql_str += " GROUP BY CASE WHEN num <= 5 THEN city ELSE 'Ostali' END" ;
         sql_str += " ORDER BY origin desc";
+
+		// SaveFile(sql_str);
     }
     elif (pieChartStr== "Regije"); //(regijeRB)
     {
@@ -335,7 +337,7 @@ function setPieChart(){
     PieChart("PieChart1", "title", "Pie Chart Title", 20);    
 	for(i = 1; i < queryResult.length; i++)
 	{
-		PieChart("PieChart1", "values", int(queryResult[i][1]) , substring(string(queryResult[i][0].trim()), 0, 30), 50);
+		PieChart("PieChart1", "values", int(queryResult[i][1]) , queryResult[i][0].trim() == "" ? "Nema oznake" : substring(string(queryResult[i][0].trim()), 0, 30), 50);
 	}
 }
 
@@ -434,7 +436,7 @@ function DisplayKategPieChart(){
 
 	for(i = 1; i < queryResult.length; i++)
 	{
-		PieChart("PieChartKat", "values", int(queryResult[i][1]) , substring(string(queryResult[i][0].trim()), 0, 30), 50);
+		PieChart("PieChartKat", "values", int(queryResult[i][1]), substring(string(queryResult[i][0].trim()), 0, 30), 50);
 	}
 
 	PieChart("PieChartKAt", "colors", { "#1C4E80", "#EA6A47", "#5acc6b", "#34d2fa", "#ff45d4", "#fae62f" });

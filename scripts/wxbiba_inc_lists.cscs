@@ -33,12 +33,14 @@
     DEFINE cntr1,cntr2,cntr3,cntr4 type i;
     define ovagod_h,lani_h type a size 4;
 
-    DEFINE tot_ovagod type n size 14 dec 0 ;
+    DEFINE tot_ovagod, tot_ovagod_kontiranje type n size 14 dec 0 ;
     DEFINE tot_ovagod_mp type n size 14 dec 0 ;
     DEFINE tot_ovagod_ukupno type n size 14 dec 0 ;
-    DEFINE tot_lani type n size 14 dec 0 ;
-    DEFINE tot_ovajmj type n size 14 dec 0 ;
-    DEFINE tot_proslimj type n size 14 dec 0 ;
+    DEFINE tot_ovagod_suma type n size 14 dec 0 ;
+    DEFINE tot_lani_suma type n size 14 dec 0 ;
+    DEFINE tot_lani, tot_lani_kontiranje type n size 14 dec 0 ;
+    DEFINE tot_ovajmj, tot_ovajmj_kontiranje, tot_ovajmj_suma type n size 14 dec 0 ;
+    DEFINE tot_proslimj, tot_proslimj_kontiranje, tot_proslimj_suma type n size 14 dec 0 ;
     DEFINE postotak type n size 10 dec 2 ;
     DEFINE postotakMj type n size 10 dec 2 ;
     define postotakTj type n size 10 dec 2 ;
@@ -48,11 +50,15 @@
     DEFINE tot_ovagod_string type a size 20;
     DEFINE tot_ovagod_mp_string type a size 20;
     DEFINE tot_ovagod_ukupno_string type a size 20;
+    DEFINE tot_ovagod_suma_string type a size 20;
     DEFINE tot_lani_string type a size 20;
-    DEFINE tot_ovajmj_string type a size 20;
-    DEFINE tot_proslimj_string type a size 20;
+    DEFINE tot_lani_suma_string type a size 20;
+    DEFINE tot_ovajmj_string, tot_ovajmj_suma_string type a size 20;
+    DEFINE tot_proslimj_string, tot_proslimj_suma_string type a size 20;
     DEFINE tot_ovajTj_string type a size 20;
+    DEFINE tot_ovajTj_suma_string type a size 20;
     DEFINE tot_ProsliTj_string type a size 20;
+    DEFINE tot_ProsliTj_suma_string type a size 20;
 
 	define nameArt type a size 40;
 	define codeArt_ar type a size 15 array 10;
@@ -77,15 +83,15 @@
     define sales2 type n size 16 dec 2;
 	define sklad_str type a size 100;
 
-    define br_kupaca_og, br_kupaca_lg type i size 5;
+    define br_kupaca_og, br_kupaca_og_kontiranje, br_kupaca_lg, br_kupaca_lg_kontiranje, br_kupaca_lg_suma, br_kupaca_og_suma type i size 5;
     define prodaja_kup_og, prodaja_kup_lg type n size 14;
-    define broj_rac_og, broj_rac_lg type r size 6;
+    define broj_rac_og, broj_rac_og_kontiranje, broj_rac_lg, broj_rac_lg_kontiranje, broj_rac_lg_suma, broj_rac_og_suma, broj_rac_og_kontiranje_string, broj_rac_og_string type r size 6;
     define prod_kup_indx type n size 10 dec 2;
     DEFINE arrayProsla, arrayProslaKontiranje type n size 14 array 12;
     DEFINE arrayTrenutna, arrayTrenutnaKontiranje type n size 14 array 12;
 
-	define tot_ovajTj type n size 14;
-	define tot_prosliTj type n size 14;
+	define tot_ovajTj, tot_ovajTj_kontiranje, tot_ovajTj_suma type n size 14;
+	define tot_prosliTj, tot_prosliTj_kontiranje, tot_prosliTj_suma type n size 14;
 	define sales_ar type n size 14 dec 0 array 10;        
 	define postotak type n size 10 dec 2;
 	define postotakMj type n size 10 dec 2;
@@ -94,7 +100,7 @@
 	define week_p type a size 10;
 	define week type i;
 
-    DEFINE sales_month_ar type n size 14 dec 0 array 24;
+    DEFINE sales_month_ar, sales_month_ar_kontiranje type n size 14 dec 0 array 24;
     DEFINE CNTR type i size 3;
     DEFINE cntry type i size 3;
     DEFINE arrayProsla type n size 14 array 12;
@@ -179,23 +185,25 @@
     DEFINE pripremljeno type l;
     define in_string type a size 300;
     DEFINE companyCode type a size 3 up;   
-    DEFINE userCode type a size 20;   
+    DEFINE userCode type a size 20;
     define proslaGodinaBaza type a size 200; 
 
     DEFINE sqlNaDan type a size 10;  
     DEFINE sqlOdDana type a size 10;  
     DEFINE fiscal_yr type a size 10;  
     DEFINE br_kupaca_og_string, br_kupaca_lg_string type a size 50;
+    DEFINE br_kupaca_og_suma_string, br_kupaca_lg_suma_string type a size 50;
     DEFINE broj_rac_og_string, broj_rac_lg_string type a size 50;
+    DEFINE broj_rac_og_suma_string, broj_rac_lg_suma_string type a size 50;
     DEFINE prodaja_kup_og_string, prodaja_kup_lg_string type a size 50;
     define dan2 type i;
     define tableHndl type i;
     define pieChartStr type a size 20;
     define refreshpie type l;    
     define br_wait type r;
-    define br_neazur type r;
+    define br_neazur, br_neazur_kontiranje, br_neazur_suma type r;
     define br_wait_string type a size 30;
-    define br_neazur_string type a size 30;
+    define br_neazur_string, br_neazur_suma_string type a size 30;
     define local type a size 1;
 
 //=============================================

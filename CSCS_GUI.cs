@@ -7043,7 +7043,8 @@ namespace WpfCSCS
 			get;
 			set;
 		} = " ";
-		string TIME_FORMAT { get; set; } = "";
+		string TIME_FORMAT { get;
+			set; } = "";
 
 		public string Name { get; set; }
 		public string DefValue { get; set; }
@@ -7198,36 +7199,54 @@ namespace WpfCSCS
 			Tuple = a;
 		}
 
-		static double CheckValue(string type, int size, Variable varValue)
+		static double CheckValue(string type, int size, int dec, Variable varValue)
 		{
-			double val = varValue.AsDouble();
-			switch (type)
+            double val = Math.Round(varValue.AsDouble(), dec);
+            if (varValue.Type == VarType.NONE)
+            {
+				return val;
+            }
+            if (varValue.Type != VarType.NUMBER && 
+			    (type == "n" || type == "b" || type == "i" || type == "r") &&
+				!Double.TryParse(varValue.String, out val))
+            {
+                throw new ArgumentException("Error: Variable type [" + varValue.Type + "], required [" + type + "]");
+            }
+            switch (type)
 			{
 				case "b":
 					if (val < Byte.MinValue || val > Byte.MaxValue)
 					{
-						return 0;
+                        throw new ArgumentException("Error: Incorrect value [" + varValue.String + "], required [" + type + "]");
 					}
 					break;
 				case "i":
 					if (val < short.MinValue || val > short.MaxValue)
 					{
-						return 0;
-					}
-					break;
+                        throw new ArgumentException("Error: Incorrect value [" + varValue.String + "], required [" + type + "]");
+                    }
+                    break;
 				case "r":
 					if (val < Int32.MinValue || val > Int32.MaxValue)
 					{
-						return 0;
-					}
-					break;
+                        throw new ArgumentException("Error: Incorrect value [" + varValue.String + "], required [" + type + "]");
+                    }
+                    break;
 			}
 			if (size > 0)
 			{
 				var strValue = val.ToString();
 				if (strValue.Length > size)
 				{
-					return 0;
+					var newVal = strValue.Substring(0, size);
+					if (newVal.EndsWith(".") || newVal.ToLower().EndsWith("e"))
+					{
+                        newVal = newVal.Substring(0, newVal.Length - 1);
+                    }
+					if (!Double.TryParse(newVal, out val))
+					{
+                        throw new ArgumentException("Error: Couldn't convert [" + newVal + "], to [" + type + "]");
+                    }
 				}
 			}
 			return val;
@@ -7277,7 +7296,7 @@ namespace WpfCSCS
 					break;
 				case "d":
 				case "t":
-					DateTime = ToDateTime(init.AsString());
+					DateTime = ToDateTime(init);
 					Type = VarType.DATETIME;
 					break;
 				case "l": // "logic" (boolean)
@@ -7289,7 +7308,7 @@ namespace WpfCSCS
 				case "n": // number
 				case "r": // small int
 				default:
-					Value = CheckValue(DefType, Size, init);
+					Value = CheckValue(DefType, Size, Dec, init);
 					Type = VarType.NUMBER;
 					break;
 			}
@@ -7393,7 +7412,7 @@ namespace WpfCSCS
 			{
 				return TIME_FORMAT;
 			}
-			TIME_FORMAT = "dd/MM/yyyy";
+			TIME_FORMAT = "HH:mm:ss";
 			switch (Size)
 			{
 				case 3:
@@ -7424,10 +7443,16 @@ namespace WpfCSCS
 			return ch == 't' || ch == 'y' || ch == '1';
 		}
 
-		public DateTime ToDateTime(string strValue)
+		public DateTime ToDateTime(Variable val)
 		{
+            DateTime oldest = new DateTime(1900, 1, 1, 0, 0, 0);
+            DateTime dt = oldest;
+            if (val.Type == VarType.NONE || (val.Type == VarType.NUMBER && val.Value == 0.0))
+			{
+				return dt;
+			}
+			var strValue = val.AsString();
 			//DateTime dt = DateTime.MinValue;
-			DateTime dt = new DateTime(1900, 1, 1);
 			if (DefType == "d")
 			{
 				if (!string.IsNullOrWhiteSpace(strValue) &&
@@ -7445,10 +7470,10 @@ namespace WpfCSCS
 					else
 						throw new ArgumentException("Error: Couldn't parse [" + strValue + "] with format [" + GetDateFormat() + "]");
 				}
-				else if (dt.CompareTo(new DateTime(1900, 1, 1)) < 0)
+				else if (dt.CompareTo(oldest) < 0)
 				{
 					MessageBox.Show("Date range is out of limit: " + dt.ToString(GetDateFormat()) + "\nDate is set to 0");
-					dt = new DateTime(1900, 1, 1);
+					dt = oldest;
                 }
 			}
 			if (DefType == "t")
@@ -7709,14 +7734,15 @@ namespace WpfCSCS
                 ProcessParentScript(script, m_name, varValue);
 				return result;
 			}
-			if (Mode == MODE.INCREMENT || Mode == MODE.DECREMENT)
+			var name = m_originalName.EndsWith("]") ? m_originalName : m_name;
+            if (Mode == MODE.INCREMENT || Mode == MODE.DECREMENT)
 			{
-				var result = IncrementDecrementFunction.ProcessAction(m_name, m_action, m_prefix, script);
+				var result = IncrementDecrementFunction.ProcessAction(name, m_action, m_prefix, script);
 				return result;
 			}
 			if (m_action.Length > 1)
 			{
-				var result = OperatorAssignFunction.ProcessOperator(m_name, m_action, script);
+				var result = OperatorAssignFunction.ProcessOperator(name, m_action, script);
 				return result;
 			}
 			return null;

@@ -408,7 +408,7 @@ namespace WpfCSCS
 		public Window GetParentWindow(ParsingScript script)
 		{
 			if (script.ParentScript != null &&
-			    File2Window.TryGetValue(script.ParentScript.Filename, out Window win))
+				File2Window.TryGetValue(script.ParentScript.Filename, out Window win))
 			{
 				return win;
 			}
@@ -417,7 +417,7 @@ namespace WpfCSCS
 		public Window GetScriptWindow(ParsingScript script)
 		{
 			if (script != null && !string.IsNullOrWhiteSpace(script.Filename) &&
-			    File2Window.TryGetValue(script.Filename, out Window win))
+				File2Window.TryGetValue(script.Filename, out Window win))
 			{
 				return win;
 			}
@@ -478,6 +478,9 @@ namespace WpfCSCS
 		public static string DefaultDB { get; set; }
 		public static string CommonDB { get; set; }
 		public static int MaxCacheSize { get; set; }
+		public static string DefaultDateFormat { get; set; }
+		public static string DateFormat10 { get; set; }
+		public static string DateFormat8 { get; set; }
 
 		bool m_initialized;
 
@@ -536,22 +539,22 @@ namespace WpfCSCS
 		public static AdictionaryLocal.Adictionary Adictionary { get; set; } = new AdictionaryLocal.Adictionary();
 
 		public Dictionary<string, DefineVariable> DEFINES { get; set; } =
-		    new Dictionary<string, DefineVariable>(40000);
+			new Dictionary<string, DefineVariable>(40000);
 		public Dictionary<string, WidgetData> WIDGETS { get; set; } =
-		    new Dictionary<string, WidgetData>();
+			new Dictionary<string, WidgetData>();
 
 		public Dictionary<string, Dictionary<string, bool>> m_varExists =
-		    new Dictionary<string, Dictionary<string, bool>>();
+			new Dictionary<string, Dictionary<string, bool>>();
 
 
 		protected static List<ICscsModule> GetModuleList()
 		{
 			return new List<ICscsModule>
-	  {
-	      new CscsGuiModule(),
+			{
+				new CscsGuiModule(),
                 //new CscsMathModule(),
                 InterpreterManager
-	  };
+			};
 		}
 		public void Init()
 		{
@@ -597,6 +600,9 @@ namespace WpfCSCS
 			RequireDEFINE = App.GetConfiguration("Require_Define", "false");
 			DefaultDB = App.GetConfiguration("DefaultDB", "ad");
 			CommonDB = App.GetConfiguration("CommonDB", "");
+			DefaultDateFormat = App.GetConfiguration("DateFormat", "dd/MM/yyyy");
+			DateFormat10 = App.GetConfiguration("DateFormat", "dd/MM/yyyy");
+			DateFormat8 = App.GetConfiguration("DateFormat", "dd/MM/yy");
 
 			if (int.TryParse(App.GetConfiguration("MaxCacheSize", "300"), out int cacheSize))
 			{
@@ -733,7 +739,7 @@ namespace WpfCSCS
 		public ParsingScript GetScript(Window window)
 		{
 			if (window != null && Window2File.TryGetValue(window, out string filename) &&
-			    ChainFunction.Chains.TryGetValue(filename, out ParsingScript result))
+				ChainFunction.Chains.TryGetValue(filename, out ParsingScript result))
 			{
 				return result;
 			}
@@ -748,17 +754,17 @@ namespace WpfCSCS
 				File2Window[filename] = window;
 			}
 		}
-        public void UncacheWindow(Window window, string tag)
-        {
-            if (Window2File.TryGetValue(window, out string filename))
-            {
-                Window2File.Remove(window);
-                File2Window.Remove(filename);
-            }
-            Tag2Parent.Remove(tag);
-        }
+		public void UncacheWindow(Window window, string tag)
+		{
+			if (Window2File.TryGetValue(window, out string filename))
+			{
+				Window2File.Remove(window);
+				File2Window.Remove(filename);
+			}
+			Tag2Parent.Remove(tag);
+		}
 
-        public void CloseAllWindows()
+		public void CloseAllWindows()
 		{
 			CSCS_GUI.Dispatcher.Invoke((Action)delegate ()
 			{
@@ -769,7 +775,7 @@ namespace WpfCSCS
 					{
 						continue;
 					}
-                    var filename = Window2File[win];
+					var filename = Window2File[win];
 					win.Close();
 					Window2File.Remove(win);
 					File2Window.Remove(filename);
@@ -814,7 +820,7 @@ namespace WpfCSCS
 
 			var widgetName = name.ToLower();
 			if (string.Equals(widgetName, s_variableChanged) ||
-			    !m_boundVariables.TryGetValue(widgetName, out Variable bounded))
+				!m_boundVariables.TryGetValue(widgetName, out Variable bounded))
 			{
 				return;
 			}
@@ -864,7 +870,7 @@ namespace WpfCSCS
 			}
 
 			Interpreter.AddGlobalOrLocalVariable(widgetName,
-					        new GetVarFunction(newValue));
+							new GetVarFunction(newValue));
 			ChangingBoundVariable = false;
 		}
 
@@ -1138,19 +1144,19 @@ namespace WpfCSCS
 			}
 			else if (widget is ASDateEditer2)
 			{
-                var dateEditer2 = widget as ASDateEditer2;
-                if (dateEditer2 == null)
-                {
-                    return false;
-                }
+				var dateEditer2 = widget as ASDateEditer2;
+				if (dateEditer2 == null)
+				{
+					return false;
+				}
 
-                m_textChangedHandlers[name] = action;
-                // x2
-                //dateEditer2.SelectedDateChanged -= new EventHandler<SelectionChangedEventArgs>(Widget_DateChanged);
-                //dateEditer2.SelectedDateChanged += new EventHandler<SelectionChangedEventArgs>(Widget_DateChanged);
+				m_textChangedHandlers[name] = action;
+				// x2
+				//dateEditer2.SelectedDateChanged -= new EventHandler<SelectionChangedEventArgs>(Widget_DateChanged);
+				//dateEditer2.SelectedDateChanged += new EventHandler<SelectionChangedEventArgs>(Widget_DateChanged);
 
-                return true;
-            }
+				return true;
+			}
 
 			var textable = widget as TextBoxBase;
 			if (textable == null)
@@ -1158,17 +1164,17 @@ namespace WpfCSCS
 				return false;
 			}
 
-			if(textable.Parent is Grid grid)
+			if (textable.Parent is Grid grid)
 			{
-				if(grid.Parent is ASDateEditer2 asde2)
+				if (grid.Parent is ASDateEditer2 asde2)
 				{
-                    m_textChangedHandlers[name] = action;
+					m_textChangedHandlers[name] = action;
 
-                    textable.TextChanged -= dateEditer2_TextChanged;
-                    textable.TextChanged += dateEditer2_TextChanged;
+					textable.TextChanged -= dateEditer2_TextChanged;
+					textable.TextChanged += dateEditer2_TextChanged;
 
-                    return true;
-                }
+					return true;
+				}
 			}
 
 			m_textChangedHandlers[name] = action;
@@ -1178,21 +1184,21 @@ namespace WpfCSCS
 
 			return true;
 		}
-		
+
 		public bool AddLostFocusHandler(string name, string action, FrameworkElement widget)
 		{
-			if(widget is ASDateEditer asde)
+			if (widget is ASDateEditer asde)
 			{
-                m_lostFocusHandlers[name] = action;
+				m_lostFocusHandlers[name] = action;
 
-                asde.LostFocus -= widget_LostFocus;
-                asde.LostFocus += widget_LostFocus;
+				asde.LostFocus -= widget_LostFocus;
+				asde.LostFocus += widget_LostFocus;
 
-                return true;
-            }
+				return true;
+			}
 			//else if(widget is ComboBox cb)
 			//{
-   //             //m_lostFocusHandlers[name] = action;
+			//             //m_lostFocusHandlers[name] = action;
 
 			//	//cb.LostFocus -= comboBox_LostFocus;
 			//	//cb.LostFocus += comboBox_LostFocus;
@@ -1200,245 +1206,245 @@ namespace WpfCSCS
 			//	//cb.SelectionChanged -= comboBox_SelectionChanged;
 			//	//cb.SelectionChanged += comboBox_SelectionChanged;
 
-   //             return true;
-   //         }
+			//             return true;
+			//         }
 
-            var textable = widget as TextBoxBase;
-            if (textable == null)
+			var textable = widget as TextBoxBase;
+			if (textable == null)
 			{
 				return false;
 			}
 
-			if(textable.Parent is Grid grid)
+			if (textable.Parent is Grid grid)
 			{
-				if(grid.Parent is ASDateEditer2 asde2)
+				if (grid.Parent is ASDateEditer2 asde2)
 				{
-                    m_lostFocusHandlers[name] = action;
+					m_lostFocusHandlers[name] = action;
 
-                    textable.LostFocus -= dateEditer2_LostFocus;
-                    textable.LostFocus += dateEditer2_LostFocus;
+					textable.LostFocus -= dateEditer2_LostFocus;
+					textable.LostFocus += dateEditer2_LostFocus;
 
-                    return true;
-                }
+					return true;
+				}
 			}
 
 			return false;
 		}
 
-        private void comboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {            
-            FrameworkElement widget = sender as FrameworkElement;
+		private void comboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			FrameworkElement widget = sender as FrameworkElement;
 
-            var widgetName = GetWidgetName(widget);
-            if (string.IsNullOrWhiteSpace(widgetName) ||
-                m_updatingWidget.Contains(widgetName))
-            {
-                return;
-            }
+			var widgetName = GetWidgetName(widget);
+			if (string.IsNullOrWhiteSpace(widgetName) ||
+				m_updatingWidget.Contains(widgetName))
+			{
+				return;
+			}
 
-            //var text = GetTextWidgetFunction.GetText(widget);
+			//var text = GetTextWidgetFunction.GetText(widget);
 			var text2 = new Variable(((ComboBox)widget).SelectedValue.ToString());
 
-            FrameworkElement widget2 = sender as FrameworkElement;
-            var widgetName2 = GetWidgetBindingName(widget2);
-            if (string.IsNullOrWhiteSpace(widgetName2) ||
-                m_updatingWidget.Contains(widgetName2))
-            {
-                return;
-            }
+			FrameworkElement widget2 = sender as FrameworkElement;
+			var widgetName2 = GetWidgetBindingName(widget2);
+			if (string.IsNullOrWhiteSpace(widgetName2) ||
+				m_updatingWidget.Contains(widgetName2))
+			{
+				return;
+			}
 
-            m_updatingWidget.Add(widgetName2);
+			m_updatingWidget.Add(widgetName2);
 			UpdateVariable(widget2, text2);
-            
-            string funcName;
-            if (m_selChangedHandlers.TryGetValue(widgetName, out funcName))
-            {
-                Control2Window.TryGetValue(widget, out Window win);
-                Interpreter.Run(funcName, new Variable(widgetName), text2,
-                    Variable.EmptyInstance, GetScript(win));
-            }
-            m_updatingWidget.Remove(widgetName2);
-        }
 
-        private void comboBox_LostFocus(object sender, RoutedEventArgs e)
-        {            
-            FrameworkElement widget = sender as FrameworkElement;
+			string funcName;
+			if (m_selChangedHandlers.TryGetValue(widgetName, out funcName))
+			{
+				Control2Window.TryGetValue(widget, out Window win);
+				Interpreter.Run(funcName, new Variable(widgetName), text2,
+					Variable.EmptyInstance, GetScript(win));
+			}
+			m_updatingWidget.Remove(widgetName2);
+		}
 
-            var widgetName = GetWidgetName(widget);
-            if (string.IsNullOrWhiteSpace(widgetName) ||
-                m_updatingWidget.Contains(widgetName))
-            {
-                return;
-            }
+		private void comboBox_LostFocus(object sender, RoutedEventArgs e)
+		{
+			FrameworkElement widget = sender as FrameworkElement;
 
-            var text = GetTextWidgetFunction.GetText(widget);
+			var widgetName = GetWidgetName(widget);
+			if (string.IsNullOrWhiteSpace(widgetName) ||
+				m_updatingWidget.Contains(widgetName))
+			{
+				return;
+			}
 
-            FrameworkElement widget2 = sender as FrameworkElement;
-            var widgetName2 = GetWidgetBindingName(widget2);
-            if (string.IsNullOrWhiteSpace(widgetName2) ||
-                m_updatingWidget.Contains(widgetName2))
-            {
-                return;
-            }
+			var text = GetTextWidgetFunction.GetText(widget);
 
-            m_updatingWidget.Add(widgetName2);
+			FrameworkElement widget2 = sender as FrameworkElement;
+			var widgetName2 = GetWidgetBindingName(widget2);
+			if (string.IsNullOrWhiteSpace(widgetName2) ||
+				m_updatingWidget.Contains(widgetName2))
+			{
+				return;
+			}
+
+			m_updatingWidget.Add(widgetName2);
 			UpdateVariable(widget2, text);
-            
-            string funcName;
-            if (m_lostFocusHandlers.TryGetValue(widgetName, out funcName))
-            {
-                Control2Window.TryGetValue(widget, out Window win);
-                Interpreter.Run(funcName, new Variable(widgetName), text,
-                    Variable.EmptyInstance, GetScript(win));
-            }
-            m_updatingWidget.Remove(widgetName2);
-        }
-		
+
+			string funcName;
+			if (m_lostFocusHandlers.TryGetValue(widgetName, out funcName))
+			{
+				Control2Window.TryGetValue(widget, out Window win);
+				Interpreter.Run(funcName, new Variable(widgetName), text,
+					Variable.EmptyInstance, GetScript(win));
+			}
+			m_updatingWidget.Remove(widgetName2);
+		}
+
 		private void widget_LostFocus(object sender, RoutedEventArgs e)
-        {
-            FrameworkElement widget = sender as FrameworkElement;
-            
-            string funcName;
-            if (m_lostFocusHandlers.TryGetValue(widget.Name, out funcName))
-            {
-                Control2Window.TryGetValue(widget, out Window win);
-                Interpreter.Run(funcName, new Variable(""), new Variable(""),
-                    Variable.EmptyInstance, GetScript(win));
-            }
-            
-        }
-		
+		{
+			FrameworkElement widget = sender as FrameworkElement;
+
+			string funcName;
+			if (m_lostFocusHandlers.TryGetValue(widget.Name, out funcName))
+			{
+				Control2Window.TryGetValue(widget, out Window win);
+				Interpreter.Run(funcName, new Variable(""), new Variable(""),
+					Variable.EmptyInstance, GetScript(win));
+			}
+
+		}
+
 		private void dateEditer2_LostFocus(object sender, RoutedEventArgs e)
-        {
-            TextBoxBase widget = sender as TextBoxBase;
-            var widgetName = GetWidgetName(widget);
-            if (string.IsNullOrWhiteSpace(widgetName) ||
-                m_updatingWidget.Contains(widgetName))
-            {
-                return;
-            }
+		{
+			TextBoxBase widget = sender as TextBoxBase;
+			var widgetName = GetWidgetName(widget);
+			if (string.IsNullOrWhiteSpace(widgetName) ||
+				m_updatingWidget.Contains(widgetName))
+			{
+				return;
+			}
 
-            //if(sender is ASNumericTextBox)
-            //{
-            //    var asntb = (sender as ASNumericTextBox);
-            //    if (asntb.SkipWidgetTextChanged)
-            //    {
-            //        asntb.SkipWidgetTextChanged = false;
-            //        ///return;
-            //    }
-            //}
+			//if(sender is ASNumericTextBox)
+			//{
+			//    var asntb = (sender as ASNumericTextBox);
+			//    if (asntb.SkipWidgetTextChanged)
+			//    {
+			//        asntb.SkipWidgetTextChanged = false;
+			//        ///return;
+			//    }
+			//}
 
-            //m_updatingWidget.Add(widgetName);
-            var text = GetTextWidgetFunction.GetText(widget);
-            //UpdateVariable(widget, text);
-            //m_updatingWidget.Remove(widgetName);
-            //
-            TextBoxBase widget2 = sender as TextBoxBase;
-            var widgetName2 = GetWidgetBindingName(widget2);
-            if (string.IsNullOrWhiteSpace(widgetName2) ||
-                m_updatingWidget.Contains(widgetName2))
-            {
-                return;
-            }
+			//m_updatingWidget.Add(widgetName);
+			var text = GetTextWidgetFunction.GetText(widget);
+			//UpdateVariable(widget, text);
+			//m_updatingWidget.Remove(widgetName);
+			//
+			TextBoxBase widget2 = sender as TextBoxBase;
+			var widgetName2 = GetWidgetBindingName(widget2);
+			if (string.IsNullOrWhiteSpace(widgetName2) ||
+				m_updatingWidget.Contains(widgetName2))
+			{
+				return;
+			}
 
-            m_updatingWidget.Add(widgetName2);
-            //var text = GetTextWidgetFunction.GetText(widget2);
-            if (DEFINES.TryGetValue(widgetName2.ToLower(), out DefineVariable defVar))
-            {
-                switch (defVar.DefType)
-                {
-                    case "a":
-                        UpdateVariable(widget2, text);
-                        break;
+			m_updatingWidget.Add(widgetName2);
+			//var text = GetTextWidgetFunction.GetText(widget2);
+			if (DEFINES.TryGetValue(widgetName2.ToLower(), out DefineVariable defVar))
+			{
+				switch (defVar.DefType)
+				{
+					case "a":
+						UpdateVariable(widget2, text);
+						break;
 
-                    case "i":
-                    case "n":
-                    case "r":
-                    case "b":
-                        if (double.TryParse(text.AsString(), out double parsedDouble))
-                        {
-                            if (text.AsString() == parsedDouble.ToString())
-                            {
-                                UpdateVariable(widget2, new Variable(parsedDouble));
-                            }
-
-                        }
-                        break;
-
-                    case "d":
-                        if (DateTime.TryParseExact(text.AsString(), defVar.GetDateFormat(), CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dt))
-                        {
-                            UpdateVariable(widget2, text/*new Variable(dt)*/);
-                        }
-						else if(text.AsString() == "00/00/00")
+					case "i":
+					case "n":
+					case "r":
+					case "b":
+						if (double.TryParse(text.AsString(), out double parsedDouble))
 						{
-                            UpdateVariable(widget2, new Variable("01/01/00"));
-                        }
-						else if(text.AsString() == "00/00/0000")
+							if (text.AsString() == parsedDouble.ToString())
+							{
+								UpdateVariable(widget2, new Variable(parsedDouble));
+							}
+
+						}
+						break;
+
+					case "d":
+						if (DateTime.TryParseExact(text.AsString(), defVar.GetDateFormat(), CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dt))
 						{
-                            UpdateVariable(widget2, new Variable("01/01/1900"));
-                        }
-                        break;
-                    case "t":
-                        //if (true)
-                        //{
-                        //    if (TimeSpan.TryParse(text.AsString(), out TimeSpan result))
-                        //    {
-                        //        UpdateVariable(widget2, text);
-                        //    }
-                        //}
-                        break;
+							UpdateVariable(widget2, text/*new Variable(dt)*/);
+						}
+						else if (text.AsString() == "00/00/00")
+						{
+							UpdateVariable(widget2, new Variable("01/01/00"));
+						}
+						else if (text.AsString() == "00/00/0000")
+						{
+							UpdateVariable(widget2, new Variable("01/01/1900"));
+						}
+						break;
+					case "t":
+						//if (true)
+						//{
+						//    if (TimeSpan.TryParse(text.AsString(), out TimeSpan result))
+						//    {
+						//        UpdateVariable(widget2, text);
+						//    }
+						//}
+						break;
 
-                    default:
-                        //UpdateVariable(widget2, text);
-                        break;
-                }
-            }
+					default:
+						//UpdateVariable(widget2, text);
+						break;
+				}
+			}
 
-            string funcName;
-            if (m_lostFocusHandlers.TryGetValue(widgetName, out funcName))
-            {
-                Control2Window.TryGetValue(widget, out Window win);
-                Interpreter.Run(funcName, new Variable(widgetName), text,
-                    Variable.EmptyInstance, GetScript(win));
-            }
-            m_updatingWidget.Remove(widgetName2);
-        }
+			string funcName;
+			if (m_lostFocusHandlers.TryGetValue(widgetName, out funcName))
+			{
+				Control2Window.TryGetValue(widget, out Window win);
+				Interpreter.Run(funcName, new Variable(widgetName), text,
+					Variable.EmptyInstance, GetScript(win));
+			}
+			m_updatingWidget.Remove(widgetName2);
+		}
 
-        private void dateEditer2_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            TextBoxBase widget = sender as TextBoxBase;
-            var widgetName = GetWidgetName(widget);
-            if (string.IsNullOrWhiteSpace(widgetName) ||
-                m_updatingWidget.Contains(widgetName))
-            {
-                return;
-            }
+		private void dateEditer2_TextChanged(object sender, TextChangedEventArgs e)
+		{
+			TextBoxBase widget = sender as TextBoxBase;
+			var widgetName = GetWidgetName(widget);
+			if (string.IsNullOrWhiteSpace(widgetName) ||
+				m_updatingWidget.Contains(widgetName))
+			{
+				return;
+			}
 
-            var text = GetTextWidgetFunction.GetText(widget);
-            
-            string funcName;
-            if (m_textChangedHandlers.TryGetValue(widgetName, out funcName))
-            {
-                Control2Window.TryGetValue(widget, out Window win);
-                Interpreter.Run(funcName, new Variable(widgetName), text,
-                    Variable.EmptyInstance, GetScript(win));
-            }
-        }
+			var text = GetTextWidgetFunction.GetText(widget);
 
-        public bool AddSelectionChangedHandler(string name, string action, FrameworkElement widget)
+			string funcName;
+			if (m_textChangedHandlers.TryGetValue(widgetName, out funcName))
+			{
+				Control2Window.TryGetValue(widget, out Window win);
+				Interpreter.Run(funcName, new Variable(widgetName), text,
+					Variable.EmptyInstance, GetScript(win));
+			}
+		}
+
+		public bool AddSelectionChangedHandler(string name, string action, FrameworkElement widget)
 		{
 			if (widget is ComboBox cb)
-            {
-                m_selChangedHandlers[name] = action;
+			{
+				m_selChangedHandlers[name] = action;
 
-                cb.SelectionChanged -= comboBox_SelectionChanged;
-                cb.SelectionChanged += comboBox_SelectionChanged;
+				cb.SelectionChanged -= comboBox_SelectionChanged;
+				cb.SelectionChanged += comboBox_SelectionChanged;
 
-                return true;
-            }
+				return true;
+			}
 
-            var sel = widget as Selector;
+			var sel = widget as Selector;
 			if (sel == null)
 			{
 				return false;
@@ -1469,10 +1475,10 @@ namespace WpfCSCS
 
 			if (widget is ASDateEditer)
 			{
-                m_dateSelectedHandlers[name] = action;
-                datePicker.SelectedDateChanged -= new EventHandler<SelectionChangedEventArgs>(Widget_DateChanged);
-                datePicker.SelectedDateChanged += new EventHandler<SelectionChangedEventArgs>(Widget_DateChanged);
-                return true;
+				m_dateSelectedHandlers[name] = action;
+				datePicker.SelectedDateChanged -= new EventHandler<SelectionChangedEventArgs>(Widget_DateChanged);
+				datePicker.SelectedDateChanged += new EventHandler<SelectionChangedEventArgs>(Widget_DateChanged);
+				return true;
 			}
 
 			m_dateSelectedHandlers[name] = action;
@@ -1609,9 +1615,9 @@ namespace WpfCSCS
 				m_SelectHandlers[name] = action;
 				dg.MouseDoubleClick -= new MouseButtonEventHandler(DataGrid_Select);
 				dg.MouseDoubleClick += new MouseButtonEventHandler(DataGrid_Select);
-				
+
 				dg.PreviewKeyDown += new KeyEventHandler(DataGrid_EnterKeyPressed);
-				dg.PreviewKeyDown += new KeyEventHandler(DataGrid_EnterKeyPressed);	
+				dg.PreviewKeyDown += new KeyEventHandler(DataGrid_EnterKeyPressed);
 
 				return true;
 			}
@@ -1874,10 +1880,10 @@ namespace WpfCSCS
 			string funcName;
 			if (m_actionHandlers.TryGetValue(widgetName, out funcName))
 			{
-                Control2Window.TryGetValue(widget, out Window win);
-                Interpreter.Run(funcName, new Variable(widgetName), Variable.EmptyInstance, Variable.EmptyInstance,
-                    GetScript(win));
-            }
+				Control2Window.TryGetValue(widget, out Window win);
+				Interpreter.Run(funcName, new Variable(widgetName), Variable.EmptyInstance, Variable.EmptyInstance,
+					GetScript(win));
+			}
 
 		}
 
@@ -1896,7 +1902,7 @@ namespace WpfCSCS
 				var arg = GetTextWidgetFunction.GetText(widget);
 				Control2Window.TryGetValue(widget, out Window win);
 				Interpreter.Run(funcName, new Variable(widgetName), new Variable(arg), Variable.EmptyInstance,
-				    GetScript(win));
+					GetScript(win));
 			}
 		}
 
@@ -1915,7 +1921,7 @@ namespace WpfCSCS
 				var arg = GetTextWidgetFunction.GetText(widget);
 				Control2Window.TryGetValue(widget, out Window win);
 				Interpreter.Run(funcName, new Variable(widgetName), new Variable(arg),
-				    Variable.EmptyInstance, GetScript(win));
+					Variable.EmptyInstance, GetScript(win));
 			}
 		}
 
@@ -1933,8 +1939,8 @@ namespace WpfCSCS
 			{
 				Control2Window.TryGetValue(widget, out Window win);
 				Interpreter.Run(funcName, new Variable(widgetName),
-				    new Variable(((char)e.Key).ToString()),
-				    Variable.EmptyInstance, GetScript(win));
+					new Variable(((char)e.Key).ToString()),
+					Variable.EmptyInstance, GetScript(win));
 			}
 		}
 		private void Widget_KeyUp(object sender, KeyEventArgs e)
@@ -1951,8 +1957,8 @@ namespace WpfCSCS
 			{
 				Control2Window.TryGetValue(widget, out Window win);
 				Interpreter.Run(funcName, new Variable(widgetName),
-				    new Variable(((char)e.Key).ToString()),
-				    Variable.EmptyInstance, GetScript(win));
+					new Variable(((char)e.Key).ToString()),
+					Variable.EmptyInstance, GetScript(win));
 			}
 		}
 
@@ -1961,7 +1967,7 @@ namespace WpfCSCS
 			TextBoxBase widget = sender as TextBoxBase;
 			var widgetName = GetWidgetName(widget);
 			if (string.IsNullOrWhiteSpace(widgetName) ||
-			    m_updatingWidget.Contains(widgetName))
+				m_updatingWidget.Contains(widgetName))
 			{
 				return;
 			}
@@ -1984,7 +1990,7 @@ namespace WpfCSCS
 			TextBoxBase widget2 = sender as TextBoxBase;
 			var widgetName2 = GetWidgetBindingName(widget2);
 			if (string.IsNullOrWhiteSpace(widgetName2) ||
-			    m_updatingWidget.Contains(widgetName2))
+				m_updatingWidget.Contains(widgetName2))
 			{
 				return;
 			}
@@ -2037,7 +2043,7 @@ namespace WpfCSCS
 			{
 				Control2Window.TryGetValue(widget, out Window win);
 				Interpreter.Run(funcName, new Variable(widgetName), text,
-				    Variable.EmptyInstance, GetScript(win));
+					Variable.EmptyInstance, GetScript(win));
 			}
 			m_updatingWidget.Remove(widgetName2);
 		}
@@ -2093,19 +2099,19 @@ namespace WpfCSCS
 				}
 			}
 
-            
 
-            string funcName;
-            if (m_dateSelectedHandlers.TryGetValue(widget.Name, out funcName))
-            {
-                var item = e.AddedItems.Count > 0 ? e.AddedItems[0].ToString() : e.RemovedItems.Count > 0 ? e.RemovedItems[0].ToString() : "";
-                Control2Window.TryGetValue(widget, out Window win);
-                Interpreter.Run(funcName, new Variable(widgetName), new Variable(item),
-                    Variable.EmptyInstance, GetScript(win));
-            }
 
-            m_updatingWidget.Remove(widgetName);
-        }
+			string funcName;
+			if (m_dateSelectedHandlers.TryGetValue(widget.Name, out funcName))
+			{
+				var item = e.AddedItems.Count > 0 ? e.AddedItems[0].ToString() : e.RemovedItems.Count > 0 ? e.RemovedItems[0].ToString() : "";
+				Control2Window.TryGetValue(widget, out Window win);
+				Interpreter.Run(funcName, new Variable(widgetName), new Variable(item),
+					Variable.EmptyInstance, GetScript(win));
+			}
+
+			m_updatingWidget.Remove(widgetName);
+		}
 
 		public Dictionary<string, List<object>> gridsSelectedRow = new Dictionary<string, List<object>>();
 
@@ -2121,7 +2127,7 @@ namespace WpfCSCS
 					var dg = widget as DataGrid;
 
 					if (dg.SelectedItem != null)
-                    {
+					{
 						var row = new List<object>();
 
 						foreach (KeyValuePair<string, object> kvp in (dg.SelectedItem as ExpandoObject))
@@ -2143,7 +2149,7 @@ namespace WpfCSCS
 				var item = e.AddedItems.Count > 0 ? e.AddedItems[0].ToString() : e.RemovedItems.Count > 0 ? e.RemovedItems[0].ToString() : "";
 				Control2Window.TryGetValue(widget, out Window win);
 				Interpreter.Run(funcName, new Variable(widgetName), new Variable(item),
-				    Variable.EmptyInstance, GetScript(win));
+					Variable.EmptyInstance, GetScript(win));
 			}
 		}
 
@@ -2158,7 +2164,7 @@ namespace WpfCSCS
 			{
 				Control2Window.TryGetValue(widget, out Window win);
 				Interpreter.Run(funcName, new Variable(widgetName), /*new Variable(item)*/ null,
-				    Variable.EmptyInstance, GetScript(win));
+					Variable.EmptyInstance, GetScript(win));
 			}
 		}
 
@@ -2173,7 +2179,7 @@ namespace WpfCSCS
 			{
 				Control2Window.TryGetValue(widget, out Window win);
 				Interpreter.Run(funcName, new Variable(widgetName), /*new Variable(item)*/ null,
-				    Variable.EmptyInstance, GetScript(win));
+					Variable.EmptyInstance, GetScript(win));
 			}
 		}
 
@@ -2190,7 +2196,7 @@ namespace WpfCSCS
 			{
 				Control2Window.TryGetValue(widget, out Window win);
 				Interpreter.Run(funcName, new Variable(widgetName), new Variable(e.ToString()),
-				    Variable.EmptyInstance, GetScript(win));
+					Variable.EmptyInstance, GetScript(win));
 			}
 		}
 
@@ -2343,7 +2349,7 @@ namespace WpfCSCS
 			{
 				Control2Window.TryGetValue(widget, out Window win);
 				var result = Interpreter.Run(funcName, new Variable(widgetName), null,
-				    Variable.EmptyInstance, GetScript(win));
+					Variable.EmptyInstance, GetScript(win));
 				if (result.Type == Variable.VarType.NUMBER && !result.AsBool()) // if script returned false
 				{
 					if (widget is ASEnterTextBox || widget is ASNumericTextBox)
@@ -2489,7 +2495,7 @@ namespace WpfCSCS
 					}
 				}
 			}
-			
+
 			if ((Control)sender is DatePicker)
 			{
 				var asdeDatePicker = sender as DatePicker;
@@ -2501,7 +2507,7 @@ namespace WpfCSCS
 					{
 						if (parent1 is Popup popup)
 						{
-							if(popup.Name.Replace("_Popup", "") == asdeDatePicker.Name)
+							if (popup.Name.Replace("_Popup", "") == asdeDatePicker.Name)
 							{
 								return;
 							}
@@ -2519,8 +2525,8 @@ namespace WpfCSCS
 					{
 						return;
 					}
-                }
-				else if((Control)e.NewFocus is CalendarButton)
+				}
+				else if ((Control)e.NewFocus is CalendarButton)
 				{
 					return;
 				}
@@ -2532,7 +2538,7 @@ namespace WpfCSCS
 			{
 				Control2Window.TryGetValue(widget, out Window win);
 				var result = Interpreter.Run(funcName, new Variable(widgetName), null,
-				    Variable.EmptyInstance, GetScript(win));
+					Variable.EmptyInstance, GetScript(win));
 				if (result.Type == Variable.VarType.NUMBER && !result.AsBool())
 				{
 					e.Handled = true;
@@ -2544,7 +2550,7 @@ namespace WpfCSCS
 					TextBoxBase widget2 = sender as TextBoxBase;
 					var widgetName2 = GetWidgetBindingName(widget2);
 					if (string.IsNullOrWhiteSpace(widgetName2) ||
-					    m_updatingWidget.Contains(widgetName2))
+						m_updatingWidget.Contains(widgetName2))
 					{
 						return;
 					}
@@ -2606,7 +2612,7 @@ namespace WpfCSCS
 			{
 				Control2Window.TryGetValue(widget, out Window win);
 				Interpreter.Run(funcName, new Variable(widgetName), null,
-				    Variable.EmptyInstance, GetScript(win));
+					Variable.EmptyInstance, GetScript(win));
 				e.Handled = true;
 			}
 		}
@@ -2626,7 +2632,7 @@ namespace WpfCSCS
 			{
 				Control2Window.TryGetValue(widget, out Window win);
 				var result = Interpreter.Run(funcName, new Variable(widgetName), null,
-				    Variable.EmptyInstance, GetScript(win));
+					Variable.EmptyInstance, GetScript(win));
 
 				if (result.Type == Variable.VarType.NUMBER && !result.AsBool())
 				{
@@ -2678,7 +2684,7 @@ namespace WpfCSCS
 			{
 				Control2Window.TryGetValue(widget, out Window win);
 				var result = Interpreter.Run(funcName, new Variable(widgetName), null,
-				    Variable.EmptyInstance, GetScript(win));
+					Variable.EmptyInstance, GetScript(win));
 			}
 		}
 
@@ -2696,7 +2702,7 @@ namespace WpfCSCS
 			{
 				Control2Window.TryGetValue(widget, out Window win);
 				var result = Interpreter.Run(funcName, new Variable(widgetName), null,
-				    Variable.EmptyInstance, GetScript(win));
+					Variable.EmptyInstance, GetScript(win));
 			}
 		}
 
@@ -2720,20 +2726,20 @@ namespace WpfCSCS
 			{
 				Control2Window.TryGetValue(widget, out Window win);
 				var result = Interpreter.Run(funcName, new Variable(widgetName), null,
-				    Variable.EmptyInstance, GetScript(win));
+					Variable.EmptyInstance, GetScript(win));
 			}
 		}
-		
+
 		private void DataGrid_EnterKeyPressed(object sender, KeyEventArgs e)
 		{
-            DataGrid widget = sender as DataGrid;
+			DataGrid widget = sender as DataGrid;
 			var widgetName = GetWidgetName(widget);
 			if (string.IsNullOrWhiteSpace(widgetName))
 			{
 				return;
 			}
-			
-			if(widget.SelectedIndex < 0)
+
+			if (widget.SelectedIndex < 0)
 			{
 				return;
 			}
@@ -2744,17 +2750,17 @@ namespace WpfCSCS
 				return;
 			}
 
-            if (e.Key == Key.Enter)
-            {
-                e.Handled = true;
-                string funcName;
-                if (m_SelectHandlers.TryGetValue(widgetName, out funcName))
-                {
-                    Control2Window.TryGetValue(widget, out Window win);
-                    var result = Interpreter.Run(funcName, new Variable(widgetName), null,
-                        Variable.EmptyInstance, GetScript(win));
-                }
-            }
+			if (e.Key == Key.Enter)
+			{
+				e.Handled = true;
+				string funcName;
+				if (m_SelectHandlers.TryGetValue(widgetName, out funcName))
+				{
+					Control2Window.TryGetValue(widget, out Window win);
+					var result = Interpreter.Run(funcName, new Variable(widgetName), null,
+						Variable.EmptyInstance, GetScript(win));
+				}
+			}
 		}
 
 		public FrameworkElement GetWidget(string name)
@@ -2806,7 +2812,7 @@ namespace WpfCSCS
 			{
 				var viewbox = content as Viewbox;
 				children = new List<UIElement>() { viewbox.Child };
-            }
+			}
 
 			CacheChildren(children, controls, win);
 			return controls;
@@ -2855,15 +2861,15 @@ namespace WpfCSCS
 											foreach (var child2 in content2.Children)
 											{
 
-                                                if (child2 is ASButton)
-                                                {
-                                                    var asButton = child2 as ASButton;
-                                                    var insideButton = asButton.Content as Button;
+												if (child2 is ASButton)
+												{
+													var asButton = child2 as ASButton;
+													var insideButton = asButton.Content as Button;
 
-                                                    //CacheControl(insideButton as FrameworkElement, win, controls);
-                                                    CacheASButton(asButton as FrameworkElement, win, controls, insideButton);
-                                                }
-                                                else if (child2 is ASEnterBox)
+													//CacheControl(insideButton as FrameworkElement, win, controls);
+													CacheASButton(asButton as FrameworkElement, win, controls, insideButton);
+												}
+												else if (child2 is ASEnterBox)
 												{
 													var enterBox = child2 as ASEnterBox;
 													var enterBoxGrid = enterBox.Content as Grid;
@@ -2882,65 +2888,65 @@ namespace WpfCSCS
 														CacheNumericBoxChild(item5 as FrameworkElement, win, controls, numBox);
 													}
 												}
-                                                else if (child2 is GroupBox)//for RadioButtons
-                                                {
-                                                    CacheControl(child2 as FrameworkElement, win, controls);
+												else if (child2 is GroupBox)//for RadioButtons
+												{
+													CacheControl(child2 as FrameworkElement, win, controls);
 
-                                                    var groupBox = child2 as GroupBox;
-                                                    var groupBoxGrid = groupBox.Content as Grid;
-                                                    foreach (var item6 in groupBoxGrid.Children)
-                                                    {
-                                                        if (item6 is RadioButton)
-                                                        {
-                                                            CacheControl(item6 as FrameworkElement, win, controls);
-                                                            if (!GroupBoxesAndRadioButtons.Any(p => p.Key.ToLower() == groupBox.Name.ToLower()))
-                                                                GroupBoxesAndRadioButtons.Add(groupBox.Name, new List<string>());
-                                                            if (!GroupBoxesAndRadioButtons[groupBox.Name].Any(p => p == (item6 as RadioButton).Name.ToLower()))
-                                                                GroupBoxesAndRadioButtons[groupBox.Name].Add((item6 as RadioButton).Name.ToLower());
-                                                        }
+													var groupBox = child2 as GroupBox;
+													var groupBoxGrid = groupBox.Content as Grid;
+													foreach (var item6 in groupBoxGrid.Children)
+													{
+														if (item6 is RadioButton)
+														{
+															CacheControl(item6 as FrameworkElement, win, controls);
+															if (!GroupBoxesAndRadioButtons.Any(p => p.Key.ToLower() == groupBox.Name.ToLower()))
+																GroupBoxesAndRadioButtons.Add(groupBox.Name, new List<string>());
+															if (!GroupBoxesAndRadioButtons[groupBox.Name].Any(p => p == (item6 as RadioButton).Name.ToLower()))
+																GroupBoxesAndRadioButtons[groupBox.Name].Add((item6 as RadioButton).Name.ToLower());
+														}
 
-                                                        else if (item6 is CheckBox)
-                                                            CacheControl(item6 as FrameworkElement, win, controls);
-                                                    }
-                                                }
-                                                else if (child2 is ASDateEditer2)
-                                                {
-                                                    //CacheControl(child as ASDateEditer2, win, controls);
+														else if (item6 is CheckBox)
+															CacheControl(item6 as FrameworkElement, win, controls);
+													}
+												}
+												else if (child2 is ASDateEditer2)
+												{
+													//CacheControl(child as ASDateEditer2, win, controls);
 
-                                                    var asde2 = child2 as ASDateEditer2;
-                                                    var asde2Grid = asde2.Content as Grid;
-                                                    foreach (var item6 in asde2Grid.Children)
-                                                    {
-                                                        var fe = (item6 as FrameworkElement);
-                                                        fe.DataContext = asde2.FieldName;
-                                                        CacheControl(fe, win, controls);
-                                                    }
-                                                }
+													var asde2 = child2 as ASDateEditer2;
+													var asde2Grid = asde2.Content as Grid;
+													foreach (var item6 in asde2Grid.Children)
+													{
+														var fe = (item6 as FrameworkElement);
+														fe.DataContext = asde2.FieldName;
+														CacheControl(fe, win, controls);
+													}
+												}
 												else
 												{
-                                                    if (child2 is DataGrid dg)
-                                                    {
-                                                        gridsSelectedRow.Remove(dg.Name.ToLower());
-                                                    }
-                                                    CacheControl(child2 as FrameworkElement, win, controls);
-                                                    if (child2 is ItemsControl)
-                                                    {
-                                                        var parent = child2 as ItemsControl;
-                                                        var items = parent.Items;
-                                                        if (items != null && items.Count > 0)
-                                                        {
-                                                            try
-                                                            {
-                                                                CacheChildren(items.Cast<UIElement>().ToList(), controls, win);
-                                                            }
-                                                            catch (Exception ex)
-                                                            {
-                                                                //MessageBox.Show("Vassili help needed");
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
+													if (child2 is DataGrid dg)
+													{
+														gridsSelectedRow.Remove(dg.Name.ToLower());
+													}
+													CacheControl(child2 as FrameworkElement, win, controls);
+													if (child2 is ItemsControl)
+													{
+														var parent = child2 as ItemsControl;
+														var items = parent.Items;
+														if (items != null && items.Count > 0)
+														{
+															try
+															{
+																CacheChildren(items.Cast<UIElement>().ToList(), controls, win);
+															}
+															catch (Exception ex)
+															{
+																//MessageBox.Show("Vassili help needed");
+															}
+														}
+													}
+												}
+											}
 										}
 									}
 								}
@@ -2970,7 +2976,7 @@ namespace WpfCSCS
 				{
 					var asButton = child as ASButton;
 					var insideButton = asButton.Content as Button;
-					
+
 					//CacheControl(insideButton as FrameworkElement, win, controls);
 					CacheASButton(asButton as FrameworkElement, win, controls, insideButton);
 				}
@@ -3029,10 +3035,10 @@ namespace WpfCSCS
 				}
 				else
 				{
-					if(child is DataGrid dg)
+					if (child is DataGrid dg)
 					{
 						gridsSelectedRow.Remove(dg.Name.ToLower());
-                    }
+					}
 					CacheControl(child as FrameworkElement, win, controls);
 					if (child is ItemsControl)
 					{
@@ -3086,7 +3092,7 @@ namespace WpfCSCS
 			    }
 			}*/
 		}
-		
+
 		public void CacheASButton(FrameworkElement widget, Window win = null, List<FrameworkElement> controls = null, Button insideButton = null)
 		{
 			var temp = widget.Name;
@@ -3258,8 +3264,8 @@ namespace WpfCSCS
 				}
 
 				Control2Window.TryGetValue(toRunWidget, out Window win);
-                ActiveWindow = win;
-                RunScript(toRunFuncName, win, new Variable(toRunWidgetName), new Variable(toRunWidgetName));
+				ActiveWindow = win;
+				RunScript(toRunFuncName, win, new Variable(toRunWidgetName), new Variable(toRunWidgetName));
 			}
 			else if (sender is ASEnterTextBox)
 			{
@@ -3577,7 +3583,7 @@ namespace WpfCSCS
 						string mouseHoverAction = widgetName + "@MouseHover";
 						string selectionChangedAction = widgetName + "@SelectionChanged";
 						string dateChangedAction = widgetName + "@DateChanged";
-						
+
 						string lostFocusAction = widgetName + "@LostFocus";
 
 						//textBox
@@ -3604,7 +3610,7 @@ namespace WpfCSCS
 						AddSelectionChangedHandler(widgetName, selectionChangedAction, widget);
 						AddMouseHoverHandler(widgetName, mouseHoverAction, widget);
 						AddDateChangedHandler(widgetName, dateChangedAction, widget);
-						
+
 						AddLostFocusHandler(widgetName, lostFocusAction, widget);
 
 						//Pre, Post
@@ -3646,8 +3652,8 @@ namespace WpfCSCS
 		public Variable RunScript(string fileName, bool encode = false)
 		{
 			Init();
-            
-            if (encode)
+
+			if (encode)
 			{
 				EncodeFileFunction.EncodeDecode(fileName, false);
 			}
@@ -3663,7 +3669,7 @@ namespace WpfCSCS
 			var tokenSet = GetPreprocessTokens();
 			var scriptsDirStr = App.GetConfiguration("ScriptsPath", "");
 			var split2 = Utils.PreprocessScriptFile(fileName, tokenSet, scriptsDirStr, this);
-			
+
 			Variable result = null;
 			try
 			{
@@ -3675,7 +3681,7 @@ namespace WpfCSCS
 				Console.WriteLine(exc.StackTrace);
 				Interpreter.InvalidateStacksAfterLevel(0);
 				var onException = CustomFunction.Run(Interpreter, Constants.ON_EXCEPTION, new Variable("Global Scope"),
-					        new Variable(exc.Message), Variable.EmptyInstance);
+							new Variable(exc.Message), Variable.EmptyInstance);
 				if (onException == null)
 				{
 					throw;
@@ -3708,7 +3714,7 @@ namespace WpfCSCS
 			var tokensStr = App.GetConfiguration("PreprocessTokens", "");
 			var doPreprocess = App.GetConfiguration("Preprocess", "");
 			if (string.IsNullOrWhiteSpace(tokensStr) ||
-			    !string.Equals(doPreprocess, "true", StringComparison.OrdinalIgnoreCase))
+				!string.Equals(doPreprocess, "true", StringComparison.OrdinalIgnoreCase))
 			{
 				return tokenSet;
 			}
@@ -3864,24 +3870,24 @@ namespace WpfCSCS
 		}
 	}
 
-    public class FreeMemoryFunction : ParserFunction
-    {
-        protected override Variable Evaluate(ParsingScript script)
-        {
-            var gui = CSCS_GUI.GetInstance(script);
-            List<Variable> args = script.GetFunctionArgs();
-            Utils.CheckArgs(args.Count, 1, m_name);
+	public class FreeMemoryFunction : ParserFunction
+	{
+		protected override Variable Evaluate(ParsingScript script)
+		{
+			var gui = CSCS_GUI.GetInstance(script);
+			List<Variable> args = script.GetFunctionArgs();
+			Utils.CheckArgs(args.Count, 1, m_name);
 
-            var name = args[0].ParamName;
+			var name = args[0].ParamName;
 
 			var removed = gui.DEFINES.Remove(name);
-            removed = (InterpreterInstance != null && InterpreterInstance.RemoveVariable(name)) || removed;
-            removed = gui.Interpreter.RemoveVariable(name) || removed;
-            return new Variable(removed);
-        }
-    }
+			removed = (InterpreterInstance != null && InterpreterInstance.RemoveVariable(name)) || removed;
+			removed = gui.Interpreter.RemoveVariable(name) || removed;
+			return new Variable(removed);
+		}
+	}
 
-    public class RunExecFunction : ParserFunction
+	public class RunExecFunction : ParserFunction
 	{
 		protected override Variable Evaluate(ParsingScript script)
 		{
@@ -4110,8 +4116,8 @@ namespace WpfCSCS
 				var numericTextBox = widget as ASNumericTextBox;
 				dispatcher.Invoke(new Action(() =>
 				{
-			//numericTextBox.SkipTextChangedHandler = true;
-			numericTextBox.Text = text;
+					//numericTextBox.SkipTextChangedHandler = true;
+					numericTextBox.Text = text;
 				}));
 			}
 			else if (widget is ASEnterTextBox)
@@ -4119,8 +4125,8 @@ namespace WpfCSCS
 				var enterTextBox = widget as ASEnterTextBox;
 				dispatcher.Invoke(new Action(() =>
 				{
-			//enterTextBox.SkipTextChangedHandler = true;
-			enterTextBox.Text = text;
+					//enterTextBox.SkipTextChangedHandler = true;
+					enterTextBox.Text = text;
 				}));
 			}
 			else if (widget is TextBox)
@@ -4128,35 +4134,35 @@ namespace WpfCSCS
 				var textBox = widget as TextBox;
 				dispatcher.Invoke(new Action(() =>
 				{
-					if(widget.Parent is Grid grid)
+					if (widget.Parent is Grid grid)
 					{
-						if(grid.Parent is ASDateEditer2 asde2)
+						if (grid.Parent is ASDateEditer2 asde2)
 						{
-							if(text == "01/01/1900")
+							if (text == "01/01/1900")
 							{
-                                //asde2.skipSelectedDateChangedHandler = true;
-                                //asde2.TempDate = DateTime.Now;
-                                textBox.Text = "00/00/0000";
-                                //
-                                return;
-                            }
+								//asde2.skipSelectedDateChangedHandler = true;
+								//asde2.TempDate = DateTime.Now;
+								textBox.Text = "00/00/0000";
+								//
+								return;
+							}
 							//else if (text == "01/01/00")
 							//{
-       //                         //asde2.skipSelectedDateChangedHandler = true;
-       //                         //asde2.TempDate = DateTime.Now;
-                                
+							//                         //asde2.skipSelectedDateChangedHandler = true;
+							//                         //asde2.TempDate = DateTime.Now;
+
 							//	textBox.Text = "00/00/00";
-                                
+
 							//	return;
-       //                     }
+							//                     }
 							else
 							{
-                                textBox.Text = text;
+								textBox.Text = text;
 								return;
-                            }
-                        }
+							}
+						}
 					}
-					
+
 					textBox.Text = text;
 				}));
 			}
@@ -4172,8 +4178,8 @@ namespace WpfCSCS
 			else if (widget is ASDateEditer && !string.IsNullOrWhiteSpace(text))
 			{
 				var dateEditer = widget as ASDateEditer;
-                var dateStr = ProcessDateStr(text);
-                var format = dateStr.Length == 10 ? "dd/MM/yyyy" : dateStr.Length == 8 ? "dd/MM/yy" : "yyyy/MM/dd hh:mm:ss";
+				var dateStr = ProcessDateStr(text);
+				var format = dateStr.Length == 10 ? "dd/MM/yyyy" : dateStr.Length == 8 ? "dd/MM/yy" : "yyyy/MM/dd hh:mm:ss";
 				dispatcher.Invoke(new Action(() =>
 				{
 					dateEditer.SelectedDate = DateTime.ParseExact(dateStr, format, CultureInfo.InvariantCulture);
@@ -4182,8 +4188,8 @@ namespace WpfCSCS
 			else if (widget is ASDateEditer2 && !string.IsNullOrWhiteSpace(text))
 			{
 				var dateEditer = widget as ASDateEditer2;
-                var dateStr = ProcessDateStr(text);
-                var format = dateStr.Length == 10 ? "dd/MM/yyyy" : dateStr.Length == 8 ? "dd/MM/yy" : "yyyy/MM/dd hh:mm:ss";
+				var dateStr = ProcessDateStr(text);
+				var format = dateStr.Length == 10 ? "dd/MM/yyyy" : dateStr.Length == 8 ? "dd/MM/yy" : "yyyy/MM/dd hh:mm:ss";
 				dispatcher.Invoke(new Action(() =>
 				{
 					dateEditer.TempDate = DateTime.ParseExact(dateStr, format, CultureInfo.InvariantCulture);
@@ -4207,36 +4213,36 @@ namespace WpfCSCS
 		}
 		public static string ProcessDateStr(string dateStr)
 		{
-            if (dateStr.Length >= 10)
-            {
-                return dateStr;
-            }
-            char sep = '/';
-            var parts = dateStr.Split(sep);
+			if (dateStr.Length >= 10)
+			{
+				return dateStr;
+			}
+			char sep = '/';
+			var parts = dateStr.Split(sep);
 			if (parts.Length == 1)
 			{
 				sep = '.';
-                parts = dateStr.Split(sep);
-            }
-            if (parts.Length <= 2)
-            {
+				parts = dateStr.Split(sep);
+			}
+			if (parts.Length <= 2)
+			{
 				return dateStr;
-            }
-            var first = parts[0];
-            var second = parts[1];
-            var third = parts[2];
-            if (first.Length == 1)
+			}
+			var first = parts[0];
+			var second = parts[1];
+			var third = parts[2];
+			if (first.Length == 1)
 			{
 				first = "0" + first;
 			}
-            if (second.Length == 1)
-            {
-                second = "0" + second;
-            }
+			if (second.Length == 1)
+			{
+				second = "0" + second;
+			}
 			var result = first + sep + second + sep + third;
 			return result;
-        }
-    }
+		}
+	}
 
 	public class MessageBoxFunction : ParserFunction
 	{
@@ -4258,23 +4264,23 @@ namespace WpfCSCS
 		public static string ShowMessageBox(string message, string caption = "Info", string answerType = "ok", string messageType = "info")
 		{
 			MessageBoxButton buttons =
-			    answerType == "ok" ? MessageBoxButton.OK :
-			    answerType == "okcancel" ? MessageBoxButton.OKCancel :
-			    answerType == "yesno" ? MessageBoxButton.YesNo :
-			    answerType == "yesnocancel" ? MessageBoxButton.YesNoCancel : MessageBoxButton.OK;
+				answerType == "ok" ? MessageBoxButton.OK :
+				answerType == "okcancel" ? MessageBoxButton.OKCancel :
+				answerType == "yesno" ? MessageBoxButton.YesNo :
+				answerType == "yesnocancel" ? MessageBoxButton.YesNoCancel : MessageBoxButton.OK;
 
 			MessageBoxImage icon =
-			    messageType == "question" ? MessageBoxImage.Question :
-			    messageType == "info" ? MessageBoxImage.Information :
-			    messageType == "warning" ? MessageBoxImage.Warning :
-			    messageType == "error" ? MessageBoxImage.Error :
-			    messageType == "exclamation" ? MessageBoxImage.Exclamation :
-			    messageType == "stop" ? MessageBoxImage.Stop :
-			    messageType == "hand" ? MessageBoxImage.Hand :
-			    messageType == "asterisk" ? MessageBoxImage.Asterisk :
-						    MessageBoxImage.None;
+				messageType == "question" ? MessageBoxImage.Question :
+				messageType == "info" ? MessageBoxImage.Information :
+				messageType == "warning" ? MessageBoxImage.Warning :
+				messageType == "error" ? MessageBoxImage.Error :
+				messageType == "exclamation" ? MessageBoxImage.Exclamation :
+				messageType == "stop" ? MessageBoxImage.Stop :
+				messageType == "hand" ? MessageBoxImage.Hand :
+				messageType == "asterisk" ? MessageBoxImage.Asterisk :
+							MessageBoxImage.None;
 			var result = MessageBox.Show(message, caption,
-					         buttons, icon);
+							 buttons, icon);
 
 			var ret = result == MessageBoxResult.OK ? "OK" :
 				result == MessageBoxResult.Cancel ? "Cancel" :
@@ -4414,32 +4420,32 @@ namespace WpfCSCS
 			List<Variable> args = script.GetFunctionArgs();
 			Utils.CheckArgs(args.Count, 0, m_name);
 
-			if(args.Count == 0)
+			if (args.Count == 0)
 			{
-                var result = CSCS_GUI.Adictionary.SY_DATABASESList.FirstOrDefault(p => p.SYCD_USERCODE.ToLower().TrimEnd() == CSCS_GUI.DefaultDB.ToLower().TrimEnd());
-				if(result != null)
+				var result = CSCS_GUI.Adictionary.SY_DATABASESList.FirstOrDefault(p => p.SYCD_USERCODE.ToLower().TrimEnd() == CSCS_GUI.DefaultDB.ToLower().TrimEnd());
+				if (result != null)
 					return new Variable(result.SYCD_YEAR);
-            }
-            else if(args.Count == 1)
+			}
+			else if (args.Count == 1)
 			{
-                var result = CSCS_GUI.Adictionary.SY_DATABASESList.FirstOrDefault(p => p.SYCD_USERCODE.ToLower().TrimEnd() == Utils.GetSafeString(args, 0).ToLower());
-                if (result != null)
-                    return new Variable(result.SYCD_YEAR);
-            }
-			else if(args.Count == 2)
+				var result = CSCS_GUI.Adictionary.SY_DATABASESList.FirstOrDefault(p => p.SYCD_USERCODE.ToLower().TrimEnd() == Utils.GetSafeString(args, 0).ToLower());
+				if (result != null)
+					return new Variable(result.SYCD_YEAR);
+			}
+			else if (args.Count == 2)
 			{
-				if(Utils.GetSafeString(args, 1).ToLower() == "dbase")
+				if (Utils.GetSafeString(args, 1).ToLower() == "dbase")
 				{
-                    var result = CSCS_GUI.Adictionary.SY_DATABASESList.FirstOrDefault(p => p.SYCD_DBASENAME.ToLower().TrimEnd() == Utils.GetSafeString(args, 0).ToLower());
-                    if (result != null)
-                        return new Variable(result.SYCD_YEAR);
-                }
-            }
+					var result = CSCS_GUI.Adictionary.SY_DATABASESList.FirstOrDefault(p => p.SYCD_DBASENAME.ToLower().TrimEnd() == Utils.GetSafeString(args, 0).ToLower());
+					if (result != null)
+						return new Variable(result.SYCD_YEAR);
+				}
+			}
 
 			return new Variable("");
 		}
 
-		
+
 	}
 	public class Get_dbaseFunction : ParserFunction
 	{
@@ -4467,7 +4473,7 @@ namespace WpfCSCS
 			}
 
 			//conn.Close();
-			return new Variable() ;
+			return new Variable();
 		}
 
 
@@ -4532,18 +4538,18 @@ namespace WpfCSCS
 		protected override Variable Evaluate(ParsingScript script)
 		{
 			List<Variable> args = script.GetFunctionArgs();
-            Utils.CheckArgs(args.Count, 2, m_name);
-            var widgetName = Utils.GetSafeString(args, 0).ToLower();
-            var option = Utils.GetSafeString(args, 1).ToLower();
-            var gui = CSCS_GUI.GetInstance(script);
-            FrameworkElement widget = gui.GetWidget(widgetName);
-            var parameter = Utils.GetSafeString(args, 2).ToLower();
-            var prop_mapped = WidgetPropertyMap // try mapped
-            .OrderBy(a => a.Item1 == "*" ? 1 : 0)  // first the non *'s
-            .Where(a => (a.Item1.ToLower() == widget.GetType().Name.ToLower() || a.Item1.ToLower() == "*") && a.Item2.ToLower() == option) // overrides or *'s
-            .Select(a => a.Item3).FirstOrDefault();// real mapped prop name
-            var prop_by_prop_mapped = widget.GetType().GetProperties().Where(a => a.Name.ToLower() == (prop_mapped ?? "").ToLower()).FirstOrDefault();
-			
+			Utils.CheckArgs(args.Count, 2, m_name);
+			var widgetName = Utils.GetSafeString(args, 0).ToLower();
+			var option = Utils.GetSafeString(args, 1).ToLower();
+			var gui = CSCS_GUI.GetInstance(script);
+			FrameworkElement widget = gui.GetWidget(widgetName);
+			var parameter = Utils.GetSafeString(args, 2).ToLower();
+			var prop_mapped = WidgetPropertyMap // try mapped
+			.OrderBy(a => a.Item1 == "*" ? 1 : 0)  // first the non *'s
+			.Where(a => (a.Item1.ToLower() == widget.GetType().Name.ToLower() || a.Item1.ToLower() == "*") && a.Item2.ToLower() == option) // overrides or *'s
+			.Select(a => a.Item3).FirstOrDefault();// real mapped prop name
+			var prop_by_prop_mapped = widget.GetType().GetProperties().Where(a => a.Name.ToLower() == (prop_mapped ?? "").ToLower()).FirstOrDefault();
+
 			if (!string.IsNullOrEmpty(prop_mapped) && prop_by_prop_mapped != null)
             {
                 //Chart("ChartPoMjesecima", "init");
@@ -5383,7 +5389,7 @@ namespace WpfCSCS
 					argsStr = argsStr.Substring(0, argsStr.Length - 1);
 				}
 				string[] argsArray = argsStr.Split(separator);
-			//string msg = "CmdArgs:";
+				//string msg = "CmdArgs:";
 				var fileFullName = script.GetFilePath(script.Filename);
 				if (!Gui.Parameters.TryGetValue(fileFullName, out parameters))
 				{
@@ -5419,7 +5425,7 @@ namespace WpfCSCS
 			tempScript.ScriptOffset = script.ScriptOffset + currentScriptPos;
 			//List<Variable> args = tempScript.GetFunctionArgs();
 			List<Variable> args = GetChainArgs(tempScript);
-            Utils.CheckArgs(args.Count, 1, m_name);
+			Utils.CheckArgs(args.Count, 1, m_name);
 
 			string chainName = args[0].AsString();
 			string chainFullName = script.GetFilePath(chainName);
@@ -5490,16 +5496,16 @@ namespace WpfCSCS
 			if (result.Type == Variable.VarType.QUIT)
 			{
 				result.Type = Variable.VarType.NONE;
-            }
+			}
 			return result;
 		}
 
-        public static string ReplaceSpaces(ParsingScript script, char replaceChar = ',', char end = Constants.END_STATEMENT)
-        {
-            StringBuilder sb = new StringBuilder();
-            while (script.StillValid() && script.TryCurrent() != end)
-            {
-                var token = Utils.GetBodyBetween(script, '\0', ' ', end);
+		public static string ReplaceSpaces(ParsingScript script, char replaceChar = ',', char end = Constants.END_STATEMENT)
+		{
+			StringBuilder sb = new StringBuilder();
+			while (script.StillValid() && script.TryCurrent() != end)
+			{
+				var token = Utils.GetBodyBetween(script, '\0', ' ', end);
 				if (token.Equals(Constants.WITH, StringComparison.OrdinalIgnoreCase) && sb.ToString().Last() == replaceChar)
 				{
 					sb.Remove(sb.Length - 1, 1);
@@ -5507,45 +5513,45 @@ namespace WpfCSCS
 				}
 				else
 				{
-                    sb.Append(token + replaceChar);
-                }
-            }
-            if (sb.Length > 0 && sb[sb.Length - 1] == replaceChar)
-            {
-                sb.Remove(sb.Length - 1, 1);
-            }
-            return sb.ToString();
-        }
+					sb.Append(token + replaceChar);
+				}
+			}
+			if (sb.Length > 0 && sb[sb.Length - 1] == replaceChar)
+			{
+				sb.Remove(sb.Length - 1, 1);
+			}
+			return sb.ToString();
+		}
 
-        public static List<Variable> GetChainArgs(ParsingScript script)
-        {
-            List<Variable> args = new List<Variable>();
-            var pos = script.Pointer;
-            Variable scrptName = Utils.GetItem(script);
-            args.Add(scrptName);
+		public static List<Variable> GetChainArgs(ParsingScript script)
+		{
+			List<Variable> args = new List<Variable>();
+			var pos = script.Pointer;
+			Variable scrptName = Utils.GetItem(script);
+			args.Add(scrptName);
 
 			script.Pointer = pos;
 			var token = Utils.GetToken(script, Constants.END_SPACE_ARRAY);
 			script.MoveForwardIf(Constants.SPACE);
 			if (script.Rest.StartsWith(Constants.WITH + " ", StringComparison.OrdinalIgnoreCase))
 			{
-                args.Add(new Variable(Constants.WITH));
+				args.Add(new Variable(Constants.WITH));
 				script.Pointer += Constants.WITH.Length + 1;
-            }
-            if (!script.StillValid() || script.Current == Constants.END_STATEMENT)
-            {
-                return args;
-            }
+			}
+			if (!script.StillValid() || script.Current == Constants.END_STATEMENT)
+			{
+				return args;
+			}
 
-            var moreArgs = script.GetFunctionArgs();
+			var moreArgs = script.GetFunctionArgs();
 			foreach (var arg in moreArgs)
 			{
 				args.Add(arg);
 			}
-            return args;
-        }
+			return args;
+		}
 
-        static Variable RunTask(CSCS_GUI gui, string scriptStr, ParsingScript parent, string chainName)
+		static Variable RunTask(CSCS_GUI gui, string scriptStr, ParsingScript parent, string chainName)
 		{
 			if (string.IsNullOrWhiteSpace(scriptStr))
 			{
@@ -5652,8 +5658,8 @@ namespace WpfCSCS
 				var labelName = Utils.GetToken(script, Constants.TOKEN_SEPARATION).ToLower();
 				var value = labelName == "up" || labelName == "down" || labelName == "local" || labelName == "setup" ||
 					labelName == "close" || labelName == "reset" ||
-                    labelName == "addrow" || labelName == "insertrow" || labelName == "deleterow" ?
-				    new Variable(true) :
+					labelName == "addrow" || labelName == "insertrow" || labelName == "deleterow" ?
+					new Variable(true) :
 					  script.Current == Constants.END_STATEMENT ? Variable.EmptyInstance :
 					  new Variable(Utils.GetToken(script, separator));
 				if (labelName != "type" && script.Prev != '"' && !string.IsNullOrWhiteSpace(value.String))
@@ -5749,20 +5755,20 @@ namespace WpfCSCS
 			if (Name == Constants.DEFINE)
 			{
 				Variable newVar = CreateVariable(script, objectName, GetVariableParameter("value"), GetVariableParameter("init"),
-				    GetParameter("type"), GetIntParameter("size"), GetIntParameter("dec"), GetIntParameter("array"),
-				    GetBoolParameter("local"), GetBoolParameter("up"), GetBoolParameter("down"), GetParameter("dup"), GetBoolParameter("reset"));
+					GetParameter("type"), GetIntParameter("size"), GetIntParameter("dec"), GetIntParameter("array"),
+					GetBoolParameter("local"), GetBoolParameter("up"), GetBoolParameter("down"), GetParameter("dup"), GetBoolParameter("reset"));
 				return newVar;
 			}
 			if (Name == Constants.DISPLAY_ARRAY)
 			{
 				Variable newVar = DisplayArray(script, objectName, GetParameter("linecounter"), GetParameter("maxelements"),
-				    GetParameter("actualelements"), m_lastParameter);
+					GetParameter("actualelements"), m_lastParameter);
 				return newVar;
 			}
 			if (Name == Constants.DATA_GRID)
 			{
 				Variable newVar = DataGrid(script, objectName, GetBoolParameter("addrow"), GetBoolParameter("insertrow"),
-				    GetBoolParameter("deleterow"), m_lastParameter);
+					GetBoolParameter("deleterow"), m_lastParameter);
 				return newVar;
 			}
 			if (Name == Constants.ADD_COLUMN)
@@ -5949,8 +5955,8 @@ namespace WpfCSCS
 				}
 				if (dg.ItemsSource != null)
 				{
-			     // dg.ItemsSource.re
-		     }
+					// dg.ItemsSource.re
+				}
 			};
 
 			result = new Variable(wd.lineCounter);
@@ -5958,7 +5964,7 @@ namespace WpfCSCS
 		}
 
 		public static Variable CreateVariable(ParsingScript script, string name, Variable value, Variable init,
-		    string type = "", int size = 0, int dec = 3, int array = 0, bool local = false,
+			string type = "", int size = 0, int dec = 3, int array = 0, bool local = false,
 			bool up = false, bool down = false, string dup = null, bool reset = false)
 		{
 			var gui = CSCS_GUI.GetInstance(script);
@@ -5976,21 +5982,21 @@ namespace WpfCSCS
 			foreach (var objName in parts)
 			{
 				newVar = dupVar != null ? new DefineVariable(objName, dupVar, local) :
-						      new DefineVariable(objName, valueStr, type, size, dec, array, local, up, down);
+							  new DefineVariable(objName, valueStr, type, size, dec, array, local, up, down);
 				newVar.InitVariable(dupVar != null ? dupVar.Init : init, gui, script);
-                if (reset && script.ParentScript != null)
-                {
-                    var guiParent = CSCS_GUI.GetInstance(script.ParentScript);
-                    if (guiParent.DEFINES.TryGetValue(objName.ToLower(), out DefineVariable parentVar))
-                    {
-                        init = parentVar;
-                        newVar.InitVariable(parentVar, gui, script);
-                    }
-                    MyAssignFunction.AddVariableMap(objName, script.ParentScript);
+				if (reset && script.ParentScript != null)
+				{
+					var guiParent = CSCS_GUI.GetInstance(script.ParentScript);
+					if (guiParent.DEFINES.TryGetValue(objName.ToLower(), out DefineVariable parentVar))
+					{
+						init = parentVar;
+						newVar.InitVariable(parentVar, gui, script);
+					}
+					MyAssignFunction.AddVariableMap(objName, script.ParentScript);
 					var newV = CreateVariable(script.ParentScript, objName, value, init, type, size, dec, array, local, up, down, dup, false);
-                }
-            }
-            return newVar;
+				}
+			}
+			return newVar;
 		}
 
 		DefineVariable DataGrid(ParsingScript script, string name, bool addrow, bool insertrow, bool deleterow, string action)
@@ -6043,7 +6049,7 @@ namespace WpfCSCS
 
 		//DISPLAYARR ‘DataGridName’ LINECOUNTER cntr1 MAXELEMENTS cntr2 ACTUALELEMENTS cntr3 SETUP
 		DefineVariable DisplayArray(ParsingScript script, string name, string
-		    lineCounter, string maxElems, string actualElems, string action)
+			lineCounter, string maxElems, string actualElems, string action)
 		{
 			var gui = CSCS_GUI.GetInstance(script);
 			if (!gui.DEFINES.TryGetValue(name, out DefineVariable gridVar))
@@ -6241,7 +6247,7 @@ namespace WpfCSCS
 			var array1 = gui.Interpreter.GetVariableValue(binding1);
 			var array2 = gui.Interpreter.GetVariableValue(binding2);
 			var max = array1 == null || array1 == null || array1.Tuple == null || array2.Tuple == null ? 0 :
-			    Math.Min(array1.Tuple.Count, array2.Tuple.Count);
+				Math.Min(array1.Tuple.Count, array2.Tuple.Count);
 
 			/*for (int rowNb = 0; rowNb < max; rowNb++)
 			{
@@ -6310,30 +6316,30 @@ namespace WpfCSCS
 			return result;
 		}
 	}
-	
+
 	class TestClass1Function : ParserFunction
 	{
 		protected override Variable Evaluate(ParsingScript script)
 		{
-            return new Variable(new TestClass1());
-        }
+			return new Variable(new TestClass1());
+		}
 	}
-	
+
 	class TestButtonFunction : ParserFunction
 	{
 		protected override Variable Evaluate(ParsingScript script)
 		{
-            List<Variable> args = script.GetFunctionArgs();
-            Utils.CheckArgs(args.Count, 1, m_name);
+			List<Variable> args = script.GetFunctionArgs();
+			Utils.CheckArgs(args.Count, 1, m_name);
 
-            var widgetName = Utils.GetSafeString(args, 0);
-            CSCS_GUI gui = script.Context as CSCS_GUI;
+			var widgetName = Utils.GetSafeString(args, 0);
+			CSCS_GUI gui = script.Context as CSCS_GUI;
 			var button = gui.GetWidget(widgetName) as Button;
-			
-            return new Variable(button);
-        }
+
+			return new Variable(button);
+		}
 	}
-	
+
 	class PrintWindowFunction : ParserFunction
 	{
 		protected override Variable Evaluate(ParsingScript script)
@@ -6344,6 +6350,22 @@ namespace WpfCSCS
             var fileName = Utils.GetSafeString(args, 0);
 			var imagesPath = App.GetConfiguration("ImagesPath", "");
             var imagePath = Path.Combine(imagesPath, "screenshots", fileName);
+
+			var imagePath = Path.Combine(App.GetConfiguration("ImagesPath", ""), "tempScreenshot.jpg");
+			ScreenShot(imagePath);
+
+			PrintImage(imagePath);
+
+			return Variable.EmptyInstance;
+		}
+
+		private void PrintImage(string path)
+		{
+			string fileName = path;//pass in or whatever you need
+			var p = new Process();
+			p.StartInfo.FileName = fileName;
+			p.StartInfo.Verb = "Print";
+			p.Start();
 
 			if(!Directory.Exists(Path.Combine(imagesPath, "screenshots")))
 			{
@@ -6429,30 +6451,30 @@ namespace WpfCSCS
 	{
 		protected override Variable Evaluate(ParsingScript script)
 		{
-            List<Variable> args = script.GetFunctionArgs();
-            Utils.CheckArgs(args.Count, 0, m_name);
+			List<Variable> args = script.GetFunctionArgs();
+			Utils.CheckArgs(args.Count, 0, m_name);
 
 			string downloadScriptsString = App.GetConfiguration("DownloadScripts", "false");
-			if(bool.TryParse(downloadScriptsString, out bool result))
+			if (bool.TryParse(downloadScriptsString, out bool result))
 			{
-                return new Variable(result);
+				return new Variable(result);
 			}
 
 			return new Variable(false);
-        }
+		}
 	}
-	
+
 	class ServerAddressFunction : ParserFunction
 	{
 		protected override Variable Evaluate(ParsingScript script)
 		{
-            List<Variable> args = script.GetFunctionArgs();
-            Utils.CheckArgs(args.Count, 0, m_name);
+			List<Variable> args = script.GetFunctionArgs();
+			Utils.CheckArgs(args.Count, 0, m_name);
 
 			string serverAddressString = App.GetConfiguration("ServerAddress", "");
-			
+
 			return new Variable(serverAddressString);
-        }
+		}
 	}
 
 	class RunScriptFunction : ParserFunction
@@ -6523,24 +6545,24 @@ namespace WpfCSCS
 
 				var title = Utils.GetSafeString(args, 1);
 				var winMode = m_mode == MODE.NEW ? SpecialWindow.MODE.NORMAL : //SpecialWindow.MODE.SPECIAL_MODAL;
-				    parentWin == CSCS_GUI.MainWindow ? SpecialWindow.MODE.MODAL : SpecialWindow.MODE.SPECIAL_MODAL;
+					parentWin == CSCS_GUI.MainWindow ? SpecialWindow.MODE.MODAL : SpecialWindow.MODE.SPECIAL_MODAL;
 
 				Variable result = Variable.EmptyInstance;
-                Application.Current.Dispatcher.Invoke(new Action(() =>
-                {
-                    SpecialWindow modalwin = CreateNew(instanceName, parentWin, winMode, script);
-                    //modalwin.Instance.Title = string.IsNullOrWhiteSpace(title) ? modalwin.Instance.Title : title;
+				Application.Current.Dispatcher.Invoke(new Action(() =>
+				{
+					SpecialWindow modalwin = CreateNew(instanceName, parentWin, winMode, script);
+					//modalwin.Instance.Title = string.IsNullOrWhiteSpace(title) ? modalwin.Instance.Title : title;
 					result = new Variable(modalwin.DialogResult);
-                }));
-                return result;
+				}));
+				return result;
 
 			}
 
 			if (!s_windows.TryGetValue(instanceName, out wind))
 			{
 				if ((!s_windowType.TryGetValue(instanceName, out string windName) &&
-				     !s_typeWindow.TryGetValue(instanceName, out windName)) ||
-				    !s_windows.TryGetValue(windName, out wind))
+					 !s_typeWindow.TryGetValue(instanceName, out windName)) ||
+					!s_windows.TryGetValue(windName, out wind))
 				{
 					throw new ArgumentException("Couldn't find window [" + instanceName + "]");
 				}
@@ -6573,7 +6595,7 @@ namespace WpfCSCS
 		}
 
 		public SpecialWindow CreateNew(string instanceName, Window parentWin = null,
-		    SpecialWindow.MODE winMode = SpecialWindow.MODE.NORMAL, ParsingScript script = null)
+			SpecialWindow.MODE winMode = SpecialWindow.MODE.NORMAL, ParsingScript script = null)
 		{
 			//var isMain = ChainFunction.CheckParentScriptIsMain(script);
 			//winMode = isMain ? SpecialWindow.MODE.NORMAL : SpecialWindow.MODE.MODAL;
@@ -6591,52 +6613,52 @@ namespace WpfCSCS
 			Gui.CacheWindow(wind, cscsFilename);
 			Gui.CacheParentWindow(tag, parentWin);
 
-            //wind.Show();
+			//wind.Show();
 
-			if(winMode == SpecialWindow.MODE.MODAL || winMode == SpecialWindow.MODE.SPECIAL_MODAL)
-            {
+			if (winMode == SpecialWindow.MODE.MODAL || winMode == SpecialWindow.MODE.SPECIAL_MODAL)
+			{
 				modalwin.DialogResult = wind.ShowDialog();
-            }
-            else //NORMAL
-            {
-				if(parentWin == CSCS_GUI.MainWindow || parentWin == null)
-                {
+			}
+			else //NORMAL
+			{
+				if (parentWin == CSCS_GUI.MainWindow || parentWin == null)
+				{
 					wind.Show();
 				}
-                else
-                {
+				else
+				{
 					wind.ShowDialog();
-                }
-            }
+				}
+			}
 
-            //if (parentWin == null /*|| isMain*/)
-            //{
-            //    wind.Show();
-            //}
-            //else
-            //{
-            //    //parentWin.Hide();
-            //    wind.Hide();
-            //    wind.ShowDialog();
-            //}
+			//if (parentWin == null /*|| isMain*/)
+			//{
+			//    wind.Show();
+			//}
+			//else
+			//{
+			//    //parentWin.Hide();
+			//    wind.Hide();
+			//    wind.ShowDialog();
+			//}
 
 
-            return modalwin;
+			return modalwin;
 		}
 
 		public static void RemoveWindow(Window wind, CSCS_GUI Gui)
 		{
-            var tag = wind.Tag.ToString();
-            s_windows.Remove(tag);
+			var tag = wind.Tag.ToString();
+			s_windows.Remove(tag);
 			if (s_typeWindow.TryGetValue(tag, out string instanceName))
 			{
 				s_typeWindow.Remove(tag);
 				s_windowType.Remove(instanceName);
 			}
-            
+
 			SpecialWindow.RemoveInstance(wind);
 			Gui.UncacheWindow(wind, tag);
-        }
+		}
 
 		static void HideAll()
 		{
@@ -6681,7 +6703,7 @@ namespace WpfCSCS
 		public static int AddGridData(CSCS_GUI gui, string widgetName, string headerName)
 		{
 			if (!gui.WIDGETS.TryGetValue(widgetName, out CSCS_GUI.WidgetData wd) ||
-			    !(wd.widget is DataGrid))
+				!(wd.widget is DataGrid))
 			{
 				return 0;
 			}
@@ -6694,7 +6716,7 @@ namespace WpfCSCS
 			}
 
 			if (gui.DEFINES.TryGetValue(dg.DataContext as string, out DefineVariable headerDef) &&
-			    dg.Columns.Count > defVar.Index && headerDef.Tuple.Count > defVar.Index)
+				dg.Columns.Count > defVar.Index && headerDef.Tuple.Count > defVar.Index)
 			{
 				var textCol = dg.Columns[defVar.Index] as DataGridTextColumn;
 				textCol.Header = headerDef.Tuple[defVar.Index].AsString();
@@ -6745,7 +6767,7 @@ namespace WpfCSCS
 				actualElems.Value = wd.actualElems = rowList.Count;// dg.Items.Count;
 				gui.Interpreter.AddGlobal(wd.actualElemsName, new GetVarFunction(actualElems), false);
 				if (gui.DEFINES.TryGetValue(wd.lineCounterName, out DefineVariable lineCounter) &&
-				    dg.SelectedIndex < 0)
+					dg.SelectedIndex < 0)
 				{
 					if (wd.lineCounter < 0)
 					{
@@ -6772,7 +6794,7 @@ namespace WpfCSCS
 			}
 			var name = dg.DataContext as string;
 			if (string.IsNullOrWhiteSpace(name) ||
-			    !gui.WIDGETS.TryGetValue(name, out CSCS_GUI.WidgetData wd))
+				!gui.WIDGETS.TryGetValue(name, out CSCS_GUI.WidgetData wd))
 			{
 				return;
 			}
@@ -6807,7 +6829,7 @@ namespace WpfCSCS
 					var colStr = wd.headerNames[colNb];
 					var v = row[colStr];
 					Variable cellValue = wd.colTypes[colNb] == CSCS_GUI.WidgetData.COL_TYPE.STRING ||
-					    v is string ? new Variable(v.ToString()) : new Variable((double)v);
+						v is string ? new Variable(v.ToString()) : new Variable((double)v);
 
 					var headerData = gui.Interpreter.GetVariableValue(colStr);
 					headerData.SetAsArray();
@@ -7048,8 +7070,11 @@ namespace WpfCSCS
 			get;
 			set;
 		} = " ";
-		string TIME_FORMAT { get;
-			set; } = "";
+		string TIME_FORMAT
+		{
+			get;
+			set;
+		} = "";
 
 		public string Name { get; set; }
 		public string DefValue { get; set; }
@@ -7170,7 +7195,7 @@ namespace WpfCSCS
 		}
 
 		public DefineVariable(string name, string value,
-		    string type = "", int size = 0, int dec = 3, int array = 0, bool local = false, bool up = false, bool down = false)
+			string type = "", int size = 0, int dec = 3, int array = 0, bool local = false, bool up = false, bool down = false)
 		{
 			Name = name.ToLower();
 			DefValue = value;
@@ -7206,53 +7231,74 @@ namespace WpfCSCS
 
 		static double CheckValue(string type, int size, int dec, Variable varValue)
 		{
-            double val = Math.Round(varValue.AsDouble(), dec);
-            if (varValue.Type == VarType.NONE || varValue.Type == VarType.ARRAY ||
-				string.IsNullOrWhiteSpace(varValue.String))
-            {
+			double val = Math.Round(varValue.AsDouble(), dec);
+			//if (varValue.Type == VarType.NONE || varValue.Type == VarType.ARRAY || string.IsNullOrWhiteSpace(varValue.String))
+			if (varValue.Type == VarType.NONE)
+			{
 				return val;
-            }
-            if (varValue.Type != VarType.NUMBER && 
-			    (type == "n" || type == "b" || type == "i" || type == "r") &&
+			}
+			if (varValue.Type != VarType.NUMBER &&
+				(type == "n" || type == "b" || type == "i" || type == "r") &&
 				!Double.TryParse(varValue.String, out val))
-            {
-                throw new ArgumentException("Error: Variable type [" + varValue.Type + "], required [" + type + "]");
-            }
-            switch (type)
+			{
+				throw new ArgumentException("Error: Variable type [" + varValue.Type + "], required [" + type + "]");
+			}
+			switch (type)
 			{
 				case "b":
 					if (val < Byte.MinValue || val > Byte.MaxValue)
 					{
-                        throw new ArgumentException("Error: Incorrect value [" + varValue.String + "], required [" + type + "]");
+						throw new ArgumentException("Error: Incorrect value [" + varValue.String + "], required [" + type + "]");
 					}
 					break;
 				case "i":
 					if (val < short.MinValue || val > short.MaxValue)
 					{
-                        throw new ArgumentException("Error: Incorrect value [" + varValue.String + "], required [" + type + "]");
-                    }
-                    break;
+						throw new ArgumentException("Error: Incorrect value [" + varValue.String + "], required [" + type + "]");
+					}
+					break;
 				case "r":
 					if (val < Int32.MinValue || val > Int32.MaxValue)
 					{
-                        throw new ArgumentException("Error: Incorrect value [" + varValue.String + "], required [" + type + "]");
-                    }
-                    break;
+						throw new ArgumentException("Error: Incorrect value [" + varValue.String + "], required [" + type + "]");
+					}
+					break;
 			}
 			if (size > 0)
 			{
 				var strValue = val.ToString();
+				if (dec > 0)
+				{ // add missing 0s after decimal point.
+					var decPt = strValue.Replace(",", ".").IndexOf(".");
+					if (decPt < 0)
+					{
+						strValue += "." + new string('0', dec);
+					}
+					else
+					{ // 1.2
+						var present = strValue.Length - decPt - 1;
+						if (present < dec)
+						{
+							strValue += new string('0', dec - present);
+						}
+					}
+				}
 				if (strValue.Length > size)
 				{
-					var newVal = strValue.Substring(0, size);
-					if (newVal.EndsWith(".") || newVal.ToLower().EndsWith("e"))
+					/* old code:
+					bool isNeg = strValue.StartsWith("-"); // -12.346 --> -2.35 (for size 5, dec 2)
+					var newVal = isNeg ? strValue.Substring(strValue.Length - size + 1, size - 1) :
+                                         strValue.Substring(strValue.Length - size, size);
+					if (newVal.StartsWith("."))
 					{
-                        newVal = newVal.Substring(0, newVal.Length - 1);
+                        newVal = newVal.Substring(1, newVal.Length - 1);
                     }
-					if (!Double.TryParse(newVal, out val))
+                    newVal = isNeg ? "-" + newVal : newVal;
+                    if (!Double.TryParse(newVal, out val))
 					{
-                        throw new ArgumentException("Error: Couldn't convert [" + newVal + "], to [" + type + "]");
-                    }
+                        throw new ArgumentException("Error: Couldn't convert [" + strValue + "], to [" + type + "]");
+                    }*/
+					return 0;
 				}
 			}
 			return val;
@@ -7279,18 +7325,22 @@ namespace WpfCSCS
 			{
 				case "a":
 					String = init.AsString();
-                    init.Type = Type = VarType.STRING;
+					Type = VarType.STRING;
 					if (Size > 0 && m_string.Length > Size)
 					{
-						init.String = m_string = m_string.Substring(0, Size);
+						m_string = m_string.Substring(0, Size);
 					}
 					if (Up)
 					{
-                        init.String = m_string = m_string.ToUpper();
+						m_string = m_string.ToUpper();
 					}
 					if (Down)
 					{
-                        init.String = m_string = m_string.ToLower();
+						m_string = m_string.ToLower();
+					}
+					if (init.Type != VarType.NONE)
+					{
+						init.String = m_string;
 					}
 
 					break;
@@ -7298,25 +7348,47 @@ namespace WpfCSCS
 				case "p":
 				case "f":
 					Pointer = init.AsString();
-                    init.Type = Type = VarType.POINTER;
+					Type = VarType.POINTER;
+					if (init.Type != VarType.NONE)
+					{
+						init.Type = Type;
+						init.Pointer = Pointer;
+					}
 					break;
 				case "d":
 				case "t":
-                    init.DateTime = DateTime = ToDateTime(init);
-					init.Format = DefType == "d" ? GetDateFormat() : GetTimeFormat();
-                    init.Type = Type = VarType.DATETIME;
+					DateTime = ToDateTime(init);
+					Format = !string.IsNullOrWhiteSpace(Format) ? Format :
+						DefType == "d" ? GetDateFormat() : GetTimeFormat();
+					Type = VarType.DATETIME;
+					if (init.Type != VarType.NONE)
+					{
+						init.DateTime = DateTime;
+						init.Type = Type;
+						init.Format = Format;
+					}
 					break;
 				case "l": // "logic" (boolean)
-                    init.Value = Value = ToBool(init.AsString()) ? 1 : 0;
-                    init.Type = Type = VarType.NUMBER;
+					Value = ToBool(init.AsString()) ? 1 : 0;
+					Type = VarType.NUMBER;
+					if (init.Type != VarType.NONE)
+					{
+						init.Value = Value;
+						init.Type = Type;
+					}
 					break;
 				case "b": // byte
 				case "i": // integer
 				case "n": // number
 				case "r": // small int
 				default:
-                    init.Value = Value = CheckValue(DefType, Size, Dec, init);
-                    init.Type = Type = VarType.NUMBER;
+					Value = CheckValue(DefType, Size, Dec, init);
+					Type = VarType.NUMBER;
+					if (init.Type != VarType.NONE)
+					{
+						init.Value = Value;
+						init.Type = Type;
+					}
 					break;
 			}
 
@@ -7396,6 +7468,10 @@ namespace WpfCSCS
 
 		public string GetDateFormat()
 		{
+			if (!string.IsNullOrWhiteSpace(Format))
+			{
+				return Format;
+			}
 			if (!string.IsNullOrWhiteSpace(DATE_FORMAT))
 			{
 				return DATE_FORMAT;
@@ -7403,7 +7479,7 @@ namespace WpfCSCS
 			// disable US date formatting for now
 			string sysFormat = CultureInfo.CurrentCulture.DateTimeFormat.ShortDatePattern;
 			var usDate = false;// !sysFormat.StartsWith("dd") && !sysFormat.EndsWith("dd");
-			DATE_FORMAT = "dd/MM/yyyy";
+			DATE_FORMAT = CSCS_GUI.DefaultDateFormat;
 			switch (Size)
 			{
 				case 5:
@@ -7461,21 +7537,32 @@ namespace WpfCSCS
 
 		public DateTime ToDateTime(Variable val)
 		{
-            DateTime oldest = new DateTime(1900, 1, 1, 0, 0, 0);
-            DateTime dt = oldest;
-            if (val.Type == VarType.NONE || (val.Type == VarType.NUMBER && val.Value == 0.0))
+			DateTime oldest = DateTime.MinValue;
+			DateTime dt = oldest;
+			if (val.Type == VarType.NONE || (val.Type == VarType.NUMBER && val.Value == 0.0))
 			{
 				return dt;
 			}
+			if (val.Type == VarType.NUMBER && val.Value > 0.0)
+			{ // Number of days since 01/01/1900
+				var baseDate = new DateTime(1900, 1, 1);
+				dt = baseDate.AddDays((int)val.Value);
+				var hours = (int)((val.Value - (int)val.Value) * 24.0);
+				dt = dt.AddHours(hours);
+				return dt;
+			}
+
 			var strValue = val.AsString();
-			var format = DefType == "d" ? GetDateFormat() : GetTimeFormat();
+			var format = DefType == "d" ? (strValue.Length == 8 ? CSCS_GUI.DateFormat8 :
+										  strValue.Length == 10 ? CSCS_GUI.DateFormat10 :
+										  GetDateFormat()) : GetTimeFormat();
 			var theValue = val.Type == VarType.DATETIME ? val.DateTime.ToString(format) : strValue;
-            if (DefType == "d")
+			if (DefType == "d")
 			{
 				if (!string.IsNullOrWhiteSpace(theValue) &&
-				    !DateTime.TryParseExact(theValue, format, CultureInfo.InvariantCulture, DateTimeStyles.None, out dt))
+					!DateTime.TryParseExact(theValue, format, CultureInfo.InvariantCulture, DateTimeStyles.None, out dt))
 				{
-					if(theValue.Length >= 10 && format.Length < 10 && format.Length >= 8)
+					if (theValue.Length >= 10 && format.Length < 10 && format.Length >= 8)
 					{
 						var shortenedDate = theValue.Substring(0, 6) + theValue.Substring(8, 2);
 
@@ -7483,7 +7570,7 @@ namespace WpfCSCS
 						{
 							throw new ArgumentException("Error: Couldn't parse [" + theValue + "] with format [" + format + "]");
 						}
-                    }
+					}
 					else
 						throw new ArgumentException("Error: Couldn't parse [" + theValue + "] with format [" + format + "]");
 				}
@@ -7491,16 +7578,16 @@ namespace WpfCSCS
 				{
 					MessageBox.Show("Date range is out of limit: " + dt.ToString(format) + "\nDate is set to 0");
 					dt = oldest;
-                }
+				}
 			}
 			if (DefType == "t")
 			{
-                if (theValue.Length >= 8 && format.Length < 8 && format.Length >= 5)
-                {
-                    theValue = theValue.Substring(0, 5);
-                }
-                if (!string.IsNullOrWhiteSpace(theValue) &&
-				    !DateTime.TryParseExact(theValue, format, CultureInfo.InvariantCulture, DateTimeStyles.None, out dt))
+				if (theValue.Length >= 8 && format.Length < 8 && format.Length >= 5)
+				{
+					theValue = theValue.Substring(0, 5);
+				}
+				if (!string.IsNullOrWhiteSpace(theValue) &&
+					!DateTime.TryParseExact(theValue, format, CultureInfo.InvariantCulture, DateTimeStyles.None, out dt))
 				{
 					throw new ArgumentException("Error: Couldn't parse [" + theValue + "] with format [" + format + "]");
 				}
@@ -7540,7 +7627,7 @@ namespace WpfCSCS
 				var strValue = Value.ToString();
 				if (strValue.Length > Size)
 				{
-					return "0";
+					return CheckValue(DefType, Size, Dec, this).ToString();
 				}
 				return strValue;
 			}
@@ -7572,7 +7659,7 @@ namespace WpfCSCS
 			}
 		}
 
-        public override double AsDouble()
+		public override double AsDouble()
 		{
 			return base.AsDouble();
 		}
@@ -7629,25 +7716,25 @@ namespace WpfCSCS
 			}
 			return result;
 		}
-        public static Variable PointerAssign(ParsingScript script, string name, string pointerVal)
-        {
-            var gui = CSCS_GUI.GetInstance(script);
+		public static Variable PointerAssign(ParsingScript script, string name, string pointerVal)
+		{
+			var gui = CSCS_GUI.GetInstance(script);
 
-            DefineVariable defVar;
-            if (!gui.DEFINES.TryGetValue(name, out defVar))
-            {
-                return null;
-            }
+			DefineVariable defVar;
+			if (!gui.DEFINES.TryGetValue(name, out defVar))
+			{
+				return null;
+			}
 
-            defVar.Pointer = pointerVal;
-            var existing = gui.Interpreter.GetVariableValue(defVar.Pointer, script);
-            if (existing != null)
-            {
-                gui.Interpreter.AddGlobalOrLocalVariable(Constants.POINTER_REF + name,
-                         new GetVarFunction(existing));
-            }
-            return defVar;
-        }
+			defVar.Pointer = pointerVal;
+			var existing = gui.Interpreter.GetVariableValue(defVar.Pointer, script);
+			if (existing != null)
+			{
+				gui.Interpreter.AddGlobalOrLocalVariable(Constants.POINTER_REF + name,
+						 new GetVarFunction(existing));
+			}
+			return defVar;
+		}
 		public static Variable TryPointerAssign(ParsingScript script, string name)
 		{
 			var oper = Char.ToString(script.PrevPrev) + Char.ToString(script.Prev);
@@ -7655,15 +7742,15 @@ namespace WpfCSCS
 			{
 				return null;
 			}
-            List<string> args = Utils.GetTokens(script);
-            Utils.CheckArgs(args.Count, 1, name);
+			List<string> args = Utils.GetTokens(script);
+			Utils.CheckArgs(args.Count, 1, name);
 
-            var result = PointerAssign(script, name, args[0]);
+			var result = PointerAssign(script, name, args[0]);
 			return result;
-        }
-    }
+		}
+	}
 
-    class MyAssignFunction : AssignFunction
+	class MyAssignFunction : AssignFunction
 	{
 		public enum MODE { ASSIGN, INCREMENT, DECREMENT, ASSIGNPLUS, ASSIGNMINUS, ASSIGNMULTIPLY, ASSIGNDIVIDE }
 
@@ -7690,7 +7777,7 @@ namespace WpfCSCS
 		{
 			var lower = varName.ToLower();
 			if (!s_variableMap.TryGetValue(lower, out ParsingScript parentScript) ||
-			    parentScript == script)
+				parentScript == script)
 			{
 				return false;
 			}
@@ -7737,36 +7824,36 @@ namespace WpfCSCS
 
 			InterpreterInstance = script.InterpreterInstance;
 			DefineVariable defVar = IsDefinedVariable(script);
-            if (defVar != null)
+			if (defVar != null)
 			{
 				Variable varValue = new Variable(Variable.VarType.NONE);
 				var result = DoAssign(script, m_name, defVar, ref varValue);
 
 				if (gui != null && gui.GroupBoxesAndRadioButtons != null)
 				{
-                    foreach (string groupBox in gui.GroupBoxesAndRadioButtons.Keys)
-                    {
-                        var firstRBName = gui.GroupBoxesAndRadioButtons[groupBox].FirstOrDefault(p => gui.GetWidget(p)?.DataContext.ToString().ToLower() == m_name.ToLower());
-                        if (firstRBName != null)
-                        //if (CSCS_GUI.GroupBoxesAndRadioButtons[groupBox].Any(p=> gui.GetWidget(p).DataContext.ToString().ToLower() == m_name.ToLower()))
-                        {
-                            //var widget = gui.Controls.First(p => (string)p.Value.DataContext == m_name.ToLower());
-                            var widget2 = gui.GetWidget(firstRBName.ToLower());
+					foreach (string groupBox in gui.GroupBoxesAndRadioButtons.Keys)
+					{
+						var firstRBName = gui.GroupBoxesAndRadioButtons[groupBox].FirstOrDefault(p => gui.GetWidget(p)?.DataContext.ToString().ToLower() == m_name.ToLower());
+						if (firstRBName != null)
+						//if (CSCS_GUI.GroupBoxesAndRadioButtons[groupBox].Any(p=> gui.GetWidget(p).DataContext.ToString().ToLower() == m_name.ToLower()))
+						{
+							//var widget = gui.Controls.First(p => (string)p.Value.DataContext == m_name.ToLower());
+							var widget2 = gui.GetWidget(firstRBName.ToLower());
 
-                            if (widget2 is RadioButton)
-                            {
-                                var radioButton = widget2 as RadioButton;
-                                radioButton.IsChecked = defVar.AsBool();
-                            }
-                        }
-                    }
-                }
+							if (widget2 is RadioButton)
+							{
+								var radioButton = widget2 as RadioButton;
+								radioButton.IsChecked = defVar.AsBool();
+							}
+						}
+					}
+				}
 
-                ProcessParentScript(script, m_name, varValue);
+				ProcessParentScript(script, m_name, varValue);
 				return result;
 			}
 			var name = m_originalName.EndsWith("]") ? m_originalName : m_name;
-            if (Mode == MODE.INCREMENT || Mode == MODE.DECREMENT)
+			if (Mode == MODE.INCREMENT || Mode == MODE.DECREMENT)
 			{
 				var result = IncrementDecrementFunction.ProcessAction(name, m_action, m_prefix, script);
 				return result;
@@ -7815,13 +7902,13 @@ namespace WpfCSCS
 			}
 
 			var newValue = new GetVarFunction(defVar);
-            script.InterpreterInstance.AddGlobalOrLocalVariable(m_name, newValue);
+			script.InterpreterInstance.AddGlobalOrLocalVariable(m_name, newValue);
 			if (!string.IsNullOrWhiteSpace(defVar.Pointer))
 			{
-                script.InterpreterInstance.AddGlobalOrLocalVariable(defVar.Pointer, newValue);
-            }
+				script.InterpreterInstance.AddGlobalOrLocalVariable(defVar.Pointer, newValue);
+			}
 
-            if (argStart > 0)
+			if (argStart > 0)
 			{
 				int argEnd = m_originalName.IndexOf(Constants.END_ARRAY, argStart + 1);
 				var index = m_originalName.Substring(argStart + 1, argEnd - argStart - 1);
@@ -7867,9 +7954,9 @@ namespace WpfCSCS
 				{
 					refValue.InitVariable(varValue, gui, script, false);
 					gui.Interpreter.AddGlobalOrLocalVariable(m_originalName,
-					        new GetVarFunction(refValue));
+							new GetVarFunction(refValue));
 					gui.Interpreter.AddGlobalOrLocalVariable(defVar.Pointer,
-					        new GetVarFunction(varValue));
+							new GetVarFunction(varValue));
 					return refValue;
 				}
 			}
@@ -7900,7 +7987,7 @@ namespace WpfCSCS
 					{
 						var rowList = dg.ItemsSource as List<ExpandoObject>;
 						if (!gui.WIDGETS.TryGetValue(dg.DataContext as string, out wd) ||
-						    !gui.DEFINES.TryGetValue(wd.actualElemsName, out DefineVariable actualElems))
+							!gui.DEFINES.TryGetValue(wd.actualElemsName, out DefineVariable actualElems))
 						{
 							return Variable.EmptyInstance;
 						}
@@ -7948,14 +8035,14 @@ namespace WpfCSCS
 					{
 						wd.actualElems = wd.maxElems;
 						if (!string.IsNullOrWhiteSpace(wd.actualElemsName) &&
-						    gui.DEFINES.TryGetValue(wd.actualElemsName, out DefineVariable actualElems))
+							gui.DEFINES.TryGetValue(wd.actualElemsName, out DefineVariable actualElems))
 						{
 							actualElems.Value = wd.maxElems;
 							gui.Interpreter.AddGlobal(wd.actualElemsName, new GetVarFunction(actualElems), false);
 						}
 					}
 					var rowList = dg.ItemsSource == null ? new List<ExpandoObject>() :
-						    dg.ItemsSource as List<ExpandoObject>;
+							dg.ItemsSource as List<ExpandoObject>;
 					while (rowList.Count > wd.maxElems)
 					{
 						rowList.RemoveAt(rowList.Count - 1);
@@ -7975,6 +8062,7 @@ namespace WpfCSCS
 					}
 					else
 					{
+						varValue = varValue.DeepClone();
 						defVar.InitVariable(varValue, gui, script, false, m_arrayIndex);
 					}
 
@@ -8081,12 +8169,12 @@ namespace WpfCSCS
 		}
 
 		void ThreadProc(CustomFunction newThreadFunction, CustomFunction callbackFunction, List<Variable> args,
-		    ParsingScript script)
+			ParsingScript script)
 		{
 			Variable result = Gui.Interpreter.Run(newThreadFunction, args, script);
 
 			var resultArgs = new List<Variable>() {
-	      new Variable(newThreadFunction.Name), result
+		  new Variable(newThreadFunction.Name), result
 	  };
 
 			RunOnMainFunction.RunOnMainThread(callbackFunction, resultArgs);
@@ -8106,7 +8194,7 @@ namespace WpfCSCS
 			return QuitFunction.QuitScript(script, code);
 		}
 	}
-	
+
 	class SetWindowModalResultFunction : ParserFunction
 	{
 		protected override Variable Evaluate(ParsingScript script)
@@ -8121,7 +8209,7 @@ namespace WpfCSCS
 
 			var scriptWindow = gui.GetScriptWindow(script);
 			scriptWindow.DialogResult = modalResult;
-			
+
 			return Variable.EmptyInstance;
 		}
 	}

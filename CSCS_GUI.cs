@@ -6351,35 +6351,15 @@ namespace WpfCSCS
 			var imagesPath = App.GetConfiguration("ImagesPath", "");
             var imagePath = Path.Combine(imagesPath, "screenshots", fileName);
 
-			var imagePath = Path.Combine(App.GetConfiguration("ImagesPath", ""), "tempScreenshot.jpg");
-			ScreenShot(imagePath);
+			//var imagePath = Path.Combine(App.GetConfiguration("ImagesPath", ""), "tempScreenshot.jpg");
+            screenShot(imagePath);
 
-			PrintImage(imagePath);
+            printImage(imagePath);
 
 			return Variable.EmptyInstance;
 		}
 
-		private void PrintImage(string path)
-		{
-			string fileName = path;//pass in or whatever you need
-			var p = new Process();
-			p.StartInfo.FileName = fileName;
-			p.StartInfo.Verb = "Print";
-			p.Start();
-
-			if(!Directory.Exists(Path.Combine(imagesPath, "screenshots")))
-			{
-				Directory.CreateDirectory(Path.Combine(imagesPath, "screenshots"));
-			}
-
-            screenShot(imagePath);
-
-			printImage(imagePath);
-
-            return Variable.EmptyInstance;
-        }
-
-        public bool screenShot(string saveAs)
+		public bool screenShot(string saveAs)
         {
             try
             {

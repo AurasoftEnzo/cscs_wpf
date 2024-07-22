@@ -187,30 +187,121 @@
 
 //-------------------------------------------------------------
 
-//numeric
-DEFINE var1 type n size 5 dec 2;
+// //numeric
+// DEFINE var1 type n size 5 dec 2;
 
-var1 = 123456789;
-MessageBox(var1); // 123456789 -> not ok, should be: 89, in fact it will be as 89.00
+// var1 = 123456789;
+// MessageBox(var1); // 0
 
-var1 = 123.126;
-MessageBox(var1); // 123,12 -> should be : 23.13
+// var1 = 123.126;
+// MessageBox(var1); // 0
 
-var1 = -12345.567;
-MessageBox(var1); // -12345.56  -> should be: -5.57, i.e. it must preserve negative sign, then round the decimals, and take a least significant integer(s) to fit in defined size
-
-
-//alphanumeric
-DEFINE var2 type a size 5;
-
-var2 = 25;
-MessageBox(var2); // "" -> should be: "25"
+// var1 = -12345.567;
+// MessageBox(var1); // 0
 
 
-//date
-DEFINE varDate type d size 10;
+// //alphanumeric
+// DEFINE var2 type a size 5;
 
-varDate = 0;
-MessageBox(varDate); // 01/01/1900 -> should be 00/00/0000
+// var2 = 25;
+// MessageBox(var2); // 25 
 
-quit;
+
+// //date
+// DEFINE varDate type d size 10;
+
+// varDate = 0;
+// MessageBox(varDate); // 01/01/0001
+
+// quit;
+
+//------------------------------------------------------------
+    
+    
+// DEFINE arr1, arr2 type a size 14 array 10; // dela ok
+
+// DEFINE arr1, arr2 type n size 14 array 10; // Error: Variable type [ARRAY], required [n]
+// DEFINE arr1, arr2 type n size 14 dec 2 array 10; // Error: Variable type [ARRAY], required [n]
+
+// DEFINE arr1, arr2 type i size 14 array 10; // Error: Variable type [ARRAY], required [i]
+
+// DEFINE arr1, arr2 type r size 14 array 10; // Error: Variable type [ARRAY], required [r]
+
+// DEFINE arr1, arr2 type b size 14 array 10; // Error: Variable type [ARRAY], required [b]
+
+// DEFINE arr1, arr2 type l array 10; // dela ok
+
+// DEFINE arr1, arr2 type d size 8 array 10; // Error: Couldn't parse [[01/01/01, 01/01/01, 01/01/01, 01/01/01, 01/01/01, 01/01/01, 01/01/01, 01/01/01, 01/01/01, 01/01/01]] with format [dd/MM/yy]
+
+// DEFINE arr1, arr2 type t size 8 array 10; // Error: Couldn't parse [[00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00]] with format [HH:mm:ss]
+
+//------------------------------------------------------------
+
+
+// DEFINE dateRec type r size 100;
+// DEFINE date type d size 10;
+
+// date = "01/01/1900";
+// dateRec = date; // Error: Variable type [DATETIME], required [r]
+// MessageBox(dateRec); // tu ne dojde
+
+//------------------------------------------------------------
+//------------------------------------------------------------
+
+// DEFINE date8 type d size 8;
+// DEFINE date10 type d size 10;
+
+// date8 = "22/07/24";
+// date10 = date8;
+// MessageBox(date10); // 22/07/2024
+
+// date8 = "22/07/50";
+// date10 = date8;
+// MessageBox(date10); // 22/07/1950
+
+// date8 = "22/07/40";
+// date10 = date8;
+// MessageBox(date10); // 22/07/2040
+
+// //------------------------------------------------------------
+
+// DEFINE date10 type d size 10;
+// DEFINE date8 type d size 8;
+
+// date10 = "22/07/2024";
+// date8 = date10;
+// MessageBox(date8); // 22/07/24
+
+// date10 = "22/07/1950";
+// date8 = date10;
+// MessageBox(date8); // 22/07/50
+
+// date10 = "22/07/2040";
+// date8 = date10;
+// MessageBox(date8); // 22/07/40
+
+// //------------------------------------------------------------
+
+// DEFINE date8 type d size 8;
+// DEFINE date10 type d size 10;
+
+// date8 = "01/01/01";
+// date10 = date8;
+// MessageBox(date10); // 01/01/2001
+
+// //------------------------------------------------------------
+
+// DEFINE date10 type d size 10;
+// DEFINE date8 type d size 8;
+
+// date10 = "01/01/0001";
+// date8 = date10;
+// MessageBox(date8); // 01/01/01
+
+// //------------------------------------------------------------
+
+// DEFINE date8 type d size 8;
+// DEFINE date10 type d size 10;
+
+// date8 = "01.01.01"; // Error: Couldn't parse [01.01.01] with format [dd/MM/yy]
+// date10 = "01.01.0001"; // Error: Couldn't parse [01.01.0001] with format [dd/MM/yyyy]

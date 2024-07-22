@@ -1,8 +1,216 @@
 
 
-array1 = {0, 1, 2};
-MessageBox(array1[0]); // prints: 0 // ok
-array1[0] += 1;
-// array1[0] = array1[0] + 1; // this works ok
-MessageBox(array1[0]); // error: Unknown index [0] for tuple of size 3
+// array1 = {0, 1, 2};
+// MessageBox(array1[0]); // prints: 0 // ok
+// array1[0] += 1;
+// // array1[0] = array1[0] + 1; // this works ok
+// MessageBox(array1[0]); // error: Unknown index [0] for tuple of size 3
 
+// quit;
+
+//-------------------------------------------------------------
+
+// //numeric
+// DEFINE var1 type n size 5 dec 2;
+
+// var1 = 123456789;
+// MessageBox(var1); // 123456789 -> not ok, should be: 12
+
+// var1 = 123.123;
+// MessageBox(var1); // 123,12   ?? -> skraćeno je ali nije 5/2 nego 6/2
+
+// var1 = -555.555;
+// MessageBox(var1); // -555,55  ?? -> isto tako, skraćeno je ali nije 5/2 nego 7/2
+
+// var1 = 123456789012345;
+// MessageBox(var1); // 123456789012345  ?? -> nije skraćeno uopće
+
+// var1 = "25";
+// MessageBox(var1); // 25 -> ok
+
+
+// //alphanumeric
+// DEFINE var2 type a size 5;
+
+// var2 = "aaa";
+// MessageBox(var2); // aaa -> ok
+
+// var2 = 25;
+// MessageBox(var2); // "" -> not ok, should be: "25" ? 
+
+// var2 = 123456789;
+// MessageBox(var2); // 12345 -> ok
+
+// var2 = "abcdefghijklmnop";
+// MessageBox(var2); // abcde -> ok
+
+
+// DEFINE var3 type a size 5 UP;
+// var3 = "abc";
+// MessageBox(var3); // ABC -> ok
+
+
+// //date
+// DEFINE varDate type d size 10;
+
+// varDate = 0;
+// MessageBox(varDate); // 01/01/1900 -> 00/00/0000
+
+
+// //time
+// DEFINE varTime type t size 8;
+
+// varTime = 0;
+// MessageBox(varTime); // 00:00:00 -> ok
+
+
+// quit;
+
+//-------------------------------------------------------------
+
+// function1(5);
+
+// function function1(var1){
+//     MessageBox(var1);
+// }
+
+// quit;
+
+//-------------------------------------------------------------
+
+// DEFINE var1 type n size 5 dec 2;
+// DEFINE var2 type a size 5 up;
+// DEFINE varDate type d size 8;
+// DEFINE varDate2 type d size 10;
+
+// function testScript1_onDisplay(){
+//     var1 = 21.11;
+
+//     var2 = "abcdefghijklmnop"; // displays ABCDEFGHIJKLMNOP -> not ok, koristin TextBox
+
+//     DEFINE varLA type a size 5 up;
+    
+//     varDate = 0;
+//     varDate2 = 0;
+// }
+
+// CreateWindow(string(tpath()) + "testScript1.xaml");
+
+// function btn1@clicked(){
+//     MessageBox("var1 = " + var1); // 21,1
+//     MessageBox("var2 = " + var2); // ABCDEFGHIJKLMNOP
+//     MessageBox("varDate = " + varDate); // 01/01/00
+//     MessageBox("varDate2 = " + varDate2); // 01/01/1900
+// }
+
+//-------------------------------------------------------------
+
+// DEFINE var1 type a size 10; // ok
+// DEFINE var2 type n size 5 dec 2; // Error: Variable type [STRING], required [n]
+// DEFINE var3 type i size 10; // Error: Variable type [STRING], required [i]
+// DEFINE var4 type r size 10; // Error: Variable type [STRING], required [r]
+// DEFINE var5 type b size 10; // Error: Variable type [STRING], required [b]
+// DEFINE var6 type l; // ok
+// DEFINE var7 type d size 10; // ok
+// DEFINE var8 type t size 8; // MessageBox: Date range is out of limit: 01/01/0001 Date is set to 0 -> it may be an error involved by our code
+
+// DEFINE array1 type a size 10 array 10; // Error: Couldn't parse [["", "", "", "", "", "", "", "", "", ""]] with format [dd/MM/yyyy]
+// DEFINE array2 type n size 10 array 10; // Error: Variable type [STRING], required [n]
+// DEFINE array3 type i size 10 array 10; // Error: Variable type [STRING], required [i]
+// DEFINE array4 type r size 10 array 10; // Error: Variable type [STRING], required [r]
+// DEFINE array5 type b size 10 array 10; // Error: Variable type [STRING], required [b]
+// DEFINE array6 type l array 10; // Error: Couldn't parse [[false, false, false, false, false, false, false, false, false, false]] with format [dd/MM/yyyy]
+// DEFINE array7 type d size 10 array 10; // Error: Couldn't parse [[01/01/1900, 01/01/1900, 01/01/1900, 01/01/1900, 01/01/1900, 01/01/1900, 01/01/1900, 01/01/1900, 01/01/1900, 01/01/1900]] with format [dd/MM/yyyy]'
+// DEFINE array8 type t size 8 array 10; // Error: Couldn't parse [[00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00]] with format [dd/MM/yyyy]
+
+// array1[0] = "x"; // Object reference not set to an instance of an object.
+// array2[0] = 5.2; // Object reference not set to an instance of an object.
+// array3[0] = 4; // Object reference not set to an instance of an object.
+// array4[0] = 3; // Object reference not set to an instance of an object.
+// array5[0] = 2; // Object reference not set to an instance of an object.
+// array6[0] = false; // Object reference not set to an instance of an object.
+// array7[0] = "01/01/2025"; // Object reference not set to an instance of an object.
+// array8[0] = "12:12:12"; // Object reference not set to an instance of an object.
+
+// quit;
+
+//-------------------------------------------------------------
+
+// DEFINE date1 type d size 10;
+// DEFINE date2 type d size 8;
+
+// date1 = "15/12/2024";
+// date2 = "01/01/26";
+
+// MessageBox(date1); // 15/12/2024, ok
+// MessageBox(date2); // 01/01/26, ok
+
+// date2 = date1;
+// MessageBox(date2); // 15/12/24, ok
+
+// date1 += 1;
+// MessageBox(date1); // 16/12/2024, ok
+
+// date2 = date1;
+// MessageBox(date2); // 16/12/2024, not ok, it must be: 16/12/24
+
+
+// quit;
+
+//-------------------------------------------------------------
+
+// //numeric
+// DEFINE var1 type n size 5 dec 2;
+
+// var1 = 123456789;
+// MessageBox(var1); // 123456789 -> not ok, should be: 89, in fact it will be as 89.00
+
+// var1 = 123.126;
+// MessageBox(var1); // 123,12 -> should be : 23.13
+
+// var1 = -12345.567;
+// MessageBox(var1); // -12345.56  -> should be: -5.57, i.e. it must preserve negative sign, then round the decimals, and take a least significant integer(s) to fit in defined size
+
+
+// //alphanumeric
+// DEFINE var2 type a size 5;
+
+// var2 = 25;
+// MessageBox(var2); // "" -> should be: "25"
+
+
+// //date
+// DEFINE varDate type d size 10;
+
+// varDate = 0;
+// MessageBox(varDate); // 01/01/1900 -> should be 00/00/0000
+
+//-------------------------------------------------------------
+
+//numeric
+DEFINE var1 type n size 5 dec 2;
+
+var1 = 123456789;
+MessageBox(var1); // 123456789 -> not ok, should be: 89, in fact it will be as 89.00
+
+var1 = 123.126;
+MessageBox(var1); // 123,12 -> should be : 23.13
+
+var1 = -12345.567;
+MessageBox(var1); // -12345.56  -> should be: -5.57, i.e. it must preserve negative sign, then round the decimals, and take a least significant integer(s) to fit in defined size
+
+
+//alphanumeric
+DEFINE var2 type a size 5;
+
+var2 = 25;
+MessageBox(var2); // "" -> should be: "25"
+
+
+//date
+DEFINE varDate type d size 10;
+
+varDate = 0;
+MessageBox(varDate); // 01/01/1900 -> should be 00/00/0000
+
+quit;

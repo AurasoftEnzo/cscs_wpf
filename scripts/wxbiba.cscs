@@ -1,5 +1,4 @@
 Import(strTrim(mpath()) + "CSCS.Math.dll");
-
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiba_inc_lists.cscs") : strTrim(tpath()) + "wxbiba_inc_lists.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiba_inc_a.cscs") : strTrim(tpath()) + "wxbiba_inc_a.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiba_inc_b.cscs") : strTrim(tpath()) + "wxbiba_inc_b.cscs");
@@ -189,6 +188,7 @@ function gbPripremi@clicked()
     {
         GL_oznaka= "";
     } 
+    
     AsyncCall("setChartByMonth", "callSetHorizontalBars");
 }
 function callSetHorizontalBars(){

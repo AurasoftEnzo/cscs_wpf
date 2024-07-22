@@ -339,35 +339,35 @@ function setChartByMonth(){
         sql_str += "SELECT '0' as tip,CONVERT(varchar(6), nkpr_gl_datem, 112) as yyyymm, ";
         if (neto_dn)
         {
-            sql_str += "Sales = cast(ISNULL(SUM(CASE WHEN nkpr_gl_dviza = 'D' THEN nkpr_gl_tecaj * nkpr_ln_amt ELSE nkpr_ln_amt END) , 0) as decimal(10,0)) ";
+            sql_str += "Sales = round(ISNULL(SUM(CASE WHEN nkpr_gl_dviza = 'D' THEN nkpr_gl_tecaj * nkpr_ln_amt ELSE nkpr_ln_amt END) , 0), 0) ";
         }
         elif (razlikaUCijeniField)
         {
-            sql_str += " Sales = cast(ISNULL(SUM(CASE WHEN nkpr_gl_dviza = 'D' THEN nkpr_gl_tecaj * nkpr_ln_amt - nkpr_ln_cenan * nkpr_ln_qtyz ELSE nkpr_ln_amt - nkpr_ln_cenan * nkpr_ln_qtyz END) , 0)as decimal (10))";
+            sql_str += " Sales = round(ISNULL(SUM(CASE WHEN nkpr_gl_dviza = 'D' THEN nkpr_gl_tecaj * nkpr_ln_amt - nkpr_ln_cenan * nkpr_ln_qtyz ELSE nkpr_ln_amt - nkpr_ln_cenan * nkpr_ln_qtyz END) , 0), 0)";
         }
         elif (tezina_dn)
         {
-            sql_str += " Sales = cast(ISNULL(SUM(nkpr_ln_tezinan) , 0) as decimal (10))"; //" + cast(ISNULL(SUM(e.nkpr_ln_tezinan) , 0) as decimal (10))";
+            sql_str += " Sales = round(ISNULL(SUM(nkpr_ln_tezinan) , 0), 0)"; //" + cast(ISNULL(SUM(e.nkpr_ln_tezinan) , 0) as decimal (10))";
         }
         elif (mx3_dn)
         {
-            sql_str += " Sales = cast(ISNULL(SUM(nkpr_ln_metx3) , 0) as decimal (10))"; //" + cast(ISNULL(SUM(e.nkpr_ln_metx3) , 0) as decimal (10))";
+            sql_str += " Sales = round(ISNULL(SUM(nkpr_ln_metx3) , 0), 0)"; //" + cast(ISNULL(SUM(e.nkpr_ln_metx3) , 0) as decimal (10))";
         }
         elif (mx2_dn)
         {
-            sql_str += " Sales = cast(ISNULL(SUM(nkpr_ln_metx2) , 0) as decimal (10))"; //" + cast(ISNULL(SUM(e.nkpr_ln_metx2) , 0) as decimal (10))";
+            sql_str += " Sales = round(ISNULL(SUM(nkpr_ln_metx2) , 0), 0)"; //" + cast(ISNULL(SUM(e.nkpr_ln_metx2) , 0) as decimal (10))";
         }
         elif (met_dn)
         {
-            sql_str += " Sales = cast(ISNULL(SUM(nkpr_ln_met) , 0) as decimal (10))"; //" + cast(ISNULL(SUM(e.nkpr_ln_met) , 0) as decimal (10))";
+            sql_str += " Sales = round(ISNULL(SUM(nkpr_ln_met) , 0), 0)"; //" + cast(ISNULL(SUM(e.nkpr_ln_met) , 0) as decimal (10))";
         }
         elif (kom_dn)
         {
-            sql_str += " Sales = cast(ISNULL(SUM(CASE WHEN nkpr_ln_jedmj = 'KOM' THEN nkpr_ln_pqty ELSE nkpr_ln_kom END),0) as decimal (10))"; //" + cast(ISNULL(SUM(CASE WHEN e.nkpr_ln_jmj='KOM' THEN e.nkpr_ln_pqty ELSE e.nkpr_ln_kom END) , 0) as decimal (10))";
+            sql_str += " Sales = round(ISNULL(SUM(CASE WHEN nkpr_ln_jedmj = 'KOM' THEN nkpr_ln_pqty ELSE nkpr_ln_kom END),0), 0)"; //" + cast(ISNULL(SUM(CASE WHEN e.nkpr_ln_jmj='KOM' THEN e.nkpr_ln_pqty ELSE e.nkpr_ln_kom END) , 0) as decimal (10))";
         }
         else
         {
-            sql_str += " Sales = cast(ISNULL(SUM(CASE WHEN nkpr_gl_dviza = 'D' THEN nkpr_gl_tecaj * nkpr_ln_pext ELSE nkpr_ln_pext END) , 0) as decimal (10))"; //" + cast(ISNULL(SUM(CASE WHEN c.nkpr_gl_dviza = 'D' THEN c.nkpr_gl_tecaj * e.nkpr_ln_pext ELSE e.nkpr_ln_pext END) , 0)as decimal (10))";
+            sql_str += " Sales = round(ISNULL(SUM(CASE WHEN nkpr_gl_dviza = 'D' THEN nkpr_gl_tecaj * nkpr_ln_pext ELSE nkpr_ln_pext END) , 0), 0)"; //" + cast(ISNULL(SUM(CASE WHEN c.nkpr_gl_dviza = 'D' THEN c.nkpr_gl_tecaj * e.nkpr_ln_pext ELSE e.nkpr_ln_pext END) , 0)as decimal (10))";
         }
         sql_str += " FROM " + proslaGodinaBaza + ".dbo.nknaglrn"; // b ON a.[Wk_Date] = DATEADD(month , DATEDIFF(month , 0 , b.nkpr_gl_datem) , 0) AND year(b.nkpr_gl_datem)='" + (int(ovagod_h) - 1) + "' ";
         if ( regija != "" )
@@ -862,88 +862,115 @@ function setLast10InvoicesDataGrid()
 
 function setTop10InvoicesDataGrid()
 {
-    /*
-    sql_str =  "SELECT TOP 10 nkpr_gl_num , nkpr_gl_cusnme , CONVERT(char(8) ,  nkpr_gl_invdte , 3) AS datecr , " ;
-	sql_str += " CAST(CASE WHEN nkpr_gl_dviza =  'D' THEN nkpr_gl_tecaj * nkpr_gl_total ELSE nkpr_gl_total END as decimal (10,2))AS nkpr_gl_total ";
-	sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkprinv" ;
-	if ( regija != "" )
-	{
-		sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart g ON nkpr_gl_cuscod =  g.nksc_partcode" ;
-	}
-	sql_str += " WHERE 1 = 1" ;
-	if ( mjesec_h != "" )
-		{
-		if (do_mjeseca)
-		{
-			sql_str += " AND month(nkpr_gl_datem)< =  " + mjesec_h ;
-			sql_str += " AND YEAR(nkpr_gl_datem) =  " + ovagod_h ;
-		}
-		else 
-		{
-			sql_str += " AND month(nkpr_gl_datem) =  " + mjesec_h ;
-			sql_str += " AND YEAR(nkpr_gl_datem) =  " + ovagod_h ;
-			}
-	}
-	if ( regija != "" )
-	{
-		sql_str += " AND g.nksc_regija =  '" + regija + "'";
-	}
-    */
+    sql_str = "WITH cte AS(";
+	sql_str += " SELECT";
+	sql_str += " 'N' as modul,";
+	sql_str += " nkpr_gl_num as broj_racuna,";
+	sql_str += " (SELECT TOP 1 nksc_partname FROM nkscpart WHERE nksc_partcode = nkpr_gl_cuscod ORDER BY nksc_partcode) as naziv_dobavljaca,";
+	sql_str += " nkpr_gl_datem as datecr,";
     
-	sql_str =  "SELECT TOP 10 nkpr_gl_num , nkpr_gl_cusnme , CONVERT(char(8) ,  nkpr_gl_invdte , 3) AS datecr , ";
     if (neto_dn)
 	{
-        sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_gl_dviza= 'D' THEN nkpr_gl_tecaj*nkpr_ln_amt ELSE nkpr_ln_amt END),2), 0)";
+        sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_gl_dviza= 'D' THEN nkpr_gl_tecaj * nkpr_ln_amt ELSE nkpr_ln_amt END),2), 0) as vrijednost";
 	}
     elif (razlikaUCijeniField)
 	{
-        sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_gl_dviza= 'D' THEN nkpr_gl_tecaj*(nkpr_ln_amt-nkpr_ln_cenan*nkpr_ln_qtyz) ELSE nkpr_ln_amt-nkpr_ln_cenan*nkpr_ln_qtyz END), 2), 0)";
+        sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_gl_dviza= 'D' THEN nkpr_gl_tecaj*(nkpr_ln_amt-nkpr_ln_cenan*nkpr_ln_qtyz) ELSE nkpr_ln_amt-nkpr_ln_cenan*nkpr_ln_qtyz END), 2), 0)  as vrijednost";
 	}
     elif (tezina_dn )
 	{
-        sql_str += " ISNULL(ROUND(SUM(nkpr_ln_tezinan), 2), 0)";
+        sql_str += " ISNULL(ROUND(SUM(nkpr_ln_tezinan), 2), 0) as vrijednost";
 	}	
     elif (mx3_dn )
 	{
-        sql_str += " ISNULL(ROUND(SUM(nkpr_ln_metx3), 2), 0)";
+        sql_str += " ISNULL(ROUND(SUM(nkpr_ln_metx3), 2), 0) as vrijednost";
 	}	
     elif (mx2_dn )
 	{
-        sql_str += " ISNULL(ROUND(SUM(nkpr_ln_metx2), 2), 0)";
+        sql_str += " ISNULL(ROUND(SUM(nkpr_ln_metx2), 2), 0) as vrijednost";
 	}	
     elif (met_dn )
 	{
-        sql_str += " ISNULL(ROUND(SUM(nkpr_ln_met), 2), 0)";
+        sql_str += " ISNULL(ROUND(SUM(nkpr_ln_met), 2), 0) as vrijednost";
 	}	
     elif (kom_dn )
 	{
-        sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_ln_jedmj = 'KOM' THEN nkpr_ln_pqty ELSE nkpr_ln_kom END), 2), 0)";
+        sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_ln_jedmj = 'KOM' THEN nkpr_ln_pqty ELSE nkpr_ln_kom END), 0), 0) as vrijednost";
 	}	
     else
 	{
-        sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_gl_dviza= 'D' THEN nkpr_gl_tecaj*nkpr_ln_pext ELSE nkpr_ln_pext END), 2), 0)";
+        sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_gl_dviza= 'D' THEN nkpr_gl_tecaj*nkpr_ln_pext ELSE nkpr_ln_pext END), 2), 0) as vrijednost";
 	}
-	sql_str += " AS iznos FROM " + trenutnaGodinaBaza + ".dbo.nknaglrn" ;
+	
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nknaglrn" ;
     if (regija!= "")
 	{
-        sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkscpart g ON nkpr_gl_cuscod= g.nksc_partcode";
+        sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkscpart g ON nkpr_gl_cuscod = g.nksc_partcode";
     }
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nknalnrn ON nkpr_gl_num = nkpr_ln_invnm";
-    sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkmkarti ON nkpr_ln_pcode= arti_artikl";
-	sql_str += " WHERE nkpr_gl_cuscod <> '" + vlFirma + "' AND YEAR(nkpr_gl_datem) =  " + ovagod_h;
+    sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkmkarti ON nkpr_ln_pcode = arti_artikl";
+
+	sql_str += " WHERE nkpr_gl_cuscod <> '" + vlFirma + "' AND YEAR(nkpr_gl_datem) = " + ovagod_h;
 	if (do_mjeseca)
 	{
-		sql_str +=" AND month(nkpr_gl_datem)< =  " + mjesec_h  ;
+		sql_str +=" AND month(nkpr_gl_datem) <=  " + mjesec_h;
 	}
 	else 
 	{
 		sql_str += " AND month(nkpr_gl_datem) =  " + mjesec_h;
 	}
     filterPart();
-	sql_str += " GROUP BY nkpr_gl_num,nkpr_gl_cusnme,nkpr_gl_invdte,nkpr_gl_dviza,nkpr_gl_tecaj" ;
-	sql_str += " ORDER BY iznos DESC"; //CASE WHEN nkpr_gl_dviza =  'D' THEN nkpr_gl_tecaj * nkpr_gl_total ELSE nkpr_gl_total END DESC";
+
+	sql_str += " GROUP BY nkpr_gl_num, nkpr_gl_cusnme, nkpr_gl_datem, nkpr_gl_timecr, nkpr_gl_cuscod";
 	
-	try	{
+    sql_str += " UNION ALL";
+    
+    sql_str += " SELECT";
+    sql_str += " 'K' as modul,";
+    sql_str += " kpsp_gl_num as broj_racuna,";
+    sql_str += " (SELECT TOP 1 nksc_partname FROM nkscpart WHERE nksc_partcode = kpsp_gl_partner ORDER BY nksc_partcode) as naziv_dobavljaca,";
+    sql_str += " kpsp_gl_datem AS datecr,";
+
+    if (neto_dn)
+    {
+        sql_str += " ISNULL(ROUND(SUM(kpsp_gl_total - kpsp_gl_porez),2), 0) as vrijednost";
+    }
+    elif (bruto_dn)
+    {
+        sql_str += " ISNULL(ROUND(SUM(kpsp_gl_total),2), 0) as vrijednost";
+    }
+    else{
+        sql_str += " 0 as vrijednost";
+    }
+
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpsoglrn" ;
+    if (regija!= "")
+	{
+        sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart g ON kpsp_gl_partner = g.nksc_partcode";
+    }
+
+    sql_str += " WHERE kpsp_gl_partner <> '" + vlFirma + "' AND YEAR(kpsp_gl_datem) = " + ovagod_h;
+	if (do_mjeseca)
+	{
+		sql_str += " AND month(kpsp_gl_datem) <=  " + mjesec_h;
+	}
+	else 
+	{
+		sql_str += " month(kpsp_gl_datem) =  " + mjesec_h;
+	}
+    filterPartKontiranje();
+
+    sql_str += " GROUP BY kpsp_gl_num, kpsp_gl_partner, kpsp_gl_datem";
+
+    sql_str += " )";
+
+    sql_str += " SELECT TOP 10";
+    sql_str += " modul, broj_racuna, naziv_dobavljaca, CONVERT(char(8), datecr, 3) AS datecr2, vrijednost";
+    sql_str += " from cte ORDER BY vrijednost DESC";
+	
+    //SaveFile(sql_str);
+	
+    try	{
 		sqlResult = sqlQuery(sql_str);
 	}catch(exc){
 		MessageBox(exc);
@@ -956,13 +983,14 @@ function setTop10InvoicesDataGrid()
 		// nkpr_gl_invdte = sqlResult[i][2];
 		// nkpr_gl_total= sqlResult[i][3];
 
-        
-		t10NameMj_ar[i - 1] =  sqlResult[i][1]; //nkpr_gl_cusnme;
-		t10IznosMj_ar[i - 1] =  sqlResult[i][3]; //nkpr_gl_total;
+        t10modulMj_ar[i - 1] = sqlResult[i][0];
+		t10NameMj_ar[i - 1] =  sqlResult[i][2]; //nkpr_gl_cusnme;
+		t10IznosMj_ar[i - 1] =  sqlResult[i][4]; //nkpr_gl_total;
 		t10CntrMj_ar[i - 1] =  i;
-		t10DatumMj_ar[i - 1] =  sqlResult[i][2]; //nkpr_gl_invdte;
-		t10RacunMj_ar[i - 1] =  sqlResult[i][0]; //nkpr_gl_num;
+		t10DatumMj_ar[i - 1] =  sqlResult[i][3]; //nkpr_gl_invdte;
+		t10RacunMj_ar[i - 1] =  sqlResult[i][1]; //nkpr_gl_num;
 	}        
+    
 	return;
 }
 

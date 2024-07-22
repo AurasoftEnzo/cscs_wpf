@@ -1,4 +1,4 @@
-using CefSharp.DevTools.FedCm;
+//using CefSharp.DevTools.FedCm;
 using CSCS.InterpreterManager;
 using SplitAndMerge;
 using System;
@@ -3113,7 +3113,11 @@ namespace WpfCSCS
 				widget.DataContext = enterBox.FieldName;
 				if (enterBox.FieldName != null && DEFINES.TryGetValue(enterBox.FieldName.ToLower(), out DefineVariable defVar))
 				{
-					if (defVar.Size < enterBox.Size)
+					if(enterBox.Size == 0)
+					{
+						enterBox.Size = defVar.Size;
+					}
+					else if (defVar.Size < enterBox.Size)
 					{
 						enterBox.Size = defVar.Size;
 					}
@@ -3388,7 +3392,7 @@ namespace WpfCSCS
 		}
 
 		public void AddWidgetActions(FrameworkElement widget)
-		{
+		{	
 			if ((widget.Parent as FrameworkElement).Parent is ASEnterBox)
 			{
 				var ASEnterBox = (widget.Parent as FrameworkElement).Parent as ASEnterBox;

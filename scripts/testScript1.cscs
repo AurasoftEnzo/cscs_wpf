@@ -305,3 +305,143 @@
 
 // date8 = "01.01.01"; // Error: Couldn't parse [01.01.01] with format [dd/MM/yy]
 // date10 = "01.01.0001"; // Error: Couldn't parse [01.01.0001] with format [dd/MM/yyyy]
+
+// //------------------------------------------------------------
+
+// DEFINE date type d size 8;
+// DEFINE alpha type a size 8;
+
+// date = "23/07/24";
+// alpha = date;
+// MessageBox(alpha); // 23/07/24
+
+// // ----------------------------------------------------------------
+
+// DEFINE alpha type a size 8;
+// DEFINE date type d size 8;
+
+// alpha = "23/07/24";
+// date = alpha;
+// MessageBox(date); // 23/07/24
+
+// // ----------------------------------------------------------------
+
+// DEFINE date type d size 10;
+// DEFINE rec type r size 100;
+
+// date = "01/01/1900";
+// rec = date; // Error: Variable type [DATETIME], required [r]
+// MessageBox(rec);
+
+// // ----------------------------------------------------------------
+
+// DEFINE rec type r size 100;
+// DEFINE date type d size 10;
+
+// rec = 1200;
+// date = rec; 
+// MessageBox(date); // 16/04/1903
+
+// // ----------------------------------------------------------------
+
+// DEFINE date type d size 10;
+// DEFINE int type i size 100;
+
+// date = "01/01/1900";
+// int = date; // Error: Variable type [DATETIME], required [i]
+// MessageBox(int);
+
+// // ----------------------------------------------------------------
+
+// DEFINE int type i size 100;
+// DEFINE date type d size 10;
+
+// int = 1200;
+// date = int; 
+// MessageBox(date); // 16/04/1903
+
+// // ----------------------------------------------------------------
+
+// DEFINE date type d size 10;
+// DEFINE byte type b size 100;
+
+// date = "01/01/1900";
+// byte = date; // Error: Variable type [DATETIME], required [b]
+// MessageBox(byte);
+
+// // ----------------------------------------------------------------
+
+// DEFINE byte type b size 100;
+// DEFINE date type d size 10;
+
+// byte = 1200; // Error: Incorrect value [], required [b]
+// date = byte; 
+// MessageBox(date);
+
+// // ----------------------------------------------------------------
+
+// DEFINE date type d size 10;
+// DEFINE numeric type n size 100;
+
+// date = "01/01/1900";
+// numeric = date; // Error: Variable type [DATETIME], required [n]
+// MessageBox(numeric);
+
+// // ----------------------------------------------------------------
+
+// DEFINE numeric type n size 100;
+// DEFINE date type d size 10;
+
+// numeric = 1200;
+// date = numeric; 
+// MessageBox(date); // 16/04/1903
+
+// // ----------------------------------------------------------------
+
+// DEFINE arr1, arr2 type a size 14 array 10; // ok
+// DEFINE arr1, arr2 type n size 14 array 10; // Error: Variable type [ARRAY], required [n]
+// DEFINE arr1, arr2 type n size 14 dec 2 array 10; // Error: Variable type [ARRAY], required [n]
+// DEFINE arr1, arr2 type i size 14 array 10; // Error: Variable type [ARRAY], required [i]
+// DEFINE arr1, arr2 type r size 14 array 10; // Error: Variable type [ARRAY], required [r]
+// DEFINE arr1, arr2 type b size 14 array 10; // Error: Variable type [ARRAY], required [b]
+// DEFINE arr1, arr2 type l array 10; // ok
+// DEFINE arr1, arr2 type d size 8 array 10; // Error: Couldn't parse [[01/01/01, 01/01/01, 01/01/01, 01/01/01, 01/01/01, 01/01/01, 01/01/01, 01/01/01, 01/01/01, 01/01/01]] with format [dd/MM/yy]
+// DEFINE arr1, arr2 type t size 8 array 10; // Error: Couldn't parse [[00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00]] with format [HH:mm:ss]
+
+
+// DEFINE arr1, arr2 type a size 14 ;
+// DEFINE arr1, arr2 type n size 14 ;
+// DEFINE arr1, arr2 type n size 14 dec 2 ;
+// DEFINE arr1, arr2 type i size 14 ;
+// DEFINE arr1, arr2 type r size 14 ;
+// DEFINE arr1, arr2 type b size 14 ;
+// DEFINE arr1, arr2 type l ;
+// DEFINE arr1, arr2 type d size 8 ;
+// DEFINE arr1, arr2 type t size 8 ; 
+
+// // ----------------------------------------------------------------
+// // ----------------------------------------------------------------
+
+// DEFINE date type d size 10;
+// DEFINE var1 type r;
+// //date += 100;
+// var1 = date + 100;
+// MessageBox(var1);
+
+// quit;
+
+// // ----------------------------------------------------------------
+// // ----------------------------------------------------------------
+
+// DEFINE arr1, arr2 type n size 14 array 10; // Error: Variable type [ARRAY], required [n]
+
+// arr1[0] = "25";
+// MessageBox(arr1[0]);
+
+DEFINE var1 type n size 14; 
+DEFINE arr1 type n size 14 array 10;
+
+var1 = arr1;
+
+MessageBox(var1);
+quit;

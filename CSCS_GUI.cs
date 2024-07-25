@@ -7218,7 +7218,11 @@ namespace WpfCSCS
 				return val;
 			}
 			if (varValue.Type != VarType.NUMBER &&
+
+				varValue.Type != VarType.ARRAY && // Vassili needs approval!
+
 				(type == "n" || type == "b" || type == "i" || type == "r") &&
+
 				!Double.TryParse(varValue.String, out val))
 			{
 				throw new ArgumentException("Error: Variable type [" + varValue.Type + "], required [" + type + "]");

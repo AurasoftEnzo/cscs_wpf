@@ -439,7 +439,7 @@ function setKategPieChart(){
 	sql_str += " SELECT 'Usluga' as naziv,";
 	if (neto_dn)
 	{
-		sql_str += " SUM(kpsp_gl_total - kpsp_gl_porez) AS Suma";
+		sql_str += " ISNULL(SUM(kpsp_gl_total - kpsp_gl_porez), 0) AS Suma";
 	}
 	elif (bruto_dn)
 	{

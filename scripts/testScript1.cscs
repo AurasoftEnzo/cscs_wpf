@@ -398,15 +398,18 @@
 
 // // ----------------------------------------------------------------
 
-// DEFINE arr1, arr2 type a size 14 array 10; // ok
-// DEFINE arr1, arr2 type n size 14 array 10; // Error: Variable type [ARRAY], required [n]
-// DEFINE arr1, arr2 type n size 14 dec 2 array 10; // Error: Variable type [ARRAY], required [n]
-// DEFINE arr1, arr2 type i size 14 array 10; // Error: Variable type [ARRAY], required [i]
-// DEFINE arr1, arr2 type r size 14 array 10; // Error: Variable type [ARRAY], required [r]
-// DEFINE arr1, arr2 type b size 14 array 10; // Error: Variable type [ARRAY], required [b]
-// DEFINE arr1, arr2 type l array 10; // ok
-// DEFINE arr1, arr2 type d size 8 array 10; // Error: Couldn't parse [[01/01/01, 01/01/01, 01/01/01, 01/01/01, 01/01/01, 01/01/01, 01/01/01, 01/01/01, 01/01/01, 01/01/01]] with format [dd/MM/yy]
-// DEFINE arr1, arr2 type t size 8 array 10; // Error: Couldn't parse [[00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00]] with format [HH:mm:ss]
+DEFINE arr1, arr2 type a size 14 array 10; // ok
+DEFINE arr1, arr2 type n size 14 array 10; // Error: Variable type [ARRAY], required [n]
+DEFINE arr1, arr2 type n size 14 dec 2 array 10; // Error: Variable type [ARRAY], required [n]
+DEFINE arr1, arr2 type i size 14 array 10; // Error: Variable type [ARRAY], required [i]
+DEFINE arr1, arr2 type r size 14 array 10; // Error: Variable type [ARRAY], required [r]
+DEFINE arr1, arr2 type b size 14 array 10; // Error: Variable type [ARRAY], required [b]
+DEFINE arr1, arr2 type l array 10; // ok
+DEFINE arr1, arr2 type d size 8 array 10; // Error: Couldn't parse [[01/01/01, 01/01/01, 01/01/01, 01/01/01, 01/01/01, 01/01/01, 01/01/01, 01/01/01, 01/01/01, 01/01/01]] with format [dd/MM/yy]
+DEFINE arr1, arr2 type t size 8 array 10; // Error: Couldn't parse [[00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00, 00:00:00]] with format [HH:mm:ss]
+
+MessageBox("done");
+quit;
 
 
 // DEFINE arr1, arr2 type a size 14 ;
@@ -438,10 +441,12 @@
 // arr1[0] = "25";
 // MessageBox(arr1[0]);
 
-DEFINE var1 type n size 14; 
-DEFINE arr1 type n size 14 array 10;
+// //-----------------------------------------------------------------
 
-var1 = arr1;
+// DEFINE var1 type n size 14; 
+// DEFINE arr1 type n size 14 array 10;
 
-MessageBox(var1);
-quit;
+// var1 = arr1;
+
+// MessageBox(var1);
+// quit;

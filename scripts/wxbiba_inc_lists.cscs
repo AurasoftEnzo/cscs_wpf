@@ -16,7 +16,7 @@
 
     define tip_racuna type a size 30;
     define gl_oznaka type a size 1 up;
-    DEFINE skladiste type i size 3;
+    DEFINE skladiste type a size 3;
     DEFINE skladisteNaziv type a size 50;
 
     DEFINE ARTI_ARTIKL_ARR type a size 30 array 50000;
@@ -241,7 +241,7 @@ function ceSkladiste@clicked()
         skladiste= &sifraFieldPointer;
         if (skladiste != 0)
         {
-            sklad_str = (sklad_str== "") ? (sklad_str + skladiste) : (sklad_str + "," + skladiste);
+            sklad_str = (sklad_str == "") ? (sklad_str + skladiste) : (sklad_str + "," + skladiste);
         }    
     }
     searchSifra = "";
@@ -788,11 +788,11 @@ function filterPart()
 
     if (kategorija != "")
 	{
-        sql_str += " AND arti_kategorija='"+kategorija+"'";
+        sql_str += " AND arti_kategorija='" + kategorija + "'";
 	}
     if (klasa != "")
 	{
-        sql_str += " AND arti_klasa='"+klasa+"'";
+        sql_str += " AND arti_klasa='" + klasa + "'";
 	}
     if (regija != "")
 	{

@@ -60,8 +60,8 @@ function setSellersPieChart(){
 	}	
 	elif (razlikaUCijeniField  )
 	{
-		sql_str += " sum(KS_IL_TOTAL - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) AS Suma,";
-		sql_str += " ROW_NUMBER() OVER( ORDER BY sum(KS_IL_TOTAL - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) DESC ) As Num";
+		sql_str += " sum(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) AS Suma,";
+		sql_str += " ROW_NUMBER() OVER( ORDER BY sum(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) DESC ) As Num";
 	}	
 	else
 	{
@@ -316,7 +316,6 @@ function setTop30Nofisc(){
 	}
     for ( i = 1; i < Size(sqlResult2); i++ )
     {
-        MessageBox("aaaaaaa");
         T30SELLER_AR[i - 1] =  sqlResult2[i][1];
         T30IZNOS_AR[i - 1] =  sqlResult2[i][4];
         T30RBR_AR[i - 1] =  i;

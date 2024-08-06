@@ -13,7 +13,7 @@
         Height="675"
         Width="1200" MinHeight="540" MinWidth="960" WindowStartupLocation="CenterScreen">
     <Viewbox Stretch="Uniform">
-        <Grid Width="1210">
+        <Grid Width="1210" Margin="15">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
@@ -58,25 +58,26 @@
                Grid.Column="1"
                FontSize="16"
                FontWeight="Bold"/>
-            <DataGrid GridLinesVisibility="Vertical"
-          VerticalGridLinesBrush="LightGray"
-          HorizontalAlignment="Center"
-          VerticalAlignment="Top"
-          Height="260"
-          Width="585"
-          Margin="0,44,0,0"
-          IsReadOnly="true"
-          x:Name="dgT30nofisc"
-          AlternatingRowBackground="LightBlue"
-          HorizontalScrollBarVisibility="Auto"
-          VerticalScrollBarVisibility="Auto"
-          Background="White"
-          Grid.Row="1"
-          TabIndex="4" BorderThickness="0,0,0,0" Grid.Column="1">
+            <DataGrid GridLinesVisibility="Horizontal"
+                      HorizontalGridLinesBrush="#FFD7D6D6"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Top"
+                      Height="260"
+                      Width="585"
+                      RowHeight="22"
+                        FontSize="15"
+                      Margin="0,44,0,0"
+                      IsReadOnly="true"
+                      x:Name="dgT30nofisc"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto"
+                      Background="White"
+                      Grid.Row="1"
+                      TabIndex="4" BorderThickness="0,0,0,0" Grid.Column="1">
                 <DataGrid.Resources>
                     <Style TargetType="{x:Type DataGridColumnHeader}">
                         <Setter Property="Background"
-                    Value="#FF006393" />
+                    Value="#D32D41" />
                         <Setter Property="Foreground"
                     Value="White" />
                         <Setter Property="FontSize" Value="17"/>
@@ -105,7 +106,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                     <DataGridTemplateColumn Header="Datum"
-                                Width="63">
+                                Width="70">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <wcl:ASGridCell FieldName="T30DATUM_AR"
@@ -164,7 +165,7 @@ BorderBrush="Transparent"
 BorderThickness="0"
 Padding="-8"
 x:Name="gbPrint3"
-Background="gray"
+Background="#1F3F49"
 TabIndex="35"
 Foreground="#FFFDFDFD"
 Content="Ispis"

@@ -10,7 +10,7 @@
         Height="675"
         Width="1200" MinHeight="540" MinWidth="960" WindowStartupLocation="CenterScreen">
     <Viewbox Stretch="Uniform">
-        <Grid Height="582">
+        <Grid Width="1162" Margin="15">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="*"/>
@@ -33,18 +33,17 @@
             <Label HorizontalAlignment="Left" Content="Prodaja po danima" Grid.Row="0" Grid.Column="1" VerticalAlignment="Top" Width="193" FontSize="16" FontWeight="Bold" Margin="24,5,0,0" BorderBrush="{x:Null}" Background="{x:Null}"/>
             <Label HorizontalAlignment="Left" Content="Najnoviji računi" Grid.Row="1" Grid.Column="0" VerticalAlignment="Top" Width="193" FontSize="16" FontWeight="Bold" Margin="23,5,0,0" BorderBrush="{x:Null}"/>
 
-            <DataGrid GridLinesVisibility="Vertical"
-                      VerticalGridLinesBrush="LightGray"
+            <DataGrid GridLinesVisibility="Horizontal"
+                      HorizontalGridLinesBrush="#FFD7D6D6"
                       HorizontalAlignment="Center"
                       VerticalAlignment="Top"
-                      Height="242"
-                      Width="516"
-                      RowHeight="21"
-                      FontSize="14"
+                      Height="266"
+                        Width="540"
+                      RowHeight="22"
+                        FontSize="15"
                       Margin="0,39,0,0"
                       IsReadOnly="true"
                       x:Name="dgRacuniLast"
-                      AlternatingRowBackground="LightBlue"
                       HorizontalScrollBarVisibility="Auto"
                       VerticalScrollBarVisibility="Auto"
                       Background="White"
@@ -53,7 +52,7 @@
                 <DataGrid.Resources>
                     <Style TargetType="{x:Type DataGridColumnHeader}">
                         <Setter Property="Background"
-                                Value="#FF006393" />
+                                Value="#4CB5F5" />
                         <Setter Property="Foreground"
                                 Value="White" />
                         <Setter Property="FontSize" Value="17"/>
@@ -82,7 +81,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                     <DataGridTemplateColumn Header="Datum"
-                                            Width="63">
+                                            Width="70">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <wcl:ASGridCell FieldName="T10DATUMZ_AR"
@@ -93,7 +92,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                     <DataGridTemplateColumn Header="Sat"
-                                            Width="50">
+                                            Width="60">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <wcl:ASGridCell FieldName="T10TIMEZ_AR"
@@ -104,7 +103,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                     <DataGridTemplateColumn Header="Kupac"
-                                            Width="210">
+                                            Width="190">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <wcl:ASGridCell FieldName="T10NAMEZ_AR"
@@ -132,25 +131,26 @@
             </DataGrid>
             <Label HorizontalAlignment="Left" Content="Najveći računi" Grid.Row="1" Grid.Column="1" VerticalAlignment="Top" Width="193" FontSize="16" FontWeight="Bold" Margin="24,5,0,0" BorderBrush="{x:Null}"/>
             <Label HorizontalAlignment="Left" Content="Prodaja po mjesecima " VerticalAlignment="Top" Width="272" FontSize="16" FontWeight="Bold" Margin="23,10,0,0" BorderBrush="{x:Null}" Background="{x:Null}"/>
-            <DataGrid GridLinesVisibility="None"
+            <DataGrid GridLinesVisibility="Horizontal"
+                      HorizontalGridLinesBrush="#FFD7D6D6"
                       HorizontalAlignment="Center"
-                      Width="550"
-                      RowHeight="21"
-                      FontSize="14"
-                      Margin="10,0,10,10"
+                      Height="266"
+                      Width="540"
+                    RowHeight="22"
+                      FontSize="15"
+                      Margin="0,39,0,0"
                       IsReadOnly="true"
                       x:Name="dgRacuniMjesec"
-                      AlternatingRowBackground="LightGray"
                       HorizontalScrollBarVisibility="Auto"
                       VerticalScrollBarVisibility="Auto"
                       Background="White"
                       Grid.Column="1"
                       Grid.Row="1"
-                      TabIndex="3" BorderThickness="0,0,0,0" CanUserAddRows="False" CanUserDeleteRows="False" CanUserResizeRows="False" Height="242" VerticalAlignment="Bottom">
+                      TabIndex="3" BorderThickness="0,0,0,0" CanUserAddRows="False" CanUserDeleteRows="False" CanUserResizeRows="False" VerticalAlignment="Top">
                 <DataGrid.Resources>
                     <Style TargetType="{x:Type DataGridColumnHeader}">
                         <Setter Property="Background"
-                                Value="#FF326363" />
+                                Value="#6AB187" />
                         <Setter Property="Foreground"
                                 Value="White" />
                         <Setter Property="FontSize" Value="17"/>
@@ -179,7 +179,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                     <DataGridTemplateColumn Header="Datum"
-                                            Width="63">
+                                            Width="70">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <wcl:ASGridCell FieldName="T10DATUMMJ_AR"
@@ -226,7 +226,7 @@ BorderBrush="Transparent"
 BorderThickness="0"
 Padding="-8"
 x:Name="gbPrint1"
-Background="gray"
+Background="#1F3F49"
 TabIndex="35"
 Foreground="#FFFDFDFD"
 Content="Ispis"

@@ -2,10 +2,14 @@
 
 Import(strTrim(mpath()) + "CSCS.Math.dll");
 
-include(strTrim(tpath()) + "wxbiposa_inc_lists.cscs");
-include(strTrim(tpath()) + "wxbiposa_inc_a.cscs");
-include(strTrim(tpath()) + "wxbiposa_inc_b.cscs");
-include(strTrim(tpath()) + "wxbiposa_inc_c.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiposa_inc_lists.cscs") : strTrim(tpath()) + "wxbiposa_inc_lists.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiposa_inc_a.cscs") : strTrim(tpath()) + "wxbiposa_inc_a.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiposa_inc_b.cscs") : strTrim(tpath()) + "wxbiposa_inc_b.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiposa_inc_c.cscs") : strTrim(tpath()) + "wxbiposa_inc_c.cscs");
+// include(strTrim(tpath()) + "wxbiposa_inc_lists.cscs");
+// include(strTrim(tpath()) + "wxbiposa_inc_a.cscs");
+// include(strTrim(tpath()) + "wxbiposa_inc_b.cscs");
+// include(strTrim(tpath()) + "wxbiposa_inc_c.cscs");
 // IncludeScript("wxbiposa_inc_lists.cscs"); //look-up lists
 // IncludeScript("wxbiposa_inc_a.cscs"); //look-up lists
 // IncludeScript("wxbiposa_inc_b.cscs"); //look-up lists
@@ -26,18 +30,19 @@ function Wxbiposa_onDisplay()
     args = CommandLineArgs(); 
     if(Size(args) > 2){
         companyCode = args[2];
+        userCode = args[3];
     }else{
         companyCode = Substring(CoGet(), 1, 2);
     }
     sqlQueryString = "select SY_CC_USER, SY_CC_YEAR, SY_CC_DBASE from " + strtrim(CommonDBGet()) + ".dbo.NKSYCCYR WHERE SY_CC_CODE = '" + companyCode + "'";
     try
-        {
+    {
         sqlResult = sqlQuery(sqlQueryString);
-        }
+    }
     catch(exc)
-        {
+    {
         MessageBox(exc);
-        }
+    }
     if (ffile(strTrim(tpath())+"CompanyLogo.jpg",'f') == "CompanyLogo.jpg")
     { 
         setimage("Logo",strTrim(tpath())+"CompanyLogo.jpg");
@@ -72,15 +77,15 @@ function Wxbiposa_onDisplay()
     }    
     lani_h = string(int(ovagod_h) - 1); // 2
     trenutnaGodinaBaza = sqlResult[1][2].trim(); // ime baze
-    sqlQueryString = " SELECT TOP 1 kpsy_comp_name,kpsy_po_freight,FORMAT([KPSY_FISCAL_YR], 'yyyy-MM-dd'),kpsy_ku_pnb FROM " + trenutnaGodinaBaza + ".[dbo].[KPSYMSTR]";
+    sqlQueryString = " SELECT TOP 1 kpsy_comp_name, kpsy_po_freight, FORMAT([KPSY_FISCAL_YR], 'yyyy-MM-dd'), kpsy_ku_pnb FROM " + trenutnaGodinaBaza + ".[dbo].[KPSYMSTR]";
     try
-        {
+    {
         sqlResult = sqlQuery(sqlQueryString);
-        }
+    }
     catch(exc)
-        {
+    {
         MessageBox(exc);
-        }
+    }
     if (size(sqlResult) > 1)
     {
         proslaGodina = (int(ovagod_h) - 1);
@@ -90,6 +95,7 @@ function Wxbiposa_onDisplay()
         local = sqlResult[1][3];
     } 
     neto_dn = true;
+    SetWindowOptions("wxbiposaWindow", "title", "Dashboard - POS kasa za " + nazivFirme + " - " + ovagod_h+ ". godina");
     //kasnije zamijenit sa funkcijom, kada se bude koristi adictionary
     sqlQueryString = "select SY_CC_DBASE from " + CommonDBGet() + ".dbo.NKSYCCYR WHERE SY_CC_USER = '" + imeFirme + "' AND SY_CC_YEAR = '" + (int(ovagod_h) - 1) + "'";
     try
@@ -105,10 +111,10 @@ function Wxbiposa_onDisplay()
         MessageBox(exc);
     }
    
-    EUCountries= "'AT', 'BE', 'BG', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR', 'HU', 'IE', 'IT', 'LT', 'LU', 'LV', 'MT', 'NL', 'PL', 'PT', 'RO', 'SE', 'SI', 'SK', 'QP', 'QR', 'QV'";
-    if(local== 'S' || local== 'B')
+    EUCountries = "'AT', 'BE', 'BG', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR', 'HU', 'IE', 'IT', 'LT', 'LU', 'LV', 'MT', 'NL', 'PL', 'PT', 'RO', 'SE', 'SI', 'SK', 'QP', 'QR', 'QV'";
+    if(local == 'S' || local == 'B')
     {
-        EUCountries= EUCountries+",HR";
+        EUCountries = EUCountries+",'HR'";
     }
     sqlNaDan = ovagod_h + "-12-31";
     sqlOdDana = string(int(ovagod_h) - 1) + "-01-01";
@@ -125,7 +131,7 @@ function Wxbiposa_onDisplay()
 
     mjesec_h = Now("MM");
     mjesec_h = string(int(mjesec_h) - 1);
-    mjesec_h= Mjesec_h=< "0" ? "12" : mjesec_h;
+    mjesec_h= Mjesec_h <= "0" ? "1" : mjesec_h;
     proslimjesec = string(int(mjesec_h) - 1);
     mjesec_h0X = mjesec_h.length == 1 ? "0" + mjesec_h : mjesec_h;
     proslimjesec0X = proslimjesec.length == 1 ? "0" + proslimjesec : proslimjesec;
@@ -222,7 +228,16 @@ function gbProdaja3@clicked()
 
 function gbExit@clicked()
 {
-    quit;
+    if(Size(args) > 2)
+    {
+        //comming from tas
+        exit;
+    }
+    else
+    {    
+        //comming from mainmenu
+        quit;
+    }
 }
 
 //next routines is work out of above
@@ -353,7 +368,8 @@ function setCustomerAndInvoiceCounts()
     }
 
     // bojeArray = {250, 100, 250};
-    bojeArray = {111, 207, 247};
+    // bojeArray = {111, 207, 247};
+    bojeArray = {106, 177, 135};
     Format("br_kupaca_og", "nofd", recv: "br_kupaca_og_string");
     HorizontalBar("HorizontalBarBrKupacaOG", "Text", br_kupaca_og_string);
     HorizontalBar("HorizontalBarBrKupacaOG", "Color", bojeArray);
@@ -422,7 +438,8 @@ function setCustomerAndInvoiceCounts()
     }
 
     // bojeArray = {220, 150, 250};
-    bojeArray = {111, 207, 247};
+    // bojeArray = {111, 207, 247};
+    bojeArray = {106, 177, 135};
     Format("broj_rac_og", "nofd", recv: "broj_rac_og_string");
     HorizontalBar("HorizontalBarBrRacunaOG", "Text", broj_rac_og_string);
     HorizontalBar("HorizontalBarBrRacunaOG", "Color", bojeArray);
@@ -517,7 +534,7 @@ function setCustomerAndInvoiceCounts()
     }
 
     // bojeArray = {150, 190, 250};
-    bojeArray = {111, 207, 247};
+    bojeArray = {106, 177, 135};
     Format("prodaja_kup_og", "nofd", recv: "prodaja_kup_og_string");
     HorizontalBar("HorizontalBarProdajaKupOG", "Text", prodaja_kup_og_string);
     HorizontalBar("HorizontalBarProdajaKupOG", "Color", bojeArray);
@@ -740,8 +757,8 @@ function setHorizontalBars()
 {
     //  bojeArray = {196, 224, 138};
     //  bojeArray2 = {200, 170, 80};
-    bojeArray = {111, 207, 247};
-    bojeArray2 = {111, 207, 247};
+    bojeArray = {106, 177, 135};
+    bojeArray2 = {106, 177, 135};
     if (Math.Abs(tot_ovagod)>Math.Abs(tot_lani))
     {
         if(tot_lani != 0)
@@ -814,8 +831,8 @@ function setHorizontalBars()
     HorizontalBar("HorizontalBarLG", "Color", bojeArray);
 //  bojeArrayMJ = {76, 168, 168};
 //  bojeArrayMJ2 = {230, 60, 80};
-    bojeArrayMJ = {111, 207, 247};
-    bojeArrayMJ2 = {111, 207, 247};
+    bojeArrayMJ = {106, 177, 135};
+    bojeArrayMJ2 = {106, 177, 135};
     if (Math.Abs(tot_ovajmj) > Math.Abs(tot_proslimj))
     {
         if(tot_proslimj != 0)
@@ -921,7 +938,7 @@ function setWeekComparison()
 	}
 	elif ( razlikaUCijeniField == true )
 	{
-		sql_str = sql_str + " Sales = round(ISNULL(SUM(KS_IL_TOTAL - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0),0)";
+		sql_str = sql_str + " Sales = round(ISNULL(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0),0)";
 	}
 	else 
 	{
@@ -970,10 +987,8 @@ function setWeekComparison()
 	sql_str = sql_str + " GROUP BY [wk_FirstOfWeek]";
 	sql_str = sql_str + " ORDER BY [wk_FirstOfWeek] DESC";
 	
-    
     //SaveFile(sql_str);
 	
-
     try	{
 		sqlResult = sqlQuery(sql_str);
         //MessageBox(sqlResult);
@@ -999,8 +1014,8 @@ function setWeekComparison()
 	}
 	// bojeArrayTJ = {252, 192, 131};
 	// bojeArrayTJ2 = {55, 153, 176};
-	bojeArrayTJ = {111, 207, 247};
-	bojeArrayTJ2 = {111, 207, 247};
+	bojeArrayTJ = {106, 177, 135};
+	bojeArrayTJ2 = {106, 177, 135};
     define a type n size 14 dec 2;
 	if (Math.Abs(tot_ovajTj) > Math.Abs(tot_ProsliTj))
 	{
@@ -1133,7 +1148,7 @@ function setCash(){
 
 function setSalesRatio(){
 
-    sql_str = "SELECT '1' as tip,CONVERT(varchar(6),nkpr_gl_datem,112) as yyyymm, ";
+    sql_str = "SELECT '1' as tip, CONVERT(varchar(6),nkpr_gl_datem,112) as yyyymm, ";
     if (neto_dn)
     {
         sql_str += "Sales = cast(ISNULL(SUM(CASE WHEN nkpr_gl_dviza = 'D' THEN nkpr_gl_tecaj * nkpr_ln_amt ELSE nkpr_ln_amt END) , 0) as decimal(10,0)) ";
@@ -1187,7 +1202,7 @@ function setSalesRatio(){
     {
         MessageBox(exc);
     }
-
+    
     tot_ovagod_vp = 0;
 
     for(i = 1; i <= Size(queryResult)-1; i++)
@@ -1230,7 +1245,7 @@ function setSalesRatio(){
 
 
     GaugeChart("GaugeChartOmjerProdaje", "value", Math.round(100*tot_ovagod/(tot_ovagod + tot_ovagod_vp)), 25, 30);
-    GaugeChart("GaugeChartOmjerProdaje", "color", "red");
+    GaugeChart("GaugeChartOmjerProdaje", "color", "#D32D41");
 }
 
 function deNadan@LostFocus(){
@@ -1249,14 +1264,14 @@ function deNadan@LostFocus(){
 
 
 function gbPrint@clicked(){
-    PrintWindow();
+    PrintWindow(WhoAmI() + "_" + userCode + ".jpg");
 }
 function gbPrint1@clicked(){
-    PrintWindow();
+    PrintWindow(WhoAmI() + "_" + userCode + ".jpg");
 }
 function gbPrint2@clicked(){
-    PrintWindow();
+    PrintWindow(WhoAmI() + "_" + userCode + ".jpg");
 }
 function gbPrint3@clicked(){
-    PrintWindow();
+    PrintWindow(WhoAmI() + "_" + userCode + ".jpg");
 }

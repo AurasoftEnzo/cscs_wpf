@@ -1,4 +1,4 @@
-using CefSharp.DevTools.FedCm;
+//using CefSharp.DevTools.FedCm;
 using CSCS.InterpreterManager;
 using SplitAndMerge;
 using System;
@@ -91,6 +91,9 @@ namespace SplitAndMerge
 			interpreter.RegisterFunction("SetText", new SetTextWidgetFunction());
 			interpreter.RegisterFunction("AddWidgetData", new AddWidgetDataFunction());
 			interpreter.RegisterFunction("SetWidgetOptions", new SetWidgetOptionsFunction());
+
+			interpreter.RegisterFunction("SetWindowOptions", new SetWindowOptionsFunction());
+
 			interpreter.RegisterFunction("Get_comp_year", new Get_comp_yearFunction());
 			interpreter.RegisterFunction("Get_dbase", new Get_dbaseFunction());
 			interpreter.RegisterFunction("GetSelected", new GetSelectedFunction());
@@ -101,6 +104,8 @@ namespace SplitAndMerge
 			interpreter.RegisterFunction("DisplayArrFunc", new DisplayArrFuncFunction());
 
 			interpreter.RegisterFunction("MessageBox", new MessageBoxFunction());
+			interpreter.RegisterFunction("msg", new MessageBoxFunction());
+
 			interpreter.RegisterFunction("SendToPrinter", new PrintFunction());
 
 			interpreter.RegisterFunction("AddMenuItem", new AddMenuEntryFunction(false));
@@ -362,7 +367,7 @@ namespace WpfCSCS
 	{
 		public NavigatorClass NavigatorClass { get; set; } = new NavigatorClass();
 		public Btrieve Btrieve { get; set; } = new Btrieve();
-		public TasFunctions TasFunctions { get; set; } = new TasFunctions();
+		//public TasFunctions TasFunctions { get; set; } = new TasFunctions();
 
 		public string LastObjWidgetName;
 		public string LastObjClickedWidgetName;
@@ -524,7 +529,8 @@ namespace WpfCSCS
 		internal CSCS_SQL SQLInstance { get; set; } = new CSCS_SQL();
 		internal Btrieve BtrieveInstance { get; set; } = new Btrieve();
 		internal TasFunctions TasFunctionsInstance { get; set; } = new TasFunctions();
-		internal Charts ChartsInstance { get; set; } = new Charts();
+        public NewCSCSFunctions NewCSCSFunctionsInstance { get; set; } = new NewCSCSFunctions();
+        internal Charts ChartsInstance { get; set; } = new Charts();
 		internal NavigatorClass NavigatorClassInstance { get; set; } = new NavigatorClass();
 		internal Commands CommandsInstance { get; set; } = new Commands();
 
@@ -610,7 +616,8 @@ namespace WpfCSCS
 
 			BtrieveInstance.Init(this);
 			TasFunctionsInstance.Init(this);
-			ChartsInstance.Init(this);
+			NewCSCSFunctionsInstance.Init(this);
+            ChartsInstance.Init(this);
 			ReportFunction.Init(Interpreter);
 			Excel.Init(Interpreter);
 			NavigatorClassInstance.Init(Interpreter);
@@ -2947,6 +2954,24 @@ namespace WpfCSCS
 						}
 					}
 				}
+				else if (child is ToolBarTray)
+				{
+					var tbTray = child as ToolBarTray;
+					var toolbars = tbTray.ToolBars;
+
+					foreach (var toolbar in toolbars)
+					{
+						foreach (var item in toolbar.Items)
+						{
+							if(item is Button)
+							{
+                                CacheControl(item as FrameworkElement, win, controls);
+                            }
+						}
+					}
+                    //CacheControl(insideButton as FrameworkElement, win, controls);
+                    //CacheASButton(asButton as FrameworkElement, win, controls, insideButton);
+				}
 				else if (child is ASButton)
 				{
 					var asButton = child as ASButton;
@@ -3094,7 +3119,11 @@ namespace WpfCSCS
 				widget.DataContext = enterBox.FieldName;
 				if (enterBox.FieldName != null && DEFINES.TryGetValue(enterBox.FieldName.ToLower(), out DefineVariable defVar))
 				{
-					if (defVar.Size < enterBox.Size)
+					if(enterBox.Size == 0)
+					{
+						enterBox.Size = defVar.Size;
+					}
+					else if (defVar.Size < enterBox.Size)
 					{
 						enterBox.Size = defVar.Size;
 					}
@@ -3369,7 +3398,7 @@ namespace WpfCSCS
 		}
 
 		public void AddWidgetActions(FrameworkElement widget)
-		{
+		{	
 			if ((widget.Parent as FrameworkElement).Parent is ASEnterBox)
 			{
 				var ASEnterBox = (widget.Parent as FrameworkElement).Parent as ASEnterBox;
@@ -4472,6 +4501,31 @@ namespace WpfCSCS
 
 	//}
 
+	class SetWindowOptionsFunction : ParserFunction
+	{
+		protected override Variable Evaluate(ParsingScript script)
+		{
+			List<Variable> args = script.GetFunctionArgs();
+			Utils.CheckArgs(args.Count, 2, m_name);
+			var windowName = Utils.GetSafeString(args, 0).ToLower();
+			var option = Utils.GetSafeString(args, 1).ToLower();
+			
+			var gui = CSCS_GUI.GetInstance(script);
+
+			Window window = CSCS_GUI.Window2File.Keys.FirstOrDefault(p => p.Name.ToLower() == windowName);
+			
+			var parameter = Utils.GetSafeString(args, 2);
+			
+			// try generically
+			foreach (var prop in window.GetType().GetProperties())
+				if (prop.Name.ToLower() == option.ToLower())
+					prop.SetValue(window, Convert.ChangeType(parameter, prop.PropertyType), null);
+
+
+			return new Variable(true);
+		}
+	}
+	
 	class SetWidgetOptionsFunction : ParserFunction
 	{
 		//emin
@@ -4497,53 +4551,57 @@ namespace WpfCSCS
 			var prop_by_prop_mapped = widget.GetType().GetProperties().Where(a => a.Name.ToLower() == (prop_mapped ?? "").ToLower()).FirstOrDefault();
 
 			if (!string.IsNullOrEmpty(prop_mapped) && prop_by_prop_mapped != null)
-			{
-				//Chart("ChartPoMjesecima", "init");
-				//Chart("ChartPoMjesecima", "seriesType", "Columnseries");
-				//Chart("ChartPoMjesecima", "title", "Naslov grafa", 20);
-				//Chart("ChartPoMjesecima", "labels", "y", 13);
-				//Chart("ChartPoMjesecima", "labels", "x", 13, { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"});
-				//Chart("ChartPoMjesecima", "xlabelsRotation", 0);
-				//Chart("ChartPoMjesecima", "values", a1, "aaaaaa1");
-				//Chart("ChartPoMjesecima", "values", a2, "aaaaaa2");
-				//Chart("ChartPoMjesecima", "values", a3, "aaaaaa3");
-				//Chart("ChartPoMjesecima", "values", a4, "aaaaaa4");
-				//Chart("ChartPoMjesecima", "SeparatorStep", 1);
-				//Chart("ChartPoMjesecima", "Margins", { 50, 20, 0, 30});
-				//Chart("ChartPoMjesecima", "TooltipDecimalPlaces", 2);
+            {
+                //Chart("ChartPoMjesecima", "init");
+                //Chart("ChartPoMjesecima", "seriesType", "Columnseries");
+                //Chart("ChartPoMjesecima", "title", "Naslov grafa", 20);
+                //Chart("ChartPoMjesecima", "labels", "y", 13);
+                //Chart("ChartPoMjesecima", "labels", "x", 13, { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"});
+                //Chart("ChartPoMjesecima", "xlabelsRotation", 0);
+                //Chart("ChartPoMjesecima", "values", a1, "aaaaaa1");
+                //Chart("ChartPoMjesecima", "values", a2, "aaaaaa2");
+                //Chart("ChartPoMjesecima", "values", a3, "aaaaaa3");
+                //Chart("ChartPoMjesecima", "values", a4, "aaaaaa4");
+                //Chart("ChartPoMjesecima", "SeparatorStep", 1);
+                //Chart("ChartPoMjesecima", "Margins", { 50, 20, 0, 30});
+                //Chart("ChartPoMjesecima", "TooltipDecimalPlaces", 2);
 
-				if (option.StartsWith("Color".ToLower())) // from WidgetPropertyMap
-				{
-					// simple fix for color
-					prop_by_prop_mapped.SetValue(widget, new SolidColorBrush((Color)ColorConverter.ConvertFromString(parameter)), null);
-				}
-				else if (option.StartsWith("Visible".ToLower())) // from WidgetPropertyMap
-				{
-					// fix for Visibility
-					prop_by_prop_mapped.SetValue(widget, Set(parameter) ? Visibility.Visible : Visibility.Hidden, null);
-				}
-				else if (option.StartsWith("Enabled".ToLower())) // from WidgetPropertyMap
-				{
-					// fix for Enabled
-					prop_by_prop_mapped.SetValue(widget, Set(parameter), null);
-				}
-				else
-				{
-					// try by name directly
-					prop_by_prop_mapped.SetValue(widget, Convert.ChangeType(parameter, prop_by_prop_mapped.PropertyType), null);
-				}
-			}
-			else
-			{
-				// try generically
-				foreach (var prop in widget.GetType().GetProperties())
-					if (prop.Name.ToLower() == option.ToLower())
-						prop.SetValue(widget, Convert.ChangeType(parameter, prop.PropertyType), null);
-			}
+                if (option.StartsWith("Color".ToLower())) // from WidgetPropertyMap
+                {
+                    // simple fix for color
+                    prop_by_prop_mapped.SetValue(widget, new SolidColorBrush((Color)ColorConverter.ConvertFromString(parameter)), null);
+                }
+                else if (option.StartsWith("Visible".ToLower())) // from WidgetPropertyMap
+                {
+                    // fix for Visibility
+                    prop_by_prop_mapped.SetValue(widget, Set(parameter) ? Visibility.Visible : Visibility.Hidden, null);
+                }
+                else if (option.StartsWith("Enabled".ToLower())) // from WidgetPropertyMap
+                {
+                    // fix for Enabled
+                    prop_by_prop_mapped.SetValue(widget, Set(parameter), null);
+                }
+				else if (option.StartsWith("Source".ToLower())) // from WidgetPropertyMap
+                {
+                    prop_by_prop_mapped.SetValue(widget, new Uri(parameter), null);
+                }
+                else
+                {
+                    // try by name directly
+                    prop_by_prop_mapped.SetValue(widget, Convert.ChangeType(parameter, prop_by_prop_mapped.PropertyType), null);
+                }
+            }
+            else
+            {
+                // try generically
+                foreach (var prop in widget.GetType().GetProperties())
+                    if (prop.Name.ToLower() == option.ToLower())
+                        prop.SetValue(widget, Convert.ChangeType(parameter, prop.PropertyType), null);
+            }
 
-			return new Variable(true);
+            return new Variable(true);
 
-		}
+        }
 
 
 		public string ToHex(Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
@@ -4554,62 +4612,64 @@ namespace WpfCSCS
 		}
 
 		private static List<(string, string, string)> WidgetPropertyMap = new List<(string, string, string)>
-		  {
-               // common
-               ("*", "Text", "Content"),
-			   ("*", "Text.Hover", "ToolTip"),
-			   ("*", "Color", "Foreground"),
-			   ("*", "Color", "Color.Foreground"),
-			   ("*", "Color.Border", "BorderBrush"),
-			   ("*", "Color.Text", "Foreground"),
-			   ("*", "Color.Background", "Background"),
-			   ("*", "Enabled", "IsEnabled"),
-			   ("*", "Visible", "Visibility"),
+		{
+			// common
+			("*", "Text", "Content"),
+			("*", "Text.Hover", "ToolTip"),
+			("*", "Color", "Foreground"),
+			("*", "Color", "Color.Foreground"),
+			("*", "Color.Border", "BorderBrush"),
+			("*", "Color.Text", "Foreground"),
+			("*", "Color.Background", "Background"),
+			("*", "Enabled", "IsEnabled"),
+			("*", "Visible", "Visibility"),
 
-               //charts
-               ("*", "Color.Series", "Series"),
-			   ("*", "Text.SeriesNames", "Series"),
+			//charts
+			("*", "Color.Series", "Series"),
+			("*", "Text.SeriesNames", "Series"),
 
 
-			   ("Button", "Text.Description", ""),
-			   ("Button", "Text.Size", ""),
-			   ("Button", "Text.Name", ""),
-			   ("Button", "Text.Style", ""),
+			("Button", "Text.Description", ""),
+			("Button", "Text.Size", ""),
+			("Button", "Text.Name", ""),
+			("Button", "Text.Style", ""),
 
-			   ("Label", "Text.Description", ""),
-			   ("Label", "Text.Size", ""),
-			   ("Label", "Text.Name", ""),
-			   ("Label", "Text.Style", ""),
+			("Label", "Text.Description", ""),
+			("Label", "Text.Size", ""),
+			("Label", "Text.Name", ""),
+			("Label", "Text.Style", ""),
 
-			   ("Grid", "Text.Description", ""),
-			   ("Grid", "Text.Size", ""),
-			   ("Grid", "Text.Name", ""),
-			   ("Grid", "Text.Style", ""),
+			("Grid", "Text.Description", ""),
+			("Grid", "Text.Size", ""),
+			("Grid", "Text.Name", ""),
+			("Grid", "Text.Style", ""),
 
-			   ("Ellipse", "Color", "Fill"),
-			   ("Ellipse", "Color.Background", "Fill"),
-			   ("Ellipse", "Color.Foreground", "Fill"),
-			   ("Ellipse", "Color.Border", "Stroke"),
-			   ("Ellipse", "Text.Description", ""),
-			   ("Ellipse", "Text.Size", ""),
-			   ("Ellipse", "Text.Name", ""),
-			   ("Ellipse", "Text.Style", ""),
+			("Ellipse", "Color", "Fill"),
+			("Ellipse", "Color.Background", "Fill"),
+			("Ellipse", "Color.Foreground", "Fill"),
+			("Ellipse", "Color.Border", "Stroke"),
+			("Ellipse", "Text.Description", ""),
+			("Ellipse", "Text.Size", ""),
+			("Ellipse", "Text.Name", ""),
+			("Ellipse", "Text.Style", ""),
 
-               //("CartesianChart", "Color.Series", "Series"),
-               //("CartesianChart", "Text.SeriesNames", "Series")
+			("WebView2", "Source", "Source"),
 
-               //("PlaceholderToCopy", "Color", ""),
-               //("PlaceholderToCopy", "Color.Foreground", ""),
-               //("PlaceholderToCopy", "Color.Background", ""),
-               //("PlaceholderToCopy", "Color.Border", ""),
-               //("PlaceholderToCopy", "Color.Text", ""),
-               //("PlaceholderToCopy", "Text", ""),
-               //("PlaceholderToCopy", "Text.Description", ""),
-               //("PlaceholderToCopy", "Text.Hover", ""),
-               //("PlaceholderToCopy", "Text.Size", ""),
-               //("PlaceholderToCopy", "Text.Name", ""),
-               //("PlaceholderToCopy", "Text.Style", ""),
-          };
+			//("CartesianChart", "Color.Series", "Series"),
+			//("CartesianChart", "Text.SeriesNames", "Series")
+
+			//("PlaceholderToCopy", "Color", ""),
+			//("PlaceholderToCopy", "Color.Foreground", ""),
+			//("PlaceholderToCopy", "Color.Background", ""),
+			//("PlaceholderToCopy", "Color.Border", ""),
+			//("PlaceholderToCopy", "Color.Text", ""),
+			//("PlaceholderToCopy", "Text", ""),
+			//("PlaceholderToCopy", "Text.Description", ""),
+			//("PlaceholderToCopy", "Text.Hover", ""),
+			//("PlaceholderToCopy", "Text.Size", ""),
+			//("PlaceholderToCopy", "Text.Name", ""),
+			//("PlaceholderToCopy", "Text.Style", ""),
+		};
 
 		public static bool ClearWidget(CSCS_GUI gui, string widgetName, FrameworkElement widget = null)
 		{
@@ -6284,72 +6344,89 @@ namespace WpfCSCS
 	{
 		protected override Variable Evaluate(ParsingScript script)
 		{
-			var imagePath = Path.Combine(App.GetConfiguration("ImagesPath", ""), "tempScreenshot.jpg");
-			ScreenShot(imagePath);
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
 
-			PrintImage(imagePath);
+            var fileName = Utils.GetSafeString(args, 0);
+			var imagesPath = App.GetConfiguration("ImagesPath", "");
+            var imagePath = Path.Combine(imagesPath, "screenshots", fileName);
+
+			//var imagePath = Path.Combine(App.GetConfiguration("ImagesPath", ""), "tempScreenshot.jpg");
+            screenShot(imagePath);
+
+            printImage(imagePath);
 
 			return Variable.EmptyInstance;
 		}
 
-		private void PrintImage(string path)
-		{
-			string fileName = path;//pass in or whatever you need
-			var p = new Process();
-			p.StartInfo.FileName = fileName;
-			p.StartInfo.Verb = "Print";
-			p.Start();
+		public bool screenShot(string saveAs)
+        {
+            try
+            {
+                //Get the Current instance of the window
+                Window window = Application.Current.Windows.OfType<Window>().Single(x => x.IsActive);
 
+                //Render the current control (window) with specified parameters of: Widht, Height, horizontal DPI of the bitmap, vertical DPI of the bitmap, The format of the bitmap
+                RenderTargetBitmap renderTargetBitmap = new RenderTargetBitmap((int)window.ActualWidth, (int)window.ActualHeight, 96, 96, PixelFormats.Pbgra32);
+                renderTargetBitmap.Render(window);
 
-			//var bi = new BitmapImage();
-			//bi.BeginInit();
-			//bi.CacheOption = BitmapCacheOption.OnLoad;
-			//bi.UriSource = new Uri(path);
-			//bi.EndInit();
+                //Encoding the rendered bitmap as desired (PNG,on my case because I wanted losless compression)
+                PngBitmapEncoder png = new PngBitmapEncoder();
+                png.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
 
-			//var vis = new DrawingVisual();
-			//using (var dc = vis.RenderOpen())
-			//{
-			//	dc.DrawImage(bi, new Rect { Width = bi.Width, Height = bi.Height });
-			//}
+                //Save the image on the desired location, on my case saveAs was C:\test.png
+                using (Stream stm = File.Create(saveAs))
+                {
+                    png.Save(stm);
+                }
 
-			//var pdialog = new PrintDialog();
-			//if (pdialog.ShowDialog() == true)
-			//{
-			//	pdialog.PrintVisual(vis, "My Image");
-			//}
-		}
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
 
-		public bool ScreenShot(string saveAs)
-		{
-			try
-			{
-				//Get the Current instance of the window
-				Window window = Application.Current.Windows.OfType<Window>().Single(x => x.IsActive);
+        private void printImage(string path)
+        {
+            string fileName = path;//pass in or whatever you need
+            var p = new Process();
+            p.StartInfo.FileName = fileName;
+            p.StartInfo.Verb = "Print";
+            //p.EnableRaisingEvents = true;
+            //p.Exited += delegate
+            //{
+            //    try
+            //    {
+            //        File.Delete(path);
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //    }
+            //};
+            p.Start();
 
-				//Render the current control (window) with specified parameters of: Widht, Height, horizontal DPI of the bitmap, vertical DPI of the bitmap, The format of the bitmap
-				RenderTargetBitmap renderTargetBitmap = new RenderTargetBitmap((int)window.ActualWidth, (int)window.ActualHeight, 96, 96, PixelFormats.Pbgra32);
-				renderTargetBitmap.Render(window);
+            //var bi = new BitmapImage();
+            //bi.BeginInit();
+            //bi.CacheOption = BitmapCacheOption.OnLoad;
+            //bi.UriSource = new Uri(path);
+            //bi.EndInit();
 
-				//Encoding the rendered bitmap as desired (PNG,on my case because I wanted losless compression)
-				PngBitmapEncoder png = new PngBitmapEncoder();
-				png.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
+            //var vis = new DrawingVisual();
+            //using (var dc = vis.RenderOpen())
+            //{
+            //	dc.DrawImage(bi, new Rect { Width = bi.Width, Height = bi.Height });
+            //}
 
-				//Save the image on the desired location, on my case saveAs was C:\test.png
-				using (Stream stm = File.Create(saveAs))
-				{
-					png.Save(stm);
-				}
-
-				return true;
-			}
-			catch (Exception ex)
-			{
-				return false;
-			}
-		}
-	}
-
+            //var pdialog = new PrintDialog();
+            //if (pdialog.ShowDialog() == true)
+            //{
+            //	pdialog.PrintVisual(vis, "My Image");
+            //}
+        }
+    }
+	
 	class DownloadScriptsFunction : ParserFunction
 	{
 		protected override Variable Evaluate(ParsingScript script)

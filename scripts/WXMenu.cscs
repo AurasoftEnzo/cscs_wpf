@@ -1,0 +1,100 @@
+#MAINMENU;
+CreateWindow(strtrim(tpath()) + "WXMenu.xaml");
+
+//StartDebugger(13337, true, "*");
+
+function runScript(sender, load){
+    try{
+        CHAIN strTrim(tpath())+strTrim(sender)+".cscs";
+    }catch(ex){
+        msg(ex);
+    }
+}
+
+function WXMenu_OnDisplay(){
+
+    SetMainMenu("mainMenuDC", "runScript");
+
+    return;
+
+    // read = readfile(strtrim(tpath())+"wxmenu.ini");
+    // i = 0;
+    // lastLevels = {};
+    // while(i < size(read)){
+    //     if(substring(read[i], 0, 1) == ";" || substring(read[i], 0, 1) == "\\"){
+    //         i++;
+    //         continue;
+    //     }
+
+    //     splitted = read[i].split(",");
+    //     for(j = 0; j < size(splitted); j++){
+    //         splitted[j] = strtrim(splitted[j]);
+    //     }
+
+    //     if(size(splitted) < 4){
+    //         i++;
+    //         continue;
+    //     }
+
+    //     if(splitted[3] == "0"){
+    //         i++;
+    //         continue;
+    //     }
+
+    //     splitted[2] = StrReplace(splitted[2], "/", "_");
+
+    //     if(int(splitted[0]) == 0){
+    //         dataContext = StrReplace(splitted[2], "&", "");
+
+    //         AddMenuItem("mainMenuDC", dataContext, splitted[1]);
+    //         lastLevels[int(splitted[0])] = dataContext;
+
+    //         i++;
+    //         continue;
+    //     }
+
+    //     if(int(splitted[0]) > 0){
+    //         lastParentLevel = int(splitted[0]) - 1;
+
+    //         if(trim(splitted[1]) == "-"){
+    //             AddMenuSeparator(lastLevels[lastParentLevel]);
+    //         }
+    //         else{
+    //             dataContext = StrReplace(splitted[2], "&", "");
+    //             AddMenuItem(lastLevels[lastParentLevel], dataContext, splitted[1]);
+    //             lastLevels[int(splitted[0])] = dataContext;
+    //         }
+
+    //         i++;
+    //         continue;
+    //     }
+    // }
+}
+
+function btnLogin@clicked(){
+    MessageBox("not implemented");
+}
+function btnKorisnici@clicked(){
+    MessageBox("not implemented");
+}
+function btnGodine@clicked(){
+    MessageBox("not implemented");
+}
+function btnBackUp@clicked(){
+    MessageBox("not implemented");
+}
+function btnKontakti@clicked(){
+    MessageBox("not implemented");
+}
+function btnNovosti@clicked(){
+    MessageBox("not implemented");
+}
+function btnFavoriti@clicked(){
+    MessageBox("not implemented");
+}
+function btnInfo@clicked(){
+    MessageBox("not implemented");
+}
+function btnIzlaz@clicked(){
+    exit;
+}

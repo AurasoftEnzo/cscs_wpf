@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -118,7 +119,7 @@ namespace WpfControlsLibrary
                 ControlTemplate templateButton = new ControlTemplate(typeof(Button));
 
                 FrameworkElementFactory elemFactory = new FrameworkElementFactory(typeof(Image));
-                elemFactory.SetValue(Image.SourceProperty, new BitmapImage(new Uri("settings.png", UriKind.Relative)));
+                elemFactory.SetValue(Image.SourceProperty, new BitmapImage(new Uri(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.png"), UriKind.Absolute)));
                 templateButton.VisualTree = elemFactory;
 
                 button.Template = templateButton;

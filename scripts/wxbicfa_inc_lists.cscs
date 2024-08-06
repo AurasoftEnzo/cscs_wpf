@@ -11,7 +11,7 @@
     define rnalogNaziv type a size 50;
     define mx3_dn,mx2_dn,met_dn,kom_dn type l;
     define neto_dn,do_mjeseca,ruc_dn,bruto_dn,tezina_dn,do_mjeseca2 type l;
-
+    define nazivFirme type a size 50;
     DEFINE ratio type n size 10 dec 2;
 
     define tip_racuna type a size 30;
@@ -207,7 +207,8 @@
 
     DEFINE pripremljeno type l;
     define in_string type a size 300;
-    DEFINE companyCode type a size 3 up;   
+    DEFINE companyCode type a size 3 up;
+    DEFINE userCode type a size 20;    
     define proslaGodinaBaza type a size 200; 
 
     DEFINE sqlNaDan type a size 10;  
@@ -232,19 +233,29 @@
 function ceBanka@clicked()
 {
     
-    F2ListQueryString = "SELECT distinct kpsy_bnk_code, kpsy_bnk_ime FROM " + trenutnaGodinaBaza + ".dbo.kpsybank left join " + trenutnaGodinaBaza + ".dbo.kpkdibgl ON kdib_gl_banka = kpsy_bnk_code where kpsy_bnk_ime like '%{var2}%' AND kpsy_bnk_ime <> '' AND kpsy_bnk_code <> '' ";
-    //if(searchSklSifra != 0){
-    //    F2ListQueryString += " and PKMK_SKL_CODE = '{var1}'";
-    //}
-    F2ListQueryString += " ORDER BY kpsy_bnk_ime";
+    // F2ListQueryString = "SELECT distinct kpsy_bnk_code, kpsy_bnk_ime FROM " + trenutnaGodinaBaza + ".dbo.kpsybank left join " + trenutnaGodinaBaza + ".dbo.kpkdibgl ON kdib_gl_banka = kpsy_bnk_code where kpsy_bnk_ime like '%{var2}%' AND kpsy_bnk_ime <> '' AND kpsy_bnk_code <> '' ";
+    // //if(searchSklSifra != 0){
+    // //    F2ListQueryString += " and PKMK_SKL_CODE = '{var1}'";
+    // //}
+    // F2ListQueryString += " ORDER BY kpsy_bnk_ime";
     
+    F2ListQueryString = "WITH banke AS("
+    + " SELECT DISTINCT kpsy_bnk_code, kpsy_bnk_ime"
+    + " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code"
+    + " WHERE kpsy_bnk_ime LIKE '%{var2}%' AND kpsy_bnk_ime <> '' AND kpsy_bnk_code <> '' AND kpsy_bnk_blag <> 'D'"
+    + " AND YEAR(kdib_gl_datem) = " + ovagod_h
+    + ")"
+    + " SELECT ROW_NUMBER() OVER(ORDER BY kpsy_bnk_code ASC) AS RowNumber, kpsy_bnk_code, kpsy_bnk_ime"
+    + " FROM banke ORDER BY RowNumber";
+
     banka = "";
     BankaNaziv = "";
     sifraFieldPointer -> banka;
     NazivFieldPointer -> BankaNaziv; 
 
     windowTitle = "F2 lista banaka";
-    headersArray = {"Šifra banke    ", "Naziv banke"};
+    headersArray = {"R.br.", "Šifra banke", "Naziv banke"};
     
     ShowF2List();
     
@@ -263,12 +274,23 @@ function ceBanka@clicked()
 // // F2 KONTA
 function ceKonto@clicked()
 {
-    F2ListQueryString = "SELECT distinct gk_ac_konto, gk_ac_opis, CASE when kdib_ln_dp= 'D' THEN 'Odliv' ELSE 'Priliv' END as Trans FROM " + trenutnaGodinaBaza + ".dbo.kpkdibln left join " + trenutnaGodinaBaza + ".dbo.nkgkacct ON kdib_ln_konto = gk_ac_konto where gk_ac_opis like '%{var2}%' AND gk_ac_konto like '{var1}%'";
-    //if(searchSklSifra != 0){
-    //    F2ListQueryString += " and PKMK_SKL_CODE = '{var1}'";
-    //}
-    F2ListQueryString += " ORDER BY gk_ac_konto";
+    // F2ListQueryString = "SELECT distinct gk_ac_konto, gk_ac_opis, CASE when kdib_ln_dp= 'D' THEN 'Odliv' ELSE 'Priliv' END as Trans FROM " + trenutnaGodinaBaza + ".dbo.kpkdibln left join " + trenutnaGodinaBaza + ".dbo.nkgkacct ON kdib_ln_konto = gk_ac_konto where gk_ac_opis like '%{var2}%' AND gk_ac_konto like '{var1}%'";
+    // //if(searchSklSifra != 0){
+    // //    F2ListQueryString += " and PKMK_SKL_CODE = '{var1}'";
+    // //}
+    // F2ListQueryString += " ORDER BY gk_ac_konto";
     
+    F2ListQueryString = "WITH konta AS("
+    + " SELECT DISTINCT gk_ac_konto, gk_ac_opis, CASE WHEN kdib_ln_dp= 'D' THEN 'Odliv' ELSE 'Priliv' END as Trans"
+    + " FROM  " + trenutnaGodinaBaza + ".[dbo].[kpkdibgl] "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[kpkdibln] ON kdib_gl_num = kdib_ln_num "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkacct ON kdib_ln_konto = gk_ac_konto "
+    + " WHERE gk_ac_konto like '{var1}%' AND gk_ac_opis like '%{var2}%'"
+    + " AND YEAR(kdib_gl_datem) = " + ovagod_h
+    + ")"
+    + " SELECT ROW_NUMBER() OVER(ORDER BY gk_ac_konto ASC) AS RowNumber, gk_ac_konto, gk_ac_opis, Trans"
+    + " FROM konta ORDER BY RowNumber";
+
     Konto = "";
     KontoNaziv = "";
     sifraFieldPointer -> Konto;
@@ -276,7 +298,7 @@ function ceKonto@clicked()
     
 
     windowTitle = "F2 lista konta";
-    headersArray = {"Konto", "Naziv konta", "Priliv/odliv"};
+    headersArray = {"R.br.", "Konto", "Naziv konta", "Priliv/odliv"};
     
     ShowF2List();
     
@@ -295,13 +317,24 @@ function ceKonto@clicked()
 
 function cePartner@clicked()
 {
-    F2ListQueryString = "SELECT distinct kdib_ln_partner, [NKSC_PARTNAME] FROM  " + trenutnaGodinaBaza + ".[dbo].[kpkdibln] LEFT JOIN  " + trenutnaGodinaBaza + ".[dbo].nkscpart on kdib_ln_partner = nksc_partcode where NKSC_PARTCODE like '%{var1}%' and NKSC_PARTNAME like '%{var2}%' ORDER BY kdib_ln_partner";
+    //F2ListQueryString = "SELECT distinct kdib_ln_partner, [NKSC_PARTNAME], CASE WHEN nksc_cust_vend= 'K' THEN 'Kupac' WHEN nksc_cust_vend= 'D' THEN 'Dobavljač' ELSE 'Kup/Dob' END as PartnerTip FROM  " + trenutnaGodinaBaza + ".[dbo].[kpkdibln] LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].nkscpart on kdib_ln_partner = nksc_partcode LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].kpkdibgl ON kdib_gl_num = kdib_ln_num WHERE NKSC_PARTCODE like '%{var1}%' and NKSC_PARTNAME like '%{var2}%' AND YEAR(kdib_gl_datem) = " + ovagod_h + " ORDER BY kdib_ln_partner";
+
+    F2ListQueryString = "WITH partneri AS("
+    + " SELECT DISTINCT kdib_ln_partner, nksc_partname, CASE WHEN nksc_cust_vend= 'K' THEN 'Kupac' WHEN nksc_cust_vend= 'D' THEN 'Dobavljač' ELSE 'Kup/Dob' END as PartnerTip "
+    + " FROM " + trenutnaGodinaBaza + ".[dbo].[kpkdibln] "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].nkscpart on kdib_ln_partner = nksc_partcode"
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].kpkdibgl ON kdib_gl_num = kdib_ln_num"
+    + " WHERE nksc_partcode LIKE '%{var1}%' AND nksc_partname LIKE '%{var2}%'"
+    + " AND YEAR(kdib_gl_datem) = " + ovagod_h
+    + ")"
+    + " SELECT ROW_NUMBER() OVER(ORDER BY kdib_ln_partner ASC) AS RowNumber, kdib_ln_partner, nksc_partname, PartnerTip"
+    + " FROM partneri ORDER BY RowNumber";
     
     sifraFieldPointer -> partner;
     NazivFieldPointer -> PartnerNaziv;
 
     windowTitle = "F2 lista Partnera";
-    headersArray = {"Šifra partnera    ", "Naziv partnera"};
+    headersArray = {"R.br.", "Šifra partnera", "Naziv partnera", "Kupac/Dobavljač"};
     ShowF2List();
     
     if(&sifraFieldPointer != ""){
@@ -325,7 +358,7 @@ function cePartner@post()
     }
     else{
         sqlResult = {};
-        sqlString = "SELECT TOP 1 NKSC_PARTNAME FROM  " + trenutnaGodinaBaza + ".[dbo].[NKSCPART] where NKSC_PARTCODE = '" + partner + "' ORDER BY nksc_partcode";
+        sqlString = "SELECT TOP 1 nksc_partname FROM  " + trenutnaGodinaBaza + ".[dbo].[nkscpart] WHERE nksc_partcode = '" + partner + "' ORDER BY nksc_partcode";
         try{
             sqlResult = SqlQuery(sqlString);
         }catch(ex){
@@ -347,13 +380,23 @@ function cePartner@post()
 
 function ceIzvadak@clicked()
 {
-    F2ListQueryString = "SELECT kdib_gl_num, CONCAT(kdib_gl_datem, '   ', kpsy_bnk_ime), kdib_gl_banka FROM " + trenutnaGodinaBaza + ".[dbo].kpkdibgl left join " + trenutnaGodinaBaza + ".[dbo].kpsybank ON kdib_gl_banka = kpsy_bnk_code where kpsy_bnk_ime like '%{var2}%' AND kdib_gl_num like '{var1}%'";
+    //F2ListQueryString = "SELECT kdib_gl_num, CONCAT(kdib_gl_datem, '   ', kpsy_bnk_ime), kdib_gl_banka FROM " + trenutnaGodinaBaza + ".[dbo].kpkdibgl left join " + trenutnaGodinaBaza + ".[dbo].kpsybank ON kdib_gl_banka = kpsy_bnk_code where kpsy_bnk_ime like '%{var2}%' AND kdib_gl_num like '{var1}%'";
     
+    F2ListQueryString = "WITH izvatci AS("
+    + " SELECT DISTINCT kdib_gl_num, CONCAT(kdib_gl_datem, '   ', kpsy_bnk_ime) as datBank, kdib_gl_banka "
+    + " FROM " + trenutnaGodinaBaza + ".[dbo].kpkdibgl"
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].kpsybank ON kdib_gl_banka = kpsy_bnk_code"
+    + " WHERE kpsy_bnk_blag <> 'D' AND kdib_gl_num LIKE '{var1}%' AND kpsy_bnk_ime LIKE '%{var2}%'"
+    + " AND YEAR(kdib_gl_datem) = " + ovagod_h
+    + ")"
+    + " SELECT ROW_NUMBER() OVER(ORDER BY kdib_gl_num ASC) AS RowNumber, kdib_gl_num, datBank, kdib_gl_banka"
+    + " FROM izvatci ORDER BY RowNumber";
+
     sifraFieldPointer -> Izvadak;
     NazivFieldPointer -> IzvadakNaziv;
 
     windowTitle = "F2 lista izvadaka";
-    headersArray = {"Broj izvatka    ", "Datum i naziv banke", "Šifra banke"};
+    headersArray = {"R.br.", "Broj izvatka", "Datum i naziv banke", "Šifra banke"};
 
     ShowF2List();
 
@@ -418,20 +461,20 @@ function filterPart()
     {
         sql_str += " AND kdib_gl_num = '" + Izvadak + "'";
     }
+    if (domaca_dn )
+    {
+        sql_str += " AND nksc_drzava= '"+kpsy_po_freight+"'";
+    }
+    elif (eu_dn )
+    {
+        sql_str +=  " AND nksc_drzava IN ("+eucountries+")";
+    }
+    elif (izvoz_dn )
+    {
+        sql_str += " AND nksc_drzava <> '"+kpsy_po_freight+"' AND NOT nksc_drzava IN ("+eucountries+")";
+    }
     //sql_str += " AND kpsy_bnk_blag != 'D'";
 /*
-    if (domaca_dn )
-	{
-        sql_str += " AND nkpr_gl_drzava= '" + kpsy_po_freight + "'";
-	}
-    elif (eu_dn )
-	{
-        sql_str +=  " AND nkpr_gl_drzava IN (" + eucountries + ")";
-	}
-    elif (izvoz_dn )
-	{
-        sql_str += " AND nkpr_gl_drzava != '" + kpsy_po_freight + "' AND NOT nkpr_gl_drzava IN (" + eucountries + ")";
-	}
     if (gl_oznaka != "")
 	{
 	    if (GL_oznaka == "X" || GL_oznaka == "O" || GL_oznaka == "R" )  //ako je to storno, odobrenje ili reklamacija neka okrene

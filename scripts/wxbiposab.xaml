@@ -13,7 +13,7 @@
         Height="675"
         Width="1200" MinHeight="540" MinWidth="960" WindowStartupLocation="CenterScreen">
     <Viewbox Stretch="Uniform">
-        <Grid Width="1216">
+        <Grid Width="1216" Margin="15">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
@@ -48,7 +48,8 @@
                FontSize="16"
                FontWeight="Bold"/>
 
-            <DataGrid GridLinesVisibility="None"
+            <DataGrid GridLinesVisibility="Horizontal"
+                      HorizontalGridLinesBrush="#FFD7D6D6"
                   HorizontalAlignment="Center"
                   VerticalAlignment="Top"
                   Height="266"
@@ -58,7 +59,6 @@
                   Margin="0,42,0,0"
                   IsReadOnly="true"
                   Name="dgStavke"
-                  AlternatingRowBackground="LightGray"
                   HorizontalScrollBarVisibility="Auto"
                   VerticalScrollBarVisibility="Auto"
                   Background="White"
@@ -66,7 +66,7 @@
                 <DataGrid.Resources>
                     <Style TargetType="{x:Type DataGridColumnHeader}">
                         <Setter Property="Background"
-                            Value="#FFAE0000" />
+                            Value="#1F3F49" />
                         <Setter Property="Foreground"
                             Value="White" />
                         <Setter Property="FontSize" Value="17"/>
@@ -145,7 +145,9 @@
                     <DataGridTemplateColumn Header="">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell IsImage="True" FieldName="ImagePART_AR"/>
+                                <wcl:ASGridCell IsImage="True"
+                                                Margin="2"
+                                                FieldName="ImagePART_AR"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -157,7 +159,8 @@
                FontSize="16"
                FontWeight="Bold"/>
 
-            <DataGrid GridLinesVisibility="None"
+            <DataGrid GridLinesVisibility="Horizontal"
+                      HorizontalGridLinesBrush="#FFD7D6D6"
                   HorizontalAlignment="Center"
                   VerticalAlignment="Top"
                   Height="266"
@@ -166,7 +169,6 @@
                       FontSize="15"
                   IsReadOnly="true"
                   Name="dgArtikli"
-                  AlternatingRowBackground="LightGray"
                   HorizontalScrollBarVisibility="Auto"
                   VerticalScrollBarVisibility="Auto"
                   Background="White"
@@ -174,7 +176,7 @@
                 <DataGrid.Resources>
                     <Style TargetType="{x:Type DataGridColumnHeader}">
                         <Setter Property="Background"
-                            Value="#FF0000A0" />
+                            Value="#6AB187" />
                         <Setter Property="Foreground"
                             Value="White" />
                         <Setter Property="FontSize" Value="17"/>
@@ -241,6 +243,7 @@
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <wcl:ASGridCell IsImage="True"
+                                                Margin="2"
                                                 FieldName="ImageART_AR"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
@@ -259,7 +262,7 @@ BorderBrush="Transparent"
 BorderThickness="0"
 Padding="-8"
 x:Name="gbPrint2"
-Background="gray"
+Background="#1F3F49"
 TabIndex="35"
 Foreground="#FFFDFDFD"
 Content="Ispis"

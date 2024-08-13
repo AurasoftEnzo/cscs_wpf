@@ -332,6 +332,7 @@ namespace SplitAndMerge
 	public const string TPATH = "TPATH";
 	public const string IPATH = "IPATH";
 	public const string MPATH = "MPATH";
+	public const string WPATH = "WPATH";
 	public const string GFLD = "GFLD";
 	public const string SNDX = "SNDX";
 	public const string JUST = "JUST";

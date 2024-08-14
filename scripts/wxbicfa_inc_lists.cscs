@@ -232,6 +232,10 @@
     define KONTO_posl_akt_str type a size 1000;
     define KONTO_financ_akt_str type a size 1000;
     define KONTO_invest_akt_str type a size 1000;
+    
+    define cbKontoPoslAkt type l;
+    define cbKontoFinancAkt type l;
+    define cbKontoInvestAkt type l;
 
 //=============================================
 
@@ -301,15 +305,9 @@ function ShowF2ListKonta(){
     ShowF2List();
 }
 
-// // F2 KONTA sva
+// F2 KONTA sva
 function ceKonto@clicked()
 {
-    // F2ListQueryString = "SELECT distinct gk_ac_konto, gk_ac_opis, CASE when kdib_ln_dp= 'D' THEN 'Odliv' ELSE 'Priliv' END as Trans FROM " + trenutnaGodinaBaza + ".dbo.kpkdibln left join " + trenutnaGodinaBaza + ".dbo.nkgkacct ON kdib_ln_konto = gk_ac_konto where gk_ac_opis like '%{var2}%' AND gk_ac_konto like '{var1}%'";
-    // //if(searchSklSifra != 0){
-    // //    F2ListQueryString += " and PKMK_SKL_CODE = '{var1}'";
-    // //}
-    // F2ListQueryString += " ORDER BY gk_ac_konto";
-    
     ShowF2ListKonta();
     
     if(&sifraFieldPointer != ""){
@@ -324,15 +322,9 @@ function ceKonto@clicked()
     searchNaziv = "";
 }
 
-// // F2 KONTA poslovne aktivnosti
+// F2 KONTA poslovne aktivnosti
 function ceKontoPoslAkt@clicked()
 {
-    // F2ListQueryString = "SELECT distinct gk_ac_konto, gk_ac_opis, CASE when kdib_ln_dp= 'D' THEN 'Odliv' ELSE 'Priliv' END as Trans FROM " + trenutnaGodinaBaza + ".dbo.kpkdibln left join " + trenutnaGodinaBaza + ".dbo.nkgkacct ON kdib_ln_konto = gk_ac_konto where gk_ac_opis like '%{var2}%' AND gk_ac_konto like '{var1}%'";
-    // //if(searchSklSifra != 0){
-    // //    F2ListQueryString += " and PKMK_SKL_CODE = '{var1}'";
-    // //}
-    // F2ListQueryString += " ORDER BY gk_ac_konto";
-    
     ShowF2ListKonta();
     
     if(&sifraFieldPointer != ""){
@@ -347,15 +339,9 @@ function ceKontoPoslAkt@clicked()
     searchNaziv = "";
 }
 
-// // F2 KONTA financijske aktivnosti
+// F2 KONTA financijske aktivnosti
 function ceKontoFinancAkt@clicked()
 {
-    // F2ListQueryString = "SELECT distinct gk_ac_konto, gk_ac_opis, CASE when kdib_ln_dp= 'D' THEN 'Odliv' ELSE 'Priliv' END as Trans FROM " + trenutnaGodinaBaza + ".dbo.kpkdibln left join " + trenutnaGodinaBaza + ".dbo.nkgkacct ON kdib_ln_konto = gk_ac_konto where gk_ac_opis like '%{var2}%' AND gk_ac_konto like '{var1}%'";
-    // //if(searchSklSifra != 0){
-    // //    F2ListQueryString += " and PKMK_SKL_CODE = '{var1}'";
-    // //}
-    // F2ListQueryString += " ORDER BY gk_ac_konto";
-    
     ShowF2ListKonta();
     
     if(&sifraFieldPointer != ""){
@@ -370,15 +356,9 @@ function ceKontoFinancAkt@clicked()
     searchNaziv = "";
 }
 
-// // F2 KONTA investicijske aktivnosti
+// F2 KONTA investicijske aktivnosti
 function ceKontoInvestAkt@clicked()
 {
-    // F2ListQueryString = "SELECT distinct gk_ac_konto, gk_ac_opis, CASE when kdib_ln_dp= 'D' THEN 'Odliv' ELSE 'Priliv' END as Trans FROM " + trenutnaGodinaBaza + ".dbo.kpkdibln left join " + trenutnaGodinaBaza + ".dbo.nkgkacct ON kdib_ln_konto = gk_ac_konto where gk_ac_opis like '%{var2}%' AND gk_ac_konto like '{var1}%'";
-    // //if(searchSklSifra != 0){
-    // //    F2ListQueryString += " and PKMK_SKL_CODE = '{var1}'";
-    // //}
-    // F2ListQueryString += " ORDER BY gk_ac_konto";
-    
     ShowF2ListKonta();
     
     if(&sifraFieldPointer != ""){
@@ -392,7 +372,6 @@ function ceKontoInvestAkt@clicked()
     searchSifra = "";
     searchNaziv = "";
 }
-
 
 
 //==============================================

@@ -361,6 +361,8 @@ function setHorizontalBars()
     bojeArrayMJ2 = {196, 224, 138};
     
     RunOnMain("setHorizontalBars2");
+
+    RunOnMain("setHorizontalBars3");
 }
 
 function setHorizontalBars1(){
@@ -769,6 +771,76 @@ function setHorizontalBars2()
     }
 }
 
+function setHorizontalBars3()
+{
+    //obrtaj
+    obrtaj = 2 * tot_ovagod_priliv / (pocetnoStanjeOvagod + stanjeOvagod) * 1.0;
+
+    Format("obrtaj", "nofd", recv: "obrtaj_string");
+    HorizontalBar("HorizontalBarObrtaj", "Text", obrtaj_string);
+
+    //brojDanaZaNaplatu
+
+    // ako je SAMO jedan mjesec -> prazan string
+    // i ako je mjesec 1. -> prazan string
+    if(do_mjeseca == false || mjesec_h == 1)
+    {
+        HorizontalBar("HorizontalBarBrDanaZaNaplatu", "Text", "");
+    }
+    else{
+        datum1 = "01/01/" + ovagod_h;
+        
+        switch(mjesec_h){
+            case "2":
+            ovagod_int = int(ovagod_h);
+            if(ovagod_int % 4 == 0 || (ovagod_int % 100 == 0 && ovagod_int % 400 == 0)){
+                datum2 = "29/02/" + ovagod_h;
+            }
+            else{
+                datum2 = "28/02/" + ovagod_h;
+            }
+            break;
+            case "3":
+            datum2 = "31/03/" + ovagod_h;
+            break;
+            case "4":
+            datum2 = "30/04/" + ovagod_h;
+            break;
+            case "5":
+            datum2 = "31/05/" + ovagod_h;
+            break;
+            case "6":
+            datum2 = "30/06/" + ovagod_h;
+            break;
+            case "7":
+            datum2 = "31/07/" + ovagod_h;
+            break;
+            case "8":
+            datum2 = "31/08/" + ovagod_h;
+            break;
+            case "9":
+            datum2 = "30/09/" + ovagod_h;
+            break;
+            case "10":
+            datum2 = "31/10/" + ovagod_h;
+            break;
+            case "11":
+            datum2 = "30/11/" + ovagod_h;
+            break;
+            case "12":
+            datum2 = "31/12/" + ovagod_h;
+            break;            
+        }
+        
+        brojProteklihDana = datum2 - datum1;
+        //MessageBox(brojProteklihDana);
+
+        brojDanaZaNaplatu = brojProteklihDana / obrtaj * 1.0;
+        // MessageBox(brojDanaZaNaplatu);
+        Format("brojDanaZaNaplatu", "nofd", recv: "brojDanaZaNaplatu_string");
+        HorizontalBar("HorizontalBarBrDanaZaNaplatu", "Text", brojDanaZaNaplatu_string);
+    }
+}
 //-----------------------------------------------------------
 
 function setWeekComparison()

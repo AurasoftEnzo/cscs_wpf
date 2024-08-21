@@ -229,10 +229,13 @@
 
     define iniFilename type a size 100;
 
-    define KONTO_posl_akt_str type a size 1000;
-    define KONTO_financ_akt_str type a size 1000;
-    define KONTO_invest_akt_str type a size 1000;
+    define KONTO_posl_akt_str type a size 10000;
+    define KONTO_financ_akt_str type a size 10000;
+    define KONTO_invest_akt_str type a size 10000;
     
+    //define KONTO_final_string type a size 10000;
+    define odabranaKonta type a size 10000;
+
     define cbKontoPoslAkt type l;
     define cbKontoFinancAkt type l;
     define cbKontoInvestAkt type l;
@@ -242,6 +245,10 @@
     define obrtaj_string, brojDanaZaNaplatu_string type a size 30;
     define brojProteklihDana type i size 3;
     define datum1, datum2 type d size 10;
+
+    define F2ListQueryString type a size 20000;
+
+    
 
 //=============================================
 
@@ -287,14 +294,22 @@ function ceBanka@clicked()
 }
 //==============================================
 
-function ShowF2ListKonta(){
+function ShowF2ListSvaKonta(){
+
+
     F2ListQueryString = "WITH konta AS("
     + " SELECT DISTINCT gk_ac_konto, gk_ac_opis, CASE WHEN kdib_ln_dp= 'D' THEN 'Odliv' ELSE 'Priliv' END as Trans"
     + " FROM  " + trenutnaGodinaBaza + ".[dbo].[kpkdibgl] "
     + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[kpkdibln] ON kdib_gl_num = kdib_ln_num "
     + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkacct ON kdib_ln_konto = gk_ac_konto "
-    + " WHERE gk_ac_konto like '{var1}%' AND gk_ac_opis like '%{var2}%'"
-    + " AND YEAR(kdib_gl_datem) = " + ovagod_h
+    + " WHERE gk_ac_konto like '{var1}%' AND gk_ac_opis like '%{var2}%'";
+
+    if(KONTO_str != ""){
+        F2ListQueryString += " AND gk_ac_konto NOT IN (" + KONTO_str + ")";
+    }
+    
+    F2ListQueryString += " AND YEAR(kdib_gl_datem) = " + ovagod_h
+    + " AND kdib_ln_iznos != 0"
     + ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY gk_ac_konto ASC) AS RowNumber, gk_ac_konto, gk_ac_opis, Trans"
     + " FROM konta ORDER BY RowNumber";
@@ -311,10 +326,41 @@ function ShowF2ListKonta(){
     ShowF2List();
 }
 
+function ShowF2ListPreostalaKonta(){
+
+    kontoPoslZarez = (KONTO_posl_akt_str != "" ? "," : "");
+    kontoFinancZarez = (KONTO_financ_akt_str != "" ? "," : "");
+    odabranaKonta = KONTO_posl_akt_str + kontoPoslZarez + KONTO_financ_akt_str + kontoFinancZarez + KONTO_invest_akt_str;
+    
+    F2ListQueryString = "WITH konta AS("
+    + " SELECT DISTINCT gk_ac_konto, gk_ac_opis, CASE WHEN kdib_ln_dp= 'D' THEN 'Odliv' ELSE 'Priliv' END as Trans"
+    + " FROM  " + trenutnaGodinaBaza + ".[dbo].[kpkdibgl] "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[kpkdibln] ON kdib_gl_num = kdib_ln_num "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkacct ON kdib_ln_konto = gk_ac_konto "
+    + " WHERE gk_ac_konto like '{var1}%' AND gk_ac_opis like '%{var2}%'"
+    + " AND gk_ac_konto NOT IN (" + odabranaKonta + ")"
+    + " AND YEAR(kdib_gl_datem) = " + ovagod_h
+    + " AND kdib_ln_iznos != 0"
+    + ")"
+    + " SELECT ROW_NUMBER() OVER(ORDER BY gk_ac_konto ASC) AS RowNumber, gk_ac_konto, gk_ac_opis, Trans"
+    + " FROM konta ORDER BY RowNumber";
+    
+    Konto = "";
+    KontoNaziv = "";
+    sifraFieldPointer -> Konto;
+    NazivFieldPointer -> KontoNaziv; 
+    
+
+    windowTitle = "F2 lista konta";
+    headersArray = {"R.br.", "Konto", "Naziv konta", "Priliv/odliv"};
+    
+    ShowF2List();
+}
+
 // F2 KONTA sva
 function ceKonto@clicked()
 {
-    ShowF2ListKonta();
+    ShowF2ListSvaKonta();
     
     if(&sifraFieldPointer != ""){
         Konto = &sifraFieldPointer;
@@ -331,7 +377,7 @@ function ceKonto@clicked()
 // F2 KONTA poslovne aktivnosti
 function ceKontoPoslAkt@clicked()
 {
-    ShowF2ListKonta();
+    ShowF2ListPreostalaKonta();
     
     if(&sifraFieldPointer != ""){
         Konto = &sifraFieldPointer;
@@ -348,7 +394,7 @@ function ceKontoPoslAkt@clicked()
 // F2 KONTA financijske aktivnosti
 function ceKontoFinancAkt@clicked()
 {
-    ShowF2ListKonta();
+    ShowF2ListPreostalaKonta();
     
     if(&sifraFieldPointer != ""){
         Konto = &sifraFieldPointer;
@@ -365,7 +411,7 @@ function ceKontoFinancAkt@clicked()
 // F2 KONTA investicijske aktivnosti
 function ceKontoInvestAkt@clicked()
 {
-    ShowF2ListKonta();
+    ShowF2ListPreostalaKonta();
     
     if(&sifraFieldPointer != ""){
         Konto = &sifraFieldPointer;
@@ -520,9 +566,37 @@ function filterPart()
     {
         sql_str += " AND kdib_gl_banka IN (" + BANKA_str + ")";
     }
-    if (KONTO_str != "")
+    if (KONTO_str != "" || KONTO_posl_akt_str != "" || KONTO_financ_akt_str != "" || KONTO_invest_akt_str != "")
     {
-        sql_str += " AND kdib_ln_konto IN (" + KONTO_str + ")";
+        KONTO_final_string = "";
+
+        if(KONTO_str != ""){
+            KONTO_final_string += KONTO_str;
+            KONTO_final_string += (KONTO_final_string != "" ? "," : "");
+        }
+        if(cbKontoPoslAkt == true && KONTO_posl_akt_str != ""){
+            KONTO_final_string += KONTO_posl_akt_str;
+            KONTO_final_string += (KONTO_final_string != "" ? "," : "");
+        }
+        
+        if(cbKontoFinancAkt == true && KONTO_financ_akt_str != ""){
+            KONTO_final_string += KONTO_financ_akt_str;
+            KONTO_final_string += (KONTO_final_string != "" ? "," : "");
+        }
+        
+        if(cbKontoInvestAkt == true && KONTO_invest_akt_str != ""){
+            KONTO_final_string += KONTO_invest_akt_str;
+            KONTO_final_string += (KONTO_final_string != "" ? "," : "");
+        }
+        
+        // charCount = lchr(KONTO_final_string, "l");
+        // KONTO_final_string = substring(KONTO_final_string, 0, charCount - 1);
+
+        if(KONTO_final_string.length > 0){
+            KONTO_final_string = substring(KONTO_final_string, 0, KONTO_final_string.length - 1);
+            //MessageBox(KONTO_final_string);
+            sql_str += " AND kdib_ln_konto IN (" + KONTO_final_string + ")";
+        }
     }
     if (Izvadak != "")
     {
@@ -530,15 +604,15 @@ function filterPart()
     }
     if (domaca_dn )
     {
-        sql_str += " AND nksc_drzava= '"+kpsy_po_freight+"'";
+        sql_str += " AND nksc_drzava= '" + kpsy_po_freight + "'";
     }
     elif (eu_dn )
     {
-        sql_str +=  " AND nksc_drzava IN ("+eucountries+")";
+        sql_str +=  " AND nksc_drzava IN (" + eucountries + ")";
     }
     elif (izvoz_dn )
     {
-        sql_str += " AND nksc_drzava <> '"+kpsy_po_freight+"' AND NOT nksc_drzava IN ("+eucountries+")";
+        sql_str += " AND nksc_drzava <> '" + kpsy_po_freight + "' AND NOT nksc_drzava IN (" + eucountries + ")";
     }
     //sql_str += " AND kpsy_bnk_blag != 'D'";
 /*

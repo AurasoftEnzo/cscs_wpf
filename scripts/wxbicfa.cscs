@@ -171,11 +171,61 @@ function Wxbicfa_onDisplay()
     KONTO_financ_akt_str = regedit("regReadStr", 'DASH_CASH_FLOW', 'KontaFinancAkt');
     KONTO_invest_akt_str = regedit("regReadStr", 'DASH_CASH_FLOW', 'KontaInvestAkt');
     regedit("regClose");
+
+    cbKontoPoslAkt = true;
+    cbKontoFinancAkt = true;
+    cbKontoInvestAkt = true;
 }
 
 function gbPripremi@clicked()
 {
     cursor("wait");
+    
+    //provjera da li su sva konta odabrana
+    sqlQueryString = "SELECT DISTINCT trim(gk_ac_konto)"
+    + " FROM  " + trenutnaGodinaBaza + ".[dbo].[kpkdibgl] "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[kpkdibln] ON kdib_gl_num = kdib_ln_num "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkacct ON kdib_ln_konto = gk_ac_konto "
+    + " WHERE YEAR(kdib_gl_datem) = " + ovagod_h
+    + " AND kdib_ln_iznos != 0";
+
+    try
+    {
+        sqlResult = sqlQuery(sqlQueryString);
+    }
+    catch(exc)
+    {
+        MessageBox(exc);
+    }
+
+    kontoPoslZarez = (KONTO_posl_akt_str != "" ? "," : "");
+    kontoFinancZarez = (KONTO_financ_akt_str != "" ? "," : "");
+    odabranaKonta = KONTO_posl_akt_str + kontoPoslZarez + KONTO_financ_akt_str + kontoFinancZarez + KONTO_invest_akt_str;
+
+    listaOdabranihKonta = odabranaKonta.split(",");
+    for(i = 0; i < size(listaOdabranihKonta); i++){
+        listaOdabranihKonta[i] = listaOdabranihKonta[i].replace("'", ""); // 
+    }
+    
+    for(i = 1; i < size(sqlresult); i++){
+        if(!listaOdabranihKonta.contains(sqlResult[i][0])){
+            MessageBox("Nisu odabrana sva konta!");
+            cursor("dflt");
+            return;
+        }
+    }
+
+    // if(listaOdabranihKonta.contains("")){
+    //     MessageBox("asdasdasd");
+    // }
+    
+    // if(listaOdabranihKonta.contains("1000008")){
+    //     MessageBox("1000008");
+    // }
+    
+
+    //MessageBox(listaOdabranihKonta);
+
     /*
     gl_oznaka= "";
     if (tip_racuna== "STANDARDNI")
@@ -231,6 +281,19 @@ function callSetWeekComparison(){
 function end(){
     cursor("dflt");
     pripremljeno = true;
+}
+
+function saveKontoFilterButton@clicked(){
+    try{
+        regedit("regOpen", iniFilename, "rtFile");
+        regedit("regWriteStr", 'DASH_CASH_FLOW', 'KontaPoslAkt', "'" + KONTO_posl_akt_str + "'");
+        regedit("regWriteStr", 'DASH_CASH_FLOW', 'KontaFinancAkt', "'" + KONTO_financ_akt_str + "'");
+        regedit("regWriteStr", 'DASH_CASH_FLOW', 'KontaInvestAkt', "'" + KONTO_invest_akt_str + "'");
+        regedit("regClose");
+        MessageBox("Uspješno spremljeno.");
+    }catch(exc){
+        MessageBox(exc);
+    }
 }
 
 function gbPriliv1@clicked()
@@ -793,7 +856,7 @@ function setHorizontalBars3()
         switch(mjesec_h){
             case "2":
             ovagod_int = int(ovagod_h);
-            if(ovagod_int % 4 == 0 || (ovagod_int % 100 == 0 && ovagod_int % 400 == 0)){
+            if((ovagod_int % 4 == 0 && ovagod_int % 100 != 0) || ovagod_int % 400 == 0){
                 datum2 = "29/02/" + ovagod_h;
             }
             else{

@@ -1184,7 +1184,14 @@ namespace WpfCSCS
                 var x = temp[temp.Length - 1];
                 return new Variable(x.ToString());
             }
-            return new Variable(rijec.TrimEnd().Count());
+            else if (!string.IsNullOrEmpty(param) && param.ToUpper() == "L")
+            {
+                return new Variable(rijec.TrimEnd().Count());
+            }
+            else
+            {
+                throw new Exception("Incorrect parameter: " + param.ToUpper());
+            }
         }
     }
     

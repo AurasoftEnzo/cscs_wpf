@@ -637,3 +637,30 @@ function filterPart()
     */
 
 }
+
+function filterPartPieCharts(){
+    if (partner != "")
+    {
+        sql_str += " AND kdib_ln_partner = '" + partner + "'";
+    }
+    if (BANKA_str != "")
+    {
+        sql_str += " AND kdib_gl_banka IN (" + BANKA_str + ")";
+    }
+    if (Izvadak != "")
+    {
+        sql_str += " AND kdib_gl_num = '" + Izvadak + "'";
+    }
+    if (domaca_dn )
+    {
+        sql_str += " AND nksc_drzava= '" + kpsy_po_freight + "'";
+    }
+    elif (eu_dn )
+    {
+        sql_str +=  " AND nksc_drzava IN (" + eucountries + ")";
+    }
+    elif (izvoz_dn )
+    {
+        sql_str += " AND nksc_drzava <> '" + kpsy_po_freight + "' AND NOT nksc_drzava IN (" + eucountries + ")";
+    }
+}

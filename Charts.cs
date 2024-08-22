@@ -507,6 +507,7 @@ namespace WpfCSCS
                 var valueVariable = Utils.GetSafeVariable(args, 2);
                 var value2Variable = Utils.GetSafeVariable(args, 3);
                 var value3Variable = Utils.GetSafeVariable(args, 4);
+                var value4Variable = Utils.GetSafeVariable(args, 5);
 
                 var widget = gui.GetWidget(widgetName);
                 if (widget is PieChart)
@@ -527,6 +528,11 @@ namespace WpfCSCS
                                     })
                                 );
                             pieWidget.Tooltip = null;
+                        }
+
+                        if(value4Variable != null)
+                        {
+                            pieWidget.MaxValue = value4Variable.Value;
                         }
                     }
                     else if (optionString == "color")

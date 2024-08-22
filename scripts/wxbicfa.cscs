@@ -272,7 +272,11 @@ function callSetHorizontalBars(){
 }
 
 function callSetWeekComparison(){
-    AsyncCall("setWeekComparison", "end");
+    AsyncCall("setWeekComparison", "callSetPieCharts");
+}
+
+function callSetPieCharts(){
+    AsyncCall("setPieCharts", "end");
 }
 
 // function callSetCashFlowRatio(){
@@ -424,8 +428,6 @@ function setHorizontalBars()
     bojeArrayMJ2 = {196, 224, 138};
     
     RunOnMain("setHorizontalBars2");
-
-    RunOnMain("setHorizontalBars3");
 }
 
 function setHorizontalBars1(){
@@ -637,7 +639,13 @@ function setHorizontalBars1(){
 
     //MessageBox("aaaa :"+100*tot_ovagod_priliv/(tot_ovagod_priliv + tot_ovagod_odliv));
     
-    GaugeChart("GaugeChartOmjerProdaje", "value", Math.round(100*tot_ovagod_priliv/(tot_ovagod_priliv + tot_ovagod_odliv)), 25, 30);
+    omjer = Math.round(100 * tot_ovagod_priliv / tot_ovagod_odliv - 100);
+    omjer = 120;
+    if(omjer <= 100){
+        GaugeChart("GaugeChartOmjerProdaje", "value", omjer, 25, 30, 100);
+    }else{
+        GaugeChart("GaugeChartOmjerProdaje", "value", omjer, 25, 30, omjer * 1.3);
+    }
     GaugeChart("GaugeChartOmjerProdaje", "color", "#118888");
    
     // PieChart("PieChartOmjerProdaje", "init");
@@ -834,76 +842,7 @@ function setHorizontalBars2()
     }
 }
 
-function setHorizontalBars3()
-{
-    //obrtaj
-    obrtaj = 2 * tot_ovagod_priliv / (pocetnoStanjeOvagod + stanjeOvagod) * 1.0;
 
-    Format("obrtaj", "nofd", recv: "obrtaj_string");
-    HorizontalBar("HorizontalBarObrtaj", "Text", obrtaj_string);
-
-    //brojDanaZaNaplatu
-
-    // ako je SAMO jedan mjesec -> prazan string
-    // i ako je mjesec 1. -> prazan string
-    if(do_mjeseca == false || mjesec_h == 1)
-    {
-        HorizontalBar("HorizontalBarBrDanaZaNaplatu", "Text", "");
-    }
-    else{
-        datum1 = "01/01/" + ovagod_h;
-        
-        switch(mjesec_h){
-            case "2":
-            ovagod_int = int(ovagod_h);
-            if((ovagod_int % 4 == 0 && ovagod_int % 100 != 0) || ovagod_int % 400 == 0){
-                datum2 = "29/02/" + ovagod_h;
-            }
-            else{
-                datum2 = "28/02/" + ovagod_h;
-            }
-            break;
-            case "3":
-            datum2 = "31/03/" + ovagod_h;
-            break;
-            case "4":
-            datum2 = "30/04/" + ovagod_h;
-            break;
-            case "5":
-            datum2 = "31/05/" + ovagod_h;
-            break;
-            case "6":
-            datum2 = "30/06/" + ovagod_h;
-            break;
-            case "7":
-            datum2 = "31/07/" + ovagod_h;
-            break;
-            case "8":
-            datum2 = "31/08/" + ovagod_h;
-            break;
-            case "9":
-            datum2 = "30/09/" + ovagod_h;
-            break;
-            case "10":
-            datum2 = "31/10/" + ovagod_h;
-            break;
-            case "11":
-            datum2 = "30/11/" + ovagod_h;
-            break;
-            case "12":
-            datum2 = "31/12/" + ovagod_h;
-            break;            
-        }
-        
-        brojProteklihDana = datum2 - datum1;
-        //MessageBox(brojProteklihDana);
-
-        brojDanaZaNaplatu = brojProteklihDana / obrtaj * 1.0;
-        // MessageBox(brojDanaZaNaplatu);
-        Format("brojDanaZaNaplatu", "nofd", recv: "brojDanaZaNaplatu_string");
-        HorizontalBar("HorizontalBarBrDanaZaNaplatu", "Text", brojDanaZaNaplatu_string);
-    }
-}
 //-----------------------------------------------------------
 
 function setWeekComparison()
@@ -1105,6 +1044,126 @@ function setWeekComparison2(){
 	HorizontalBar("HorizontalBarLTOdliv", "Text", tot_ProsliTj_Odliv_string);
 	HorizontalBar("HorizontalBarLTOdliv", "Color", bojeArrayTJ);
 
+}
+
+//---------------------------------------------------------------
+
+function setPieCharts(){
+    RunOnMain("setPieCharts1");
+}
+
+function setPieCharts1(){
+
+    //Pie Chart Priliv
+    PieChart("PieChartPriliv", "init");
+    PieChart("PieChartPriliv", "seriesType", "pie");
+    PieChart("PieChartPriliv", "title", "Pie Chart Title", 20);  
+
+    //Pie Chart Odliv
+    PieChart("PieChartOdliv", "init");
+    PieChart("PieChartOdliv", "seriesType", "pie");
+    PieChart("PieChartOdliv", "title", "Pie Chart Title", 20);
+
+    //poslovne aktivnosti
+    sql_str = "SELECT ";
+    sql_str += " sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END) AS Odliv, ";
+    sql_str += " sum(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END) AS Priliv ";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl"; 
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
+    sql_str += " WHERE 1 = 1 AND kpsy_bnk_blag <> 'D' AND year(kdib_gl_datum) = " + ovagod_h; 
+    if (do_mjeseca)
+	{
+		sql_str += " AND month(kdib_gl_datum) <= '" + mjesec_h + "'";
+	}
+	else
+	{
+		sql_str += " AND month(kdib_gl_datum) = '" + mjesec_h + "'";
+	}
+    filterPartPieCharts();
+    sql_str += " AND kdib_ln_konto IN (" + KONTO_posl_akt_str + ")";
+
+    try
+    {
+        //SaveFile(sql_str);
+        queryResult = sqlquery(SQL_str);
+    }
+    catch(exc)
+    {
+        MessageBox(exc);
+    }
+
+    PieChart("PieChartPriliv", "values", queryResult[1][1], "Poslovne aktivnosti", 0, 50);
+    PieChart("PieChartOdliv", "values", queryResult[1][0], "Poslovne aktivnosti", 0, 50);
+
+
+    //financijske aktivnosti
+    sql_str = "SELECT ";
+    sql_str += " sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END) AS Odliv, ";
+    sql_str += " sum(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END) AS Priliv ";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl"; 
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
+    sql_str += " WHERE 1 = 1 AND kpsy_bnk_blag <> 'D' AND year(kdib_gl_datum) = " + ovagod_h; 
+    if (do_mjeseca)
+	{
+		sql_str += " AND month(kdib_gl_datum) <= '" + mjesec_h + "'";
+	}
+	else
+	{
+		sql_str += " AND month(kdib_gl_datum) = '" + mjesec_h + "'";
+	}
+    filterPartPieCharts();
+    sql_str += " AND kdib_ln_konto IN (" + KONTO_financ_akt_str + ")";
+
+    try
+    {
+        //SaveFile(sql_str);
+        queryResult = sqlquery(SQL_str);
+    }
+    catch(exc)
+    {
+        MessageBox(exc);
+    }
+
+    PieChart("PieChartPriliv", "values", queryResult[1][1], "Financijske aktivnosti", 0, 50);
+    PieChart("PieChartOdliv", "values", queryResult[1][0], "Financijske aktivnosti", 0, 50);
+    
+    
+    //investicijske aktivnosti
+    sql_str = "SELECT ";
+    sql_str += " sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END) AS Odliv, ";
+    sql_str += " sum(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END) AS Priliv ";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl"; 
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
+    sql_str += " WHERE 1 = 1 AND kpsy_bnk_blag <> 'D' AND year(kdib_gl_datum) = " + ovagod_h; 
+    if (do_mjeseca)
+	{
+		sql_str += " AND month(kdib_gl_datum) <= '" + mjesec_h + "'";
+	}
+	else
+	{
+		sql_str += " AND month(kdib_gl_datum) = '" + mjesec_h + "'";
+	}
+    filterPartPieCharts();
+    sql_str += " AND kdib_ln_konto IN (" + KONTO_invest_akt_str + ")";
+
+    try
+    {
+        //SaveFile(sql_str);
+        queryResult = sqlquery(SQL_str);
+    }
+    catch(exc)
+    {
+        MessageBox(exc);
+    }
+
+    PieChart("PieChartPriliv", "values", queryResult[1][1], "Investicijske aktivnosti", 0, 50);
+    PieChart("PieChartOdliv", "values", queryResult[1][0], "Investicijske aktivnosti", 0, 50);
 }
 
 //---------------------------------------------------------------

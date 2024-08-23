@@ -640,14 +640,23 @@ function setHorizontalBars1(){
     //MessageBox("aaaa :"+100*tot_ovagod_priliv/(tot_ovagod_priliv + tot_ovagod_odliv));
     
     omjer = Math.round(100 * tot_ovagod_priliv / tot_ovagod_odliv - 100);
-    omjer = 120;
+    
+    omjer = Math.abs(omjer);
     if(omjer <= 100){
         GaugeChart("GaugeChartOmjerProdaje", "value", omjer, 18, 25, 100);
     }else{
         GaugeChart("GaugeChartOmjerProdaje", "value", omjer, 18, 25, omjer * 1.3);
     }
-    GaugeChart("GaugeChartOmjerProdaje", "color", "#118888");
-   
+    
+    if(tot_ovagod_priliv >= tot_ovagod_odliv){
+        SetWidgetOptions("labelPrilivOdliv", "text", "Priliv/Odliv");
+        GaugeChart("GaugeChartOmjerProdaje", "color", "#118888");
+    }
+    else{
+        SetWidgetOptions("labelPrilivOdliv", "text", "Odliv/Priliv");
+        GaugeChart("GaugeChartOmjerProdaje", "color", "red");
+    }
+
     // PieChart("PieChartOmjerProdaje", "init");
     // PieChart("PieChartOmjerProdaje", "seriesType", "pie");  
 	// PieChart("PieChartOmjerProdaje", "values", tot_ovagod_priliv , "Priliv");

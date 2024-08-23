@@ -11,7 +11,7 @@
         Width="1200" WindowStartupLocation="CenterScreen"  MinHeight="540" MinWidth="960">
     <Viewbox Stretch="Uniform">
         <Grid
-            Margin="10,30,10,30">
+            Margin="15">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="*"/>
@@ -20,6 +20,10 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
+            <Rectangle Fill="#FFEEEDF1" RadiusX="7" RadiusY="7" Margin="5"/>
+            <Rectangle Fill="#FFEEEDF1" RadiusX="7" RadiusY="7" Margin="5" Grid.Column="1"/>
+            <Rectangle Fill="#FFEEEDF1" RadiusX="7" RadiusY="7" Margin="5" Grid.Row="1"/>
+            <Rectangle Fill="#FFEEEDF1" RadiusX="7" RadiusY="7" Margin="5" Grid.Row="1" Grid.Column="1"/>
             <lvc:CartesianChart LegendPosition="Right"
                                 x:Name="ChartPoMjesecima"
                                 Margin="23,45,23,10"
@@ -31,12 +35,15 @@
             <Label HorizontalAlignment="Left" Content="Prodaja po danima" Grid.Row="0" Grid.Column="1" VerticalAlignment="Top" Width="193" FontSize="16" FontWeight="Bold" Margin="24,5,0,0" BorderBrush="{x:Null}" Background="{x:Null}"/>
             <Label HorizontalAlignment="Left" Content="Najnoviji računi" Grid.Row="1" Grid.Column="0" VerticalAlignment="Top" Width="193" FontSize="16" FontWeight="Bold" Margin="23,5,0,0" BorderBrush="{x:Null}"/>
 
-            <DataGrid GridLinesVisibility="Vertical"
-                      VerticalGridLinesBrush="LightGray"
+            <DataGrid GridLinesVisibility="Horizontal"
+                      HorizontalGridLinesBrush="#FFD7D6D6"
                       Margin="23,32,23,14"
                       IsReadOnly="true"
                       x:Name="dgRacuniLast"
-                      AlternatingRowBackground="LightBlue"
+                      Height="245"
+                        Width="540"
+                      RowHeight="22"
+                    FontSize="15"
                       HorizontalScrollBarVisibility="Auto"
                       VerticalScrollBarVisibility="Auto"
                       Background="White"
@@ -45,7 +52,7 @@
                 <DataGrid.Resources>
                     <Style TargetType="{x:Type DataGridColumnHeader}">
                         <Setter Property="Background"
-                                Value="#FF006393" />
+                                Value="#7E909A" />
                         <Setter Property="Foreground"
                                 Value="White" />
                         <Setter Property="FontSize" Value="17"/>
@@ -74,7 +81,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                     <DataGridTemplateColumn Header="Datum"
-                                            Width="63">
+                                            Width="70">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <wcl:ASGridCell FieldName="T10DATUMZ_AR"
@@ -85,7 +92,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                     <DataGridTemplateColumn Header="Sat"
-                                            Width="50">
+                                            Width="65">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <wcl:ASGridCell FieldName="T10TIMEZ_AR"
@@ -124,21 +131,25 @@
             </DataGrid>
             <Label HorizontalAlignment="Left" Content="Najveći računi" Grid.Row="1" Grid.Column="1" VerticalAlignment="Top" Width="193" FontSize="16" FontWeight="Bold" Margin="24,5,0,0" BorderBrush="{x:Null}"/>
             <Label HorizontalAlignment="Left" Content="Prodaja po mjesecima (x 1.000)" VerticalAlignment="Top" Width="272" FontSize="16" FontWeight="Bold" Margin="23,5,0,0" BorderBrush="{x:Null}" Background="{x:Null}"/>
-            <DataGrid GridLinesVisibility="None"
+            <DataGrid GridLinesVisibility="Horizontal"
+                      HorizontalGridLinesBrush="#FFD7D6D6"
                       Margin="24,32,20,14"
                       IsReadOnly="true"
                       x:Name="dgRacuniMjesec"
-                      AlternatingRowBackground="LightGray"
                       HorizontalScrollBarVisibility="Auto"
                       VerticalScrollBarVisibility="Auto"
                       Background="White"
+                        Height="245"
+                        Width="540"
+                      RowHeight="22"
+                    FontSize="15"
                       Grid.Column="1"
                       Grid.Row="1"
                       TabIndex="3" BorderThickness="0,0,0,0" CanUserAddRows="False" CanUserDeleteRows="False" CanUserResizeRows="False">
                 <DataGrid.Resources>
                     <Style TargetType="{x:Type DataGridColumnHeader}">
                         <Setter Property="Background"
-                                Value="#FF326363" />
+                                Value="#1C4E80" />
                         <Setter Property="Foreground"
                                 Value="White" />
                         <Setter Property="FontSize" Value="17"/>
@@ -167,7 +178,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                     <DataGridTemplateColumn Header="Datum"
-                                            Width="63">
+                                            Width="75">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <wcl:ASGridCell FieldName="T10DATUMMJ_AR"
@@ -215,7 +226,7 @@ BorderBrush="Transparent"
 BorderThickness="0"
 Padding="-8"
 x:Name="gbPrint1"
-Background="gray"
+Background="#7E909A"
 TabIndex="35"
 Foreground="#FFFDFDFD"
 Content="Ispis"

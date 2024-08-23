@@ -6695,6 +6695,8 @@ $@"EXECUTE sp_executesql N'
             public Dictionary<string, int?> tagsAndDecimalChrs = new Dictionary<string, int?>();
             public Dictionary<string, int?> tagsAndSizes = new Dictionary<string, int?>();
             public Dictionary<string, bool> tagsAndThousands = new Dictionary<string, bool>();
+            
+            public Dictionary<string, Thickness> tagsAndMargins = new Dictionary<string, Thickness>();
         }
 
         class DisplayTableClass
@@ -6970,6 +6972,7 @@ $@"EXECUTE sp_executesql N'
 
                 Gui.Btrieve.gridsArrayClass[gridName].tagsAndTypes = new Dictionary<string, Type>();
                 Gui.Btrieve.gridsArrayClass[gridName].tagsAndHeaders = new Dictionary<string, string>();
+                Gui.Btrieve.gridsArrayClass[gridName].tagsAndMargins = new Dictionary<string, Thickness>();
 
                 var columns = dg.Columns;
                 for (int i = 0; i < columns.Count; i++)
@@ -6989,6 +6992,7 @@ $@"EXECUTE sp_executesql N'
                                 if (asgc.IsImage)
                                 {
                                     Gui.Btrieve.gridsArrayClass[gridName].tagsAndTypes.Add(asgc.FieldName.ToString(), typeof(BitmapImage));
+                                    Gui.Btrieve.gridsArrayClass[gridName].tagsAndMargins.Add(asgc.FieldName.ToString(), asgc.Margin);
                                 }
                                 else
                                 {
@@ -7607,6 +7611,7 @@ $@"EXECUTE sp_executesql N'
                             // Create the TextBlock
                             FrameworkElementFactory imageFactory = new FrameworkElementFactory(typeof(System.Windows.Controls.Image));
                             imageFactory.SetBinding(System.Windows.Controls.Image.SourceProperty, bindImage);
+                            imageFactory.SetValue(System.Windows.Controls.Image.MarginProperty, Gui.Btrieve.gridsArrayClass[gridName].tagsAndMargins[tag]);
 
                             DataTemplate imageTemplate = new DataTemplate();
                             imageTemplate.VisualTree = imageFactory;

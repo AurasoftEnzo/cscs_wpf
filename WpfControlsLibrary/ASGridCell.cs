@@ -100,6 +100,19 @@ namespace WpfControlsLibrary
                 base.SetValue(IsImageProperty, value);
             }
         }
+        
+        public static readonly DependencyProperty MarginProperty = DependencyProperty.Register("Margin", typeof(Thickness), typeof(ASGridCell));
+        public Thickness Margin
+        {
+            get
+            {
+                return (Thickness)base.GetValue(MarginProperty);
+            }
+            set
+            {
+                base.SetValue(MarginProperty, value);
+            }
+        }
 
         public override void OnApplyTemplate()
         {

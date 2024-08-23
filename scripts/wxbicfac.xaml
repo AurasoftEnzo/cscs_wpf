@@ -6,12 +6,11 @@
         xmlns:wcl="clr-namespace:WpfControlsLibrary;assembly=WpfControlsLibrary"
         xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
         mc:Ignorable="d"
-        Title="Cash Flow - odliv I"
+        Title="Cash Flow - Odliv I"
         Height="675"
         Width="1200" WindowStartupLocation="CenterScreen"  MinHeight="540" MinWidth="960">
     <Viewbox Stretch="Uniform">
-        <Grid
-            Margin="10,30,10,30">
+        <Grid Width="1162" Margin="15">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="*"/>
@@ -20,6 +19,10 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
+            <Rectangle Fill="#FFEEEDF1" RadiusX="7" RadiusY="7" Margin="5"/>
+            <Rectangle Fill="#FFEEEDF1" RadiusX="7" RadiusY="7" Margin="5" Grid.Column="1"/>
+            <Rectangle Fill="#FFEEEDF1" RadiusX="7" RadiusY="7" Margin="5" Grid.Row="1"/>
+            <Rectangle Fill="#FFEEEDF1" RadiusX="7" RadiusY="7" Margin="5" Grid.Row="1" Grid.Column="1"/>
             <lvc:CartesianChart LegendPosition="Right"
                                 x:Name="ChartPoMjesecima"
                                 Margin="23,45,23,10"
@@ -31,12 +34,15 @@
             <Label HorizontalAlignment="Left" Content="Odliv po danima" Grid.Row="0" Grid.Column="1" VerticalAlignment="Top" Width="193" FontSize="16" FontWeight="Bold" Margin="24,5,0,0" BorderBrush="{x:Null}" Background="{x:Null}"/>
             <Label HorizontalAlignment="Left" Content="Najnoviji odliv" Grid.Row="1" Grid.Column="0" VerticalAlignment="Top" Width="193" FontSize="16" FontWeight="Bold" Margin="23,5,0,0" BorderBrush="{x:Null}"/>
 
-            <DataGrid GridLinesVisibility="Vertical"
-                      VerticalGridLinesBrush="LightGray"
+            <DataGrid GridLinesVisibility="Horizontal"
+                      HorizontalGridLinesBrush="#FFD7D6D6"
                       Margin="23,32,23,14"
                       IsReadOnly="true"
+                      Height="245"
+                      Width="540"
+                    RowHeight="22"
+                      FontSize="15"
                       x:Name="dgRacuniLast"
-                      AlternatingRowBackground="LightBlue"
                       HorizontalScrollBarVisibility="Auto"
                       VerticalScrollBarVisibility="Auto"
                       Background="White"
@@ -74,7 +80,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                     <DataGridTemplateColumn Header="Datum"
-                                            Width="63">
+                                            Width="70">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <wcl:ASGridCell FieldName="T10DATUMZ_AR"
@@ -85,7 +91,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                     <DataGridTemplateColumn Header="Sat"
-                                            Width="50">
+                                            Width="65">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <wcl:ASGridCell FieldName="T10TIMEZ_AR"
@@ -96,7 +102,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                     <DataGridTemplateColumn Header="Banka"
-                                            Width="210">
+                                            Width="205">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <wcl:ASGridCell FieldName="T10NAMEZ_AR"
@@ -124,11 +130,15 @@
             </DataGrid>
             <Label HorizontalAlignment="Left" Content="Najveći odliv" Grid.Row="1" Grid.Column="1" VerticalAlignment="Top" Width="193" FontSize="16" FontWeight="Bold" Margin="24,5,0,0" BorderBrush="{x:Null}"/>
             <Label HorizontalAlignment="Left" Content="Odliv po mjesecima (x 1.000)" VerticalAlignment="Top" Width="272" FontSize="16" FontWeight="Bold" Margin="23,5,0,0" BorderBrush="{x:Null}" Background="{x:Null}"/>
-            <DataGrid GridLinesVisibility="None"
+            <DataGrid GridLinesVisibility="Horizontal"
+                      HorizontalGridLinesBrush="#FFD7D6D6"
                       Margin="24,32,20,14"
                       IsReadOnly="true"
+                      Height="245"
+                      Width="540"
+                    RowHeight="22"
+                      FontSize="15"
                       x:Name="dgRacuniMjesec"
-                      AlternatingRowBackground="LightGray"
                       HorizontalScrollBarVisibility="Auto"
                       VerticalScrollBarVisibility="Auto"
                       Background="White"
@@ -167,7 +177,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                     <DataGridTemplateColumn Header="Datum"
-                                            Width="63">
+                                            Width="70">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <wcl:ASGridCell FieldName="T10DATUMMJ_AR"

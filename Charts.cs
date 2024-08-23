@@ -8,9 +8,11 @@
 //using LiveChartsCore.SkiaSharpView.WPF;
 using LiveCharts.Defaults;
 using LiveChartsCore;
+using LiveChartsCore.ConditionalDraw;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.Kernel;
 using LiveChartsCore.SkiaSharpView;
+using LiveChartsCore.SkiaSharpView.Drawing;
 using LiveChartsCore.SkiaSharpView.Drawing.Geometries;
 using LiveChartsCore.SkiaSharpView.Extensions;
 using LiveChartsCore.SkiaSharpView.Painting;
@@ -70,6 +72,12 @@ namespace WpfCSCS
                 var value3Variable = Utils.GetSafeVariable(args, 4);
                 if (value3Variable == null)
                     value3Variable = new Variable();
+                var value4Variable = Utils.GetSafeVariable(args, 5);
+                if (value4Variable == null)
+                    value4Variable = new Variable();
+                var value5Variable = Utils.GetSafeVariable(args, 6);
+                if (value5Variable == null)
+                    value5Variable = new Variable();
 
                 var widget = gui.GetWidget(widgetName);
                 if (widget is CartesianChart)
@@ -105,6 +113,34 @@ namespace WpfCSCS
                                 });
                                 //Debug.WriteLine("temp.Count = " + temp.Count);
                             }
+                            else if (valueVariable.String.ToLower() == "stacked")
+                            {
+                                int stackGroup = 0;
+                                Int32.TryParse(value4Variable.Value.ToString(), out stackGroup);
+                                
+                                int maxBarWidth = 22;
+                                Int32.TryParse(value5Variable.Value.ToString(), out maxBarWidth);
+                                
+                                temp.Add(new StackedColumnSeries<double>()
+                                {
+                                    Values = newList,
+                                    StackGroup = stackGroup,
+                                    //TooltipLabelFormatter = (chartPoint) => $"{newList[(int)chartPoint.Context.Series.Name.SecondaryValue]}" + $": chartPoint.Context.Series.Name}: {chartPoint.PrimaryValue:C0}"
+                                    //TooltipLabelFormatter = (chartPoint) => $"{chartPoint.Context.Series.Name} - {} - {newList[(int)chartPoint.SecondaryValue]}"
+                                    YToolTipLabelFormatter = (chartPoint) => $"{newList[(int)chartPoint.Coordinate.SecondaryValue].ToString("N")}",
+                                    //Fill = new SolidColorPaint(SKColors.Transparent)
+                                    
+                                    //Fill = null,
+
+                                    //Stroke = new SolidColorPaint(new SKColor(100, 100, 100), 3),
+
+                                    //GeometryFill = null,
+
+                                    //GeometryStroke = new SolidColorPaint(new SKColor(100, 100, 100), 3),
+                                    //GeometrySize = 0
+                                    MaxBarWidth = maxBarWidth
+                                });
+                            }
                             //else if (chartsTypes[widgetName] == "lineseries")
                             else if (valueVariable.String.ToLower() == "line")
                             {
@@ -123,6 +159,7 @@ namespace WpfCSCS
 
                                 });
                             }
+                            
                             if (!string.IsNullOrEmpty(value3Variable.String))
                             {
                                 temp.Last().Name = value3Variable.String;
@@ -200,6 +237,10 @@ namespace WpfCSCS
                             {
                                 (series as LineSeries<double>).YToolTipLabelFormatter = (chartPoint) => $"{chartPoint.Coordinate.PrimaryValue.ToString($"N{valueVariable.Value}")}";
                             }
+                            else if (series is StackedColumnSeries<double>)
+                            {
+                                (series as StackedColumnSeries<double>).YToolTipLabelFormatter = (chartPoint) => $"{chartPoint.Coordinate.PrimaryValue.ToString($"N{valueVariable.Value}")}";
+                            }
                         }
                     }
                     else if (optionString == "color.series")
@@ -220,6 +261,47 @@ namespace WpfCSCS
                             {
                                 item.GetType().GetProperty("Stroke").SetValue(item, new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColor.Parse(ToHex((Color)ColorConverter.ConvertFromString(g[i]))), 3), null);
                                 item.GetType().GetProperty("GeometryStroke").SetValue(item, new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColor.Parse(ToHex((Color)ColorConverter.ConvertFromString(g[i++]))), 3), null);
+                            }
+                            else if(item is StackedColumnSeries<double>)
+                            {
+                                item.GetType().GetProperty("Fill").SetValue(item, new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColor.Parse(ToHex((Color)ColorConverter.ConvertFromString(g[i++])))), null);
+                                //item.GetType().GetProperty("Stroke").SetValue(item, new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColor.Parse(ToHex((Color)ColorConverter.ConvertFromString(g[i]))), 3), null);
+                                //item.GetType().GetProperty("GeometryStroke").SetValue(item, new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColor.Parse(ToHex((Color)ColorConverter.ConvertFromString(g[i++]))), 3), null);
+                            }
+                        }
+                    }
+                    else if (optionString == "color.point")
+                    {
+                        var seriesNumber = valueVariable.Value;
+                        var pointNumber = value2Variable.Value;
+                        var pointColor = value3Variable.String;
+
+                        //var parameter = Utils.GetSafeString(args, 2);
+
+                        var series_ienum_property = widget.GetType().GetProperty("Series");
+                        
+                        //var g = args[2].Type == Variable.VarType.ARRAY ? args[2].Tuple.Select(a => a.String).ToArray() : parameter.Split('|');
+                        
+                        int indexSeries = 0;
+
+                        foreach (var item in (System.Collections.IEnumerable)series_ienum_property.GetValue(widget, null))
+                        {
+                            if(indexSeries != seriesNumber)
+                            {
+                                indexSeries++;
+                                continue;
+                            }
+
+                            if(item is ColumnSeries<double>)
+                            {
+                                //(item as ColumnSeries<double>).PointMeasured += ChartFunction_PointMeasured;
+
+                                (item as ColumnSeries<double>).OnPointMeasured(point =>
+                                    {
+                                        if (point.Visual is null) return;
+                                        if (point.Index == pointNumber) point.Visual.Fill = new SolidColorPaint(SkiaSharp.SKColor.Parse(ToHex((Color)ColorConverter.ConvertFromString(pointColor))));
+                                    }
+                                );
                             }
                         }
                     }
@@ -425,6 +507,7 @@ namespace WpfCSCS
                 var valueVariable = Utils.GetSafeVariable(args, 2);
                 var value2Variable = Utils.GetSafeVariable(args, 3);
                 var value3Variable = Utils.GetSafeVariable(args, 4);
+                var value4Variable = Utils.GetSafeVariable(args, 5);
 
                 var widget = gui.GetWidget(widgetName);
                 if (widget is PieChart)
@@ -433,7 +516,7 @@ namespace WpfCSCS
 
                     if (optionString == "value")
                     {
-                        if (valueVariable.Value > 0)
+                        if (valueVariable.Value >= 0)
                         {
                             pieWidget.Series = GaugeGenerator.BuildSolidGauge(
                                 new GaugeItem(
@@ -445,6 +528,11 @@ namespace WpfCSCS
                                     })
                                 );
                             pieWidget.Tooltip = null;
+                        }
+
+                        if(value4Variable != null)
+                        {
+                            pieWidget.MaxValue = value4Variable.Value;
                         }
                     }
                     else if (optionString == "color")

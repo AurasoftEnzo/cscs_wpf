@@ -304,6 +304,47 @@ function saveKontoFilterButton@clicked(){
     }
 }
 
+function takeAllKontoButton@clicked(){
+    kontoPoslZarez = (KONTO_posl_akt_str != "" ? "," : "");
+    kontoFinancZarez = (KONTO_financ_akt_str != "" ? "," : "");
+    kontoInvestZarez = (KONTO_invest_akt_str != "" ? "," : "");
+    odabranaKonta = KONTO_posl_akt_str + kontoPoslZarez + KONTO_financ_akt_str + kontoFinancZarez + KONTO_invest_akt_str + kontoInvestZarez;
+    if(odabranaKonta != ""){
+        odabranaKonta = substring(odabranaKonta, 0, odabranaKonta.length - 1);
+    }
+
+    sqlQueryString = " SELECT DISTINCT gk_ac_konto"
+    + " FROM  " + trenutnaGodinaBaza + ".[dbo].[kpkdibgl] "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[kpkdibln] ON kdib_gl_num = kdib_ln_num "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkacct ON kdib_ln_konto = gk_ac_konto "
+    + " WHERE 1 = 1";
+    if(odabranaKonta != ""){
+        sqlQueryString += " AND gk_ac_konto NOT IN (" + odabranaKonta + ")";
+    }
+    sqlQueryString += " AND YEAR(kdib_gl_datem) = " + ovagod_h
+    + " AND kdib_ln_iznos != 0";
+
+    try
+    {
+        sqlResult = sqlQuery(sqlQueryString);
+    }
+    catch(exc)
+    {
+        MessageBox(exc);
+    }
+
+    //MessageBox(sqlResult);
+
+    kontoTempString = "";
+    for(i = 1; i < size(sqlResult); i++){
+        kontoTempString += "'" + strTrim(sqlResult[i][0]) + "',";
+    }
+    if(kontoTempString != ""){
+        kontoTempString = substring(kontoTempString, 0, kontoTempString.length - 1);
+        KONTO_posl_akt_str += kontoTempString;
+    }
+}
+
 function gbPriliv1@clicked()
 {
     if (pripremljeno   ) 

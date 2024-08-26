@@ -330,16 +330,22 @@ function ShowF2ListPreostalaKonta(){
 
     kontoPoslZarez = (KONTO_posl_akt_str != "" ? "," : "");
     kontoFinancZarez = (KONTO_financ_akt_str != "" ? "," : "");
-    odabranaKonta = KONTO_posl_akt_str + kontoPoslZarez + KONTO_financ_akt_str + kontoFinancZarez + KONTO_invest_akt_str;
-    
+    kontoInvestZarez = (KONTO_invest_akt_str != "" ? "," : "");
+    odabranaKonta = KONTO_posl_akt_str + kontoPoslZarez + KONTO_financ_akt_str + kontoFinancZarez + KONTO_invest_akt_str + kontoInvestZarez;
+    if(odabranaKonta != ""){
+        odabranaKonta = substring(odabranaKonta, 0, odabranaKonta.length - 1);
+    }
+
     F2ListQueryString = "WITH konta AS("
     + " SELECT DISTINCT gk_ac_konto, gk_ac_opis, CASE WHEN kdib_ln_dp= 'D' THEN 'Odliv' ELSE 'Priliv' END as Trans"
     + " FROM  " + trenutnaGodinaBaza + ".[dbo].[kpkdibgl] "
     + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[kpkdibln] ON kdib_gl_num = kdib_ln_num "
     + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkacct ON kdib_ln_konto = gk_ac_konto "
-    + " WHERE gk_ac_konto like '{var1}%' AND gk_ac_opis like '%{var2}%'"
-    + " AND gk_ac_konto NOT IN (" + odabranaKonta + ")"
-    + " AND YEAR(kdib_gl_datem) = " + ovagod_h
+    + " WHERE gk_ac_konto like '{var1}%' AND gk_ac_opis like '%{var2}%'";
+    if(odabranaKonta != ""){
+        F2ListQueryString += " AND gk_ac_konto NOT IN (" + odabranaKonta + ")";
+    }
+    F2ListQueryString += " AND YEAR(kdib_gl_datem) = " + ovagod_h
     + " AND kdib_ln_iznos != 0"
     + ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY gk_ac_konto ASC) AS RowNumber, gk_ac_konto, gk_ac_opis, Trans"

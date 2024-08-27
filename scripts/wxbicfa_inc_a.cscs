@@ -250,15 +250,15 @@ function setChartByMonth2(){
 
 function setLast10InvoicesDataGrid()
 {
-    sql_str = "SELECT TOP 10 kdib_gl_num, kpsy_bnk_ime, REPLACE(SUBSTRING(kdib_gl_rez , 2, 8), '.', '/'), SUBSTRING(kdib_gl_rez , 10, 8), sum(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END) as priliv";
+    sql_str = "SELECT TOP 10 kdib_gl_num, kpsy_bnk_ime, REPLACE(SUBSTRING(kdib_gl_rez, 2, 8), '.', '/'), SUBSTRING(kdib_gl_rez, 10, 8), sum(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END) as priliv";
     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
    	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
-	sql_str += " WHERE 1=1 AND kpsy_bnk_blag <> 'D' AND YEAR(kdib_gl_datem) =  '" + ovagod_h+"'"  ;
+	sql_str += " WHERE 1=1 AND kpsy_bnk_blag <> 'D' AND YEAR(kdib_gl_datem) =  '" + ovagod_h+"'";
 	if (do_mjeseca)
 	{
-		sql_str +=" AND month(kdib_gl_datem)< =  '" + mjesec_h+"'"  ;
+		sql_str +=" AND month(kdib_gl_datem) <=  '" + mjesec_h+"'";
 	}
 	else 
 	{
@@ -287,8 +287,8 @@ function setLast10InvoicesDataGrid()
 
 function setTop10InvoicesDataGrid()
 {
-	sql_str =  "SELECT TOP 10 CASE WHEN kdib_ln_racun > 0 THEN kdib_ln_racun ELSE kdib_ln_uplata END as brdok , CASE WHEN kdib_ln_partner<> '' THEN nksc_partname ELSE kdib_ln_opis END as opis, CONVERT(char(8) ,  kdib_gl_datem , 3) AS datecr , ";
-    sql_str += " ISNULL(ROUND(SUM(CASE WHEN kdib_ln_dp= 'P' THEN kdib_ln_iznos ELSE 0 END),2), 0) as iznos";
+	sql_str =  "SELECT TOP 10 CASE WHEN kdib_ln_racun > 0 THEN kdib_ln_racun ELSE kdib_ln_uplata END as brdok, CASE WHEN kdib_ln_partner <> '' THEN nksc_partname ELSE kdib_ln_opis END as opis, CONVERT(char(8),  kdib_gl_datem, 3) AS datecr, ";
+    sql_str += " ISNULL(ROUND(SUM(CASE WHEN kdib_ln_dp = 'P' THEN kdib_ln_iznos ELSE 0 END),2), 0) as iznos";
     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner= nksc_partcode";
@@ -296,7 +296,7 @@ function setTop10InvoicesDataGrid()
 	sql_str += " WHERE 1=1 AND kpsy_bnk_blag <> 'D' AND YEAR(kdib_gl_datem) =  '" + ovagod_h+"'"  ;
 	if (do_mjeseca)
 	{
-		sql_str +=" AND month(kdib_gl_datem)< =  '" + mjesec_h+"'"  ;
+		sql_str +=" AND month(kdib_gl_datem) <=  '" + mjesec_h+"'"  ;
 	}
 	else 
 	{

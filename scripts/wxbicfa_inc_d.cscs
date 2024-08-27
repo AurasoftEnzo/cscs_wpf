@@ -47,14 +47,14 @@ function setBankPieChartOdliv()
 	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
 	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
 	sql_str += " WHERE kpsy_bnk_blag <> 'D'";
-	sql_str += " AND YEAR(kdib_gl_datem)= " + ovagod_h;
+	sql_str += " AND YEAR(kdib_gl_datum)= " + ovagod_h;
 	if (do_mjeseca2  )
 	{
-		sql_str += " AND Month(kdib_gl_datem)<=" + mjesec_h;
+		sql_str += " AND Month(kdib_gl_datum)<=" + mjesec_h;
 	}	
 	else
 	{
-		sql_str += " AND Month(kdib_gl_datem)=" + mjesec_h;
+		sql_str += " AND Month(kdib_gl_datum)=" + mjesec_h;
 	}	
 	filterPart();
 	sql_str += " GROUP BY kpsy_bnk_ime) t";
@@ -99,14 +99,14 @@ function setRegionPieChartOdliv()
 		sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner= nksc_partcode";
 		sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
         sql_str += " WHERE kpsy_bnk_blag <> 'D'";
-		sql_str += " AND YEAR(kdib_gl_datem)= " + ovagod_h;
+		sql_str += " AND YEAR(kdib_gl_datum)= " + ovagod_h;
         if (do_mjeseca2  )
 		{
-            sql_str += " AND Month(kdib_gl_datem)<=" + mjesec_h;
+            sql_str += " AND Month(kdib_gl_datum)<=" + mjesec_h;
 		}	
         else
 		{
-            sql_str += " AND Month(kdib_gl_datem)=" + mjesec_h;
+            sql_str += " AND Month(kdib_gl_datum)=" + mjesec_h;
 		}	
         filterPart();
         sql_str += " GROUP BY nksc_city) t";
@@ -125,14 +125,14 @@ function setRegionPieChartOdliv()
         sql_str += " LEFT JOIN " + CommonDBGet() + ".dbo.KPSYSIFA a ON NKSC_REGIJA = a.ksdu_sf_code AND ksdu_sf_tip = 'V'";
 		sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
         sql_str += " WHERE kpsy_bnk_blag <> 'D'";
-		sql_str += " AND YEAR(kdib_gl_datem)= "+ ovagod_h;
+		sql_str += " AND YEAR(kdib_gl_datum)= "+ ovagod_h;
         if (do_mjeseca2)
 		{
-            sql_str += " AND Month(kdib_gl_datem)<="+mjesec_h;
+            sql_str += " AND Month(kdib_gl_datum)<="+mjesec_h;
 		}	
         else
 		{
-            sql_str += " AND Month(kdib_gl_datem)="+mjesec_h;
+            sql_str += " AND Month(kdib_gl_datum)="+mjesec_h;
 		}	
         filterPart();
         sql_str += " GROUP BY ksdu_sf_opis1) t";
@@ -152,18 +152,18 @@ function setRegionPieChartOdliv()
         sql_str += " LEFT JOIN " + CommonDBGet() + ".dbo.KPSYSIFA ON CASE WHEN nksc_drzava= '' THEN nksc_model ELSE nksc_drzava END = ksdu_sf_code AND ksdu_sf_tip = 'H'";
 		sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
         sql_str += " WHERE kpsy_bnk_blag <> 'D'";
-		sql_str += " AND YEAR(kdib_gl_datem)= " + ovagod_h;
+		sql_str += " AND YEAR(kdib_gl_datum)= " + ovagod_h;
         if (razlikaUCijeniField)
 		{
             sql_str += " AND kdib_gl_invcd= 'D'";
 		}
         if (do_mjeseca2)
 		{
-            sql_str += " AND Month(kdib_gl_datem)<=" + mjesec_h;
+            sql_str += " AND Month(kdib_gl_datum)<=" + mjesec_h;
 		}	
         else
 		{
-            sql_str += " AND Month(kdib_gl_datem)="+mjesec_h;
+            sql_str += " AND Month(kdib_gl_datum)="+mjesec_h;
 		}
         filterPart();
         sql_str += " GROUP BY ksdu_sf_opis1) t";
@@ -213,13 +213,13 @@ function setTop10ProductsOdliv()
 	{
         if (do_mjeseca )
 		{
-            sql_str += " AND month(kdib_gl_datem)<= "+mjesec_h;
-            sql_str += " AND YEAR(kdib_gl_datem)= "+ovagod_h;
+            sql_str += " AND month(kdib_gl_datum)<= "+mjesec_h;
+            sql_str += " AND YEAR(kdib_gl_datum)= "+ovagod_h;
 		}	
         else
 		{
-            sql_str += " AND month(kdib_gl_datem)= "+mjesec_h;
-            sql_str += " AND YEAR(kdib_gl_datem)= "+ovagod_h;
+            sql_str += " AND month(kdib_gl_datum)= "+mjesec_h;
+            sql_str += " AND YEAR(kdib_gl_datum)= "+ovagod_h;
         }
     }
 
@@ -257,13 +257,13 @@ function setTop10ProductsOdliv()
 	{
         if (do_mjeseca )
 		{
-            sql_str += " AND month(kdib_gl_datem)<= "+mjesec_h;
-            sql_str += " AND YEAR(kdib_gl_datem)= "+lani_h;
+            sql_str += " AND month(kdib_gl_datum)<= "+mjesec_h;
+            sql_str += " AND YEAR(kdib_gl_datum)= "+lani_h;
 		}
         else
 		{
-            sql_str += " AND month(kdib_gl_datem)= "+mjesec_h;
-            sql_str += " AND YEAR(kdib_gl_datem)= "+lani_h;
+            sql_str += " AND month(kdib_gl_datum)= "+mjesec_h;
+            sql_str += " AND YEAR(kdib_gl_datum)= "+lani_h;
         }
     }
     filterPart();
@@ -380,13 +380,13 @@ function setCustomerDataGridOdliv()
 	{
         if (do_mjeseca )
 		{
-            sql_str += " AND month(kdib_gl_datem)<= "+mjesec_h;
-            sql_str += " AND YEAR(kdib_gl_datem)= "+ovagod_h;
+            sql_str += " AND month(kdib_gl_datum)<= "+mjesec_h;
+            sql_str += " AND YEAR(kdib_gl_datum)= "+ovagod_h;
 		}	
         else
 		{
-            sql_str += " AND month(kdib_gl_datem)= "+mjesec_h;
-            sql_str += " AND YEAR(kdib_gl_datem)= "+ovagod_h;
+            sql_str += " AND month(kdib_gl_datum)= "+mjesec_h;
+            sql_str += " AND YEAR(kdib_gl_datum)= "+ovagod_h;
         }
     }
 
@@ -427,13 +427,13 @@ function setCustomerDataGridOdliv()
 	{
         if (do_mjeseca )
 		{
-            sql_str += " AND month(kdib_gl_datem)<= "+mjesec_h;
-            sql_str += " AND YEAR(kdib_gl_datem)= "+lani_h;
+            sql_str += " AND month(kdib_gl_datum)<= "+mjesec_h;
+            sql_str += " AND YEAR(kdib_gl_datum)= "+lani_h;
 		}
         else
 		{
-            sql_str += " AND month(kdib_gl_datem)= "+mjesec_h;
-            sql_str += " AND YEAR(kdib_gl_datem)= "+lani_h;
+            sql_str += " AND month(kdib_gl_datum)= "+mjesec_h;
+            sql_str += " AND YEAR(kdib_gl_datum)= "+lani_h;
         }
     }
 

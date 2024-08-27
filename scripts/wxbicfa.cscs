@@ -186,7 +186,7 @@ function gbPripremi@clicked()
     + " FROM  " + trenutnaGodinaBaza + ".[dbo].[kpkdibgl] "
     + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[kpkdibln] ON kdib_gl_num = kdib_ln_num "
     + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkacct ON kdib_ln_konto = gk_ac_konto "
-    + " WHERE YEAR(kdib_gl_datem) = " + ovagod_h
+    + " WHERE YEAR(kdib_gl_datum) = " + ovagod_h
     + " AND kdib_ln_iznos != 0";
 
     try
@@ -321,7 +321,7 @@ function takeAllKontoButton@clicked(){
     if(odabranaKonta != ""){
         sqlQueryString += " AND gk_ac_konto NOT IN (" + odabranaKonta + ")";
     }
-    sqlQueryString += " AND YEAR(kdib_gl_datem) = " + ovagod_h
+    sqlQueryString += " AND YEAR(kdib_gl_datum) = " + ovagod_h
     + " AND kdib_ln_iznos != 0";
 
     try
@@ -914,12 +914,12 @@ function setWeekComparison()
 	sql_str = "SELECT TOP 2 CONVERT(char(10), wk_firstofWeek,103) as prviutjednu,";
     sql_str  += " Priliv = round(ISNULL(SUM(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END) , 0),0),Odliv = round(ISNULL(SUM(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END) , 0),0)";
 	sql_str  += " FROM " + CommonDBGet() +  ".dbo.Kalendar";
-	sql_str  += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibgl ON [Wk_date] = kdib_gl_datem "; //ON a.[Wk_Week] = datepart(week , b.nkpr_gl_datem) ";
+	sql_str  += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibgl ON [Wk_date] = kdib_gl_datum "; //ON a.[Wk_Week] = datepart(week , b.nkpr_gl_datum) ";
 	sql_str  += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
 	sql_str  += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
     sql_str  += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
     sql_str  += " WHERE kpsy_bnk_blag <> 'D' AND wk_year = " + ovagod_h;
-	sql_str  += " AND kdib_gl_datem >= '" + fiscal_yr + "'";
+	sql_str  += " AND kdib_gl_datum >= '" + fiscal_yr + "'";
     filterPart();
     if (partner!= ''){ sql_str += " AND kdib_ln_partner= '"+partner+"'";}
     if (domaca_dn  ){ sql_str += " AND nksc_drzava= '"+kpsy_po_freight+"'";}

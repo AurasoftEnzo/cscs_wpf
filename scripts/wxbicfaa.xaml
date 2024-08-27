@@ -32,7 +32,7 @@
                                 Grid.Row="0"
                                 Margin="5,45,5,10" LegendPosition="Top" />
             <Label HorizontalAlignment="Left" Content="Priliv po danima" Grid.Row="0" Grid.Column="1" VerticalAlignment="Top" Width="193" FontSize="16" FontWeight="Bold" Margin="24,5,0,0" BorderBrush="{x:Null}" Background="{x:Null}"/>
-            <Label HorizontalAlignment="Left" Content="Najnoviji priliv" Grid.Row="1" Grid.Column="0" VerticalAlignment="Top" Width="193" FontSize="16" FontWeight="Bold" Margin="23,5,0,0" BorderBrush="{x:Null}"/>
+            <Label HorizontalAlignment="Left" Content="Najnoviji priliv po datumu unosa/izmjene" Grid.Row="1" Grid.Column="0" VerticalAlignment="Top" Width="368" FontSize="16" FontWeight="Bold" Margin="23,5,0,0" BorderBrush="{x:Null}"/>
 
             <DataGrid GridLinesVisibility="Horizontal"
                       HorizontalGridLinesBrush="#FFD7D6D6"
@@ -105,8 +105,19 @@
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Dat. dok."
+                        Width="70">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="T10DATUMDOKZ_AR"
+                            HorizontalContentAlignment="Center"
+                            Editor="edDefault"
+                            EditLength="8" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
                     <DataGridTemplateColumn Header="Banka"
-                                            Width="190">
+                                            Width="120">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <wcl:ASGridCell FieldName="T10NAMEZ_AR"

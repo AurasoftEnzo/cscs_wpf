@@ -7261,7 +7261,7 @@ namespace WpfCSCS
 						}
 					}
 				}
-				if (strValue.Length > size || (dec > 0 && !Double.TryParse(strValue, out val)))
+				if (strValue.Length > size || (dec > 0 && !Double.TryParse(strValue, System.Globalization.NumberStyles.AllowDecimalPoint, System.Globalization.CultureInfo.InvariantCulture, out val)))
 				{
 					/* old code:
 					bool isNeg = strValue.StartsWith("-"); // -12.346 --> -2.35 (for size 5, dec 2)

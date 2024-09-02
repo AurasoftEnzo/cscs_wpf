@@ -166,11 +166,15 @@ function Wxbicfa_onDisplay()
     }
     iniFilename = strtrim(sqlResult[1][0]) + ".ini";
     iniFilename = string(wpath()) + iniFilename;
-    regedit("regOpen", iniFilename, "rtFile");
-    KONTO_posl_akt_str = regedit("regReadStr", 'DASH_CASH_FLOW', 'KontaPoslAkt');
-    KONTO_financ_akt_str = regedit("regReadStr", 'DASH_CASH_FLOW', 'KontaFinancAkt');
-    KONTO_invest_akt_str = regedit("regReadStr", 'DASH_CASH_FLOW', 'KontaInvestAkt');
-    regedit("regClose");
+    if(regedit("regOpen", iniFilename, "rtFile")){
+        KONTO_posl_akt_str = regedit("regReadStr", 'DASH_CASH_FLOW', 'KontaPoslAkt');
+        KONTO_financ_akt_str = regedit("regReadStr", 'DASH_CASH_FLOW', 'KontaFinancAkt');
+        KONTO_invest_akt_str = regedit("regReadStr", 'DASH_CASH_FLOW', 'KontaInvestAkt');
+        regedit("regClose");
+    }else{
+        MessageBox("Datoteka " + iniFilename + " nije dostupna.");
+        quit;
+    }
 
     cbKontoPoslAkt = true;
     cbKontoFinancAkt = true;

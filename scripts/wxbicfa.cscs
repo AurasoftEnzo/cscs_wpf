@@ -172,6 +172,20 @@ function Wxbicfa_onDisplay()
     KONTO_invest_akt_str = regedit("regReadStr", 'DASH_CASH_FLOW', 'KontaInvestAkt');
     regedit("regClose");
 
+//MessageBox(KONTO_posl_akt_str+" "+iniFilename);
+    if (KONTO_posl_akt_str == "0")
+    {
+        KONTO_posl_akt_str = "'0'";
+    }
+    if (KONTO_financ_akt_str == "0")
+    {
+        KONTO_financ_akt_str = "'0'";
+    }
+    if (KONTO_invest_akt_str == "0")
+    {
+        KONTO_invest_akt_str = "'0'";
+    }
+
     cbKontoPoslAkt = true;
     cbKontoFinancAkt = true;
     cbKontoInvestAkt = true;
@@ -323,6 +337,7 @@ function takeAllKontoButton@clicked(){
     }
     sqlQueryString += " AND YEAR(kdib_gl_datum) = " + ovagod_h
     + " AND kdib_ln_iznos != 0";
+    SaveFile(sqlQueryString);
 
     try
     {
@@ -330,7 +345,7 @@ function takeAllKontoButton@clicked(){
     }
     catch(exc)
     {
-        MessageBox(exc);
+        MessageBox("A1: "+exc);
     }
 
     //MessageBox(sqlResult);

@@ -7247,10 +7247,10 @@ namespace WpfCSCS
 				var strValue = val.ToString();
 				if (dec > 0)
 				{ // add missing 0s after decimal point.
-					var decPt = strValue.Replace(",", ".").IndexOf(".");
+					var decPt = strValue.Replace(",", NumberFormatInfo.CurrentInfo.NumberDecimalSeparator).IndexOf(NumberFormatInfo.CurrentInfo.NumberDecimalSeparator);
 					if (decPt < 0)
 					{
-						strValue += "." + new string('0', dec);
+						strValue += NumberFormatInfo.CurrentInfo.NumberDecimalSeparator + new string('0', dec);
 					}
 					else
 					{ // 1.2
@@ -7261,7 +7261,7 @@ namespace WpfCSCS
 						}
 					}
 				}
-				if (strValue.Length > size || (dec > 0 && !Double.TryParse(strValue, System.Globalization.NumberStyles.AllowDecimalPoint, System.Globalization.CultureInfo.InvariantCulture, out val)))
+				if (strValue.Length > size || (dec > 0 && !Double.TryParse(strValue, out val)))
 				{
 					/* old code:
 					bool isNeg = strValue.StartsWith("-"); // -12.346 --> -2.35 (for size 5, dec 2)

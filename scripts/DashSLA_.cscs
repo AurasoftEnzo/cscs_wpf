@@ -628,7 +628,7 @@ function setChartByDaysOfMonth(){
     
 	if ( do_mjeseca == true )
     {
-    	sql_str = sql_str + " AND [wk_Month]< = '" + mjesec_h + "' AND wk_Year = '" + ovagod_h + "'";    
+    	sql_str = sql_str + " AND [wk_Month]<= '" + mjesec_h + "' AND wk_Year = '" + ovagod_h + "'";    
     }
 	else
 	{
@@ -836,10 +836,10 @@ function setWeekComparison(){
 	sql_str = sql_str + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprinv b ON a.[Wk_date] = b.nkpr_gl_datem AND nkpr_gl_invcd<> ''"; //ON a.[Wk_Week] = datepart(week , b.nkpr_gl_datem) ";
 	sql_str = sql_str + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprinvl c ON b.nkpr_gl_num = c.nkpr_ln_invnm";
 	//WHERE a.[Wk_Week]  =  datepart(week , b.nkpr_gl_invdte) AND nkpr_gl_invdte> = '" +  sqlDate(kpsy_fiscal_yr) + "')"
-	//sql_str =  sql_str +  " WHERE [wk_Week]> =  datepart(week , '" + sqlDate(danas) * "') - 1 AND wk_Week< =  datepart(week , '" + sqlDate(danas) * "') AND wk_ISOyear = " +  year(kpsy_fiscal_yr)
+	//sql_str =  sql_str +  " WHERE [wk_Week]> =  datepart(week , '" + sqlDate(danas) * "') - 1 AND wk_Week<=  datepart(week , '" + sqlDate(danas) * "') AND wk_ISOyear = " +  year(kpsy_fiscal_yr)
 	sql_str = sql_str + " WHERE wk_year = " + ovagod_h;
 	sql_str = sql_str + " AND nkpr_gl_datem> = '" + kpsy_fiscal_yr + "'";
-	sql_str = sql_str + " AND wk_Week< = datepart(week , '" + danas + "')";
+	sql_str = sql_str + " AND wk_Week<= datepart(week , '" + danas + "')";
 	
 	if ( partner != "" )
 	{
@@ -1191,7 +1191,7 @@ function setCustomerDataGrid(){
 		{
 			if ( do_mjeseca == true )
 			{
-				sql_str = sql_str + " AND month(nkpr_gl_datem)< = " + mjesec_h;
+				sql_str = sql_str + " AND month(nkpr_gl_datem)<= " + mjesec_h;
 				sql_str = sql_str + " AND YEAR(nkpr_gl_datem) = " + ovagod_h;
 			}
 			else 
@@ -1230,7 +1230,7 @@ function setCustomerDataGrid(){
 		{
 			if ( do_mjeseca == true )
 			{
-				sql_str = sql_str + " AND month(nkpr_gl_datem)< = " + mjesec_h;
+				sql_str = sql_str + " AND month(nkpr_gl_datem)<= " + mjesec_h;
 				sql_str = sql_str + " AND YEAR(nkpr_gl_datem) = " + ovagod_h;
 			}
 			else 
@@ -1277,7 +1277,7 @@ function setCustomerDataGrid(){
 		{
 			if ( do_mjeseca == true )
 			{
-				sql_str = sql_str + " AND month(nkpr_gl_datem)< = " + mjesec_h;
+				sql_str = sql_str + " AND month(nkpr_gl_datem)<= " + mjesec_h;
 				sql_str = sql_str + " AND YEAR(nkpr_gl_datem) = " + ovagod_h;
 			}
 			else 
@@ -1317,7 +1317,7 @@ function setCustomerDataGrid(){
 		{
 			if ( do_mjeseca == true )
 				{
-				sql_str = sql_str + " AND month(nkpr_gl_datem)< = " + mjesec_h;
+				sql_str = sql_str + " AND month(nkpr_gl_datem)<= " + mjesec_h;
 				sql_str = sql_str + " AND YEAR(nkpr_gl_datem) = " + ovagod_h;
 			}
 			else 
@@ -1359,7 +1359,7 @@ function setCustomerDataGrid(){
 		//
 		if ( do_mjeseca == true )
 		{
-			sql_str = sql_str + " AND month(c.nkpr_gl_datem)< = " + mjesec_h;
+			sql_str = sql_str + " AND month(c.nkpr_gl_datem)<= " + mjesec_h;
 			sql_str = sql_str + " AND YEAR(c.nkpr_gl_datem) = " + proslaGodina;
 		}
 		else 
@@ -1551,7 +1551,7 @@ function setTop10InvoicesDataGrid(){
 		{
 		if ( do_mjeseca == true )
 		{
-			sql_str =  sql_str +  " AND month(nkpr_gl_datem)< =  " + mjesec_h ;
+			sql_str =  sql_str +  " AND month(nkpr_gl_datem)<=  " + mjesec_h ;
 			sql_str =  sql_str +  " AND YEAR(nkpr_gl_datem) =  " + ovagod_h ;
 		}
 		else 
@@ -1889,7 +1889,7 @@ function setTop10Products(){
 		{
 			if ( do_mjeseca == true )
 			{
-				sql_str =  sql_str +  " AND month(nkpr_gl_datem)< =  " + mjesec_h ;
+				sql_str =  sql_str +  " AND month(nkpr_gl_datem)<=  " + mjesec_h ;
 				sql_str =  sql_str +  " AND YEAR(nkpr_gl_datem) =  " + ovagod_h ;
 			}
 			else 
@@ -1939,7 +1939,7 @@ function setTop10Products(){
 		{
 			if ( do_mjeseca == true )
 			{
-				sql_str =  sql_str +  " AND month(nkpr_gl_datem)< =  " + mjesec_h ;
+				sql_str =  sql_str +  " AND month(nkpr_gl_datem)<=  " + mjesec_h ;
 				sql_str =  sql_str +  " AND YEAR(nkpr_gl_datem) =  " + ovagod_h ;
 			}
 			else 
@@ -1992,7 +1992,7 @@ function setTop10Products(){
 			{
 			if ( do_mjeseca == true )
 			{
-				sql_str =  sql_str +  " AND month(nkpr_gl_datem)< =  " + mjesec_h ;
+				sql_str =  sql_str +  " AND month(nkpr_gl_datem)<=  " + mjesec_h ;
 				sql_str =  sql_str +  " AND YEAR(nkpr_gl_datem) =  " + ovagod_h ;
 			}
 			else 
@@ -2040,7 +2040,7 @@ function setTop10Products(){
 			{
 			if ( do_mjeseca == true )
 			{
-				sql_str =  sql_str +  " AND month(nkpr_gl_datem)< =  " + mjesec_h ;
+				sql_str =  sql_str +  " AND month(nkpr_gl_datem)<=  " + mjesec_h ;
 				sql_str =  sql_str +  " AND YEAR(nkpr_gl_datem) =  " + ovagod_h ;
 			}
 			else 
@@ -2095,7 +2095,7 @@ function setTop10Products(){
 		{
 			if ( do_mjeseca == true )
 				{
-				sql_str =  sql_str +  " AND month(c.nkpr_gl_datem)< =  " + mjesec_h ;
+				sql_str =  sql_str +  " AND month(c.nkpr_gl_datem)<=  " + mjesec_h ;
 				sql_str =  sql_str +  " AND YEAR(c.nkpr_gl_datem) =  " + proslaGodina ;
 			}
 			else 

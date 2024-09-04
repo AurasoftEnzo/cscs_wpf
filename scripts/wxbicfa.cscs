@@ -166,11 +166,15 @@ function Wxbicfa_onDisplay()
     }
     iniFilename = strtrim(sqlResult[1][0]) + ".ini";
     iniFilename = string(wpath()) + iniFilename;
-    regedit("regOpen", iniFilename, "rtFile");
-    KONTO_posl_akt_str = regedit("regReadStr", 'DASH_CASH_FLOW', 'KontaPoslAkt');
-    KONTO_financ_akt_str = regedit("regReadStr", 'DASH_CASH_FLOW', 'KontaFinancAkt');
-    KONTO_invest_akt_str = regedit("regReadStr", 'DASH_CASH_FLOW', 'KontaInvestAkt');
-    regedit("regClose");
+    if(regedit("regOpen", iniFilename, "rtFile")){
+        KONTO_posl_akt_str = regedit("regReadStr", 'DASH_CASH_FLOW', 'KontaPoslAkt');
+        KONTO_financ_akt_str = regedit("regReadStr", 'DASH_CASH_FLOW', 'KontaFinancAkt');
+        KONTO_invest_akt_str = regedit("regReadStr", 'DASH_CASH_FLOW', 'KontaInvestAkt');
+        regedit("regClose");
+    }else{
+        MessageBox("Datoteka " + iniFilename + " nije dostupna.");
+        quit;
+    }
 
     cbKontoPoslAkt = true;
     cbKontoFinancAkt = true;
@@ -186,7 +190,7 @@ function gbPripremi@clicked()
     + " FROM  " + trenutnaGodinaBaza + ".[dbo].[kpkdibgl] "
     + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[kpkdibln] ON kdib_gl_num = kdib_ln_num "
     + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkacct ON kdib_ln_konto = gk_ac_konto "
-    + " WHERE YEAR(kdib_gl_datem) = " + ovagod_h
+    + " WHERE YEAR(kdib_gl_datum) = " + ovagod_h
     + " AND kdib_ln_iznos != 0";
 
     try
@@ -200,7 +204,11 @@ function gbPripremi@clicked()
 
     kontoPoslZarez = (KONTO_posl_akt_str != "" ? "," : "");
     kontoFinancZarez = (KONTO_financ_akt_str != "" ? "," : "");
-    odabranaKonta = KONTO_posl_akt_str + kontoPoslZarez + KONTO_financ_akt_str + kontoFinancZarez + KONTO_invest_akt_str;
+    kontoInvestZarez = (KONTO_invest_akt_str != "" ? "," : "");
+    odabranaKonta = KONTO_posl_akt_str + kontoPoslZarez + KONTO_financ_akt_str + kontoFinancZarez + KONTO_invest_akt_str + kontoInvestZarez;
+    if(odabranaKonta != ""){
+        odabranaKonta = substring(odabranaKonta, 0, odabranaKonta.length - 1);
+    }
 
     listaOdabranihKonta = odabranaKonta.split(",");
     for(i = 0; i < size(listaOdabranihKonta); i++){
@@ -297,6 +305,48 @@ function saveKontoFilterButton@clicked(){
         MessageBox("Uspješno spremljeno.");
     }catch(exc){
         MessageBox(exc);
+    }
+}
+
+function takeAllKontoButton@clicked(){
+    kontoPoslZarez = (KONTO_posl_akt_str != "" ? "," : "");
+    kontoFinancZarez = (KONTO_financ_akt_str != "" ? "," : "");
+    kontoInvestZarez = (KONTO_invest_akt_str != "" ? "," : "");
+    odabranaKonta = KONTO_posl_akt_str + kontoPoslZarez + KONTO_financ_akt_str + kontoFinancZarez + KONTO_invest_akt_str + kontoInvestZarez;
+    if(odabranaKonta != ""){
+        odabranaKonta = substring(odabranaKonta, 0, odabranaKonta.length - 1);
+    }
+
+    sqlQueryString = " SELECT DISTINCT gk_ac_konto"
+    + " FROM  " + trenutnaGodinaBaza + ".[dbo].[kpkdibgl] "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[kpkdibln] ON kdib_gl_num = kdib_ln_num "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkacct ON kdib_ln_konto = gk_ac_konto "
+    + " WHERE 1 = 1";
+    if(odabranaKonta != ""){
+        sqlQueryString += " AND gk_ac_konto NOT IN (" + odabranaKonta + ")";
+    }
+    sqlQueryString += " AND YEAR(kdib_gl_datum) = " + ovagod_h
+    + " AND kdib_ln_iznos != 0";
+    //SaveFile(sqlQueryString);
+
+    try
+    {
+        sqlResult = sqlQuery(sqlQueryString);
+    }
+    catch(exc)
+    {
+        MessageBox("A1: "+exc);
+    }
+
+    //MessageBox(sqlResult);
+
+    kontoTempString = "";
+    for(i = 1; i < size(sqlResult); i++){
+        kontoTempString += "'" + strTrim(sqlResult[i][0]) + "',";
+    }
+    if(kontoTempString != ""){
+        kontoTempString = substring(kontoTempString, 0, kontoTempString.length - 1);
+        KONTO_posl_akt_str += kontoTempString;
     }
 }
 
@@ -640,14 +690,23 @@ function setHorizontalBars1(){
     //MessageBox("aaaa :"+100*tot_ovagod_priliv/(tot_ovagod_priliv + tot_ovagod_odliv));
     
     omjer = Math.round(100 * tot_ovagod_priliv / tot_ovagod_odliv - 100);
-    omjer = 120;
+    
+    omjer = Math.abs(omjer);
     if(omjer <= 100){
         GaugeChart("GaugeChartOmjerProdaje", "value", omjer, 18, 25, 100);
     }else{
         GaugeChart("GaugeChartOmjerProdaje", "value", omjer, 18, 25, omjer * 1.3);
     }
-    GaugeChart("GaugeChartOmjerProdaje", "color", "#118888");
-   
+    
+    if(tot_ovagod_priliv >= tot_ovagod_odliv){
+        SetWidgetOptions("labelPrilivOdliv", "text", "Priliv/Odliv(%)");
+        GaugeChart("GaugeChartOmjerProdaje", "color", "#118888");
+    }
+    else{
+        SetWidgetOptions("labelPrilivOdliv", "text", "Odliv/Priliv(%)");
+        GaugeChart("GaugeChartOmjerProdaje", "color", "red");
+    }
+
     // PieChart("PieChartOmjerProdaje", "init");
     // PieChart("PieChartOmjerProdaje", "seriesType", "pie");  
 	// PieChart("PieChartOmjerProdaje", "values", tot_ovagod_priliv , "Priliv");
@@ -852,7 +911,7 @@ function setWeekComparison()
 	//postotakTj = 0;	
 	
     RunOnMain("setWeekComparison1");
-    
+
 	//danas = "20" + substring(danas_h, 6, 2) + "-" + substring(danas_h, 3,2) + "-" + substring(danas_h, 0, 2);//("yyyy-MM-dd");
     danas = substring(danas_h, 6, 4) + "-" + substring(danas_h, 3,2) + "-" + substring(danas_h, 0, 2);//("yyyy-MM-dd");
     //MessageBox(danas_h);
@@ -860,12 +919,12 @@ function setWeekComparison()
 	sql_str = "SELECT TOP 2 CONVERT(char(10), wk_firstofWeek,103) as prviutjednu,";
     sql_str  += " Priliv = round(ISNULL(SUM(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END) , 0),0),Odliv = round(ISNULL(SUM(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END) , 0),0)";
 	sql_str  += " FROM " + CommonDBGet() +  ".dbo.Kalendar";
-	sql_str  += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibgl ON [Wk_date] = kdib_gl_datem "; //ON a.[Wk_Week] = datepart(week , b.nkpr_gl_datem) ";
+	sql_str  += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibgl ON [Wk_date] = kdib_gl_datum "; //ON a.[Wk_Week] = datepart(week , b.nkpr_gl_datum) ";
 	sql_str  += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
 	sql_str  += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
     sql_str  += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
     sql_str  += " WHERE kpsy_bnk_blag <> 'D' AND wk_year = " + ovagod_h;
-	sql_str  += " AND kdib_gl_datem >= '" + fiscal_yr + "'";
+	sql_str  += " AND kdib_gl_datum >= '" + fiscal_yr + "'";
     filterPart();
     if (partner!= ''){ sql_str += " AND kdib_ln_partner= '"+partner+"'";}
     if (domaca_dn  ){ sql_str += " AND nksc_drzava= '"+kpsy_po_freight+"'";}
@@ -1066,8 +1125,8 @@ function setPieCharts1(){
 
     //poslovne aktivnosti
     sql_str = "SELECT ";
-    sql_str += " sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END) AS Odliv, ";
-    sql_str += " sum(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END) AS Priliv ";
+    sql_str += " isnull(sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END), 0) AS Odliv, ";
+    sql_str += " isnull(sum(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END), 0) AS Priliv ";
     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl"; 
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
@@ -1082,8 +1141,13 @@ function setPieCharts1(){
 		sql_str += " AND month(kdib_gl_datum) = '" + mjesec_h + "'";
 	}
     filterPartPieCharts();
-    sql_str += " AND kdib_ln_konto IN (" + KONTO_posl_akt_str + ")";
-
+    if(KONTO_posl_akt_str != ""){
+        sql_str += " AND kdib_ln_konto IN (" + KONTO_posl_akt_str + ")";
+    }
+    else{
+        sql_str += " AND 1 <> 1";
+    }
+    
     try
     {
         //SaveFile(sql_str);
@@ -1094,14 +1158,15 @@ function setPieCharts1(){
         MessageBox(exc);
     }
 
+
     PieChart("PieChartPriliv", "values", queryResult[1][1], "Posl.", 0, 50);
     PieChart("PieChartOdliv", "values", queryResult[1][0], "Posl.", 0, 50);
 
 
     //financijske aktivnosti
     sql_str = "SELECT ";
-    sql_str += " sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END) AS Odliv, ";
-    sql_str += " sum(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END) AS Priliv ";
+    sql_str += " isnull(sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END), 0) AS Odliv, ";
+    sql_str += " isnull(sum(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END), 0) AS Priliv ";
     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl"; 
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
@@ -1116,7 +1181,12 @@ function setPieCharts1(){
 		sql_str += " AND month(kdib_gl_datum) = '" + mjesec_h + "'";
 	}
     filterPartPieCharts();
-    sql_str += " AND kdib_ln_konto IN (" + KONTO_financ_akt_str + ")";
+    if(KONTO_financ_akt_str != ""){
+        sql_str += " AND kdib_ln_konto IN (" + KONTO_financ_akt_str + ")";
+    }
+    else{
+        sql_str += " AND 1 <> 1";
+    }
 
     try
     {
@@ -1134,8 +1204,8 @@ function setPieCharts1(){
     
     //investicijske aktivnosti
     sql_str = "SELECT ";
-    sql_str += " sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END) AS Odliv, ";
-    sql_str += " sum(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END) AS Priliv ";
+    sql_str += " isnull(sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END), 0) AS Odliv, ";
+    sql_str += " isnull(sum(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END), 0) AS Priliv ";
     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl"; 
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
@@ -1150,7 +1220,12 @@ function setPieCharts1(){
 		sql_str += " AND month(kdib_gl_datum) = '" + mjesec_h + "'";
 	}
     filterPartPieCharts();
-    sql_str += " AND kdib_ln_konto IN (" + KONTO_invest_akt_str + ")";
+    if(KONTO_invest_akt_str != ""){
+        sql_str += " AND kdib_ln_konto IN (" + KONTO_invest_akt_str + ")";
+    }
+    else{
+        sql_str += " AND 1 <> 1";
+    }
 
     try
     {

@@ -312,7 +312,12 @@ namespace WpfCSCS
             }
             var funcName = Path.GetFileNameWithoutExtension(win.Tag.ToString()) + "_OnDisplay";
             Gui.RunScript(funcName, win, new Variable(win.Tag));
-            Instance.ContentRendered -= Win_ContentRendered;
+            //in case when we want to quit a script inside of a onDisplay event following code is necessary
+            if (Instance != null)
+            {
+                Instance.ContentRendered -= Win_ContentRendered;
+            }
+            
             if (Owner != null && Mode != MODE.NORMAL)
             {
                 try

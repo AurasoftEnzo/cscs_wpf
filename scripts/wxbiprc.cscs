@@ -142,6 +142,20 @@ function Wxbiprc_onDisplay()
     faktDa = false;
     faktNe = false;
 
+    sqlQueryString = " SELECT TOP 1 trim(sy_sp_vl_firma) FROM " + trenutnaGodinaBaza + ".[dbo].[kpsystem]";
+    try
+    {
+        sqlResult = sqlQuery(sqlQueryString);
+    }
+    catch(exc)
+    {
+        MessageBox(exc);
+    }
+    DEFINE vlFirma type a size 10;
+    if(Size(sqlResult) > 1){
+        vlFirma = sqlResult[1][0];
+    }
+
     pripremljeno = false;
     setFocus("gbPripremi");
     tip_racuna= "SVI TIPOVI";
@@ -268,6 +282,7 @@ function setCustomerAndInvoiceCounts()
             sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.nkscpart g ON nkpr_gl_cuscod = g.nksc_partcode";
         }
         sql_str += " WHERE 1=1"; //nkpr_gl_subtot > 0 AND nkpr_gl_oznaka= 'S'";
+        sql_str += " AND nkpr_gl_cuscod <> '" + vlFirma + "'";
         if ( mjesec_h != "")
         {
             if(do_mjeseca)
@@ -299,6 +314,7 @@ function setCustomerAndInvoiceCounts()
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart g ON nkpr_gl_cuscod= g.nksc_partcode";
     }
     sql_str += " WHERE 1=1"; //nkpr_gl_subtot> 0 AND nkpr_gl_oznaka= 'S'";
+    sql_str += " AND nkpr_gl_cuscod <> '" + vlFirma + "'";
     if(mjesec_h != "")
     {
         if(do_mjeseca)
@@ -331,6 +347,7 @@ function setCustomerAndInvoiceCounts()
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart g ON nkpr_gl_cuscod = g.nksc_partcode";
     }
     sql_str += " WHERE 1 = 1 ";
+    sql_str += " AND nkpr_gl_cuscod <> '" + vlFirma + "'";
     if(mjesec_h != "")
     {
         if(do_mjeseca)
@@ -701,6 +718,7 @@ function setCustomerAndInvoiceCounts4(){
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart g ON nkpr_gl_cuscod= g.nksc_partcode";
     }
     sql_str += " WHERE nkpr_gl_RTS='N'";
+    sql_str += " AND nkpr_gl_cuscod <> '" + vlFirma + "'";
     if(mjesec_h != "")
     {
         if(do_mjeseca)
@@ -981,6 +999,7 @@ function setWeekComparison()
 	//sql_str =  sql_str +  " WHERE [wk_Week]>=  datepart(week , '" + sqlDate(danas) * "') - 1 AND wk_Week<=  datepart(week , '" + sqlDate(danas) * "') AND wk_ISOyear = " +  year(kpsy_fiscal_yr)
     
 	sql_str  += " WHERE wk_year = " + ovagod_h;
+    sql_str += " AND nkpr_gl_cuscod <> '" + vlFirma + "'";
 	sql_str  += " AND nkpr_gl_esd >= '" + fiscal_yr + "'";
     filterPart();
     /*

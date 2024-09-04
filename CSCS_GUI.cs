@@ -4547,7 +4547,7 @@ namespace WpfCSCS
 			var option = Utils.GetSafeString(args, 1).ToLower();
 			var gui = CSCS_GUI.GetInstance(script);
 			FrameworkElement widget = gui.GetWidget(widgetName);
-			var parameter = Utils.GetSafeString(args, 2).ToLower();
+			var parameter = Utils.GetSafeString(args, 2);
 			var prop_mapped = WidgetPropertyMap // try mapped
 			.OrderBy(a => a.Item1 == "*" ? 1 : 0)  // first the non *'s
 			.Where(a => (a.Item1.ToLower() == widget.GetType().Name.ToLower() || a.Item1.ToLower() == "*") && a.Item2.ToLower() == option) // overrides or *'s
@@ -7247,10 +7247,10 @@ namespace WpfCSCS
 				var strValue = val.ToString();
 				if (dec > 0)
 				{ // add missing 0s after decimal point.
-					var decPt = strValue.Replace(",", ".").IndexOf(".");
+					var decPt = strValue.Replace(",", NumberFormatInfo.CurrentInfo.NumberDecimalSeparator).IndexOf(NumberFormatInfo.CurrentInfo.NumberDecimalSeparator);
 					if (decPt < 0)
 					{
-						strValue += "." + new string('0', dec);
+						strValue += NumberFormatInfo.CurrentInfo.NumberDecimalSeparator + new string('0', dec);
 					}
 					else
 					{ // 1.2

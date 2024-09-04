@@ -93,7 +93,7 @@ function setLast10InvoicesDataGrid()
 	sql_str +=  " WHERE YEAR(nkpr_gl_esd) =  " + ovagod_h  ;
 	if ( do_mjeseca)
 	{
-		sql_str +=  " AND month(nkpr_gl_esd)< =  " + mjesec_h  ;
+		sql_str +=  " AND month(nkpr_gl_esd)<=  " + mjesec_h  ;
 	}
 	else 
 	{
@@ -151,7 +151,7 @@ function setTop10InvoicesDataGrid()
 		{
 		if (do_mjeseca)
 		{
-			sql_str += " AND month(nkpr_gl_esd)< =  " + mjesec_h ;
+			sql_str += " AND month(nkpr_gl_esd)<=  " + mjesec_h ;
 			sql_str += " AND YEAR(nkpr_gl_esd) =  " + ovagod_h ;
 		}
 		else 
@@ -230,6 +230,7 @@ function setChartByDaysOfMonth()
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart g ON c.nkpr_gl_cuscod = g.nksc_partcode";
     }
     sql_str += " WHERE 1 = 1";
+    sql_str += " AND nkpr_gl_cuscod <> '" + vlFirma + "'";
     if (do_mjeseca)
     {
         sql_str += " AND MONTH(nkpr_gl_esd) <= '" + mjesec_h + "' AND YEAR(nkpr_gl_esd) = '" + ovagod_h + "'";
@@ -316,6 +317,7 @@ function setChartByMonth()
         sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.nkprlnot ON nkpr_gl_brotp = nkpr_ln_invnm";
         sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.nkmkarti ON nkpr_ln_pcode= arti_artikl";
         sql_str += " WHERE 1 = 1 AND year(nkpr_gl_esd) = " + lani_h; //BETWEEN '"+sqlDate(od_danaLG)+"' AND '"+sqlDate(do_danaLG)+"'"  ";
+        sql_str += " AND nkpr_gl_cuscod <> '" + vlFirma + "'";
         filterPart();
         sql_str += " GROUP BY CONVERT(varchar(6),nkpr_gl_esd,112)";
         sql_str += " ORDER BY CONVERT(varchar(6),nkpr_gl_esd,112);";
@@ -375,6 +377,7 @@ function setChartByMonth()
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprlnot ON nkpr_gl_brotp = nkpr_ln_invnm";
     sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkmkarti ON nkpr_ln_pcode= arti_artikl";
     sql_str += " WHERE 1 = 1 AND year(nkpr_gl_esd) = " + ovagod_h; //BETWEEN '"+sqlDate(od_danaLG)+"' AND '"+sqlDate(do_danaLG)+"'"  ";
+    sql_str += " AND nkpr_gl_cuscod <> '" + vlFirma + "'";
     filterPart();
     sql_str += " GROUP BY CONVERT(varchar(6),nkpr_gl_esd,112)";
     sql_str += " ORDER BY CONVERT(varchar(6),nkpr_gl_esd,112);";
@@ -540,9 +543,10 @@ function setLast10InvoicesDataGrid()
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprlnot ON nkpr_gl_brotp = nkpr_ln_invnm";
     sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkmkarti ON nkpr_ln_pcode= arti_artikl";
 	sql_str += " WHERE YEAR(nkpr_gl_esd) =  " + ovagod_h  ;
+    sql_str += " AND nkpr_gl_cuscod <> '" + vlFirma + "'";
 	if (do_mjeseca)
 	{
-		sql_str +=" AND month(nkpr_gl_esd)< =  " + mjesec_h  ;
+		sql_str +=" AND month(nkpr_gl_esd)<=  " + mjesec_h  ;
 	}
 	else 
 	{
@@ -596,7 +600,7 @@ function setTop10InvoicesDataGrid()
 		{
 		if (do_mjeseca)
 		{
-			sql_str += " AND month(nkpr_gl_esd)< =  " + mjesec_h ;
+			sql_str += " AND month(nkpr_gl_esd)<=  " + mjesec_h ;
 			sql_str += " AND YEAR(nkpr_gl_esd) =  " + ovagod_h ;
 		}
 		else 
@@ -652,9 +656,10 @@ function setTop10InvoicesDataGrid()
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprlnot ON nkpr_gl_brotp = nkpr_ln_invnm";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkmkarti ON nkpr_ln_pcode= arti_artikl";
 	sql_str += " WHERE YEAR(nkpr_gl_esd) =  " + ovagod_h  ;
+    sql_str += " AND nkpr_gl_cuscod <> '" + vlFirma + "'";
 	if (do_mjeseca)
 	{
-		sql_str +=" AND month(nkpr_gl_esd)< =  " + mjesec_h  ;
+		sql_str +=" AND month(nkpr_gl_esd)<=  " + mjesec_h  ;
 	}
 	else 
 	{

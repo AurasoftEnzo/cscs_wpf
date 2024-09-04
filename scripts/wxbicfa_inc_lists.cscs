@@ -129,7 +129,8 @@
 	define t10Cntrz_ar type i size 2 array 10;
 	define t10Datumz_ar type d size 8 array 10;
 	define t10Timez_ar type t size 8 array 10;
-	define t10Racunz_ar type r size 8 array 10;
+	define T10DATUMDOKZ_AR type d size 8 array 10;
+    define t10Racunz_ar type r size 8 array 10;
  	define T10Cntrz type i;
 	define t10DatRac type l;
 
@@ -267,7 +268,7 @@ function ceBanka@clicked()
     + " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl "
     + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code"
     + " WHERE kpsy_bnk_ime LIKE '%{var2}%' AND kpsy_bnk_ime <> '' AND kpsy_bnk_code <> '' AND kpsy_bnk_blag <> 'D'"
-    + " AND YEAR(kdib_gl_datem) = " + ovagod_h
+    + " AND YEAR(kdib_gl_datum) = " + ovagod_h
     + ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY kpsy_bnk_code ASC) AS RowNumber, kpsy_bnk_code, kpsy_bnk_ime"
     + " FROM banke ORDER BY RowNumber";
@@ -296,7 +297,6 @@ function ceBanka@clicked()
 
 function ShowF2ListSvaKonta(){
 
-
     F2ListQueryString = "WITH konta AS("
     + " SELECT DISTINCT gk_ac_konto, gk_ac_opis, CASE WHEN kdib_ln_dp= 'D' THEN 'Odliv' ELSE 'Priliv' END as Trans"
     + " FROM  " + trenutnaGodinaBaza + ".[dbo].[kpkdibgl] "
@@ -308,7 +308,7 @@ function ShowF2ListSvaKonta(){
         F2ListQueryString += " AND gk_ac_konto NOT IN (" + KONTO_str + ")";
     }
     
-    F2ListQueryString += " AND YEAR(kdib_gl_datem) = " + ovagod_h
+    F2ListQueryString += " AND YEAR(kdib_gl_datum) = " + ovagod_h
     + " AND kdib_ln_iznos != 0"
     + ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY gk_ac_konto ASC) AS RowNumber, gk_ac_konto, gk_ac_opis, Trans"
@@ -330,16 +330,22 @@ function ShowF2ListPreostalaKonta(){
 
     kontoPoslZarez = (KONTO_posl_akt_str != "" ? "," : "");
     kontoFinancZarez = (KONTO_financ_akt_str != "" ? "," : "");
-    odabranaKonta = KONTO_posl_akt_str + kontoPoslZarez + KONTO_financ_akt_str + kontoFinancZarez + KONTO_invest_akt_str;
-    
+    kontoInvestZarez = (KONTO_invest_akt_str != "" ? "," : "");
+    odabranaKonta = KONTO_posl_akt_str + kontoPoslZarez + KONTO_financ_akt_str + kontoFinancZarez + KONTO_invest_akt_str + kontoInvestZarez;
+    if(odabranaKonta != ""){
+        odabranaKonta = substring(odabranaKonta, 0, odabranaKonta.length - 1);
+    }
+
     F2ListQueryString = "WITH konta AS("
     + " SELECT DISTINCT gk_ac_konto, gk_ac_opis, CASE WHEN kdib_ln_dp= 'D' THEN 'Odliv' ELSE 'Priliv' END as Trans"
     + " FROM  " + trenutnaGodinaBaza + ".[dbo].[kpkdibgl] "
     + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[kpkdibln] ON kdib_gl_num = kdib_ln_num "
     + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkacct ON kdib_ln_konto = gk_ac_konto "
-    + " WHERE gk_ac_konto like '{var1}%' AND gk_ac_opis like '%{var2}%'"
-    + " AND gk_ac_konto NOT IN (" + odabranaKonta + ")"
-    + " AND YEAR(kdib_gl_datem) = " + ovagod_h
+    + " WHERE gk_ac_konto like '{var1}%' AND gk_ac_opis like '%{var2}%'";
+    if(odabranaKonta != ""){
+        F2ListQueryString += " AND gk_ac_konto NOT IN (" + odabranaKonta + ")";
+    }
+    F2ListQueryString += " AND YEAR(kdib_gl_datum) = " + ovagod_h
     + " AND kdib_ln_iznos != 0"
     + ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY gk_ac_konto ASC) AS RowNumber, gk_ac_konto, gk_ac_opis, Trans"
@@ -430,7 +436,7 @@ function ceKontoInvestAkt@clicked()
 
 function cePartner@clicked()
 {
-    //F2ListQueryString = "SELECT distinct kdib_ln_partner, [NKSC_PARTNAME], CASE WHEN nksc_cust_vend= 'K' THEN 'Kupac' WHEN nksc_cust_vend= 'D' THEN 'Dobavljač' ELSE 'Kup/Dob' END as PartnerTip FROM  " + trenutnaGodinaBaza + ".[dbo].[kpkdibln] LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].nkscpart on kdib_ln_partner = nksc_partcode LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].kpkdibgl ON kdib_gl_num = kdib_ln_num WHERE NKSC_PARTCODE like '%{var1}%' and NKSC_PARTNAME like '%{var2}%' AND YEAR(kdib_gl_datem) = " + ovagod_h + " ORDER BY kdib_ln_partner";
+    //F2ListQueryString = "SELECT distinct kdib_ln_partner, [NKSC_PARTNAME], CASE WHEN nksc_cust_vend= 'K' THEN 'Kupac' WHEN nksc_cust_vend= 'D' THEN 'Dobavljač' ELSE 'Kup/Dob' END as PartnerTip FROM  " + trenutnaGodinaBaza + ".[dbo].[kpkdibln] LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].nkscpart on kdib_ln_partner = nksc_partcode LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].kpkdibgl ON kdib_gl_num = kdib_ln_num WHERE NKSC_PARTCODE like '%{var1}%' and NKSC_PARTNAME like '%{var2}%' AND YEAR(kdib_gl_datum) = " + ovagod_h + " ORDER BY kdib_ln_partner";
 
     F2ListQueryString = "WITH partneri AS("
     + " SELECT DISTINCT kdib_ln_partner, nksc_partname, CASE WHEN nksc_cust_vend= 'K' THEN 'Kupac' WHEN nksc_cust_vend= 'D' THEN 'Dobavljač' ELSE 'Kup/Dob' END as PartnerTip "
@@ -438,7 +444,7 @@ function cePartner@clicked()
     + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].nkscpart on kdib_ln_partner = nksc_partcode"
     + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].kpkdibgl ON kdib_gl_num = kdib_ln_num"
     + " WHERE nksc_partcode LIKE '%{var1}%' AND nksc_partname LIKE '%{var2}%'"
-    + " AND YEAR(kdib_gl_datem) = " + ovagod_h
+    + " AND YEAR(kdib_gl_datum) = " + ovagod_h
     + ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY kdib_ln_partner ASC) AS RowNumber, kdib_ln_partner, nksc_partname, PartnerTip"
     + " FROM partneri ORDER BY RowNumber";
@@ -493,14 +499,14 @@ function cePartner@post()
 
 function ceIzvadak@clicked()
 {
-    //F2ListQueryString = "SELECT kdib_gl_num, CONCAT(kdib_gl_datem, '   ', kpsy_bnk_ime), kdib_gl_banka FROM " + trenutnaGodinaBaza + ".[dbo].kpkdibgl left join " + trenutnaGodinaBaza + ".[dbo].kpsybank ON kdib_gl_banka = kpsy_bnk_code where kpsy_bnk_ime like '%{var2}%' AND kdib_gl_num like '{var1}%'";
+    //F2ListQueryString = "SELECT kdib_gl_num, CONCAT(kdib_gl_datum, '   ', kpsy_bnk_ime), kdib_gl_banka FROM " + trenutnaGodinaBaza + ".[dbo].kpkdibgl left join " + trenutnaGodinaBaza + ".[dbo].kpsybank ON kdib_gl_banka = kpsy_bnk_code where kpsy_bnk_ime like '%{var2}%' AND kdib_gl_num like '{var1}%'";
     
     F2ListQueryString = "WITH izvatci AS("
-    + " SELECT DISTINCT kdib_gl_num, CONCAT(kdib_gl_datem, '   ', kpsy_bnk_ime) as datBank, kdib_gl_banka "
+    + " SELECT DISTINCT kdib_gl_num, CONCAT(kdib_gl_datum, '   ', kpsy_bnk_ime) as datBank, kdib_gl_banka "
     + " FROM " + trenutnaGodinaBaza + ".[dbo].kpkdibgl"
     + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].kpsybank ON kdib_gl_banka = kpsy_bnk_code"
     + " WHERE kpsy_bnk_blag <> 'D' AND kdib_gl_num LIKE '{var1}%' AND kpsy_bnk_ime LIKE '%{var2}%'"
-    + " AND YEAR(kdib_gl_datem) = " + ovagod_h
+    + " AND YEAR(kdib_gl_datum) = " + ovagod_h
     + ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY kdib_gl_num ASC) AS RowNumber, kdib_gl_num, datBank, kdib_gl_banka"
     + " FROM izvatci ORDER BY RowNumber";
@@ -533,7 +539,7 @@ function ceIzvadak@post()
     }
     else{
         sqlResult = {};
-        sqlString = "SELECT TOP 1 CONCAT(kdib_gl_datem, ' ', kpsy_bnk_ime) FROM " + trenutnaGodinaBaza + ".[dbo].kpkdibgl left join " + trenutnaGodinaBaza + ".[dbo].kpsybank ON kdib_gl_banka = kpsy_bnk_code where kdib_gl_num = '" + Izvadak + "' ORDER BY kdib_gl_num";
+        sqlString = "SELECT TOP 1 CONCAT(kdib_gl_datum, ' ', kpsy_bnk_ime) FROM " + trenutnaGodinaBaza + ".[dbo].kpkdibgl left join " + trenutnaGodinaBaza + ".[dbo].kpsybank ON kdib_gl_banka = kpsy_bnk_code where kdib_gl_num = '" + Izvadak + "' ORDER BY kdib_gl_num";
         //sqlString = "SELECT TOP 1 [KSDU_SF_OPIS1] FROM  " + trenutnaGodinaBaza + ".[dbo].[KPSYSIFA] WHERE [KSDU_SF_TIP] ='V' and KSDU_SF_CODE = '" + regija + "' ORDER BY ksdu_sf_code";
         try{
             sqlResult = SqlQuery(sqlString);

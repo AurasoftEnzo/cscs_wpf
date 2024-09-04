@@ -583,7 +583,7 @@
                 <Label x:Name="label_Copy2" Content="Priliv" Margin="40,3,0,0" FontFamily="Lato" FontSize="22" FontWeight="Bold" HorizontalAlignment="Left" Width="76" Height="36" VerticalAlignment="Top" Grid.Column="2"/>
                 <Label x:Name="label_Copy3" Content="Odliv" Margin="220,3,0,0" FontFamily="Lato" FontSize="22" FontWeight="Bold" HorizontalAlignment="Left" Width="76" Height="36" VerticalAlignment="Top" Grid.Column="2"/>
                 <Label x:Name="label_Copy4" Content="/aktivnosti/" Margin="96,3,0,0" FontFamily="Lato" FontSize="22" FontWeight="Bold" HorizontalAlignment="Left" Width="135" Height="36" VerticalAlignment="Top" Grid.Column="2"/>
-                <Label x:Name="label_Copy5" Content="Priliv/Odliv" Margin="202,5,0,0" FontFamily="Lato" FontSize="22" FontWeight="Bold" HorizontalAlignment="Left" Width="135" Height="36" VerticalAlignment="Top" Grid.Column="1"/>
+                <Label x:Name="labelPrilivOdliv" Content="Priliv/Odliv(%)" Margin="192,5,0,0" FontFamily="Lato" FontSize="22" FontWeight="Bold" HorizontalAlignment="Left" Width="165" Height="36" VerticalAlignment="Top" Grid.Column="1" Grid.ColumnSpan="2"/>
 
             </Grid>
             <Button x:Name="gbPriliv1" Content="Priliv I" Style="{StaticResource FlatButtonStyle}" Grid.Row="1" Margin="0,15,0,0"  HorizontalAlignment="Center" VerticalAlignment="Top" Width="140" Height="63" Background="#FF69A627" FontFamily="Lato" FontSize="20" Foreground="#FFFBFBFB" BorderBrush="{x:Null}" TabIndex="32"/>
@@ -768,8 +768,8 @@
             </GroupBox>
             <CheckBox HorizontalAlignment="Left"
     Width="18" Content=""
-    x:Name="cbKontoPoslAkt"
-    DataContext="cbKontoPoslAkt"
+    x:Name="cbKontoFinancAkt"
+    DataContext="cbKontoFinancAkt"
     Foreground="Black"
                       IsTabStop="True"
     Margin="10,72,0,131" TabIndex="3" Grid.Column="1" />
@@ -949,7 +949,7 @@
                 x:Name="Label11_Copy"
                 FontSize="14"
                 Foreground="Black"
-                Height="17" ><Run Language="hr-hr" Text="K"/><Run Text="onta za poslovne aktivnosti"/></TextBlock>
+                Height="17" ><Run Language="hr-hr" Text="K"/><Run Text="onta za financijske aktivnosti"/></TextBlock>
             <wcl:ASEnterBox Grid.Column="1" HorizontalAlignment="Left"
                 VerticalAlignment="Top"
                 FontWeight="Bold"
@@ -957,11 +957,11 @@
                 Height="22"
                 Width="367"
                 Margin="30,68,0,0"
-                x:Name="ceKontoPoslAkt"
+                x:Name="ceKontoFinancAkt"
                 Background="White"
                 Foreground="black"
-                KeyTraps="F2|ceKontoPoslAkt@clicked"
-                FieldName="KONTO_posl_akt_str"
+                KeyTraps="F2|ceKontoFinancAkt@clicked"
+                FieldName="KONTO_financ_akt_str"
                 FontFamily="lato"
                 FontSize="14"
                 TabIndex="4"
@@ -970,8 +970,8 @@
             <CheckBox HorizontalAlignment="Left"
                 Width="18"
                       Content=""
-                x:Name="cbKontoFinancAkt"
-                DataContext="cbKontoFinancAkt"
+                x:Name="cbKontoInvestAkt"
+                DataContext="cbKontoInvestAkt"
                 Foreground="Black"
                 Margin="10,111,0,92" TabIndex="5" Grid.Column="1" />
             <TextBlock Grid.Column="1" HorizontalAlignment="Left"
@@ -983,7 +983,7 @@
                 x:Name="Label11_Copy1"
                 FontSize="14"
                 Foreground="Black"
-                Height="17" ><Run Text="K"/><Run Text="onta za "/><Run Language="hr-hr" Text="financijske"/><Run Text=" aktivnosti"/></TextBlock>
+                Height="17" ><Run Text="K"/><Run Text="onta za "/><Run Language="hr-hr" Text="investicijske"/><Run Text=" aktivnosti"/></TextBlock>
             <wcl:ASEnterBox Grid.Column="1" HorizontalAlignment="Left"
                 VerticalAlignment="Top"
                 FontWeight="Bold"
@@ -991,11 +991,11 @@
                 Height="22"
                 Width="367"
                 Margin="30,107,0,0"
-                x:Name="ceKontoFinancAkt"
+                x:Name="ceKontoInvestAkt"
                 Background="White"
                 Foreground="black"
-                KeyTraps="F2|ceKontoFinancAkt@clicked"
-                FieldName="KONTO_financ_akt_str"
+                KeyTraps="F2|ceKontoInvestAkt@clicked"
+                FieldName="KONTO_invest_akt_str"
                 FontFamily="lato"
                 FontSize="14"
                 TabIndex="6"
@@ -1004,8 +1004,8 @@
             <CheckBox HorizontalAlignment="Left"
                 Width="18"
                       Content=""
-                x:Name="cbKontoInvestAkt"
-                DataContext="cbKontoInvestAkt"
+                x:Name="cbKontoPoslAkt"
+                DataContext="cbKontoPoslAkt"
                 Foreground="Black"
                 Margin="10,148,0,55" TabIndex="7" Grid.Column="1" />
             <TextBlock Grid.Column="1" HorizontalAlignment="Left"
@@ -1017,7 +1017,7 @@
                 x:Name="Label11_Copy2"
                 FontSize="14"
                 Foreground="Black"
-                Height="17" ><Run Text="K"/><Run Text="onta za "/><Run Text="in"/><Run Language="hr-hr" Text="v"/><Run Text="esticijske"/><Run Text=" aktivnosti"/></TextBlock>
+                Height="17" ><Run Text="K"/><Run Text="onta za "/><Run Language="hr-hr" Text="poslovne"/><Run Text=" aktivnosti"/></TextBlock>
             <wcl:ASEnterBox Grid.Column="1" HorizontalAlignment="Left"
                 VerticalAlignment="Top"
                 FontWeight="Bold"
@@ -1025,20 +1025,20 @@
                 Height="22"
                 Width="367"
                 Margin="30,145,0,0"
-                x:Name="ceKontoInvestAkt"
+                x:Name="ceKontoPoslAkt"
                 Background="White"
                 Foreground="black"
-                KeyTraps="F2|ceKontoInvestAkt@clicked"
-                FieldName="KONTO_invest_akt_str"
+                KeyTraps="F2|ceKontoPoslAkt@clicked"
+                FieldName="KONTO_posl_akt_str"
                 FontFamily="lato"
                 FontSize="14"
                 TabIndex="8"
                 ButtonBackground="Orange" BorderBrush="#FFFFFDFF"
                 IsTabStop="True"/>
             <Button Grid.Column="1"
-                VerticalAlignment="Top"
+                VerticalAlignment="Center"
                 Height="39"
-                Margin="0,129,510,0"
+                Margin="405,0,0,0"
                 FontFamily="lato"
                 Visibility="Visible"
                 BorderBrush="Transparent"
@@ -1047,7 +1047,7 @@
                 x:Name="saveKontoFilterButton"
                 Background="CornflowerBlue"
                 
-                HorizontalAlignment="Right"
+                HorizontalAlignment="Left"
                 Width="125"
                     TabIndex="9">
                 <Button.Resources>
@@ -1069,6 +1069,35 @@
                 Margin="630,36,130,0" Grid.Column="1" Grid.Row="1" Height="127" VerticalAlignment="Top" />
             <lvc:PieChart x:Name="PieChartOdliv"
                 Margin="820,36,-25,0" Grid.Column="1" Grid.Row="1" Height="127" VerticalAlignment="Top" />
+            <Button Grid.Column="1"
+                VerticalAlignment="Top"
+                Height="23"
+                Margin="405,145,0,0"
+                FontFamily="lato"
+                Visibility="Visible"
+                BorderBrush="Transparent"
+                BorderThickness="0"
+                Padding="-8"
+                x:Name="takeAllKontoButton"
+                Background="IndianRed"
+                
+                HorizontalAlignment="Left"
+                Width="125"
+                TabIndex="9">
+                <Button.Resources>
+                    <Style TargetType="{x:Type Border}">
+                        <Setter Property="CornerRadius"
+                            Value="6" />
+                    </Style>
+                </Button.Resources>
+                <Grid Grid.Column="1">
+                    <TextBlock FontSize="18"
+                        Foreground="#FFFDFDFD"
+                        VerticalAlignment="Center"
+                        Text="Uzmi sve"
+                        HorizontalAlignment="Center" />
+                </Grid>
+            </Button>
             <!-- <wcl:ASNumericBox HorizontalAlignment="Left"
             VerticalAlignment="Top"
             FontWeight="Bold"

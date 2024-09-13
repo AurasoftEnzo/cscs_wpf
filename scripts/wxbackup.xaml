@@ -1,0 +1,97 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:wcl="clr-namespace:WpfControlsLibrary;assembly=WpfControlsLibrary"
+        xmlns:local="clr-namespace:WpfCSCS"
+        mc:Ignorable="d"
+        Title="Arhiviranje baza podataka"
+        Height="600"
+        Width="800"
+        ResizeMode="NoResize">
+    <Grid>
+
+        <DataGrid GridLinesVisibility="Horizontal"
+          HorizontalGridLinesBrush="#FFD7D6D6"
+          Background="White"
+          Margin="20,14,20,215"
+          IsReadOnly="true"
+        RowHeight="22"
+          FontSize="15"
+          x:Name="datagridDatabases"
+          HorizontalScrollBarVisibility="Auto"
+          VerticalScrollBarVisibility="Auto"
+          TabIndex="4" 
+                  BorderBrush="DarkGray"
+                  BorderThickness="1">
+            <DataGrid.Resources>
+                <Style TargetType="{x:Type DataGridColumnHeader}">
+                    <Setter Property="Background"
+                    Value="#FF006393" />
+                    <Setter Property="Foreground"
+                    Value="White" />
+                    <Setter Property="FontSize" Value="17"/>
+
+                    <Setter Property="BorderBrush" Value="White"/>
+                    <Setter Property="BorderThickness" Value="1"/>
+                </Style>
+            </DataGrid.Resources>
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Header="No."
+                                Width="50">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <wcl:ASGridCell FieldName="arrayRbr" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Naziv firme"
+                                Width="150">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <wcl:ASGridCell FieldName="arrayNazivFirme" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Poslovna godina"
+                                Width="180">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <wcl:ASGridCell FieldName="arrayPoslovnaGodina"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Naziv baze"
+                                Width="150">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <wcl:ASGridCell FieldName="arrayNazivBaze" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <Label Content="Lokacija za arhivu:" FontSize="20" Height="50" Width="175" Margin="20,384,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+
+        <TextBox IsReadOnly="True" Name="TextBoxBackupLocation" DataContext="FinalBackupPath" VerticalContentAlignment="Center" FontSize="20" Height="50" Width="400" Margin="190,379,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+
+        <Button
+            Content="Odaberi"
+                Name="btnSelectBackupLocation"
+                FontSize="20"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top" 
+            Margin="595,379,0,0" 
+            Width="170" Height="50"/>
+        
+        <Button
+                Name="btnPokreni"
+                FontSize="35"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top" Margin="310,439,0,0" Width="190" Height="105" >
+            <TextBlock TextWrapping="Wrap"><Run Language="hr-hr" Text="  "/><Run Text="Pokreni arhiviranje"/></TextBlock>
+        </Button>
+    </Grid>
+</Window>

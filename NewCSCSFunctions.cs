@@ -11,7 +11,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
+//using System.Windows.Forms;
 using System.Windows.Media;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
 namespace WpfCSCS
 {
@@ -29,6 +31,8 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.MAP_SETUP, new MapFunction(MapFunctionOption.Setup));
             interpreter.RegisterFunction(Constants.MAP_ADD_POINT, new MapFunction(MapFunctionOption.AddItem));
             
+            interpreter.RegisterFunction(Constants.GET_PATH, new GetPathFunction());
+            
         }
         public partial class Constants
         {
@@ -36,6 +40,8 @@ namespace WpfCSCS
 
             public const string MAP_SETUP = "MapSetup";
             public const string MAP_ADD_POINT = "MapAddPoint";
+            
+            public const string GET_PATH = "GetPath";
         }
     }
 
@@ -457,4 +463,32 @@ namespace WpfCSCS
         }
     }
 
+    class GetPathFunction : ParserFunction
+    {
+
+        protected override Variable Evaluate(ParsingScript script)
+        {
+
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 2, m_name);
+
+            var gui = CSCS_GUI.GetInstance(script);
+
+            var defaultPath = Utils.GetSafeString(args, 0);
+            var dialogCaption = Utils.GetSafeString(args, 1);
+
+            using (var fbd = new System.Windows.Forms.FolderBrowserDialog())
+            {
+                fbd.Description = dialogCaption;
+                fbd.SelectedPath = defaultPath;
+                if (fbd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    return new Variable(fbd.SelectedPath);
+                }
+                else{
+                    return new Variable("");
+                }
+            }
+        }
+    }
 }

@@ -1,0 +1,139 @@
+CreateWindow(strTrim(tpath()) + "wxbackup.xaml");
+
+DEFINE arrayRbr type i size 3 array 100;
+DEFINE arrayNazivFirme type a size 255 array 100;
+DEFINE arrayPoslovnaGodina type a size 10 array 100;
+DEFINE arrayNazivBaze type a size 255 array 100;
+
+DEFINE cntr1 type i size 10;
+DEFINE actElem1 type i size 10;
+DEFINE cntr1 type i size 10;
+DEFINE cntr1 type i size 10;
+
+DEFINE winxIniPath type a size 255;
+
+DEFINE dialogResult type a size 255;
+
+DEFINE BackupPath type a size 255;
+DEFINE BackupFilenames type a size 255 array 100;
+
+DEFINE FinalBackupPath type a size 255;
+DEFINE destination type a size 255;
+
+DEFINE backupDateShort type a size 6;
+DEFINE backupTimeShort type a size 6;
+DEFINE backupDateSQL type a size 10;
+DEFINE backupTimeSQL type a size 8;
+
+function wxbackup_onDisplay()
+{
+    cursor("wait");
+
+    getDatabaseNames();
+
+    DisplayArray("datagridDatabases", "close");
+    DisplayArraySetup("datagridDatabases", counterFld: cntr1, activeElements: actElem1, maxElements: 100);
+
+    winxIniPath = strtrim(wpath()) + "winx.ini";
+
+    if(regedit("regOpen", winxIniPath, "rtFile")){
+        FinalBackupPath = regedit("regReadStr", 'BACKUP', 'LocalBackupPath');
+        regedit("regClose");
+    }else{
+        MessageBox("Datoteka " + winxIniPath + " nije dostupna.");
+        quit;
+    }
+
+    cursor("dflt");
+}
+
+function getDatabaseNames(){
+    sqlQueryString = "SELECT [SY_CC_USER], [SY_CC_YEAR], [SY_CC_DBASE]" +
+        " FROM " + CommonDBGet() + ".[dbo].[NKSYCCYR]" +
+        " WHERE SY_CC_REZ1 = 'D'";
+    try
+    {
+        sqlResult = sqlQuery(sqlQueryString);
+
+        for(i = 1; i < size(sqlResult); i++){
+            arrayRbr[i - 1] = i;
+            arrayNazivFirme[i - 1] = strtrim(sqlResult[i][0]);
+            arrayPoslovnaGodina[i - 1] = strtrim(string(sqlResult[i][1]));
+            arrayNazivBaze[i - 1] = strtrim(sqlResult[i][2]);
+        }
+
+        actElem1 = Size(sqlResult) - 1;
+    }
+    catch(exc)
+    {
+        MessageBox(exc);
+        quit;
+    }
+}
+
+function btnSelectBackupLocation@clicked(){
+    if(FinalBackupPath == ""){
+        dialogResult = getPath(wpath(), "Odaberite direktorij za arhivu");
+    }
+    else{
+        dialogResult = getPath(FinalBackupPath, "Odaberite direktorij za arhivu");
+    }
+
+    if(dialogResult != ""){
+        FinalBackupPath = dialogResult;
+    }
+}
+
+
+function btnPokreni@clicked()
+{
+    cursor("wait");
+
+    if(regedit("regOpen", winxIniPath, "rtFile")){
+        BackupPath = regedit("regReadStr", 'BACKUP', 'BackupPath');;
+        regedit("regClose");
+    }else{
+        MessageBox("Datoteka " + winxIniPath + " nije dostupna.");
+        quit;
+    }
+    
+    for(i = 0; i < actElem1; i++){
+        CreateDBBackup(arrayNazivBaze[i], arrayNazivFirme[i], arrayPoslovnaGodina[i], i);
+    }
+
+    backupDateSQL = Now("yyyy-MM-dd");
+    backupTimeSQL = Now("HH:mm:ss");
+    backupDateShort = substring(backupDateSQL, 0, 4) + substring(backupDateSQL, 5, 2) + substring(backupDateSQL, 8, 2);
+    backupTimeShort = substring(backupTimeSQL, 0, 2) + substring(backupTimeSQL, 3, 2) + substring(backupTimeSQL, 6, 2);
+
+    for(i = 0; i < actElem1; i++){
+        MoveBackupFile(i);
+    }
+
+    cursor("dflt"); 
+}
+
+function CreateDBBackup(dbName, nazivFirme, poslovnaGodina, counter){
+
+    BackupFilenames[counter] = nazivFirme + "_" + poslovnaGodina + "_" + dbName + ".bak";
+
+    sqlQueryString = "BACKUP DATABASE " + dbName +
+        " TO DISK = '" + BackupPath + BackupFilenames[counter] + "' " +
+        " WITH INIT, NOSKIP, NOFORMAT, COPY_ONLY";
+    
+    try
+    {
+        sqlResult = sqlQuery(sqlQueryString);
+    }
+    catch(exc)
+    {
+        MessageBox(exc);
+        quit;
+    }
+}
+
+function MoveBackupFile(counter){
+    destination = FinalBackupPath + substring(BackupFilenames[counter], 0, BackupFilenames[counter].length - 4) + "_" + backupDateShort + "_" + backupTimeShort + ".bak";
+    move(BackupPath + BackupFilenames[counter], destination);
+}
+

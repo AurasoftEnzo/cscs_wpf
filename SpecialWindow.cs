@@ -1,4 +1,6 @@
-﻿using HarfBuzzSharp;
+﻿using DevExpress.Xpf.Core;
+using HarfBuzzSharp;
+using Org.BouncyCastle.Asn1.Crmf;
 using SplitAndMerge;
 using System;
 using System.Collections.Generic;
@@ -8,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Xml;
@@ -349,6 +352,42 @@ namespace WpfCSCS
 
             Instance.Closed -= Win_Closed;
             Instance.Close();
+
+
+            ////---------------------------------
+            //FrameworkElement widget = new FrameworkElement();
+            //foreach (var entry in Gui.Control2Window)
+            //{
+            //    if(entry.Value == Instance)
+            //    {
+            //        widget = entry.Key;
+            //        Gui.Controls.Remove(widget.Name);
+            //    }
+            //}
+            //Gui.Control2Window.Remove(widget);
+
+
+            //NameScope.SetNameScope(Instance, new NameScope());
+
+
+            //if (Instance is IDisposable disposable)
+            //{
+            //    disposable.Dispose();
+            //}
+
+            //if (Instance.Parent is Panel parentPanel)
+            //{
+            //    parentPanel.Children.Remove(Instance);
+            //}
+
+            //Instance.Resources.Clear();
+
+            //GC.Collect();
+            //GC.WaitForPendingFinalizers();
+            ////---------------------------------
+
+
+
             Instance = null;
 
             var parent = Gui.GetParentWindow(win.Tag.ToString());

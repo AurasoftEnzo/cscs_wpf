@@ -4,6 +4,7 @@ using SplitAndMerge;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -32,6 +33,8 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.MAP_ADD_POINT, new MapFunction(MapFunctionOption.AddItem));
             
             interpreter.RegisterFunction(Constants.GET_PATH, new GetPathFunction());
+
+            interpreter.RegisterFunction(Constants.ZIP_FILE, new ZipFileFunction());
             
         }
         public partial class Constants
@@ -42,6 +45,8 @@ namespace WpfCSCS
             public const string MAP_ADD_POINT = "MapAddPoint";
             
             public const string GET_PATH = "GetPath";
+
+            public const string ZIP_FILE = "ZipFile";
         }
     }
 
@@ -489,6 +494,49 @@ namespace WpfCSCS
                     return new Variable("");
                 }
             }
+        }
+    }
+    
+    class ZipFileFunction : ParserFunction
+    {
+
+        protected override Variable Evaluate(ParsingScript script)
+        {
+
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 2, m_name);
+
+            var gui = CSCS_GUI.GetInstance(script);
+
+            var filePath = Utils.GetSafeString(args, 0);
+            var zipFilePath = Utils.GetSafeString(args, 1);
+            var newOrAdd = Utils.GetSafeString(args, 2).ToLower();
+            //var password = Utils.GetSafeString(args, 3);
+
+            try
+            {
+                if (newOrAdd == "new" || newOrAdd == "")
+                {
+                    using (ZipArchive zip = ZipFile.Open(zipFilePath, ZipArchiveMode.Create))
+                    {
+                        zip.CreateEntryFromFile(filePath, Path.GetFileName(filePath));
+                        return new Variable(true);
+                    }
+                }
+                else
+                {
+                    //add
+                    using (ZipArchive zip = ZipFile.Open(zipFilePath, ZipArchiveMode.Update))
+                    {
+                        zip.CreateEntryFromFile(filePath, Path.GetFileName(filePath));
+                        return new Variable(true);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return new Variable(false);
+            }            
         }
     }
 }

@@ -565,11 +565,11 @@
 
 // var1 = 100;
 
-CreateWindow(string(tpath()) + "testScript1.xaml");
+// CreateWindow(string(tpath()) + "testScript1.xaml");
 
-function btn1@clicked(){
-    CreateWindow(string(tpath()) + "testScript2.xaml");
-}
+// function btn1@clicked(){
+//     CreateWindow(string(tpath()) + "testScript2.xaml");
+// }
 
 ///*----------------------------
 
@@ -604,3 +604,45 @@ function btn1@clicked(){
 // MessageBox(var1); // 100,5
 
 // quit;
+
+//---------------------------------------------
+
+// DEFINE var1 type i size 10;
+
+// var1 = 10;
+// MessageBox(var1);
+// var1++;
+// MessageBox(var1);
+// var1 += 1;
+// MessageBox(var1);
+
+
+
+// DEFINE array1 type i size 10 array 10;
+
+// array1[3] = 10;
+// MessageBox(array1[3]);
+// array1[3]++;
+// MessageBox(array1[3]);
+// array1[3] += 1;
+// MessageBox(array1[3]);
+
+
+//--------------------------------------------------
+
+// DEFINE array1 type i size 10 array 10;
+
+// array1[3] = 10;
+// MessageBox(array1[3]); // 10
+// array1[3] += 1;
+// MessageBox(array1[3]); // 1, must be 11
+
+//---------------------------------------------------
+
+backupDateSQL = Now("yyyy-MM-dd");
+MessageBox(substring(backupDateSQL, 8, 2)); // 18
+
+backupDateShort = substring(backupDateSQL, 0, 4) + substring(backupDateSQL, 5, 2) + substring(backupDateSQL, 8, 2);
+MessageBox(backupDateShort);
+
+quit;

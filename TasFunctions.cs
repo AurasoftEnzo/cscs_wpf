@@ -1943,24 +1943,32 @@ namespace WpfCSCS
 
     class EMAILFunction : ParserFunction
     {
-        private bool SetupMail(string podaci, string outgoingServer, string password, string username, string senderMail, string senderUsername)
+        private bool SetupMail(string podaci, string outgoingServer, string password, string username, string senderMail, string senderUsername, string to, string subject)
         {
             bool ok = true;
-            var to = GetTo(podaci);
-            var subject = GetSubject(podaci);
-            var body = GetiBody(podaci);
-            var cc = GetCC(podaci);
-            var bcc = GetBCC(podaci);
-            var atch = GetATCH(podaci);
-            
-            foreach (var item in to)
+            //var to = GetTo(podaci);
+            //var subject = GetSubject(podaci);
+            //var body = GetiBody(podaci);
+            var body = podaci;
+
+            //var cc = GetCC(podaci);
+            //var bcc = GetBCC(podaci);
+            //var atch = GetATCH(podaci);
+
+            foreach (var email in to.Split(','))
             {
-                if(ok)
-                ok =  Send(item, senderMail, subject + DateTime.Now.ToString("ddMMYY HHmmss"), body, outgoingServer, username, password, cc, bcc, atch);
+                ok = Send(email.Trim(), senderMail, subject, body, outgoingServer, username, password /*, cc, bcc, atch*/);
             }
+
+            //foreach (var item in to)
+            //{
+            //    if(ok)
+            //    ok =  Send(item, senderMail, subject, body, outgoingServer, username, password /*, cc, bcc, atch*/);
+            //}
+
             return ok;
         }
-        public bool Send(string addressTo, string addressFrom, string subject, string body, string outgoingServer , string username, string password, List<string> cc, List<string> bcc, List<string> atchs)
+        public bool Send(string addressTo, string addressFrom, string subject, string body, string outgoingServer , string username, string password, List<string> cc = null, List<string> bcc = null, List<string> atchs = null)
         {
             MailAddress to = new MailAddress(addressTo);
             MailAddress from = new MailAddress(addressFrom);
@@ -2188,29 +2196,40 @@ namespace WpfCSCS
             var gui = CSCS_GUI.GetInstance(script);
 
             var option = Utils.GetSafeString(args, 0);
-            var podaci = Utils.GetSafeString(args, 1);
+            //var podaci = Utils.GetSafeString(args, 1);
+            var text = Utils.GetSafeString(args, 1);
             var widgetName = Utils.GetSafeString(args, 2);
             var saveAttachsFolder = Utils.GetSafeString(args,3);
             var outgoingServer = Utils.GetSafeString(args,4);
             var password = Utils.GetSafeString(args,5);
             var username = Utils.GetSafeString(args,6);
             var senderMail = Utils.GetSafeString(args,7);
-            var senderUsername = Utils.GetSafeString(args,8);
+            var senderName = Utils.GetSafeString(args,8);
+            var to = Utils.GetSafeString(args,9);
+            var subject = Utils.GetSafeString(args,10);
+
             switch (option.ToLower())
             {
                 case "emlsendmsg":
-                    var widget1 = gui.GetWidget(podaci);
-                    if (widget1 is ListBox)
+                    //var widget1 = gui.GetWidget(podaci);
+                    //if (widget1 is ListBox)
+                    //{
+                    //    string text = null;
+                    //    var asmemobox = widget1 as ListBox;
+                    //    foreach (var item in asmemobox.Items)
+                    //    {
+                    //        text = text +((ListBoxItem) item).Content + System.Environment.NewLine;
+                    //    }
+                    //    return new Variable(SetupMail(text, outgoingServer, password, username, senderMail, senderUsername));
+                    //}
+                    try
                     {
-                        string text = null;
-                        var asmemobox = widget1 as ListBox;
-                        foreach (var item in asmemobox.Items)
-                        {
-                            text = text +((ListBoxItem) item).Content + System.Environment.NewLine;
-                        }
-                        return new Variable(SetupMail(text, outgoingServer, password, username, senderMail, senderUsername));
+                        return new Variable(SetupMail(text, outgoingServer, password, username, senderMail, senderName, to, subject));
                     }
-                    return new Variable(false);
+                    catch (Exception ex)
+                    {
+                        return new Variable(false);
+                    }
                 case "test":
                     var widget = gui.GetWidget(widgetName);
                     if (widget is ASMemoBox)
@@ -2237,7 +2256,7 @@ ovo je testni mail!!
 \Attachments
 d:\temp\aaa.txt, d:\temp\ggg.txt, 
                     ";
-                        var text = asmemobox.Text;
+                        //var text = asmemobox.Text;
                     }
                     break;
                 default:

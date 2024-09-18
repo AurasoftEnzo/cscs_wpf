@@ -56,20 +56,19 @@ function setPieChart(){
 
 function setChartByHours()
 {
+	sql_str = "WITH hours AS (";
+
     if (neto_dn)
     {
-            sql_str = "SELECT datepart(hour,ks_ig_sat) as Hour , SalesDay = ISNULL(ROUND(SUM(KS_IL_TOTAL - KS_IL_POREZ),0) , 0)";
-            sql_str += ", ISNULL(ROUND(AVG(SUM(KS_IL_TOTAL - KS_IL_POREZ)) OVER(ORDER BY datepart(hour,ks_ig_sat) ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 0),0) AS moving_average_3_days";
+		sql_str += "SELECT datepart(hour,ks_ig_sat) as Hour , SalesDay = ISNULL(ROUND(SUM(KS_IL_TOTAL - KS_IL_POREZ),0) , 0)";
     }
     elif (razlikaUCijeniField)
     {
-            sql_str = "SELECT datepart(hour,ks_ig_sat) as Hour  , SalesDay = ISNULL(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0)";
-            sql_str += ", ISNULL(ROUND(AVG(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.')))) OVER(ORDER BY datepart(hour,ks_ig_sat) ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 0),0) AS moving_average_3_days";
+		sql_str += "SELECT datepart(hour,ks_ig_sat) as Hour  , SalesDay = ISNULL(SUM(KS_IL_TOTAL - ks_il_ukupno - KS_IL_POREZ - KS_IL_CENAN * CONVERT(float, REPLACE(KS_IL_KOL, ',', '.'))) , 0)";
     }
     else
     {
-            sql_str = "SELECT datepart(hour,ks_ig_sat) as Hour  , SalesDay = ISNULL(SUM(KS_IL_TOTAL) , 0)";
-            sql_str += ", ISNULL(ROUND(AVG(SUM(KS_IL_TOTAL)) OVER(ORDER BY datepart(hour,ks_ig_sat) ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 0), 0) AS moving_average_3_days";
+		sql_str += "SELECT datepart(hour,ks_ig_sat) as Hour  , SalesDay = ISNULL(SUM(KS_IL_TOTAL) , 0)";
     }
     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKKSINVG ";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.NKKSINVL ON KS_IG_RACUN = KS_IL_RACUN";
@@ -79,7 +78,7 @@ function setChartByHours()
     sql_str += " WHERE 1 = 1";
     if (do_mjeseca)
     {
-            sql_str += " AND Month(ks_ig_datum)<= '" + mjesec_h + "' AND year(ks_ig_datum) = '" + ovagod_h + "'";
+            sql_str += " AND Month(ks_ig_datum) <= '" + mjesec_h + "' AND year(ks_ig_datum) = '" + ovagod_h + "'";
     }
     else
     {
@@ -87,10 +86,19 @@ function setChartByHours()
     }
     filterPart();
     sql_str += " GROUP BY datepart(hour,ks_ig_sat)";
-    sql_str += " ORDER BY datepart(hour,ks_ig_sat)";
+    //sql_str += " ORDER BY datepart(hour,ks_ig_sat)";
+
+	sql_str += " ), gen AS (";
+	sql_str += " SELECT 1 AS sat UNION ALL SELECT sat + 1 FROM gen WHERE sat + 1 <= 24";
+	sql_str += " ) SELECT sat,";
+	sql_str += " ISNULL(SalesDay, 0) as SalesDay,";
+	sql_str += " ISNULL(ROUND(AVG(ISNULL(SalesDay, 0)) OVER(ORDER BY sat ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 0),0) AS moving_average_3_days";
+	sql_str += " FROM gen LEFT JOIN hours on gen.sat = hours.Hour";
+	sql_str += " ORDER BY sat";
+
     try
     {
-        // SaveFile(sql_str);
+        //SaveFile(sql_str);
 		queryResult = sqlquery(sql_str);
     }catch(exc)
     {

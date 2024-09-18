@@ -17,37 +17,101 @@ DEFINE dialogResult type a size 255;
 DEFINE BackupPath type a size 255;
 DEFINE BackupFilenames type a size 255 array 100;
 
-DEFINE FinalBackupPath type a size 255;
-DEFINE destination type a size 255;
+DEFINE LocalBackupPath type a size 255;
+// DEFINE LocalBackupFilenames type a size 255 array 100;
+DEFINE localBakFile type a size 255;
+DEFINE localZipFile type a size 255;
+DEFINE localBakFilename type a size 255;
 
-DEFINE backupDateShort type a size 6;
+
+DEFINE FinalBackupPath type a size 255;
+DEFINE destinationFile type a size 255;
+
+DEFINE backupDateShort type a size 8;
 DEFINE backupTimeShort type a size 6;
 DEFINE backupDateSQL type a size 10;
 DEFINE backupTimeSQL type a size 8;
 
+DEFINE isRunning type l;
+DEFINE hasErrors type l;
+
+DEFINE log type a size 1000 array 1000;
+DEFINE logCount type i size 4;
+DEFINE logFinal type a size 1000000;
+
+//mail
+DEFINE OutgoingEmailServer type a size 100;
+DEFINE EmailUsername type a size 100;
+DEFINE EmailPassword type a size 100;
+DEFINE SenderEmail type a size 100;
+DEFINE EmailSenderName type a size 100;
+DEFINE DestinationEmail type a size 100;
+DEFINE EmailSubject type a size 100;
+DEFINE NazivFirme type a size 100;
+
 function wxbackup_onDisplay()
-{
-    cursor("wait");
+{   
+    Cursor("wait");
 
-    getDatabaseNames();
+    logCount = 0;
 
+    GetDatabaseNames();
+    
     DisplayArray("datagridDatabases", "close");
     DisplayArraySetup("datagridDatabases", counterFld: cntr1, activeElements: actElem1, maxElements: 100);
 
     winxIniPath = strtrim(wpath()) + "winx.ini";
 
-    if(regedit("regOpen", winxIniPath, "rtFile")){
-        FinalBackupPath = regedit("regReadStr", 'BACKUP', 'LocalBackupPath');
-        regedit("regClose");
-    }else{
+    if(!regedit("regOpen", winxIniPath, "rtFile")){
         MessageBox("Datoteka " + winxIniPath + " nije dostupna.");
+        Cursor("dflt");
         quit;
     }
 
-    cursor("dflt");
+    BackupPath = regedit("regReadStr", 'BACKUP', 'BackupPath');
+    if(BackupPath == ""){
+        MessageBox("Potrebno je podesiti path za kreiranje arhive(BackupPath) u ini datoteci.");
+        regedit("regWriteStr", 'BACKUP', 'BackupPath', "");
+        Cursor("dflt");
+        quit;
+    }
+    
+    LocalBackupPath = regedit("regReadStr", 'BACKUP', 'LocalBackupPath');
+    if(LocalBackupPath == ""){
+        MessageBox("Potrebno je podesiti lokalni path za kreiranje arhive(LocalBackupPath) u ini datoteci.");
+        regedit("regWriteStr", 'BACKUP', 'LocalBackupPath', "");
+        Cursor("dflt");
+        quit;
+    }
+    
+    FinalBackupPath = regedit("regReadStr", 'BACKUP', 'FinalBackupPath');
+
+    regedit("regClose");
+    
+    if(FinalBackupPath == ""){
+        regedit("regWriteStr", 'BACKUP', 'FinalBackupPath', "");
+        FinalBackupPath = string(wpath());
+    }
+
+
+    if(!DIR_EXISTS(BackupPath)){
+        MAKE_DIR(BackupPath);
+        //MessageBox("Kreiran je direktorij BackupPath iz ini datoteke");
+    }
+   
+    if(!DIR_EXISTS(LocalBackupPath)){
+        MAKE_DIR(LocalBackupPath);
+        //MessageBox("Kreiran je direktorij LocalBackupPath iz ini datoteke");
+    }
+
+
+    Cursor("dflt");
+
+    isRunning = false;
+    hasErrors = false;
 }
 
-function getDatabaseNames(){
+function GetDatabaseNames(){
     sqlQueryString = "SELECT [SY_CC_USER], [SY_CC_YEAR], [SY_CC_DBASE]" +
         " FROM " + CommonDBGet() + ".[dbo].[NKSYCCYR]" +
         " WHERE SY_CC_REZ1 = 'D'";
@@ -66,12 +130,17 @@ function getDatabaseNames(){
     }
     catch(exc)
     {
-        MessageBox(exc);
+        MessageBox("Greška na GetDatabaseNames():" + "\n" + exc);
+        Cursor("dflt");
         quit;
     }
 }
 
 function btnSelectBackupLocation@clicked(){
+    if(isRunning){
+        return;
+    }
+    
     if(FinalBackupPath == ""){
         dialogResult = getPath(wpath(), "Odaberite direktorij za arhivu");
     }
@@ -81,37 +150,111 @@ function btnSelectBackupLocation@clicked(){
 
     if(dialogResult != ""){
         FinalBackupPath = dialogResult;
+        if(substring(FinalBackupPath, FinalBackupPath.length - 1, 1) != "\\"){
+            FinalBackupPath += "\\";
+        }
     }
 }
-
 
 function btnPokreni@clicked()
 {
-    cursor("wait");
+    AsyncCall("Pokreni", "Gotovo");
+}
 
-    if(regedit("regOpen", winxIniPath, "rtFile")){
-        BackupPath = regedit("regReadStr", 'BACKUP', 'BackupPath');;
-        regedit("regClose");
-    }else{
-        MessageBox("Datoteka " + winxIniPath + " nije dostupna.");
-        quit;
+function Pokreni(){
+    //supress running multiple times
+    if(isRunning){
+        return;
     }
-    
-    for(i = 0; i < actElem1; i++){
-        CreateDBBackup(arrayNazivBaze[i], arrayNazivFirme[i], arrayPoslovnaGodina[i], i);
+
+    if(!DIR_EXISTS(FinalBackupPath)){
+        MessageBox("Direktorij za arhivu ne postoji.\nMolim odaberite drugi direktorij.");
+        return;
     }
+
+    isRunning = true;
+    hasErrors = false;
+
+    RunOnMain("SetWait");
+
+    //clear log
+    for(i = 0; i < logCount; i++){
+        log[i] = "";
+    }
+    logCount = 0;
 
     backupDateSQL = Now("yyyy-MM-dd");
     backupTimeSQL = Now("HH:mm:ss");
-    backupDateShort = substring(backupDateSQL, 0, 4) + substring(backupDateSQL, 5, 2) + substring(backupDateSQL, 8, 2);
-    backupTimeShort = substring(backupTimeSQL, 0, 2) + substring(backupTimeSQL, 3, 2) + substring(backupTimeSQL, 6, 2);
+    // backupDateShort = substring(backupDateSQL, 0, 4) + substring(backupDateSQL, 5, 2) + substring(backupDateSQL, 8, 2);
+    // backupTimeShort = substring(backupTimeSQL, 0, 2) + substring(backupTimeSQL, 3, 2) + substring(backupTimeSQL, 6, 2);
+    backupDateShort = strReplace(backupDateSQL, "-", "");
+    backupTimeShort = strReplace(backupTimeSQL, ":", "");
 
     for(i = 0; i < actElem1; i++){
-        MoveBackupFile(i);
+        logAdd("----- Arhiviranje baze " + arrayNazivBaze[i] + "(" + arrayNazivFirme[i] + " - " + arrayPoslovnaGodina[i] + ")" + " -----");
+        if(!CreateDBBackup(arrayNazivBaze[i], arrayNazivFirme[i], arrayPoslovnaGodina[i], i)){
+            hasErrors = true;
+            continue;
+        }
+
+        if(!MoveBackupFileLocally(BackupFilenames[i], arrayNazivBaze[i])){
+            hasErrors = true;
+            continue;
+        }       
+
+        localZipFile = substring(localBakFile, 0, localBakFile.length - 4) + ".zip";
+        if(!ZipFile(localBakFile, localZipFile)){
+            logAdd(arrayNazivBaze[i] + ": GREŠKA pri kreiranju .zip datoteke");
+            hasErrors = true;
+            continue;
+        }
+        else{
+            logAdd(arrayNazivBaze[i] + ": Kreirana .zip datoteka");
+            try{
+                Delete(localBakFile);
+                logAdd(arrayNazivBaze[i] + ": .bak datoteka obrisana");
+            }catch(exc){
+                logAdd(arrayNazivBaze[i] + ": GREŠKA brisanja .bak datoteke");
+                hasErrors = true;
+            }
+        }
+
+        if(!MoveZipFileToFinal(substring(localBakFilename, 0, localBakFilename.length - 4) + ".zip", arrayNazivBaze[i])){
+            hasErrors = true;
+            continue;
+        }  
     }
 
-    cursor("dflt"); 
+    SendEmail();
+
+    RunOnMain("SetDflt");
+    if(hasErrors){
+        MessageBox("Arhiviranje dovršeno s greškama.");
+    }
+    else{
+        MessageBox("Arhiviranje uspješno dovršeno.");
+    }
+    
+    isRunning = false;
+    hasErrors = false;
 }
+
+
+
+function SetWait(){
+    SetWidgetOptions("btnPokreni", "Content", "Molim pričekajte...");
+    Cursor("wait");
+}
+
+function SetDflt(){
+    SetWidgetOptions("btnPokreni", "Content", "Pokreni arhiviranje");
+    Cursor("dflt");
+}
+
+function Gotovo(){
+}
+
+//---------------------------------------------------------
 
 function CreateDBBackup(dbName, nazivFirme, poslovnaGodina, counter){
 
@@ -123,17 +266,141 @@ function CreateDBBackup(dbName, nazivFirme, poslovnaGodina, counter){
     
     try
     {
-        sqlResult = sqlQuery(sqlQueryString);
+        sqlResult = sqlNonQuery(sqlQueryString);
+        logAdd(dbName + ": Kreirana .bak datoteka");
+        return true;
     }
     catch(exc)
     {
-        MessageBox(exc);
-        quit;
+        logAdd(dbName + ": GREŠKA pri kreiranju .bak datoteke: " + exc);
+        return false;
     }
 }
 
-function MoveBackupFile(counter){
-    destination = FinalBackupPath + substring(BackupFilenames[counter], 0, BackupFilenames[counter].length - 4) + "_" + backupDateShort + "_" + backupTimeShort + ".bak";
-    move(BackupPath + BackupFilenames[counter], destination);
+function MoveBackupFileLocally(backupFilename, dbName){
+    try
+    {
+        localBakFile = LocalBackupPath + backupFilename;
+        localBakFilename = backupFilename;
+
+        move(BackupPath + backupFilename, LocalBackupPath + backupFilename);
+        
+        logAdd(dbName + ": Premještena .bak datoteka");
+        return true;
+    }
+    catch(exc)
+    {
+        logAdd(dbName + ": GREŠKA pri premještanju .bak datoteke: " + exc);
+        return false;
+    }
+    
 }
 
+function MoveZipFileToFinal(zipFilename, dbName){
+    try
+    {
+        destinationFile = FinalBackupPath + substring(zipFilename, 0, zipFilename.length - 4) + "_" + backupDateShort + "_" + backupTimeShort + ".zip";
+        
+        move(LocalBackupPath + zipFilename, destinationFile);
+        
+        logAdd(dbName + ": Premještena .zip datoteka");
+        return true;
+    }
+    catch(exc)
+    {
+        logAdd(dbName + ": GREŠKA pri premještanju .zip datoteke: " + exc);
+        return false;
+    }
+    
+}
+
+//-- EMAIL --------------------------------------------------------------
+
+function SendEmail(){
+    
+    if(!regedit("regOpen", winxIniPath, "rtFile")){
+        MessageBox("Datoteka " + winxIniPath + " nije dostupna. Mail nije poslan.");
+        return;
+    }
+
+    OutgoingEmailServer = regedit("regReadStr", 'EMAIL', 'OutgoingEmailServer');
+    if(OutgoingEmailServer == ""){
+        MessageBox("Potrebno je podesiti adresu izlaznog e-mail poslužitelja(OutgoingEmailServer) u ini datoteci.");
+        regedit("regWriteStr", 'EMAIL', 'OutgoingEmailServer', "");
+        return;
+    }
+
+    EmailUsername = regedit("regReadStr", 'EMAIL', 'EmailUsername');
+    if(EmailUsername == ""){
+        MessageBox("Potrebno je podesiti korisničko ime za slanje e-maila(EmailUsername) u ini datoteci.");
+        regedit("regWriteStr", 'EMAIL', 'EmailUsername', "");
+        return;
+    }
+
+    EmailPassword = regedit("regReadStr", 'EMAIL', 'EmailPassword');
+    if(EmailPassword == ""){
+        MessageBox("Potrebno je podesiti lozinku za slanje e-maila(EmailPassword) u ini datoteci.");
+        regedit("regWriteStr", 'EMAIL', 'EmailPassword', "");
+        return;
+    }
+
+    SenderEmail = regedit("regReadStr", 'EMAIL', 'SenderEmail');
+    if(SenderEmail == ""){
+        MessageBox("Potrebno je podesiti e-mail pošiljatelja(SenderEmail) u ini datoteci.");
+        regedit("regWriteStr", 'EMAIL', 'SenderEmail', "");
+        return;
+    }
+    
+    EmailSenderName = regedit("regReadStr", 'EMAIL', 'EmailSenderName');
+    if(EmailSenderName == ""){
+        MessageBox("Potrebno je podesiti ime pošiljatelja e-maila(EmailSenderName) u ini datoteci.");
+        regedit("regWriteStr", 'EMAIL', 'EmailSenderName', "");
+        return;
+    }
+
+    DestinationEmail = regedit("regReadStr", 'EMAIL', 'DestinationEmail');
+    if(DestinationEmail == ""){
+        MessageBox("Potrebno je podesiti adresu primatelja e-maila(DestinationEmail) u ini datoteci.");
+        regedit("regWriteStr", 'EMAIL', 'DestinationEmail', "");
+        return;
+    }
+
+    NazivFirme = regedit("regReadStr", 'COMPANY', 'NazivFirme');
+    if(NazivFirme == ""){
+        MessageBox("Potrebno je podesiti naziv firme(NazivFirme) u ini datoteci.");
+        regedit("regWriteStr", 'COMPANY', 'NazivFirme', "");
+        NazivFirme = "???";
+    }
+
+    regedit("regClose");
+    
+    EmailSubject = "WinX Zapisnik arhive(" + backupDateSQL + " " + backupTimeSQL + ") za " + NazivFirme;
+
+    FormatLog();
+
+    ok  = EMAIL("emlSendMsg", logFinal, "", "", OutgoingEmailServer, EmailPassword, EmailUsername, SenderEmail, EmailSenderName, DestinationEmail, EmailSubject);   
+    //MessageBox(ok);
+
+}
+
+//-- LOG ------------------------------------------------
+
+function logAdd(text){
+    log[logCount] = text;
+    logCount++;
+}
+
+function FormatLog(){
+    logFinal = "";
+    for(i = 0; i < logCount; i++){
+        logFinal += log[i] + "\n";
+    }
+}
+
+function ListLog(){
+    for(i = 0; i < logCount; i++){
+        MessageBox(log[i]);
+    }
+}
+
+//-----------------------------------------------------

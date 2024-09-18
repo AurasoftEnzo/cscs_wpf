@@ -463,17 +463,19 @@ namespace WpfCSCS
                     }
                     else if (optionString == "tooltipdecimalplaces")
                     {
-                        var aljksd = pieWidget.ToolTip;
+                        //var aljksd = pieWidget.ToolTip;
 
                         foreach (var series in pieWidget.Series)
                         {
                             if (chartsTypes[widgetName] == "columnseries")
                             {
-                                (series as ColumnSeries<double>).TooltipLabelFormatter = (chartPoint) => $"{chartPoint.PrimaryValue.ToString($"N{valueVariable.Value}")}";
+                                //(series as ColumnSeries<double>).TooltipLabelFormatter = (chartPoint) => $"{chartPoint.PrimaryValue.ToString($"N{valueVariable.Value}")}";
+                                (series as ColumnSeries<double>).XToolTipLabelFormatter = (chartPoint) => $"{chartPoint.PrimaryValue.ToString($"N{valueVariable.Value}")}";
                             }
                             else if (chartsTypes[widgetName] == "lineseries")
                             {
-                                (series as LineSeries<double>).TooltipLabelFormatter = (chartPoint) => $"{chartPoint.PrimaryValue.ToString($"N{valueVariable.Value}")}";
+                                //(series as LineSeries<double>).TooltipLabelFormatter = (chartPoint) => $"{chartPoint.PrimaryValue.ToString($"N{valueVariable.Value}")}";
+                                (series as LineSeries<double>).XToolTipLabelFormatter = (chartPoint) => $"{chartPoint.PrimaryValue.ToString($"N{valueVariable.Value}")}";
                             }
                         }
 

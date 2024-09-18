@@ -1,21 +1,30 @@
-mkdir("test1");
+//mkdir("test1");
 
 CreateWindow("../../scripts/testEmail.xaml");
+
 outgoingServer = "mail.aurasoft.hr";
+
 Username="ivan@aurasoft.hr";
 Password = "H]$R7MKP#[2A";
+
 FromMail = "ivan@aurasoft.hr";
-MailSenderName =  "ivan";
+MailSenderName = "ivan";
+
 DEFINE ToAddresses type a size 100;
-ToAddresses="nebojsa@aurasoft.hr, matija@aurasoft.hr\n,sanja@aurasoft.hr";
+// ToAddresses="nebojsa@aurasoft.hr, matija@aurasoft.hr\n,sanja@aurasoft.hr";
+ToAddresses="enzo@aurasoft.hr";
+
 DEFINE CCAddresses type a size 100;
-CCAddresses="lidija@aurasoft.hr,lorena@aurasoft.hr";
+//CCAddresses="lidija@aurasoft.hr,lorena@aurasoft.hr";
+
 DEFINE BCCAddresses type a size 100;
-BCCAddresses="enzo@aurasoft.hr, boris@aurasoft.hr";
+BCCAddresses="aurasoft.enzo@gmail.com";
+
 DEFINE Body type a size 100;
-Body="neki tekst\nasdkljhasd\n";
-DEFINE attachments type a size 100;
-attachments="d:\text.txt";
+Body = "neki tekst\nasdkljhasd\n";
+
+// DEFINE attachments type a size 100;
+// attachments = "d:\text.txt";
 
 
 
@@ -45,7 +54,7 @@ function sendButtonPop@clicked(){
     Strings("stringListbox", "", stAddLine, Body);   
     test2 = Strings("stringListbox", "", stGetText); 
     
-    ok  = EMAIL(emlSendMsg, "stringListbox","","", outgoingServer, Password, Username, FromMail,MailSenderName);   
+    ok  = EMAIL(emlSendMsg, "stringListbox","","", outgoingServer, Password, Username, FromMail, MailSenderName);   
     MessageBox(ok);  
     ToAddresses=null;
     CCAddresses=null;
@@ -62,4 +71,4 @@ function testEmail_onStart(){
     // MessageBox(test2);  
     //@memobox1.text="gfdhbgd";
 }
-quit;
+

@@ -499,10 +499,8 @@ namespace WpfCSCS
     
     class ZipFileFunction : ParserFunction
     {
-
         protected override Variable Evaluate(ParsingScript script)
         {
-
             List<Variable> args = script.GetFunctionArgs();
             Utils.CheckArgs(args.Count, 2, m_name);
 

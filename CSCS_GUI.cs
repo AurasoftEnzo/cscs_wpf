@@ -7,16 +7,12 @@ using System.Collections.ObjectModel;
 using System.Data;
 using System.Data.SqlClient;
 using System.Diagnostics;
-using System.Drawing.Imaging;
 
-//using System.Drawing;
-using System.Drawing.Printing;
 using System.Dynamic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7911,7 +7907,6 @@ namespace WpfCSCS
 				m_name = m_name.Substring(Constants.POINTER_REF.Length);
 			}
 
-
 			var origName = m_name;
             int argStart = m_name.IndexOf(Constants.START_ARRAY);
 			if (argStart > 0)
@@ -7934,6 +7929,14 @@ namespace WpfCSCS
 				if (Int32.TryParse(indStr, out int ind))
 				{
 					defVar.Indices.Add(ind);
+				}
+				else
+				{
+					var value = gui.ProcessScript(indStr);
+					if (value.Type == Variable.VarType.NUMBER)
+					{
+						defVar.Indices.Add(value.AsInt());
+					}
 				}
                 argStart = origName.IndexOf(Constants.START_ARRAY, argEnd + 1);
             }

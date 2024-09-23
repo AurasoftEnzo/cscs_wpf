@@ -7075,8 +7075,9 @@ namespace WpfCSCS
 		public bool Active { get; set; } = false;
 		public DefineVariable Dup { get; set; }
 		public Variable Init { get; set; }
+		public List<int> Indices { get; set; } = new List<int>();
 
-		public string AssignedString { get; set; }
+        public string AssignedString { get; set; }
 		public double AssignedNumber { get; set; }
 
 		public bool LocalAssign { get; set; }
@@ -7289,7 +7290,26 @@ namespace WpfCSCS
 			return val;
 		}
 
-		public void InitVariable(Variable init, CSCS_GUI gui, ParsingScript script = null, bool update = true, int arrayIndex = -1)
+		public void AssignArrayValue(Variable val)
+		{
+            if (Indices.Count == 1)
+            {
+                Tuple[Indices[0]] = val;
+            }
+            else if (Indices.Count == 2)
+            {
+                Tuple[Indices[0]].Tuple[Indices[1]] = val;
+            }
+            else if (Indices.Count == 3)
+            {
+                Tuple[Indices[0]].Tuple[Indices[1]].Tuple[Indices[2]] = val;
+            }
+            else
+            {
+                Tuple[Indices[0]].Tuple[Indices[1]].Tuple[Indices[2]].Tuple[Indices[3]] = val;
+            }
+        }
+        public void InitVariable(Variable init, CSCS_GUI gui, ParsingScript script = null, bool update = true, int arrayIndex = -1)
 		{
 			/*
 	        I  - signed small int (2 bytes), from -32,768 to 32.767
@@ -7306,7 +7326,18 @@ namespace WpfCSCS
 			 * */
 			Init = init;
 			LocalAssign = true;
-			switch (DefType)
+            if (Indices.Count > 0 && Tuple != null && Tuple.Count > Math.Max(Indices[0], Array-1))
+            {
+                Variable tmp = Tuple[Indices[0]];
+                for (int i = 1; i < Indices.Count && tmp.Tuple != null && tmp.Tuple.Count > Indices[i]; i++)
+                {
+                    tmp = tmp.Tuple[Indices[i]];
+                }
+                tmp = init;
+				AssignArrayValue(tmp);
+                return;
+            }
+            switch (DefType)
 			{
 				case "a":
 					String = init.AsString();
@@ -7375,9 +7406,8 @@ namespace WpfCSCS
 						init.Type = Type;
 					}
 					break;
-			}
-
-			if (Array > 0)
+            }
+            if (Array > 0)
 			{
 				var maxElems = Math.Max(Array, arrayIndex);
 				var missingElems = Tuple == null || arrayIndex < 0 ? maxElems : maxElems - Tuple.Count;
@@ -7881,18 +7911,34 @@ namespace WpfCSCS
 				m_name = m_name.Substring(Constants.POINTER_REF.Length);
 			}
 
-			int argStart = m_name.IndexOf(Constants.START_ARRAY);
+
+			var origName = m_name;
+            int argStart = m_name.IndexOf(Constants.START_ARRAY);
 			if (argStart > 0)
 			{
-				m_name = m_name.Substring(0, argStart);
-			}
-
-			if (!gui.DEFINES.TryGetValue(m_name, out DefineVariable defVar))
+                m_name = m_name.Substring(0, argStart);
+            }
+            if (!gui.DEFINES.TryGetValue(m_name, out DefineVariable defVar))
 			{
 				return null;
 			}
+			defVar.Indices.Clear();
+			while (argStart > 0)
+			{
+				int argEnd = origName.IndexOf(Constants.END_ARRAY, argStart + 1);
+				if (argEnd < 0)
+				{
+					break;
+				}
+				var indStr = origName.Substring(argStart + 1, argEnd - argStart - 1);
+				if (Int32.TryParse(indStr, out int ind))
+				{
+					defVar.Indices.Add(ind);
+				}
+                argStart = origName.IndexOf(Constants.START_ARRAY, argEnd + 1);
+            }
 
-			var newValue = new GetVarFunction(defVar);
+            var newValue = new GetVarFunction(defVar);
 			script.InterpreterInstance.AddGlobalOrLocalVariable(m_name, newValue);
 			if (!string.IsNullOrWhiteSpace(defVar.Pointer))
 			{
@@ -8046,11 +8092,30 @@ namespace WpfCSCS
 				{
 					if (m_action != null && m_action.EndsWith("=") && m_action.Length > 1)
 					{ // an action like +=, *=, etc.
-						var leftVar = new DefineVariable(defVar);
-						OperatorAssignFunction.ProcessOperator(leftVar, varValue, m_action, script, m_name);
-						defVar.InitVariable(leftVar, gui, script, false, m_arrayIndex);
-						varValue = leftVar;
-					}
+                        var leftVar = new DefineVariable(defVar);
+						bool initDone = false;
+                        if (defVar.Type == Variable.VarType.ARRAY && defVar.Indices.Count > 0)
+						{
+							Variable tmp = defVar;
+							for (int i = 0; i < defVar.Indices.Count && tmp.Tuple != null && tmp.Tuple.Count > defVar.Indices[i]; i++)
+							{
+                                tmp = tmp.Tuple[defVar.Indices[i]];
+							}
+							var assigning = tmp.DeepClone();
+                            OperatorAssignFunction.ProcessOperator(assigning, varValue, m_action, script, m_name);
+                            defVar.AssignArrayValue(assigning);
+							initDone = true;
+                        }
+                        else
+						{
+                            OperatorAssignFunction.ProcessOperator(leftVar, varValue, m_action, script, m_name);
+                        }
+						if (!initDone)
+						{
+                            defVar.InitVariable(leftVar, gui, script, false, m_arrayIndex);
+                            varValue = leftVar;
+                        }
+                    }
 					else
 					{
 						varValue = varValue.DeepClone();

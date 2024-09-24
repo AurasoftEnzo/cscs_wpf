@@ -136,7 +136,7 @@ namespace SplitAndMerge
         public virtual Variable DeepClone(string newName = "")
         {
             Variable newVar = (Variable)this.MemberwiseClone();
-            if (m_tuple != null)
+            if (Type == VarType.ARRAY && m_tuple != null)
             {
                 List<Variable> newTuple = new List<Variable>();
                 foreach (var item in m_tuple)

@@ -1,0 +1,76 @@
+DEFINE nkpr_gl_num type r size 15;
+DEFINE nkpr_gl_cuscod type a size 20;
+DEFINE nkpr_gl_cusnme type a size 100;
+DEFINE nkpr_gl_invdte type d size 8;
+DEFINE nkpr_gl_timecr type t size 8;
+DEFINE nkpr_gl_total type n size 15 dec 15;
+
+DEFINE nkpr_ln_pcode type a size 100;
+DEFINE nkpr_ln_pdesc type a size 100;
+DEFINE nkpr_ln_pqty type n size 15 dec 15;
+DEFINE nkpr_ln_pprce type n size 15 dec 15;
+DEFINE nkpr_ln_pext type n size 15 dec 15;
+
+DEFINE NKPRINV_hndl, NKPRINVL_hndl type i;
+
+// DEFINE lokacijaSlike type a;
+
+// lokacijaSlike = "E:\A - Aura Soft LOGO\logo crni.png";
+
+// DEFINE panel1 type a size 3;
+// DEFINE label1Cl type a size 10;
+// DEFINE label1Lt, label1Top type i;
+// DEFINE label1Wd, label1Ht type i;
+// DEFINE label1Fs type i;
+// DEFINE label1Fn type a size 30;
+
+// DEFINE labelTotalFc type a size 10;
+
+// labelTotalFc = "Blue";
+
+// panel1 = "OFF";
+// label1Cl = "Brown";
+// label1Lt = 50;
+// label1Top = 50;
+// label1Wd = 600;
+// label1Ht = 100;
+// label1Fs = 50;
+// label1Fn = "Times New Roman";
+
+// DEFINE panel2, label2, label3 type a size 3;
+
+//-----------------------
+
+report1_hndl = SetupReport("NKPRINVReport.repx"); //
+report2_hndl = SetupReport("NKPRINVLReport.repx", report1_hndl);
+
+//--------------------------
+
+SqlResultGlaveRacuna = SqlQuery("SELECT TOP 10 nkpr_gl_num, nkpr_gl_cuscod, nkpr_gl_cusnme, CONVERT(varchar(8), nkpr_gl_invdte, 3) as nkpr_gl_invdte, CONVERT(varchar(8), nkpr_gl_timecr, 8) as nkpr_gl_timecr, nkpr_gl_total FROM nkprinv ORDER BY nkpr_gl_num");
+
+for(i = 1; i < Size(SqlResultGlaveRacuna); i++){
+    
+    GetSQLRecord(SqlResultGlaveRacuna[0], SqlResultGlaveRacuna[i]);
+    OutputReport(report1_hndl);
+
+    SqlResultLinijeRacuna = SqlQuery("SELECT nkpr_ln_pcode, nkpr_ln_pdesc, nkpr_ln_pqty, nkpr_ln_pprce, nkpr_ln_pext FROM nkprinvl WHERE nkpr_ln_invnm = " + SqlResultGlaveRacuna[i][0] + " ORDER BY nkpr_ln_br_ln");
+    
+    for(j = 1; j < Size(SqlResultLinijeRacuna); j++){   
+
+        GetSQLRecord(SqlResultLinijeRacuna[0], SqlResultLinijeRacuna[j]);
+        OutputReport(report2_hndl);
+    }
+}
+
+PrintReport();
+
+quit;
+
+// PrintOOP();
+
+
+
+
+
+
+

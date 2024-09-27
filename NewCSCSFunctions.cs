@@ -3,6 +3,7 @@ using MapControl;
 using SplitAndMerge;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -35,6 +36,8 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.GET_PATH, new GetPathFunction());
 
             interpreter.RegisterFunction(Constants.ZIP_FILE, new ZipFileFunction());
+
+            interpreter.RegisterFunction(Constants.GET_SQL_RECORD, new GetSQLRecordFunction());
             
         }
         public partial class Constants
@@ -47,6 +50,8 @@ namespace WpfCSCS
             public const string GET_PATH = "GetPath";
 
             public const string ZIP_FILE = "ZipFile";
+
+            public const string GET_SQL_RECORD = "GetSQLRecord";
         }
     }
 
@@ -535,6 +540,56 @@ namespace WpfCSCS
             {
                 return new Variable(false);
             }            
+        }
+    }
+    
+    class GetSQLRecordFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 2, m_name);
+
+            var gui = CSCS_GUI.GetInstance(script);
+
+            var sqlColumnNames = Utils.GetSafeVariable(args, 0);
+            var sqlRowData = Utils.GetSafeVariable(args, 1);
+
+            for (int i = 0; i < sqlColumnNames.Tuple.Count; i++)
+            {
+                string defineVarName = sqlColumnNames.Tuple[i].String.ToLower();
+                switch (gui.DEFINES[defineVarName].DefType)
+                {
+                    case "a":
+                        gui.DEFINES[defineVarName].String = sqlRowData.Tuple[i].String;
+                        break;
+                    case "i":
+                    case "n":
+                    case "b":
+                    case "r":
+                    case "l":
+                        gui.DEFINES[defineVarName].Value = sqlRowData.Tuple[i].Value;
+                        break;
+                    case "d":
+                        var dateFormat = gui.DEFINES[defineVarName].GetDateFormat();
+                        gui.DEFINES[defineVarName].DateTime = DateTime.ParseExact(sqlRowData.Tuple[i].String, dateFormat, CultureInfo.InvariantCulture);
+
+                        gui.DEFINES[defineVarName].String = sqlRowData.Tuple[i].String;
+                        break;
+                    case "t":
+                        var timeFormat = gui.DEFINES[defineVarName].GetTimeFormat();
+                        gui.DEFINES[defineVarName].DateTime = DateTime.ParseExact(sqlRowData.Tuple[i].String, timeFormat, CultureInfo.InvariantCulture);
+
+                        gui.DEFINES[defineVarName].String = sqlRowData.Tuple[i].String;
+                        break;
+                    default:
+                        break;
+                }
+                gui.DEFINES[defineVarName].InitVariable(gui.DEFINES[defineVarName], gui);
+                gui.OnVariableChange(defineVarName, gui.DEFINES[defineVarName], true);
+            }
+
+            return Variable.EmptyInstance;          
         }
     }
 }

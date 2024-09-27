@@ -37,8 +37,8 @@ DEFINE report1_hndl, report2_hndl type i;
 
 //start = Now();
 
-report1_hndl = SetupReport("NKPRINVReport.repx"); //
-report2_hndl = SetupReport("NKPRINVLReport.repx", report1_hndl);
+report1_hndl = SetupReport("NKPRINVReportAll.repx"); //
+report2_hndl = SetupReport("NKPRINVLReportAll.repx", report1_hndl);
 
 
 findv(NKPRINV_hndl,"f","NKPR_GL_NUM");
@@ -69,7 +69,7 @@ UpdateReport(report1_hndl, "NKPR_GL_NUM");
 //********
 */
 
-for(j = 0; j < 999; j++){
+for(j = 0; j < 99999999; j++){
     findv(NKPRINV_hndl,"n");
     if(flerr()){
         break;

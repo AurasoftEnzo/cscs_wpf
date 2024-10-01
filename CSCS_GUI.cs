@@ -153,7 +153,7 @@ namespace SplitAndMerge
 	public const string UPDATE_REPORT = "UpdateReport";
 	public const string PRINT_REPORT = "PrintReport";
 
-	public const string PRINT_SQL_REPORT = "PrintSqlReport";
+	//public const string PRINT_SQL_REPORT = "PrintSqlReport";
 
 	public const string MAINMENU = "#MAINMENU";
 	public const string WINFORM = "#WINFORM";

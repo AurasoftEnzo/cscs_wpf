@@ -27,7 +27,12 @@ namespace WpfCSCS
 {
     public enum FindvOption
     {
-        First, Last, Next, Previous, MatchExact, Generic /* exact or greater */
+        First, 
+        Last, 
+        Next, 
+        Previous, 
+        MatchExact, 
+        Generic /* exact or greater */
     }
 
     public class CacheLine

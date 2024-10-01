@@ -19,8 +19,9 @@ namespace WpfCSCS
         Setup,
         Output,
         Update,
-        Print,
-        PrintSQL
+        Print
+            //,
+        //PrintSQL
     }
     public class ReportFunction : ParserFunction
     {
@@ -31,7 +32,7 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.UPDATE_REPORT, new ReportFunction(ReportOption.Update));
             interpreter.RegisterFunction(Constants.PRINT_REPORT, new ReportFunction(ReportOption.Print));
 
-            interpreter.RegisterFunction(Constants.PRINT_SQL_REPORT, new ReportFunction(ReportOption.PrintSQL));
+            //interpreter.RegisterFunction(Constants.PRINT_SQL_REPORT, new ReportFunction(ReportOption.PrintSQL));
         }
 
         ReportOption option;
@@ -76,9 +77,9 @@ namespace WpfCSCS
                     PrintReport();
                     break;
 
-                case ReportOption.PrintSQL:
-                    PrintSqlReport();
-                    break;
+                //case ReportOption.PrintSQL:
+                //    PrintSqlReport();
+                //    break;
             }
 
             return Variable.EmptyInstance;
@@ -678,38 +679,6 @@ namespace WpfCSCS
 
             //// Invoke the Ribbon Print Preview window modally.
             //PrintHelper.ShowRibbonPrintPreviewDialog(null, cachedReportSource);
-        }
-        
-        private void PrintSqlReport()
-        {
-            List<Variable> args = Script.GetFunctionArgs();
-            Utils.CheckArgs(args.Count, 1, m_name);
-
-            string reportFilename = Utils.GetSafeString(args, 0);
-            int sqlQueryString = Utils.GetSafeInt(args, 1);
-
-
-            //foreach (var report in Reports)
-            //{
-            //    var allSubreports = report.Value.AllControls<XRSubreport>();
-            //    foreach (var subreport in allSubreports)
-            //    {
-            //        subreport.ParameterBindings.Clear();
-            //        subreport.ParameterBindings.Add(new ParameterBinding($"thisReportsNumberParam_{report.Key + 1}", report.Value.DataSource, ((DataSet)report.Value.DataSource).Tables[0].TableName + "." + "thisReportsNumber"/*parameterName.ParameterName.Replace("param", "")*/));
-                    
-            //    }
-            //}
-
-            //var storage = new MemoryDocumentStorage();
-            //var Report = Reports[1];
-            //var cachedReportSource = new CachedReportSource(Report, storage);
-
-            //// Invoke the Ribbon Print Preview window 
-            //// and load the report document into it.
-            //PrintHelper.ShowRibbonPrintPreview(null, cachedReportSource);
-
-            ////// Invoke the Ribbon Print Preview window modally.
-            ////PrintHelper.ShowRibbonPrintPreviewDialog(null, cachedReportSource);
         }
     }
 }

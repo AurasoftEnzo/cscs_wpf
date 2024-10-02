@@ -1201,7 +1201,8 @@ namespace SplitAndMerge
             }
 
             while (tempScript.Pointer < m_body.Length - 1 &&
-                  (result == null || !result.IsReturn))
+                  (result == null || !result.IsReturn) &&
+                  (result == null || result.Type != Variable.VarType.QUIT))
             {
                 result = tempScript.Execute();
                 tempScript.GoToNextStatement();
@@ -1836,6 +1837,10 @@ namespace SplitAndMerge
             while (tempScript.StillValid())
             {
                 result = tempScript.Execute();
+                if (result.Type == Variable.VarType.QUIT)
+                {
+                    return result;
+                }
                 tempScript.GoToNextStatement();
             }
             return result == null ? Variable.EmptyInstance : result;

@@ -38,11 +38,14 @@ namespace WpfCSCS
     public class CacheLine
     {
         public int id;
-        public Dictionary<string, DefineVariable> Line = new Dictionary<string, DefineVariable>(); // one line of the table, string = fieldName, DefineVariable = value
+        public Dictionary<string, object> Line = new Dictionary<string, object>(); // one line of the table, string = fieldName, DefineVariable = value
     }
 
     public class CachingClass
     {
+        public FindvOption CacheDirection;
+        public bool firstTaken = false;
+        public int currentCacheListIndex;
         public int numOfRowsToGet;
         public string KeyName; // for comparison with another key while "findv next"
         public List<CacheLine> CachedLines; // index = 1, 2, 3 to 300 
@@ -80,7 +83,7 @@ namespace WpfCSCS
         public string lockingType; //  N, R, F, X // not implemented
         public string lastAscDescOption;
 
-        public int currentCacheListIndex;
+        //public int currentCacheListIndex;
         public CachingClass Cache = new CachingClass();
     }
 
@@ -2066,7 +2069,7 @@ order by {orderByString}
                         {
                             if(thisVar.DefType == "d")
                             {
-                                KeyClass.KeyColumns[currentColumnName] = lineItem.Value.DateTime.ToString("yyyy-MM-dd");
+                                KeyClass.KeyColumns[currentColumnName] = ((DateTime)lineItem.Value).ToString("yyyy-MM-dd");
                             }
                             else
                             {
@@ -2075,10 +2078,24 @@ order by {orderByString}
                         }
                     }
 
-                    string fieldValue = lineItem.Value.ToString();
+                    string fieldValue = "";
+                    if (lineItem.Value.GetType() == typeof(DateTime))
+                    {
+                        var dateFormat = Gui.DEFINES[currentColumnName.ToLower()].GetDateFormat();
 
-                    Gui.DEFINES[currentColumnName.ToLower()].InitVariable(new Variable(fieldValue).Clone(), Gui);
+                        fieldValue = ((DateTime)lineItem.Value).ToString(dateFormat);
+                        //Gui.DEFINES[currentColumnName.ToLower()].DateTime = (DateTime)lineItem.Value;
+                    }
+                    else
+                    {
+                        fieldValue = lineItem.Value.ToString().TrimEnd();
+                    }
+
+                    Gui.DEFINES[currentColumnName.ToLower()].InitVariable(new Variable(fieldValue), Gui);
                     Gui.OnVariableChange(currentColumnName.ToLower(), new Variable(fieldValue), true);
+
+                    //Gui.Interpreter.AddGlobalOrLocalVariable(currentColumnName.ToLower(), new GetVarFunction(Gui.DEFINES[currentColumnName.ToLower()]), script);
+                    //Gui.DEFINES[currentColumnName.ToLower()] = Gui.DEFINES[currentColumnName.ToLower()];
                 }
             }
 
@@ -2086,30 +2103,45 @@ order by {orderByString}
             {
                 int currentSqlId = thisOpenv.currentRow;
 
-                if(lastUsedPreviousOrNext.TryGetValue(tableHndlNum, out FindvOption lastOption) && lastOption == option)
+                lastUsedPreviousOrNext.TryGetValue(tableHndlNum, out FindvOption lastOption);
+
+                if (thisOpenv.Cache.CachedLines.Count > 0)
                 {
-                    //if something is in Cache
-                    if (thisOpenv.Cache.CachedLines.Count > 0)
+                    int newIndex;
+                    if (thisOpenv.Cache.firstTaken == false)
                     {
-                        var firstCachedLine = thisOpenv.Cache.CachedLines.First();
+                        newIndex = 0;
+                        thisOpenv.Cache.firstTaken = true;
+                    }
+                    else if (option == thisOpenv.Cache.CacheDirection)
+                    {
+                        newIndex = ++thisOpenv.Cache.currentCacheListIndex;                       
+                    }
+                    else
+                    {
+                        newIndex = --thisOpenv.Cache.currentCacheListIndex;
+                    }
+                    
+                    var cachedLine = thisOpenv.Cache.CachedLines.ElementAtOrDefault(newIndex);
 
-                        fillBufferFromCacheLine(firstCachedLine);
-
-                        thisOpenv.Cache.CachedLines.Remove(firstCachedLine);
-
+                    if (cachedLine != null)
+                    {
+                        fillBufferFromCacheLine(cachedLine);
                         lastUsedPreviousOrNext[tableHndlNum] = option;
-
                         SetFlerr(0, tableHndlNum); // 0 means OK
                         return Variable.EmptyInstance;
                     }
                 }
-                else
+
+                // fill cache
+                thisOpenv.Cache.CachedLines = new List<CacheLine>();
+
+                if (lastOption != option)
                 {
                     // option != lastOption ... direction changed
                     thisOpenv.Cache.numOfRowsToGet = 1;
                     thisOpenv.Cache.CachedLines = new List<CacheLine>();
                 }
-                
 
                 int numOfRowsToSelect = thisOpenv.Cache.numOfRowsToGet;
 
@@ -2192,7 +2224,7 @@ N'{paramsDeclaration}', ";
                             {
                                 //if (firstPass)
 
-                                Dictionary<string, DefineVariable> cacheLine = new Dictionary<string, DefineVariable>();
+                                Dictionary<string, object> cacheLine = new Dictionary<string, object>();
 
                                 currentSqlId = (int)reader["ID"];
 
@@ -2202,60 +2234,70 @@ N'{paramsDeclaration}', ";
                                 while (currentFieldNum < reader.FieldCount)
                                 {
                                     var currentColumnName = reader.GetName(currentFieldNum);
-                                    if (KeyClass.KeyColumns.Keys.Any(p => p.ToUpper() == currentColumnName.ToUpper()))
-                                    {
-                                        if (reader.GetFieldType(currentFieldNum) == typeof(DateTime))
-                                        {
-                                            KeyClass.KeyColumns[currentColumnName] = ((DateTime)reader[currentColumnName]).ToString("yyyy-MM-dd");
-                                        }
-                                        else
-                                        {
-                                            KeyClass.KeyColumns[currentColumnName] = reader[currentColumnName].ToString();
-                                        }
-                                    }
+                                    
+                                    //if (KeyClass.KeyColumns.Keys.Any(p => p.ToUpper() == currentColumnName.ToUpper()))
+                                    //{
+                                    //    if (reader.GetFieldType(currentFieldNum) == typeof(DateTime))
+                                    //    {
+                                    //        KeyClass.KeyColumns[currentColumnName] = ((DateTime)reader[currentColumnName]).ToString("yyyy-MM-dd");
+                                    //    }
+                                    //    else
+                                    //    {
+                                    //        KeyClass.KeyColumns[currentColumnName] = reader[currentColumnName].ToString();
+                                    //    }
+                                    //}
 
-                                    var loweredCurrentColumnName = currentColumnName.ToLower();
-                                    if (!Gui.DEFINES.ContainsKey(loweredCurrentColumnName))
-                                    //if (!cacheLine.ContainsKey(loweredCurrentColumnName))
-                                    {
-                                        lastUsedPreviousOrNext[tableHndlNum] = option;
-                                        return new Variable((long)4);
-                                    }
-                                    else
-                                    {
-                                        if (reader.GetFieldType(currentFieldNum) == typeof(DateTime))
-                                        {
-                                            DateTime fieldValue = (DateTime)reader[currentColumnName];
-                                            //var dateFormat = CSCS_GUI.DEFINES[loweredCurrentColumnName].GetDateFormat();
-                                            //var newVar = new Variable(fieldValue.ToString(dateFormat));
+                                    //var loweredCurrentColumnName = currentColumnName.ToLower();
 
-                                            cacheLine.Add(currentColumnName, Gui.DEFINES[loweredCurrentColumnName]);
-                                            cacheLine[currentColumnName].DateTime = fieldValue;
-                                            //cacheLine[currentColumnName].InitVariable(newVar);
+                                    cacheLine.Add(currentColumnName, reader[currentColumnName]);
+
+
+                                    //if (!Gui.DEFINES.ContainsKey(loweredCurrentColumnName))
+                                    ////if (!cacheLine.ContainsKey(loweredCurrentColumnName))
+                                    //{
+                                    //    lastUsedPreviousOrNext[tableHndlNum] = option;
+                                    //    return new Variable((long)4);
+                                    //}
+                                    //else
+                                    //{
+                                    //    if (reader.GetFieldType(currentFieldNum) == typeof(DateTime))
+                                    //    {
+                                    //        DateTime fieldValue = (DateTime)reader[currentColumnName];
+                                    //        //var dateFormat = CSCS_GUI.DEFINES[loweredCurrentColumnName].GetDateFormat();
+                                    //        //var newVar = new Variable(fieldValue.ToString(dateFormat));
+
+                                    //        cacheLine.Add(currentColumnName, Gui.DEFINES[loweredCurrentColumnName]);
+                                    //        cacheLine[currentColumnName].DateTime = fieldValue;
                                             
-                                            //CSCS_GUI.DEFINES[loweredCurrentColumnName].InitVariable(newVar);
-                                            //CSCS_GUI.OnVariableChange(loweredCurrentColumnName, newVar, true);
-                                        }
-                                        else
-                                        {
-                                            string fieldValue = reader[currentColumnName].ToString().TrimEnd();
+                                            
+                                    //        //cacheLine[currentColumnName].InitVariable(newVar);
+                                            
+                                    //        //CSCS_GUI.DEFINES[loweredCurrentColumnName].InitVariable(newVar);
+                                    //        //CSCS_GUI.OnVariableChange(loweredCurrentColumnName, newVar, true);
+                                    //    }
+                                    //    else
+                                    //    {
+                                    //        cacheLine.Add(loweredCurrentColumnName, reader[currentColumnName]);
+                                            
+                                    //        //cacheLine[currentColumnName].InitVariable(new Variable(fieldValue).Clone(), Gui);
 
-                                            cacheLine.Add(currentColumnName, Gui.DEFINES[loweredCurrentColumnName]);
-                                            cacheLine[currentColumnName].InitVariable(new Variable(fieldValue).Clone(), Gui);
 
-                                            //CSCS_GUI.DEFINES[loweredCurrentColumnName].InitVariable(new Variable(fieldValue).Clone());
-                                            //CSCS_GUI.OnVariableChange(loweredCurrentColumnName, new Variable(fieldValue), true);
-                                        }
-                                    }
+                                    //        //CSCS_GUI.DEFINES[loweredCurrentColumnName].InitVariable(new Variable(fieldValue).Clone());
+                                    //        //CSCS_GUI.OnVariableChange(loweredCurrentColumnName, new Variable(fieldValue), true);
+                                    //    }
+                                    //}
 
                                     currentFieldNum++;
                                 }
-                                thisOpenv.Cache.CachedLines.Add(new CacheLine() { id = currentSqlId, Line = CloneCacheLineDictionary(cacheLine) });
+                                thisOpenv.Cache.CachedLines.Add(new CacheLine() { id = currentSqlId, Line = cacheLine });
 
                                 //firstPass = false;
                             }
 
                             //thisOpenv.currentRow = currentSqlId;
+                            thisOpenv.Cache.currentCacheListIndex = 0;
+                            thisOpenv.Cache.firstTaken = false;
+                            thisOpenv.Cache.CacheDirection = option;
                             Btrieve.OPENVs[tableHndlNum] = thisOpenv;
                         }
 
@@ -2269,6 +2311,194 @@ N'{paramsDeclaration}', ";
                 SetFlerr(0, tableHndlNum); // 0 means OK
                 return Variable.EmptyInstance;
             }
+            
+//            private Variable findNextOrPrevious_old(FindvOption option)
+//            {
+//                int currentSqlId = thisOpenv.currentRow;
+
+//                if(lastUsedPreviousOrNext.TryGetValue(tableHndlNum, out FindvOption lastOption) && lastOption == option)
+//                {
+//                    //if something is in Cache
+//                    if (thisOpenv.Cache.CachedLines.Count > 0)
+//                    {
+//                        var firstCachedLine = thisOpenv.Cache.CachedLines.First();
+
+//                        fillBufferFromCacheLine(firstCachedLine);
+
+//                        thisOpenv.Cache.CachedLines.Remove(firstCachedLine);
+
+//                        lastUsedPreviousOrNext[tableHndlNum] = option;
+
+//                        SetFlerr(0, tableHndlNum); // 0 means OK
+//                        return Variable.EmptyInstance;
+//                    }
+//                }
+//                else
+//                {
+//                    // option != lastOption ... direction changed
+//                    thisOpenv.Cache.numOfRowsToGet = 1;
+//                    thisOpenv.Cache.CachedLines = new List<CacheLine>();
+//                }
+                
+
+//                int numOfRowsToSelect = thisOpenv.Cache.numOfRowsToGet;
+
+//                thisOpenv.Cache.numOfRowsToGet *= 3;
+//                if (thisOpenv.Cache.numOfRowsToGet > CSCS_GUI.MaxCacheSize)
+//                    thisOpenv.Cache.numOfRowsToGet = CSCS_GUI.MaxCacheSize;
+
+
+//                string query = "";
+
+//                if (false && lastUsedPreviousOrNext.TryGetValue(tableHndlNum, out FindvOption lastOption2) && lastOption2 == option && !string.IsNullOrEmpty(nextPrevCachedWhereStrings[tableHndlNum]))
+//                {
+//                    query = nextPrevCachedWhereStrings[tableHndlNum];
+//                }
+//                else
+//                {
+//                    string columns = "*";
+//                    if (!string.IsNullOrEmpty(cachedColumnsToSelect[tableHndlNum]))
+//                    {
+//                        columns = cachedColumnsToSelect[tableHndlNum];
+//                    }
+
+//                    string whereString = GetNextOrPreviousWhereStringWithParams(option);
+
+//                    string sqlForString = "";
+//                    if (!string.IsNullOrEmpty(cachedSqlForString[tableHndlNum]))
+//                    {
+//                        sqlForString = cachedSqlForString[tableHndlNum];
+//                    }
+
+//                    string orderByString = GetOrderByString(option, thisOpenv, KeyClass);
+
+//                    string paramsDeclaration = GetParametersDeclaration(KeyClass);
+
+//                    query =
+//        $@"EXECUTE sp_executesql N'
+//select top {numOfRowsToSelect}
+//{columns}
+//from {Databases[thisOpenv.databaseName.ToUpper()]}.dbo.{thisOpenv.tableName} 
+//with (nolock) 
+//where (
+//{whereString}
+//)
+//{(!string.IsNullOrEmpty(cachedSqlForString[tableHndlNum]) ? "AND (" + sqlForString + ")" : "")} 
+
+//order by {orderByString}
+//',
+//N'{paramsDeclaration}', ";
+
+//                    nextPrevCachedWhereStrings[tableHndlNum] = query;
+//                }
+
+
+//                string paramsValues = GetParametersValues();
+
+//                query += paramsValues;
+
+//                using (SqlCommand cmd = new SqlCommand(query, Gui.SQLInstance.SqlServerConnection))
+//                {
+//                    using (SqlDataReader reader = cmd.ExecuteReader())
+//                    {
+//                        if (!reader.HasRows)
+//                        {
+//                            SetFlerr(3, tableHndlNum);
+//                            lastUsedPreviousOrNext[tableHndlNum] = option;
+//                            return Variable.EmptyInstance;
+//                        }
+//                        else
+//                        {
+//                            if (keyo == "keyo")
+//                            {
+//                                SetFlerr(0, tableHndlNum);
+//                                lastUsedPreviousOrNext[tableHndlNum] = option;
+//                                return Variable.EmptyInstance;
+//                            }
+
+//                            bool firstPass = true; // for buffer, first row outside cache
+                                                        
+//                            while (reader.Read())
+//                            {
+//                                //if (firstPass)
+
+//                                Dictionary<string, DefineVariable> cacheLine = new Dictionary<string, DefineVariable>();
+
+//                                currentSqlId = (int)reader["ID"];
+
+//                                //cacheLine.Add("id", new DefineVariable());
+
+//                                int currentFieldNum = 1;
+//                                while (currentFieldNum < reader.FieldCount)
+//                                {
+//                                    var currentColumnName = reader.GetName(currentFieldNum);
+//                                    if (KeyClass.KeyColumns.Keys.Any(p => p.ToUpper() == currentColumnName.ToUpper()))
+//                                    {
+//                                        if (reader.GetFieldType(currentFieldNum) == typeof(DateTime))
+//                                        {
+//                                            KeyClass.KeyColumns[currentColumnName] = ((DateTime)reader[currentColumnName]).ToString("yyyy-MM-dd");
+//                                        }
+//                                        else
+//                                        {
+//                                            KeyClass.KeyColumns[currentColumnName] = reader[currentColumnName].ToString();
+//                                        }
+//                                    }
+
+//                                    var loweredCurrentColumnName = currentColumnName.ToLower();
+//                                    if (!Gui.DEFINES.ContainsKey(loweredCurrentColumnName))
+//                                    //if (!cacheLine.ContainsKey(loweredCurrentColumnName))
+//                                    {
+//                                        lastUsedPreviousOrNext[tableHndlNum] = option;
+//                                        return new Variable((long)4);
+//                                    }
+//                                    else
+//                                    {
+//                                        if (reader.GetFieldType(currentFieldNum) == typeof(DateTime))
+//                                        {
+//                                            DateTime fieldValue = (DateTime)reader[currentColumnName];
+//                                            //var dateFormat = CSCS_GUI.DEFINES[loweredCurrentColumnName].GetDateFormat();
+//                                            //var newVar = new Variable(fieldValue.ToString(dateFormat));
+
+//                                            cacheLine.Add(currentColumnName, Gui.DEFINES[loweredCurrentColumnName]);
+//                                            cacheLine[currentColumnName].DateTime = fieldValue;
+//                                            //cacheLine[currentColumnName].InitVariable(newVar);
+                                            
+//                                            //CSCS_GUI.DEFINES[loweredCurrentColumnName].InitVariable(newVar);
+//                                            //CSCS_GUI.OnVariableChange(loweredCurrentColumnName, newVar, true);
+//                                        }
+//                                        else
+//                                        {
+//                                            string fieldValue = reader[currentColumnName].ToString().TrimEnd();
+
+//                                            cacheLine.Add(currentColumnName, Gui.DEFINES[loweredCurrentColumnName]);
+//                                            cacheLine[currentColumnName].InitVariable(new Variable(fieldValue).Clone(), Gui);
+
+//                                            //CSCS_GUI.DEFINES[loweredCurrentColumnName].InitVariable(new Variable(fieldValue).Clone());
+//                                            //CSCS_GUI.OnVariableChange(loweredCurrentColumnName, new Variable(fieldValue), true);
+//                                        }
+//                                    }
+
+//                                    currentFieldNum++;
+//                                }
+//                                thisOpenv.Cache.CachedLines.Add(new CacheLine() { id = currentSqlId, Line = CloneCacheLineDictionary(cacheLine) });
+
+//                                //firstPass = false;
+//                            }
+
+//                            //thisOpenv.currentRow = currentSqlId;
+//                            Btrieve.OPENVs[tableHndlNum] = thisOpenv;
+//                        }
+
+//                    }
+//                }
+
+//                lastUsedPreviousOrNext[tableHndlNum] = option;
+                
+//                findNextOrPrevious(option);
+
+//                SetFlerr(0, tableHndlNum); // 0 means OK
+//                return Variable.EmptyInstance;
+//            }
 
             public static Dictionary<string, DefineVariable> CloneCacheLineDictionary(Dictionary<string, DefineVariable> original)
             {

@@ -8232,9 +8232,12 @@ namespace WpfCSCS
 		{
 			Variable result = Gui.Interpreter.Run(newThreadFunction, args, script);
 
-			var resultArgs = new List<Variable>() {
-		  new Variable(newThreadFunction.Name), result
-	  };
+			if (result.Type == Variable.VarType.QUIT || result.IsReturn)
+			{
+				return;
+			}
+
+			var resultArgs = new List<Variable>() { new Variable(newThreadFunction.Name), result };
 
 			RunOnMainFunction.RunOnMainThread(callbackFunction, resultArgs);
 		}

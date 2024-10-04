@@ -1,0 +1,39 @@
+
+CreateWindow(strtrim(tpath()) + "mainScript1.xaml");
+
+MessageBox("start");
+AsyncCall("asyncFunction1", "done1");
+AsyncCall("asyncFunction2", "done2");
+AsyncCall("asyncFunction3", "done3");
+MessageBox("x");
+
+function asyncFunction1(){
+    for(i = 0; i < 50000; i++){
+        
+    }
+
+    quit;
+}
+
+function asyncFunction2(){
+    for(j = 0; j < 100000; j++){
+
+    }
+}
+
+function asyncFunction3(){
+    for(k = 0; k < 150000; k++){
+
+    }
+}
+
+function done1(){
+    MessageBox("done 1");
+}
+function done2(){
+    MessageBox("done 2");
+}
+function done3(){
+    MessageBox("done 3");
+}
+

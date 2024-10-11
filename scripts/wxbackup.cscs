@@ -49,9 +49,27 @@ DEFINE DestinationEmail type a size 100;
 DEFINE EmailSubject type a size 100;
 DEFINE NazivFirme type a size 100;
 
+DEFINE checkboxZakaziArhiviranje type l;
+
+DEFINE zakazanoTime type t size 8;
+
+DEFINE zakazanoSati type i size 2;
+DEFINE zakazanoMinuta type i size 2;
+
+DEFINE zakazano type l;
+
+DEFINE ftp type l;
+DEFINE FtpUsername, FtpPassword type a size 100;
+
 function wxbackup_onDisplay()
 {   
     Cursor("wait");
+
+    Clock("SatLabel");
+
+    zakazanoSati = 0;
+    zakazanoMinuta = 0;
+    checkboxZakaziArhiviranje = false;
 
     logCount = 0;
 
@@ -109,6 +127,8 @@ function wxbackup_onDisplay()
 
     isRunning = false;
     hasErrors = false;
+
+    SetFocus("btnPokreni");
 }
 
 function GetDatabaseNames(){
@@ -137,7 +157,7 @@ function GetDatabaseNames(){
 }
 
 function btnSelectBackupLocation@clicked(){
-    if(isRunning){
+    if(isRunning || zakazano){
         return;
     }
     
@@ -156,26 +176,109 @@ function btnSelectBackupLocation@clicked(){
     }
 }
 
-function btnPokreni@clicked()
-{
-    AsyncCall("Pokreni", "Gotovo");
+function cbZakaziArhiviranje@Clicked(){
+    if(!checkboxZakaziArhiviranje){
+        zakazano = false;
+        CancelScheduledFunction();
+        SetWidgetOptions("StatusLabel", "Content", "");
+        SetWidgetOptions("StatusLabel2", "Content", "");
+    }
 }
 
-function Pokreni(){
+function btnPokreni@clicked()
+{
     //supress running multiple times
     if(isRunning){
         return;
     }
 
-    if(!DIR_EXISTS(FinalBackupPath)){
-        MessageBox("Direktorij za arhivu ne postoji.\nMolim odaberite drugi direktorij.");
-        return;
+    if(substring(FinalBackupPath, 1, 1) == ":"){
+        ftp = false;
+    }else{
+        ftp = true;
     }
+
+    if(ftp == false){
+        if(!DIR_EXISTS(FinalBackupPath)){
+            MessageBox("Direktorij za arhivu ne postoji.\nMolim odaberite drugi direktorij.");
+            return;
+        }
+    }
+    else{
+        //ftp
+        if(!regedit("regOpen", winxIniPath, "rtFile")){
+            MessageBox("Datoteka " + winxIniPath + " nije dostupna.");
+            Cursor("dflt");
+            quit;
+        }
+
+        FtpUsername = regedit("regReadStr", 'BACKUP', 'FtpUsername');
+        if(FtpUsername == ""){
+            MessageBox("Potrebno je podesiti FTP username u ini datoteci.");
+            regedit("regWriteStr", 'BACKUP', 'FtpUsername', "");
+            Cursor("dflt");
+            quit;
+        }
+        
+        FtpPassword = regedit("regReadStr", 'BACKUP', 'FtpPassword');
+        if(FtpPassword == ""){
+            MessageBox("Potrebno je podesiti FTP password u ini datoteci.");
+            regedit("regWriteStr", 'BACKUP', 'FtpPassword', "");
+            Cursor("dflt");
+            quit;
+        }
+        
+        regedit("regClose");
+    }
+
+
+    if(checkboxZakaziArhiviranje == true){
+        satiString = string(zakazanoSati);
+        minutaString = string(zakazanoMinuta);
+        if(satiString.length < 2){
+            satiString = "0" + satiString;
+        }
+        if(minutaString.length < 2){
+            minutaString = "0" + minutaString;
+        }
+        zakazanoTime = satiString + ":" + minutaString + ":00";
+        
+        ScheduleFunction(zakazanoTime, "PokreniAsync");
+        
+        zakazano = true;
+
+        SetWidgetOptions("StatusLabel", "Content", "");
+        SetWidgetOptions("StatusLabel2", "Content", "Sljedeće arhiviranje zakazano u " + zakazanoTime);
+    }
+    else{
+        PokreniAsync();
+    }
+}
+
+function nbSati@textChange(){
+    // if(checkboxZakaziArhiviranje == true){
+    //     UpdateTimer();
+    // }
+}
+
+function nbMinuta@textChange(){
+    // if(checkboxZakaziArhiviranje == true){
+    //     UpdateTimer();
+    // }
+}
+
+
+function PokreniAsync(){
+    AsyncCall("Pokreni", "Gotovo");
+}
+
+function Pokreni(){
 
     isRunning = true;
     hasErrors = false;
 
-    RunOnMain("SetWait");
+    RunOnMain("SetWidgetsBackupStart");
+
 
     //clear log
     for(i = 0; i < logCount; i++){
@@ -219,20 +322,32 @@ function Pokreni(){
             }
         }
 
-        if(!MoveZipFileToFinal(substring(localBakFilename, 0, localBakFilename.length - 4) + ".zip", arrayNazivBaze[i])){
-            hasErrors = true;
-            continue;
-        }  
+        if(ftp){
+            //ftp
+            if(!UploadZipFile(substring(localBakFilename, 0, localBakFilename.length - 4) + ".zip", arrayNazivBaze[i])){
+                hasErrors = true;
+                continue;
+            }
+        }
+        else{
+            //local
+            if(!MoveZipFileToFinal(substring(localBakFilename, 0, localBakFilename.length - 4) + ".zip", arrayNazivBaze[i])){
+                hasErrors = true;
+                continue;
+            }
+        }
     }
 
     SendEmail();
 
-    RunOnMain("SetDflt");
+    //RunOnMain("SetDflt");
     if(hasErrors){
-        MessageBox("Arhiviranje dovršeno s greškama.");
+        // MessageBox("Arhiviranje dovršeno s greškama.");
+        RunOnMain("SetWidgetsBackupErrors");
     }
     else{
-        MessageBox("Arhiviranje uspješno dovršeno.");
+        //MessageBox("Arhiviranje uspješno dovršeno.");
+        RunOnMain("SetWidgetsBackupOk");
     }
     
     isRunning = false;
@@ -241,15 +356,40 @@ function Pokreni(){
 
 
 
-function SetWait(){
-    SetWidgetOptions("btnPokreni", "Content", "Molim pričekajte...");
+function SetWidgetsBackupStart(){
+    //SetWidgetOptions("btnPokreni", "Content", "Prekini arhiviranje");
+    SetWidgetOptions("StatusLabel", "Content", "Arhiviranje u tijeku...");
+    SetWidgetOptions("StatusLabel2", "Content", "");
+    
+    SetWidgetOptions("cbZakaziArhiviranje", "IsEnabled", "false");
+    
+    // SetWidgetOptions("nbSati", "IsEnabled", "false");
+    // SetWidgetOptions("nbMinuta", "IsEnabled", "false");
     Cursor("wait");
 }
 
-function SetDflt(){
-    SetWidgetOptions("btnPokreni", "Content", "Pokreni arhiviranje");
+function SetWidgetsBackupErrors(){
+    SetWidgetOptions("StatusLabel", "Content", "Arhiviranje dovršeno s greškama!");
+    SetWidgetOptions("cbZakaziArhiviranje", "IsEnabled", "true");
+    if(zakazano){
+        SetWidgetOptions("StatusLabel2", "Content", "Sljedeće arhiviranje zakazano u " + zakazanoTime);
+    }
+    // SetWidgetOptions("nbSati", "IsEnabled", "true");
+    // SetWidgetOptions("nbMinuta", "IsEnabled", "true");
     Cursor("dflt");
 }
+
+function SetWidgetsBackupOk(){
+    SetWidgetOptions("StatusLabel", "Content", "Arhiviranje uspješno dovršeno");
+    SetWidgetOptions("cbZakaziArhiviranje", "IsEnabled", "true");
+    if(zakazano){
+        SetWidgetOptions("StatusLabel2", "Content", "Sljedeće arhiviranje zakazano u " + zakazanoTime);
+    }
+    // SetWidgetOptions("nbSati", "IsEnabled", "true");
+    // SetWidgetOptions("nbMinuta", "IsEnabled", "true");
+    Cursor("dflt");
+}
+
 
 function Gotovo(){
 }
@@ -312,6 +452,27 @@ function MoveZipFileToFinal(zipFilename, dbName){
         return false;
     }
     
+}
+
+function UploadZipFile(zipFilename, dbName){
+    try
+    {
+        destinationFile = LocalBackupPath + substring(zipFilename, 0, zipFilename.length - 4) + "_" + backupDateShort + "_" + backupTimeShort + ".zip";
+        move(LocalBackupPath + zipFilename, destinationFile);
+        
+        FTPUploadFile(destinationFile, FinalBackupPath, 21, FtpUsername, FtpPassword);
+        logAdd(dbName + ": .zip datoteka uploadana");
+
+        Delete(destinationFile);
+        logAdd(dbName + ": .zip datoteka obrisana");
+
+        return true;
+    }
+    catch(exc)
+    {
+        logAdd(dbName + ": GREŠKA pri uploadanju .zip datoteke: " + exc);
+        return false;
+    }
 }
 
 //-- EMAIL --------------------------------------------------------------

@@ -63,6 +63,34 @@ DEFINE FtpUsername, FtpPassword type a size 100;
 
 function wxbackup_onDisplay()
 {   
+    //SaveFile(Encryptstr("setwofish", "wxbackup@aurasoft.hr", "12345"));
+
+    winxIniPath = strtrim(wpath()) + "winx.ini";
+
+    if(!regedit("regOpen", winxIniPath, "rtFile")){
+        MessageBox("Datoteka " + winxIniPath + " nije dostupna.");
+        Cursor("dflt");
+        quit;
+    }
+
+    UserName = regedit("regReadStr", 'MSSQL_SERVER', 'UserName');
+    Password = regedit("regReadStr", 'MSSQL_SERVER', 'Password');
+
+    UserName = Decryptstr("setwofish", UserName, "asoft0701");
+    Password = Decryptstr("setwofish", Password, "asoft0701");
+
+
+    MessageBox(UserName + " - " + Password);
+
+    regedit("regClose");
+
+    quit;
+
+
+
+
+
+
     Cursor("wait");
 
     Clock("SatLabel");
@@ -104,12 +132,19 @@ function wxbackup_onDisplay()
     
     FinalBackupPath = regedit("regReadStr", 'BACKUP', 'FinalBackupPath');
 
-    regedit("regClose");
-    
     if(FinalBackupPath == ""){
         regedit("regWriteStr", 'BACKUP', 'FinalBackupPath', "");
         FinalBackupPath = string(wpath());
     }
+
+    zakazanoSati = int(regedit("regReadStr", 'BACKUP', 'ZakazanoSati'));
+    zakazanoMinuta = int(regedit("regReadStr", 'BACKUP', 'ZakazanoMinuta'));
+    checkboxZakaziArhiviranje = regedit("regReadStr", 'BACKUP', 'Zakazano');
+    if(checkboxZakaziArhiviranje){
+        btnPokreni@clicked();
+    }
+
+    regedit("regClose");
 
 
     if(!DIR_EXISTS(BackupPath)){
@@ -182,6 +217,14 @@ function cbZakaziArhiviranje@Clicked(){
         CancelScheduledFunction();
         SetWidgetOptions("StatusLabel", "Content", "");
         SetWidgetOptions("StatusLabel2", "Content", "");
+
+        if(!regedit("regOpen", winxIniPath, "rtFile")){
+            MessageBox("Datoteka " + winxIniPath + " nije dostupna.");
+            Cursor("dflt");
+            quit;
+        }
+        regedit("regWriteStr", 'BACKUP', 'Zakazano', string(zakazano));
+        regedit("regClose");
     }
 }
 
@@ -192,7 +235,7 @@ function btnPokreni@clicked()
         return;
     }
 
-    if(substring(FinalBackupPath, 1, 1) == ":"){
+    if(FinalBackupPath.length > 2 && substring(FinalBackupPath, 1, 1) == ":"){
         ftp = false;
     }else{
         ftp = true;
@@ -219,6 +262,8 @@ function btnPokreni@clicked()
             Cursor("dflt");
             quit;
         }
+        //decrypt
+        FtpUsername = Decryptstr("setwofish", FtpUsername, "12345");
         
         FtpPassword = regedit("regReadStr", 'BACKUP', 'FtpPassword');
         if(FtpPassword == ""){
@@ -227,7 +272,9 @@ function btnPokreni@clicked()
             Cursor("dflt");
             quit;
         }
-        
+        //decrypt
+        FtpPassword = Decryptstr("setwofish", FtpPassword, "12345");
+
         regedit("regClose");
     }
 
@@ -246,6 +293,16 @@ function btnPokreni@clicked()
         ScheduleFunction(zakazanoTime, "PokreniAsync");
         
         zakazano = true;
+
+        if(!regedit("regOpen", winxIniPath, "rtFile")){
+            MessageBox("Datoteka " + winxIniPath + " nije dostupna.");
+            Cursor("dflt");
+            quit;
+        }
+        regedit("regWriteStr", 'BACKUP', 'Zakazano', string(zakazano));
+        regedit("regWriteStr", 'BACKUP', 'ZakazanoSati', string(zakazanoSati));
+        regedit("regWriteStr", 'BACKUP', 'ZakazanoMinuta', string(zakazanoMinuta));
+        regedit("regClose");
 
         SetWidgetOptions("StatusLabel", "Content", "");
         SetWidgetOptions("StatusLabel2", "Content", "Sljedeće arhiviranje zakazano u " + zakazanoTime);

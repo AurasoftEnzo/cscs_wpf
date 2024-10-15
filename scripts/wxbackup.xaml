@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:WpfCSCS"
         mc:Ignorable="d"
         Title="Arhiviranje baza podataka"
-        Height="700"
+        Height="670"
         Width="800"
         ResizeMode="CanMinimize">
     <Grid>
@@ -48,7 +48,7 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
                 <DataGridTemplateColumn Header="Naziv firme"
-                                Width="150">
+                                Width="100">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <wcl:ASGridCell FieldName="arrayNazivFirme" />
@@ -56,10 +56,18 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
                 <DataGridTemplateColumn Header="Poslovna godina"
-                                Width="180">
+                                Width="150">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <wcl:ASGridCell FieldName="arrayPoslovnaGodina"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Opis"
+                                Width="280">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <wcl:ASGridCell FieldName="arrayDescription"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
@@ -122,5 +130,7 @@
         <Label Content="" Name="StatusLabel2" FontSize="25" HorizontalContentAlignment="Center" Height="45" Width="570" Margin="110,579,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
 
         <Label Content="" x:Name="SatLabel" DataContext="Sat" FontSize="35" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Height="60" Width="175" Margin="15,444,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+
+        <Image x:Name="asImage" DataContext="Sat" Height="90" Width="100" Margin="680,534,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
     </Grid>
 </Window>

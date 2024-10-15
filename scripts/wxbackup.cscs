@@ -4,6 +4,7 @@ DEFINE arrayRbr type i size 3 array 100;
 DEFINE arrayNazivFirme type a size 255 array 100;
 DEFINE arrayPoslovnaGodina type a size 10 array 100;
 DEFINE arrayNazivBaze type a size 255 array 100;
+DEFINE arrayDescription type a size 255 array 100;
 
 DEFINE cntr1 type i size 10;
 DEFINE actElem1 type i size 10;
@@ -65,31 +66,7 @@ function wxbackup_onDisplay()
 {   
     //SaveFile(Encryptstr("setwofish", "wxbackup@aurasoft.hr", "12345"));
 
-    winxIniPath = strtrim(wpath()) + "winx.ini";
-
-    if(!regedit("regOpen", winxIniPath, "rtFile")){
-        MessageBox("Datoteka " + winxIniPath + " nije dostupna.");
-        Cursor("dflt");
-        quit;
-    }
-
-    UserName = regedit("regReadStr", 'MSSQL_SERVER', 'UserName');
-    Password = regedit("regReadStr", 'MSSQL_SERVER', 'Password');
-
-    UserName = Decryptstr("setwofish", UserName, "asoft0701");
-    Password = Decryptstr("setwofish", Password, "asoft0701");
-
-
-    MessageBox(UserName + " - " + Password);
-
-    regedit("regClose");
-
-    quit;
-
-
-
-
-
+    SetImage("asImage", strtrim(ipath())+"as1.png");
 
     Cursor("wait");
 
@@ -118,20 +95,19 @@ function wxbackup_onDisplay()
     if(BackupPath == ""){
         MessageBox("Potrebno je podesiti path za kreiranje arhive(BackupPath) u ini datoteci.");
         regedit("regWriteStr", 'BACKUP', 'BackupPath', "");
-        Cursor("dflt");
-        quit;
+        // Cursor("dflt");
+        // quit;
     }
     
     LocalBackupPath = regedit("regReadStr", 'BACKUP', 'LocalBackupPath');
     if(LocalBackupPath == ""){
         MessageBox("Potrebno je podesiti lokalni path za kreiranje arhive(LocalBackupPath) u ini datoteci.");
         regedit("regWriteStr", 'BACKUP', 'LocalBackupPath', "");
-        Cursor("dflt");
-        quit;
+        // Cursor("dflt");
+        // quit;
     }
     
     FinalBackupPath = regedit("regReadStr", 'BACKUP', 'FinalBackupPath');
-
     if(FinalBackupPath == ""){
         regedit("regWriteStr", 'BACKUP', 'FinalBackupPath', "");
         FinalBackupPath = string(wpath());
@@ -163,11 +139,13 @@ function wxbackup_onDisplay()
     isRunning = false;
     hasErrors = false;
 
+
+
     SetFocus("btnPokreni");
 }
 
 function GetDatabaseNames(){
-    sqlQueryString = "SELECT [SY_CC_USER], [SY_CC_YEAR], [SY_CC_DBASE]" +
+    sqlQueryString = "SELECT [SY_CC_USER], [SY_CC_YEAR], [SY_CC_DBASE], [SY_CC_DESC]" +
         " FROM " + CommonDBGet() + ".[dbo].[NKSYCCYR]" +
         " WHERE SY_CC_REZ1 = 'D'";
     try
@@ -179,9 +157,19 @@ function GetDatabaseNames(){
             arrayNazivFirme[i - 1] = strtrim(sqlResult[i][0]);
             arrayPoslovnaGodina[i - 1] = strtrim(string(sqlResult[i][1]));
             arrayNazivBaze[i - 1] = strtrim(sqlResult[i][2]);
+            arrayDescription[i - 1] = strtrim(sqlResult[i][3]);
         }
 
-        actElem1 = Size(sqlResult) - 1;
+        // actElem1 = Size(sqlResult) - 1;
+
+        //Dictionary
+        arrayRbr[Size(sqlResult) - 1] = Size(sqlResult);
+        arrayNazivFirme[Size(sqlResult) - 1] = "DICTIONARY";
+        arrayPoslovnaGodina[Size(sqlResult) - 1] = "0";
+        arrayNazivBaze[Size(sqlResult) - 1] = "Dictionary";
+        arrayDescription[Size(sqlResult) - 1] = "Dictionary";
+
+        actElem1 = Size(sqlResult);
     }
     catch(exc)
     {
@@ -234,6 +222,22 @@ function btnPokreni@clicked()
     if(isRunning){
         return;
     }
+
+    winxIniPath = strtrim(wpath()) + "winx.ini";
+
+    if(!DIR_EXISTS(BackupPath)){
+        MessageBox("Potrebno je podesiti path za kreiranje arhive(BackupPath) u ini datoteci.");
+        Cursor("dflt");
+        return;
+    }
+    
+    if(!DIR_EXISTS(LocalBackupPath)){
+        MessageBox("Potrebno je podesiti lokalni path za kreiranje arhive(LocalBackupPath) u ini datoteci.");
+        Cursor("dflt");
+        return;
+    }
+    
+    
 
     if(FinalBackupPath.length > 2 && substring(FinalBackupPath, 1, 1) == ":"){
         ftp = false;

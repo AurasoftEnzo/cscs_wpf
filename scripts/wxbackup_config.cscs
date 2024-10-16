@@ -1,0 +1,144 @@
+DEFINE winxIniBackupPath type a size 255;
+DEFINE winxIniLocalBackupPath type a size 255;
+DEFINE winxIniFinalBackupPath type a size 255;
+DEFINE winxIniFtpUsername type a size 255;
+DEFINE winxIniFtpPassword type a size 255;
+
+DEFINE winxIniOutgoingEmailServer type a size 255;
+DEFINE winxIniEmailUsername type a size 255;
+DEFINE winxIniEmailPassword type a size 255;
+DEFINE winxIniSenderEmail type a size 255;
+DEFINE winxIniEmailSenderName type a size 255;
+DEFINE winxIniDestinationEmail type a size 255;
+
+function wxbackup_config_onDisplay(){
+    winxIniPath = strtrim(wpath()) + "winx.ini";
+
+    if(!regedit("regOpen", winxIniPath, "rtFile")){
+        MessageBox("Datoteka " + winxIniPath + " nije dostupna.");
+        Cursor("dflt");
+        quit;
+    }
+
+    winxIniBackupPath = regedit("regReadStr", 'BACKUP', 'BackupPath');
+    winxIniLocalBackupPath = regedit("regReadStr", 'BACKUP', 'LocalBackupPath');
+    winxIniFinalBackupPath = regedit("regReadStr", 'BACKUP', 'FinalBackupPath');
+
+    winxIniFtpUsername = regedit("regReadStr", 'BACKUP', 'FtpUsername');
+    if(winxIniFtpUsername != ""){
+        winxIniFtpUsername = Decryptstr("setwofish", winxIniFtpUsername, "12345");
+    }
+    winxIniFtpPassword = regedit("regReadStr", 'BACKUP', 'FtpPassword');
+    if(winxIniFtpPassword != ""){
+        winxIniFtpPassword = Decryptstr("setwofish", winxIniFtpPassword, "12345");
+    }
+    
+    winxIniOutgoingEmailServer = regedit("regReadStr", 'EMAIL', 'OutgoingEmailServer');
+
+    winxIniEmailUsername = regedit("regReadStr", 'EMAIL', 'EmailUsername');
+    if(winxIniEmailUsername != ""){
+        winxIniEmailUsername = Decryptstr("setwofish", winxIniEmailUsername, "12345");
+    }
+    winxIniEmailPassword = regedit("regReadStr", 'EMAIL', 'EmailPassword');
+    if(winxIniEmailPassword != ""){
+        winxIniEmailPassword = Decryptstr("setwofish", winxIniEmailPassword, "12345");
+    }
+
+    winxIniSenderEmail = regedit("regReadStr", 'EMAIL', 'SenderEmail');
+    winxIniEmailSenderName = regedit("regReadStr", 'EMAIL', 'EmailSenderName');
+    winxIniDestinationEmail = regedit("regReadStr", 'EMAIL', 'DestinationEmail');
+    
+    regedit("regClose");
+}
+
+function btnSelectWinxIniBackupLocation@clicked(){
+    if(winxIniBackupPath == ""){
+        dialogResult = getPath(wpath(), "Odaberite direktorij za arhivu");
+    }
+    else{
+        dialogResult = getPath(winxIniBackupPath, "Odaberite direktorij za arhivu");
+    }
+
+    if(dialogResult != ""){
+        winxIniBackupPath = dialogResult;
+        if(substring(winxIniBackupPath, winxIniBackupPath.length - 1, 1) != "\\"){
+            winxIniBackupPath += "\\";
+        }
+    }
+}
+
+function btnSelectWinxIniLocalBackupLocation@clicked(){
+    if(winxIniLocalBackupPath == ""){
+        dialogResult = getPath(wpath(), "Odaberite direktorij za arhivu");
+    }
+    else{
+        dialogResult = getPath(winxIniLocalBackupPath, "Odaberite direktorij za arhivu");
+    }
+
+    if(dialogResult != ""){
+        winxIniLocalBackupPath = dialogResult;
+        if(substring(winxIniLocalBackupPath, winxIniLocalBackupPath.length - 1, 1) != "\\"){
+            winxIniLocalBackupPath += "\\";
+        }
+    }
+}
+
+function btnSelectWinxIniFinalBackupLocation@clicked(){
+    if(winxIniFinalBackupPath == ""){
+        dialogResult = getPath(wpath(), "Odaberite direktorij za arhivu");
+    }
+    else{
+        dialogResult = getPath(winxIniFinalBackupPath, "Odaberite direktorij za arhivu");
+    }
+
+    if(dialogResult != ""){
+        winxIniFinalBackupPath = dialogResult;
+        if(substring(winxIniFinalBackupPath, winxIniFinalBackupPath.length - 1, 1) != "\\"){
+            winxIniFinalBackupPath += "\\";
+        }
+    }
+}
+
+function btnSpremiConfig@clicked(){
+    try{
+        winxIniPath = strtrim(wpath()) + "winx.ini";
+
+        if(!regedit("regOpen", winxIniPath, "rtFile")){
+            MessageBox("Datoteka " + winxIniPath + " nije dostupna.");
+            Cursor("dflt");
+            quit;
+        }
+
+        regedit("regWriteStr", 'BACKUP', 'BackupPath', winxIniBackupPath);
+        regedit("regWriteStr", 'BACKUP', 'LocalBackupPath', winxIniLocalBackupPath);
+        regedit("regWriteStr", 'BACKUP', 'FinalBackupPath', winxIniFinalBackupPath);
+        regedit("regWriteStr", 'BACKUP', 'FtpUsername', Encryptstr("setwofish", winxIniFtpUsername, "12345"));
+        regedit("regWriteStr", 'BACKUP', 'FtpPassword', Encryptstr("setwofish", winxIniFtpPassword, "12345"));
+
+        regedit("regWriteStr", 'EMAIL', 'OutgoingEmailServer', winxIniOutgoingEmailServer);
+        regedit("regWriteStr", 'EMAIL', 'EmailUsername', Encryptstr("setwofish", winxIniEmailUsername, "12345"));
+        regedit("regWriteStr", 'EMAIL', 'EmailPassword', Encryptstr("setwofish", winxIniEmailPassword, "12345"));
+        regedit("regWriteStr", 'EMAIL', 'SenderEmail', winxIniSenderEmail);
+        regedit("regWriteStr", 'EMAIL', 'EmailSenderName', winxIniEmailSenderName);
+        regedit("regWriteStr", 'EMAIL', 'DestinationEmail', winxIniDestinationEmail);
+        
+        regedit("regClose");
+
+        BackupPath = winxIniBackupPath;
+        LocalBackupPath = winxIniLocalBackupPath;
+        FinalBackupPath = winxIniFinalBackupPath;
+        FtpUsername = winxIniFtpUsername;
+        FtpPassword = winxIniFtpPassword;
+
+        OutgoingEmailServer = winxIniOutgoingEmailServer;
+        EmailUsername = winxIniEmailUsername;
+        EmailPassword = winxIniEmailPassword;
+        SenderEmail = winxIniSenderEmail;
+        EmailSenderName = winxIniEmailSenderName;
+        DestinationEmail = winxIniDestinationEmail;
+
+        MessageBox("Uspješno spremljeno");
+    }catch(ex){
+        MessageBox("GREŠKA: " + ex)
+    }    
+}

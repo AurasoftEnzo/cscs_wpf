@@ -139,9 +139,14 @@ function wxbackup_onDisplay()
     isRunning = false;
     hasErrors = false;
 
-
+    TRAP("F9", "openConfig");
 
     SetFocus("btnPokreni");
+}
+
+function openConfig(){
+    include(strtrim(tpath()) + "wxbackup_config.cscs");
+    ModalWindow(strtrim(tpath()) + "wxbackup_config.xaml");
 }
 
 function GetDatabaseNames(){
@@ -558,6 +563,7 @@ function SendEmail(){
         regedit("regWriteStr", 'EMAIL', 'EmailUsername', "");
         return;
     }
+    EmailUsername = Decryptstr("setwofish", EmailUsername, "12345");
 
     EmailPassword = regedit("regReadStr", 'EMAIL', 'EmailPassword');
     if(EmailPassword == ""){
@@ -565,6 +571,7 @@ function SendEmail(){
         regedit("regWriteStr", 'EMAIL', 'EmailPassword', "");
         return;
     }
+    EmailPassword = Decryptstr("setwofish", EmailPassword, "12345");
 
     SenderEmail = regedit("regReadStr", 'EMAIL', 'SenderEmail');
     if(SenderEmail == ""){

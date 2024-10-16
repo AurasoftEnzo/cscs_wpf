@@ -1597,15 +1597,16 @@ namespace WpfCSCS
             List<Variable> args = script.GetFunctionArgs();
             Utils.CheckArgs(args.Count, 2, m_name);
             var key = Utils.GetSafeString(args, 0);
-            var toRun = args.FirstOrDefault(p => p.CurrentAssign.ToLower() == "gosub");
+            //var toRun = args.FirstOrDefault(p => p.CurrentAssign.ToLower() == "gosub");
+            var toRun = Utils.GetSafeString(args, 1).ToLower();
             var gui = script.Context as CSCS_GUI;
             Window win;
-            Key keyPressed =new ReturnKeyUtil().ReturnKey(key);
+            Key keyPressed = new ReturnKeyUtil().ReturnKey(key);
           
-
             if (CSCS_GUI.File2Window.TryGetValue(script.Filename, out win))
             {
-                var ib = new InputBinding(new KeyCommand((object arg1) => { return true; }, (object obj) => { gui.Interpreter.Run(toRun.String, null, null, null, script); }), new KeyGesture(keyPressed));
+                //var ib = new InputBinding(new KeyCommand((object arg1) => { return true; }, (object obj) => { gui.Interpreter.Run(toRun.String, null, null, null, script); }), new KeyGesture(keyPressed));
+                var ib = new InputBinding(new KeyCommand((object arg1) => { return true; }, (object obj) => { gui.Interpreter.Run(toRun, null, null, null, script); }), new KeyGesture(keyPressed));
                 win.InputBindings.Add(ib);
             }
 

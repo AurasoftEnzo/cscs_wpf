@@ -7,14 +7,17 @@ using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 //using System.Windows.Forms;
 using System.Windows.Media;
+using System.Windows.Threading;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
 namespace WpfCSCS
@@ -38,6 +41,13 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.ZIP_FILE, new ZipFileFunction());
 
             interpreter.RegisterFunction(Constants.GET_SQL_RECORD, new GetSQLRecordFunction());
+
+            interpreter.RegisterFunction(Constants.SCHEDULE_FUNCTION, new ScheduleFunctionFunction());
+            interpreter.RegisterFunction(Constants.CANCEL_SCHEDULED_FUNCTION, new CancelScheduledFunctionFunction());
+            
+            interpreter.RegisterFunction(Constants.CLOCK, new ClockFunction());
+
+            interpreter.RegisterFunction(Constants.FTP_UPLOAD_FILE, new FTPUploadFileFunction());
             
         }
         public partial class Constants
@@ -52,6 +62,13 @@ namespace WpfCSCS
             public const string ZIP_FILE = "ZipFile";
 
             public const string GET_SQL_RECORD = "GetSQLRecord";
+
+            public const string SCHEDULE_FUNCTION = "ScheduleFunction";
+            public const string CANCEL_SCHEDULED_FUNCTION = "CancelScheduledFunction";
+
+            public const string CLOCK = "Clock";
+
+            public const string FTP_UPLOAD_FILE = "FTPUploadFile";
         }
     }
 
@@ -590,6 +607,151 @@ namespace WpfCSCS
             }
 
             return Variable.EmptyInstance;          
+        }
+    }
+
+    public static class Timers
+    {
+        public static System.Timers.Timer timer1;
+        public static System.Timers.Timer timer2;
+    }
+    
+    class ScheduleFunctionFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 2, m_name);
+
+            var gui = CSCS_GUI.GetInstance(script);
+
+            var timeVar = Utils.GetSafeVariable(args, 0);
+            var functionName = Utils.GetSafeString(args, 1);
+            
+            var alertTime = timeVar.DateTime.TimeOfDay;
+            DateTime current = DateTime.Now;
+            TimeSpan timeToGo;
+
+            if (alertTime < current.TimeOfDay)
+            {
+                timeToGo = alertTime + (TimeSpan.Parse("24:00:00") - current.TimeOfDay);
+            }
+            else
+            {
+                timeToGo = alertTime - current.TimeOfDay;
+            }
+
+            if (Timers.timer1 != null)
+            {
+                Timers.timer1.Stop();
+                Timers.timer1.Dispose();
+            }
+            if (Timers.timer2 != null)
+            {
+                Timers.timer2.Stop();
+                Timers.timer2.Dispose();
+            }
+
+            Timers.timer1 = new System.Timers.Timer(timeToGo.TotalMilliseconds);
+            Timers.timer1.Elapsed += (Object source, ElapsedEventArgs e) =>
+            {
+                gui.Interpreter.Run(functionName);
+
+                Timers.timer2 = new System.Timers.Timer(1000 * 60 * 60 * 24);
+                Timers.timer2.Elapsed += (Object source2, ElapsedEventArgs e2) =>
+                {
+                    gui.Interpreter.Run(functionName);
+                };
+                Timers.timer2.AutoReset = true;
+                Timers.timer2.Enabled = true;
+
+                Timers.timer1.Stop();
+                Timers.timer1.Dispose();
+            };
+            Timers.timer1.AutoReset = false;
+            Timers.timer1.Enabled = true;
+
+            return Variable.EmptyInstance;
+        }
+    }
+    
+    class CancelScheduledFunctionFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 0, m_name);
+
+            if(Timers.timer1 != null)
+            {
+                Timers.timer1.Stop();
+                Timers.timer1.Dispose();
+            }
+            if(Timers.timer2 != null)
+            {
+                Timers.timer2.Stop();
+                Timers.timer2.Dispose();
+            }
+
+            return Variable.EmptyInstance;
+        }
+    }
+    
+    class ClockFunction : ParserFunction
+    {
+        private System.Timers.Timer timer1;
+        private System.Timers.Timer timer2;
+
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+
+            var gui = CSCS_GUI.GetInstance(script);
+
+            var widgetName = Utils.GetSafeString(args, 0).ToLower();
+
+            var widget = gui.GetWidget(widgetName);
+
+            if (widget is Label label) {
+                DispatcherTimer LiveTime = new DispatcherTimer();
+                LiveTime.Interval = TimeSpan.FromMilliseconds(200);
+                LiveTime.Tick += (object sender, EventArgs e) => {
+                    label.Content = DateTime.Now.ToString("HH:mm:ss");
+                };
+                LiveTime.Start();
+            }
+
+            return Variable.EmptyInstance;
+        }
+    }
+    
+    class FTPUploadFileFunction : ParserFunction
+    {
+        private System.Timers.Timer timer1;
+        private System.Timers.Timer timer2;
+
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 5, m_name);
+
+            var gui = CSCS_GUI.GetInstance(script);
+
+            var filePath = Utils.GetSafeString(args, 0);
+            var serverAddress = Utils.GetSafeString(args, 1);
+            var port = Utils.GetSafeInt(args, 2);
+            var username = Utils.GetSafeString(args, 3).ToLower();
+            var password = Utils.GetSafeString(args, 4);
+
+            using (var client = new WebClient())
+            {
+                var zipFilename = Path.GetFileName(filePath);
+                client.Credentials = new NetworkCredential(username, password);
+                client.UploadFile(string.Format("ftp://{0}/{1}", serverAddress, zipFilename), WebRequestMethods.Ftp.UploadFile, filePath);
+            }
+
+            return Variable.EmptyInstance;
         }
     }
 }

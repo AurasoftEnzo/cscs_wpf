@@ -161,7 +161,7 @@ function setTop10InvoicesDataGrid()
 		{
 		if (do_mjeseca)
 		{
-			sql_str += " AND month(nkpr_gl_datem)<=  " + mjesec_h ;
+			sql_str += " AND month(nkpr_gl_datem) <=  " + mjesec_h ;
 			sql_str += " AND YEAR(nkpr_gl_datem) =  " + ovagod_h ;
 		}
 		else 
@@ -825,7 +825,7 @@ function setLast10InvoicesDataGrid()
 	}
 	else 
 	{
-		sql_str += " month(CASE WHEN kpsp_gl_datcr != '1900-01-01' THEN kpsp_gl_datcr ELSE kpsp_gl_dat_dok END) =  " + mjesec_h;
+		sql_str += " AND month(CASE WHEN kpsp_gl_datcr != '1900-01-01' THEN kpsp_gl_datcr ELSE kpsp_gl_dat_dok END) =  " + mjesec_h;
 	}
     filterPartKontiranje();
 
@@ -960,7 +960,7 @@ function setTop10InvoicesDataGrid()
 	}
 	else 
 	{
-		sql_str += " month(kpsp_gl_datem) =  " + mjesec_h;
+		sql_str += " AND month(kpsp_gl_datem) =  " + mjesec_h;
 	}
     filterPartKontiranje();
 

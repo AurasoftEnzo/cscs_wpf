@@ -436,7 +436,6 @@ function setChartByMonth(){
         
         RunOnMain("setChartByMonth2");
     }
-    
     //sada tekuća godina nabava
     sql_str = "SELECT '1' as tip,CONVERT(varchar(6),nkpr_gl_datem,112) as yyyymm, ";
     if (neto_dn)
@@ -524,15 +523,18 @@ function setChartByMonth(){
     sql_str += " ORDER BY CONVERT(varchar(6), kpsp_gl_datem, 112);";
     try
     {
-        // SaveFile(sql_str);
+         //SaveFile(sql_str);
         queryResult = sqlquery(SQL_str);
     }
     catch(exc)
     {
         MessageBox(exc);
     }
-    
+    if (Size(queryResult)> 1)
+    {
     RunOnMain("setChartByMonth4");
+    }
+
 }
 
 function setChartByMonth1(){
@@ -691,9 +693,10 @@ function setChartByMonth4(){
 
     for(i = 1; i <= Size(queryResult)-1; i++)
     {
+
         ar_cntr_kontiranje = int(substring(queryResult[i][1],4,2)); //nađimo koji je to mjesec
         arrayTrenutnaKontiranje[ar_cntr_kontiranje - 1] = math.round(queryResult[i][2] / 1000.0); 
-        sales_month_ar_kontiranje[ar_cntr-1] = queryResult[i][2];
+        sales_month_ar_kontiranje[ar_cntr_kontiranje-1] = queryResult[i][2]; //GREŠKA!!!
         mjesec_h0X = mjesec_h.length == 1 ? "0" + mjesec_h : mjesec_h;
         proslimjesec = string(int(mjesec_h) - 1); // 1
         proslimjesec0X = proslimjesec.length == 1 ? "0" + proslimjesec : proslimjesec;

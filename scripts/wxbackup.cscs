@@ -621,6 +621,14 @@ function logAdd(text){
 
 function FormatLog(){
     logFinal = "";
+
+    if(hasErrors){
+        logFinal += "Arhiviranje dovršeno s greškama!\n\n";
+    }
+    else{
+        logFinal += "Arhiviranje uspješno dovršeno.\n\n";
+    }
+
     for(i = 0; i < logCount; i++){
         logFinal += log[i] + "\n";
     }

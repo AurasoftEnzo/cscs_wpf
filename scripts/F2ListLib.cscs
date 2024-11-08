@@ -18,7 +18,7 @@ function ShowF2List(){
 }
 
 function F2List_onDisplay(){
-    FormatF2ListDataGrid( windowTitle, headersArray);
+    FormatF2ListDataGrid("dgF2List", windowTitle, headersArray);
     searchSifra = &sifraFieldPointer;
     search();
     //DisplayTable("dgF2List", "RedisplayfromTop");
@@ -78,5 +78,112 @@ function gbCancel@clicked()
 {
     searchSifra = "";
     searchNaziv = "";
+    SetWindowModalResult(false);
+}
+
+
+//--- SelectedViewList----------------------------------
+
+
+function ShowSelectedViewList(){
+    ModalWindow(strTrim(tpath()) + "SelectedViewList.xaml");
+}
+
+function SelectedViewList_onDisplay(){
+
+    cursor("wait");
+
+    FormatF2ListDataGrid("dgSelectedViewList", windowTitle, headersArray);
+    
+    //NewBindSQL("dgSelectedViewList", F2ListQueryString);
+
+    define novi_selected_str type a size 50;
+    novi_selected_str = &sifraFieldPointer;
+
+    // MessageBox(novi_selected_str);
+
+    // searchSifra = &sifraFieldPointer;
+    searchView();
+    
+    //DisplayTable("dgSelectedViewList", "RedisplayfromTop");
+    //SetFocus("dgSelectedViewList");
+
+    cursor("dflt");
+}
+
+function searchView()
+{
+    // cursor("wait");
+    finalQueryString = F2ListQueryString.replace("{var1}", novi_selected_str);
+    // finalQueryString = finalQueryString.replace("{var2}", searchNaziv);
+    // finalQueryString = finalQueryString.replace("{var3}", search3);
+    NewBindSQL("dgSelectedViewList", finalQueryString);
+    //MSG(finalQueryString);
+    // cursor("dflt");
+}
+
+
+// function ebSifra@TextChange()
+// {
+//     searchView();
+// }
+
+// function ebNaziv@TextChange()
+// {
+//     if(searchNaziv.length > 2 || searchNaziv.length == 0){
+//         searchView();
+//     }
+// }
+
+// function dgSelectedViewList@select(){
+//     //selected();
+// }
+
+function gbUkloni@clicked()
+{
+    selectedArray = GetSelectedGridRow("dgSelectedViewList");
+
+    if (size(selectedArray) !== 0)
+    {
+        selectedSifra = selectedArray[1];
+      
+        novi_selected_str = strReplace(strReplace(strReplace(novi_selected_str, ",'" + selectedSifra + "'", ""), "'" + selectedSifra + "',", ""), "'" + selectedSifra + "'", "");
+        // if(novi_selected_str == ""){
+        //     novi_selected_str = "''";
+        // }
+        try{
+            searchView();
+        }catch(exc){
+            // MessageBox("->>> " + exc);
+        }
+
+        sifraFieldPointer -> novi_selected_str;
+       
+        //SetWindowModalResult(true);
+    } 
+}
+
+// function selectedInView(){
+//     // define searchSifra2 type a size 50;
+//     // define searchNaziv2 type a size 50;
+    
+//     // selectedArray = GetSelectedGridRow("dgSelectedViewList");
+
+//     // if (size(selectedArray) !== 0)
+//     // {
+//     //     searchSifra2 = selectedArray[1];
+//     //     searchNaziv2 = selectedArray[2];
+      
+//     //     sifraFieldPointer -> searchSifra2;
+//     //     NazivFieldPointer -> searchNaziv2;
+       
+//     //     SetWindowModalResult(true);
+//     // }   
+// }
+
+function gbCancel@clicked()
+{
+    // searchSifra = "";
+    // searchNaziv = "";
     SetWindowModalResult(false);
 }

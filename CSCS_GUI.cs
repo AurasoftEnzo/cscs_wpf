@@ -202,6 +202,7 @@ namespace SplitAndMerge
 	public const string YEAR = "Year";
 	public const string DOM = "DOM";
 	public const string DOW = "DOW";
+	public const string FLSZE = "FLSZE";
 	public const string DSPCE = "DSPCE";
 	public const string HEX = "HEX";
 	public const string REGEDIT = "REGEDIT";

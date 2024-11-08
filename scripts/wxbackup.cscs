@@ -360,6 +360,7 @@ function Pokreni(){
     backupTimeShort = strReplace(backupTimeSQL, ":", "");
 
     for(i = 0; i < actElem1; i++){
+        logAdd("");
         logAdd("----- Arhiviranje baze " + arrayNazivBaze[i] + "(" + arrayNazivFirme[i] + " - " + arrayPoslovnaGodina[i] + ")" + " -----");
         if(!CreateDBBackup(arrayNazivBaze[i], arrayNazivFirme[i], arrayPoslovnaGodina[i], i)){
             hasErrors = true;
@@ -507,6 +508,10 @@ function MoveZipFileToFinal(zipFilename, dbName){
     {
         destinationFile = FinalBackupPath + substring(zipFilename, 0, zipFilename.length - 4) + "_" + backupDateShort + "_" + backupTimeShort + ".zip";
         
+        if(FLSZE(LocalBackupPath + zipFilename) * 5 > DSPCE(substring(destinationFile, 0, 1))){
+            logAdd(dbName + ": UPOZORENJE: Preostalo je malo mjesta na disku");
+        }
+
         move(LocalBackupPath + zipFilename, destinationFile);
         
         logAdd(dbName + ": Premještena .zip datoteka");
@@ -615,7 +620,7 @@ function SendEmail(){
 //-- LOG ------------------------------------------------
 
 function logAdd(text){
-    log[logCount] = text;
+    log[logCount] = strTrim(text);
     logCount++;
 }
 
@@ -623,10 +628,10 @@ function FormatLog(){
     logFinal = "";
 
     if(hasErrors){
-        logFinal += "Arhiviranje dovršeno s greškama!\n\n";
+        logFinal += "Arhiviranje dovršeno s greškama!\n";
     }
     else{
-        logFinal += "Arhiviranje uspješno dovršeno.\n\n";
+        logFinal += "Arhiviranje uspješno dovršeno.\n";
     }
 
     for(i = 0; i < logCount; i++){

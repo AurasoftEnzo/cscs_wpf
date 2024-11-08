@@ -105,6 +105,7 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.ELOC, new ELOCFunction());
             interpreter.RegisterFunction(Constants.ASC, new ASCFunction());
             interpreter.RegisterFunction(Constants.DOM, new DOMFunction());
+            interpreter.RegisterFunction(Constants.FLSZE, new FLSZEFunction());
             interpreter.RegisterFunction(Constants.DSPCE, new DSPCEFunction());
             interpreter.RegisterFunction(Constants.HEX, new HEXFunction());
             interpreter.RegisterFunction(Constants.REGEDIT, new REGEDITFunction());
@@ -1770,19 +1771,52 @@ namespace WpfCSCS
         }
     }
     
+    class FLSZEFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+            var filePath = Utils.GetSafeString(args, 0);
+
+            if (File.Exists(filePath))
+            {
+                FileInfo fInfo = new FileInfo(filePath);
+
+                return new Variable(fInfo.Length);
+            }
+            
+            return new Variable(0);
+        }
+    }
+    
     class DSPCEFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
         {
-            foreach (DriveInfo drive in DriveInfo.GetDrives())
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 0, m_name);
+            var driveLetter = Utils.GetSafeString(args, 0);
+
+            if (string.IsNullOrEmpty(driveLetter))
             {
-                var tmp = System.AppDomain.CurrentDomain.BaseDirectory.Substring(0, 3);
-                if (drive.IsReady && drive.Name.ToLower() == tmp.ToLower())
-                {
-                    return new Variable(drive.TotalFreeSpace); ;
-                }
+                driveLetter = System.AppDomain.CurrentDomain.BaseDirectory.Substring(0, 1);
             }
-            return Variable.EmptyInstance;
+
+            var drives = DriveInfo.GetDrives();
+            var drive = drives.FirstOrDefault(p=>p.Name.Substring(0, 1).ToLower() == driveLetter.ToLower());
+
+            return new Variable(drive.TotalFreeSpace);
+
+            //foreach (DriveInfo drive in DriveInfo.GetDrives())
+            //{
+            //    var tmp = System.AppDomain.CurrentDomain.BaseDirectory.Substring(0, 3);
+            //    if (drive.IsReady && drive.Name.ToLower() == tmp.ToLower())
+            //    {
+            //        return new Variable(drive.TotalFreeSpace);
+            //    }
+            //}
+            //return Variable.EmptyInstance;
         }
     }
     
@@ -2518,21 +2552,22 @@ d:\temp\aaa.txt, d:\temp\ggg.txt,
         protected override Variable Evaluate(ParsingScript script)
         {
             List<Variable> args = script.GetFunctionArgs();
-            Utils.CheckArgs(args.Count, 2, m_name);
+            Utils.CheckArgs(args.Count, 3, m_name);
 
             var gui = CSCS_GUI.GetInstance(script);
 
             var columnHeaders = new List<string>();
             //var columnTags = new List<string>();
 
-            var windowTitle = Utils.GetSafeString(args, 0);
-            var columnHeadersVariableArray = Utils.GetSafeVariable(args, 1);
+            var dgName = Utils.GetSafeString(args, 0).ToLower();
+            var windowTitle = Utils.GetSafeString(args, 1);
+            var columnHeadersVariableArray = Utils.GetSafeVariable(args, 2);
             for(int i = 0; i < columnHeadersVariableArray.Tuple.Count; i++)
             {
                 columnHeaders.Add(columnHeadersVariableArray.Tuple[i].String);
             }
 
-            var widget = gui.GetWidget("dgF2List");
+            var widget = gui.GetWidget(dgName);
 
             if (widget == null)
             {

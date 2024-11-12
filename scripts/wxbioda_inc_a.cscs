@@ -127,16 +127,17 @@ function setChartByMonth()
     }
     sql_str += " as god_mjesec, ";
 
-    if(brutoPlaca_dn == true){
+    if(bruto_rb == true){
         sql_str += " round(sum(odob_ln_ukupno), 2)"
-    }elif(netoPlaca_dn == true){
+    }elif(neto_rb == true){
         sql_str += " round(sum(odob_ln_neto), 2)"
     }else{
+        //KRIVO
         sql_str += " round(sum(odob_ln_iznos), 2)"
     }
     sql_str += " as placa";
 
-    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkodobgl"; 
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkodobgl";
     //sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobos on odob_gl_num = odob_os_num";
 	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobln ON odob_gl_num = odob_ln_num";
 	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodradn ON od_ms_br_rad = odob_ln_osoba";

@@ -312,7 +312,7 @@ function setChartByMonth()
     SQL_str = "SET query_governor_cost_limit 0;";
     if ( proslaGodinaBaza != "" )
     {
-        sql_str += "SELECT '0' as tip,CONVERT(varchar(6),nkpr_gl_datem,112) as yyyymm, ";
+        sql_str += "SELECT '0' as tip, CONVERT(varchar(6), nkpr_gl_datem, 112) as yyyymm, ";
         if (neto_dn)
         {
             sql_str += "Sales = cast(ISNULL(SUM(CASE WHEN nkpr_gl_dviza = 'D' THEN nkpr_gl_tecaj * nkpr_ln_amt ELSE nkpr_ln_amt END) , 0) as decimal(10,0)) ";

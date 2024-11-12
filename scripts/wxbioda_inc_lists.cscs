@@ -145,9 +145,14 @@
     define prodaja_kup_og, prodaja_kup_lg type n size 14;
     define broj_rac_og, broj_rac_lg type r size 6;
     define prod_kup_indx type n size 10 dec 2;
+
+    DEFINE arrayProslaPlace, arrayTrenutnaPlace type n size 14 array 12;
+
     DEFINE arrayProslaPriliv, arrayProslaOdliv type n size 14 array 12;
     DEFINE arrayTrenutnaPriliv, arrayTrenutnaOdliv type n size 14 array 12;
 
+	define tot_place type n size 14;
+    
 	define tot_ovajTj_priliv type n size 14;
 	define tot_prosliTj_priliv type n size 14;
 	define tot_ovajTj_odliv type n size 14;
@@ -444,7 +449,7 @@ function gbBrojeviObracuna_view@clicked(){
 function ceStrucnaSprema@clicked()
 {    
     F2ListQueryString = "WITH strucnaSprema AS("
-    + " SELECT DISTINCT convert(int, trim(NKOD_SF_CODE)) as sifraSS, trim(NKOD_SF_NAZIV) as nazivSS"
+    + " SELECT DISTINCT trim(NKOD_SF_CODE) as sifraSS, trim(NKOD_SF_NAZIV) as nazivSS"
     + " FROM " + CommonDBGet() + ".dbo.nkodsifr "
     //+ " LEFT JOIN " + CommonDBGet() + ".dbo.nkodsifr ON nkod_sf_code = od_ms_sif_radmj AND nkod_sf_tip = 'I'"
     + " WHERE NKOD_SF_CODE like '%{var1}%' AND NKOD_SF_NAZIV like '%{var2}%' AND NKOD_SF_TIP = 'c'";
@@ -935,62 +940,64 @@ function gbElementiObracuna_view@clicked(){
 
 function filterPart()
 {
-    if (partner != "")
-    {
-        sql_str += " AND kdib_ln_partner = '" + partner + "'";
-    }
-    if (BANKA_str != "")
-    {
-        sql_str += " AND kdib_gl_banka IN (" + BANKA_str + ")";
-    }
-    if (KONTO_str != "" || KONTO_posl_akt_str != "" || KONTO_financ_akt_str != "" || KONTO_invest_akt_str != "")
-    {
-        KONTO_final_string = "";
+    // if (partner != "")
+    // {
+    //     sql_str += " AND kdib_ln_partner = '" + partner + "'";
+    // }
+    // if (BANKA_str != "")
+    // {
+    //     sql_str += " AND kdib_gl_banka IN (" + BANKA_str + ")";
+    // }
+    // if (KONTO_str != "" || KONTO_posl_akt_str != "" || KONTO_financ_akt_str != "" || KONTO_invest_akt_str != "")
+    // {
+    //     KONTO_final_string = "";
 
-        if(KONTO_str != ""){
-            KONTO_final_string += KONTO_str;
-            KONTO_final_string += (KONTO_final_string != "" ? "," : "");
-        }
-        if(cbKontoPoslAkt == true && KONTO_posl_akt_str != ""){
-            KONTO_final_string += KONTO_posl_akt_str;
-            KONTO_final_string += (KONTO_final_string != "" ? "," : "");
-        }
+    //     if(KONTO_str != ""){
+    //         KONTO_final_string += KONTO_str;
+    //         KONTO_final_string += (KONTO_final_string != "" ? "," : "");
+    //     }
+    //     if(cbKontoPoslAkt == true && KONTO_posl_akt_str != ""){
+    //         KONTO_final_string += KONTO_posl_akt_str;
+    //         KONTO_final_string += (KONTO_final_string != "" ? "," : "");
+    //     }
         
-        if(cbKontoFinancAkt == true && KONTO_financ_akt_str != ""){
-            KONTO_final_string += KONTO_financ_akt_str;
-            KONTO_final_string += (KONTO_final_string != "" ? "," : "");
-        }
+    //     if(cbKontoFinancAkt == true && KONTO_financ_akt_str != ""){
+    //         KONTO_final_string += KONTO_financ_akt_str;
+    //         KONTO_final_string += (KONTO_final_string != "" ? "," : "");
+    //     }
         
-        if(cbKontoInvestAkt == true && KONTO_invest_akt_str != ""){
-            KONTO_final_string += KONTO_invest_akt_str;
-            KONTO_final_string += (KONTO_final_string != "" ? "," : "");
-        }
+    //     if(cbKontoInvestAkt == true && KONTO_invest_akt_str != ""){
+    //         KONTO_final_string += KONTO_invest_akt_str;
+    //         KONTO_final_string += (KONTO_final_string != "" ? "," : "");
+    //     }
         
-        // charCount = lchr(KONTO_final_string, "l");
-        // KONTO_final_string = substring(KONTO_final_string, 0, charCount - 1);
+    //     // charCount = lchr(KONTO_final_string, "l");
+    //     // KONTO_final_string = substring(KONTO_final_string, 0, charCount - 1);
 
-        if(KONTO_final_string.length > 0){
-            KONTO_final_string = substring(KONTO_final_string, 0, KONTO_final_string.length - 1);
-            //MessageBox(KONTO_final_string);
-            sql_str += " AND kdib_ln_konto IN (" + KONTO_final_string + ")";
-        }
-    }
-    if (Izvadak != "")
-    {
-        sql_str += " AND kdib_gl_num = '" + Izvadak + "'";
-    }
-    if (domaca_dn )
-    {
-        sql_str += " AND nksc_drzava= '" + kpsy_po_freight + "'";
-    }
-    elif (eu_dn )
-    {
-        sql_str +=  " AND nksc_drzava IN (" + eucountries + ")";
-    }
-    elif (izvoz_dn )
-    {
-        sql_str += " AND nksc_drzava <> '" + kpsy_po_freight + "' AND NOT nksc_drzava IN (" + eucountries + ")";
-    }
+    //     if(KONTO_final_string.length > 0){
+    //         KONTO_final_string = substring(KONTO_final_string, 0, KONTO_final_string.length - 1);
+    //         //MessageBox(KONTO_final_string);
+    //         sql_str += " AND kdib_ln_konto IN (" + KONTO_final_string + ")";
+    //     }
+    // }
+    // if (Izvadak != "")
+    // {
+    //     sql_str += " AND kdib_gl_num = '" + Izvadak + "'";
+    // }
+    // if (domaca_dn )
+    // {
+    //     sql_str += " AND nksc_drzava= '" + kpsy_po_freight + "'";
+    // }
+    // elif (eu_dn )
+    // {
+    //     sql_str +=  " AND nksc_drzava IN (" + eucountries + ")";
+    // }
+    // elif (izvoz_dn )
+    // {
+    //     sql_str += " AND nksc_drzava <> '" + kpsy_po_freight + "' AND NOT nksc_drzava IN (" + eucountries + ")";
+    // }
+
+
     //sql_str += " AND kpsy_bnk_blag != 'D'";
 /*
     if (gl_oznaka != "")

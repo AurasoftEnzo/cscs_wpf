@@ -230,47 +230,47 @@ function gbPripremi@clicked()
 {
     // MessageBox("Mjesec1od: " + mjesec1od + ", mjesec1do: " + mjesec1do + ", godina1: " + godina1);
     // MessageBox(comboBoxMjesec1selected);
-    return;
+    //return;
 
     cursor("wait");
     
-    //provjera da li su sva konta odabrana
-    sqlQueryString = "SELECT DISTINCT trim(gk_ac_konto)"
-    + " FROM  " + trenutnaGodinaBaza + ".[dbo].[kpkdibgl] "
-    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[kpkdibln] ON kdib_gl_num = kdib_ln_num "
-    + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkacct ON kdib_ln_konto = gk_ac_konto "
-    + " WHERE YEAR(kdib_gl_datum) = " + ovagod_h
-    + " AND kdib_ln_iznos != 0";
+    // //provjera da li su sva konta odabrana
+    // sqlQueryString = "SELECT DISTINCT trim(gk_ac_konto)"
+    // + " FROM  " + trenutnaGodinaBaza + ".[dbo].[kpkdibgl] "
+    // + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[kpkdibln] ON kdib_gl_num = kdib_ln_num "
+    // + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkacct ON kdib_ln_konto = gk_ac_konto "
+    // + " WHERE YEAR(kdib_gl_datum) = " + ovagod_h
+    // + " AND kdib_ln_iznos != 0";
 
-    try
-    {
-        sqlResult = sqlQuery(sqlQueryString);
-    }
-    catch(exc)
-    {
-        MessageBox(exc);
-    }
+    // try
+    // {
+    //     sqlResult = sqlQuery(sqlQueryString);
+    // }
+    // catch(exc)
+    // {
+    //     MessageBox(exc);
+    // }
 
-    kontoPoslZarez = (KONTO_posl_akt_str != "" ? "," : "");
-    kontoFinancZarez = (KONTO_financ_akt_str != "" ? "," : "");
-    kontoInvestZarez = (KONTO_invest_akt_str != "" ? "," : "");
-    odabranaKonta = KONTO_posl_akt_str + kontoPoslZarez + KONTO_financ_akt_str + kontoFinancZarez + KONTO_invest_akt_str + kontoInvestZarez;
-    if(odabranaKonta != ""){
-        odabranaKonta = substring(odabranaKonta, 0, odabranaKonta.length - 1);
-    }
+    // kontoPoslZarez = (KONTO_posl_akt_str != "" ? "," : "");
+    // kontoFinancZarez = (KONTO_financ_akt_str != "" ? "," : "");
+    // kontoInvestZarez = (KONTO_invest_akt_str != "" ? "," : "");
+    // odabranaKonta = KONTO_posl_akt_str + kontoPoslZarez + KONTO_financ_akt_str + kontoFinancZarez + KONTO_invest_akt_str + kontoInvestZarez;
+    // if(odabranaKonta != ""){
+    //     odabranaKonta = substring(odabranaKonta, 0, odabranaKonta.length - 1);
+    // }
 
-    listaOdabranihKonta = odabranaKonta.split(",");
-    for(i = 0; i < size(listaOdabranihKonta); i++){
-        listaOdabranihKonta[i] = listaOdabranihKonta[i].replace("'", ""); // 
-    }
+    // listaOdabranihKonta = odabranaKonta.split(",");
+    // for(i = 0; i < size(listaOdabranihKonta); i++){
+    //     listaOdabranihKonta[i] = listaOdabranihKonta[i].replace("'", ""); // 
+    // }
     
-    for(i = 1; i < size(sqlresult); i++){
-        if(!listaOdabranihKonta.contains(sqlResult[i][0])){
-            MessageBox("Nisu odabrana sva konta!");
-            cursor("dflt");
-            return;
-        }
-    }
+    // for(i = 1; i < size(sqlresult); i++){
+    //     if(!listaOdabranihKonta.contains(sqlResult[i][0])){
+    //         MessageBox("Nisu odabrana sva konta!");
+    //         cursor("dflt");
+    //         return;
+    //     }
+    // }
 
     // if(listaOdabranihKonta.contains("")){
     //     MessageBox("asdasdasd");
@@ -322,7 +322,9 @@ function gbPripremi@clicked()
         GL_oznaka= "";
     } 
     */
-    AsyncCall("setChartByMonth", "callSetHorizontalBars");
+    
+    // AsyncCall("setChartByMonth", "callSetHorizontalBars");
+    AsyncCall("setChartByMonth", "end");
 }
 function callSetHorizontalBars(){
     AsyncCall("setHorizontalBars", "callSetWeekComparison");

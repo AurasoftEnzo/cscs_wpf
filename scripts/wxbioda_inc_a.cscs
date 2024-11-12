@@ -4,6 +4,7 @@ function wxbiodaa_onStart()
     t10datrac=true;
     
     setChartByDaysOfMonth();
+
     //
     Chart("ChartPoMjesecima", "init");
     //Chart("ChartPoMjesecima", "seriesType", "Columnseries");
@@ -20,43 +21,50 @@ function wxbiodaa_onStart()
 
     Chart("ChartPoMjesecima", "labels", "x", 13, {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"});
 
-    //
-    Chart("ChartPoDanima", "init");
-    //Chart("ChartPoDanima", "seriesType", "lineSeries");
-    Chart("ChartPoDanima", "title", "Po Danima");
-    //Chart("ChartPoDanima", "labels","y", 12);
-    Chart("ChartPoDanima", "labels","x", 12,  {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31"});
-    //Chart("ChartPoDanima", "labels", arrayDani);
-    //Chart("ChartPoDanima", "xlabelsRotation", 0);
-    Chart("ChartPoDanima", "SeparatorStep", 1);
-    Chart("ChartPoDanima", "values", "line", arrayVrijednosti, "Dnevno");
-    Chart("ChartPoDanima", "values", "line", arrayAvr, "Prosjek7dana");
-    Chart("ChartPoDanima", "Color.Series", { "#fb8500", "#8ecae6"}); 
-    //Chart("ChartPoDanima", "Margins", {60, 20, 0, 30});
-    //
+    // //
+    // Chart("ChartPoDanima", "init");
+    // //Chart("ChartPoDanima", "seriesType", "lineSeries");
+    // Chart("ChartPoDanima", "title", "Po Danima");
+    // //Chart("ChartPoDanima", "labels","y", 12);
+    // Chart("ChartPoDanima", "labels","x", 12,  {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31"});
+    // //Chart("ChartPoDanima", "labels", arrayDani);
+    // //Chart("ChartPoDanima", "xlabelsRotation", 0);
+    // Chart("ChartPoDanima", "SeparatorStep", 1);
+    // Chart("ChartPoDanima", "values", "line", arrayVrijednosti, "Dnevno");
+    // Chart("ChartPoDanima", "values", "line", arrayAvr, "Prosjek7dana");
+    // Chart("ChartPoDanima", "Color.Series", { "#fb8500", "#8ecae6"}); 
+    // //Chart("ChartPoDanima", "Margins", {60, 20, 0, 30});
+    // //
+    
     cntr2= 0;
-    setLast10InvoicesDataGrid();
-    Format("T10IZNOSZ_AR", "nofd");
-    Format("T10IZNOSMJ_AR", "nofd");
-    DisplayArray("dgRacuniLast", "close");
-    DisplayArraySetup("dgRacuniLast", counterFld: cntr2, activeElements: Size(sqlResult2) - 1, maxElements: 10);
-    //
-	DisplayArray("dgRacuniMjesec", "close");
+    //setLast10InvoicesDataGrid();
+
+    // Format("T10IZNOSZ_AR", "nofd");
+    // Format("T10IZNOSMJ_AR", "nofd");
+    // DisplayArray("dgRacuniLast", "close");
+    // DisplayArraySetup("dgRacuniLast", counterFld: cntr2, activeElements: Size(sqlResult2) - 1, maxElements: 10);
+    // //
+	// DisplayArray("dgRacuniMjesec", "close");
+
 	//DisplayArraySetup("dgRacuniMjesec", counterFld: "cntr3", activeElements: Size(sqlResult) - 1, maxElements: 10);
-    setTop10InvoicesDataGrid();
+    
+    //setTop10InvoicesDataGrid();
     cntr3= 0;
-	DisplayArraySetup("dgRacuniMjesec", counterFld: cntr3, activeElements: Size(sqlResult) - 1, maxElements: 10);
+	
+    //DisplayArraySetup("dgRacuniMjesec", counterFld: cntr3, activeElements: Size(sqlResult) - 1, maxElements: 10);
+
     cursor("dflt");
 }
 
-function buty@clicked()
-{
-    //Chart("ChartPoMjesecima", "init");
-    refresh();
-    DisplayArray("dgRacuniMjesec", "close");
-    Chart("ChartPoMjesecima", "Color.Series", { "Blue", "Green"}); 
-	DisplayArraySetup("dgRacuniMjesec", counterFld: cntr3, activeElements: Size(sqlResult) - 1, maxElements: 10);
-}    
+// function buty@clicked()
+// {
+//     //Chart("ChartPoMjesecima", "init");
+//     refresh();
+//     DisplayArray("dgRacuniMjesec", "close");
+//     Chart("ChartPoMjesecima", "Color.Series", { "Blue", "Green"}); 
+// 	DisplayArraySetup("dgRacuniMjesec", counterFld: cntr3, activeElements: Size(sqlResult) - 1, maxElements: 10);
+// }    
+
 function setChartByDaysOfMonth()
 {
     sql_str = "WITH cte AS (";
@@ -75,7 +83,9 @@ function setChartByDaysOfMonth()
     {
         sql_str += " AND MONTH(kdib_gl_datum) = '" + mjesec_h + "' AND YEAR(kdib_gl_datum) = '" + godina1 + "'";
     }
-    filterPart();
+    
+    //filterPart();
+    
     sql_str += " GROUP BY DAY(kdib_gl_datum)";
     sql_str += ")";
     sql_str += "SELECT wk_day,ISNULL(max(salesday), 0) as salesday";
@@ -107,7 +117,6 @@ function setChartByDaysOfMonth()
 
 function setChartByMonth()
 {
-    //
     sql_str = "SELECT TOP 24";
     if(comboBoxMjesec1selected == "Obračun za mjesec"){
         sql_str += " odob_gl_god + CASE WHEN LEN(odob_gl_mjesec) = 1 THEN '0' + odob_gl_mjesec ELSE ODOB_GL_MJESEC END";
@@ -118,13 +127,19 @@ function setChartByMonth()
     }
     sql_str += " as god_mjesec, ";
 
-    sql_str += " round(sum(odob_ln_ukupno), 2) as bruto, "
-        //+ "round(sum(odob_ln_neto), 2) as neto, "
-        + "count(DISTINCT odob_os_osoba) as _br_radnika ";
+    if(brutoPlaca_dn == true){
+        sql_str += " round(sum(odob_ln_ukupno), 2)"
+    }elif(netoPlaca_dn == true){
+        sql_str += " round(sum(odob_ln_neto), 2)"
+    }else{
+        sql_str += " round(sum(odob_ln_iznos), 2)"
+    }
+    sql_str += " as placa";
 
     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkodobgl"; 
-    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobos on odob_gl_num= odob_os_num";
-	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobln ON odob_gl_num= odob_ln_num";
+    //sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobos on odob_gl_num = odob_os_num";
+	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobln ON odob_gl_num = odob_ln_num";
+	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodradn ON od_ms_br_rad = odob_ln_osoba";
 
     sql_str += " WHERE "; 
     if(comboBoxMjesec1selected == "Obračun za mjesec"){
@@ -250,6 +265,8 @@ function setChartByMonth1(){
 
 //--------------------------------------------------------
 
+
+/*
 function setLast10InvoicesDataGrid()
 {
     sql_str = "SELECT TOP 10 kdib_gl_num, kpsy_bnk_ime, REPLACE(SUBSTRING(kdib_gl_rez, 2, 8), '.', '/'), SUBSTRING(kdib_gl_rez, 10, 8), kdib_gl_datum, sum(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END) as priliv";
@@ -326,4 +343,4 @@ function setTop10InvoicesDataGrid()
 	return;
 }
 
-
+*/

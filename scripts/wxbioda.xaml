@@ -623,9 +623,9 @@
             <GroupBox Grid.Column="1" Padding="0"
                       HorizontalAlignment="Left"
                       VerticalAlignment="Top"
-                      Height="211"
-                      Width="135"
-                      Margin="775,3,0,0"
+                      Height="180"
+                      Width="134"
+                      Margin="624,3,0,0"
                       BorderThickness="0.5"
                       BorderBrush="Black"
                       Header="Element plaće"
@@ -642,8 +642,8 @@
                                  Width="113"
                                  Margin="6,5,0,0"
                                  x:Name="Cbut1"
-                                 DataContext="brutoPlaca_dn"
-                                 Content="bruto plaća"
+                                 DataContext="rad_rb"
+                                 Content="rad"
                                  Foreground="Black" Grid.ColumnSpan="2"
                                  TabIndex="21"/>
                     <RadioButton HorizontalAlignment="Left"
@@ -652,8 +652,8 @@
                                  Width="113"
                                  Margin="6,20,0,0"
                                  x:Name="Cbut2"
-                                 DataContext="netoPlaca_dn"
-                                 Content="neto plaća"
+                                 DataContext="bolovanje_rb"
+                                 Content="bolovanje"
                                  Foreground="Black" Grid.ColumnSpan="2"
                                  TabIndex="22"/>
                     <RadioButton HorizontalAlignment="Left"
@@ -662,7 +662,7 @@
                                  Width="113"
                                  Margin="6,35,0,0"
                                  x:Name="Cbut3"
-                                 DataContext="doprinosiIzPlace_dn"
+                                 DataContext="doprinosiIzPlace_rb"
                                  Content="doprinosi iz plaće"
                                  Foreground="Black" Grid.ColumnSpan="2"
                                  TabIndex="23"/>
@@ -672,7 +672,7 @@
                                  Width="121"
                                  Margin="6,50,0,0"
                                  x:Name="Cbut4"
-                                 DataContext="doprinosiNaPlacu_dn"
+                                 DataContext="doprinosiNaPlacu_rb"
                                  Content="doprinosi na plaću"
                                  Foreground="Black" Grid.ColumnSpan="2"
                                  TabIndex="24"/>
@@ -682,7 +682,7 @@
                         Width="113"
                         Margin="6,66,0,0"
                         x:Name="Cbut1_Copy"
-                        DataContext="olaksice_dn"
+                        DataContext="olaksice_rb"
                         Content="olakšice"
                         Foreground="Black" Grid.ColumnSpan="2"
                         TabIndex="21"/>
@@ -692,8 +692,8 @@
                         Width="113"
                         Margin="6,81,0,0"
                         x:Name="Cbut2_Copy"
-                        DataContext="porezi_dn"
-                        Content="porezi"
+                        DataContext="osobniOdbitak_rb"
+                        Content="osobni odbitak"
                         Foreground="Black" Grid.ColumnSpan="2"
                         TabIndex="22"/>
                     <RadioButton HorizontalAlignment="Left"
@@ -702,8 +702,8 @@
                         Width="113"
                         Margin="6,96,0,0"
                         x:Name="Cbut3_Copy"
-                        DataContext="prirezi_dn"
-                        Content="prirezi"
+                        DataContext="porez_rb"
+                        Content="porez"
                         Foreground="Black" Grid.ColumnSpan="2"
                         TabIndex="23"/>
                     <RadioButton HorizontalAlignment="Left"
@@ -712,8 +712,8 @@
                         Width="113"
                         Margin="6,111,0,0"
                         x:Name="Cbut4_Copy"
-                        DataContext="obustave_dn"
-                        Content="obustave"
+                        DataContext="prirez_rb"
+                        Content="prirez"
                         Foreground="Black" Grid.ColumnSpan="2"
                         TabIndex="24"/>
                     <RadioButton HorizontalAlignment="Left"
@@ -722,7 +722,7 @@
                         Width="113"
                         Margin="6,127,0,0"
                         x:Name="Cbut1_Copy1"
-                        DataContext="naknade_dn"
+                        DataContext="naknade_rb"
                         Content="naknade"
                         Foreground="Black" Grid.ColumnSpan="2"
                         TabIndex="21"/>
@@ -732,30 +732,10 @@
                         Width="113"
                         Margin="6,142,0,0"
                         x:Name="Cbut2_Copy1"
-                        DataContext="bolovanja_dn"
-                        Content="bolovanja"
+                        DataContext="obustave_rb"
+                        Content="obustave"
                         Foreground="Black" Grid.ColumnSpan="2"
                         TabIndex="22"/>
-                    <RadioButton HorizontalAlignment="Left"
-                        VerticalAlignment="Top"
-                        Height="17"
-                        Width="113"
-                        Margin="6,157,0,0"
-                        x:Name="Cbut3_Copy1"
-                        DataContext="prekovremeni_dn"
-                        Content="prekovremeni"
-                        Foreground="Black" Grid.ColumnSpan="2"
-                        TabIndex="23"/>
-                    <RadioButton HorizontalAlignment="Left"
-                        VerticalAlignment="Top"
-                        Height="17"
-                        Width="113"
-                        Margin="6,172,0,0"
-                        x:Name="Cbut4_Copy1"
-                        DataContext="stimulacije_dn"
-                        Content="stimulacije"
-                        Foreground="Black" Grid.ColumnSpan="2"
-                        TabIndex="24"/>
                 </Grid>
             </GroupBox>
             <Button Grid.Column="1"
@@ -1096,10 +1076,10 @@
                 VerticalAlignment="Top"
                 Height="180"
                 Width="148"
-                Margin="625,3,0,0"
+                Margin="761,3,0,0"
                 BorderThickness="0.5"
                 BorderBrush="Black"
-                Header="Radni status zaposlenika"
+                Header="Trenutni radni status"
                 Foreground="Black"
                 x:Name="gb2_Copy">
                 <Grid>
@@ -1487,6 +1467,54 @@
                         HorizontalAlignment="Center" Grid.RowSpan="2" />
                 </Grid>
             </Button>
+            <GroupBox Grid.Column="1" Padding="0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Height="76"
+                Width="134"
+                Margin="487,107,0,0"
+                BorderThickness="0.5"
+                BorderBrush="Black"
+                Header="Izbor I"
+                Foreground="Black"
+                x:Name="gb2_Copy1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="11*"/>
+                        <ColumnDefinition Width="35*"/>
+                    </Grid.ColumnDefinitions>
+                    <RadioButton HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Height="16"
+                        Width="113"
+                        Margin="6,5,0,0"
+                        x:Name="Cbut9"
+                        DataContext="bruto_rb"
+                        Content="bruto plaća"
+                        Foreground="Black" Grid.ColumnSpan="2"
+                        TabIndex="21"/>
+                    <RadioButton HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Height="17"
+                        Width="113"
+                        Margin="6,20,0,0"
+                        x:Name="Cbut10"
+                        DataContext="neto_rb"
+                        Content="neto plaća"
+                        Foreground="Black" Grid.ColumnSpan="2"
+                        TabIndex="22"/>
+                    <RadioButton HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Height="17"
+                        Width="113"
+                        Margin="6,35,0,0"
+                        x:Name="Cbut11"
+                        DataContext="brojRadnika_rb"
+                        Content="broj radnika"
+                        Foreground="Black" Grid.ColumnSpan="2"
+                        TabIndex="23"/>
+                </Grid>
+            </GroupBox>
             <!--<Button Grid.Column="1"
                 VerticalAlignment="Top"
                 Height="23"

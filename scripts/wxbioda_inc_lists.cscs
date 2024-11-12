@@ -7,9 +7,20 @@
     define sveDrzave_dn,eu_dn,izvoz_dn,domaca_dn type l;
     define eucountries type a size 200;
 
-    define brutoPlaca_dn, netoPlaca_dn, doprinosiIzPlace_dn, doprinosiNaPlacu_dn, olaksice_dn type l;
-    define porezi_dn, prirezi_dn, obustave_dn, naknade_dn, bolovanja_dn type l;
-    define prekovremeni_dn, stimulacije_dn type l;
+    define bruto_rb type l;
+    define neto_rb type l;
+    define brojRadnika_rb type l;
+
+    define rad_rb type l;
+    define bolovanje_rb type l;
+    define doprinosiIzPlace_rb type l;
+    define doprinosiNaPlacu_rb type l;
+    define olaksice_rb type l;
+    define osobniOdbitak_rb type l;
+    define porez_rb type l;
+    define prirez_rb type l;
+    define naknade_rb type l;
+    define obustave_rb type l;
     
     define redoviti_cb, poduzetnik_cb, beneficirani_cb, volonter_cb, pripravnik_cb type l;
     define obrtnik_cb, nijeZaposlen_cb, porodiljskiDopust_cb, ugovorODjelu_cb, obracunNaknada_cb type l;
@@ -256,6 +267,13 @@
     DEFINE regijeRB type l;
     DEFINE drzaveRB type l;
     DEFINE gradoviRB type l;
+
+
+    DEFINE spolSve_rb type l;
+    DEFINE spolMusko_rb type l;
+    DEFINE spolZensko_rb type l;
+    DEFINE spolOstalo_rb type l;
+
 
     DEFINE nazivFirme type a size 100;
 
@@ -729,48 +747,14 @@ function gbNazivRadnogMjesta_view@clicked(){
 
 function ceOrganizacijskeJedinice@clicked()
 {
-    // F2ListQueryString = "WITH orgJedinice AS("
-    // + " SELECT DISTINCT trim(od_ms_objed) as sifraOrgJed, isnull(NKGK_OJ_NAZIV, 'nema naziva') as nazivOrgJed"
-    // + " FROM " + trenutnaGodinaBaza + ".dbo.nkodradn "
-    // + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkoj ON nkgk_oj_code = od_ms_objed"
-    // + " WHERE od_ms_objed like '%{var1}%' AND isnull(NKGK_OJ_NAZIV, 'nema naziva') like '%{var2}%'";
-    
-    // if(ORGANIZACIJSKE_JEDINICE_str != ""){
-    //     F2ListQueryString += " AND od_ms_objed NOT IN (" + ORGANIZACIJSKE_JEDINICE_str + ")";
-    // }
-
-    // F2ListQueryString += ")"
-    // + " SELECT ROW_NUMBER() OVER(ORDER BY sifraOrgJed ASC) AS RowNumber, sifraOrgJed, nazivOrgJed"
-    // + " FROM orgJedinice ORDER BY RowNumber";
-
-    // organizacijskeJedinice = "";
-    // organizacijskeJediniceNaziv = "";
-    // sifraFieldPointer -> organizacijskeJedinice;
-    // NazivFieldPointer -> organizacijskeJediniceNaziv; 
-
-    // windowTitle = "F2 lista organizacijskih jedinica";
-    // headersArray = {"R.br.   ", "Šifra org. jed.   ", "Naziv org. jed.                                                                                                      "};
-    
-    // ShowF2List();
-    
-    // if(&sifraFieldPointer != ""){
-    //     organizacijskeJedinice = &sifraFieldPointer;
-    //     if (organizacijskeJedinice != "")
-    //     {
-    //         ORGANIZACIJSKE_JEDINICE_str = (ORGANIZACIJSKE_JEDINICE_str == "") ? (ORGANIZACIJSKE_JEDINICE_str + "'"+organizacijskeJedinice+"'") : (ORGANIZACIJSKE_JEDINICE_str + ",'" + organizacijskeJedinice+"'");
-    //     }    
-    // }
-    // searchSifra = "";
-    // searchNaziv = "";
-    
     F2ListQueryString = "WITH orgJedinice AS("
-    + " SELECT DISTINCT trim(NKGK_OJ_CODE) as sifraOrgJed, isnull(trim(NKGK_OJ_NAZIV), 'nema naziva') as nazivOrgJed"
-    + " FROM " + trenutnaGodinaBaza + ".dbo.nkgkoj "
-    //+ " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkoj ON nkgk_oj_code = od_ms_objed"
-    + " WHERE NKGK_OJ_CODE like '%{var1}%' AND isnull(trim(NKGK_OJ_NAZIV), 'nema naziva') like '%{var2}%'";
+    + " SELECT DISTINCT trim(od_ms_objed) as sifraOrgJed, isnull(NKGK_OJ_NAZIV, 'nema naziva') as nazivOrgJed"
+    + " FROM " + trenutnaGodinaBaza + ".dbo.nkodradn "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkoj ON nkgk_oj_code = od_ms_objed"
+    + " WHERE od_ms_objed like '%{var1}%' AND isnull(NKGK_OJ_NAZIV, 'nema naziva') like '%{var2}%'";
     
     if(ORGANIZACIJSKE_JEDINICE_str != ""){
-        F2ListQueryString += " AND NKGK_OJ_CODE NOT IN (" + ORGANIZACIJSKE_JEDINICE_str + ")";
+        F2ListQueryString += " AND od_ms_objed NOT IN (" + ORGANIZACIJSKE_JEDINICE_str + ")";
     }
 
     F2ListQueryString += ")"
@@ -796,45 +780,56 @@ function ceOrganizacijskeJedinice@clicked()
     }
     searchSifra = "";
     searchNaziv = "";
-}
 
-//--- View organizacijske jedinice -------------------------------------------
 
-function gbOrganizacijskeJedinice_view@clicked(){
 
+    
     // F2ListQueryString = "WITH orgJedinice AS("
-    // + " SELECT DISTINCT trim(od_ms_objed) as sifraOrgJed, isnull(NKGK_OJ_NAZIV, 'nema naziva') as nazivOrgJed"
-    // + " FROM " + trenutnaGodinaBaza + ".dbo.nkodradn "
-    // + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkoj ON nkgk_oj_code = od_ms_objed";
+    // + " SELECT DISTINCT trim(NKGK_OJ_CODE) as sifraOrgJed, isnull(trim(NKGK_OJ_NAZIV), 'nema naziva') as nazivOrgJed"
+    // + " FROM " + trenutnaGodinaBaza + ".dbo.nkgkoj "
+    // //+ " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkoj ON nkgk_oj_code = od_ms_objed"
+    // + " WHERE NKGK_OJ_CODE like '%{var1}%' AND isnull(trim(NKGK_OJ_NAZIV), 'nema naziva') like '%{var2}%'";
     
     // if(ORGANIZACIJSKE_JEDINICE_str != ""){
-    //     F2ListQueryString += " WHERE od_ms_objed IN ({var1})";
-    // }
-    // else{
-    //     F2ListQueryString += " WHERE 1 <> 1";
+    //     F2ListQueryString += " AND NKGK_OJ_CODE NOT IN (" + ORGANIZACIJSKE_JEDINICE_str + ")";
     // }
 
     // F2ListQueryString += ")"
     // + " SELECT ROW_NUMBER() OVER(ORDER BY sifraOrgJed ASC) AS RowNumber, sifraOrgJed, nazivOrgJed"
     // + " FROM orgJedinice ORDER BY RowNumber";
 
-    // windowTitle = "Odabrane organizacijske jedinice";
+    // organizacijskeJedinice = "";
+    // organizacijskeJediniceNaziv = "";
+    // sifraFieldPointer -> organizacijskeJedinice;
+    // NazivFieldPointer -> organizacijskeJediniceNaziv; 
+
+    // windowTitle = "F2 lista organizacijskih jedinica";
     // headersArray = {"R.br.   ", "Šifra org. jed.   ", "Naziv org. jed.                                                                                                      "};
+    
+    // ShowF2List();
+    
+    // if(&sifraFieldPointer != ""){
+    //     organizacijskeJedinice = &sifraFieldPointer;
+    //     if (organizacijskeJedinice != "")
+    //     {
+    //         ORGANIZACIJSKE_JEDINICE_str = (ORGANIZACIJSKE_JEDINICE_str == "") ? (ORGANIZACIJSKE_JEDINICE_str + "'"+organizacijskeJedinice+"'") : (ORGANIZACIJSKE_JEDINICE_str + ",'" + organizacijskeJedinice+"'");
+    //     }    
+    // }
+    // searchSifra = "";
+    // searchNaziv = "";
+}
 
-    // sifraFieldPointer -> ORGANIZACIJSKE_JEDINICE_str;
+//--- View organizacijske jedinice -------------------------------------------
 
-    // ShowSelectedViewList();
-    
-    // ORGANIZACIJSKE_JEDINICE_str = &sifraFieldPointer;
-    
-    
+function gbOrganizacijskeJedinice_view@clicked(){
+
     F2ListQueryString = "WITH orgJedinice AS("
-    + " SELECT DISTINCT trim(NKGK_OJ_CODE) as sifraOrgJed, isnull(trim(NKGK_OJ_NAZIV), 'nema naziva') as nazivOrgJed"
-    + " FROM " + trenutnaGodinaBaza + ".dbo.nkgkoj ";
-    //+ " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkoj ON nkgk_oj_code = od_ms_objed";
+    + " SELECT DISTINCT trim(od_ms_objed) as sifraOrgJed, isnull(NKGK_OJ_NAZIV, 'nema naziva') as nazivOrgJed"
+    + " FROM " + trenutnaGodinaBaza + ".dbo.nkodradn "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkoj ON nkgk_oj_code = od_ms_objed";
     
     if(ORGANIZACIJSKE_JEDINICE_str != ""){
-        F2ListQueryString += " WHERE NKGK_OJ_CODE IN ({var1})";
+        F2ListQueryString += " WHERE od_ms_objed IN ({var1})";
     }
     else{
         F2ListQueryString += " WHERE 1 <> 1";
@@ -852,6 +847,32 @@ function gbOrganizacijskeJedinice_view@clicked(){
     ShowSelectedViewList();
     
     ORGANIZACIJSKE_JEDINICE_str = &sifraFieldPointer;
+    
+    
+    // F2ListQueryString = "WITH orgJedinice AS("
+    // + " SELECT DISTINCT trim(NKGK_OJ_CODE) as sifraOrgJed, isnull(trim(NKGK_OJ_NAZIV), 'nema naziva') as nazivOrgJed"
+    // + " FROM " + trenutnaGodinaBaza + ".dbo.nkgkoj ";
+    // //+ " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkoj ON nkgk_oj_code = od_ms_objed";
+    
+    // if(ORGANIZACIJSKE_JEDINICE_str != ""){
+    //     F2ListQueryString += " WHERE NKGK_OJ_CODE IN ({var1})";
+    // }
+    // else{
+    //     F2ListQueryString += " WHERE 1 <> 1";
+    // }
+
+    // F2ListQueryString += ")"
+    // + " SELECT ROW_NUMBER() OVER(ORDER BY sifraOrgJed ASC) AS RowNumber, sifraOrgJed, nazivOrgJed"
+    // + " FROM orgJedinice ORDER BY RowNumber";
+
+    // windowTitle = "Odabrane organizacijske jedinice";
+    // headersArray = {"R.br.   ", "Šifra org. jed.   ", "Naziv org. jed.                                                                                                      "};
+
+    // sifraFieldPointer -> ORGANIZACIJSKE_JEDINICE_str;
+
+    // ShowSelectedViewList();
+    
+    // ORGANIZACIJSKE_JEDINICE_str = &sifraFieldPointer;
 }
 
 //========================================================================
@@ -860,14 +881,14 @@ function gbOrganizacijskeJedinice_view@clicked(){
 function ceElementiObracuna@clicked()
 {
     F2ListQueryString = "WITH elemObracuna AS("
-    + " SELECT DISTINCT trim(OD_EL_CODE) as sifraOrgJed, trim(OD_EL_OPIS) as nazivOrgJed, trim(OD_EL_VRSTA) as vrstaOrgJed, trim(OD_EL_JMJ) as jmjOrgJed"
+    + " SELECT DISTINCT trim(odob_ln_sifra) as sifraOrgJed, trim(OD_EL_OPIS) as nazivOrgJed, trim(OD_EL_VRSTA) as vrstaOrgJed, trim(OD_EL_JMJ) as jmjOrgJed"
     //+ " SELECT DISTINCT trim(od_ms_br_rad) as sifraZaposlenika, trim(od_ms_prezime) + ' ' + trim(od_ms_ime) as prezimeIme, trim(od_ms_djel) as oib, trim(nkod_sf_opis1) opisRadMj, trim(od_ms_mjes_stan) as mjestoStanovanja"
-    + " FROM " + trenutnaGodinaBaza + ".dbo.nkodelem "
-    //+ " LEFT JOIN " + CommonDBGet() + ".dbo.nkodsifr ON nkod_sf_code = od_ms_sif_radmj AND nkod_sf_tip = 'I'"
-    + " WHERE OD_EL_CODE like '%{var1}%' AND trim(OD_EL_OPIS) like '%{var2}%'";
+    + " FROM " + trenutnaGodinaBaza + ".dbo.nkodobln "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodelem ON odob_ln_sifra = od_el_code"
+    + " WHERE odob_ln_sifra like '%{var1}%' AND trim(OD_EL_OPIS) like '%{var2}%'";
     
     if(ELEMENTI_OBRACUNA_str != ""){
-        F2ListQueryString += " AND OD_EL_CODE NOT IN (" + ELEMENTI_OBRACUNA_str + ")";
+        F2ListQueryString += " AND odob_ln_sifra NOT IN (" + ELEMENTI_OBRACUNA_str + ")";
     }
 
     F2ListQueryString += ")"
@@ -893,6 +914,42 @@ function ceElementiObracuna@clicked()
     }
     searchSifra = "";
     searchNaziv = "";
+    
+    
+    // F2ListQueryString = "WITH elemObracuna AS("
+    // + " SELECT DISTINCT trim(OD_EL_CODE) as sifraOrgJed, trim(OD_EL_OPIS) as nazivOrgJed, trim(OD_EL_VRSTA) as vrstaOrgJed, trim(OD_EL_JMJ) as jmjOrgJed"
+    // //+ " SELECT DISTINCT trim(od_ms_br_rad) as sifraZaposlenika, trim(od_ms_prezime) + ' ' + trim(od_ms_ime) as prezimeIme, trim(od_ms_djel) as oib, trim(nkod_sf_opis1) opisRadMj, trim(od_ms_mjes_stan) as mjestoStanovanja"
+    // + " FROM " + trenutnaGodinaBaza + ".dbo.nkodelem "
+    // //+ " LEFT JOIN " + CommonDBGet() + ".dbo.nkodsifr ON nkod_sf_code = od_ms_sif_radmj AND nkod_sf_tip = 'I'"
+    // + " WHERE OD_EL_CODE like '%{var1}%' AND trim(OD_EL_OPIS) like '%{var2}%'";
+    
+    // if(ELEMENTI_OBRACUNA_str != ""){
+    //     F2ListQueryString += " AND OD_EL_CODE NOT IN (" + ELEMENTI_OBRACUNA_str + ")";
+    // }
+
+    // F2ListQueryString += ")"
+    // + " SELECT ROW_NUMBER() OVER(ORDER BY sifraOrgJed ASC) AS RowNumber, sifraOrgJed, nazivOrgJed, vrstaOrgJed, jmjOrgJed"
+    // + " FROM elemObracuna ORDER BY RowNumber";
+
+    // elementiObracuna = "";
+    // elementiObracunaNaziv = "";
+    // sifraFieldPointer -> elementiObracuna;
+    // NazivFieldPointer -> elementiObracunaNaziv;
+
+    // windowTitle = "F2 lista elemenata obračuna";
+    // headersArray = {"R.br.   ", "Šifra elementa   ", "Opis elementa   ", "Vrsta elementa   ", "Jedinica mjere                                   "};
+    
+    // ShowF2List();
+    
+    // if(&sifraFieldPointer != ""){
+    //     elementiObracuna = &sifraFieldPointer;
+    //     if (elementiObracuna != "")
+    //     {
+    //         ELEMENTI_OBRACUNA_str = (ELEMENTI_OBRACUNA_str == "") ? (ELEMENTI_OBRACUNA_str + "'"+elementiObracuna+"'") : (ELEMENTI_OBRACUNA_str + ",'" + elementiObracuna+"'");
+    //     }    
+    // }
+    // searchSifra = "";
+    // searchNaziv = "";
 }
 
 //--- View elementi obračuna -------------------------------------------
@@ -900,12 +957,13 @@ function ceElementiObracuna@clicked()
 function gbElementiObracuna_view@clicked(){
 
     F2ListQueryString = "WITH elemObracuna AS("
-    + " SELECT DISTINCT trim(OD_EL_CODE) as sifraOrgJed, trim(OD_EL_OPIS) as nazivOrgJed, trim(OD_EL_VRSTA) as vrstaOrgJed, trim(OD_EL_JMJ) as jmjOrgJed"
-    + " FROM " + trenutnaGodinaBaza + ".dbo.nkodelem ";
+    + " SELECT DISTINCT trim(odob_ln_sifra) as sifraOrgJed, trim(OD_EL_OPIS) as nazivOrgJed, trim(OD_EL_VRSTA) as vrstaOrgJed, trim(OD_EL_JMJ) as jmjOrgJed"
+    + " FROM " + trenutnaGodinaBaza + ".dbo.nkodobln "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodelem ON odob_ln_sifra = od_el_code";
     //+ " LEFT JOIN " + CommonDBGet() + ".dbo.nkodsifr ON nkod_sf_code = od_ms_sif_radmj AND nkod_sf_tip = 'I'";
     
     if(ELEMENTI_OBRACUNA_str != ""){
-        F2ListQueryString += " WHERE OD_EL_CODE IN ({var1})";
+        F2ListQueryString += " WHERE odob_ln_sifra IN ({var1})";
     }
     else{
         F2ListQueryString += " WHERE 1 <> 1";
@@ -923,6 +981,32 @@ function gbElementiObracuna_view@clicked(){
     ShowSelectedViewList();
     
     ELEMENTI_OBRACUNA_str = &sifraFieldPointer;
+    
+    
+    // F2ListQueryString = "WITH elemObracuna AS("
+    // + " SELECT DISTINCT trim(OD_EL_CODE) as sifraOrgJed, trim(OD_EL_OPIS) as nazivOrgJed, trim(OD_EL_VRSTA) as vrstaOrgJed, trim(OD_EL_JMJ) as jmjOrgJed"
+    // + " FROM " + trenutnaGodinaBaza + ".dbo.nkodelem ";
+    // //+ " LEFT JOIN " + CommonDBGet() + ".dbo.nkodsifr ON nkod_sf_code = od_ms_sif_radmj AND nkod_sf_tip = 'I'";
+    
+    // if(ELEMENTI_OBRACUNA_str != ""){
+    //     F2ListQueryString += " WHERE OD_EL_CODE IN ({var1})";
+    // }
+    // else{
+    //     F2ListQueryString += " WHERE 1 <> 1";
+    // }
+
+    // F2ListQueryString += ")"
+    // + " SELECT ROW_NUMBER() OVER(ORDER BY sifraOrgJed ASC) AS RowNumber, sifraOrgJed, nazivOrgJed, vrstaOrgJed, jmjOrgJed"
+    // + " FROM elemObracuna ORDER BY RowNumber";
+
+    // windowTitle = "Odabrani elementi obračuna";
+    // headersArray = {"R.br.   ", "Šifra elementa   ", "Opis elementa   ", "Vrsta elementa   ", "Jedinica mjere                                            "};
+
+    // sifraFieldPointer -> ELEMENTI_OBRACUNA_str;
+
+    // ShowSelectedViewList();
+    
+    // ELEMENTI_OBRACUNA_str = &sifraFieldPointer;
 }
 
   //========================================================
@@ -940,14 +1024,104 @@ function gbElementiObracuna_view@clicked(){
 
 function filterPart()
 {
-    // if (partner != "")
-    // {
-    //     sql_str += " AND kdib_ln_partner = '" + partner + "'";
-    // }
-    // if (BANKA_str != "")
-    // {
-    //     sql_str += " AND kdib_gl_banka IN (" + BANKA_str + ")";
-    // }
+    if(brutoPlaca_dn == true || netoPlaca_dn == true){
+        sql_str += " AND odob_ln_vrsta IN ('A', 'C', 'E', 'G', 'I')";
+    }elif(doprinosiIzPlace_dn == true){
+        sql_str += " AND odob_ln_vrsta = 'K'";
+    }elif(doprinosiNaPlacu_dn == true){
+        sql_str += " AND odob_ln_vrsta = 'N'";
+    }elif(olaksice_dn == true){
+        sql_str += " AND odob_ln_vrsta = 'Q'";
+    }elif(porezi_dn == true){
+        sql_str += " AND odob_ln_vrsta = 'R'";
+    }elif(prirezi_dn == true){
+        sql_str += " AND odob_ln_vrsta = 'T'";
+    }elif(obustave_dn == true){
+        sql_str += " AND odob_ln_vrsta = ''";
+    }elif(naknade_dn == true){
+        sql_str += " AND odob_ln_vrsta = ''";
+    }elif(bolovanja_dn == true){
+        sql_str += " AND odob_ln_vrsta = ''";
+    }elif(prekovremeni_dn == true){
+        sql_str += " AND odob_ln_vrsta = ''";
+    }elif(stimulacije_dn == true){
+        sql_str += " AND odob_ln_vrsta = ''";
+    }
+
+    radniStatus_str = "";
+    if(redoviti_cb == true){
+        radniStatus_str += " OR od_ms_status = 'R'";
+    }
+    if(poduzetnik_cb == true){
+        radniStatus_str += " OR od_ms_status = 'F'";
+    }
+    if(beneficirani_cb == true){
+        radniStatus_str += " OR od_ms_status = 'B'";
+    }
+    if(volonter_cb == true){
+        radniStatus_str += " OR od_ms_status = 'V'";
+    }
+    if(pripravnik_cb == true){
+        radniStatus_str += " OR od_ms_status = 'P'";
+    }
+    if(obrtnik_cb == true){
+        radniStatus_str += " OR od_ms_status = 'O'";
+    }
+    if(nijeZaposlen_cb == true){
+        radniStatus_str += " OR od_ms_status = 'N'";
+    }
+    if(porodiljskiDopust_cb == true){
+        radniStatus_str += " OR od_ms_status = 'L'";
+    }
+    if(ugovorODjelu_cb == true){
+        radniStatus_str += " OR od_ms_status = 'U'";
+    }
+    if(obracunNaknada_cb == true){
+        radniStatus_str += " OR od_ms_status = 'A'";
+    }
+
+    if(radniStatus_str == ""){
+        radniStatus_str = "1 <> 1";
+    }else{
+        radniStatus_str = radniStatus_str.substring(4, radniStatus_str.length - 4);
+    }   
+    sql_str += " AND (" + radniStatus_str + ")";
+
+
+    if (ZAPOSLENIK_str != "")
+    {
+        sql_str += " AND odob_ln_osoba IN (" + ZAPOSLENIK_str + ")";
+    }
+    if (BROJEVI_OBRACUNA_str != "")
+    {
+        sql_str += " AND ODOB_GL_NUM IN (" + BROJEVI_OBRACUNA_str + ")";
+    }
+    if (STRUCNA_SPREMA_str != "")
+    {
+        sql_str += " AND OD_MS_SIF_ST_SP IN (" + STRUCNA_SPREMA_str  + ")";
+    }
+    if (MJESTO_STANOVANJA_str != "")
+    {
+        sql_str += " AND OD_MS_ISPLAT_MJ IN (" + MJESTO_STANOVANJA_str + ")";
+    }
+    if (MJESTO_ZAPOSLENJA_str != "")
+    {
+        sql_str += " AND OD_MS_POSL_JED IN (" + MJESTO_ZAPOSLENJA_str + ")";
+    }
+    if (NAZIV_RADNOG_MJESTA_str != "")
+    {
+        sql_str += " AND OD_MS_SIF_RADMJ IN (" + NAZIV_RADNOG_MJESTA_str + ")";
+    }
+    if (ORGANIZACIJSKE_JEDINICE_str != "")
+    {
+        sql_str += " AND od_ms_objed IN (" + ORGANIZACIJSKE_JEDINICE_str + ")";
+    }
+    if (ELEMENTI_OBRACUNA_str != "")
+    {
+        sql_str += " AND odob_ln_sifra IN (" + ELEMENTI_OBRACUNA_str + ")";
+    }
+    
+
     // if (KONTO_str != "" || KONTO_posl_akt_str != "" || KONTO_financ_akt_str != "" || KONTO_invest_akt_str != "")
     // {
     //     KONTO_final_string = "";

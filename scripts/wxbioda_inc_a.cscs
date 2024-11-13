@@ -132,10 +132,10 @@ function setChartByMonth()
     }elif(neto_rb == true){
         sql_str += " round(sum(odob_ln_neto), 2)"
     }else{
-        //KRIVO
-        sql_str += " round(sum(odob_ln_iznos), 2)"
+        //broj radnika
+        sql_str += " count(distinct ODOB_LN_OSOBA)"
     }
-    sql_str += " as placa";
+    sql_str += " as iznos";
 
     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkodobgl";
     //sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobos on odob_gl_num = odob_os_num";

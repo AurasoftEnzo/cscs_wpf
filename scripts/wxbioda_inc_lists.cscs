@@ -1024,28 +1024,26 @@ function gbElementiObracuna_view@clicked(){
 
 function filterPart()
 {
-    if(brutoPlaca_dn == true || netoPlaca_dn == true){
-        sql_str += " AND odob_ln_vrsta IN ('A', 'C', 'E', 'G', 'I')";
-    }elif(doprinosiIzPlace_dn == true){
+    if(rad_rb == true){
+        sql_str += " AND odob_ln_vrsta IN ('A', 'C', 'E')";
+    }elif(doprinosiIzPlace_rb == true){
         sql_str += " AND odob_ln_vrsta = 'K'";
-    }elif(doprinosiNaPlacu_dn == true){
+    }elif(doprinosiNaPlacu_rb == true){
         sql_str += " AND odob_ln_vrsta = 'N'";
-    }elif(olaksice_dn == true){
+    }elif(bolovanje_rb == true){
+        sql_str += " AND odob_ln_vrsta IN ('G', 'I')";
+    }elif(olaksice_rb == true){
+        sql_str += " AND odob_ln_vrsta = 'J'";
+    }elif(osobniOdbitak_rb == true){
         sql_str += " AND odob_ln_vrsta = 'Q'";
-    }elif(porezi_dn == true){
+    }elif(porez_rb == true){
         sql_str += " AND odob_ln_vrsta = 'R'";
-    }elif(prirezi_dn == true){
+    }elif(prirez_rb == true){
         sql_str += " AND odob_ln_vrsta = 'T'";
-    }elif(obustave_dn == true){
-        sql_str += " AND odob_ln_vrsta = ''";
-    }elif(naknade_dn == true){
-        sql_str += " AND odob_ln_vrsta = ''";
-    }elif(bolovanja_dn == true){
-        sql_str += " AND odob_ln_vrsta = ''";
-    }elif(prekovremeni_dn == true){
-        sql_str += " AND odob_ln_vrsta = ''";
-    }elif(stimulacije_dn == true){
-        sql_str += " AND odob_ln_vrsta = ''";
+    }elif(naknade_rb == true){
+        sql_str += " AND odob_ln_vrsta = 'X'";
+    }elif(obustave_rb == true){
+        sql_str += " AND odob_ln_vrsta = 'V'";
     }
 
     radniStatus_str = "";

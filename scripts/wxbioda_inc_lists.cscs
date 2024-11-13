@@ -41,32 +41,6 @@
     DEFINE skladisteNaziv type a size 50;
 
 
-//-----------------------------------
-    DEFINE zaposlenik type a size 10;
-    DEFINE zaposlenikNaziv type a size 50;
-
-    DEFINE brojeviObracuna type a size 10;
-    DEFINE brojeviObracunaNaziv type a size 50;
-
-    DEFINE strucnaSprema type a size 10;
-    DEFINE strucnaSpremaNaziv type a size 50;
-
-    DEFINE mjestoStanovanja type a size 10;
-    DEFINE mjestoStanovanjaNaziv type a size 50;
-
-    DEFINE mjestoZaposlenja type a size 10;
-    DEFINE mjestoZaposlenjaNaziv type a size 50;
-
-    DEFINE nazivRadnogMjesta type a size 10;
-    DEFINE nazivRadnogMjestaNaziv type a size 50;
-
-    DEFINE organizacijskeJedinice type a size 10;
-    DEFINE organizacijskeJediniceNaziv type a size 50;
-
-    DEFINE elementiObracuna type a size 10;
-    DEFINE elementiObracunaNaziv type a size 50;
-//-----------------------------------
-
     DEFINE ARTI_ARTIKL_ARR type a size 30 array 50000;
     DEFINE ARTI_NAZIV_ARR type a size 50 array 50000;
     DEFINE NKSC_PARTCODE_ARR type a size 10 array 50000;
@@ -91,10 +65,15 @@
     DEFINE artiklNaziv type a size 30;
     define artikl type a size 15 ;
 
+
+
+
     DEFINE tot_ovagod_priliv, tot_ovagod_odliv type n size 14 dec 0;
     DEFINE tot_lani_priliv, tot_lani_odliv type n size 14 dec 0;
     DEFINE tot_ovajmj_priliv, tot_ovajmj_odliv type n size 14 dec 0 ;
     DEFINE tot_proslimj_priliv, tot_proslimj_odliv type n size 14 dec 0 ;
+
+
 
     DEFINE tot_ovagod_priliv_string type a size 20;
     DEFINE tot_ovagod_priliv_mp_string type a size 20;
@@ -140,16 +119,7 @@
     define sales2 type n size 16 dec 2;
 	define sklad_str type a size 100;
 	
-//---------------------------------
-    define ZAPOSLENIK_str type a size 5000;
-    define BROJEVI_OBRACUNA_str type a size 15000;
-    define STRUCNA_SPREMA_str type a size 15000;
-    define MJESTO_STANOVANJA_str type a size 15000;
-    define MJESTO_ZAPOSLENJA_str type a size 15000;
-    define NAZIV_RADNOG_MJESTA_str type a size 15000;
-    define ORGANIZACIJSKE_JEDINICE_str type a size 15000;
-    define ELEMENTI_OBRACUNA_str type a size 15000;
-//---------------------------------
+
     define KONTO_str type a size 100;
 
     define br_kupaca_og, br_kupaca_lg type i size 5;
@@ -157,7 +127,11 @@
     define broj_rac_og, broj_rac_lg type r size 6;
     define prod_kup_indx type n size 10 dec 2;
 
-    DEFINE arrayProslaPlace, arrayTrenutnaPlace type n size 14 array 12;
+    DEFINE arrayProslaIznosi, arrayTrenutnaIznosi type n size 14 array 12;
+    
+    DEFINE arrayProslaBruto, arrayTrenutnaBruto type n size 14 array 12;
+    DEFINE arrayProslaNeto, arrayTrenutnaNeto type n size 14 array 12;
+    DEFINE arrayProslaBrRadnika, arrayTrenutnaBrRadnika type n size 14 array 12;
 
     DEFINE arrayProslaPriliv, arrayProslaOdliv type n size 14 array 12;
     DEFINE arrayTrenutnaPriliv, arrayTrenutnaOdliv type n size 14 array 12;
@@ -320,6 +294,74 @@
 
     define F2ListQueryString type a size 20000;
 
+
+
+//-----------------------------------
+    DEFINE zaposlenik type a size 10;
+    DEFINE zaposlenikNaziv type a size 50;
+
+    DEFINE brojeviObracuna type a size 10;
+    DEFINE brojeviObracunaNaziv type a size 50;
+
+    DEFINE strucnaSprema type a size 10;
+    DEFINE strucnaSpremaNaziv type a size 50;
+
+    DEFINE mjestoStanovanja type a size 10;
+    DEFINE mjestoStanovanjaNaziv type a size 50;
+
+    DEFINE mjestoZaposlenja type a size 10;
+    DEFINE mjestoZaposlenjaNaziv type a size 50;
+
+    DEFINE nazivRadnogMjesta type a size 10;
+    DEFINE nazivRadnogMjestaNaziv type a size 50;
+
+    DEFINE organizacijskeJedinice type a size 10;
+    DEFINE organizacijskeJediniceNaziv type a size 50;
+
+    DEFINE elementiObracuna type a size 10;
+    DEFINE elementiObracunaNaziv type a size 50;
+//-----------------------------------
+
+//---------------------------------
+    define ZAPOSLENIK_str type a size 5000;
+    define BROJEVI_OBRACUNA_str type a size 15000;
+    define STRUCNA_SPREMA_str type a size 15000;
+    define MJESTO_STANOVANJA_str type a size 15000;
+    define MJESTO_ZAPOSLENJA_str type a size 15000;
+    define NAZIV_RADNOG_MJESTA_str type a size 15000;
+    define ORGANIZACIJSKE_JEDINICE_str type a size 15000;
+    define ELEMENTI_OBRACUNA_str type a size 15000;
+//---------------------------------
+
+//---------------------------------
+    DEFINE tot_bruto_trenutna type n size 14 dec 0;
+    DEFINE tot_bruto_prosla type n size 14 dec 0;
+    
+    DEFINE tot_neto_trenutna type n size 14 dec 0;
+    DEFINE tot_neto_prosla type n size 14 dec 0;
+    
+    DEFINE tot_brRadnika_trenutna type n size 14 dec 0;
+    DEFINE tot_brRadnika_prosla type n size 14 dec 0;
+//---------------------------------
+
+//---------------------------------
+    DEFINE tot_bruto_trenutna_string type a size 20;
+    DEFINE tot_bruto_prosla_string type a size 20;
+
+    DEFINE tot_neto_trenutna_string type a size 20;
+    DEFINE tot_neto_prosla_string type a size 20;
+    
+    DEFINE tot_brRadnika_trenutna_string type a size 20;
+    DEFINE tot_brRadnika_prosla_string type a size 20;
+
+//---------------------------------
+
+
+
+    //---------------------------
+
+    define ar_mjesec type i size 2;
+    define ar_godina type a size 4;
     
 //=============================================================
 //=== F2 sifra zaposlenika ==========================================

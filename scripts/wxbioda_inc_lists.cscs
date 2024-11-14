@@ -342,6 +342,20 @@
     
     DEFINE tot_brRadnika_trenutna type n size 14 dec 0;
     DEFINE tot_brRadnika_prosla type n size 14 dec 0;
+
+    DEFINE tot_bolovanja_trenutna type n size 14 dec 0;
+    DEFINE tot_bolovanja_prosla type n size 14 dec 0;
+    DEFINE tot_bolovanjaKol_trenutna type n size 14 dec 0;
+    DEFINE tot_bolovanjaKol_prosla type n size 14 dec 0;
+    DEFINE tot_bolovanjaBrRadnika_trenutna type n size 14 dec 0;
+    DEFINE tot_bolovanjaBrRadnika_prosla type n size 14 dec 0;
+
+    DEFINE tot_prekovremeni_trenutna type n size 14 dec 0;
+    DEFINE tot_prekovremeni_prosla type n size 14 dec 0;
+    DEFINE tot_prekovremeniKol_trenutna type n size 14 dec 0;
+    DEFINE tot_prekovremeniKol_prosla type n size 14 dec 0;
+    DEFINE tot_prekovremeniBrRadnika_trenutna type n size 14 dec 0;
+    DEFINE tot_prekovremeniBrRadnika_prosla type n size 14 dec 0;
 //---------------------------------
 
 //---------------------------------
@@ -353,15 +367,70 @@
     
     DEFINE tot_brRadnika_trenutna_string type a size 20;
     DEFINE tot_brRadnika_prosla_string type a size 20;
+    
+    DEFINE trenutnaAvgPlaca_string type a size 20;
+    DEFINE proslaAvgPlaca_string type a size 20;
+    
+    DEFINE trenutnaMedianPlaca_string type a size 20;
+    DEFINE proslaMedianPlaca_string type a size 20;
+
+
+
+
+    DEFINE tot_bolovanja_trenutna_string type a size 20;
+    DEFINE tot_bolovanja_prosla_string type a size 20;
+
+    // DEFINE tot_bolovanjaKol_trenutna_string type a size 20;
+    // DEFINE tot_bolovanjaKol_prosla_string type a size 20;
+
+    DEFINE tot_prekovremeni_trenutna_string type a size 20;
+    DEFINE tot_prekovremeni_prosla_string type a size 20;
+    
+    // DEFINE tot_prekovremeniKol_trenutna_string type a size 20;
+    // DEFINE tot_prekovremeniKol_prosla_string type a size 20;
 
 //---------------------------------
 
+    DEFINE tot_bolovanja_trenutna_temp type n size 14 dec 0;
+    DEFINE tot_bolovanja_prosla_temp type n size 14 dec 0;
 
+    DEFINE tot_prekovremeni_trenutna_temp type n size 14 dec 0;
+    DEFINE tot_prekovremeni_prosla_temp type n size 14 dec 0;
+    
+    //---------------------------
+    
+    define indexBruto type n size 10 dec 2;
+    define indexNeto type n size 10 dec 2;
+    define indexBrRadnika type n size 10 dec 2;
+    define indexAvg type n size 10 dec 2;
+    define indexMedian type n size 10 dec 2;
+
+    define indexBolovanja type n size 10 dec 2;
+    define indexPrekovremeni type n size 10 dec 2;
 
     //---------------------------
 
     define ar_mjesec type i size 2;
     define ar_godina type a size 4;
+
+    //---------------------------
+
+    define bolovanja_cb type a size 30;
+    define prekovremeni_cb type a size 30;
+    
+        //---------------------------
+    //---------------------------
+    //---------------------------
+
+    define arrayTrenutnaAvgPlaca type n size 14 dec 2 array 10000;
+    define arrayProslaAvgPlaca type n size 14 dec 2 array 10000;
+    define trenutnaAvgPlaca type n size 14 dec 0;
+    define proslaAvgPlaca type n size 14 dec 0;
+
+    define arrayTrenutnaMedianPlaca type n size 14 dec 2 array 10000;
+    define arrayProslaMedianPlaca type n size 14 dec 2 array 10000;
+    define trenutnaMedianPlaca type n size 14 dec 0;
+    define proslaMedianPlaca type n size 14 dec 0;
     
 //=============================================================
 //=== F2 sifra zaposlenika ==========================================
@@ -1064,29 +1133,32 @@ function gbElementiObracuna_view@clicked(){
   //========================================================
 //------------------------------------------------------------
 
-function filterPart()
+function filterPart(elementPlace = true)
 {
-    if(rad_rb == true){
-        sql_str += " AND odob_ln_vrsta IN ('A', 'C', 'E')";
-    }elif(doprinosiIzPlace_rb == true){
-        sql_str += " AND odob_ln_vrsta = 'K'";
-    }elif(doprinosiNaPlacu_rb == true){
-        sql_str += " AND odob_ln_vrsta = 'N'";
-    }elif(bolovanje_rb == true){
-        sql_str += " AND odob_ln_vrsta IN ('G', 'I')";
-    }elif(olaksice_rb == true){
-        sql_str += " AND odob_ln_vrsta = 'J'";
-    }elif(osobniOdbitak_rb == true){
-        sql_str += " AND odob_ln_vrsta = 'Q'";
-    }elif(porez_rb == true){
-        sql_str += " AND odob_ln_vrsta = 'R'";
-    }elif(prirez_rb == true){
-        sql_str += " AND odob_ln_vrsta = 'T'";
-    }elif(naknade_rb == true){
-        sql_str += " AND odob_ln_vrsta = 'X'";
-    }elif(obustave_rb == true){
-        sql_str += " AND odob_ln_vrsta = 'V'";
+    if(elementPlace){
+        if(rad_rb == true){
+            sql_str += " AND odob_ln_vrsta IN ('A', 'C', 'E')";
+        }elif(doprinosiIzPlace_rb == true){
+            sql_str += " AND odob_ln_vrsta = 'K'";
+        }elif(doprinosiNaPlacu_rb == true){
+            sql_str += " AND odob_ln_vrsta = 'N'";
+        }elif(bolovanje_rb == true){
+            sql_str += " AND odob_ln_vrsta IN ('G', 'I')";
+        }elif(olaksice_rb == true){
+            sql_str += " AND odob_ln_vrsta = 'J'";
+        }elif(osobniOdbitak_rb == true){
+            sql_str += " AND odob_ln_vrsta = 'Q'";
+        }elif(porez_rb == true){
+            sql_str += " AND odob_ln_vrsta = 'R'";
+        }elif(prirez_rb == true){
+            sql_str += " AND odob_ln_vrsta = 'T'";
+        }elif(naknade_rb == true){
+            sql_str += " AND odob_ln_vrsta = 'X'";
+        }elif(obustave_rb == true){
+            sql_str += " AND odob_ln_vrsta = 'V'";
+        }
     }
+    
 
     radniStatus_str = "";
     if(redoviti_cb == true){

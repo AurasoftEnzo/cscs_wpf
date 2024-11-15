@@ -354,8 +354,12 @@ function gbPripremi@clicked()
     AsyncCall("setMainData", "callSetAvgAndMedian");    
 }
 function callSetAvgAndMedian(){
-    AsyncCall("setAvgAndMedian", "callSetBruto");
+    AsyncCall("setAvgAndMedian", "callSetBrNovozaposlenihIPrekidaRadOdn");
 }
+function callSetBrNovozaposlenihIPrekidaRadOdn(){
+    AsyncCall("setBrNovozaposlenihIPrekidaRadOdn", "callSetBruto");
+}
+
 function callSetBruto(){
     AsyncCall("setBruto", "callSetNeto");
 }
@@ -369,7 +373,13 @@ function callSetAvg(){
     AsyncCall("setAvg", "callSetMedian");
 }
 function callSetMedian(){
-    AsyncCall("setMedian", "callSetBolovanje");
+    AsyncCall("setMedian", "callSetBrNovozaposlenih");
+}
+function callSetBrNovozaposlenih(){
+    AsyncCall("setBrNovozaposlenih", "callSetBrPrekidaRadOdn");
+}
+function callSetBrPrekidaRadOdn(){
+    AsyncCall("setBrPrekidaRadOdn", "callSetBolovanje");
 }
 function callSetBolovanje(){
     AsyncCall("setBolovanje", "callSetPrekovremeni");
@@ -572,6 +582,8 @@ function clearData(){
     tot_brRadnika_trenutna = 0;
     tot_brRadnika_prosla = 0;
     indexBrRadnika = 0;
+   
+//----
 
     trenutnaAvgPlaca = 0;
     proslaAvgPlaca = 0;
@@ -580,10 +592,19 @@ function clearData(){
     trenutnaMedianPlaca = 0;
     proslaMedianPlaca = 0;
     indexMedian = 0;
+    
+//----
 
-
+    trenutnaBrNovozaposlenih = 0;
+    proslaBrNovozaposlenih = 0;
+    indexBrNovozaposlenih = 0;
+    
+    trenutnaBrPrekidaRadOdn = 0;
+    proslaBrPrekidaRadOdn = 0;
+    indexBrPrekidaRadOdn = 0;
 
 //---
+
     tot_bolovanja_trenutna = 0;
     tot_bolovanja_prosla = 0;
     
@@ -594,7 +615,9 @@ function clearData(){
     tot_bolovanjaBrRadnika_prosla = 0;
     
     indexBolovanja = 0;
+
 //---
+
     tot_prekovremeni_trenutna = 0;
     tot_prekovremeni_prosla = 0;
  
@@ -606,7 +629,7 @@ function clearData(){
     
     indexPrekovremeni = 0;
 
-    //...
+//---
 
     HorizontalBar("HorizontalBarOGBruto", "Text", "");
     HorizontalBar("HorizontalBarOGBruto", "BarWidth", 0);
@@ -637,6 +660,19 @@ function clearData(){
     
     HorizontalBar("HorizontalBarPGMedian", "Text", "");
     HorizontalBar("HorizontalBarPGMedian", "BarWidth", 0);
+    
+
+    HorizontalBar("HorizontalBarOGBrNovozaposlenih", "Text", "");
+    HorizontalBar("HorizontalBarOGBrNovozaposlenih", "BarWidth", 0);
+    
+    HorizontalBar("HorizontalBarPGBrNovozaposlenih", "Text", "");
+    HorizontalBar("HorizontalBarPGBrNovozaposlenih", "BarWidth", 0);
+    
+    HorizontalBar("HorizontalBarOGBrPrekidaRadOdn", "Text", "");
+    HorizontalBar("HorizontalBarOGBrPrekidaRadOdn", "BarWidth", 0);
+    
+    HorizontalBar("HorizontalBarPGBrPrekidaRadOdn", "Text", "");
+    HorizontalBar("HorizontalBarPGBrPrekidaRadOdn", "BarWidth", 0);
     
 
 
@@ -948,6 +984,103 @@ function setAvgAndMedian1(){
 }
 
 
+// Broj novozaposlenih i broj prekida radnog odnosa
+function setBrNovozaposlenihIPrekidaRadOdn(){
+    //Novozaposleni
+    sql_str = " SELECT";
+    sql_str += " year(od_ms_dat_zap) as godina,";
+    sql_str += " count(distinct od_ms_br_rad) as brRadnika";
+    
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkodradn";
+	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobln ON od_ms_br_rad = odob_ln_osoba";
+	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobgl  ON odob_gl_num = odob_ln_num";
+
+
+    sql_str += " WHERE "; 
+    sql_str += " month(od_ms_dat_zap) >= " + int(mjesec1od) + " AND month(od_ms_dat_zap) <= " + int(mjesec1do);
+    sql_str += " AND year(od_ms_dat_zap) IN (" + int(godina1) + ", " + (int(godina1) - 1) + ")";
+
+    filterPart(false);
+    
+    sql_str += " GROUP BY year(od_ms_dat_zap)";
+   
+    sql_str += " ORDER BY godina desc";
+    
+    try
+    {
+        //SaveFile(sql_str);
+        queryResult = sqlquery(SQL_str);
+        //SaveFile(queryResult);
+    }
+    catch(exc)
+    {
+        MessageBox(exc);
+    }
+
+    RunOnMain("setBrNovozaposlenihIPrekidaRadOdn1");
+
+
+
+    //PREKIDI
+    sql_str = " SELECT";
+    sql_str += " year(od_ms_dat_prest) as godina,";
+    sql_str += " count(distinct od_ms_br_rad) as brRadnika";
+    
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkodradn";
+	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobln ON od_ms_br_rad = odob_ln_osoba";
+	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobgl  ON odob_gl_num = odob_ln_num";
+
+
+    sql_str += " WHERE "; 
+    sql_str += " month(od_ms_dat_prest) >= " + int(mjesec1od) + " AND month(od_ms_dat_prest) <= " + int(mjesec1do);
+    sql_str += " AND year(od_ms_dat_prest) IN (" + int(godina1) + ", " + (int(godina1) - 1) + ")";
+
+    filterPart(false);
+    
+    sql_str += " GROUP BY year(od_ms_dat_prest)";
+   
+    sql_str += " ORDER BY godina desc";
+    
+    try
+    {
+        //SaveFile(sql_str);
+        queryResult = sqlquery(SQL_str);
+        //SaveFile(queryResult);
+    }
+    catch(exc)
+    {
+        MessageBox(exc);
+    }
+
+    RunOnMain("setBrNovozaposlenihIPrekidaRadOdn2");
+
+}
+
+function setBrNovozaposlenihIPrekidaRadOdn1(){
+    for(i = 1; i <= Size(queryResult) - 1; i++)
+    {
+        if(queryResult[i][0] == godina1){
+            trenutnaBrNovozaposlenih = queryResult[i][1];
+        }
+        elif(queryResult[i][0] == string(int(godina1) - 1)){
+            proslaBrNovozaposlenih = queryResult[i][1];
+        }
+    }
+}
+
+function setBrNovozaposlenihIPrekidaRadOdn2(){
+for(i = 1; i <= Size(queryResult) - 1; i++)
+    {
+        if(queryResult[i][0] == godina1){
+            trenutnaBrPrekidaRadOdn = queryResult[i][1];
+        }
+        elif(queryResult[i][0] == string(int(godina1) - 1)){
+            proslaBrPrekidaRadOdn = queryResult[i][1];
+        }
+    }
+}
+
+
 
 
 function setBruto(){
@@ -964,6 +1097,12 @@ function setAvg(){
 }
 function setMedian(){
     RunOnMain("HorizontalBarsMedian");
+}
+function setBrNovozaposlenih(){
+    RunOnMain("HorizontalBarsBrNovozaposlenih");
+}
+function setBrPrekidaRadOdn(){
+    RunOnMain("HorizontalBarsBrPrekidaRadOdn");
 }
 function setBolovanje(){
     RunOnMain("HorizontalBarsBolovanje");
@@ -1425,6 +1564,169 @@ function HorizontalBarsMedian(){
     else
     {
         indexMedian = Math.Round((100.00 * (trenutnaMedianPlaca - proslaMedianPlaca) / proslaMedianPlaca), 2);
+    }
+}
+
+
+function HorizontalBarsBrNovozaposlenih(){
+    
+    if (Math.Abs(trenutnaBrNovozaposlenih) > Math.Abs(proslaBrNovozaposlenih))
+    {
+        if(proslaBrNovozaposlenih != 0)
+        {
+            ratio = 1.00 * trenutnaBrNovozaposlenih/proslaBrNovozaposlenih;
+            HorizontalBar("HorizontalBarOGBrNovozaposlenih", "BarWidth", 90);
+            HorizontalBar("HorizontalBarPGBrNovozaposlenih", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarPGBrNovozaposlenih", "BarWidth", 0);
+            if(trenutnaBrNovozaposlenih != 0)
+            {
+                HorizontalBar("HorizontalBarOGBrNovozaposlenih", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarOGBrNovozaposlenih", "BarWidth", 0);
+            }
+        }
+    }
+    else
+    {
+        if(trenutnaBrNovozaposlenih != 0)
+        {
+            ratio = 1.00 * proslaBrNovozaposlenih/trenutnaBrNovozaposlenih;
+            HorizontalBar("HorizontalBarPGBrNovozaposlenih", "BarWidth", 90);
+            HorizontalBar("HorizontalBarOGBrNovozaposlenih", "BarWidth", 90/ratio);
+            // HorizontalBar("HorizontalBarOG1", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarOGBrNovozaposlenih", "BarWidth", 0);
+            if(proslaBrNovozaposlenih != 0)
+            {
+                HorizontalBar("HorizontalBarPGBrNovozaposlenih", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarPGBrNovozaposlenih", "BarWidth", 0);
+            }
+        }
+    }
+
+    // //ellipse(strelica gore/dolje)
+    // SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Visible", true);
+    // if (tot_ovagod_priliv > tot_lani_priliv)
+    // {
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Lime");
+    // }
+    // elif(tot_ovagod_priliv < tot_lani_priliv)
+    // {
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Red");
+    // }
+    // else{
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Gray");
+    // }
+    // if(tot_ovagod_priliv == 0 || tot_lani_priliv == 0){
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Visible", false);
+    // }
+
+    Format("trenutnaBrNovozaposlenih", "nofd", recv: "trenutnaBrNovozaposlenih_string");
+    HorizontalBar("HorizontalBarOGBrNovozaposlenih", "Text", trenutnaBrNovozaposlenih_string);
+    HorizontalBar("HorizontalBarOGBrNovozaposlenih", "Color", bojeArray);
+    Format("proslaBrNovozaposlenih", "nofd", recv: "proslaBrNovozaposlenih_string");
+    HorizontalBar("HorizontalBarPGBrNovozaposlenih", "Text", proslaBrNovozaposlenih_string);
+    HorizontalBar("HorizontalBarPGBrNovozaposlenih", "Color", bojeArray);
+
+    //index broj radnika
+    if(proslaBrNovozaposlenih == 0)
+    {
+        indexBrNovozaposlenih = 0;
+    }
+    else
+    {
+        indexBrNovozaposlenih = Math.Round((100.00 * (trenutnaBrNovozaposlenih - proslaBrNovozaposlenih) / proslaBrNovozaposlenih), 2);
+    }
+}
+
+function HorizontalBarsBrPrekidaRadOdn(){
+    
+    if (Math.Abs(trenutnaBrPrekidaRadOdn) > Math.Abs(proslaBrPrekidaRadOdn))
+    {
+        if(proslaBrPrekidaRadOdn != 0)
+        {
+            ratio = 1.00 * trenutnaBrPrekidaRadOdn/proslaBrPrekidaRadOdn;
+            HorizontalBar("HorizontalBarOGBrPrekidaRadOdn", "BarWidth", 90);
+            HorizontalBar("HorizontalBarPGBrPrekidaRadOdn", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarPGBrPrekidaRadOdn", "BarWidth", 0);
+            if(trenutnaBrPrekidaRadOdn != 0)
+            {
+                HorizontalBar("HorizontalBarOGBrPrekidaRadOdn", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarOGBrPrekidaRadOdn", "BarWidth", 0);
+            }
+        }
+    }
+    else
+    {
+        if(trenutnaBrPrekidaRadOdn != 0)
+        {
+            ratio = 1.00 * proslaBrPrekidaRadOdn/trenutnaBrPrekidaRadOdn;
+            HorizontalBar("HorizontalBarPGBrPrekidaRadOdn", "BarWidth", 90);
+            HorizontalBar("HorizontalBarOGBrPrekidaRadOdn", "BarWidth", 90/ratio);
+            // HorizontalBar("HorizontalBarOG1", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarOGBrPrekidaRadOdn", "BarWidth", 0);
+            if(proslaBrPrekidaRadOdn != 0)
+            {
+                HorizontalBar("HorizontalBarPGBrPrekidaRadOdn", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarPGBrPrekidaRadOdn", "BarWidth", 0);
+            }
+        }
+    }
+
+    // //ellipse(strelica gore/dolje)
+    // SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Visible", true);
+    // if (tot_ovagod_priliv > tot_lani_priliv)
+    // {
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Lime");
+    // }
+    // elif(tot_ovagod_priliv < tot_lani_priliv)
+    // {
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Red");
+    // }
+    // else{
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Gray");
+    // }
+    // if(tot_ovagod_priliv == 0 || tot_lani_priliv == 0){
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Visible", false);
+    // }
+
+    Format("trenutnaBrPrekidaRadOdn", "nofd", recv: "trenutnaBrPrekidaRadOdn_string");
+    HorizontalBar("HorizontalBarOGBrPrekidaRadOdn", "Text", trenutnaBrPrekidaRadOdn_string);
+    HorizontalBar("HorizontalBarOGBrPrekidaRadOdn", "Color", bojeArray);
+    Format("proslaBrPrekidaRadOdn", "nofd", recv: "proslaBrPrekidaRadOdn_string");
+    HorizontalBar("HorizontalBarPGBrPrekidaRadOdn", "Text", proslaBrPrekidaRadOdn_string);
+    HorizontalBar("HorizontalBarPGBrPrekidaRadOdn", "Color", bojeArray);
+
+    //index broj radnika
+    if(proslaBrPrekidaRadOdn == 0)
+    {
+        indexBrPrekidaRadOdn = 0;
+    }
+    else
+    {
+        indexBrPrekidaRadOdn = Math.Round((100.00 * (trenutnaBrPrekidaRadOdn - proslaBrPrekidaRadOdn) / proslaBrPrekidaRadOdn), 2);
     }
 }
 

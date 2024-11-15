@@ -716,7 +716,7 @@ function setMainData(){
     // }
 
     // sql_str += " round(sum(odob_ln_ukupno), 2) as bruto,";
-    sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G', 'I') THEN odob_ln_ukupno ELSE 0 END), 2) as bruto,";
+    sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G') THEN odob_ln_ukupno WHEN odob_ln_vrsta IN ('I') THEN odob_ln_iznos ELSE 0 END), 2) as bruto,";
     sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G', 'I') THEN odob_ln_neto ELSE 0 END), 2) as neto,";
     
     sql_str += " count(distinct odob_ln_osoba) as brRadnika,";
@@ -871,7 +871,7 @@ function setAvgAndMedian(){
     }
     sql_str += " odob_ln_osoba as osoba,";
 
-    sql_str += " round(sum(odob_ln_ukupno), 2) as bruto";
+    sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G') THEN odob_ln_ukupno WHEN odob_ln_vrsta IN ('I') THEN odob_ln_iznos ELSE 0 END), 2) as bruto";
     
         // --round(sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G', 'I') THEN odob_ln_ukupno ELSE 0 END), 2) as bruto, 
         

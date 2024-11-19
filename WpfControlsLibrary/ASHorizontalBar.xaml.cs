@@ -9,6 +9,7 @@ using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
@@ -39,7 +40,10 @@ namespace WpfControlsLibrary
                 {
                     BarFill.HorizontalAlignment = HorizontalAlignment.Left;
                 }
-                BarFill.Width = Math.Abs(Width * value / 100);
+
+                newBarFillWidth = Math.Abs(Width * (double)value / 100.0);
+                AnimateBarFillWidth();
+
             }
         }
         
@@ -80,8 +84,15 @@ namespace WpfControlsLibrary
             }
             set
             {
-                base.SetValue(BarColorProperty, value);
-                BarFill.Background = value;
+
+                var startColor = (value as SolidColorBrush).Color;
+                startColor.A = 0;
+                
+                //Colors.Transparent
+                LinearGradientBrush lgb = new LinearGradientBrush(startColor, (value as SolidColorBrush).Color, 0);
+
+                base.SetValue(BarColorProperty, lgb);
+                BarFill.Background = lgb;
             }
         }
 
@@ -126,6 +137,19 @@ namespace WpfControlsLibrary
             }
         }
 
+        public static readonly DependencyProperty AnimationDurationProperty = DependencyProperty.Register("AnimationDuration", typeof(double), typeof(ASHorizontalBar), new PropertyMetadata(1.3));
+        public double AnimationDuration
+        {
+            get
+            {
+                return (double)base.GetValue(AnimationDurationProperty);
+            }
+            set
+            {
+                base.SetValue(AnimationDurationProperty, value);
+            }
+        }
+
         public ASHorizontalBar()
         {
             InitializeComponent();
@@ -159,6 +183,35 @@ namespace WpfControlsLibrary
 
                 loaded = true;
             }
+        }
+
+
+        double newBarFillWidth = 0;
+        DoubleAnimation widthAnimation;
+        private void AnimateBarFillWidth()
+        {
+            // Create a DoubleAnimation to animate the width of a button
+            widthAnimation = new DoubleAnimation
+            {
+                From = 0,
+                To = Math.Abs(newBarFillWidth),
+                Duration = new Duration(TimeSpan.FromSeconds(AnimationDuration))
+            };
+
+            // Create a Storyboard to contain the animation
+            Storyboard storyboard = new Storyboard();
+            storyboard.Children.Add(widthAnimation);
+
+            // Set the target property and target name for the animation
+            Storyboard.SetTargetName(widthAnimation, this.BarFill.Name);
+            Storyboard.SetTargetProperty(widthAnimation, new PropertyPath(Border.WidthProperty));
+
+            ////// Store the storyboard in the resources for later use
+            //this.Resources.Add("MyStoryboard", storyboard);
+
+            ////// Retrieve the storyboard from the resources and begin the animation
+            //storyboard = this.Resources["MyStoryboard"] as Storyboard;
+            storyboard.Begin(this);
         }
     }
 }

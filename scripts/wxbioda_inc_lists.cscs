@@ -246,7 +246,7 @@
     DEFINE spolSve_rb type l;
     DEFINE spolMusko_rb type l;
     DEFINE spolZensko_rb type l;
-    DEFINE spolOstalo_rb type l;
+    DEFINE spolNijeUneseno_rb type l;
 
 
     DEFINE nazivFirme type a size 100;
@@ -1268,6 +1268,35 @@ function filterPart(elementPlace = true)
         sql_str += " AND odob_ln_sifra IN (" + ELEMENTI_OBRACUNA_str + ")";
     }
     
+    // if (spolSve_rb)
+    // {
+    //     sql_str += " AND od_ms_spol IN (" +  + ")";
+    // }
+    if (spolMusko_rb)
+    {
+        sql_str += " AND od_ms_spol = 'M'";
+    }
+    if (spolZensko_rb)
+    {
+        sql_str += " AND od_ms_spol = 'Z'";
+    }
+    if (spolNijeUneseno_rb)
+    {
+        sql_str += " AND od_ms_spol = ''";
+    }
+
+
+    if(zaposleniUCijelomPeriodu_cb)
+    {
+        sql_str += " AND (CASE ";
+        sql_str += " WHEN od_ms_dat_zap = '1900-01-01' THEN null";
+        sql_str += " WHEN year(od_ms_dat_zap) > " + godina1 + " THEN null";
+        sql_str += " WHEN year(od_ms_dat_zap) = " + godina1 + " AND month(od_ms_dat_zap) >= " + mjesec1od + " THEN null";
+        sql_str += " WHEN year(OD_MS_DAT_PREST) = " + godina1 + " AND month(OD_MS_DAT_PREST) <= " + mjesec1do + " THEN null";
+        sql_str += " WHEN year(OD_MS_DAT_PREST) < " + godina1 + " AND OD_MS_DAT_PREST != '1900-01-01' THEN null";
+        sql_str += " ELSE 1";
+        sql_str += " END ) is not null";
+    }
 
     // if (KONTO_str != "" || KONTO_posl_akt_str != "" || KONTO_financ_akt_str != "" || KONTO_invest_akt_str != "")
     // {

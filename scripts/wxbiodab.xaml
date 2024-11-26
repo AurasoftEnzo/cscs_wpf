@@ -49,7 +49,7 @@
                       Height="245"
                       Width="1120"
                       IsReadOnly="true"
-                      Name="dgArtikli"
+                      Name="dgListaZaposlenika"
                       RowHeight="22"
                       FontSize="15"
                       HorizontalScrollBarVisibility="Auto"
@@ -72,67 +72,158 @@
                                             Width="45">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="TOP10ART_AR"
-                                                Editor="edDefault"
-                                                EditLength="0"
-                                                HorizontalContentAlignment="Center" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <!--<DataGridTemplateColumn Header="Naziv priliva (konta)"
-                                            Width="245">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <wcl:ASGridCell FieldName="NAMEART_AR"
-                                                Editor="edDefault"
-                                                EditLength="0"
+                                <wcl:ASGridCell FieldName="LstRadnRbr_ar"
                                                 HorizontalContentAlignment="Left" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Ova godina"
-                                            Width="100">
+                    <DataGridTemplateColumn Header="Šifra zaposlenika"
+                                            Width="150">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="SALESART1_AR"
-                                                Editor="edNumeric"
-                                                EditLength="0"
+                                <wcl:ASGridCell FieldName="LstRadnSifraRadnika_ar"
+                                                HorizontalContentAlignment="Left" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Prezime"
+                                            Width="130">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="LstRadnPrezime_ar"
+                                                HorizontalContentAlignment="Left" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Ime"
+                                            Width="130">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="LstRadnIme_ar"
+                                                HorizontalContentAlignment="Left" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Ugovorena plaća  ">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="LstRadnUgovorenaPlaca_ar"
                                                 HorizontalContentAlignment="Right" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Preth.godina"
-                                            Width="100">
+                    <DataGridTemplateColumn Header="Spol  ">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="SALESART2_AR"
-                                                Editor="edNumeric"
-                                                EditLength="0"
-                                                Size="10"
-                                                HorizontalContentAlignment="Right" />
+                                <wcl:ASGridCell 
+                                    FieldName="LstRadnSpol_ar"
+                                    HorizontalContentAlignment="Center"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Index%"
-                                            Width="54">
+                    
+                    <DataGridTemplateColumn Header="Starost(godina)  ">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="INDEXART_AR"
-                                                Editor="edNumeric"
-                                                EditLength="0"
-                                                HorizontalContentAlignment="Right" />
+                                <wcl:ASGridCell 
+                                    FieldName="LstRadnGodine_ar"
+                                    HorizontalContentAlignment="Center"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="">
+                    <DataGridTemplateColumn Header="Radni staž(ukupno)  ">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell IsImage="True" 
-                                                Margin="2"
-                                                FieldName="ImageART_AR"/>
+                                <wcl:ASGridCell 
+                                    FieldName="LstRadnStazUkupno_ar"
+                                    HorizontalContentAlignment="Center"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>-->
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Radni staž(u firmi)  ">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell 
+                                    FieldName="LstRadnStazUFirmi_ar"
+                                    HorizontalContentAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Posljednja bruto plaća  ">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell 
+                                    FieldName="LstRadnPosljPlacaBruto_ar"
+                                    HorizontalContentAlignment="Right"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Header="Posljednja neto plaća  ">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell 
+                                    FieldName="LstRadnPosljPlacaNeto_ar"
+                                    HorizontalContentAlignment="Right"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Prosječna bruto plaća  ">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell 
+                                    FieldName="LstRadnProsjPlacaBruto_ar"
+                                    HorizontalContentAlignment="Right"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Prosječna neto plaća  ">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell 
+                                    FieldName="LstRadnProsjPlacaNeto_ar"
+                                    HorizontalContentAlignment="Right"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    
+                    <DataGridTemplateColumn Header="Stručna sprema  ">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell 
+                                    FieldName="LstRadnStrSprema_ar"
+                                    HorizontalContentAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Prebivalište  ">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell 
+                                    FieldName="LstRadnPrebivaliste_ar"
+                                    HorizontalContentAlignment="Left"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Radno vrijeme(sati)  ">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell 
+                                    FieldName="LstRadnRadnoVrijeme_ar"
+                                    HorizontalContentAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Ugovor na  ">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell 
+                                    FieldName="LstRadnUgovorNa_ar"
+                                    HorizontalContentAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    
                 </DataGrid.Columns>
             </DataGrid>
 

@@ -477,6 +477,26 @@ define punoRadnoVrijemeSati type n size 2;
 define ugovorNaOdredeno_cb type l;
 define ugovorNaNeodredeno_cb type l;
 
+//---------------------------
+
+define LstRadnRbr_ar type i size 5 array 5000;
+define LstRadnSifraRadnika_ar type a size 10 array 5000;
+define LstRadnPrezime_ar type a size 50 array 5000;
+define LstRadnIme_ar type a size 50 array 5000;
+define LstRadnUgovorenaPlaca_ar type n size 10 dec 2 array 5000;
+define LstRadnSpol_ar type a size 1 array 5000;
+define LstRadnGodine_ar type i size 3 array 5000;
+define LstRadnStazUkupno_ar type i size 3 array 5000;
+define LstRadnStazUFirmi_ar type i size 3 array 5000;
+define LstRadnPosljPlacaBruto_ar type n size 10 dec 2 array 5000;
+define LstRadnPosljPlacaNeto_ar type n size 10 dec 2 array 5000;
+define LstRadnProsjPlacaBruto_ar type n size 10 dec 2 array 5000;
+define LstRadnProsjPlacaNeto_ar type n size 10 dec 2 array 5000;
+define LstRadnStrSprema_ar type a size 40 array 5000;
+define LstRadnPrebivaliste_ar type a size 40 array 5000;
+define LstRadnRadnoVrijeme_ar type i size 3 array 5000;
+define LstRadnUgovorNa_ar type a size 40 array 5000;
+
 //=============================================================
 //=== F2 sifra zaposlenika ==========================================
 
@@ -622,19 +642,37 @@ function gbBrojeviObracuna_view@clicked(){
 
 function ceStrucnaSprema@clicked()
 {    
+    // F2ListQueryString = "WITH strucnaSprema AS("
+    // + " SELECT DISTINCT trim(NKOD_SF_CODE) as sifraSS, trim(NKOD_SF_NAZIV) as nazivSS"
+    // + " FROM " + CommonDBGet() + ".dbo.nkodsifr "
+    // //+ " LEFT JOIN " + CommonDBGet() + ".dbo.nkodsifr ON nkod_sf_code = od_ms_sif_radmj AND nkod_sf_tip = 'I'"
+    // + " WHERE NKOD_SF_CODE like '%{var1}%' AND NKOD_SF_NAZIV like '%{var2}%' AND NKOD_SF_TIP = 'c'";
+    
+    // if(STRUCNA_SPREMA_str != ""){
+    //     F2ListQueryString += " AND NKOD_SF_CODE NOT IN (" + STRUCNA_SPREMA_str + ")";
+    // }
+
+    // F2ListQueryString += ")"
+    // + " SELECT ROW_NUMBER() OVER(ORDER BY sifraSS ASC) AS RowNumber, sifraSS, nazivSS"
+    // + " FROM strucnaSprema ORDER BY RowNumber";
+    
+    
     F2ListQueryString = "WITH strucnaSprema AS("
-    + " SELECT DISTINCT trim(NKOD_SF_CODE) as sifraSS, trim(NKOD_SF_NAZIV) as nazivSS"
-    + " FROM " + CommonDBGet() + ".dbo.nkodsifr "
-    //+ " LEFT JOIN " + CommonDBGet() + ".dbo.nkodsifr ON nkod_sf_code = od_ms_sif_radmj AND nkod_sf_tip = 'I'"
-    + " WHERE NKOD_SF_CODE like '%{var1}%' AND NKOD_SF_NAZIV like '%{var2}%' AND NKOD_SF_TIP = 'c'";
+    + " SELECT DISTINCT trim(OD_MS_SIF_ST_SP) as sifraSS, isnull(CASE WHEN trim(NKOD_SF_NAZIV) <> '' THEN trim(NKOD_SF_NAZIV) ELSE trim(NKOD_SF_OPIS1) END, 'nema naziva') as nazivSS"
+    + " FROM " + trenutnaGodinaBaza + ".dbo.nkodradn "
+    + " LEFT JOIN " + CommonDBGet() + ".dbo.nkodsifr ON nkod_sf_code = OD_MS_SIF_ST_SP AND NKOD_SF_TIP = 'c'"
+    
+    + " WHERE trim(OD_MS_SIF_ST_SP) like '%{var1}%' AND isnull(CASE WHEN trim(NKOD_SF_NAZIV) <> '' THEN trim(NKOD_SF_NAZIV) ELSE trim(NKOD_SF_OPIS1) END, '') like '%{var2}%'";
     
     if(STRUCNA_SPREMA_str != ""){
-        F2ListQueryString += " AND NKOD_SF_CODE NOT IN (" + STRUCNA_SPREMA_str + ")";
+        F2ListQueryString += " AND OD_MS_SIF_ST_SP NOT IN (" + STRUCNA_SPREMA_str + ")";
     }
 
     F2ListQueryString += ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY sifraSS ASC) AS RowNumber, sifraSS, nazivSS"
-    + " FROM strucnaSprema ORDER BY RowNumber";
+    + " FROM strucnaSprema"
+    + " WHERE sifraSS <> ''"
+    + " ORDER BY RowNumber";
 
     strucnaSprema = "";
     strucnaSpremaNaziv = "";
@@ -662,18 +700,19 @@ function ceStrucnaSprema@clicked()
 function gbStrucnaSprema_view@clicked(){
 
     F2ListQueryString = "WITH strucnaSprema AS("
-    + " SELECT DISTINCT trim(NKOD_SF_CODE) as sifraSS, trim(NKOD_SF_NAZIV) as nazivSS"
-    + " FROM " + CommonDBGet() + ".dbo.nkodsifr ";
-    //+ " LEFT JOIN " + CommonDBGet() + ".dbo.nkodsifr ON nkod_sf_code = od_ms_sif_radmj AND nkod_sf_tip = 'I'";
-    
+    + " SELECT DISTINCT trim(OD_MS_SIF_ST_SP) as sifraSS, isnull(CASE WHEN trim(NKOD_SF_NAZIV) <> '' THEN trim(NKOD_SF_NAZIV) ELSE trim(NKOD_SF_OPIS1) END, 'nema naziva') as nazivSS"
+    + " FROM " + trenutnaGodinaBaza + ".dbo.nkodradn "
+    + " LEFT JOIN " + CommonDBGet() + ".dbo.nkodsifr ON nkod_sf_code = OD_MS_SIF_ST_SP AND NKOD_SF_TIP = 'c'";
+
     if(STRUCNA_SPREMA_str != ""){
-        F2ListQueryString += " WHERE NKOD_SF_CODE IN ({var1})";
+        F2ListQueryString += " WHERE OD_MS_SIF_ST_SP IN ({var1})";
     }
     else{
         F2ListQueryString += " WHERE 1 <> 1";
     }
 
-    F2ListQueryString += " AND NKOD_SF_TIP = 'c')"
+    // F2ListQueryString += " AND NKOD_SF_TIP = 'c')"
+    F2ListQueryString += " )"
     + " SELECT ROW_NUMBER() OVER(ORDER BY sifraSS ASC) AS RowNumber, sifraSS, nazivSS"
     + " FROM strucnaSprema ORDER BY RowNumber";
 
@@ -704,7 +743,9 @@ function ceMjestoStanovanja@clicked()
 
     F2ListQueryString += ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY sifraMjestaIsplate ASC) AS RowNumber, sifraMjestaIsplate, nazivMjestaIsplate"
-    + " FROM mjStanovanja ORDER BY RowNumber";
+    + " FROM mjStanovanja"
+    + " WHERE sifraMjestaIsplate <> ''"
+    + " ORDER BY RowNumber";
 
     mjestoStanovanja = "";
     mjestoStanovanjaNaziv = "";
@@ -774,7 +815,9 @@ function ceMjestoZaposlenja@clicked()
 
     F2ListQueryString += ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY sifraMjestaZaposlenja ASC) AS RowNumber, sifraMjestaZaposlenja, nazivMjestaZaposlenja"
-    + " FROM mjZaposlenja ORDER BY RowNumber";
+    + " FROM mjZaposlenja"
+    + " WHERE sifraMjestaZaposlenja <> ''"
+    + " ORDER BY RowNumber";
 
     mjestoZaposlenja = "";
     mjestoZaposlenjaNaziv = "";
@@ -845,7 +888,9 @@ function ceNazivRadnogMjesta@clicked()
 
     F2ListQueryString += ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY sifraRadnogMjesta ASC) AS RowNumber, sifraRadnogMjesta, nazivRadnogMjesta"
-    + " FROM nazivRadMj ORDER BY RowNumber";
+    + " FROM nazivRadMj"
+    + " WHERE sifraRadnogMjesta <> ''"
+    + " ORDER BY RowNumber";
 
     nazivRadnogMjesta = "";
     nazivRadnogMjestaNaziv = "";
@@ -915,7 +960,9 @@ function ceOrganizacijskeJedinice@clicked()
 
     F2ListQueryString += ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY sifraOrgJed ASC) AS RowNumber, sifraOrgJed, nazivOrgJed"
-    + " FROM orgJedinice ORDER BY RowNumber";
+    + " FROM orgJedinice"
+    + " WHERE sifraOrgJed <> ''"
+    + " ORDER BY RowNumber";
 
     organizacijskeJedinice = "";
     organizacijskeJediniceNaziv = "";
@@ -1330,11 +1377,11 @@ function filterPart(elementPlace = true)
     }
     elif(!ugovorNaOdredeno_cb && ugovorNaNeodredeno_cb)
     {
-        sql_str += " AND OD_MS_GO_DO <> '1900-01-01'";
+        sql_str += " AND OD_MS_GO_DO = '1900-01-01'";
     }
     elif(ugovorNaOdredeno_cb && !ugovorNaNeodredeno_cb)
     {
-        sql_str += " AND OD_MS_GO_DO = '1900-01-01'";
+        sql_str += " AND OD_MS_GO_DO <> '1900-01-01'";
     }
 
 

@@ -28,6 +28,8 @@ CreateWindow(strTrim(tpath()) + "wxbioda.xaml");
 
 function wxbioda_onDisplay()
 {
+    cursor("wait");
+
     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Visible", false);
     SetWidgetOptions("EllipseProdajaUMjesecuPriliv", "Visible", false);
     SetWidgetOptions("EllipseProdajaUTjednuPriliv", "Visible", false);
@@ -68,6 +70,13 @@ function wxbioda_onDisplay()
     spolMusko_rb = false;
     spolZensko_rb = false;
     spolNijeUneseno_rb = false;
+
+    punoRadnoVrijeme_cb = true;
+    nepunoRadnoVrijeme_cb = true;
+
+    ugovorNaOdredeno_cb = true;
+    ugovorNaNeodredeno_cb = true;
+    
 
     args = CommandLineArgs(); 
     if(Size(args) > 2){
@@ -230,6 +239,25 @@ function wxbioda_onDisplay()
     // cbKontoFinancAkt = true;
     // cbKontoInvestAkt = true;
 
+    //---------------------------
+
+    sqlQueryString = "select OD_FK_SATI_DAN from " + trenutnaGodinaBaza + ".dbo.nkodfkin";
+    //MessageBox(sqlQueryString);
+    try
+    {
+        sqlResult = sqlQuery(sqlQueryString);
+        if (size(sqlResult) > 1)
+        {
+            punoRadnoVrijemeSati = int(sqlResult[1][0]);
+            //MessageBox(punoRadnoVrijemeSati);
+        }  
+    }
+    catch(exc)
+    {
+        MessageBox(exc);
+    }
+
+
     bojeArray = {129, 178, 154};
     //bojeArray2 = {196, 224, 138};
 
@@ -240,6 +268,8 @@ function wxbioda_onDisplay()
     comboItems4 = {"Iznos", "Sati", "Broj zaposlenika"};
     AddWidgetData("comboBoxPrekovremeni", comboItems4);
     SetWidgetOptions("comboBoxPrekovremeni", "SelectedIndex", 0);
+
+    cursor("dflt");
 }
 
 function gbPripremi@clicked()

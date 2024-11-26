@@ -466,6 +466,16 @@
     DEFINE arrayProslaBrutoMedian, arrayTrenutnaBrutoMedian type n size 14 array 12;
     DEFINE arrayProslaNetoMedian, arrayTrenutnaNetoMedian type n size 14 array 12;
 
+//---------------------------
+
+define punoRadnoVrijeme_cb type l;
+define nepunoRadnoVrijeme_cb type l;
+
+define punoRadnoVrijemeSati type n size 2;
+//---------------------------
+
+define ugovorNaOdredeno_cb type l;
+define ugovorNaNeodredeno_cb type l;
 
 //=============================================================
 //=== F2 sifra zaposlenika ==========================================
@@ -652,7 +662,7 @@ function ceStrucnaSprema@clicked()
 function gbStrucnaSprema_view@clicked(){
 
     F2ListQueryString = "WITH strucnaSprema AS("
-    + " SELECT DISTINCT convert(int, trim(NKOD_SF_CODE)) as sifraSS, trim(NKOD_SF_NAZIV) as nazivSS"
+    + " SELECT DISTINCT trim(NKOD_SF_CODE) as sifraSS, trim(NKOD_SF_NAZIV) as nazivSS"
     + " FROM " + CommonDBGet() + ".dbo.nkodsifr ";
     //+ " LEFT JOIN " + CommonDBGet() + ".dbo.nkodsifr ON nkod_sf_code = od_ms_sif_radmj AND nkod_sf_tip = 'I'";
     
@@ -1297,6 +1307,37 @@ function filterPart(elementPlace = true)
         sql_str += " ELSE 1";
         sql_str += " END ) is not null";
     }
+
+    
+    if(!punoRadnoVrijeme_cb && !nepunoRadnoVrijeme_cb)
+    {
+        sql_str += " AND 1 <> 1";
+    }
+    elif(!punoRadnoVrijeme_cb && nepunoRadnoVrijeme_cb)
+    {
+        sql_str += " AND OD_MS_DRV11 < " + punoRadnoVrijemeSati;
+    }
+    elif(punoRadnoVrijeme_cb && !nepunoRadnoVrijeme_cb)
+    {
+        sql_str += " AND OD_MS_DRV11 >= " + punoRadnoVrijemeSati;
+    }
+    
+    
+    
+    if(!ugovorNaOdredeno_cb && !ugovorNaNeodredeno_cb)
+    {
+        sql_str += " AND 1 <> 1";
+    }
+    elif(!ugovorNaOdredeno_cb && ugovorNaNeodredeno_cb)
+    {
+        sql_str += " AND OD_MS_GO_DO <> '1900-01-01'";
+    }
+    elif(ugovorNaOdredeno_cb && !ugovorNaNeodredeno_cb)
+    {
+        sql_str += " AND OD_MS_GO_DO = '1900-01-01'";
+    }
+
+
 
     // if (KONTO_str != "" || KONTO_posl_akt_str != "" || KONTO_financ_akt_str != "" || KONTO_invest_akt_str != "")
     // {

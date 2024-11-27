@@ -12,7 +12,7 @@
     define brojRadnika_rb type l;
 
     define rad_rb type l;
-    define bolovanje_rb type l;
+    // define bolovanje_rb type l;
     define doprinosiIzPlace_rb type l;
     define doprinosiNaPlacu_rb type l;
     define olaksice_rb type l;
@@ -1229,14 +1229,16 @@ function filterPart(elementPlace = true)
 {
     if(elementPlace){
         if(rad_rb == true){
-            sql_str += " AND odob_ln_vrsta IN ('A', 'C', 'E')";
+            sql_str += " AND odob_ln_vrsta IN ('A', 'C', 'E', 'G')";
         }elif(doprinosiIzPlace_rb == true){
             sql_str += " AND odob_ln_vrsta = 'K'";
         }elif(doprinosiNaPlacu_rb == true){
             sql_str += " AND odob_ln_vrsta = 'N'";
-        }elif(bolovanje_rb == true){
-            sql_str += " AND odob_ln_vrsta IN ('G', 'I')";
-        }elif(olaksice_rb == true){
+        }
+        // elif(bolovanje_rb == true){
+        //     sql_str += " AND odob_ln_vrsta IN ('G', 'I')";
+        // }
+        elif(olaksice_rb == true){
             sql_str += " AND odob_ln_vrsta = 'J'";
         }elif(osobniOdbitak_rb == true){
             sql_str += " AND odob_ln_vrsta = 'Q'";
@@ -1245,7 +1247,7 @@ function filterPart(elementPlace = true)
         }elif(prirez_rb == true){
             sql_str += " AND odob_ln_vrsta = 'T'";
         }elif(naknade_rb == true){
-            sql_str += " AND odob_ln_vrsta = 'X'";
+            sql_str += " AND odob_ln_vrsta IN ('X', 'I')";
         }elif(obustave_rb == true){
             sql_str += " AND odob_ln_vrsta = 'V'";
         }
@@ -1324,6 +1326,263 @@ function filterPart(elementPlace = true)
     {
         sql_str += " AND odob_ln_sifra IN (" + ELEMENTI_OBRACUNA_str + ")";
     }
+    
+    // if (spolSve_rb)
+    // {
+    //     sql_str += " AND od_ms_spol IN (" +  + ")";
+    // }
+    if (spolMusko_rb)
+    {
+        sql_str += " AND od_ms_spol = 'M'";
+    }
+    if (spolZensko_rb)
+    {
+        sql_str += " AND od_ms_spol = 'Z'";
+    }
+    if (spolNijeUneseno_rb)
+    {
+        sql_str += " AND od_ms_spol = ''";
+    }
+
+
+    if(zaposleniUCijelomPeriodu_cb)
+    {
+        sql_str += " AND (CASE ";
+        sql_str += " WHEN od_ms_dat_zap = '1900-01-01' THEN null";
+        sql_str += " WHEN year(od_ms_dat_zap) > " + godina1 + " THEN null";
+        sql_str += " WHEN year(od_ms_dat_zap) = " + godina1 + " AND month(od_ms_dat_zap) >= " + mjesec1od + " THEN null";
+        sql_str += " WHEN year(OD_MS_DAT_PREST) = " + godina1 + " AND month(OD_MS_DAT_PREST) <= " + mjesec1do + " THEN null";
+        sql_str += " WHEN year(OD_MS_DAT_PREST) < " + godina1 + " AND OD_MS_DAT_PREST != '1900-01-01' THEN null";
+        sql_str += " ELSE 1";
+        sql_str += " END ) is not null";
+    }
+
+    
+    if(!punoRadnoVrijeme_cb && !nepunoRadnoVrijeme_cb)
+    {
+        sql_str += " AND 1 <> 1";
+    }
+    elif(!punoRadnoVrijeme_cb && nepunoRadnoVrijeme_cb)
+    {
+        sql_str += " AND OD_MS_DRV11 < " + punoRadnoVrijemeSati;
+    }
+    elif(punoRadnoVrijeme_cb && !nepunoRadnoVrijeme_cb)
+    {
+        sql_str += " AND OD_MS_DRV11 >= " + punoRadnoVrijemeSati;
+    }
+    
+    
+    
+    if(!ugovorNaOdredeno_cb && !ugovorNaNeodredeno_cb)
+    {
+        sql_str += " AND 1 <> 1";
+    }
+    elif(!ugovorNaOdredeno_cb && ugovorNaNeodredeno_cb)
+    {
+        sql_str += " AND OD_MS_GO_DO = '1900-01-01'";
+    }
+    elif(ugovorNaOdredeno_cb && !ugovorNaNeodredeno_cb)
+    {
+        sql_str += " AND OD_MS_GO_DO <> '1900-01-01'";
+    }
+
+
+
+    // if (KONTO_str != "" || KONTO_posl_akt_str != "" || KONTO_financ_akt_str != "" || KONTO_invest_akt_str != "")
+    // {
+    //     KONTO_final_string = "";
+
+    //     if(KONTO_str != ""){
+    //         KONTO_final_string += KONTO_str;
+    //         KONTO_final_string += (KONTO_final_string != "" ? "," : "");
+    //     }
+    //     if(cbKontoPoslAkt == true && KONTO_posl_akt_str != ""){
+    //         KONTO_final_string += KONTO_posl_akt_str;
+    //         KONTO_final_string += (KONTO_final_string != "" ? "," : "");
+    //     }
+        
+    //     if(cbKontoFinancAkt == true && KONTO_financ_akt_str != ""){
+    //         KONTO_final_string += KONTO_financ_akt_str;
+    //         KONTO_final_string += (KONTO_final_string != "" ? "," : "");
+    //     }
+        
+    //     if(cbKontoInvestAkt == true && KONTO_invest_akt_str != ""){
+    //         KONTO_final_string += KONTO_invest_akt_str;
+    //         KONTO_final_string += (KONTO_final_string != "" ? "," : "");
+    //     }
+        
+    //     // charCount = lchr(KONTO_final_string, "l");
+    //     // KONTO_final_string = substring(KONTO_final_string, 0, charCount - 1);
+
+    //     if(KONTO_final_string.length > 0){
+    //         KONTO_final_string = substring(KONTO_final_string, 0, KONTO_final_string.length - 1);
+    //         //MessageBox(KONTO_final_string);
+    //         sql_str += " AND kdib_ln_konto IN (" + KONTO_final_string + ")";
+    //     }
+    // }
+    // if (Izvadak != "")
+    // {
+    //     sql_str += " AND kdib_gl_num = '" + Izvadak + "'";
+    // }
+    // if (domaca_dn )
+    // {
+    //     sql_str += " AND nksc_drzava= '" + kpsy_po_freight + "'";
+    // }
+    // elif (eu_dn )
+    // {
+    //     sql_str +=  " AND nksc_drzava IN (" + eucountries + ")";
+    // }
+    // elif (izvoz_dn )
+    // {
+    //     sql_str += " AND nksc_drzava <> '" + kpsy_po_freight + "' AND NOT nksc_drzava IN (" + eucountries + ")";
+    // }
+
+
+    //sql_str += " AND kpsy_bnk_blag != 'D'";
+/*
+    if (gl_oznaka != "")
+	{
+	    if (GL_oznaka == "X" || GL_oznaka == "O" || GL_oznaka == "R" )  //ako je to storno, odobrenje ili reklamacija neka okrene
+		{
+            sql_str += " AND nkpr_gl_oznaka= '"+gl_oznaka+"'";
+            sql_str += " AND nkpr_ln_pext< 0";
+		}
+        elif (gl_oznaka== "P")
+        {
+            //ide i plus i minus
+            sql_str += " AND nkpr_ln_ma_us= 'A'"; //avans
+        }
+        else
+		{
+            sql_str += " AND nkpr_gl_oznaka= '"+gl_oznaka+"'";
+            sql_str += " AND nkpr_ln_pext>= 0";
+		}
+	}
+    */
+
+}
+
+function filterPartListaZaposlenika()
+{
+
+    sql_str += " AND CASE WHEN (SELECT count(distinct odob_ln_num)";
+    sql_str += " from " + trenutnaGodinaBaza + ".dbo.nkodobln";
+    sql_str += " left join " + trenutnaGodinaBaza + ".dbo.nkodobgl on odob_ln_num = ODOB_GL_NUM";
+    sql_str += " where ODOB_LN_OSOBA = OD_MS_BR_RAD";
+    if(comboBoxMjesec1selected == "Obračun za mjesec"){
+        sql_str += " and convert(int, ODOB_GL_MJESEC) >= " + mjesec1od + " ";
+        sql_str += " and convert(int, ODOB_GL_MJESEC) <= " + mjesec1do + " ";
+        sql_str += " AND convert(int, ODOB_GL_GOD) = " + godina1 + " ";
+        
+    }elif(comboBoxMjesec1selected == "Mjesec isplate plaće"){
+        sql_str += " and month(odob_gl_dat_isp) >= " + mjesec1od + " ";
+        sql_str += " and month(odob_gl_dat_isp) <= " + mjesec1do + " ";
+        sql_str += " AND year(odob_gl_dat_isp) = " + godina1 + " ";
+    }elif(comboBoxMjesec1selected == "Mjesec obračuna plaće"){
+        sql_str += " and month(odob_gl_datum) >= " + mjesec1od + " ";
+        sql_str += " and month(odob_gl_datum) <= " + mjesec1do + " ";
+        sql_str += " AND year(odob_gl_datum) = " + godina1 + " ";
+    }
+    
+    if(rad_rb == true){
+        sql_str += " AND odob_ln_vrsta IN ('A', 'C', 'E', 'G')";
+    }elif(doprinosiIzPlace_rb == true){
+        sql_str += " AND odob_ln_vrsta = 'K'";
+    }elif(doprinosiNaPlacu_rb == true){
+        sql_str += " AND odob_ln_vrsta = 'N'";
+    }
+    // elif(bolovanje_rb == true){
+    //     sql_str += " AND odob_ln_vrsta IN ('G', 'I')";
+    // }
+    elif(olaksice_rb == true){
+        sql_str += " AND odob_ln_vrsta = 'J'";
+    }elif(osobniOdbitak_rb == true){
+        sql_str += " AND odob_ln_vrsta = 'Q'";
+    }elif(porez_rb == true){
+        sql_str += " AND odob_ln_vrsta = 'R'";
+    }elif(prirez_rb == true){
+        sql_str += " AND odob_ln_vrsta = 'T'";
+    }elif(naknade_rb == true){
+        sql_str += " AND odob_ln_vrsta IN ('X', 'I')";
+    }elif(obustave_rb == true){
+        sql_str += " AND odob_ln_vrsta = 'V'";
+    }
+    sql_str += " ) > 0 THEN 1 ELSE null END is not null";
+
+
+
+    radniStatus_str = "";
+    if(redoviti_cb == true){
+        radniStatus_str += " OR od_ms_status = 'R'";
+    }
+    if(poduzetnik_cb == true){
+        radniStatus_str += " OR od_ms_status = 'F'";
+    }
+    if(beneficirani_cb == true){
+        radniStatus_str += " OR od_ms_status = 'B'";
+    }
+    if(volonter_cb == true){
+        radniStatus_str += " OR od_ms_status = 'V'";
+    }
+    if(pripravnik_cb == true){
+        radniStatus_str += " OR od_ms_status = 'P'";
+    }
+    if(obrtnik_cb == true){
+        radniStatus_str += " OR od_ms_status = 'O'";
+    }
+    if(nijeZaposlen_cb == true){
+        radniStatus_str += " OR od_ms_status = 'N'";
+    }
+    if(porodiljskiDopust_cb == true){
+        radniStatus_str += " OR od_ms_status = 'L'";
+    }
+    if(ugovorODjelu_cb == true){
+        radniStatus_str += " OR od_ms_status = 'U'";
+    }
+    if(obracunNaknada_cb == true){
+        radniStatus_str += " OR od_ms_status = 'A'";
+    }
+
+    if(radniStatus_str == ""){
+        radniStatus_str = "1 <> 1";
+    }else{
+        radniStatus_str = radniStatus_str.substring(4, radniStatus_str.length - 4);
+    }   
+    sql_str += " AND (" + radniStatus_str + ")";
+
+
+    if (ZAPOSLENIK_str != "")
+    {
+        sql_str += " AND od_ms_br_rad IN (" + ZAPOSLENIK_str + ")";
+    }
+    if (BROJEVI_OBRACUNA_str != "")
+    {
+        sql_str += " AND OD_MS_BR_RAD IN (SELECT distinct ODOB_LN_OSOBA from " + trenutnaGodinaBaza + ".dbo.nkodobln WHERE ODOB_LN_NUM IN (" + BROJEVI_OBRACUNA_str + ") )";
+    }
+    if (STRUCNA_SPREMA_str != "")
+    {
+        sql_str += " AND OD_MS_SIF_ST_SP IN (" + STRUCNA_SPREMA_str  + ")";
+    }
+    if (MJESTO_STANOVANJA_str != "")
+    {
+        sql_str += " AND OD_MS_ISPLAT_MJ IN (" + MJESTO_STANOVANJA_str + ")";
+    }
+    if (MJESTO_ZAPOSLENJA_str != "")
+    {
+        sql_str += " AND OD_MS_POSL_JED IN (" + MJESTO_ZAPOSLENJA_str + ")";
+    }
+    if (NAZIV_RADNOG_MJESTA_str != "")
+    {
+        sql_str += " AND OD_MS_SIF_RADMJ IN (" + NAZIV_RADNOG_MJESTA_str + ")";
+    }
+    if (ORGANIZACIJSKE_JEDINICE_str != "")
+    {
+        sql_str += " AND od_ms_objed IN (" + ORGANIZACIJSKE_JEDINICE_str + ")";
+    }
+    // if (ELEMENTI_OBRACUNA_str != "")
+    // {
+    //     sql_str += " AND odob_ln_sifra IN (" + ELEMENTI_OBRACUNA_str + ")";
+    // }
     
     // if (spolSve_rb)
     // {

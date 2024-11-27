@@ -17,18 +17,18 @@ function wxbiodab_onDisplay()
             poMjesecimaLabel = "Broj radnika";
         }
     }
-    elif(bolovanje_rb)
-    {
-        if(bruto_rb){
-            poMjesecimaLabel = "Bruto iznos bolovanja";
-        }
-        elif(neto_rb){
-            poMjesecimaLabel = "Neto iznos bolovanja";
-        }
-        elif(brojRadnika_rb){
-            poMjesecimaLabel = "Broj radnika na bolovanju";
-        }
-    }
+    // elif(bolovanje_rb)
+    // {
+    //     if(bruto_rb){
+    //         poMjesecimaLabel = "Bruto iznos bolovanja";
+    //     }
+    //     elif(neto_rb){
+    //         poMjesecimaLabel = "Neto iznos bolovanja";
+    //     }
+    //     elif(brojRadnika_rb){
+    //         poMjesecimaLabel = "Broj radnika na bolovanju";
+    //     }
+    // }
     elif(doprinosiIzPlace_rb)
     {
         if(bruto_rb || neto_rb){
@@ -204,7 +204,7 @@ function setChartByMonth()
     }
     sql_str += " as god_mjesec, ";
 
-    if(neto_rb == true && (rad_rb == true || bolovanje_rb == true)){
+    if(neto_rb == true && (rad_rb == true /*|| bolovanje_rb == true*/)){
         sql_str += " round(sum(odob_ln_neto), 2)";
     }elif(brojRadnika_rb == true){
         sql_str += " count(distinct odob_ln_osoba)";
@@ -536,16 +536,14 @@ function setEmployeesDataGrid(){
     SQL_str +=" (SELECT CASE WHEN OD_MS_GO_DO = '1900-01-01' THEN 'Neodređeno' ELSE 'Određeno' END) as ugovorNa ";
     
     SQL_str +=" from " + trenutnaGodinaBaza + ".dbo.nkodradn ";
-    // sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkodobgl";
-    // //sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobos on odob_gl_num = odob_os_num";
-	// sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobln ON odob_gl_num = odob_ln_num";
-	// sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodradn ON od_ms_br_rad = odob_ln_osoba";
-
 
     SQL_str +=" WHERE 1 = 1 ";
 
-    //filterPart();
+    filterPartListaZaposlenika();
 
+    SQL_str +=" ORDER BY RowNumber";
+
+    //SaveFile(sql_str);
     try	{
 		sqlResult = sqlQuery(sql_str);
 	}catch(exc){

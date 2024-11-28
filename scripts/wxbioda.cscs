@@ -746,15 +746,22 @@ function setMainData(){
     // }
 
     // sql_str += " round(sum(odob_ln_ukupno), 2) as bruto,";
-    sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G') THEN odob_ln_ukupno WHEN odob_ln_vrsta IN ('I') THEN odob_ln_iznos ELSE 0 END), 2) as bruto,";
-    sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G', 'I') THEN odob_ln_neto ELSE 0 END), 2) as neto,";
+
+
+    // sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G') THEN odob_ln_ukupno WHEN odob_ln_vrsta IN ('I') THEN odob_ln_iznos ELSE 0 END), 2) as bruto,";
+    // sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G', 'I') THEN odob_ln_neto ELSE 0 END), 2) as neto,";
+    sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G') THEN odob_ln_ukupno ELSE odob_ln_iznos END), 2) as bruto,";
+    sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G') THEN odob_ln_neto ELSE odob_ln_iznos END), 2) as neto,";
     
     sql_str += " count(distinct odob_ln_osoba) as brRadnika,";
     
+    
+    // dole u sredini
     sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('G', 'I') THEN odob_ln_iznos ELSE 0 END), 2) as bolovanja,";
     sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('G', 'I') THEN convert(float, REPLACE(odob_ln_kol, ',', '.')) ELSE 0 END), 2) as bolovanjaKol,";
     sql_str += " count(distinct CASE WHEN odob_ln_vrsta IN ('G', 'I') THEN odob_ln_osoba ELSE null END) as bolovanjaBrRadnika,";
 
+    // dole desno
     sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('C') THEN odob_ln_iznos ELSE 0 END), 2) as prekovremeni,";
     sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('C') THEN convert(float, REPLACE(odob_ln_kol, ',', '.')) ELSE 0 END), 2) as prekovremeniKol,";
     sql_str += " count(distinct CASE WHEN odob_ln_vrsta IN ('C') THEN odob_ln_osoba ELSE null END) as prekovremeniBrRadnika";
@@ -778,7 +785,10 @@ function setMainData(){
         sql_str += " AND month(ODOB_GL_DATUM) >= " + int(mjesec1od) + " AND month(ODOB_GL_DATUM) <= " + int(mjesec1do);
     }
 
-    filterPart(false);
+    //sql_str += " AND odob_ln_vrsta IN ('A', 'C', 'E', 'G')";
+
+    // filterPart(false);
+    filterPart();
     
     if(comboBoxMjesec1selected == "Obračun za mjesec"){
         // sql_str += " GROUP BY odob_gl_god + CASE WHEN LEN(odob_gl_mjesec) = 1 THEN '0' + odob_gl_mjesec ELSE ODOB_GL_MJESEC END";
@@ -820,9 +830,6 @@ function setMainData1(){
     //     arrayProslaBrRadnika[i] = 0;
     //     arrayTrenutnaBrRadnika[i] = 0;
     // }
-
-    
-
 
     for(i = 1; i <= Size(queryResult) - 1; i++)
     {
@@ -901,8 +908,10 @@ function setAvgAndMedian(){
     }
     sql_str += " odob_ln_osoba as osoba,";
 
-    sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G') THEN odob_ln_ukupno WHEN odob_ln_vrsta IN ('I') THEN odob_ln_iznos ELSE 0 END), 2) as bruto";
+    // sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G') THEN odob_ln_ukupno WHEN odob_ln_vrsta IN ('I') THEN odob_ln_iznos ELSE 0 END), 2) as bruto";
+    sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G') THEN odob_ln_ukupno ELSE 0 END), 2) as bruto";
     
+
         // --round(sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G', 'I') THEN odob_ln_ukupno ELSE 0 END), 2) as bruto, 
         
         // --round(sum(odob_ln_neto), 2) as neto, 
@@ -949,7 +958,8 @@ function setAvgAndMedian(){
         sql_str += " AND month(ODOB_GL_DATUM) >= " + int(mjesec1od) + " AND month(ODOB_GL_DATUM) <= " + int(mjesec1do);
     }
 
-    sql_str += " AND odob_ln_vrsta IN ('A', 'C', 'E', 'G', 'I')";
+    // sql_str += " AND odob_ln_vrsta IN ('A', 'C', 'E', 'G', 'I')";
+    sql_str += " AND odob_ln_vrsta IN ('A', 'C', 'E', 'G')";
 
     filterPart(false);
     
@@ -1997,139 +2007,141 @@ function comboBoxPrekovremeni@SelectionChanged(){
 //-----------------------------------
 //---------------------------------------------------------------
 
-function setPieCharts(){
-    RunOnMain("setPieCharts1");
-}
 
-function setPieCharts1(){
 
-    //Pie Chart Priliv
-    PieChart("PieChartPriliv", "init");
-    PieChart("PieChartPriliv", "seriesType", "pie");
-    PieChart("PieChartPriliv", "title", "Pie Chart Title", 20);  
+// function setPieCharts(){
+//     RunOnMain("setPieCharts1");
+// }
 
-    //Pie Chart Odliv
-    PieChart("PieChartOdliv", "init");
-    PieChart("PieChartOdliv", "seriesType", "pie");
-    PieChart("PieChartOdliv", "title", "Pie Chart Title", 20);
+// function setPieCharts1(){
 
-    //poslovne aktivnosti
-    sql_str = "SELECT ";
-    sql_str += " isnull(sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END), 0) AS Odliv, ";
-    sql_str += " isnull(sum(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END), 0) AS Priliv ";
-    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl"; 
-    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
-    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
-    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
-    sql_str += " WHERE 1 = 1 AND kpsy_bnk_blag <> 'D' AND year(kdib_gl_datum) = " + ovagod_h; 
-    if (do_mjeseca)
-	{
-		sql_str += " AND month(kdib_gl_datum) <= '" + mjesec_h + "'";
-	}
-	else
-	{
-		sql_str += " AND month(kdib_gl_datum) = '" + mjesec_h + "'";
-	}
-    filterPartPieCharts();
-    if(KONTO_posl_akt_str != ""){
-        sql_str += " AND kdib_ln_konto IN (" + KONTO_posl_akt_str + ")";
-    }
-    else{
-        sql_str += " AND 1 <> 1";
-    }
+//     //Pie Chart Priliv
+//     PieChart("PieChartPriliv", "init");
+//     PieChart("PieChartPriliv", "seriesType", "pie");
+//     PieChart("PieChartPriliv", "title", "Pie Chart Title", 20);  
+
+//     //Pie Chart Odliv
+//     PieChart("PieChartOdliv", "init");
+//     PieChart("PieChartOdliv", "seriesType", "pie");
+//     PieChart("PieChartOdliv", "title", "Pie Chart Title", 20);
+
+//     //poslovne aktivnosti
+//     sql_str = "SELECT ";
+//     sql_str += " isnull(sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END), 0) AS Odliv, ";
+//     sql_str += " isnull(sum(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END), 0) AS Priliv ";
+//     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl"; 
+//     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
+//     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
+//     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
+//     sql_str += " WHERE 1 = 1 AND kpsy_bnk_blag <> 'D' AND year(kdib_gl_datum) = " + ovagod_h; 
+//     if (do_mjeseca)
+// 	{
+// 		sql_str += " AND month(kdib_gl_datum) <= '" + mjesec_h + "'";
+// 	}
+// 	else
+// 	{
+// 		sql_str += " AND month(kdib_gl_datum) = '" + mjesec_h + "'";
+// 	}
+//     filterPartPieCharts();
+//     if(KONTO_posl_akt_str != ""){
+//         sql_str += " AND kdib_ln_konto IN (" + KONTO_posl_akt_str + ")";
+//     }
+//     else{
+//         sql_str += " AND 1 <> 1";
+//     }
     
-    try
-    {
-        //SaveFile(sql_str);
-        queryResult = sqlquery(SQL_str);
-    }
-    catch(exc)
-    {
-        MessageBox(exc);
-    }
+//     try
+//     {
+//         //SaveFile(sql_str);
+//         queryResult = sqlquery(SQL_str);
+//     }
+//     catch(exc)
+//     {
+//         MessageBox(exc);
+//     }
 
 
-    PieChart("PieChartPriliv", "values", queryResult[1][1], "Posl.", 0, 50);
-    PieChart("PieChartOdliv", "values", queryResult[1][0], "Posl.", 0, 50);
+//     PieChart("PieChartPriliv", "values", queryResult[1][1], "Posl.", 0, 50);
+//     PieChart("PieChartOdliv", "values", queryResult[1][0], "Posl.", 0, 50);
 
 
-    //financijske aktivnosti
-    sql_str = "SELECT ";
-    sql_str += " isnull(sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END), 0) AS Odliv, ";
-    sql_str += " isnull(sum(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END), 0) AS Priliv ";
-    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl"; 
-    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
-    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
-    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
-    sql_str += " WHERE 1 = 1 AND kpsy_bnk_blag <> 'D' AND year(kdib_gl_datum) = " + ovagod_h; 
-    if (do_mjeseca)
-	{
-		sql_str += " AND month(kdib_gl_datum) <= '" + mjesec_h + "'";
-	}
-	else
-	{
-		sql_str += " AND month(kdib_gl_datum) = '" + mjesec_h + "'";
-	}
-    filterPartPieCharts();
-    if(KONTO_financ_akt_str != ""){
-        sql_str += " AND kdib_ln_konto IN (" + KONTO_financ_akt_str + ")";
-    }
-    else{
-        sql_str += " AND 1 <> 1";
-    }
+//     //financijske aktivnosti
+//     sql_str = "SELECT ";
+//     sql_str += " isnull(sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END), 0) AS Odliv, ";
+//     sql_str += " isnull(sum(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END), 0) AS Priliv ";
+//     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl"; 
+//     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
+//     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
+//     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
+//     sql_str += " WHERE 1 = 1 AND kpsy_bnk_blag <> 'D' AND year(kdib_gl_datum) = " + ovagod_h; 
+//     if (do_mjeseca)
+// 	{
+// 		sql_str += " AND month(kdib_gl_datum) <= '" + mjesec_h + "'";
+// 	}
+// 	else
+// 	{
+// 		sql_str += " AND month(kdib_gl_datum) = '" + mjesec_h + "'";
+// 	}
+//     filterPartPieCharts();
+//     if(KONTO_financ_akt_str != ""){
+//         sql_str += " AND kdib_ln_konto IN (" + KONTO_financ_akt_str + ")";
+//     }
+//     else{
+//         sql_str += " AND 1 <> 1";
+//     }
 
-    try
-    {
-        //SaveFile(sql_str);
-        queryResult = sqlquery(SQL_str);
-    }
-    catch(exc)
-    {
-        MessageBox(exc);
-    }
+//     try
+//     {
+//         //SaveFile(sql_str);
+//         queryResult = sqlquery(SQL_str);
+//     }
+//     catch(exc)
+//     {
+//         MessageBox(exc);
+//     }
 
-    PieChart("PieChartPriliv", "values", queryResult[1][1], "Financ.", 0, 50);
-    PieChart("PieChartOdliv", "values", queryResult[1][0], "Financ.", 0, 50);
+//     PieChart("PieChartPriliv", "values", queryResult[1][1], "Financ.", 0, 50);
+//     PieChart("PieChartOdliv", "values", queryResult[1][0], "Financ.", 0, 50);
     
     
-    //investicijske aktivnosti
-    sql_str = "SELECT ";
-    sql_str += " isnull(sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END), 0) AS Odliv, ";
-    sql_str += " isnull(sum(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END), 0) AS Priliv ";
-    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl"; 
-    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
-    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
-    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
-    sql_str += " WHERE 1 = 1 AND kpsy_bnk_blag <> 'D' AND year(kdib_gl_datum) = " + ovagod_h; 
-    if (do_mjeseca)
-	{
-		sql_str += " AND month(kdib_gl_datum) <= '" + mjesec_h + "'";
-	}
-	else
-	{
-		sql_str += " AND month(kdib_gl_datum) = '" + mjesec_h + "'";
-	}
-    filterPartPieCharts();
-    if(KONTO_invest_akt_str != ""){
-        sql_str += " AND kdib_ln_konto IN (" + KONTO_invest_akt_str + ")";
-    }
-    else{
-        sql_str += " AND 1 <> 1";
-    }
+//     //investicijske aktivnosti
+//     sql_str = "SELECT ";
+//     sql_str += " isnull(sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END), 0) AS Odliv, ";
+//     sql_str += " isnull(sum(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END), 0) AS Priliv ";
+//     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl"; 
+//     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
+//     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
+//     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
+//     sql_str += " WHERE 1 = 1 AND kpsy_bnk_blag <> 'D' AND year(kdib_gl_datum) = " + ovagod_h; 
+//     if (do_mjeseca)
+// 	{
+// 		sql_str += " AND month(kdib_gl_datum) <= '" + mjesec_h + "'";
+// 	}
+// 	else
+// 	{
+// 		sql_str += " AND month(kdib_gl_datum) = '" + mjesec_h + "'";
+// 	}
+//     filterPartPieCharts();
+//     if(KONTO_invest_akt_str != ""){
+//         sql_str += " AND kdib_ln_konto IN (" + KONTO_invest_akt_str + ")";
+//     }
+//     else{
+//         sql_str += " AND 1 <> 1";
+//     }
 
-    try
-    {
-        //SaveFile(sql_str);
-        queryResult = sqlquery(SQL_str);
-    }
-    catch(exc)
-    {
-        MessageBox(exc);
-    }
+//     try
+//     {
+//         //SaveFile(sql_str);
+//         queryResult = sqlquery(SQL_str);
+//     }
+//     catch(exc)
+//     {
+//         MessageBox(exc);
+//     }
 
-    PieChart("PieChartPriliv", "values", queryResult[1][1], "Invest.", 0, 50);
-    PieChart("PieChartOdliv", "values", queryResult[1][0], "Invest.", 0, 50);
-}
+//     PieChart("PieChartPriliv", "values", queryResult[1][1], "Invest.", 0, 50);
+//     PieChart("PieChartOdliv", "values", queryResult[1][0], "Invest.", 0, 50);
+// }
 
 //---------------------------------------------------------------
 

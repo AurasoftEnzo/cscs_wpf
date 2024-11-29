@@ -503,7 +503,7 @@ function gbZatvori@clicked(){
 //     }
 // }
 
-function gbPriliv1@clicked()
+function gbPlace1@clicked()
 {
     if (pripremljeno   ) 
     {
@@ -516,7 +516,7 @@ function gbPriliv1@clicked()
     }    
 }
 
-function gbPriliv2@clicked()
+function gbPlace2@clicked()
 {
     if (pripremljeno   )
     {
@@ -534,7 +534,7 @@ function gbPriliv2@clicked()
     }    
 }
 
-function gbOdliv1@clicked()
+function gbPlace3@clicked()
 {
     if (pripremljeno   ) 
     {
@@ -1035,7 +1035,6 @@ function setBrNovozaposlenihIPrekidaRadOdn(){
 	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobln ON od_ms_br_rad = odob_ln_osoba";
 	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobgl  ON odob_gl_num = odob_ln_num";
 
-
     sql_str += " WHERE "; 
     sql_str += " month(od_ms_dat_zap) >= " + int(mjesec1od) + " AND month(od_ms_dat_zap) <= " + int(mjesec1do);
     sql_str += " AND year(od_ms_dat_zap) IN (" + int(godina1) + ", " + (int(godina1) - 1) + ")";
@@ -1060,7 +1059,6 @@ function setBrNovozaposlenihIPrekidaRadOdn(){
     RunOnMain("setBrNovozaposlenihIPrekidaRadOdn1");
 
 
-
     //PREKIDI
     sql_str = " SELECT";
     sql_str += " year(od_ms_dat_prest) as godina,";
@@ -1069,7 +1067,6 @@ function setBrNovozaposlenihIPrekidaRadOdn(){
     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkodradn";
 	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobln ON od_ms_br_rad = odob_ln_osoba";
 	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobgl  ON odob_gl_num = odob_ln_num";
-
 
     sql_str += " WHERE "; 
     sql_str += " month(od_ms_dat_prest) >= " + int(mjesec1od) + " AND month(od_ms_dat_prest) <= " + int(mjesec1do);

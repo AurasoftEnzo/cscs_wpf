@@ -501,6 +501,15 @@ define LstRadnUgovorNa_ar type a size 40 array 5000;
 
 define poMjesecima_cb type a size 30;
 
+//---------------------------
+
+define dobneSkupine_cb type a size 30;
+//---------------------------
+
+define arrayBrojRadnikaDobneSkupine type i size 5 array 11;
+define arrayProsjecnaBrutoPlacaDobneSkupine type n size 10 dec 2 array 11;
+define arrayProsjecnaNetoPlacaDobneSkupine type n size 10 dec 2 array 11;
+
 //=============================================================
 //=== F2 sifra zaposlenika ==========================================
 
@@ -1360,6 +1369,16 @@ function filterPart(elementPlaceFilter = true)
         sql_str += " ELSE 1";
         sql_str += " END ) is not null";
     }
+    else{
+        sql_str += " AND (CASE ";
+        sql_str += " WHEN od_ms_dat_zap = '1900-01-01' THEN null";
+        sql_str += " WHEN year(od_ms_dat_zap) > " + godina1 + " THEN null";
+        sql_str += " WHEN year(od_ms_dat_zap) = " + godina1 + " AND month(od_ms_dat_zap) > " + mjesec1do + " THEN null";
+        sql_str += " WHEN year(OD_MS_DAT_PREST) = " + godina1 + " AND month(OD_MS_DAT_PREST) < " + mjesec1od + " THEN null";
+        sql_str += " WHEN year(OD_MS_DAT_PREST) < " + godina1 + " AND OD_MS_DAT_PREST != '1900-01-01' THEN null";
+        sql_str += " ELSE 1";
+        sql_str += " END ) is not null";   
+    }
 
     
     if(!punoRadnoVrijeme_cb && !nepunoRadnoVrijeme_cb)
@@ -1389,82 +1408,9 @@ function filterPart(elementPlaceFilter = true)
     {
         sql_str += " AND OD_MS_GO_DO <> '1900-01-01'";
     }
-
-
-
-    // if (KONTO_str != "" || KONTO_posl_akt_str != "" || KONTO_financ_akt_str != "" || KONTO_invest_akt_str != "")
-    // {
-    //     KONTO_final_string = "";
-
-    //     if(KONTO_str != ""){
-    //         KONTO_final_string += KONTO_str;
-    //         KONTO_final_string += (KONTO_final_string != "" ? "," : "");
-    //     }
-    //     if(cbKontoPoslAkt == true && KONTO_posl_akt_str != ""){
-    //         KONTO_final_string += KONTO_posl_akt_str;
-    //         KONTO_final_string += (KONTO_final_string != "" ? "," : "");
-    //     }
-        
-    //     if(cbKontoFinancAkt == true && KONTO_financ_akt_str != ""){
-    //         KONTO_final_string += KONTO_financ_akt_str;
-    //         KONTO_final_string += (KONTO_final_string != "" ? "," : "");
-    //     }
-        
-    //     if(cbKontoInvestAkt == true && KONTO_invest_akt_str != ""){
-    //         KONTO_final_string += KONTO_invest_akt_str;
-    //         KONTO_final_string += (KONTO_final_string != "" ? "," : "");
-    //     }
-        
-    //     // charCount = lchr(KONTO_final_string, "l");
-    //     // KONTO_final_string = substring(KONTO_final_string, 0, charCount - 1);
-
-    //     if(KONTO_final_string.length > 0){
-    //         KONTO_final_string = substring(KONTO_final_string, 0, KONTO_final_string.length - 1);
-    //         //MessageBox(KONTO_final_string);
-    //         sql_str += " AND kdib_ln_konto IN (" + KONTO_final_string + ")";
-    //     }
-    // }
-    // if (Izvadak != "")
-    // {
-    //     sql_str += " AND kdib_gl_num = '" + Izvadak + "'";
-    // }
-    // if (domaca_dn )
-    // {
-    //     sql_str += " AND nksc_drzava= '" + kpsy_po_freight + "'";
-    // }
-    // elif (eu_dn )
-    // {
-    //     sql_str +=  " AND nksc_drzava IN (" + eucountries + ")";
-    // }
-    // elif (izvoz_dn )
-    // {
-    //     sql_str += " AND nksc_drzava <> '" + kpsy_po_freight + "' AND NOT nksc_drzava IN (" + eucountries + ")";
-    // }
-
-
-    //sql_str += " AND kpsy_bnk_blag != 'D'";
-/*
-    if (gl_oznaka != "")
-	{
-	    if (GL_oznaka == "X" || GL_oznaka == "O" || GL_oznaka == "R" )  //ako je to storno, odobrenje ili reklamacija neka okrene
-		{
-            sql_str += " AND nkpr_gl_oznaka= '"+gl_oznaka+"'";
-            sql_str += " AND nkpr_ln_pext< 0";
-		}
-        elif (gl_oznaka== "P")
-        {
-            //ide i plus i minus
-            sql_str += " AND nkpr_ln_ma_us= 'A'"; //avans
-        }
-        else
-		{
-            sql_str += " AND nkpr_gl_oznaka= '"+gl_oznaka+"'";
-            sql_str += " AND nkpr_ln_pext>= 0";
-		}
-	}
-    */
-
 }
+
+
 
 function filterPartListaZaposlenika()
 {
@@ -1629,12 +1575,32 @@ function filterPartListaZaposlenika()
         sql_str += " AND (CASE ";
         sql_str += " WHEN od_ms_dat_zap = '1900-01-01' THEN null";
         sql_str += " WHEN year(od_ms_dat_zap) > " + godina1 + " THEN null";
-        sql_str += " WHEN year(od_ms_dat_zap) = " + godina1 + " AND month(od_ms_dat_zap) >= " + mjesec1od + " THEN null";
-        sql_str += " WHEN year(OD_MS_DAT_PREST) = " + godina1 + " AND month(OD_MS_DAT_PREST) <= " + mjesec1do + " THEN null";
+        sql_str += " WHEN year(od_ms_dat_zap) = " + godina1 + " AND month(od_ms_dat_zap) > " + mjesec1od + " THEN null";
+        sql_str += " WHEN year(OD_MS_DAT_PREST) = " + godina1 + " AND month(OD_MS_DAT_PREST) < " + mjesec1do + " THEN null";
         sql_str += " WHEN year(OD_MS_DAT_PREST) < " + godina1 + " AND OD_MS_DAT_PREST != '1900-01-01' THEN null";
         sql_str += " ELSE 1";
         sql_str += " END ) is not null";
     }
+    // else{
+    //     sql_str += " AND (CASE ";
+    //     sql_str += " WHEN od_ms_dat_zap = '1900-01-01' THEN null";
+    //     sql_str += " WHEN year(od_ms_dat_zap) > " + godina1 + " THEN null";
+    //     sql_str += " WHEN year(od_ms_dat_zap) = " + godina1 + " AND month(od_ms_dat_zap) > " + mjesec1do + " THEN null";
+    //     sql_str += " WHEN year(OD_MS_DAT_PREST) = " + godina1 + " AND month(OD_MS_DAT_PREST) < " + mjesec1od + " THEN null";
+    //     sql_str += " WHEN year(OD_MS_DAT_PREST) < " + godina1 + " AND OD_MS_DAT_PREST != '1900-01-01' THEN null";
+    //     sql_str += " ELSE 1";
+    //     sql_str += " END ) is not null";   
+    // }
+    // else{
+    //     sql_str += " AND (CASE ";
+    //     sql_str += " WHEN od_ms_dat_zap = '1900-01-01' THEN null";
+    //     sql_str += " WHEN year(od_ms_dat_zap) > " + godina1 + " THEN null";
+    //     sql_str += " WHEN year(od_ms_dat_zap) = " + godina1 + " AND month(od_ms_dat_zap) > " + mjesec1do + " THEN null";
+    //     sql_str += " WHEN year(OD_MS_DAT_PREST) = " + godina1 + " AND month(OD_MS_DAT_PREST) < " + mjesec1od + " THEN null";
+    //     sql_str += " WHEN year(OD_MS_DAT_PREST) < " + godina1 + " AND OD_MS_DAT_PREST != '1900-01-01' THEN null";
+    //     sql_str += " ELSE 1";
+    //     sql_str += " END ) is not null";
+    // }
 
     
     if(!punoRadnoVrijeme_cb && !nepunoRadnoVrijeme_cb)
@@ -1664,106 +1630,33 @@ function filterPartListaZaposlenika()
     {
         sql_str += " AND OD_MS_GO_DO <> '1900-01-01'";
     }
-
-
-
-    // if (KONTO_str != "" || KONTO_posl_akt_str != "" || KONTO_financ_akt_str != "" || KONTO_invest_akt_str != "")
-    // {
-    //     KONTO_final_string = "";
-
-    //     if(KONTO_str != ""){
-    //         KONTO_final_string += KONTO_str;
-    //         KONTO_final_string += (KONTO_final_string != "" ? "," : "");
-    //     }
-    //     if(cbKontoPoslAkt == true && KONTO_posl_akt_str != ""){
-    //         KONTO_final_string += KONTO_posl_akt_str;
-    //         KONTO_final_string += (KONTO_final_string != "" ? "," : "");
-    //     }
-        
-    //     if(cbKontoFinancAkt == true && KONTO_financ_akt_str != ""){
-    //         KONTO_final_string += KONTO_financ_akt_str;
-    //         KONTO_final_string += (KONTO_final_string != "" ? "," : "");
-    //     }
-        
-    //     if(cbKontoInvestAkt == true && KONTO_invest_akt_str != ""){
-    //         KONTO_final_string += KONTO_invest_akt_str;
-    //         KONTO_final_string += (KONTO_final_string != "" ? "," : "");
-    //     }
-        
-    //     // charCount = lchr(KONTO_final_string, "l");
-    //     // KONTO_final_string = substring(KONTO_final_string, 0, charCount - 1);
-
-    //     if(KONTO_final_string.length > 0){
-    //         KONTO_final_string = substring(KONTO_final_string, 0, KONTO_final_string.length - 1);
-    //         //MessageBox(KONTO_final_string);
-    //         sql_str += " AND kdib_ln_konto IN (" + KONTO_final_string + ")";
-    //     }
-    // }
-    // if (Izvadak != "")
-    // {
-    //     sql_str += " AND kdib_gl_num = '" + Izvadak + "'";
-    // }
-    // if (domaca_dn )
-    // {
-    //     sql_str += " AND nksc_drzava= '" + kpsy_po_freight + "'";
-    // }
-    // elif (eu_dn )
-    // {
-    //     sql_str +=  " AND nksc_drzava IN (" + eucountries + ")";
-    // }
-    // elif (izvoz_dn )
-    // {
-    //     sql_str += " AND nksc_drzava <> '" + kpsy_po_freight + "' AND NOT nksc_drzava IN (" + eucountries + ")";
-    // }
-
-
-    //sql_str += " AND kpsy_bnk_blag != 'D'";
-/*
-    if (gl_oznaka != "")
-	{
-	    if (GL_oznaka == "X" || GL_oznaka == "O" || GL_oznaka == "R" )  //ako je to storno, odobrenje ili reklamacija neka okrene
-		{
-            sql_str += " AND nkpr_gl_oznaka= '"+gl_oznaka+"'";
-            sql_str += " AND nkpr_ln_pext< 0";
-		}
-        elif (gl_oznaka== "P")
-        {
-            //ide i plus i minus
-            sql_str += " AND nkpr_ln_ma_us= 'A'"; //avans
-        }
-        else
-		{
-            sql_str += " AND nkpr_gl_oznaka= '"+gl_oznaka+"'";
-            sql_str += " AND nkpr_ln_pext>= 0";
-		}
-	}
-    */
-
 }
 
-function filterPartPieCharts(){
-    if (partner != "")
-    {
-        sql_str += " AND kdib_ln_partner = '" + partner + "'";
-    }
-    if (BANKA_str != "")
-    {
-        sql_str += " AND kdib_gl_banka IN (" + BANKA_str + ")";
-    }
-    if (Izvadak != "")
-    {
-        sql_str += " AND kdib_gl_num = '" + Izvadak + "'";
-    }
-    if (domaca_dn )
-    {
-        sql_str += " AND nksc_drzava= '" + kpsy_po_freight + "'";
-    }
-    elif (eu_dn )
-    {
-        sql_str +=  " AND nksc_drzava IN (" + eucountries + ")";
-    }
-    elif (izvoz_dn )
-    {
-        sql_str += " AND nksc_drzava <> '" + kpsy_po_freight + "' AND NOT nksc_drzava IN (" + eucountries + ")";
-    }
-}
+
+
+// function filterPartPieCharts(){
+//     if (partner != "")
+//     {
+//         sql_str += " AND kdib_ln_partner = '" + partner + "'";
+//     }
+//     if (BANKA_str != "")
+//     {
+//         sql_str += " AND kdib_gl_banka IN (" + BANKA_str + ")";
+//     }
+//     if (Izvadak != "")
+//     {
+//         sql_str += " AND kdib_gl_num = '" + Izvadak + "'";
+//     }
+//     if (domaca_dn )
+//     {
+//         sql_str += " AND nksc_drzava= '" + kpsy_po_freight + "'";
+//     }
+//     elif (eu_dn )
+//     {
+//         sql_str +=  " AND nksc_drzava IN (" + eucountries + ")";
+//     }
+//     elif (izvoz_dn )
+//     {
+//         sql_str += " AND nksc_drzava <> '" + kpsy_po_freight + "' AND NOT nksc_drzava IN (" + eucountries + ")";
+//     }
+// }

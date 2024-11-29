@@ -24,127 +24,17 @@
             <Rectangle Fill="#FFEEEDF1" RadiusX="7" RadiusY="7" Margin="5" Grid.Row="1"/>
             <Rectangle Fill="#FFEEEDF1" RadiusX="7" RadiusY="7" Margin="5" Grid.Row="1" Grid.Column="1"/>
             <lvc:CartesianChart LegendPosition="Right"
-                                x:Name="ChartPoMjesecima"
+                                x:Name="ChartDobneSkupine"
                                 Margin="23,45,23,10"
                                 Height="300" />
-            <lvc:CartesianChart x:Name="ChartPoDanima"
+            <lvc:CartesianChart Visibility="Hidden"
+                                x:Name="ChartPoDanima"
                                 Grid.Column="1"
                                 Grid.Row="0"
                                 Margin="5,45,5,10" LegendPosition="Top" />
-            <Label HorizontalAlignment="Left" Content="Odliv po danima" Grid.Row="0" Grid.Column="1" VerticalAlignment="Top" Width="193" FontSize="16" FontWeight="Bold" Margin="24,5,0,0" BorderBrush="{x:Null}" Background="{x:Null}"/>
-            <Label HorizontalAlignment="Left" Content="Najnoviji odliv po datumu unosa/izmjene" Grid.Row="1" Grid.Column="0" VerticalAlignment="Top" Width="404" FontSize="16" FontWeight="Bold" Margin="23,5,0,0" BorderBrush="{x:Null}"/>
-
-            <DataGrid GridLinesVisibility="Horizontal"
-                      HorizontalGridLinesBrush="#FFD7D6D6"
-                      Margin="23,32,23,14"
-                      IsReadOnly="true"
-                      Height="245"
-                      Width="540"
-                    RowHeight="22"
-                      FontSize="15"
-                      x:Name="dgRacuniLast"
-                      HorizontalScrollBarVisibility="Auto"
-                      VerticalScrollBarVisibility="Auto"
-                      Background="White"
-                      Grid.Row="1"
-                      TabIndex="4" BorderThickness="0,0,0,0">
-                <DataGrid.Resources>
-                    <Style TargetType="{x:Type DataGridColumnHeader}">
-                        <Setter Property="Background"
-                                Value="#FF006393" />
-                        <Setter Property="Foreground"
-                                Value="White" />
-                        <Setter Property="FontSize" Value="17"/>
-
-                        <Setter Property="BorderBrush" Value="White"/>
-                        <Setter Property="BorderThickness" Value="1"/>
-                    </Style>
-                </DataGrid.Resources>
-                <DataGrid.Columns>
-                    <DataGridTemplateColumn Header="No."
-                                            Width="28">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <wcl:ASGridCell FieldName="T10CNTRZ_AR"
-                                                Editor="edDefault"
-                                                EditLength="0" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Izvadak"
-                                            Width="69">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <wcl:ASGridCell FieldName="T10RACUNZ_AR"
-                                                HorizontalContentAlignment="Right"
-                                                Editor="edNumeric"
-                                                EditLength="0" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Uneseno"
-                                            Width="70">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <wcl:ASGridCell FieldName="T10DATUMZ_AR"
-                                                HorizontalContentAlignment="Center"
-                                                Editor="edDefault"
-                                                EditLength="8" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Sat"
-                                            Width="65">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <wcl:ASGridCell FieldName="T10TIMEZ_AR"
-                                                HorizontalContentAlignment="Center"
-                                                Editor="edDefault"
-                                                EditLength="0" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Dat. dok."
-                        Width="70">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <wcl:ASGridCell FieldName="T10DATUMDOKZ_AR"
-                            HorizontalContentAlignment="Center"
-                            Editor="edDefault"
-                            EditLength="8" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Banka"
-                                            Width="135">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <wcl:ASGridCell FieldName="T10NAMEZ_AR"
-                                                Editor="edDefault"
-                                                Thousands="True"
-                                                EditLength="0" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Ukupno"
-                                            Width="90">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <wcl:ASGridCell FieldName="T10IZNOSZ_AR"
-                                                Editor="edEditBtn"
-                                                EditLength="0"
-                                                x:Name="clickTest"
-                                                Size="10"
-                                                DecimalChrs="2"
-                                                HorizontalContentAlignment="Right" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                </DataGrid.Columns>
-            </DataGrid>
-            <Label HorizontalAlignment="Left" Content="Najveći odliv" Grid.Row="1" Grid.Column="1" VerticalAlignment="Top" Width="193" FontSize="16" FontWeight="Bold" Margin="24,5,0,0" BorderBrush="{x:Null}"/>
-            <Label HorizontalAlignment="Left" Content="Odliv po mjesecima (x 1.000)" VerticalAlignment="Top" Width="272" FontSize="16" FontWeight="Bold" Margin="23,5,0,0" BorderBrush="{x:Null}" Background="{x:Null}"/>
-            <DataGrid GridLinesVisibility="Horizontal"
+            <Label HorizontalAlignment="Left" Content="Dobne skupine" VerticalAlignment="Top" Width="127" FontSize="16" FontWeight="Bold" Margin="23,5,0,0" BorderBrush="{x:Null}" Background="{x:Null}"/>
+            <DataGrid  Visibility="Hidden"
+                GridLinesVisibility="Horizontal"
                       HorizontalGridLinesBrush="#FFD7D6D6"
                       Margin="24,32,20,14"
                       IsReadOnly="true"
@@ -255,6 +145,7 @@ Width="110">
                     </Style>
                 </Button.Resources>
             </Button>
+            <ComboBox x:Name="comboBoxDobneSkupine" DataContext="dobneSkupine_cb" HorizontalAlignment="Right" Margin="0,11,275,0" VerticalAlignment="Top" Width="158" Height="22" />
         </Grid>
     </Viewbox>
 </Window>

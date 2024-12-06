@@ -97,7 +97,7 @@ function initChartDobneSkupine(){
 function setChartDobneSkupine()
 {
     sql_str = "WITH cte AS (";
-    sql_str += " select";
+    sql_str += " select distinct";
     sql_str += " OD_MS_BR_RAD,";    
 
     sql_str += " CASE WHEN (CASE WHEN od_ms_dat_rod = '1900-01-01' THEN 0 WHEN EOMONTH ('2024' + '-01-01', 11 - 1 ) < od_ms_dat_rod THEN 0 ELSE ((CONVERT(int, CONVERT(char(8), EOMONTH ('2024' + '-01-01', 11 - 1 ), 112)) - CONVERT(char(10), od_ms_dat_rod, 112)) / 10000) END) BETWEEN 0 AND 18 THEN '0-18'";
@@ -163,19 +163,36 @@ function setChartDobneSkupine()
     }
     SQL_str +=" ) x), 0), 2) as prosjecnaPlacaNeto";
 
-    SQL_str +=" FROM " + trenutnaGodinaBaza + ".dbo.nkodradn ";
+    // SQL_str +=" FROM " + trenutnaGodinaBaza + ".dbo.nkodradn ";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkodobgl";
+    //sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobos on odob_gl_num = odob_os_num";
+	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobln ON odob_gl_num = odob_ln_num";
+	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodradn ON od_ms_br_rad = odob_ln_osoba";
 
-    SQL_str +=" WHERE 1 = 1 ";
+    sql_str += " WHERE "; 
+    if(comboBoxMjesec1selected == "Obračun za mjesec"){
+        sql_str += " odob_gl_god = " + godina1;
+        sql_str += " AND convert(int, odob_gl_mjesec) >= " + int(mjesec1od) + " AND convert(int, odob_gl_mjesec) <= " + int(mjesec1do);
+    }elif(comboBoxMjesec1selected == "Mjesec isplate plaće"){
+        sql_str += " year(ODOB_GL_DAT_ISP) = " + godina1;
+        sql_str += " AND month(ODOB_GL_DAT_ISP) >= " + int(mjesec1od) + " AND month(ODOB_GL_DAT_ISP) <= " + int(mjesec1do);
+    }elif(comboBoxMjesec1selected == "Mjesec obračuna plaće"){
+        sql_str += " year(ODOB_GL_DATUM) = " + godina1;
+        sql_str += " AND month(ODOB_GL_DATUM) >= " + int(mjesec1od) + " AND month(ODOB_GL_DATUM) <= " + int(mjesec1do);
+    }
 
-    filterPartListaZaposlenika();
+    filterPart();
 
     sql_str += " ) SELECT";
-    sql_str += " dobnaSkupina,";
+    sql_str += " dobnaSkupina1,";
     sql_str += " Count(dobnaSkupina) as brojRadnika,";
-    sql_str += " round(avg(prosjecnaPlacaBruto), 2) as avgProsjecnaBrutoPlaca,";
-    sql_str += " round(avg(prosjecnaPlacaNeto), 2) as avgProsjecnaNetoPlaca";
+    sql_str += " isnull(round(avg(prosjecnaPlacaBruto), 2), 0) as avgProsjecnaBrutoPlaca,";
+    sql_str += " isnull(round(avg(prosjecnaPlacaNeto), 2), 0) as avgProsjecnaNetoPlaca";
     
-    sql_str += " from cte group by dobnaSkupina order by dobnaSkupina";
+    sql_str += " from";
+    sql_str += " (SELECT DISTINCT * FROM (VALUES ('0-18'), ('19-24'), ('25-29'), ('30-34'), ('35-39'), ('40-44'), ('45-49'), ('50-54'), ('55-59'), ('60-64'), ('65-')) AS X(dobnaSkupina1)) dobneSkupine";
+    sql_str += " left join cte on dobnaSkupina = dobnaSkupina1";
+    sql_str += " group by dobnaSkupina1 order by dobnaSkupina1";
 
     try
     {

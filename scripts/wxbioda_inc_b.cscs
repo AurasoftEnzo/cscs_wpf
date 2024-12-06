@@ -516,21 +516,21 @@ function setChartByMonth2_1(){
 }
 
 function setEmployeesDataGrid(){
-    SQL_str =" select ";
-    SQL_str +=" ROW_NUMBER() OVER(ORDER BY ID ASC) AS RowNumber,";
-    SQL_str +=" OD_MS_BR_RAD as sifraRadnika,";
-    SQL_str +=" OD_MS_PREZIME as prezime,";
-    SQL_str +=" OD_MS_IME as ime,";
-    SQL_str +=" round((SELECT CASE WHEN OD_MS_PLACA != 0 THEN OD_MS_PLACA ELSE od_ms_km_k * (SELECT TOP 1 OD_FK_VRED_BODA from " + trenutnaGodinaBaza + ".dbo.nkodfkin) END), 2) as ugovorenaPlaca, ";
-    SQL_str +=" OD_MS_SPOL as spol, ";
-    SQL_str +=" CASE WHEN od_ms_dat_rod = '1900-01-01' THEN 0 WHEN EOMONTH ('" + godina1 + "' + '-01-01', " + mjesec1do + " - 1 ) < od_ms_dat_rod THEN 0 ELSE ((CONVERT(int, CONVERT(char(8), EOMONTH ('" + godina1 + "' + '-01-01', " + mjesec1do + " - 1 ), 112)) - CONVERT(char(10), od_ms_dat_rod, 112)) / 10000) END as godineStarosti, ";
-    SQL_str +=" OD_MS_GOD_STAZA as radniStazUkupno,";
+    SQL_str = " select distinct ";
+    // SQL_str += " ROW_NUMBER() OVER(ORDER BY ID ASC) AS RowNumber,";
+    SQL_str += " OD_MS_BR_RAD as sifraRadnika,";
+    SQL_str += " OD_MS_PREZIME as prezime,";
+    SQL_str += " OD_MS_IME as ime,";
+    SQL_str += " round((SELECT CASE WHEN OD_MS_PLACA != 0 THEN OD_MS_PLACA ELSE od_ms_km_k * (SELECT TOP 1 OD_FK_VRED_BODA from " + trenutnaGodinaBaza + ".dbo.nkodfkin) END), 2) as ugovorenaPlaca, ";
+    SQL_str += " OD_MS_SPOL as spol, ";
+    SQL_str += " CASE WHEN od_ms_dat_rod = '1900-01-01' THEN 0 WHEN EOMONTH ('" + godina1 + "' + '-01-01', " + mjesec1do + " - 1 ) < od_ms_dat_rod THEN 0 ELSE ((CONVERT(int, CONVERT(char(8), EOMONTH ('" + godina1 + "' + '-01-01', " + mjesec1do + " - 1 ), 112)) - CONVERT(char(10), od_ms_dat_rod, 112)) / 10000) END as godineStarosti, ";
+    SQL_str += " OD_MS_GOD_STAZA as radniStazUkupno,";
 
-    SQL_str +=" CASE WHEN od_ms_dat_zap = '1900-01-01' THEN 0 ";
-    SQL_str +=" WHEN OD_MS_DAT_PREST = '1900-01-01' ";
-    SQL_str +=" THEN (CONVERT(int, CONVERT(char(8), EOMONTH ('" + godina1 + "' + '-01-01', " + mjesec1do + " - 1 ), 112)) - CONVERT(char(10), OD_MS_DAT_ZAP, 112)) / 10000 ";
-    SQL_str +=" ELSE (CONVERT(int, CONVERT(char(8), od_ms_dat_prest, 112)) - CONVERT(char(10), OD_MS_DAT_ZAP, 112)) / 10000 ";
-    SQL_str +=" END as radniStazUFirmi, ";
+    SQL_str += " CASE WHEN od_ms_dat_zap = '1900-01-01' THEN 0 ";
+    SQL_str += " WHEN OD_MS_DAT_PREST = '1900-01-01' ";
+    SQL_str += " THEN (CONVERT(int, CONVERT(char(8), EOMONTH ('" + godina1 + "' + '-01-01', " + mjesec1do + " - 1 ), 112)) - CONVERT(char(10), OD_MS_DAT_ZAP, 112)) / 10000 ";
+    SQL_str += " ELSE (CONVERT(int, CONVERT(char(8), od_ms_dat_prest, 112)) - CONVERT(char(10), OD_MS_DAT_ZAP, 112)) / 10000 ";
+    SQL_str += " END as radniStazUFirmi, ";
 
     // if(comboBoxMjesec1selected == "Obračun za mjesec"){
     //     sql_str += " round(isnull((SELECT TOP 1 sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G') THEN odob_ln_ukupno WHEN odob_ln_vrsta IN ('I') THEN ODOB_LN_IZNOS ELSE 0 END) from " + trenutnaGodinaBaza + ".dbo.nkodobln LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobgl ON ODOB_GL_NUM = ODOB_LN_NUM where ODOB_LN_OSOBA = OD_MS_BR_RAD and ODOB_GL_GOD = '" + godina1 + "' AND convert(int,odob_gl_mjesec) >= " + mjesec1od + " AND convert(int,odob_gl_mjesec) <= " + mjesec1do + " group by ODOB_GL_MJESEC, ODOB_GL_GOD order by convert(int,odob_gl_mjesec) DESC), 0), 2) as posljednjaPlacaBruto,";
@@ -619,13 +619,26 @@ function setEmployeesDataGrid(){
     SQL_str +=" OD_MS_DRV11 as radnoVrijeme, ";
     SQL_str +=" (SELECT CASE WHEN OD_MS_GO_DO = '1900-01-01' THEN 'Neodređeno' ELSE 'Određeno' END) as ugovorNa ";
     
-    SQL_str +=" FROM " + trenutnaGodinaBaza + ".dbo.nkodradn ";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkodobgl";
+    //sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobos on odob_gl_num = odob_os_num";
+	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobln ON odob_gl_num = odob_ln_num";
+	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodradn ON od_ms_br_rad = odob_ln_osoba";
 
-    SQL_str +=" WHERE 1 = 1 ";
+    sql_str += " WHERE "; 
+    if(comboBoxMjesec1selected == "Obračun za mjesec"){
+        sql_str += " odob_gl_god = " + godina1;
+        sql_str += " AND convert(int, odob_gl_mjesec) >= " + int(mjesec1od) + " AND convert(int, odob_gl_mjesec) <= " + int(mjesec1do);
+    }elif(comboBoxMjesec1selected == "Mjesec isplate plaće"){
+        sql_str += " year(ODOB_GL_DAT_ISP) = " + godina1;
+        sql_str += " AND month(ODOB_GL_DAT_ISP) >= " + int(mjesec1od) + " AND month(ODOB_GL_DAT_ISP) <= " + int(mjesec1do);
+    }elif(comboBoxMjesec1selected == "Mjesec obračuna plaće"){
+        sql_str += " year(ODOB_GL_DATUM) = " + godina1;
+        sql_str += " AND month(ODOB_GL_DATUM) >= " + int(mjesec1od) + " AND month(ODOB_GL_DATUM) <= " + int(mjesec1do);
+    }
 
-    filterPartListaZaposlenika();
+    filterPart();
 
-    SQL_str +=" ORDER BY RowNumber";
+    SQL_str +=" ORDER BY OD_MS_BR_RAD";
 
     //SaveFile(sql_str);
     try	{
@@ -665,23 +678,23 @@ function setEmployeesDataGridArrays(){
 	{
 		for ( i = 1; i < Size(sqlResult); i++ )
 		{        
-			LstRadnRbr_ar[i - 1] =  sqlresult[i][0];
-            LstRadnSifraRadnika_ar[i - 1] =  sqlresult[i][1];
-            LstRadnPrezime_ar[i - 1] =  sqlresult[i][2];
-            LstRadnIme_ar[i - 1] =  sqlresult[i][3];
-            LstRadnUgovorenaPlaca_ar[i - 1] = sqlresult[i][4];
-            LstRadnSpol_ar[i - 1] = sqlresult[i][5];
-            LstRadnGodine_ar[i - 1] = sqlresult[i][6];
-            LstRadnStazUkupno_ar[i - 1] = sqlresult[i][7];
-            LstRadnStazUFirmi_ar[i - 1] = sqlresult[i][8];
-            LstRadnPosljPlacaBruto_ar[i - 1] = sqlresult[i][9];
-            LstRadnPosljPlacaNeto_ar[i - 1] = sqlresult[i][10];
-            LstRadnProsjPlacaBruto_ar[i - 1] = sqlresult[i][11];
-            LstRadnProsjPlacaNeto_ar[i - 1] = sqlresult[i][12];
-            LstRadnStrSprema_ar[i - 1] = trim(sqlresult[i][13]);
-            LstRadnPrebivaliste_ar[i - 1] = sqlresult[i][14];
-            LstRadnRadnoVrijeme_ar[i - 1] = sqlresult[i][15];
-            LstRadnUgovorNa_ar[i - 1] = sqlresult[i][16];   
+			LstRadnRbr_ar[i - 1] =  i
+            LstRadnSifraRadnika_ar[i - 1] =  sqlresult[i][0];
+            LstRadnPrezime_ar[i - 1] =  sqlresult[i][1];
+            LstRadnIme_ar[i - 1] =  sqlresult[i][2];
+            LstRadnUgovorenaPlaca_ar[i - 1] = sqlresult[i][3];
+            LstRadnSpol_ar[i - 1] = sqlresult[i][4];
+            LstRadnGodine_ar[i - 1] = sqlresult[i][5];
+            LstRadnStazUkupno_ar[i - 1] = sqlresult[i][6];
+            LstRadnStazUFirmi_ar[i - 1] = sqlresult[i][7];
+            LstRadnPosljPlacaBruto_ar[i - 1] = sqlresult[i][8];
+            LstRadnPosljPlacaNeto_ar[i - 1] = sqlresult[i][9];
+            LstRadnProsjPlacaBruto_ar[i - 1] = sqlresult[i][10];
+            LstRadnProsjPlacaNeto_ar[i - 1] = sqlresult[i][11];
+            LstRadnStrSprema_ar[i - 1] = trim(sqlresult[i][12]);
+            LstRadnPrebivaliste_ar[i - 1] = sqlresult[i][13];
+            LstRadnRadnoVrijeme_ar[i - 1] = sqlresult[i][14];
+            LstRadnUgovorNa_ar[i - 1] = sqlresult[i][15];   
 		} 
 	}
 }

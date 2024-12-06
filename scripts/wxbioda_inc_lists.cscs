@@ -1423,9 +1423,20 @@ function filterPart(elementPlaceFilter = true)
             sql_str += " WHERE 1 <> 1) = (1)";
         }
     }
-    elif(!zaposleniUCijelomPeriodu_cb){
-        sql_str += " WHERE isnull(ukupnoSati, 0) > 0 ) > 0";  
+    elif(!zaposleniUCijelomPeriodu_cb){  
+        if(punoRadnoVrijeme_cb && !nepunoRadnoVrijeme_cb){
+            sql_str += " WHERE isnull(fondSati, 32767) - isnull(ukupnoSati, 0) = 0  AND isnull(ukupnoSati, 0) > 0 ) > 0";
+        }
+        elif(!punoRadnoVrijeme_cb && nepunoRadnoVrijeme_cb){
+            sql_str += " WHERE isnull(fondSati, 32767) - isnull(ukupnoSati, 0) > 0 AND isnull(ukupnoSati, 0) > 0) > 0";
+        }
+        elif(punoRadnoVrijeme_cb && nepunoRadnoVrijeme_cb){
+            sql_str += " WHERE isnull(fondSati, 32767) - isnull(ukupnoSati, 0) >= 0 AND isnull(ukupnoSati, 0) > 0) > 0";
+        }else{
+            sql_str += " WHERE 1 <> 1) = (1)";
+        }
     }
+
 
 
 
@@ -1466,6 +1477,9 @@ function filterPartListaZaposlenika()
     sql_str += " AND CASE WHEN (SELECT count(distinct odob_ln_num)";
     sql_str += " from " + trenutnaGodinaBaza + ".dbo.nkodobln";
     sql_str += " left join " + trenutnaGodinaBaza + ".dbo.nkodobgl on odob_ln_num = ODOB_GL_NUM";
+    
+    sql_str += " left join " + trenutnaGodinaBaza + ".dbo.nkodelem on OD_EL_CODE = ODOB_LN_SIFRA"; 
+
     sql_str += " where ODOB_LN_OSOBA = OD_MS_BR_RAD";
     if(comboBoxMjesec1selected == "Obračun za mjesec"){
         sql_str += " and convert(int, ODOB_GL_MJESEC) >= " + mjesec1od + " ";
@@ -1482,27 +1496,27 @@ function filterPartListaZaposlenika()
     }
     
     if(rad_rb == true){
-        sql_str += " AND odob_ln_vrsta IN ('A', 'C', 'E', 'G')";
+        sql_str += " AND OD_EL_VRSTA IN ('A', 'C', 'E', 'G')";
     }elif(doprinosiIzPlace_rb == true){
-        sql_str += " AND odob_ln_vrsta = 'K'";
+        sql_str += " AND OD_EL_VRSTA = 'K'";
     }elif(doprinosiNaPlacu_rb == true){
-        sql_str += " AND odob_ln_vrsta = 'N'";
+        sql_str += " AND OD_EL_VRSTA = 'N'";
     }
     // elif(bolovanje_rb == true){
     //     sql_str += " AND odob_ln_vrsta IN ('G', 'I')";
     // }
     elif(olaksice_rb == true){
-        sql_str += " AND odob_ln_vrsta = 'J'";
+        sql_str += " AND OD_EL_VRSTA = 'J'";
     }elif(osobniOdbitak_rb == true){
-        sql_str += " AND odob_ln_vrsta = 'Q'";
+        sql_str += " AND OD_EL_VRSTA = 'Q'";
     }elif(porez_rb == true){
-        sql_str += " AND odob_ln_vrsta = 'R'";
+        sql_str += " AND OD_EL_VRSTA = 'R'";
     }elif(prirez_rb == true){
-        sql_str += " AND odob_ln_vrsta = 'T'";
+        sql_str += " AND OD_EL_VRSTA = 'T'";
     }elif(naknade_rb == true){
-        sql_str += " AND odob_ln_vrsta IN ('X', 'I')";
+        sql_str += " AND OD_EL_VRSTA IN ('X', 'I')";
     }elif(obustave_rb == true){
-        sql_str += " AND odob_ln_vrsta = 'V'";
+        sql_str += " AND OD_EL_VRSTA = 'V'";
     }
     sql_str += " ) > 0 THEN 1 ELSE null END is not null";
 
@@ -1554,7 +1568,18 @@ function filterPartListaZaposlenika()
     }
     if (BROJEVI_OBRACUNA_str != "")
     {
-        sql_str += " AND OD_MS_BR_RAD IN (SELECT distinct ODOB_LN_OSOBA from " + trenutnaGodinaBaza + ".dbo.nkodobln WHERE ODOB_LN_NUM IN (" + BROJEVI_OBRACUNA_str + ") )";
+        // sql_str += " AND OD_MS_BR_RAD IN (SELECT distinct ODOB_LN_OSOBA from " + trenutnaGodinaBaza + ".dbo.nkodobln WHERE ODOB_LN_NUM IN (" + BROJEVI_OBRACUNA_str + ") )";
+        sql_str += " AND OD_MS_BR_RAD IN (SELECT distinct ODOB_LN_OSOBA from " + trenutnaGodinaBaza + ".dbo.nkodobln";
+        sql_str += " left join " + trenutnaGodinaBaza + ".dbo.nkodobgl on ODOB_GL_NUM = ODOB_LN_NUM";
+        sql_str += " WHERE ODOB_LN_NUM IN (" + BROJEVI_OBRACUNA_str + ")";
+        if(comboBoxMjesec1selected == "Obračun za mjesec"){
+            sql_str += " AND convert(int, odob_gl_mjesec) BETWEEN " + mjesec1od + " AND " + mjesec1do + " AND convert(int, odob_gl_god) = " + godina1;
+        }elif(comboBoxMjesec1selected == "Mjesec isplate plaće"){
+            sql_str += " AND month(odob_gl_dat_isp) BETWEEN " + mjesec1od + " AND " + mjesec1do + " AND year(odob_gl_dat_isp) = " + godina1;
+        }elif(comboBoxMjesec1selected == "Mjesec obračuna plaće"){
+            sql_str += " AND month(odob_gl_datum) BETWEEN " + mjesec1od + " AND " + mjesec1do + " AND year(odob_gl_datum) = " + godina1;
+        }
+        sql_str += " )";
     }
     if (STRUCNA_SPREMA_str != "")
     {
@@ -1682,9 +1707,20 @@ function filterPartListaZaposlenika()
             sql_str += " WHERE 1 <> 1) = (1)";
         }
     }
-    elif(!zaposleniUCijelomPeriodu_cb){
-        sql_str += " WHERE isnull(ukupnoSati, 0) > 0 ) > 0";  
+    elif(!zaposleniUCijelomPeriodu_cb){  
+        if(punoRadnoVrijeme_cb && !nepunoRadnoVrijeme_cb){
+            sql_str += " WHERE isnull(fondSati, 32767) - isnull(ukupnoSati, 0) = 0  AND isnull(ukupnoSati, 0) > 0 ) > 0";
+        }
+        elif(!punoRadnoVrijeme_cb && nepunoRadnoVrijeme_cb){
+            sql_str += " WHERE isnull(fondSati, 32767) - isnull(ukupnoSati, 0) > 0 AND isnull(ukupnoSati, 0) > 0) > 0";
+        }
+        elif(punoRadnoVrijeme_cb && nepunoRadnoVrijeme_cb){
+            sql_str += " WHERE isnull(fondSati, 32767) - isnull(ukupnoSati, 0) >= 0 AND isnull(ukupnoSati, 0) > 0) > 0";
+        }else{
+            sql_str += " WHERE 1 <> 1) = (1)";
+        }
     }
+
 
 
 

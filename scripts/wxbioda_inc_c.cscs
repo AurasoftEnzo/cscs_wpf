@@ -5,7 +5,7 @@ function wxbiodac_onStart()
     
 
     // comboItems = {"do 18", "19-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59", "60-64", "65 i više"};
-    comboItems = {"Broj radnika", "Prosječna bruto plaća", "Prosječna neto plaća"};
+    comboItems = {"Broj radnika", "Prosječni bruto iznos", "Prosječni neto iznos"};
     AddWidgetData("comboBoxDobneSkupine", comboItems);
     SetWidgetOptions("comboBoxDobneSkupine", "SelectedIndex", 0);
 
@@ -76,12 +76,12 @@ function initChartDobneSkupine(){
         Chart("ChartDobneSkupine", "values", "bar", arrayBrojRadnikaDobneSkupine, "Broj radnika");
         // Chart("ChartDobneSkupine", "values", "bar", arrayTrenutnaBrutoMedian, godina1);
 	}
-	elif(dobneSkupine_cb == "Prosječna bruto plaća"){
-        Chart("ChartDobneSkupine", "values", "bar", arrayProsjecnaBrutoPlacaDobneSkupine, "Prosječna bruto plaća");
+	elif(dobneSkupine_cb == "Prosječni bruto iznos"){
+        Chart("ChartDobneSkupine", "values", "bar", arrayProsjecnaBrutoPlacaDobneSkupine, "Prosječni bruto iznos");
     	// Chart("ChartDobneSkupine", "values", "bar", arrayTrenutnaNetoMedian, godina1);
 	}
-	elif(dobneSkupine_cb == "Prosječna neto plaća"){
-        Chart("ChartDobneSkupine", "values", "bar", arrayProsjecnaNetoPlacaDobneSkupine, "Prosječna neto plaća");
+	elif(dobneSkupine_cb == "Prosječni neto iznos"){
+        Chart("ChartDobneSkupine", "values", "bar", arrayProsjecnaNetoPlacaDobneSkupine, "Prosječni neto iznos");
     	// Chart("ChartDobneSkupine", "values", "bar", arrayTrenutnaNetoMedian, godina1);
 	}
     Chart("ChartDobneSkupine", "SeparatorStep", 1);

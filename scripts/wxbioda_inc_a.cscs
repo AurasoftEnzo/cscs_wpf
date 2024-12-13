@@ -1,5 +1,19 @@
 function wxbiodaa_onStart()
 {
+    bojeArray = {129, 178, 154};
+
+    Format(555226, "nofd", recv: "tot_bruto_trenutna_string");
+    HorizontalBar("HorizontalBar11", "Text", tot_bruto_trenutna_string);
+    HorizontalBar("HorizontalBar11", "Color", bojeArray);
+    
+    Format(12345, "nofd", recv: "tot_bruto_prosla_string");
+    HorizontalBar("HorizontalBar12", "Text", tot_bruto_prosla_string);
+    HorizontalBar("HorizontalBar12", "Color", bojeArray);
+
+    HorizontalBar("HorizontalBar11", "BarWidth", 50);
+    HorizontalBar("HorizontalBar12", "BarWidth", 90);
+
+
     // cursor("wait");
     // t10datrac=true;
     

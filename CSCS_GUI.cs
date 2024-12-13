@@ -4011,6 +4011,12 @@ namespace WpfCSCS
 		public static Variable GetText(FrameworkElement widget)
 		{
 			string result = "";
+			//if (widget is ASHorizontalBar)
+			//{
+			//	var ashb = widget as ASHorizontalBar;
+			//	result = ashb.Text;
+			//}
+			
 			if (widget is ContentControl)
 			{
 				var contentable = widget as ContentControl;
@@ -4073,7 +4079,23 @@ namespace WpfCSCS
 		public static bool SetText(FrameworkElement widget, string text, int index = -1)
 		{
 			var dispatcher = Application.Current.Dispatcher;
-			if (widget is ComboBox)
+
+			// for skipping setting text on some widgets, to prevent displaying text "System.Windows.Controls.Grid" in place of content
+			if (widget is ASHorizontalBar)
+			{
+				return true;
+			}
+			else if(widget is Button)
+			{
+                return true;
+            }
+			else if(widget is GroupBox)
+			{
+                return true;
+            }
+
+
+			else if (widget is ComboBox)
 			{
 				var combo = widget as ComboBox;
 				if (index < 0)

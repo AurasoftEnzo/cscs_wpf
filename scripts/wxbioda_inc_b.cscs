@@ -408,14 +408,14 @@ function setChartByMonth2()
     sql_str += " ROW_NUMBER() OVER (PARTITION BY godina, mjesec ORDER BY bruto, osoba) AS RowAsc,";
     sql_str += " ROW_NUMBER() OVER (PARTITION BY godina, mjesec ORDER BY bruto DESC, osoba DESC) AS RowDesc";
     sql_str += " FROM cte";
-    sql_str += " where bruto != 0";
+    sql_str += " where bruto != 0"; //! bruto != 0
 
     sql_str += " ), MedianNetoSalaries AS (";
     sql_str += " SELECT godina, mjesec, neto,";
     sql_str += " ROW_NUMBER() OVER (PARTITION BY godina, mjesec ORDER BY neto, osoba) AS RowAsc,";
     sql_str += " ROW_NUMBER() OVER (PARTITION BY godina, mjesec ORDER BY neto DESC, osoba DESC) AS RowDesc";
     sql_str += " FROM cte";
-    sql_str += " where neto != 0";
+    sql_str += " where neto != 0"; //! bruto != 0
     sql_str += " )";
 
     sql_str += " SELECT x.godina, x.mjesec, brutoAvg, netoAvg, MedianBrutoMonthlySalary, MedianNetoMonthlySalary";
@@ -424,7 +424,7 @@ function setChartByMonth2()
     sql_str += " (SELECT";
     sql_str += " godina, mjesec, round(avg(bruto), 2) as brutoAvg, round(avg(neto), 2) as netoAvg";
     sql_str += " FROM cte";
-    sql_str += " WHERE bruto != 0";
+    sql_str += " WHERE bruto != 0"; //! bruto != 0
     sql_str += " group by godina, mjesec";
     sql_str += " ) x";
     

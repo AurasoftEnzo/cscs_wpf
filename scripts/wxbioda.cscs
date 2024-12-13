@@ -982,7 +982,7 @@ function setAvgAndMedian(){
     // sql_str += " ORDER BY godina DESC";
 
 
-    sql_str += " ) SELECT godina, round(avg(bruto), 2) as brutoAvg FROM cte WHERE bruto != 0";
+    sql_str += " ) SELECT godina, round(avg(bruto), 2) as brutoAvg FROM cte WHERE bruto != 0"; //! bruto != 0
     sql_str += " group by godina, osoba order by godina desc, brutoAvg asc";
 
     try

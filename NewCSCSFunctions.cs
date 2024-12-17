@@ -48,6 +48,8 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.CLOCK, new ClockFunction());
 
             interpreter.RegisterFunction(Constants.FTP_UPLOAD_FILE, new FTPUploadFileFunction());
+
+            interpreter.RegisterFunction(Constants.GET_COMP_NAME, new GetCompNameFunction());
             
         }
         public partial class Constants
@@ -69,6 +71,8 @@ namespace WpfCSCS
             public const string CLOCK = "Clock";
 
             public const string FTP_UPLOAD_FILE = "FTPUploadFile";
+
+            public const string GET_COMP_NAME = "GetCompName";
         }
     }
 
@@ -754,4 +758,16 @@ namespace WpfCSCS
             return Variable.EmptyInstance;
         }
     }
+    
+    class GetCompNameFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 0, m_name);
+
+            return new Variable(System.Environment.MachineName.Trim());
+        }
+    }
+
 }

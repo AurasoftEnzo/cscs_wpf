@@ -6372,6 +6372,7 @@ namespace WpfCSCS
 
             var fileName = Utils.GetSafeString(args, 0);
 			var imagesPath = App.GetConfiguration("ImagesPath", "");
+			Directory.CreateDirectory(Path.Combine(imagesPath, "screenshots"));
             var imagePath = Path.Combine(imagesPath, "screenshots", fileName);
 
 			//var imagePath = Path.Combine(App.GetConfiguration("ImagesPath", ""), "tempScreenshot.jpg");

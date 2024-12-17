@@ -1,6 +1,8 @@
 //DASHBOARD - Izlazni računi
 //include(strTrim(tpath()) +"chainLib.cscs");
 
+include(strTrim(tpath()) + "wxsy_lib.cscs");
+
 Import(strTrim(mpath()) + "CSCS.Math.dll");
 
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiprb_inc_lists.cscs") : strTrim(tpath()) + "wxbiprb_inc_lists.cscs");
@@ -16,6 +18,10 @@ include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiprb_inc_b.cs
 CreateWindow(strTrim(tpath()) + "wxbiprb.xaml");
 // CreateWindowXaml("wxbiprb.xaml");
 
+function wxbiprb_OnClose()
+{
+    save_logs("I", userCode, WhoAmI());
+}
 function Wxbiprb_onDisplay()
 {
     SetWidgetOptions("EllipseProdajaUGodini", "Visible", false);
@@ -29,9 +35,12 @@ function Wxbiprb_onDisplay()
     if(Size(args) > 2){
         companyCode = args[2];
         userCode = args[3];
+        CoSet(companyCode);
     }else{
         companyCode = Substring(CoGet(), 1, 2);
     }
+    
+    save_logs("U", userCode, WhoAmI());
 
     sqlQueryString = "select SY_CC_USER, SY_CC_YEAR, SY_CC_DBASE from " + strtrim(CommonDBGet()) + ".dbo.NKSYCCYR WHERE SY_CC_CODE = '" + companyCode + "'";
     try

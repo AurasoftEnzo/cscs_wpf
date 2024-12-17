@@ -2780,7 +2780,7 @@ d:\temp\aaa.txt, d:\temp\ggg.txt,
 
             var gui = CSCS_GUI.GetInstance(script);
 
-            return new Variable(Path.GetFileNameWithoutExtension(script.Filename));
+            return new Variable(Path.GetFileNameWithoutExtension(script.Filename).ToUpper());
         }
     }
     

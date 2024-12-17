@@ -2,6 +2,8 @@
 
 //include(strTrim(tpath()) +"chainLib.cscs");
 
+include(strTrim(tpath()) + "wxsy_lib.cscs");
+
 Import(strTrim(mpath()) + "CSCS.Math.dll");
 
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbioda_inc_lists.cscs") : strTrim(tpath()) + "wxbioda_inc_lists.cscs");
@@ -26,6 +28,10 @@ include(DownloadScripts() == true ? Download(ServerAddress() + "wxbioda_inc_e.cs
 CreateWindow(strTrim(tpath()) + "wxbioda.xaml");
 // CreateWindowXaml("wxbioda.xaml");
 
+function wxbioda_OnClose()
+{
+    save_logs("I", userCode, WhoAmI());
+}
 function wxbioda_onDisplay()
 {
     cursor("wait");
@@ -83,9 +89,12 @@ function wxbioda_onDisplay()
     if(Size(args) > 2){
         companyCode = args[2];
         userCode = args[3];
+        CoSet(companyCode);
     }else{
         companyCode = Substring(CoGet(), 1, 2);
     }
+
+    save_logs("U", userCode, WhoAmI());
 
     sqlQueryString = "select SY_CC_USER, SY_CC_YEAR, SY_CC_DBASE from " + strtrim(CommonDBGet()) + ".dbo.NKSYCCYR WHERE SY_CC_CODE = '" + companyCode + "'";
     try

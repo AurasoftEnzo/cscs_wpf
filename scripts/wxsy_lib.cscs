@@ -1,0 +1,71 @@
+
+//// parametri:
+// akcija_h = "U" ili "I"
+// osoba_logs = šifra osobe
+// moduleName = npr. "wxbioda"
+// optional // docum_logs = broj dokumenta
+// optional // string_logs = opis
+function save_logs(akcija_h, osoba_logs, moduleName, docum_logs = 0, string_logs = ""){
+
+    sql_str = " INSERT INTO " + CommonDBGet() + ".dbo.NKSYLOGS";
+    
+    sql_str += " (";
+    sql_str += " sy_logs_status,";
+    sql_str += " sy_logs_user,";
+    sql_str += " sy_logs_comp,";
+    sql_str += " sy_logs_datein,";
+    sql_str += " sy_logs_timein,";
+    sql_str += " sy_logs_datout,";
+    sql_str += " sy_logs_timout,";
+    sql_str += " sy_logs_rez,";
+    sql_str += " sy_logs_rez1,";
+    sql_str += " sy_logs_rez2,";
+    sql_str += " sy_logs_rez3,";
+    sql_str += " sy_logs_program,";
+    sql_str += " sy_logs_field";
+    sql_str += ")";
+
+    sql_str += " VALUES";
+    sql_str += " (";
+    
+    sql_str += " '" + akcija_h + "',"; // status
+    sql_str += " '" + osoba_logs + "',"; // user
+    
+    //---------------------
+    // sql_str += " '" + GetCompName() + "',"; // comp
+
+    sql_str += " '" + strtrim(GetCompName()) + "',"; // comp
+    
+    // sql_str += " '";
+    // sql_str += GetCompName();
+    // sql_str += "',";
+    //---------------------
+
+    sql_str += " '" + CoGet() + "',"; // datein
+    sql_str += " format(getdate(), 'HH:mm:ss.fffffff'),"; // timein
+    sql_str += " format(getdate(), 'yyyy-MM-dd'),"; // datout
+    sql_str += " format(getdate(), 'HH:mm:ss.fffffff'),"; // timout
+    sql_str += " '',"; // rez
+    sql_str += " 0,"; // rez1
+    sql_str += " " + docum_logs + ","; // rez2
+    sql_str += " '" + moduleName + "',"; // rez3
+    sql_str += " '',"; // program
+    sql_str += " '" + string_logs + "'"; // field
+    
+    sql_str += ")";
+    
+    try
+    {
+        //SaveFile(sql_str);
+        queryResult = sqlquery(SQL_str);
+    }
+    catch(exc)
+    {
+        MessageBox(exc);
+    }
+}
+
+
+//save_logs("U", "ENZO", "WXBIODA");
+
+//exit;

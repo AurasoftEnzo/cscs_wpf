@@ -1,6 +1,8 @@
 //DASHBOARD - Ponude
 //include(strTrim(tpath()) +"chainLib.cscs");
 
+include(strTrim(tpath()) + "wxsy_lib.cscs");
+
 Import(strTrim(mpath()) + "CSCS.Math.dll");
 
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiprd_inc_lists.cscs") : strTrim(tpath()) + "wxbiprd_inc_lists.cscs");
@@ -19,6 +21,10 @@ include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiprd_inc_c.cs
 CreateWindow(strTrim(tpath()) + "wxbiprd.xaml");
 // CreateWindowXaml("wxbiprd.xaml");
 
+function Wxbiprd_OnClose()
+{
+    save_logs("I", userCode, WhoAmI());
+}
 function Wxbiprd_onDisplay()
 {
     SetWidgetOptions("EllipseProdajaUGodini", "Visible", false);
@@ -32,9 +38,12 @@ function Wxbiprd_onDisplay()
     if(Size(args) > 2){
         companyCode = args[2];
         userCode = args[3];
+        CoSet(companyCode);
     }else{
         companyCode = Substring(CoGet(), 1, 2);
     }
+
+    save_logs("U", userCode, WhoAmI());
 
     sqlQueryString = "select SY_CC_USER, SY_CC_YEAR, SY_CC_DBASE from " + strtrim(CommonDBGet()) + ".dbo.NKSYCCYR WHERE SY_CC_CODE = '" + companyCode + "'";
     try

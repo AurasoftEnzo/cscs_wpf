@@ -18,7 +18,7 @@ DEFINE labelTotalFc type a size 10;
 
 labelTotalFc = "Blue";
 
-panel1 = "OFF";
+panel1 = "off";
 label1Cl = "Brown";
 label1Lt = 50;
 label1Top = 50;
@@ -28,6 +28,8 @@ label1Fs = 50;
 label1Fn = "Times New Roman";
 
 DEFINE panel2, label2, label3 type a size 3;
+
+panel2 = "ON";
 
 //panel2 = "OFF"; // mora bit Visible = true i CanShrink = true
 //label2 = "OFF"; // shrinka panel
@@ -69,11 +71,19 @@ UpdateReport(report1_hndl, "NKPR_GL_NUM");
 //********
 */
 
-for(j = 0; j < 99999999; j++){
+for(j = 0; j < 50; j++){
     findv(NKPRINV_hndl,"n");
     if(flerr()){
         break;
     }
+
+    // if(j == 3){
+    //     panel2 = "off";
+    // }
+    // else{
+    //     panel2 = "off";
+    // }
+
     OutputReport(report1_hndl);
 
     findv(NKPRINVL_hndl,"m","NKPR_LN_INVNM", string(NKPR_GL_NUM));

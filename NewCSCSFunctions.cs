@@ -1,5 +1,7 @@
 ﻿using LiveChartsCore.SkiaSharpView.Painting;
 using MapControl;
+using Renci.SshNet.Sftp;
+using Renci.SshNet;
 using SplitAndMerge;
 using System;
 using System.Collections.Generic;
@@ -19,6 +21,9 @@ using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Threading;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
+using DevExpress.XtraRichEdit.Import.Doc;
+using Org.BouncyCastle.Tls;
+using static System.Net.WebRequestMethods;
 
 namespace WpfCSCS
 {
@@ -47,7 +52,7 @@ namespace WpfCSCS
             
             interpreter.RegisterFunction(Constants.CLOCK, new ClockFunction());
 
-            interpreter.RegisterFunction(Constants.FTP_UPLOAD_FILE, new FTPUploadFileFunction());
+            interpreter.RegisterFunction(Constants.FTP, new FTPFunction());
 
             interpreter.RegisterFunction(Constants.GET_COMP_NAME, new GetCompNameFunction());
             
@@ -70,7 +75,7 @@ namespace WpfCSCS
 
             public const string CLOCK = "Clock";
 
-            public const string FTP_UPLOAD_FILE = "FTPUploadFile";
+            public const string FTP = "FTP";
 
             public const string GET_COMP_NAME = "GetCompName";
         }
@@ -103,7 +108,7 @@ namespace WpfCSCS
 
             menu.Items.Add(firstMenuItem);
 
-            List<string> wxmenuLines = File.ReadAllLines(App.GetConfiguration("ScriptsPath", "") + "wxmenu.ini").ToList();
+            List<string> wxmenuLines = System.IO.File.ReadAllLines(App.GetConfiguration("ScriptsPath", "") + "wxmenu.ini").ToList();
 
             var lastLevels = new Dictionary<int, string>();
 
@@ -703,9 +708,6 @@ namespace WpfCSCS
     
     class ClockFunction : ParserFunction
     {
-        private System.Timers.Timer timer1;
-        private System.Timers.Timer timer2;
-
         protected override Variable Evaluate(ParsingScript script)
         {
             List<Variable> args = script.GetFunctionArgs();
@@ -730,11 +732,8 @@ namespace WpfCSCS
         }
     }
     
-    class FTPUploadFileFunction : ParserFunction
+    class FTPFunction : ParserFunction
     {
-        private System.Timers.Timer timer1;
-        private System.Timers.Timer timer2;
-
         protected override Variable Evaluate(ParsingScript script)
         {
             List<Variable> args = script.GetFunctionArgs();
@@ -742,23 +741,82 @@ namespace WpfCSCS
 
             var gui = CSCS_GUI.GetInstance(script);
 
-            var filePath = Utils.GetSafeString(args, 0);
-            var serverAddress = Utils.GetSafeString(args, 1);
-            var port = Utils.GetSafeInt(args, 2);
-            var username = Utils.GetSafeString(args, 3).ToLower();
-            var password = Utils.GetSafeString(args, 4);
-
-            using (var client = new WebClient())
+            var protocol = Utils.GetSafeString(args, 0).ToLower();
+            var sendOrReceive = Utils.GetSafeString(args, 1).ToLower();
+            var serverAddress = Utils.GetSafeString(args, 2);
+            var port = Utils.GetSafeInt(args, 3);
+            if(port == 0)
             {
-                var zipFilename = Path.GetFileName(filePath);
-                client.Credentials = new NetworkCredential(username, password);
-                client.UploadFile(string.Format("ftp://{0}/{1}", serverAddress, zipFilename), WebRequestMethods.Ftp.UploadFile, filePath);
+                if (protocol == "ftp")
+                {
+                    port = 21;
+                }
+                else if(protocol == "sftp")
+                {
+                    port = 22;
+                }
+            }
+
+            var username = Utils.GetSafeString(args, 4);
+            var password = Utils.GetSafeString(args, 5);
+
+            var serverDirectoryPath = Utils.GetSafeString(args, 6);
+            var localDirectoryPath = Utils.GetSafeString(args, 7);
+
+            var filename = Utils.GetSafeString(args, 8);
+
+            if (protocol == "ftp")
+            {
+                if (sendOrReceive == "s") // "send"
+                {
+                    using (var client = new WebClient())
+                    {
+                        client.Credentials = new NetworkCredential(username, password);
+                        client.UploadFile("ftp://" + $"{serverAddress}/{serverDirectoryPath}/{filename}".Replace("///", "/").Replace("///", "/"), WebRequestMethods.Ftp.UploadFile, Path.Combine(localDirectoryPath, filename));
+                    }
+                }
+                else if (sendOrReceive == "r") // receive
+                {
+                    using (var client = new WebClient())
+                    {
+                        client.Credentials = new NetworkCredential(username, password);
+                        client.DownloadFile("ftp://" + $"{serverAddress}/{serverDirectoryPath}/{filename}".Replace("///", "/").Replace("///", "/"), Path.Combine(localDirectoryPath, filename));
+                    }
+                }
+            }
+            else if (protocol == "sftp")
+            {
+                if (sendOrReceive == "s") // "send"
+                {
+                    using (var client = new SftpClient(serverAddress, username, password))
+                    {
+                        client.Connect();
+
+                        using (FileStream fs = System.IO.File.OpenRead(Path.Combine(localDirectoryPath, filename)))
+                        {
+                            client.UploadFile(fs, $"/{serverDirectoryPath}/".Replace("///", "/").Replace("///", "/") + filename);
+                        }
+                    }
+                }
+                else if (sendOrReceive == "r") // receive
+                {
+                    using (var client = new SftpClient(serverAddress, username, password))
+                    {
+                        client.Connect();
+
+                        using (Stream fs = System.IO.File.Create(Path.Combine(localDirectoryPath, filename)))
+                        {
+                            client.DownloadFile($"/{serverDirectoryPath}/".Replace("///", "/").Replace("///", "/") + filename, fs);
+                        }
+                    }
+                }
             }
 
             return Variable.EmptyInstance;
         }
     }
     
+        
     class GetCompNameFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)

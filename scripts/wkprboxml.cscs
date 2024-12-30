@@ -24,8 +24,7 @@ if(Size(args) >= 11){
         }
 
         // ... provjerit ...
-        finalFilename = LocalBackupPath + substring(zipFilename, 0, zipFilename.length - 4) + "_" + backupDateShort + "_" + backupTimeShort + ".zip";
-        move(localDirectoryPath + filename, localDirectoryPath + substring(zipFilename, 0, zipFilename.length - 4) + ".bcx");
+        move(localDirectoryPath + filename, localDirectoryPath + substring(filename, 0, filename.length - 4) + ".bcx");
 
     }catch(ex){
         MessageBox("Error: " + ex);

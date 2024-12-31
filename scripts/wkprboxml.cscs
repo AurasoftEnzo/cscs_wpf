@@ -13,26 +13,26 @@ if(Size(args) >= 11){
     try{
         FTP(ftpProtocol, sendOrRecieve, ftpAddress, ftpPort, ftpUsername, ftpPassword, ftpDirectoryPath, localDirectoryPath, filename);
     }catch(ex){
-        MessageBox("Error: " + ex);
-        quit;
+        AppendLine(localDirectoryPath + "errors.txt", "Error: " + ex + " " + "Filename: " + filename);
+        exit;
     }
     
-    try{
-        // dodaj "/" na kraj ako nema
-        if(substring(localDirectoryPath, localDirectoryPath.length - 1, 1) != "/"){
-            localDirectoryPath += "/";
-        }
+    // try{
+    //     // dodaj "/" na kraj ako nema
+    //     if(substring(localDirectoryPath, localDirectoryPath.length - 1, 1) != "/"){
+    //         localDirectoryPath += "/";
+    //     }
 
-        // ... provjerit ...
-        move(localDirectoryPath + filename, localDirectoryPath + substring(filename, 0, filename.length - 4) + ".bcx");
+    //     // ... provjerit ...
+    //     move(localDirectoryPath + filename, localDirectoryPath + substring(filename, 0, filename.length - 4) + ".bcx");
 
-    }catch(ex){
-        MessageBox("Error: " + ex);
-        quit;
-    }
+    // }catch(ex){
+    //     MessageBox("Error: " + ex);
+    //     exit;
+    // }
 }else{
-    MessageBox("Error: " + "Invalid number of arguments: " + Size(args));
-    MessageBox(args);
+    // AppendLine(localDirectoryPath + "errors.txt", "Error: " + "Invalid number of arguments: " + Size(args) + ". Args: " + args);
+    MessageBox("Error: " + "Invalid number of arguments: " + Size(args) + ". Args: " + args);
 }
 
-quit;
+exit;

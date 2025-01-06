@@ -457,7 +457,7 @@ function setChartByMonth1(){
             ar_cntr = int(substring(queryResult[i][1],4,2));
             //if (ar_cntr== i)
             //{
-            arrayProsla[ar_cntr-1] = math.round(queryResult[i][2]/1000,0); 
+            arrayProsla[ar_cntr-1] = math.round(queryResult[i][2],0);  // /1000,0); 
             sales_month_ar[ar_cntr-1] = queryResult[i][2];
             //}
             //else
@@ -496,7 +496,7 @@ function setChartByMonth2(){
     for(i = 1; i <= Size(queryResult)-1; i++)
     {
         ar_cntr= int(substring(queryResult[i][1],4,2)); //nađimo koji je to mjesec
-        arrayTrenutna[ar_cntr-1] = math.round(queryResult[i][2]/1000,0); 
+        arrayTrenutna[ar_cntr-1] = math.round(queryResult[i][2],0); // /1000,0); 
         sales_month_ar[ar_cntr-1] = queryResult[i][2];
         mjesec_h0X = mjesec_h.length == 1 ? "0" + mjesec_h : mjesec_h;
         proslimjesec = string(int(mjesec_h) - 1); // 1

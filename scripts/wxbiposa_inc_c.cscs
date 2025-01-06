@@ -117,7 +117,7 @@ function setPaymentOptionsPieChart(){
 	sql_str += " SELECT CASE WHEN num <= 5 THEN Naziv ELSE 'Ostali' END AS Prodavac , round(sum(suma),0) as Origin";
 	sql_str += " FROM (SELECT ISNULL(ks_upl_vrsta, 'NEDEFINIRANO') as naziv,";
 	
-    sql_str += " sum(CASE WHEN ks_upl_sif_pl= 'POG' THEN -1 ELSE 1 END * ks_upl_iznos) AS Suma,";
+    sql_str += " ISNULL(sum(CASE WHEN ks_upl_sif_pl= 'POG' THEN -1 ELSE 1 END * ks_upl_iznos),0) AS Suma,";
 	sql_str += " ROW_NUMBER() OVER( ORDER BY sum(CASE WHEN ks_upl_sif_pl= 'POG' THEN -1 ELSE 1 END * ks_upl_iznos) DESC ) As Num";
 	
 	sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKKSINVG AS U";
@@ -162,7 +162,6 @@ function setPaymentOptionsPieChart(){
 	catch(exc){
 		MessageBox(exc);
 	}
-
 	RunOnMain("DisplayPaymentOptionsPieChart");
 }
 
@@ -202,7 +201,7 @@ function setPaymentCodesPieChart(){
 	sql_str += " SELECT KPKS_PL_TIP, ks_upl_sif_pl, avansTip, CASE WHEN num <= 5 THEN Naziv ELSE 'Ostali' END AS Prodavac , round(sum(suma),0) as Origin";
 	sql_str += " FROM (SELECT ISNULL(kpks_pl_opis, 'NEDEFINIRANO') as naziv,";
 	
-    sql_str += " sum(CASE WHEN ks_upl_sif_pl= 'POG' THEN -1 ELSE 1 END * ks_upl_iznos) AS Suma,";
+    sql_str += " ISNULL(sum(CASE WHEN ks_upl_sif_pl= 'POG' THEN -1 ELSE 1 END * ks_upl_iznos),0) AS Suma,";
 	sql_str += " ROW_NUMBER() OVER( ORDER BY sum(CASE WHEN ks_upl_sif_pl= 'POG' THEN -1 ELSE 1 END * ks_upl_iznos) DESC ) As Num, KPKS_PL_TIP, ks_upl_sif_pl, cast(isnull(KPKS_PL_UVJPL, 0) as int) as avansTip ";
 	
 	sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKKSINVG AS U";

@@ -5158,30 +5158,93 @@ namespace WpfCSCS
 			return new Variable(contents);
 		}
 	}
-	class SaveFileFunction : ParserFunction
-	{
-		protected override Variable Evaluate(ParsingScript script)
-		{
-			List<Variable> args = script.GetFunctionArgs();
-			string text = Utils.GetSafeString(args, 0);
 
-			return SaveFile(text);
-		}
-		public static Variable SaveFile(string text)
-		{
-			Microsoft.Win32.SaveFileDialog saveFile = new Microsoft.Win32.SaveFileDialog();
-			if (saveFile.ShowDialog() != true)
-			{
-				return Variable.EmptyInstance;
-			}
+	//class SaveFileFunction : ParserFunction
+	//{
+	//	protected override Variable Evaluate(ParsingScript script)
+	//	{
+	//		List<Variable> args = script.GetFunctionArgs();
+	//		string text = Utils.GetSafeString(args, 0);
 
-			var fileName = saveFile.FileName;
-			File.WriteAllText(fileName, text);
-			return new Variable(fileName);
-		}
-	}
+	//		return SaveFile(text);
+	//	}
+	//	public static Variable SaveFile(string text)
+	//	{
+	//		Microsoft.Win32.SaveFileDialog saveFile = new Microsoft.Win32.SaveFileDialog();
+	//		if (saveFile.ShowDialog() != true)
+	//		{
+	//			return Variable.EmptyInstance;
+	//		}
 
-	class SetColorFunction : ParserFunction
+	//		var fileName = saveFile.FileName;
+	//		File.WriteAllText(fileName, text);
+	//		return new Variable(fileName);
+	//	}
+	//}
+
+    class SaveFileFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            // Get the function arguments
+            List<Variable> args = script.GetFunctionArgs();
+
+            // Ensure at least one argument (textToSave) is provided
+            if (args.Count == 0)
+            {
+                throw new ArgumentException("At least one argument (textToSave) is required.");
+            }
+
+            string textToSave = Utils.GetSafeString(args, 0); // First argument: text to save
+            string fileName = Utils.GetSafeString(args, 1);   // Second argument: file name (optional)
+            string appendFlag = Utils.GetSafeString(args, 2); // Third argument: append flag (optional)
+
+            // Call the SaveToFile method with the provided arguments
+            return SaveToFile(textToSave, fileName, appendFlag);
+        }
+
+        public static Variable SaveToFile(string textToSave, string fileName = null, string appendFlag = null)
+        {
+            // If no file name is provided, prompt the user to select a file
+            if (string.IsNullOrEmpty(fileName))
+            {
+                Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog();
+                saveFileDialog.Filter = "Text Files (*.txt)|*.txt|All Files (*.*)|*.*";
+                if (saveFileDialog.ShowDialog() != true)
+                {
+                    return Variable.EmptyInstance; // User canceled the dialog
+                }
+                fileName = saveFileDialog.FileName;
+            }
+
+            // Determine whether to append or overwrite the file
+            bool append = !string.IsNullOrEmpty(appendFlag) && appendFlag.ToUpper() == "A";
+
+            // Save or append the text to the file
+            try
+            {
+                if (append)
+                {
+					var ienumString = new List<string>();
+					ienumString.Add(textToSave);
+                    File.AppendAllLines(fileName, ienumString);
+                }
+                else
+                {
+                    File.WriteAllText(fileName, textToSave);
+                }
+                return new Variable(fileName); // Return the file name
+            }
+            catch (Exception ex)
+            {
+                // Handle any errors (e.g., invalid path, unauthorized access)
+                return new Variable($"Error: {ex.Message}");
+            }
+        }
+    }
+
+
+    class SetColorFunction : ParserFunction
 	{
 		bool m_bgColor;
 

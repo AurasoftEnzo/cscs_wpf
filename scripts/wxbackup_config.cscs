@@ -1,6 +1,8 @@
 DEFINE winxIniBackupPath type a size 255;
 DEFINE winxIniLocalBackupPath type a size 255;
 DEFINE winxIniFinalBackupPath type a size 255;
+DEFINE winxIniFtpDirectoryPath type a size 255;
+DEFINE winxIniFtpPort type a size 255;
 DEFINE winxIniFtpUsername type a size 255;
 DEFINE winxIniFtpPassword type a size 255;
 
@@ -23,6 +25,8 @@ function wxbackup_config_onDisplay(){
     winxIniBackupPath = regedit("regReadStr", 'BACKUP', 'BackupPath');
     winxIniLocalBackupPath = regedit("regReadStr", 'BACKUP', 'LocalBackupPath');
     winxIniFinalBackupPath = regedit("regReadStr", 'BACKUP', 'FinalBackupPath');
+    winxIniFtpDirectoryPath = regedit("regReadStr", 'BACKUP', 'FtpDirectoryPath');
+    winxIniFtpPort = regedit("regReadStr", 'BACKUP', 'FtpPort');
 
     winxIniFtpUsername = regedit("regReadStr", 'BACKUP', 'FtpUsername');
     if(winxIniFtpUsername != ""){
@@ -112,6 +116,8 @@ function btnSpremiConfig@clicked(){
         regedit("regWriteStr", 'BACKUP', 'BackupPath', winxIniBackupPath);
         regedit("regWriteStr", 'BACKUP', 'LocalBackupPath', winxIniLocalBackupPath);
         regedit("regWriteStr", 'BACKUP', 'FinalBackupPath', winxIniFinalBackupPath);
+        regedit("regWriteStr", 'BACKUP', 'FtpDirectoryPath', winxIniFtpDirectoryPath);
+        regedit("regWriteStr", 'BACKUP', 'FtpPort', winxIniFtpPort);
         regedit("regWriteStr", 'BACKUP', 'FtpUsername', Encryptstr("setwofish", winxIniFtpUsername, "12345"));
         regedit("regWriteStr", 'BACKUP', 'FtpPassword', Encryptstr("setwofish", winxIniFtpPassword, "12345"));
 
@@ -127,6 +133,8 @@ function btnSpremiConfig@clicked(){
         BackupPath = winxIniBackupPath;
         LocalBackupPath = winxIniLocalBackupPath;
         FinalBackupPath = winxIniFinalBackupPath;
+        FtpDirectoryPath = winxIniFtpDirectoryPath;
+        FtpPort = winxIniFtpPort;
         FtpUsername = winxIniFtpUsername;
         FtpPassword = winxIniFtpPassword;
 

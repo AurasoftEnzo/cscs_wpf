@@ -26,6 +26,10 @@ DEFINE localBakFilename type a size 255;
 
 
 DEFINE FinalBackupPath type a size 255;
+
+DEFINE FtpDirectoryPath type a size 255;
+DEFINE FtpPort type a size 255;
+
 DEFINE destinationFile type a size 255;
 
 DEFINE backupDateShort type a size 8;
@@ -112,6 +116,7 @@ function wxbackup_onDisplay()
         regedit("regWriteStr", 'BACKUP', 'FinalBackupPath', "");
         FinalBackupPath = string(wpath());
     }
+
 
     zakazanoSati = int(regedit("regReadStr", 'BACKUP', 'ZakazanoSati'));
     zakazanoMinuta = int(regedit("regReadStr", 'BACKUP', 'ZakazanoMinuta'));
@@ -263,6 +268,20 @@ function btnPokreni@clicked()
             Cursor("dflt");
             quit;
         }
+
+
+        FtpDirectoryPath = regedit("regReadStr", 'BACKUP', 'FtpDirectoryPath');
+        if(FtpDirectoryPath == ""){
+            regedit("regWriteStr", 'BACKUP', 'FtpDirectoryPath', "");
+            FtpDirectoryPath = "";
+        }
+        
+        FtpPort = regedit("regReadStr", 'BACKUP', 'FtpPort');
+        if(FtpPort == ""){
+            regedit("regWriteStr", 'BACKUP', 'FtpPort', "0");
+            FtpPort = "0";
+        }
+
 
         FtpUsername = regedit("regReadStr", 'BACKUP', 'FtpUsername');
         if(FtpUsername == ""){
@@ -528,13 +547,16 @@ function MoveZipFileToFinal(zipFilename, dbName){
 function UploadZipFile(zipFilename, dbName){
     try
     {
-        destinationFile = LocalBackupPath + substring(zipFilename, 0, zipFilename.length - 4) + "_" + backupDateShort + "_" + backupTimeShort + ".zip";
-        move(LocalBackupPath + zipFilename, destinationFile);
+        destinationFilename = substring(zipFilename, 0, zipFilename.length - 4) + "_" + backupDateShort + "_" + backupTimeShort + ".zip";
+        destinationFilePath = LocalBackupPath + destinationFilename;
+
+        move(LocalBackupPath + zipFilename, destinationFilePath);
         
-        FTPUploadFile(destinationFile, FinalBackupPath, 21, FtpUsername, FtpPassword);
+        FTP("ftp", "s", FinalBackupPath, FtpPort, FtpUsername, FtpPassword, FtpDirectoryPath, LocalBackupPath, destinationFilename);
+        //FTPUploadFile(destinationFile, FinalBackupPath, 21, FtpUsername, FtpPassword);
         logAdd(dbName + ": .zip datoteka uploadana");
 
-        Delete(destinationFile);
+        Delete(destinationFilePath);
         logAdd(dbName + ": .zip datoteka obrisana");
 
         return true;

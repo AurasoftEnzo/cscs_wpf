@@ -1,6 +1,4 @@
 ﻿using DevExpress.Xpf.Printing;
-using DevExpress.XtraCharts;
-using DevExpress.XtraExport.Helpers;
 using DevExpress.XtraPrinting.Caching;
 using DevExpress.XtraReports.UI;
 using SplitAndMerge;
@@ -8,19 +6,17 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace WpfCSCS
+
+namespace WpfCSCS.Reporting.DevExpressReporting
 {
-      
     public enum ReportOption
     {
         Setup,
         Output,
         Update,
         Print
-            //,
+        //,
         //PrintSQL
     }
     public class ReportFunction : ParserFunction
@@ -48,7 +44,7 @@ namespace WpfCSCS
         static List<string> chartTags = new List<string>();
 
         static Dictionary<int, List<string>> fieldsOfReports = new Dictionary<int, List<string>>();
-        
+
         static Dictionary<int, int> lastReportsNumbers = new Dictionary<int, int>();
 
         public ReportFunction(ReportOption _option)
@@ -77,9 +73,9 @@ namespace WpfCSCS
                     PrintReport();
                     break;
 
-                //case ReportOption.PrintSQL:
-                //    PrintSqlReport();
-                //    break;
+                    //case ReportOption.PrintSQL:
+                    //    PrintSqlReport();
+                    //    break;
             }
 
             return Variable.EmptyInstance;
@@ -120,7 +116,7 @@ namespace WpfCSCS
                 Reports[1].DataMember = DataSets[1].Tables[0].TableName;
 
                 fieldsOfReports[1] = new List<string>();
-                
+
                 var allLabels = Reports[1].AllControls<XRLabel>();
                 foreach (var label in allLabels)
                 {
@@ -375,13 +371,13 @@ namespace WpfCSCS
             var chart = (sender as XRChart);
 
             var current = chartsReportsList.FirstOrDefault();
-            
+
             chart.DataSource = DataTables[current.Key].Rows[current.Value][chart.Tag.ToString()];
 
             chart.Series[0].ArgumentDataMember = "Argument";
             chart.Series[0].ValueDataMembers.AddRange(new string[] { "Value1" });
 
-            for(int i = 1; i < chart.Series.Count; i++)
+            for (int i = 1; i < chart.Series.Count; i++)
             {
                 chart.Series[i].ArgumentDataMember = "Argument";
                 chart.Series[i].ValueDataMembers.AddRange(new string[] { "Value" + (i + 1) });
@@ -452,10 +448,10 @@ namespace WpfCSCS
                         List<string> chartArgs = new List<string>();
                         if (Gui.DEFINES.TryGetValue(dataTableFieldName + "_args", out DefineVariable defVarArgs))
                         {
-                            chartArgs = defVarArgs.Tuple.Select(p=>p.String).ToList();
+                            chartArgs = defVarArgs.Tuple.Select(p => p.String).ToList();
                         }
 
-                        if(Gui.DEFINES.TryGetValue(dataTableFieldName + "_val_2", out DefineVariable defVarVal2))
+                        if (Gui.DEFINES.TryGetValue(dataTableFieldName + "_val_2", out DefineVariable defVarVal2))
                         {
                             dt.Columns.Add(new DataColumn("Value2", typeof(double)));
                             //numberOfSeries = 2;
@@ -612,7 +608,7 @@ namespace WpfCSCS
                 }
             }
         }
-        
+
         private void UpdateReport()
         {
             List<Variable> args = Script.GetFunctionArgs();
@@ -665,7 +661,7 @@ namespace WpfCSCS
                 {
                     subreport.ParameterBindings.Clear();
                     subreport.ParameterBindings.Add(new ParameterBinding($"thisReportsNumberParam_{report.Key + 1}", report.Value.DataSource, ((DataSet)report.Value.DataSource).Tables[0].TableName + "." + "thisReportsNumber"/*parameterName.ParameterName.Replace("param", "")*/));
-                    
+
                 }
             }
 

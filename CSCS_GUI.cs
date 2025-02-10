@@ -28,7 +28,7 @@ using System.Windows.Threading;
 using System.Windows.Xps;
 using WpfControlsLibrary;
 using WpfCSCS;
-
+using WpfCSCS.Reporting;
 using static WpfCSCS.Btrieve;
 
 namespace SplitAndMerge
@@ -152,6 +152,9 @@ namespace SplitAndMerge
 	public const string OUTPUT_REPORT = "OutputReport";
 	public const string UPDATE_REPORT = "UpdateReport";
 	public const string PRINT_REPORT = "PrintReport";
+
+	public const string SET_PARAM_REPORT = "SetParamReport";
+	public const string GET_PARAM_REPORT = "GetParamReport";
 
 	//public const string PRINT_SQL_REPORT = "PrintSqlReport";
 
@@ -619,7 +622,7 @@ namespace WpfCSCS
 			TasFunctionsInstance.Init(this);
 			NewCSCSFunctionsInstance.Init(this);
             ChartsInstance.Init(this);
-			ReportFunction.Init(Interpreter);
+			Reporting.Reporting.Init(Interpreter);
 			Excel.Init(Interpreter);
 			NavigatorClassInstance.Init(Interpreter);
 			CommandsInstance.Init(this);

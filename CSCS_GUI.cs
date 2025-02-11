@@ -7219,6 +7219,7 @@ namespace WpfCSCS
 					return;
 				}
 				AssignedString = value;
+				//// ???????????
 				//if (!LocalAssign)
 				//{
 				//	Size = 0;

@@ -1217,29 +1217,52 @@ namespace WpfCSCS.Reporting.ReportBuilderReporting
                 //AURA_Test.IspisDBTextovaUMessageBox();
                 //AURA_Test.IspisDBMemoaUMessageBox();
 
-                PrebaciTipovePodatakaUDLL(reportHandle);
-                CreateDatasetPodaci(reportHandle);
-                PrebaciPodatkeUDatasetPodaci(reportHandle);
-                PipelineON(reportHandle);
-                //FilteringON(1);//TO SE NE SMIJE POZVATI
+                //NOVO
+                int tempReportHandle;
+                foreach (var item in MyDictionary.Reports)
+                {
+                    tempReportHandle = item.Key;
+                    //MessageBox.Show("Print Sve za Key=" + tempReportHandle.ToString());
+                    PrebaciTipovePodatakaUDLL(tempReportHandle);
+                    CreateDatasetPodaci(tempReportHandle);
+                    PrebaciPodatkeUDatasetPodaci(tempReportHandle);
+                    PipelineON(tempReportHandle);
 
-                PrebaciTipovePodatakaUDLL(2);
-                CreateDatasetPodaci(2);
-                PrebaciPodatkeUDatasetPodaci(2);
-                PipelineON(2);
-                FilteringON(2);
+                    //za mainReport se ne obavlja filtering
+                    if (item.Value.IsMainReport == false)
+                    {
+                        //MessageBox.Show("Print Filtering=" + tempReportHandle.ToString());
+                        FilteringON(tempReportHandle);
+                    }
 
-                PrebaciTipovePodatakaUDLL(3);
-                CreateDatasetPodaci(3);
-                PrebaciPodatkeUDatasetPodaci(3);
-                PipelineON(3);
-                FilteringON(3);
+                }
 
-                PrebaciTipovePodatakaUDLL(4);
-                CreateDatasetPodaci(4);
-                PrebaciPodatkeUDatasetPodaci(4);
-                PipelineON(4);
-                FilteringON(4);
+                //STARO
+                //*********************************************************************
+                //PrebaciTipovePodatakaUDLL(reportHandle);
+                //CreateDatasetPodaci(reportHandle);
+                //PrebaciPodatkeUDatasetPodaci(reportHandle);
+                //PipelineON(reportHandle);
+                ////FilteringON(1);//TO SE NE SMIJE POZVATI
+
+                //PrebaciTipovePodatakaUDLL(2);
+                //CreateDatasetPodaci(2);
+                //PrebaciPodatkeUDatasetPodaci(2);
+                //PipelineON(2);
+                //FilteringON(2);
+
+                //PrebaciTipovePodatakaUDLL(3);
+                //CreateDatasetPodaci(3);
+                //PrebaciPodatkeUDatasetPodaci(3);
+                //PipelineON(3);
+                //FilteringON(3);
+
+                //PrebaciTipovePodatakaUDLL(4);
+                //CreateDatasetPodaci(4);
+                //PrebaciPodatkeUDatasetPodaci(4);
+                //PipelineON(4);
+                //FilteringON(4);
+                //*********************************************************************
 
                 //Report report = MyDictionary.Reports[2];            
                 //AURA_Test.ProvjeraTablice(report.TablePodaci, "EXE ReportHandle = 2", "TABLEPODACI");

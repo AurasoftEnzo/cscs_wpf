@@ -17,8 +17,6 @@ DEFINE label1Fn type a size 30;
 DEFINE labelTotalFc type a size 10;
 
 labelTotalFc = "Blue";
-
-panel1 = "off";
 label1Cl = "Brown";
 label1Lt = 50;
 label1Top = 50;
@@ -39,8 +37,11 @@ DEFINE report1_hndl, report2_hndl type i;
 
 //start = Now();
 
-report1_hndl = SetupReport("NKPRINVReport.repx"); //
-report2_hndl = SetupReport("NKPRINVLReport.repx", report1_hndl);
+//report1_hndl = SetupReport("NKPRINVReport.repx"); //
+//report2_hndl = SetupReport("NKPRINVLReport.repx", report1_hndl);
+
+report1_hndl = SetupReport(strTrim(tpath()) + "test_report.rtm"); //
+report2_hndl = SetupReport(2, 1);
 
 
 findv(NKPRINV_hndl,"f","NKPR_GL_NUM");
@@ -100,7 +101,7 @@ for(j = 0; j < 50; j++){
 }
 
 
-PrintReport();
+PrintReport(report1_hndl);
 
 
 //MessageBox("start = " + start + ", end = " + Now());

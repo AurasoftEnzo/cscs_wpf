@@ -7219,10 +7219,10 @@ namespace WpfCSCS
 					return;
 				}
 				AssignedString = value;
-				if (!LocalAssign)
-				{
-					Size = 0;
-				}
+				//if (!LocalAssign)
+				//{
+				//	Size = 0;
+				//}
 				m_string = value;
 				Type = VarType.STRING;
 			}

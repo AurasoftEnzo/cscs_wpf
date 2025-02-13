@@ -11,7 +11,7 @@ namespace WpfCSCS.Reporting.ReportBuilderReporting
 {
     class ReportBuilderDll
     {
-        const string DLLPath = "D:\\DELPHI\\MyDLLReportNevio10\\Win64\\Debug\\MyDLLReportNevio10.dll";
+        const string DLLPath = "ReportBuilder\\MyDLLReportNevio10.dll";
         //const string DLLPath = @"C:\Users\User\Documents\GitHub\cscs_wpf\bin\Debug\ReportBuilderDll\MyDLLReportNevio10.dll";
         //Korisnici a ne users
         //C:\Users\User\Documents\GitHub\cscs_wpf

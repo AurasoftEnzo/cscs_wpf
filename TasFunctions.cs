@@ -2039,21 +2039,17 @@ namespace WpfCSCS
 
             SmtpClient smtp = new SmtpClient();
             smtp.Host = outgoingServer;
-            smtp.Port = 25;
+            smtp.Port = 587; //25
+            smtp.UseDefaultCredentials = false;
             smtp.Credentials = new NetworkCredential(username, password);
             smtp.DeliveryMethod = SmtpDeliveryMethod.Network;
             smtp.EnableSsl = true;
 
-            try
-            {
-                smtp.Send(email);
-                return true;
-            }
-            catch (SmtpException ex)
-            {
-                return false;
-            }
+            
+            smtp.Send(email);
+            return true;
         }
+
         private List<string> GetTo(string podaci)
         {
             bool start = false;
@@ -2257,14 +2253,8 @@ namespace WpfCSCS
                     //    }
                     //    return new Variable(SetupMail(text, outgoingServer, password, username, senderMail, senderUsername));
                     //}
-                    try
-                    {
-                        return new Variable(SetupMail(text, outgoingServer, password, username, senderMail, senderName, to, subject));
-                    }
-                    catch (Exception ex)
-                    {
-                        return new Variable(false);
-                    }
+                    return new Variable(SetupMail(text, outgoingServer, password, username, senderMail, senderName, to, subject));
+                    
                 case "test":
                     var widget = gui.GetWidget(widgetName);
                     if (widget is ASMemoBox)

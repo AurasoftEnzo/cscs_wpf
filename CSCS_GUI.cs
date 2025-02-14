@@ -5223,6 +5223,13 @@ namespace WpfCSCS
             // Determine whether to append or overwrite the file
             bool append = !string.IsNullOrEmpty(appendFlag) && appendFlag.ToUpper() == "A";
 
+            //create directory if it doesn't exist
+            string directory = Path.GetDirectoryName(fileName);
+            if (!Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
             // Save or append the text to the file
             try
             {

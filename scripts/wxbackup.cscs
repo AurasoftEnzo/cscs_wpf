@@ -630,13 +630,18 @@ function SendEmail(){
 
     regedit("regClose");
     
-    EmailSubject = "WinX Zapisnik arhive(" + backupDateSQL + " " + backupTimeSQL + ") za " + NazivFirme;
+    EmailSubject = "ASConto Zapisnik arhive(" + backupDateSQL + " " + backupTimeSQL + ") za " + NazivFirme;
 
     FormatLog();
 
-    ok  = EMAIL("emlSendMsg", logFinal, "", "", OutgoingEmailServer, EmailPassword, EmailUsername, SenderEmail, EmailSenderName, DestinationEmail, EmailSubject);   
-    //MessageBox(ok);
-
+    try{
+        ok  = EMAIL("emlSendMsg", logFinal, "", "", OutgoingEmailServer, EmailPassword, EmailUsername, SenderEmail, EmailSenderName, DestinationEmail, EmailSubject);   
+        //MessageBox(ok);
+    }catch(ex){
+        logFinal += "\n" + "GREŠKA pri slanju e-maila: " + ex;
+    }
+    
+    SaveFile(logFinal, BackupPath + "Log\\" + backupDateShort + "_" + backupTimeShort + ".txt");
 }
 
 //-- LOG ------------------------------------------------

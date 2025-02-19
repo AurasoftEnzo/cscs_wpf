@@ -643,7 +643,7 @@ namespace WpfCSCS
 
             if (alertTime < current.TimeOfDay)
             {
-                timeToGo = alertTime + (TimeSpan.Parse("24:00:00") - current.TimeOfDay);
+                timeToGo = alertTime + (new TimeSpan(24,0,0) - current.TimeOfDay);
             }
             else
             {

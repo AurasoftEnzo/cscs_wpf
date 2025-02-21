@@ -1,52 +1,52 @@
 function wxbimkaa_onStart()
 {
-    cursor("wait");
-    t10datrac=true;
+    // cursor("wait");
+    // t10datrac=true;
     
-    setChartByDaysOfMonth();
-    //
-    Chart("ChartPoMjesecima", "init");
-    //Chart("ChartPoMjesecima", "seriesType", "Columnseries");
-    //Chart("ChartPoMjesecima", "title", "Naslov grafa", 20);
-    // Chart("ChartPoMjesecima", "labels", "y", 13);
+    // setChartByDaysOfMonth();
+    // //
+    // Chart("ChartPoMjesecima", "init");
+    // //Chart("ChartPoMjesecima", "seriesType", "Columnseries");
+    // //Chart("ChartPoMjesecima", "title", "Naslov grafa", 20);
+    // // Chart("ChartPoMjesecima", "labels", "y", 13);
+    // // Chart("ChartPoMjesecima", "labels", "x", 13, {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"});
+    // // Chart("ChartPoMjesecima", "xlabelsRotation", 0);
+    // Chart("ChartPoMjesecima", "values", "bar", arrayProsla, STRING(proslaGodina)); // !
+    // Chart("ChartPoMjesecima", "values", "bar", arrayTrenutna, STRING(ovagod_h)); //!
+    // Chart("ChartPoMjesecima", "SeparatorStep", 1);
+    // //Chart("ChartPoMjesecima", "Margins", {50, 20, 0, 30});
+    // Chart("ChartPoMjesecima", "TooltipDecimalPlaces", 0);
+    // Chart("ChartPoMjesecima", "Color.Series", { "#DADADA", "#488A99"}); 
+
     // Chart("ChartPoMjesecima", "labels", "x", 13, {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"});
-    // Chart("ChartPoMjesecima", "xlabelsRotation", 0);
-    Chart("ChartPoMjesecima", "values", "bar", arrayProsla, STRING(proslaGodina)); // !
-    Chart("ChartPoMjesecima", "values", "bar", arrayTrenutna, STRING(ovagod_h)); //!
-    Chart("ChartPoMjesecima", "SeparatorStep", 1);
-    //Chart("ChartPoMjesecima", "Margins", {50, 20, 0, 30});
-    Chart("ChartPoMjesecima", "TooltipDecimalPlaces", 0);
-    Chart("ChartPoMjesecima", "Color.Series", { "#DADADA", "#488A99"}); 
 
-    Chart("ChartPoMjesecima", "labels", "x", 13, {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"});
-
-    //
-    Chart("ChartPoDanima", "init");
-    //Chart("ChartPoDanima", "seriesType", "lineSeries");
-    Chart("ChartPoDanima", "title", "Po Danima");
-    //Chart("ChartPoDanima", "labels","y", 12);
-    Chart("ChartPoDanima", "labels","x", 12,  {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31"});
-    //Chart("ChartPoDanima", "labels", arrayDani);
-    //Chart("ChartPoDanima", "xlabelsRotation", 0);
-    Chart("ChartPoDanima", "SeparatorStep", 1);
-    Chart("ChartPoDanima", "values", "line", arrayVrijednosti, "Dnevno");
-    Chart("ChartPoDanima", "values", "line", arrayAvr, "Prosjek7dana");
-    Chart("ChartPoDanima", "Color.Series", { "#DBAE58", "#000000"}); 
-    //Chart("ChartPoDanima", "Margins", {60, 20, 0, 30});
-    //
-    cntr2= 0;
-    setLast10InvoicesDataGrid();
-    Format("T10IZNOSZ_AR", "nofd");
-    Format("T10IZNOSMJ_AR", "nofd");
-    DisplayArray("dgRacuniLast", "close");
-    DisplayArraySetup("dgRacuniLast", counterFld: cntr2, activeElements: Size(sqlResult2) - 1, maxElements: 10);
-    //
-	DisplayArray("dgRacuniMjesec", "close");
-	//DisplayArraySetup("dgRacuniMjesec", counterFld: "cntr3", activeElements: Size(sqlResult) - 1, maxElements: 10);
-    setTop10InvoicesDataGrid();
-    cntr3= 0;
-	DisplayArraySetup("dgRacuniMjesec", counterFld: cntr3, activeElements: Size(sqlResult) - 1, maxElements: 10);
-    cursor("dflt");
+    // //
+    // Chart("ChartPoDanima", "init");
+    // //Chart("ChartPoDanima", "seriesType", "lineSeries");
+    // Chart("ChartPoDanima", "title", "Po Danima");
+    // //Chart("ChartPoDanima", "labels","y", 12);
+    // Chart("ChartPoDanima", "labels","x", 12,  {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31"});
+    // //Chart("ChartPoDanima", "labels", arrayDani);
+    // //Chart("ChartPoDanima", "xlabelsRotation", 0);
+    // Chart("ChartPoDanima", "SeparatorStep", 1);
+    // Chart("ChartPoDanima", "values", "line", arrayVrijednosti, "Dnevno");
+    // Chart("ChartPoDanima", "values", "line", arrayAvr, "Prosjek7dana");
+    // Chart("ChartPoDanima", "Color.Series", { "#DBAE58", "#000000"}); 
+    // //Chart("ChartPoDanima", "Margins", {60, 20, 0, 30});
+    // //
+    // cntr2= 0;
+    // setLast10InvoicesDataGrid();
+    // Format("T10IZNOSZ_AR", "nofd");
+    // Format("T10IZNOSMJ_AR", "nofd");
+    // DisplayArray("dgRacuniLast", "close");
+    // DisplayArraySetup("dgRacuniLast", counterFld: cntr2, activeElements: Size(sqlResult2) - 1, maxElements: 10);
+    // //
+	// DisplayArray("dgRacuniMjesec", "close");
+	// //DisplayArraySetup("dgRacuniMjesec", counterFld: "cntr3", activeElements: Size(sqlResult) - 1, maxElements: 10);
+    // setTop10InvoicesDataGrid();
+    // cntr3= 0;
+	// DisplayArraySetup("dgRacuniMjesec", counterFld: cntr3, activeElements: Size(sqlResult) - 1, maxElements: 10);
+    // cursor("dflt");
 }
 
 function buty@clicked()
@@ -57,136 +57,8 @@ function buty@clicked()
     Chart("ChartPoMjesecima", "Color.Series", { "Blue", "Green"}); 
 	DisplayArraySetup("dgRacuniMjesec", counterFld: cntr3, activeElements: Size(sqlResult) - 1, maxElements: 10);
 }    
-/*
-function setLast10InvoicesDataGrid()
-{
-    MessageBox('LLLL');    
-  	t10Iznosz_ar ={};
-    MessageBox('mm00');    
-	t10Namez_ar = {};
-    MessageBox('mm11');    
-	t10Cntrz_ar ={};
-    MessageBox('mm22');    
-	t10Datumz_ar={};
-    MessageBox('mm33');    
-	t10Timez_ar ={};
-    MessageBox('mm44');    
-	t10Racunz_ar ={};
-        MessageBox('mm55');    
 
-	if (t10datrac)
-	{
-		//za sada ne koristimo ovo!
-    MessageBox('mmmm');    
-		sql_str =  "SELECT TOP 10 nkpr_gl_brotp , nkpr_gl_cusnme , CONVERT(char(8) ,  nkpr_gl_esd , 3) AS datecr , convert(char(8) , nkpr_gl_timecr , 20) as nkpr_gl_timecr ,  ";
-		sql_str += " CAST( CASE WHEN nkpr_gl_dviza =  'D' THEN nkpr_gl_tecaj * nkpr_gl_total ELSE nkpr_gl_total END as decimal (10,2))  AS nkpr_gl_total " ;
-    MessageBox('nnnn');    
-	}
-	else 
-	{
-           MessageBox('nn11');    
- 
-		sql_str =  "SELECT TOP 100 nkpr_gl_brotp , nkpr_gl_cusnme , CONVERT(char(8) ,  nkpr_gl_datecr , 3) AS datecr , convert(char(8) , nkpr_gl_timecr , 20) as nkpr_gl_timecr ,  ";
-		sql_str += " CAST( CASE WHEN nkpr_gl_dviza =  'D' THEN nkpr_gl_tecaj * nkpr_gl_total ELSE nkpr_gl_total END as decimal (10,2))  AS nkpr_gl_total " ;
-	}
-	sql_str +=  " FROM " + trenutnaGodinaBaza + ".dbo.nkprglot" ;
-	sql_str +=  " WHERE YEAR(nkpr_gl_esd) =  " + ovagod_h  ;
-	if ( do_mjeseca)
-	{
-		sql_str +=  " AND month(nkpr_gl_esd)<=  " + mjesec_h  ;
-	}
-	else 
-	{
-		sql_str += " AND month(nkpr_gl_esd) =  " + mjesec_h;
-		}
-        MessageBox('oooo');    
-    
-	if (t10datrac == false)
-		{
-		sql_str += " ORDER BY nkpr_gl_esd DESC , nkpr_gl_timecr DESC" ;
-	}
-	else 
-	{
-		sql_str += " ORDER BY nkpr_gl_datecr DESC , nkpr_gl_timecr DESC" ;
-	}
-    MessageBox("tttt: "+sql_str);
-         SaveFile(sql_str);
 
-	try	{
-		sqlResult = sqlQuery(sql_str);
-	}catch(exc){
-		MessageBox(exc);
-	}
-    for ( i = 1; i < Size(sqlResult); i++ )
-    {      
-
-        //nkpr_gl_brotp = sqlResult[i][0];  
-        t10Namez_ar[i - 1] = sqlResult[i][1];  
-        t10Iznosz_ar[i - 1] =  sqlResult[i][4];
-        t10Cntrz_ar[i - 1] =  i;
-        t10Datumz_ar[i - 1] =  sqlResult[i][2];
-        t10Racunz_ar[i - 1] =  sqlResult[i][0]; 
-        t10Timez_ar[i - 1] =  sqlResult[i][3];
-    }
-}
-*/
-/*
-function setTop10InvoicesDataGrid()
-{
-	t10NameMj_ar={}; // type a size 30 array 10;
-	t10CntrMj_ar={}; // type i size 2 array 10;
-	t10DatumMj_ar={}; // type d size 8 array 10;
-	t10RacunMj_ar={}; // type r size 8 array 10;
-    //t10IznosMj_ar={}; 
-	sql_str =  "SELECT TOP 10 nkpr_gl_brotp , nkpr_gl_cusnme , CONVERT(char(8) ,  nkpr_gl_esd , 3) AS datecr , " ;
-	//sql_str += " CAST(CASE WHEN nkpr_gl_dviza =  'D' THEN nkpr_gl_tecaj * nkpr_gl_total ELSE nkpr_gl_total END as decimal (10,2)) AS nkpr_gl_total ";
-	sql_str += " CASE WHEN nkpr_gl_dviza =  'D' THEN nkpr_gl_tecaj * nkpr_gl_total ELSE nkpr_gl_total END AS nkpr_gl_total ";
-	sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkprglot" ;
-	if ( regija != "" )
-	{
-		sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart g ON nkpr_gl_cuscod =  g.nksc_partcode" ;
-	}
-	sql_str += " WHERE 1 = 1" ;
-	if ( mjesec_h != "" )
-		{
-		if (do_mjeseca)
-		{
-			sql_str += " AND month(nkpr_gl_esd)<=  " + mjesec_h ;
-			sql_str += " AND YEAR(nkpr_gl_esd) =  " + ovagod_h ;
-		}
-		else 
-		{
-			sql_str += " AND month(nkpr_gl_esd) =  " + mjesec_h ;
-			sql_str += " AND YEAR(nkpr_gl_esd) =  " + ovagod_h ;
-			}
-	}
-	if ( regija != "" )
-	{
-		sql_str += " AND g.nksc_regija =  '" + regija + "'";
-	}
-	sql_str += " ORDER BY CASE WHEN nkpr_gl_dviza =  'D' THEN nkpr_gl_tecaj * nkpr_gl_total ELSE nkpr_gl_total END DESC";
-	
-	try	{
-		sqlResult = sqlQuery(sql_str);
-	}catch(exc){
-		MessageBox(exc);
-	}
-
-	for ( i = 1; i < Size(sqlResult); i++ )
-	{      
-		nkpr_gl_brotp = sqlResult[i][0];  
-		nkpr_gl_cusnme = sqlResult[i][1];
-		nkpr_gl_esd = sqlResult[i][2];
-		nkpr_gl_total= sqlResult[i][3];
-		t10NameMj_ar[i - 1] =  nkpr_gl_cusnme;
-		t10IznosMj_ar[i - 1] =  nkpr_gl_total;
-		t10CntrMj_ar[i - 1] =  i;
-		t10DatumMj_ar[i - 1] =  nkpr_gl_esd;
-		t10RacunMj_ar[i - 1] =  nkpr_gl_brotp;
-	}        
-
-}
-*/
 function setChartByDaysOfMonth()
 {
     sql_str = "WITH cte AS (";

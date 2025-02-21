@@ -7,6 +7,7 @@ Import(strTrim(mpath()) + "CSCS.Math.dll");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbimka_inc_lists.cscs") : strTrim(tpath()) + "wxbimka_inc_lists.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbimka_inc_a.cscs") : strTrim(tpath()) + "wxbimka_inc_a.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbimka_inc_b.cscs") : strTrim(tpath()) + "wxbimka_inc_b.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbimka_inc_c.cscs") : strTrim(tpath()) + "wxbimka_inc_c.cscs");
 // include(strTrim(tpath()) + "wxbimka_inc_lists.cscs");
 // include(strTrim(tpath()) + "wxbimka_inc_a.cscs");
 // include(strTrim(tpath()) + "wxbimka_inc_b.cscs");
@@ -68,8 +69,20 @@ function Wxbimka_onDisplay()
     //tableHndl = OPENV("KPSYMSTR","B"+companycode); //, coGet());
     //InvHeadHndl = OPENV("nkprglot","B"+companycode); //, coGet());
     //InvlineHndl = OPENV("nkprlnot","B"+companycode); //, coGet());
-    sveDrzave_dn= true;
-    robaUsl_dn= true;
+    
+    sve_dn = true;
+
+    
+    comboItems2 = {};
+    for(i = 1; i <= 12 ; i++){
+        comboItems2.add(i);
+    }
+    AddWidgetData("comboBoxMjesec1_odMjeseca", comboItems2);
+    // SetWidgetOptions("comboBoxMjesec1_odMjeseca", "SelectedIndex", int(Now("MM")) - 1);
+    SetWidgetOptions("comboBoxMjesec1_odMjeseca", "SelectedIndex", 0);
+    
+    AddWidgetData("comboBoxMjesec1_doMjeseca", comboItems2);
+
     postotakMj = 0;
     postotak= 0;
     //skladiste = 0;
@@ -81,16 +94,24 @@ function Wxbimka_onDisplay()
         imeFirme = sqlResult[1][0].trim(); // KAMEND
         ovagod_h = sqlResult[1][1].trim(); // 2022
     }    
+
+    if(int(ovagod_h) < int(now("yyyy"))){
+        SetWidgetOptions("comboBoxMjesec1_doMjeseca", "SelectedIndex", 11);
+    }
+    else{
+        SetWidgetOptions("comboBoxMjesec1_doMjeseca", "SelectedIndex", int(Now("MM")) - 1);
+    }
+
     lani_h = string(int(ovagod_h) - 1); // 2
     trenutnaGodinaBaza = sqlResult[1][2].trim(); // ime baze
     sqlQueryString = " SELECT TOP 1 kpsy_comp_name,kpsy_po_freight,FORMAT([KPSY_FISCAL_YR], 'yyyy-MM-dd'),kpsy_ku_pnb FROM " + trenutnaGodinaBaza + ".[dbo].[KPSYMSTR]";
     try
         {
-        sqlResult = sqlQuery(sqlQueryString);
+            sqlResult = sqlQuery(sqlQueryString);
         }
     catch(exc)
         {
-        MessageBox(exc);
+            MessageBox(exc);
         }
     if (size(sqlResult) > 1)
     {
@@ -101,7 +122,7 @@ function Wxbimka_onDisplay()
         local = sqlResult[1][3];
     } 
     neto_dn = true;
-    SetWindowOptions("wxbimkaWindow", "title", "Dashboard - Otpremnice za " + nazivFirme+" - " + ovagod_h+ ". godina");
+    SetWindowOptions("wxbimkaWindow", "title", "Dashboard - Zalihe za " + nazivFirme + " - " + ovagod_h + ". godina");
 
     //kasnije zamijenit sa funkcijom, kada se bude koristi adictionary
     sqlQueryString = "select SY_CC_DBASE from " + CommonDBGet() + ".dbo.NKSYCCYR WHERE SY_CC_USER = '" + imeFirme + "' AND SY_CC_YEAR = '" + (int(ovagod_h) - 1) + "'";
@@ -143,8 +164,8 @@ function Wxbimka_onDisplay()
     proslimjesec0X = proslimjesec.length == 1 ? "0" + proslimjesec : proslimjesec;
     do_mjeseca = true;
     
-    comboItems = {"SVI TIPOVI", "STANDARDNI", "PREDUJAM", "VL.POTROŠNJA", "REKLAMIRANI", "ODOBRENJE", "TEREĆENJE", "NEZARAČUNANI OBR.", "STORNO"};
-    AddWidgetData(cbTipRacuna, comboItems);
+    comboItems = {"SVI IZVORI", "POČETNO STANJE", "TEMELJNICE R/M", "IZLAZNI RAČUN", "OTPREMNICE", "POS KASA", "PRIMKE U NABAVI", "ULAZNI RAČUN", "SASTAVNICE", "RASTAVNICE"};
+    AddWidgetData(cbIzvorDokumenta, comboItems);
     
     faktSve = true;
     faktDa = false;
@@ -166,7 +187,7 @@ function Wxbimka_onDisplay()
 
     pripremljeno = false;
     setFocus("gbPripremi");
-    tip_racuna= "SVI TIPOVI";
+    tip_racuna = "SVI IZVORI";
     gradoviRB= true;
 }
 
@@ -174,37 +195,41 @@ function gbPripremi@clicked()
 {
     cursor("wait");
     gl_oznaka= "";
-    if (tip_racuna== "STANDARDNI")
+    if (tip_racuna== "POČETNO STANJE")
     {
-        GL_oznaka= "S";
+        GL_oznaka= "GO";
     }
-    elif (tip_racuna== "PREDUJAM")
+    elif (tip_racuna== "TEMELJNICE R/M")
     {
-        GL_oznaka= "P";
+        GL_oznaka= "UD";
     }    
-    elif (tip_racuna== "VL.POTROŠNJA")
+    elif (tip_racuna== "IZLAZNI RAČUN")
     {
-        GL_oznaka= "V";
+        GL_oznaka= "PR";
     }    
-    elif (tip_racuna== "REKLAMIRANI")
+    elif (tip_racuna== "OTPREMNICE")
     {
-        GL_oznaka= "R";
+        GL_oznaka= "OT";
     }    
-    elif (tip_racuna== "ODOBRENJE")
+    elif (tip_racuna== "POS KASA")
     {
-        GL_oznaka= "O";
+        GL_oznaka= "KS";
     }    
-    elif (tip_racuna== "TEREĆENJE")
+    elif (tip_racuna== "PRIMKE U NABAVI")
     {
-        GL_oznaka= "T";
+        GL_oznaka= "PK";
     }    
-    elif (tip_racuna== "NEZARAČUNANI OBR.")
+    elif (tip_racuna== "ULAZNI RAČUN")
     {
-        GL_oznaka= "N";
+        GL_oznaka= "UR";
     }    
-    elif (tip_racuna== "STORNO")
+    elif (tip_racuna== "SASTAVNICE")
     {
-        GL_oznaka= "X";
+        GL_oznaka= "SA";
+    }    
+    elif (tip_racuna== "RASTAVNICE")
+    {
+        GL_oznaka= "RA";
     }    
     else
     {
@@ -229,7 +254,7 @@ function end(){
     pripremljeno = true;
 }
 
-function gbProdaja1@clicked()
+function gbZalihe@clicked()
 {
     if (pripremljeno) 
     {
@@ -242,7 +267,7 @@ function gbProdaja1@clicked()
     }    
 }
 
-function gbProdaja2@clicked()
+function gbUlaz@clicked()
 {
     if (pripremljeno)
     {
@@ -250,6 +275,24 @@ function gbProdaja2@clicked()
     //     (
     //         lock{
             result = modalWindow(strTrim(tpath()) +"wxbimkab.xaml");
+    //        }
+    //    )
+    }
+    else
+    {
+        MessageBox("Molim pripremite osnovne podatke prije nastavka!"); 
+        setfocus("gbPripremi");
+    }    
+}
+
+function gbIzlaz@clicked()
+{
+    if (pripremljeno)
+    {
+    //     thread
+    //     (
+    //         lock{
+            result = modalWindow(strTrim(tpath()) +"wxbimkac.xaml");
     //        }
     //    )
     }

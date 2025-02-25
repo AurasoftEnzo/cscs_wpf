@@ -194,48 +194,48 @@ function Wxbimka_onDisplay()
 function gbPripremi@clicked()
 {
     cursor("wait");
-    gl_oznaka= "";
-    if (tip_racuna== "POČETNO STANJE")
+    gl_oznaka = "";
+    if (tip_racuna == "POČETNO STANJE")
     {
-        GL_oznaka= "GO";
+        GL_oznaka = "GO";
     }
-    elif (tip_racuna== "TEMELJNICE R/M")
+    elif (tip_racuna == "TEMELJNICE R/M")
     {
-        GL_oznaka= "UD";
+        GL_oznaka = "UD";
     }    
-    elif (tip_racuna== "IZLAZNI RAČUN")
+    elif (tip_racuna == "IZLAZNI RAČUN")
     {
-        GL_oznaka= "PR";
+        GL_oznaka = "PR";
     }    
-    elif (tip_racuna== "OTPREMNICE")
+    elif (tip_racuna == "OTPREMNICE")
     {
-        GL_oznaka= "OT";
+        GL_oznaka = "OT";
     }    
-    elif (tip_racuna== "POS KASA")
+    elif (tip_racuna == "POS KASA")
     {
-        GL_oznaka= "KS";
+        GL_oznaka = "KS";
     }    
-    elif (tip_racuna== "PRIMKE U NABAVI")
+    elif (tip_racuna == "PRIMKE U NABAVI")
     {
-        GL_oznaka= "PK";
+        GL_oznaka = "PK";
     }    
-    elif (tip_racuna== "ULAZNI RAČUN")
+    elif (tip_racuna == "ULAZNI RAČUN")
     {
-        GL_oznaka= "UR";
+        GL_oznaka = "UR";
     }    
-    elif (tip_racuna== "SASTAVNICE")
+    elif (tip_racuna == "SASTAVNICE")
     {
-        GL_oznaka= "SA";
+        GL_oznaka = "SA";
     }    
-    elif (tip_racuna== "RASTAVNICE")
+    elif (tip_racuna == "RASTAVNICE")
     {
-        GL_oznaka= "RA";
+        GL_oznaka = "RA";
     }    
     else
     {
-        GL_oznaka= "";
+        GL_oznaka = "";
     } 
-    AsyncCall("setChartByMonth", "callSetHorizontalBars");
+    AsyncCall("setChartByMonth", "end");
 }
 function callSetHorizontalBars(){
     AsyncCall("setHorizontalBars", "callSetWeekComparison");

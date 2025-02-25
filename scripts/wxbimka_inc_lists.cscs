@@ -20,6 +20,13 @@
     define mjesecOd, mjesecDo type a size 2;
 
 //**************
+//**************
+//**************
+
+    define ProsjecneZalihePoMjesecima type n size 12 dec 2 array 24;
+    define ProsjecneZalihePoMjesecimaLabels type a size 120 array 24;
+
+//**************
 
     DEFINE ratio type n size 10 dec 2;
 
@@ -381,138 +388,138 @@ function cePartner@post()
 }
 
 //==============================================================
-function ceIsporuka@clicked()
-{
-    if(partner.length == 0){
-        MessageBox("Molim unesite šifru partnera za izbor isporučnog mjesta.");
-        return;
-    }
+// function ceIsporuka@clicked()
+// {
+//     if(partner.length == 0){
+//         MessageBox("Molim unesite šifru partnera za izbor isporučnog mjesta.");
+//         return;
+//     }
 
-    //F2ListQueryString = "SELECT [NKSP_AD_CODEINT]  ,[NKSP_ad_naziv1] FROM  " + trenutnaGodinaBaza + ".[dbo].[NKSPADRS] where nksp_ad_code = " + partner + " AND NKSP_AD_CODEINT like '%{var1}%' and NKSP_AD_NAZIV1 like '%{var2}%' ORDER BY nksp_ad_codeint";    
+//     //F2ListQueryString = "SELECT [NKSP_AD_CODEINT]  ,[NKSP_ad_naziv1] FROM  " + trenutnaGodinaBaza + ".[dbo].[NKSPADRS] where nksp_ad_code = " + partner + " AND NKSP_AD_CODEINT like '%{var1}%' and NKSP_AD_NAZIV1 like '%{var2}%' ORDER BY nksp_ad_codeint";    
     
-    F2ListQueryString = "WITH isporucnaMjesta AS("
-    + " SELECT DISTINCT nkpr_gl_shpcod, TRIM(nksp_ad_naziv1) + ' ' + TRIM(nksp_ad_naziv) as naziv "
-    + " FROM " + trenutnaGodinaBaza + ".[dbo].nkprglot "
-    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkspadrs] ON nksp_ad_codeint = nkpr_gl_shpcod AND nksp_ad_code = nkpr_gl_cuscod"
-    + " WHERE nksp_ad_code = '" + partner + "' AND nksp_ad_codeint LIKE '%{var1}%' AND (nksp_ad_naziv1 LIKE '%{var2}%' OR nksp_ad_naziv LIKE '%{var2}%') "
-    + " AND YEAR(nkpr_gl_esd) = " + ovagod_h
-    + ")"
-    + " SELECT ROW_NUMBER() OVER(ORDER BY nkpr_gl_shpcod ASC) AS RowNumber, nkpr_gl_shpcod, naziv"
-    + " FROM isporucnaMjesta ORDER BY RowNumber";
+//     F2ListQueryString = "WITH isporucnaMjesta AS("
+//     + " SELECT DISTINCT nkpr_gl_shpcod, TRIM(nksp_ad_naziv1) + ' ' + TRIM(nksp_ad_naziv) as naziv "
+//     + " FROM " + trenutnaGodinaBaza + ".[dbo].nkprglot "
+//     + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkspadrs] ON nksp_ad_codeint = nkpr_gl_shpcod AND nksp_ad_code = nkpr_gl_cuscod"
+//     + " WHERE nksp_ad_code = '" + partner + "' AND nksp_ad_codeint LIKE '%{var1}%' AND (nksp_ad_naziv1 LIKE '%{var2}%' OR nksp_ad_naziv LIKE '%{var2}%') "
+//     + " AND YEAR(nkpr_gl_esd) = " + ovagod_h
+//     + ")"
+//     + " SELECT ROW_NUMBER() OVER(ORDER BY nkpr_gl_shpcod ASC) AS RowNumber, nkpr_gl_shpcod, naziv"
+//     + " FROM isporucnaMjesta ORDER BY RowNumber";
 
-    sifraFieldPointer -> isporuka;
-    NazivFieldPointer -> isporukaNaziv;
+//     sifraFieldPointer -> isporuka;
+//     NazivFieldPointer -> isporukaNaziv;
 
-    windowTitle = "F2 lista isporuka za partnera: " + partner;
-    headersArray = {"R.br.", "Šifra isporuke", "Naziv isporučnog mjesta"};
-    ShowF2List();
+//     windowTitle = "F2 lista isporuka za partnera: " + partner;
+//     headersArray = {"R.br.", "Šifra isporuke", "Naziv isporučnog mjesta"};
+//     ShowF2List();
     
-    if(&sifraFieldPointer != ""){
-        isporuka = strtrim(&sifraFieldPointer);
-        isporukaNaziv = (&NazivFieldPointer);
-    }
-    else
-    {
-        isporuka = "";
-        isporukaNaziv = "";
-    }
-    searchSifra = "";
-    searchNaziv = "";
-}
+//     if(&sifraFieldPointer != ""){
+//         isporuka = strtrim(&sifraFieldPointer);
+//         isporukaNaziv = (&NazivFieldPointer);
+//     }
+//     else
+//     {
+//         isporuka = "";
+//         isporukaNaziv = "";
+//     }
+//     searchSifra = "";
+//     searchNaziv = "";
+// }
 
-function ceIsporuka@post()
-{
-    if (isporuka == "")
-    {
-        isporukaNaziv = "";
-    }
-    else{
-        if(partner.length == 0){
-            MessageBox("Molim unesite šifru partnera za izbor isporučnog mjesta.");
-            isporuka = "";
-            isporukaNaziv = "";
-            //SetFocus("cePartner");
-            return;
-        }
+// function ceIsporuka@post()
+// {
+//     if (isporuka == "")
+//     {
+//         isporukaNaziv = "";
+//     }
+//     else{
+//         if(partner.length == 0){
+//             MessageBox("Molim unesite šifru partnera za izbor isporučnog mjesta.");
+//             isporuka = "";
+//             isporukaNaziv = "";
+//             //SetFocus("cePartner");
+//             return;
+//         }
 
-        sqlResult = {};
-        sqlString = "SELECT TOP 1 TRIM(nksp_ad_naziv1) + ' ' + TRIM(nksp_ad_naziv) as naziv FROM  " + trenutnaGodinaBaza + ".[dbo].[nkspadrs] WHERE nksp_ad_code = '" + partner + "' AND nksp_ad_codeint = '" + isporuka + "' ORDER BY nksp_ad_codeint";
-        try{
-            sqlResult = SqlQuery(sqlString);
-        }catch(ex){
-            MessageBox(ex);
-        }
-        if(sqlResult.length > 1){
-            isporukaNaziv = sqlResult[1][0];
-        }
-        else{
-            MessageBox("Isporučno mjesto zadanog partnera ne postoji.");
-            isporuka = "";
-            isporukaNaziv = "";
-            return false;
-        }
-    }
-}
+//         sqlResult = {};
+//         sqlString = "SELECT TOP 1 TRIM(nksp_ad_naziv1) + ' ' + TRIM(nksp_ad_naziv) as naziv FROM  " + trenutnaGodinaBaza + ".[dbo].[nkspadrs] WHERE nksp_ad_code = '" + partner + "' AND nksp_ad_codeint = '" + isporuka + "' ORDER BY nksp_ad_codeint";
+//         try{
+//             sqlResult = SqlQuery(sqlString);
+//         }catch(ex){
+//             MessageBox(ex);
+//         }
+//         if(sqlResult.length > 1){
+//             isporukaNaziv = sqlResult[1][0];
+//         }
+//         else{
+//             MessageBox("Isporučno mjesto zadanog partnera ne postoji.");
+//             isporuka = "";
+//             isporukaNaziv = "";
+//             return false;
+//         }
+//     }
+// }
 
-//===================================================================
-function ceRegija@clicked()
-{
-    //F2ListQueryString = "SELECT [KSDU_SF_CODE], [KSDU_SF_OPIS1] FROM  " + trenutnaGodinaBaza + ".[dbo].[KPSYSIFA] WHERE [KSDU_SF_TIP] ='V' and KSDU_SF_CODE like '%{var1}%' and KSDU_SF_OPIS1 like '%{var2}%' ORDER BY ksdu_sf_code";
+// //===================================================================
+// function ceRegija@clicked()
+// {
+//     //F2ListQueryString = "SELECT [KSDU_SF_CODE], [KSDU_SF_OPIS1] FROM  " + trenutnaGodinaBaza + ".[dbo].[KPSYSIFA] WHERE [KSDU_SF_TIP] ='V' and KSDU_SF_CODE like '%{var1}%' and KSDU_SF_OPIS1 like '%{var2}%' ORDER BY ksdu_sf_code";
     
-    F2ListQueryString = "WITH regije AS("
-    + " SELECT DISTINCT ksdu_sf_code, ksdu_sf_opis1 "
-    + " FROM " + trenutnaGodinaBaza + ".[dbo].[nkprglot] "
-    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkscpart] ON nksc_partcode = nkpr_gl_cuscod "
-    + " LEFT JOIN " + CommonDBGet() + ".[dbo].[kpsysifa] ON nksc_regija = ksdu_sf_code "
-    + " WHERE ksdu_sf_tip ='V' AND ksdu_sf_code LIKE '%{var1}%' AND ksdu_sf_opis1 LIKE '%{var2}%' "
-    + " AND YEAR(nkpr_gl_esd) = " + ovagod_h
-    + ")"
-    + " SELECT ROW_NUMBER() OVER(ORDER BY ksdu_sf_code ASC) AS RowNumber, ksdu_sf_code, ksdu_sf_opis1"
-    + " FROM regije ORDER BY RowNumber";
+//     F2ListQueryString = "WITH regije AS("
+//     + " SELECT DISTINCT ksdu_sf_code, ksdu_sf_opis1 "
+//     + " FROM " + trenutnaGodinaBaza + ".[dbo].[nkprglot] "
+//     + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkscpart] ON nksc_partcode = nkpr_gl_cuscod "
+//     + " LEFT JOIN " + CommonDBGet() + ".[dbo].[kpsysifa] ON nksc_regija = ksdu_sf_code "
+//     + " WHERE ksdu_sf_tip ='V' AND ksdu_sf_code LIKE '%{var1}%' AND ksdu_sf_opis1 LIKE '%{var2}%' "
+//     + " AND YEAR(nkpr_gl_esd) = " + ovagod_h
+//     + ")"
+//     + " SELECT ROW_NUMBER() OVER(ORDER BY ksdu_sf_code ASC) AS RowNumber, ksdu_sf_code, ksdu_sf_opis1"
+//     + " FROM regije ORDER BY RowNumber";
 
-    sifraFieldPointer -> regija;
-    NazivFieldPointer -> RegijaNaziv;
+//     sifraFieldPointer -> regija;
+//     NazivFieldPointer -> RegijaNaziv;
 
-    windowTitle = "F2 lista Regija";
-    headersArray = {"R.br.", "Šifra Regije", "Naziv Regije"};
-    ShowF2List();
-    if(&sifraFieldPointer != ""){
-        regija = strtrim(&sifraFieldPointer);
-        regijaNaziv = &NazivFieldPointer;
-    }
-    else{
-        regija = "";
-        regijaNaziv = "";
-    }
-    searchSifra = "";
-    searchNaziv = "";
-}
+//     windowTitle = "F2 lista Regija";
+//     headersArray = {"R.br.", "Šifra Regije", "Naziv Regije"};
+//     ShowF2List();
+//     if(&sifraFieldPointer != ""){
+//         regija = strtrim(&sifraFieldPointer);
+//         regijaNaziv = &NazivFieldPointer;
+//     }
+//     else{
+//         regija = "";
+//         regijaNaziv = "";
+//     }
+//     searchSifra = "";
+//     searchNaziv = "";
+// }
 
-function ceRegija@post()
-{
-    if (regija == "")
-    {
-        regijaNaziv = "";
-    }
-    else{
-        sqlResult = {};
-        sqlString = "SELECT TOP 1 [ksdu_sf_opis1] FROM  " + CommonDBGet() + ".[dbo].[kpsysifa] WHERE [ksdu_sf_tip] ='V' and ksdu_sf_code = '" + regija + "' ORDER BY ksdu_sf_code";
-        try{
-            sqlResult = SqlQuery(sqlString);
-        }catch(ex){
-            MessageBox(ex);
-        }
-        if(sqlResult.length > 1){
-            regijaNaziv = sqlResult[1][0];
-        }
-        else{
-            MessageBox("Regija ne postoji.");
-            regija = "";
-            regijaNaziv = "";
-            return false;
-        }
-    }
-}
+// function ceRegija@post()
+// {
+//     if (regija == "")
+//     {
+//         regijaNaziv = "";
+//     }
+//     else{
+//         sqlResult = {};
+//         sqlString = "SELECT TOP 1 [ksdu_sf_opis1] FROM  " + CommonDBGet() + ".[dbo].[kpsysifa] WHERE [ksdu_sf_tip] ='V' and ksdu_sf_code = '" + regija + "' ORDER BY ksdu_sf_code";
+//         try{
+//             sqlResult = SqlQuery(sqlString);
+//         }catch(ex){
+//             MessageBox(ex);
+//         }
+//         if(sqlResult.length > 1){
+//             regijaNaziv = sqlResult[1][0];
+//         }
+//         else{
+//             MessageBox("Regija ne postoji.");
+//             regija = "";
+//             regijaNaziv = "";
+//             return false;
+//         }
+//     }
+// }
 
 //===================================================================
 function ceKategorija@clicked()
@@ -637,6 +644,7 @@ function ceKlasa@post()
 }
 
 //====================================================================
+// !!!!!!!!!!!!!!!!!!!!!!!
 // neOrganizacijskaJedinica
 function neKomercijalist@clicked()
 {
@@ -670,6 +678,7 @@ function neKomercijalist@clicked()
     searchNaziv = "";
 }
 
+// !!!!!!!!!!!!!!!!!!!!!!!
 // neOrganizacijskaJedinica
 function neKomercijalist@post()
 {
@@ -863,6 +872,33 @@ function filterPart()
 	// 	}
 	// }
 
+
+//-------------------------------------------
+
+    //Vrsta artikala
+    if (sve_dn)
+	{
+        sql_str += "";
+	}
+    elif (standardni_dn)
+	{
+        sql_str += " AND ARTI_TIP = 'R' ";
+	}
+    elif (gotoviProizvodi_dn)
+	{
+        sql_str +=  " AND ARTI_TIP = 'G' ";
+	}
+    elif (poluproizvodi_dn)
+	{
+        sql_str += " AND ARTI_TIP = 'S' ";
+	}
+
+    
+    //Izvor dokumenta
+    if (GL_oznaka != "")
+	{
+        sql_str += " AND RMPR_IZVOR_DOK = '" + GL_oznaka + "' ";
+	}
 }
 
 function filterPart2()

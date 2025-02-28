@@ -102,6 +102,8 @@ function Wxbimka_onDisplay()
         SetWidgetOptions("comboBoxMjesec1_doMjeseca", "SelectedIndex", int(Now("MM")) - 1);
     }
 
+    SetWidgetOptions("StanjeZalihaNaLabel", "Content", "Stanje zaliha: " + mjesecDo + ". mj.");
+
     lani_h = string(int(ovagod_h) - 1); // 2
     trenutnaGodinaBaza = sqlResult[1][2].trim(); // ime baze
     sqlQueryString = " SELECT TOP 1 kpsy_comp_name,kpsy_po_freight,FORMAT([KPSY_FISCAL_YR], 'yyyy-MM-dd'),kpsy_ku_pnb FROM " + trenutnaGodinaBaza + ".[dbo].[KPSYMSTR]";
@@ -121,7 +123,7 @@ function Wxbimka_onDisplay()
         fiscal_yr = sqlResult[1][2];
         local = sqlResult[1][3];
     } 
-    neto_dn = true;
+    nabavna_dn = true;
     SetWindowOptions("wxbimkaWindow", "title", "Dashboard - Zalihe za " + nazivFirme + " - " + ovagod_h + ". godina");
 
     //kasnije zamijenit sa funkcijom, kada se bude koristi adictionary
@@ -191,9 +193,29 @@ function Wxbimka_onDisplay()
     gradoviRB= true;
 }
 
+function DisableButtons(){
+    SetWidgetOptions("gbPripremi", "IsEnabled", "false");
+    SetWidgetOptions("gbPrint", "IsEnabled", "false");
+    SetWidgetOptions("gbZalihe", "IsEnabled", "false");
+    SetWidgetOptions("gbUlaz", "IsEnabled", "false");
+    SetWidgetOptions("gbIzlaz", "IsEnabled", "false");
+    SetWidgetOptions("gbExit", "IsEnabled", "false");
+}
+
+function EnableButtons(){
+    SetWidgetOptions("gbPripremi", "IsEnabled", "true");
+    SetWidgetOptions("gbPrint", "IsEnabled", "true");
+    SetWidgetOptions("gbZalihe", "IsEnabled", "true");
+    SetWidgetOptions("gbUlaz", "IsEnabled", "true");
+    SetWidgetOptions("gbIzlaz", "IsEnabled", "true");
+    SetWidgetOptions("gbExit", "IsEnabled", "true");
+}
+
 function gbPripremi@clicked()
 {
+    DisableButtons();
     cursor("wait");
+
     gl_oznaka = "";
     if (tip_racuna == "POČETNO STANJE")
     {
@@ -235,8 +257,16 @@ function gbPripremi@clicked()
     {
         GL_oznaka = "";
     } 
-    AsyncCall("setChartByMonth", "end");
+    AsyncCall("setChartByMonth", "callSetStanje");
 }
+
+function callSetStanje(){
+    AsyncCall("setStanje", "callSetProsjecnoStanje");
+}
+function callSetProsjecnoStanje(){
+    AsyncCall("setProsjecnoStanje", "end");
+}
+//----
 function callSetHorizontalBars(){
     AsyncCall("setHorizontalBars", "callSetWeekComparison");
 }
@@ -252,6 +282,7 @@ function callSetSalesRatio(){
 function end(){
     cursor("dflt");
     pripremljeno = true;
+    EnableButtons();
 }
 
 function gbZalihe@clicked()
@@ -314,6 +345,287 @@ function gbExit@clicked()
     {    
         //comming from mainmenu
         quit;
+    }
+}
+
+function setStanje(){
+
+    RunOnMain("setStanje0");
+
+    // tekuća godina
+    sql_str = "SELECT";
+    
+    if (prodajna_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_obr, 2) ELSE -round(rmpr_cena_obr, 2) END), 2), 0) AS stanje";
+    }
+    elif (nabavna_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_uk, 2) ELSE -round(rmpr_cena_uk, 2) END), 2), 0) AS stanje";
+    }
+    elif (razlikaUCijeni_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_obr - rmpr_cena_uk, 2) ELSE -round(rmpr_cena_obr - rmpr_cena_uk, 2) END), 2), 0) AS stanje";
+    }
+    elif (tezina_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_tezina, 2) ELSE -round(rmpr_tezina, 2) END), 2), 0) AS stanje";
+    }
+    elif (mx3_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_metx3, 2) ELSE -round(rmpr_metx3, 2) END), 2), 0) AS stanje";
+    }
+    elif (mx2_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_metx2, 2) ELSE -round(rmpr_metx2, 2) END), 2), 0) AS stanje";
+    }
+    elif (met_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_met, 2) ELSE -round(rmpr_met, 2) END), 2), 0) AS stanje";
+    }
+    elif (kom_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_komada, 2) ELSE -round(rmpr_komada, 2) END), 2), 0) AS stanje";
+    }
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.NKMKARTI ON RMPR_ARTIKL = ARTI_ARTIKL";
+
+    sql_str += " WHERE year(rmpr_datum_dok) = " + ovagod_h;
+    sql_str += " AND month(rmpr_datum_dok) <= " + mjesecDo;
+    filterPart();
+
+    if ( proslaGodinaBaza != "" )
+    {
+        sql_str += " UNION ALL ";
+        sql_str += " SELECT";
+        
+        if (prodajna_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_obr, 2) ELSE -round(rmpr_cena_obr, 2) END), 2), 0) AS stanje";
+        }
+        elif (nabavna_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_uk, 2) ELSE -round(rmpr_cena_uk, 2) END), 2), 0) AS stanje";
+        }
+        elif (razlikaUCijeni_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_obr - rmpr_cena_uk, 2) ELSE -round(rmpr_cena_obr - rmpr_cena_uk, 2) END), 2), 0) AS stanje";
+        }
+        elif (tezina_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_tezina, 2) ELSE -round(rmpr_tezina, 2) END), 2), 0) AS stanje";
+        }
+        elif (mx3_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_metx3, 2) ELSE -round(rmpr_metx3, 2) END), 2), 0) AS stanje";
+        }
+        elif (mx2_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_metx2, 2) ELSE -round(rmpr_metx2, 2) END), 2), 0) AS stanje";
+        }
+        elif (met_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_met, 2) ELSE -round(rmpr_met, 2) END), 2), 0) AS stanje";
+        }
+        elif (kom_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_komada, 2) ELSE -round(rmpr_komada, 2) END), 2), 0) AS stanje";
+        }
+
+        sql_str += " FROM " + proslaGodinaBaza + ".dbo.NKMKPROM";
+        sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.NKMKARTI ON RMPR_ARTIKL = ARTI_ARTIKL";
+
+        sql_str += " WHERE year(rmpr_datum_dok) = " + lani_h;
+        sql_str += " AND month(rmpr_datum_dok) <= " + mjesecDo;
+        filterPart();
+    }
+       
+    try
+    {
+        //SaveFile(sql_str);
+        queryResult = sqlquery(SQL_str);
+    }
+    catch(exc)
+    {
+        MessageBox(exc);
+    }
+
+    RunOnMain("setStanje1");
+}
+
+
+function setStanje0(){
+    tot_ovagod = 0;
+    tot_lani = 0;
+
+    DaysInMonth(int(mjesecDo), int(ovagod_h));
+
+    SetWidgetOptions("StanjeZalihaNaLabel", "Content", "Stanje zaliha: " + mjesecDo + ". mj.");
+}
+
+function setStanje1(){
+
+    if (size(queryResult) > 1)
+    {
+        tot_ovagod = queryResult[1][0];
+    }
+
+    if (size(queryResult) > 2)
+    {
+        tot_lani = queryResult[2][0];
+    }
+
+    if (Math.Abs(tot_ovagod) > Math.Abs(tot_lani))
+    {
+        if(tot_lani != 0)
+        {
+            ratio = 1.00 * tot_ovagod/tot_lani;
+            HorizontalBar("HorizontalBarOG", "BarWidth", 90);
+            HorizontalBar("HorizontalBarLG", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarLG", "BarWidth", 0);
+            if(tot_ovagod != 0)
+            {
+                HorizontalBar("HorizontalBarOG", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarOG", "BarWidth", 0);
+            }
+        }
+    }
+    else
+    {
+        if(tot_ovagod != 0)
+        {
+            ratio = 1.00 * tot_lani/tot_ovagod;
+            HorizontalBar("HorizontalBarLG", "BarWidth", 90);
+            HorizontalBar("HorizontalBarOG", "BarWidth", 90/ratio);
+            // HorizontalBar("HorizontalBarOG1", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarOG", "BarWidth", 0);
+            if(tot_lani != 0)
+            {
+                HorizontalBar("HorizontalBarLG", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarLG", "BarWidth", 0);
+            }
+        }
+    }
+
+    bojeArray = {255, 126, 71};
+
+    Format("tot_ovagod", "nofd", recv: "tot_ovagod_string");
+    HorizontalBar("HorizontalBarOG", "Text", tot_ovagod_string);
+    HorizontalBar("HorizontalBarOG", "Color", bojeArray);
+    Format("tot_lani", "nofd", recv: "tot_lani_string");
+    HorizontalBar("HorizontalBarLG", "Text", tot_lani_string);
+    HorizontalBar("HorizontalBarLG", "Color", bojeArray);
+
+    if(tot_lani == 0)
+    {
+        postotak = 0;
+    }
+    else
+    {
+        postotak = Math.Round((100.00 * (tot_ovagod-tot_lani) /tot_lani), 2);
+    }
+    
+    // if(tot_prosliMj == 0)
+    // {
+    //     postotakMj = 0;
+    // }
+    // else
+    // {
+    //     postotakMj = Math.Round((100.00 *(tot_ovajmj-tot_prosliMj)/tot_prosliMj), 2);
+    // }
+}
+
+
+function setProsjecnoStanje()
+{
+    RunOnMain("setProsjecnoStanje1");
+}
+
+function setProsjecnoStanje1(){
+    prosjecnoStanjeZalihaOvagodina = 0;
+    prosjecnoStanjeZalihaProslaGodina = 0;
+
+    for(i = int(mjesecOd); i <= int(mjesecDo); i++){
+        prosjecnoStanjeZalihaOvagodina += ProsjecneZalihePoMjesecima[i - 1];
+        prosjecnoStanjeZalihaProslaGodina += ProsjecneZalihePoMjesecima[i + 11];
+    }
+
+    prosjecnoStanjeZalihaOvagodina = prosjecnoStanjeZalihaOvagodina / (int(mjesecDo) - int(mjesecOd) + 1);
+    prosjecnoStanjeZalihaProslaGodina = prosjecnoStanjeZalihaProslaGodina / (int(mjesecDo) - int(mjesecOd) + 1);
+
+
+    if (Math.Abs(prosjecnoStanjeZalihaOvagodina) > Math.Abs(prosjecnoStanjeZalihaProslaGodina))
+    {
+        if(prosjecnoStanjeZalihaProslaGodina != 0)
+        {
+            ratio = 1.00 * prosjecnoStanjeZalihaOvagodina/prosjecnoStanjeZalihaProslaGodina;
+            HorizontalBar("HorizontalBarPSZOG", "BarWidth", 90);
+            HorizontalBar("HorizontalBarPSZPG", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarPSZPG", "BarWidth", 0);
+            if(prosjecnoStanjeZalihaOvagodina != 0)
+            {
+                HorizontalBar("HorizontalBarPSZOG", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarPSZOG", "BarWidth", 0);
+            }
+        }
+    }
+    else
+    {
+        if(prosjecnoStanjeZalihaOvagodina != 0)
+        {
+            ratio = 1.00 * prosjecnoStanjeZalihaProslaGodina/prosjecnoStanjeZalihaOvagodina;
+            HorizontalBar("HorizontalBarPSZPG", "BarWidth", 90);
+            HorizontalBar("HorizontalBarPSZOG", "BarWidth", 90/ratio);
+            // HorizontalBar("HorizontalBarOG1", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarPSZOG", "BarWidth", 0);
+            if(prosjecnoStanjeZalihaProslaGodina != 0)
+            {
+                HorizontalBar("HorizontalBarPSZPG", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarPSZPG", "BarWidth", 0);
+            }
+        }
+    }
+
+    bojeArray = {255, 126, 71};
+
+    Format("prosjecnoStanjeZalihaOvagodina", "nofd", recv: "prosjecnoStanjeZalihaOvagodina_string");
+    HorizontalBar("HorizontalBarPSZOG", "Text", prosjecnoStanjeZalihaOvagodina_string);
+    HorizontalBar("HorizontalBarPSZOG", "Color", bojeArray);
+    Format("prosjecnoStanjeZalihaProslaGodina", "nofd", recv: "prosjecnoStanjeZalihaProslaGodina_string");
+    HorizontalBar("HorizontalBarPSZPG", "Text", prosjecnoStanjeZalihaProslaGodina_string);
+    HorizontalBar("HorizontalBarPSZPG", "Color", bojeArray);
+
+    if(prosjecnoStanjeZalihaProslaGodina == 0)
+    {
+        postotakProsjecnoStanje = 0;
+    }
+    else
+    {
+        postotakProsjecnoStanje = Math.Round((100.00 * (prosjecnoStanjeZalihaOvagodina-prosjecnoStanjeZalihaProslaGodina) /prosjecnoStanjeZalihaProslaGodina), 2);
     }
 }
 

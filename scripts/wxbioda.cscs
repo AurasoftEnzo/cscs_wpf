@@ -282,12 +282,31 @@ function wxbioda_onDisplay()
     cursor("dflt");
 }
 
+function DisableButtons(){
+    SetWidgetOptions("gbPripremi", "IsEnabled", "false");
+    SetWidgetOptions("gbPrint", "IsEnabled", "false");
+    SetWidgetOptions("gbPlace1", "IsEnabled", "false");
+    SetWidgetOptions("gbPlace2", "IsEnabled", "false");
+    SetWidgetOptions("gbPlace3", "IsEnabled", "false");
+    SetWidgetOptions("gbExit", "IsEnabled", "false");
+}
+
+function EnableButtons(){
+    SetWidgetOptions("gbPripremi", "IsEnabled", "true");
+    SetWidgetOptions("gbPrint", "IsEnabled", "true");
+    SetWidgetOptions("gbPlace1", "IsEnabled", "true");
+    SetWidgetOptions("gbPlace2", "IsEnabled", "true");
+    SetWidgetOptions("gbPlace3", "IsEnabled", "true");
+    SetWidgetOptions("gbExit", "IsEnabled", "true");
+}
+
 function gbPripremi@clicked()
 {
     // MessageBox("Mjesec1od: " + mjesec1od + ", mjesec1do: " + mjesec1do + ", godina1: " + godina1);
     // MessageBox(comboBoxMjesec1selected);
     //return;
 
+    DisableButtons();
     cursor("wait");
     
 
@@ -447,6 +466,7 @@ function end(){
 
     cursor("dflt");
     pripremljeno = true;
+    EnableButtons();
 }
 
 function gbDodatniIzbor@clicked()

@@ -190,8 +190,31 @@ function Wxbicfa_onDisplay()
     cbKontoInvestAkt = true;
 }
 
+function DisableButtons(){
+    SetWidgetOptions("gbPripremi", "IsEnabled", "false");
+    SetWidgetOptions("gbPrint", "IsEnabled", "false");
+    SetWidgetOptions("gbPriliv1", "IsEnabled", "false");
+    SetWidgetOptions("gbPriliv2", "IsEnabled", "false");
+    SetWidgetOptions("gbOdliv1", "IsEnabled", "false");
+    SetWidgetOptions("gbOdliv2", "IsEnabled", "false");
+    SetWidgetOptions("gbCashFlow2", "IsEnabled", "false");
+    SetWidgetOptions("gbExit", "IsEnabled", "false");
+}
+
+function EnableButtons(){
+    SetWidgetOptions("gbPripremi", "IsEnabled", "true");
+    SetWidgetOptions("gbPrint", "IsEnabled", "true");
+    SetWidgetOptions("gbPriliv1", "IsEnabled", "true");
+    SetWidgetOptions("gbPriliv2", "IsEnabled", "true");
+    SetWidgetOptions("gbOdliv1", "IsEnabled", "true");
+    SetWidgetOptions("gbOdliv2", "IsEnabled", "true");
+    SetWidgetOptions("gbCashFlow2", "IsEnabled", "true");
+    SetWidgetOptions("gbExit", "IsEnabled", "true");
+}
+
 function gbPripremi@clicked()
 {
+    DisableButtons();
     cursor("wait");
     
     //provjera da li su sva konta odabrana
@@ -302,6 +325,7 @@ function callSetPieCharts(){
 function end(){
     cursor("dflt");
     pripremljeno = true;
+    EnableButtons();
 }
 
 function saveKontoFilterButton@clicked(){

@@ -55,6 +55,8 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.FTP, new FTPFunction());
 
             interpreter.RegisterFunction(Constants.GET_COMP_NAME, new GetCompNameFunction());
+
+            interpreter.RegisterFunction(Constants.DAYS_IN_MONTH, new DaysInMonthFunction());
             
         }
         public partial class Constants
@@ -78,6 +80,8 @@ namespace WpfCSCS
             public const string FTP = "FTP";
 
             public const string GET_COMP_NAME = "GetCompName";
+
+            public const string DAYS_IN_MONTH = "DaysInMonth";
         }
     }
 
@@ -826,6 +830,20 @@ namespace WpfCSCS
             Utils.CheckArgs(args.Count, 0, m_name);
 
             return new Variable(System.Environment.MachineName.Trim());
+        }
+    }
+    
+    class DaysInMonthFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 2, m_name);
+
+            var month = Utils.GetSafeInt(args, 0);
+            var year = Utils.GetSafeInt(args, 1);
+
+            return new Variable(DateTime.DaysInMonth(year, month));
         }
     }
 

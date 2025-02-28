@@ -158,9 +158,27 @@ function wxbinaa_onDisplay()
     pripremljeno = false;
 }
 
+function DisableButtons(){
+    SetWidgetOptions("gbPripremi", "IsEnabled", "false");
+    SetWidgetOptions("gbPrint", "IsEnabled", "false");
+    SetWidgetOptions("gbProdaja1", "IsEnabled", "false");
+    SetWidgetOptions("gbProdaja2", "IsEnabled", "false");
+    SetWidgetOptions("gbExit", "IsEnabled", "false");
+}
+
+function EnableButtons(){
+    SetWidgetOptions("gbPripremi", "IsEnabled", "true");
+    SetWidgetOptions("gbPrint", "IsEnabled", "true");
+    SetWidgetOptions("gbProdaja1", "IsEnabled", "true");
+    SetWidgetOptions("gbProdaja2", "IsEnabled", "true");
+    SetWidgetOptions("gbExit", "IsEnabled", "true");
+}
+
 function gbPripremi@clicked()
 {
+    DisableButtons();
     cursor("wait");
+
     gl_oznaka= "";
     if (tip_racuna== "STANDARDNI")
     {
@@ -215,6 +233,7 @@ function callSetSalesRatio(){
 function end(){
     cursor("dflt");
     pripremljeno = true;
+    EnableButtons();
 }
 
 function gbProdaja1@clicked()

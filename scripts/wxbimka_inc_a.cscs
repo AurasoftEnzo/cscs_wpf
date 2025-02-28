@@ -66,39 +66,39 @@ function setChartByMonth()
         sql_str = "WITH promet AS(";
         sql_str += " SELECT rmpr_datum_dok,";
 
-        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_uk, 2) ELSE -round(rmpr_cena_uk, 2) END), 2), 0) AS transaction_amount";
-        // if (neto_dn)
-        // {
-        //     sql_str += " ";
-        // }
-        // elif (bruto_dn)
-        // {
-        //     sql_str += " ";
-        // }
-        // elif (razlikaUCijeniField)
-        // {
-        //     sql_str += " ";
-        // }
-        // elif (tezina_dn)
-        // {
-        //     sql_str += " ";
-        // }
-        // elif (mx3_dn)
-        // {
-        //     sql_str += " ";
-        // }
-        // elif (mx2_dn)
-        // {
-        //     sql_str += " ";
-        // }
-        // elif (met_dn)
-        // {
-        //     sql_str += " ";
-        // }
-        // elif (kom_dn)
-        // {
-        //     sql_str += " ";
-        // }
+        if (prodajna_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_obr, 2) ELSE -round(rmpr_cena_obr, 2) END), 2), 0) AS transaction_amount";
+        }
+        elif (nabavna_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_uk, 2) ELSE -round(rmpr_cena_uk, 2) END), 2), 0) AS transaction_amount";
+        }
+        elif (razlikaUCijeni_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_obr - rmpr_cena_uk, 2) ELSE -round(rmpr_cena_obr - rmpr_cena_uk, 2) END), 2), 0) AS transaction_amount";
+        }
+        elif (tezina_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_tezina, 2) ELSE -round(rmpr_tezina, 2) END), 2), 0) AS transaction_amount";
+        }
+        elif (mx3_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_metx3, 2) ELSE -round(rmpr_metx3, 2) END), 2), 0) AS transaction_amount";
+        }
+        elif (mx2_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_metx2, 2) ELSE -round(rmpr_metx2, 2) END), 2), 0) AS transaction_amount";
+        }
+        elif (met_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_met, 2) ELSE -round(rmpr_met, 2) END), 2), 0) AS transaction_amount";
+        }
+        elif (kom_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_komada, 2) ELSE -round(rmpr_komada, 2) END), 2), 0) AS transaction_amount";
+        }
+
         sql_str += " FROM " + proslaGodinaBaza + ".dbo.NKMKPROM";
         sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.NKMKARTI ON RMPR_ARTIKL = ARTI_ARTIKL";
 
@@ -136,7 +136,7 @@ function setChartByMonth()
 
         try
         {
-            // SaveFile(sql_str);
+            //SaveFile(sql_str);
             queryResult = sqlquery(SQL_str);
         }
         catch(exc)
@@ -151,39 +151,39 @@ function setChartByMonth()
     sql_str = "WITH promet AS(";
     sql_str += " SELECT rmpr_datum_dok,";
 
-    sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_uk, 2) ELSE -round(rmpr_cena_uk, 2) END), 2), 0) AS transaction_amount";
-    // if (neto_dn)
-    // {
-    //     sql_str += " ";
-    // }
-    // elif (bruto_dn)
-    // {
-    //     sql_str += " ";
-    // }
-    // elif (razlikaUCijeniField)
-    // {
-    //     sql_str += " ";
-    // }
-    // elif (tezina_dn)
-    // {
-    //     sql_str += " ";
-    // }
-    // elif (mx3_dn)
-    // {
-    //     sql_str += " ";
-    // }
-    // elif (mx2_dn)
-    // {
-    //     sql_str += " ";
-    // }
-    // elif (met_dn)
-    // {
-    //     sql_str += " ";
-    // }
-    // elif (kom_dn)
-    // {
-    //     sql_str += " ";
-    // }
+    if (prodajna_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_obr, 2) ELSE -round(rmpr_cena_obr, 2) END), 2), 0) AS transaction_amount";
+    }
+    elif (nabavna_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_uk, 2) ELSE -round(rmpr_cena_uk, 2) END), 2), 0) AS transaction_amount";
+    }
+    elif (razlikaUCijeni_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_obr - rmpr_cena_uk, 2) ELSE -round(rmpr_cena_obr - rmpr_cena_uk, 2) END), 2), 0) AS transaction_amount";
+    }
+    elif (tezina_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_tezina, 2) ELSE -round(rmpr_tezina, 2) END), 2), 0) AS transaction_amount";
+    }
+    elif (mx3_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_metx3, 2) ELSE -round(rmpr_metx3, 2) END), 2), 0) AS transaction_amount";
+    }
+    elif (mx2_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_metx2, 2) ELSE -round(rmpr_metx2, 2) END), 2), 0) AS transaction_amount";
+    }
+    elif (met_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_met, 2) ELSE -round(rmpr_met, 2) END), 2), 0) AS transaction_amount";
+    }
+    elif (kom_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_komada, 2) ELSE -round(rmpr_komada, 2) END), 2), 0) AS transaction_amount";
+    }
+    
     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.NKMKARTI ON RMPR_ARTIKL = ARTI_ARTIKL";
 
@@ -242,40 +242,48 @@ function setChartByMonth()
         sql_str = "";
         sql_str += " WITH promet AS(";
         sql_str += " SELECT month(rmpr_datum_dok) as mjesec,";
-        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_uk, 2) ELSE 0 END), 2), 0) AS ulaz,";
-        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_cena_uk, 2) ELSE 0 END), 2), 0) AS izlaz";
-        // if (neto_dn)
-        // {
-        //     sql_str += " ";
-        // }
-        // elif (bruto_dn)
-        // {
-        //     sql_str += " ";
-        // }
-        // elif (razlikaUCijeniField)
-        // {
-        //     sql_str += " ";
-        // }
-        // elif (tezina_dn)
-        // {
-        //     sql_str += " ";
-        // }
-        // elif (mx3_dn)
-        // {
-        //     sql_str += " ";
-        // }
-        // elif (mx2_dn)
-        // {
-        //     sql_str += " ";
-        // }
-        // elif (met_dn)
-        // {
-        //     sql_str += " ";
-        // }
-        // elif (kom_dn)
-        // {
-        //     sql_str += " ";
-        // }
+                
+        if (prodajna_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_obr, 2) ELSE 0 END), 2), 0) AS ulaz,";
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_cena_obr, 2) ELSE 0 END), 2), 0) AS izlaz";
+        }
+        elif (nabavna_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_uk, 2) ELSE 0 END), 2), 0) AS ulaz,";
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_cena_uk, 2) ELSE 0 END), 2), 0) AS izlaz";
+        }
+        elif (razlikaUCijeni_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_obr - rmpr_cena_uk, 2) ELSE 0 END), 2), 0) AS ulaz,";
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_cena_obr - rmpr_cena_uk, 2) ELSE 0 END), 2), 0) AS izlaz";
+        }
+        elif (tezina_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_tezina, 2) ELSE 0 END), 2), 0) AS ulaz,";
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_tezina, 2) ELSE 0 END), 2), 0) AS izlaz";
+        }
+        elif (mx3_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_metx3, 2) ELSE 0 END), 2), 0) AS ulaz,";
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_metx3, 2) ELSE 0 END), 2), 0) AS izlaz";
+        }
+        elif (mx2_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_metx2, 2) ELSE 0 END), 2), 0) AS ulaz,";
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_metx2, 2) ELSE 0 END), 2), 0) AS izlaz";
+        }
+        elif (met_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_met, 2) ELSE 0 END), 2), 0) AS ulaz,";
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_met, 2) ELSE 0 END), 2), 0) AS izlaz";
+        }
+        elif (kom_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_komada, 2) ELSE 0 END), 2), 0) AS ulaz,";
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_komada, 2) ELSE 0 END), 2), 0) AS izlaz";
+        }
+
         sql_str += " FROM " + proslaGodinaBaza + ".dbo.NKMKPROM";
         sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.NKMKARTI on RMPR_ARTIKL = ARTI_ARTIKL";
         sql_str += " WHERE RMPR_IZVOR_DOK != 'GO' AND year(rmpr_datum_dok) = " + lani_h;
@@ -306,45 +314,53 @@ function setChartByMonth()
         RunOnMain("setChartByMonth3");
     }
     
-    
+       
     //trenutna godina U i I
     sql_str = "";
     sql_str += " WITH promet AS(";
     sql_str += " SELECT month(rmpr_datum_dok) as mjesec,";
-    sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_uk, 2) ELSE 0 END), 2), 0) AS ulaz,";
-    sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_cena_uk, 2) ELSE 0 END), 2), 0) AS izlaz";
-    // if (neto_dn)
-    // {
-    //     sql_str += " ";
-    // }
-    // elif (bruto_dn)
-    // {
-    //     sql_str += " ";
-    // }
-    // elif (razlikaUCijeniField)
-    // {
-    //     sql_str += " ";
-    // }
-    // elif (tezina_dn)
-    // {
-    //     sql_str += " ";
-    // }
-    // elif (mx3_dn)
-    // {
-    //     sql_str += " ";
-    // }
-    // elif (mx2_dn)
-    // {
-    //     sql_str += " ";
-    // }
-    // elif (met_dn)
-    // {
-    //     sql_str += " ";
-    // }
-    // elif (kom_dn)
-    // {
-    //     sql_str += " ";
-    // }
+    
+    if (prodajna_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_obr, 2) ELSE 0 END), 2), 0) AS ulaz,";
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_cena_obr, 2) ELSE 0 END), 2), 0) AS izlaz";
+    }
+    elif (nabavna_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_uk, 2) ELSE 0 END), 2), 0) AS ulaz,";
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_cena_uk, 2) ELSE 0 END), 2), 0) AS izlaz";
+    }
+    elif (razlikaUCijeni_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_obr - rmpr_cena_uk, 2) ELSE 0 END), 2), 0) AS ulaz,";
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_cena_obr - rmpr_cena_uk, 2) ELSE 0 END), 2), 0) AS izlaz";
+    }
+    elif (tezina_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_tezina, 2) ELSE 0 END), 2), 0) AS ulaz,";
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_tezina, 2) ELSE 0 END), 2), 0) AS izlaz";
+    }
+    elif (mx3_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_metx3, 2) ELSE 0 END), 2), 0) AS ulaz,";
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_metx3, 2) ELSE 0 END), 2), 0) AS izlaz";
+    }
+    elif (mx2_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_metx2, 2) ELSE 0 END), 2), 0) AS ulaz,";
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_metx2, 2) ELSE 0 END), 2), 0) AS izlaz";
+    }
+    elif (met_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_met, 2) ELSE 0 END), 2), 0) AS ulaz,";
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_met, 2) ELSE 0 END), 2), 0) AS izlaz";
+    }
+    elif (kom_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_komada, 2) ELSE 0 END), 2), 0) AS ulaz,";
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_komada, 2) ELSE 0 END), 2), 0) AS izlaz";
+    }
+    
     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.NKMKARTI on RMPR_ARTIKL = ARTI_ARTIKL";
     sql_str += " WHERE RMPR_IZVOR_DOK != 'GO' AND year(rmpr_datum_dok) = " + ovagod_h;

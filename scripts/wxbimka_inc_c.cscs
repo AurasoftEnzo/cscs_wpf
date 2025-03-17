@@ -12,7 +12,7 @@ function wxbimkac_onDisplay()
 	refreshPie = true;
 }
 
-function cbPieChart@SelectionChanged(){
+function cbPieChart2@SelectionChanged(){
 	if (refreshPie == false)
 	{
 		return;
@@ -22,16 +22,16 @@ function cbPieChart@SelectionChanged(){
 	AsyncCall("setRegionPieChart", "setDefaultCursor");
 }
 
-function regionPieChartDone(){
+function regionPieChartDone2(){
 	AsyncCall("setKategPieChart", "kategPieChartDone");
 }
-function kategPieChartDone(){
+function kategPieChartDone2(){
 	AsyncCall("setTop10Products", "top10ProductsDone");
 }
-function top10ProductsDone(){
+function top10ProductsDone2(){
 	AsyncCall("setCustomerDataGrid", "setDefaultCursor");
 }
-function setDefaultCursor(){
+function setDefaultCursor2(){
 	cursor("dflt");
 }
 
@@ -63,7 +63,7 @@ function gradoviRB@clicked()
 }
 */
 
-function setRegionPieChart()
+function setRegionPieChart2()
 {
 	//	MessageBox( pieChartStr);
 	sql_str= "";	
@@ -329,10 +329,10 @@ function setRegionPieChart()
 		MessageBox(exc);
 	}
     
-	RunOnMain("setPieChart");
+	RunOnMain("setPieChart2");
 }
 
-function setPieChart(){
+function setPieChart2(){
 	PieChart("PieChart1", "init");
     PieChart("PieChart1", "seriesType", "pie");
     PieChart("PieChart1", "title", "Pie Chart Title", 20);    
@@ -344,7 +344,7 @@ function setPieChart(){
 
 //-------------------------------------------------------
 
-function setKategPieChart()
+function setKategPieChart2()
 {
 	//	MessageBox( pieChartStr);
 	sql_str = "";
@@ -429,10 +429,10 @@ function setKategPieChart()
 		MessageBox(exc);
 	}
 
-	RunOnMain("DisplayKategPieChart");
+	RunOnMain("DisplayKategPieChart2");
 }
 
-function DisplayKategPieChart(){
+function DisplayKategPieChart2(){
 	PieChart("PieChartKat", "init");
     PieChart("PieChartKat", "seriesType", "pie");
 
@@ -446,7 +446,7 @@ function DisplayKategPieChart(){
 
 //-------------------------------------------------------
 
-function setTop10Products()
+function setTop10Products2()
 {
 	SQL_str ="SET query_governor_cost_limit 0;";
     sql_str += "WITH sales AS (";
@@ -538,7 +538,7 @@ function setTop10Products()
 
 	size = Size(sqlResult) - 1;
 
-	RunOnMain("fillProductsArrays");
+	RunOnMain("fillProductsArrays2");
 
     if (proslaGodinaBaza != "")
 	{
@@ -610,12 +610,12 @@ function setTop10Products()
 		MessageBox(exc);
 	}
 	
-	RunOnMain("fillProductsArrays2");
+	RunOnMain("fillProductsArrays22");
 
-	RunOnMain("top10Products");
+	RunOnMain("top10Products2");
 }
 
-function fillProductsArrays(){
+function fillProductsArrays2(){
 	for ( i = 0; i < 10; i++ )
 	{
 		IndexArt_ar[i] =  0;
@@ -655,7 +655,7 @@ function fillProductsArrays(){
     }
 }
 
-function fillProductsArrays2(){
+function fillProductsArrays22(){
 	if(Size(sqlResult) > 1)
 	{
 		for ( i = 1; i < Size(sqlResult); i++ )
@@ -691,7 +691,7 @@ function fillProductsArrays2(){
 	}
 }
 
-function top10Products(){
+function top10Products2(){
 	DisplayArray("dgArtikli", "close");
 	Format("SALESART2_AR", "nofd");
 	Format("SALESART1_AR", "nofd");
@@ -701,7 +701,7 @@ function top10Products(){
 
 //---------------------------------------------------------------------------
 
-function setCustomerDataGrid()
+function setCustomerDataGrid2()
 {
     SQL_str ="SET query_governor_cost_limit 0;";
     sql_str += "WITH sales AS (";
@@ -793,12 +793,12 @@ function setCustomerDataGrid()
 	size = Size(sqlResult) - 1;
 
 	//SaveFile(sql_str);
-	RunOnMain("fillCustomerArrays");
+	RunOnMain("fillCustomerArrays2");
 
     if (proslaGodinaBaza != "")
 	{
 
-		RunOnMain("setCntr2");
+		RunOnMain("setCntr22");
 
 		//sql_str= "";
 		
@@ -870,12 +870,12 @@ function setCustomerDataGrid()
 		MessageBox(exc);
 	}
 	
-	RunOnMain("fillCustomerArrays2");
+	RunOnMain("fillCustomerArrays22");
 
-	RunOnMain("customerDataGrid");
+	RunOnMain("customerDataGrid2");
 }
 
-function fillCustomerArrays(){
+function fillCustomerArrays2(){
 	for ( i = 0; i < 10; i++ )
 	{
 		namePart_ar[i] =  "";
@@ -914,11 +914,11 @@ function fillCustomerArrays(){
     }
 }
 
-function setCntr2(){
+function setCntr22(){
 	cntr2= 0;
 }
 
-function fillCustomerArrays2(){    
+function fillCustomerArrays22(){    
 	if(Size(sqlResult) > 1)
 	{
 		for ( i = 1; i < Size(sqlResult); i++ )
@@ -954,7 +954,7 @@ function fillCustomerArrays2(){
 	}
 }
 
-function customerDataGrid(){
+function customerDataGrid2(){
 	DisplayArray("dgStavke", "close");
 	Format("SALESPART2_AR", "nofd");
 	Format("SALESPART1_AR", "nofd");

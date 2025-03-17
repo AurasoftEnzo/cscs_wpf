@@ -8,6 +8,7 @@ include(DownloadScripts() == true ? Download(ServerAddress() + "wxbimka_inc_list
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbimka_inc_a.cscs") : strTrim(tpath()) + "wxbimka_inc_a.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbimka_inc_b.cscs") : strTrim(tpath()) + "wxbimka_inc_b.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbimka_inc_c.cscs") : strTrim(tpath()) + "wxbimka_inc_c.cscs");
+
 // include(strTrim(tpath()) + "wxbimka_inc_lists.cscs");
 // include(strTrim(tpath()) + "wxbimka_inc_a.cscs");
 // include(strTrim(tpath()) + "wxbimka_inc_b.cscs");
@@ -196,8 +197,8 @@ function Wxbimka_onDisplay()
 function DisableButtons(){
     SetWidgetOptions("gbPripremi", "IsEnabled", "false");
     SetWidgetOptions("gbPrint", "IsEnabled", "false");
-    SetWidgetOptions("gbZalihe", "IsEnabled", "false");
-    SetWidgetOptions("gbUlaz", "IsEnabled", "false");
+    SetWidgetOptions("gbZaliheI", "IsEnabled", "false");
+    SetWidgetOptions("gbZaliheII", "IsEnabled", "false");
     SetWidgetOptions("gbIzlaz", "IsEnabled", "false");
     SetWidgetOptions("gbExit", "IsEnabled", "false");
 }
@@ -205,8 +206,8 @@ function DisableButtons(){
 function EnableButtons(){
     SetWidgetOptions("gbPripremi", "IsEnabled", "true");
     SetWidgetOptions("gbPrint", "IsEnabled", "true");
-    SetWidgetOptions("gbZalihe", "IsEnabled", "true");
-    SetWidgetOptions("gbUlaz", "IsEnabled", "true");
+    SetWidgetOptions("gbZaliheI", "IsEnabled", "true");
+    SetWidgetOptions("gbZaliheII", "IsEnabled", "true");
     SetWidgetOptions("gbIzlaz", "IsEnabled", "true");
     SetWidgetOptions("gbExit", "IsEnabled", "true");
 }
@@ -285,7 +286,7 @@ function end(){
     EnableButtons();
 }
 
-function gbZalihe@clicked()
+function gbZaliheI@clicked()
 {
     if (pripremljeno) 
     {
@@ -298,7 +299,7 @@ function gbZalihe@clicked()
     }    
 }
 
-function gbUlaz@clicked()
+function gbZaliheII@clicked()
 {
     if (pripremljeno)
     {

@@ -6,7 +6,7 @@
         xmlns:wcl="clr-namespace:WpfControlsLibrary;assembly=WpfControlsLibrary"
         xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
         mc:Ignorable="d"
-        Title="Zalihe"
+        Title="Zalihe I"
         Height="675"
         Width="1200" WindowStartupLocation="CenterScreen"  MinHeight="540" MinWidth="960"
         Background="#686868">
@@ -91,10 +91,10 @@
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    
+
                 </DataGrid.Columns>
             </DataGrid>
-            <Label HorizontalAlignment="Left" Content="Najveće otpremnice" Grid.Row="1" Grid.Column="1" VerticalAlignment="Top" Width="193" FontSize="16" FontWeight="Bold" Margin="24,5,0,0" BorderBrush="{x:Null}"/>
+            <Label HorizontalAlignment="Left" Content="100 artikala s" Grid.Row="1" Grid.Column="1" VerticalAlignment="Top" Width="114" FontSize="16" FontWeight="Bold" Margin="24,5,0,0" BorderBrush="{x:Null}"/>
             <Label HorizontalAlignment="Left" Content="Prosječne zalihe po mjesecima" VerticalAlignment="Top" Width="272" FontSize="16" FontWeight="Bold" Margin="23,10,0,0" BorderBrush="{x:Null}" Background="{x:Null}"/>
             <DataGrid GridLinesVisibility="Horizontal"
                       HorizontalGridLinesBrush="#FFD7D6D6"
@@ -104,7 +104,7 @@
                       Width="540"
                     RowHeight="22"
                       FontSize="15"
-                  x:Name="dgRacuniMjesec"
+                  x:Name="dgObrtaj"
                   HorizontalScrollBarVisibility="Auto"
                   VerticalScrollBarVisibility="Auto"
                   Background="White"
@@ -128,59 +128,38 @@
                                         Width="28">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="T10CNTRMJ_AR"
-                                            Editor="edDefault"
-                                            EditLength="0" />
+                                <wcl:ASGridCell FieldName="top100_obrtaj_Rbr_ar"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Otpremnica"
-                                        Width="90">
+                    <DataGridTemplateColumn Header="Šifra artikla"
+                                        Width="140">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="T10RACUNMJ_AR"
-                                            Editor="edNumeric"
-                                            HorizontalContentAlignment="Right"
-                                            EditLength="0" />
+                                <wcl:ASGridCell FieldName="top100_obrtaj_sifraArtikla_ar"
+                                            HorizontalContentAlignment="Center" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Datum"
-                                        Width="70">
+                    <DataGridTemplateColumn Header="Naziv artikla"
+                                        Width="240">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="T10DATUMMJ_AR"
-                                            HorizontalContentAlignment="Center"
-                                            Editor="edDefault"
-                                            EditLength="8" />
+                                <wcl:ASGridCell FieldName="top100_obrtaj_nazivArtikla_ar"
+                                            HorizontalContentAlignment="Left"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Kupac"
-                                        Width="250">
+                    <DataGridTemplateColumn Header="Obrtaj %"
+                                        Width="100">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="T10NAMEMJ_AR"
-                                            Editor="edDefault"
-                                            EditLength="0" />
+                                <wcl:ASGridCell FieldName="top100_obrtaj_obrtaj_ar"
+                                                HorizontalContentAlignment="Right"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Iznos"
-                                        Width="90">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <wcl:ASGridCell FieldName="T10IZNOSMJ_AR"
-                                            Editor="edEditBtn"
-                                            EditLength="0"
-                                            x:Name="clickTest"
-                                            Thousands="True"
-                                            Size="10"
-                                            DecimalChrs="2"
-                                            HorizontalContentAlignment="Right" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
+                    
                 </DataGrid.Columns>
             </DataGrid>
             <Button Grid.Column="1"
@@ -207,6 +186,8 @@ Width="110">
                     </Style>
                 </Button.Resources>
             </Button>
+            <Label HorizontalAlignment="Left" Content="obrtajem" Grid.Row="1" Grid.Column="1" VerticalAlignment="Top" Width="82" FontSize="16" FontWeight="Bold" Margin="221,5,0,0" BorderBrush="{x:Null}"/>
+            <ComboBox x:Name="comboBoxVrstaObrtaja" DataContext="vrstaObrtaja_cb" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,9,358,0" VerticalAlignment="Top" Width="90" Height="22" Grid.Column="1" Grid.Row="1" />
         </Grid>
     </Viewbox>
 </Window>

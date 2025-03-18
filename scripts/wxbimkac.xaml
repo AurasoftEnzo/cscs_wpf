@@ -45,7 +45,8 @@
                       HorizontalAlignment="Center" Grid.Column="1"
                       Width="581"
                       Height="283" FontSize="10" HorizontalContentAlignment="Left" Margin="0,47,0,0"/>
-            <Label Name="Top10Artikli" VerticalAlignment="Top" HorizontalAlignment="Left" Width="195" Height="35" Margin="0,10,0,0" Content="Top 10 - Artikli"
+            <Label VerticalAlignment="Top" HorizontalAlignment="Left" Width="195" Height="35" Margin="4,11,0,0" 
+                   Content="Nekurentni artikli"
                Grid.Row="1"
                FontSize="16"
                FontWeight="Bold"/>
@@ -171,7 +172,7 @@
                   Height="245"
                   Width="540"
                   IsReadOnly="true"
-                  Name="dgArtikli"
+                  Name="dgNekurentniArtikli"
                       RowHeight="22"
                       FontSize="15"
                   HorizontalScrollBarVisibility="Auto"
@@ -195,64 +196,51 @@
                                         Width="28">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="TOP10ART_AR"
-                                            Editor="edDefault"
-                                            EditLength="0"
-                                            HorizontalContentAlignment="Center" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Artikl"
-                                        Width="220">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <wcl:ASGridCell FieldName="NAMEART_AR"
-                                            Editor="edDefault"
-                                            EditLength="0"
+                                <wcl:ASGridCell FieldName="top100_nekurentni_Rbr_ar"
                                             HorizontalContentAlignment="Left" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Ova godina"
-                                        Width="100">
+                    <DataGridTemplateColumn Header="Šifra artikla"
+                                        Width="110">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="SALESART1_AR"
-                                            Editor="edNumeric"
-                                            EditLength="0"
+                                <wcl:ASGridCell FieldName="top100_nekurentni_sifraArtikla_ar"
+                                            HorizontalContentAlignment="Left" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Naziv artikla"
+                                        Width="110">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="top100_nekurentni_nazivArtikla_ar"
+                                            HorizontalContentAlignment="Left" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Zalihe"
+                                        Width="80">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="top100_nekurentni_zalihe_ar"
                                             HorizontalContentAlignment="Right" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Preth.godina"
-                                        Width="100">
+                    <DataGridTemplateColumn Header="Jed.mj."
+                                        Width="60">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="SALESART2_AR"
-                                            Editor="edNumeric"
-                                            EditLength="0"
-                                            Size="10"
-                                            HorizontalContentAlignment="Right" />
+                                <wcl:ASGridCell FieldName="top100_nekurentni_jedMjere_ar"
+                                            HorizontalContentAlignment="Left" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Index%"
-                                        Width="54">
+                    <DataGridTemplateColumn Header="Nema izlaza od">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="INDEXART_AR"
-                                            Editor="edNumeric"
-                                            EditLength="0"
-                                            HorizontalContentAlignment="Right" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <wcl:ASGridCell IsImage="True"
-                                                Margin="2"
-                                                FieldName="ImageART_AR" />
+                                <wcl:ASGridCell FieldName="top100_nekurentni_NemaIzlazaOd_ar" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>

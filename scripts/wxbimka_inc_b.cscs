@@ -418,7 +418,7 @@ function DisplayKategPieChart(){
 }
 
 //-------------------------------------------------------
-
+//Artikli S Najvećom Zalihom
 function setTop100Products()
 {
 	RunOnMain("emptyProductsArrays");
@@ -549,7 +549,9 @@ function top100Products(){
 	// Format("SALESART2_AR", "nofd");
 	// Format("SALESART1_AR", "nofd");
 	
-	DisplayArraySetup("dgArtikliSNajvećomZalihom", counterFld: cntr2, activeElements: Size(sqlResult) - 1, maxElements: 100);
+	if(Size(sqlResult) - 1 > 0){
+        DisplayArraySetup("dgArtikliSNajvećomZalihom", counterFld: cntr2, activeElements: Size(sqlResult) - 1, maxElements: 100);    
+    }
 }
 
 
@@ -812,7 +814,10 @@ function customerDataGrid(){
 	DisplayArray("dgStavke", "close");
 	Format("SALESPART2_AR", "nofd");
 	Format("SALESPART1_AR", "nofd");
-	DisplayArraySetup("dgStavke", counterFld: "cntr1", activeElements: size, maxElements: 10);
+	if(Size(sqlResult) - 1 > 0){
+        // DisplayArraySetup("dgNaNuli", counterFld: cntr2, activeElements: Size(sqlResult) - 1, maxElements: 100);    
+		DisplayArraySetup("dgStavke", counterFld: "cntr1", activeElements: size, maxElements: 10);
+    }
 }
 
 //-----------------------------------------------------------

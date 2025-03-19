@@ -7,11 +7,20 @@ function wxbimkac_onDisplay()
     // AddWidgetData(cbPieChart, comboItems);
     // pieChartStr= "Gradovi";
 
+	comboItems = {"3", "6", "12"};
+    AddWidgetData("comboBoxNekurentniBrojDana", comboItems);
+    SetWidgetOptions("comboBoxNekurentniBrojDana", "SelectedIndex", 0);
+
 
 	// AsyncCall("setNekurentniArtikli", "nekurentniArtikliDone");
 	AsyncCall("setTop100NekurentniArtikli", "setDefaultCursor2");
 		
 	refreshPie = true;
+}
+
+function comboBoxNekurentniBrojDana@SelectionChanged()
+{
+    setTop100NekurentniArtikli();
 }
 
 // function cbPieChart2@SelectionChanged(){
@@ -81,6 +90,7 @@ function setTop100NekurentniArtikli()
 	}
 
 	SQL_str = "DECLARE @datumDo DATE = '" + datum + "';";
+	SQL_str += " DECLARE @brojDana int = (DATEDIFF(DAY, DATEADD(MONTH, -" + NekurentniBrojDana_cb + ", @datumDo), @datumDo) + 1);";
 
     sql_str += " WITH InventorySummary AS (";
     sql_str += " SELECT rmpr_artikl,";
@@ -122,7 +132,7 @@ function setTop100NekurentniArtikli()
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkmkarti ON arti_artikl=  ci.rmpr_artikl";
     sql_str += " WHERE ci.TotalInput > 0";
     sql_str += " AND ci.currentInventory > 0";
-    sql_str += " AND DATEDIFF(DAY, ci.LastInputDate, @datumDo) > 90";
+    sql_str += " AND DATEDIFF(DAY, ci.LastInputDate, @datumDo) > @brojDana";
     sql_str += " AND (oali.OutputAfterLastInput IS NULL OR oali.OutputAfterLastInput < 0.01 * ci.CurrentInventory)";
     sql_str += " ORDER BY ci.currentInventory DESC";
 

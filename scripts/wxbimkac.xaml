@@ -9,9 +9,11 @@
         xmlns:dxc="http://schemas.devexpress.com/winfx/2008/xaml/charts"
         xmlns:SKCharts="clr-namespace:LiveChartsCore.SkiaSharpView.SKCharts;assembly=LiveChartsCore.SkiaSharpView"
         mc:Ignorable="d"
-        Title="Izlaz"
+        Title="Zalihe III"
         Height="675"
-        Width="1200" MinHeight="540" MinWidth="960" WindowStartupLocation="CenterScreen">
+        Width="1200" MinHeight="540" MinWidth="960" WindowStartupLocation="CenterScreen"
+        Background="#686868"
+        >
     <Viewbox Stretch="Uniform">
         <Grid Width="1162" Margin="15">
             <Grid.ColumnDefinitions>
@@ -45,8 +47,8 @@
                       HorizontalAlignment="Center" Grid.Column="1"
                       Width="581"
                       Height="283" FontSize="10" HorizontalContentAlignment="Left" Margin="0,47,0,0"/>
-            <Label VerticalAlignment="Top" HorizontalAlignment="Left" Width="195" Height="35" Margin="4,11,0,0" 
-                   Content="Nekurentni artikli"
+            <Label VerticalAlignment="Top" HorizontalAlignment="Left" Width="248" Height="35" Margin="4,11,0,0" 
+                   Content="Nekurentni artikli u posljednjih"
                Grid.Row="1"
                FontSize="16"
                FontWeight="Bold"/>
@@ -233,14 +235,15 @@
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <wcl:ASGridCell FieldName="top100_nekurentni_jedMjere_ar"
-                                            HorizontalContentAlignment="Left" />
+                                            HorizontalContentAlignment="Center" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                     <DataGridTemplateColumn Header="Nema izlaza od">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="top100_nekurentni_NemaIzlazaOd_ar" />
+                                <wcl:ASGridCell FieldName="top100_nekurentni_NemaIzlazaOd_ar"
+                                                HorizontalContentAlignment="Center"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -271,6 +274,12 @@ Width="110">
                     </Style>
                 </Button.Resources>
             </Button>
+            <ComboBox x:Name="comboBoxNekurentniBrojDana" DataContext="NekurentniBrojDana_cb" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,16,268,0" VerticalAlignment="Top" Width="62" Height="22" Grid.Row="1" />
+            <Label VerticalAlignment="Top" HorizontalAlignment="Left" Width="71" Height="35" Margin="313,11,0,0" 
+                Content="mjeseci"
+                Grid.Row="1"
+                FontSize="16"
+                FontWeight="Bold"/>
         </Grid>
     </Viewbox>
 </Window>

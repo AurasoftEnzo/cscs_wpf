@@ -63,7 +63,7 @@
                     FontSize="15"
                     Margin="0,42,0,20"
                     IsReadOnly="true"
-                    Name="dgStavke"
+                    Name="dgNoviArtikli"
                     HorizontalScrollBarVisibility="Auto"
                     VerticalScrollBarVisibility="Auto"
                     Background="White"
@@ -93,76 +93,39 @@
                         </DataGridTemplateColumn.CellStyle>
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="TOP10PART_AR"
-                                            Editor="edDefault"
-                                            EditLength="0" />
+                                <wcl:ASGridCell FieldName="top100_novi_Rbr_ar"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Kupac"
-                                        Width="220">
+                    <DataGridTemplateColumn Header="Šifra artikla"
+                                        Width="140">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="NAMEPART_AR"
-                                            Editor="edDefault"
-                                            EditLength="0" />
+                                <wcl:ASGridCell FieldName="top100_novi_sifraArtikla_ar" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Ova godina"
+                    <DataGridTemplateColumn Header="Naziv artikla"
+                                        Width="180">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="top100_novi_nazivArtikla_ar"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Prvi ulaz"
                                         Width="100">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <wcl:ASGridCell FieldName="SALESPART1_AR"
-                                            Editor="edEditBtn"
-                                            EditLength="0"
-                                            Name="clickTest"
-                                            Thousands="True"
-                                            Size="10"
-                                            HorizontalContentAlignment="Right" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Preth.godina"
-                                        Width="100">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <wcl:ASGridCell FieldName="SALESPART2_AR"
-                                            Editor="edEditBtn"
-                                            EditLength="0"
-                                            Name="clickTest"
-                                            Size="10"
-                                            HorizontalContentAlignment="Right" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Index%"
-                                        Width="54">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <wcl:ASGridCell FieldName="INDEXPART_AR"
-                                            Editor="edEditBtn"
-                                            EditLength="0"
-                                            Name="clickTest"
-                                            Thousands="True"
-                                            Size="10"
-                                            HorizontalContentAlignment="Right" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <wcl:ASGridCell IsImage="True"
-                                                Margin="2"
-                                                FieldName="ImagePART_AR"/>
+                                <wcl:ASGridCell FieldName="top100_novi_prviUlaz_ar"
+                                            HorizontalContentAlignment="Center" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
             <Label VerticalAlignment="Top" HorizontalAlignment="Left" Width="196" Height="35" Margin="21,10,0,0" 
-                   Content="Novi artikli"
+                   Content="Top 100 - Novi artikli"
                Grid.Row="1"
                Grid.Column="1"
                FontSize="16"

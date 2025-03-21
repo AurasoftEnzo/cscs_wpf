@@ -559,267 +559,59 @@ function top100Products(){
 
 function setNewProductsDataGrid()
 {
-    // SQL_str ="SET query_governor_cost_limit 0;";
-    // sql_str += "WITH sales AS (";
-    // sql_str += " SELECT TOP 10 nkpr_gl_cusnme as NamePart,nkpr_gl_cuscod as CodePart,SalesNew=";
-    // if (neto_dn )
-	// {
-    //     sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_gl_dviza= 'D' THEN nkpr_gl_tecaj*nkpr_ln_amt ELSE nkpr_ln_amt END),0), 0)";
-	// }
-    // elif (razlikaUCijeniField)
-	// {
-    //     sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_gl_dviza= 'D' THEN nkpr_gl_tecaj*(nkpr_ln_amt-nkpr_ln_cenan*nkpr_ln_qtyz) ELSE nkpr_ln_amt-nkpr_ln_cenan*nkpr_ln_qtyz END), 0), 0)";
-	// }
-    // elif (tezina_dn )
-	// {
-    //     sql_str += " ISNULL(ROUND(SUM(nkpr_ln_tezinan), 0), 0)";
-	// }	
-    // elif (mx3_dn )
-	// {
-    //     sql_str += " ISNULL(ROUND(SUM(nkpr_ln_metx3), 0), 0)";
-	// }	
-    // elif (mx2_dn )
-	// {
-    //     sql_str += " ISNULL(ROUND(SUM(nkpr_ln_metx2), 0), 0)";
-	// }	
-    // elif (met_dn )
-	// {
-    //     sql_str += " ISNULL(ROUND(SUM(nkpr_ln_met), 0), 0)";
-	// }	
-    // elif (kom_dn )
-	// {
-    //     sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_ln_jedmj = 'KOM' THEN nkpr_ln_pqty ELSE nkpr_ln_kom END), 0), 0)";
-	// }	
-    // else
-	// {
-    //     sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_gl_dviza= 'D' THEN nkpr_gl_tecaj*nkpr_ln_pext ELSE nkpr_ln_pext END), 0), 0)";
-	// }
-    // sql_str += " FROM "+trenutnaGodinaBaza+".dbo.nkprglot";
-    // if (regija!= "")
-	// {
-    //     sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkscpart g ON nkpr_gl_cuscod= g.nksc_partcode";
-    // }
-    // sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkprlnot ON nkpr_gl_brotp= nkpr_ln_invnm";
-    // sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkmkarti ON nkpr_ln_pcode= arti_artikl";
-    // sql_str += " WHERE 1=1";
-	// sql_str += " AND nkpr_gl_cuscod <> '" + vlFirma + "'";
-    // if (mjesec_h!= "")
-	// {
-    //     if (do_mjeseca )
-	// 	{
-    //         sql_str += " AND month(nkpr_gl_esd)<= "+mjesec_h;
-    //         sql_str += " AND YEAR(nkpr_gl_esd)= "+ovagod_h;
-	// 	}	
-    //     else
-	// 	{
-    //         sql_str += " AND month(nkpr_gl_esd)= "+mjesec_h;
-    //         sql_str += " AND YEAR(nkpr_gl_esd)= "+ovagod_h;
-    //     }
-    // }
+    RunOnMain("setNewProductsDataGrid0");
 
-    // filterPart();
-
-    // sql_str += " GROUP BY nkpr_gl_cusnme,nkpr_gl_cuscod";
-    // if (GL_oznaka == "X" || GL_oznaka == "O" || GL_oznaka == "R" ) //ako je to storno, odobrenje ili reklamacija neka okrene
-	// {
-    //     sql_str += " ORDER BY salesNew asc)";
-	// }	
-    // else
-	// {
-    //     sql_str += " ORDER BY salesNew desc)";
-    // }
-    // sql_str += " SELECT codePart,NamePart,salesNew,0";
-    // sql_str += " FROM sales";
-    // //sql_str += " ORDER BY salesNew desc"
-    // if (GL_oznaka == "X" || GL_oznaka == "O" || GL_oznaka == "R" )
-	// {
-	// 	 //ako je to storno, odobrenje ili reklamacija neka okrene
-    //     sql_str += " ORDER BY salesNew asc";
-	// }	
-    // else
-	// {
-    //     sql_str += " ORDER BY salesNew desc";
-	// }
-	// try	{
-	// 	sqlResult = sqlQuery(sql_str);
-	// }catch(exc){
-	// 	MessageBox(exc);
-	// }
-
-	// size = Size(sqlResult) - 1;
-
-	// //SaveFile(sql_str);
-	// RunOnMain("fillCustomerArrays");
-
-    // if (proslaGodinaBaza != "")
-	// {
-
-	// 	RunOnMain("setCntr2");
-
-	// 	//sql_str= "";
-		
-	// 	sql_str= " SELECT nkpr_gl_cuscod,";
-		
-	// 	if (neto_dn )
-	// 	{
-	// 		sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_gl_dviza= 'D' THEN nkpr_gl_tecaj*nkpr_ln_amt ELSE nkpr_ln_amt END),0), 0) as sales2";
-	// 	}
-	// 	elif (razlikaUCijeniField)
-	// 	{
-	// 		sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_gl_dviza= 'D' THEN nkpr_gl_tecaj*(nkpr_ln_amt-nkpr_ln_cenan*nkpr_ln_qtyz) ELSE nkpr_ln_amt-nkpr_ln_cenan*nkpr_ln_qtyz END),0), 0) as sales2";
-	// 	}
-	// 	elif (tezina_dn )
-	// 	{
-	// 		sql_str += " ISNULL(ROUND(SUM(nkpr_ln_tezinan),0), 0) as sales2";
-	// 	}
-	// 	elif (mx3_dn )
-	// 	{
-	// 		sql_str += " ISNULL(ROUND(SUM(nkpr_ln_metx3),0), 0) as sales2";
-	// 	}
-	// 	elif (mx2_dn )
-	// 	{
-	// 		sql_str += " ISNULL(ROUND(SUM(nkpr_ln_metx2),0), 0) as sales2";
-	// 	}
-	// 	elif (met_dn )
-	// 	{
-	// 		sql_str += " ISNULL(ROUND(SUM(nkpr_ln_met),0), 0) as sales2";
-	// 	}
-	// 	elif (kom_dn )
-	// 	{
-	// 		sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_ln_jedmj = 'KOM' THEN nkpr_ln_pqty ELSE nkpr_ln_kom END),0), 0) as sales2";
-	// 	}
-	// 	else
-	// 	{
-	// 		sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_gl_dviza= 'D' THEN nkpr_gl_tecaj*nkpr_ln_pext ELSE nkpr_ln_pext END),0), 0) as sales2";
-	// 	}
-    // }
-
-    // sql_str += " FROM "+proslaGodinaBaza+".dbo.nkprglot";
-    // sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.nkprlnot ON nkpr_gl_brotp= nkpr_ln_invnm";
-    // if (regija != "")
-	// {
-    //     sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.nkscpart g ON nkpr_gl_cuscod= g.nksc_partcode";
-    // }
-    // sql_str += " LEFT JOIN "+proslaGodinaBaza+".dbo.nkmkarti ON nkpr_ln_pcode= arti_artikl";
-    // sql_str += " WHERE nkpr_gl_cuscod IN ("+in_string+") ";
-	// sql_str += " AND nkpr_gl_cuscod <> '" + vlFirma + "'";
-    // if (mjesec_h != "")
-	// {
-    //     if (do_mjeseca )
-	// 	{
-    //         sql_str += " AND month(nkpr_gl_esd)<= "+mjesec_h;
-    //         sql_str += " AND YEAR(nkpr_gl_esd)= "+lani_h;
-	// 	}
-    //     else
-	// 	{
-    //         sql_str += " AND month(nkpr_gl_esd)= "+mjesec_h;
-    //         sql_str += " AND YEAR(nkpr_gl_esd)= "+lani_h;
-    //     }
-    // }
-
-    // filterPart();
-    // sql_str += " GROUP BY NKPR_GL_CUSCOD";
-    // sql_str += " ORDER BY NKPR_GL_CUSCOD";
-	// try	{
-	// 	sqlResult = sqlQuery(sql_str);
-	// }catch(exc){
-	// 	MessageBox(exc);
-	// }
+	sql_str = "SELECT TOP 100";
+	sql_str += " ARTI_ARTIKL, ARTI_NAZIV, CONVERT(varchar, ARTI_DAT_PRVI, 3)";
+	sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKARTI";
+	sql_str += " WHERE 1 = 1";
+	if (sklad_str != "")
+	{
+        sql_str += " AND ARTI_ARTIKL IN (SELECT DISTINCT ZAMK_SIF_ARTIKL FROM " + trenutnaGodinaBaza + ".dbo.NKMKARTK WHERE ZAMK_SKLADISTE IN (" + sklad_str + "))";
+	}
+	if (artikl != "")
+	{
+        sql_str += " AND ARTI_ARTIKL = '" + artikl + "'";
+	}
+	filterPartNKMKARTI();
 	
-	// RunOnMain("fillCustomerArrays2");
+	sql_str += " ORDER BY arti_dat_prvi desc";
 
-	// RunOnMain("customerDataGrid");
+	try	{
+		sqlResult = sqlQuery(sql_str);
+	}catch(exc){
+		MessageBox(exc);
+	}
+	
+	RunOnMain("setNewProductsDataGrid1");
 }
 
-function fillCustomerArrays(){
-	for ( i = 0; i < 10; i++ )
+function setNewProductsDataGrid0(){
+	for ( i = 0; i < 100; i++ )
 	{
-		namePart_ar[i] =  "";
-		codePart_ar[i] =  "";
-		salesPart1_ar[i] =  0;
-		salesPart2_ar[i] =  0;
-		top10Part_ar[i] =  0;
-		IndexPart_ar[i] =  0;
-		imagePart_ar[i] = "";
+		top100_novi_Rbr_ar = 0;
+		top100_novi_sifraArtikla_ar = "";
+		top100_novi_nazivArtikla_ar = "";
+		top100_novi_prviUlaz_ar = "";
 	}	
+}
 
+function setNewProductsDataGrid1(){    
 	if(Size(sqlResult) > 1)
 	{
 		for ( i = 1; i < Size(sqlResult); i++ )
 		{        
-			namePart_ar[i - 1] =  sqlResult[i][1]; //namepart;
-			codePart_ar[i - 1] =  sqlResult[i][0]; //codepart;
-			salesPart1_ar[i - 1] =  sqlResult[i][2]; //sales1;
-			salesPart2_ar[i - 1] =  0; //sqlResult[i][2]; sales2;
-			top10Part_ar[i - 1] =  i;
+			top100_novi_Rbr_ar[i - 1] =  i;
+			top100_novi_sifraArtikla_ar[i - 1] =  sqlResult[i][0];
+			top100_novi_nazivArtikla_ar[i - 1] =  sqlResult[i][1];
+			top100_novi_prviUlaz_ar[i - 1] = sqlResult[i][2];
 		} 
 	}
 
-	in_string= "";
-	for (cntr = 0; cntr < Size(codePart_ar); cntr++ )
-	{
-        in_string= in_string+"'"+codePart_ar[cntr];
-		if(cntr==Size(codePart_ar)-1)
-		{
-			in_string= in_string+"'";
-		}
-		else
-		{
-			in_string= in_string+"',";
-		}
-    }
-}
-
-function setCntr2(){
-	cntr2= 0;
-}
-
-function fillCustomerArrays2(){    
-	if(Size(sqlResult) > 1)
-	{
-		for ( i = 1; i < Size(sqlResult); i++ )
-		{    
-			cntr2= find_index(codepart_ar,sqlResult[i][0]);    
-			if (cntr2 >= 0)  //if not -1
-			{
-				salesPart2_ar[cntr2] =  sqlResult[i][1]; 
-				if(salesPart2_ar[cntr2] != 0)
-				{
-					IndexPart_ar[cntr2] =  Math.Round(((salesPart1_ar[cntr2] - salesPart2_ar[cntr2])/salesPart2_ar[cntr2]) * 100, 0);
-				}
-				else
-				{
-					IndexPart_ar[cntr2] =  0;
-				}
-			} 
-			else
-			{
-				IndexPart_ar[cntr2] =  0;
-			}
-		}
-
-		for(i = 0; i < Size(salesPart1_ar); i++){
-			if(salesPart1_ar[i] > salesPart2_ar[i]){
-				imagePart_ar[i] = strtrim(ipath()) + "greenArrow64.png";
-			}elif(salesPart1_ar[i] < salesPart2_ar[i]){
-				imagePart_ar[i] = strtrim(ipath()) + "redArrow64.png";
-			}else{
-				imagePart_ar[i] = "";
-			}
-		}
-	}
-}
-
-function customerDataGrid(){
-	DisplayArray("dgStavke", "close");
-	Format("SALESPART2_AR", "nofd");
-	Format("SALESPART1_AR", "nofd");
+	DisplayArray("dgNoviArtikli", "close");
+	// Format("SALESPART2_AR", "nofd");
+	// Format("SALESPART1_AR", "nofd");
 	if(Size(sqlResult) - 1 > 0){
-        // DisplayArraySetup("dgNaNuli", counterFld: cntr2, activeElements: Size(sqlResult) - 1, maxElements: 100);    
-		DisplayArraySetup("dgStavke", counterFld: "cntr1", activeElements: size, maxElements: 10);
+		DisplayArraySetup("dgNoviArtikli", counterFld: cntr2, activeElements: Size(sqlResult) - 1, maxElements: 100);
     }
 }
-
-//-----------------------------------------------------------
-
-

@@ -265,9 +265,10 @@ function callSetStanje(){
     AsyncCall("setStanje", "callSetProsjecnoStanje");
 }
 function callSetProsjecnoStanje(){
-    AsyncCall("setProsjecnoStanje", "end");
+    AsyncCall("setProsjecnoStanje", "callSetBroj");
 }
-//----
+
+//--------------------
 function callSetHorizontalBars(){
     AsyncCall("setHorizontalBars", "callSetWeekComparison");
 }
@@ -279,6 +280,11 @@ function callSetCustomerAndInvoiceCounts(){
 }
 function callSetSalesRatio(){
     AsyncCall("setSalesRatio", "end");
+}
+//---------------
+
+function callSetBroj(){
+    AsyncCall("setBroj", "end");
 }
 function end(){
     cursor("dflt");
@@ -630,6 +636,118 @@ function setProsjecnoStanje1(){
     }
 }
 
+function setBroj(){
+
+    //broj artikala trenutna godina
+    sql_str = "SELECT count(distinct RMPR_ARTIKL) ";
+	sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.NKMKARTI ON RMPR_ARTIKL = ARTI_ARTIKL"; 
+    sql_str += " WHERE year(rmpr_datum_dok) = " + ovagod_h;
+    sql_str += " AND month(rmpr_datum_dok) BETWEEN " + mjesecOD + " AND " + mjesecDo;
+	filterPart();
+	try	{
+		sqlResult = sqlQuery(sql_str);
+	}catch(exc){
+		MessageBox(exc);
+	}    
+    RunOnMain("brojArtikalaOva");
+
+    //broj artikala prošla godina
+    sql_str = "SELECT count(distinct RMPR_ARTIKL) ";
+	sql_str += " FROM " + proslaGodinaBaza + ".dbo.NKMKPROM";
+	sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.NKMKARTI ON RMPR_ARTIKL = ARTI_ARTIKL"; 
+    sql_str += " WHERE year(rmpr_datum_dok) = " + lani_h;
+    sql_str += " AND month(rmpr_datum_dok) BETWEEN " + mjesecOD + " AND " + mjesecDo;
+	filterPart();
+	try	{
+		sqlResult = sqlQuery(sql_str);
+	}catch(exc){
+		MessageBox(exc);
+	}    
+    RunOnMain("brojArtikalaProsla");
+
+
+    //broj temeljnica trenutna godina
+    sql_str = "SELECT count(distinct RMPR_BR_DOK) ";
+	sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.NKMKARTI ON RMPR_ARTIKL = ARTI_ARTIKL"; 
+    sql_str += " WHERE year(rmpr_datum_dok) = " + ovagod_h;
+    sql_str += " AND month(rmpr_datum_dok) BETWEEN " + mjesecOD + " AND " + mjesecDo;
+	filterPart();
+	try	{
+		sqlResult = sqlQuery(sql_str);
+	}catch(exc){
+		MessageBox(exc);
+	}    
+    RunOnMain("brojTemeljnicaOva");
+
+    //broj temeljnica prošla godina
+    sql_str = "SELECT count(distinct RMPR_BR_DOK) ";
+	sql_str += " FROM " + proslaGodinaBaza + ".dbo.NKMKPROM";
+	sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.NKMKARTI ON RMPR_ARTIKL = ARTI_ARTIKL"; 
+    sql_str += " WHERE year(rmpr_datum_dok) = " + lani_h;
+    sql_str += " AND month(rmpr_datum_dok) BETWEEN " + mjesecOD + " AND " + mjesecDo;
+	filterPart();
+	try	{
+		sqlResult = sqlQuery(sql_str);
+	}catch(exc){
+		MessageBox(exc);
+	}    
+    RunOnMain("brojTemeljnicaProsla");
+
+
+    //broj stavaka trenutna godina
+    sql_str = "SELECT count(*) ";
+	sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.NKMKARTI ON RMPR_ARTIKL = ARTI_ARTIKL"; 
+    sql_str += " WHERE year(rmpr_datum_dok) = " + ovagod_h;
+    sql_str += " AND month(rmpr_datum_dok) BETWEEN " + mjesecOD + " AND " + mjesecDo;
+	filterPart();
+	try	{
+		sqlResult = sqlQuery(sql_str);
+	}catch(exc){
+		MessageBox(exc);
+	}    
+    RunOnMain("brojStavakaOva");
+
+    //broj stavaka prošla godina
+    sql_str = "SELECT count(*) ";
+	sql_str += " FROM " + proslaGodinaBaza + ".dbo.NKMKPROM";
+	sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.NKMKARTI ON RMPR_ARTIKL = ARTI_ARTIKL"; 
+    sql_str += " WHERE year(rmpr_datum_dok) = " + lani_h;
+    sql_str += " AND month(rmpr_datum_dok) BETWEEN " + mjesecOD + " AND " + mjesecDo;
+	filterPart();
+	try	{
+		sqlResult = sqlQuery(sql_str);
+	}catch(exc){
+		MessageBox(exc);
+	}    
+    RunOnMain("brojStavakaProsla");
+}
+
+function brojArtikalaOva(){
+    HorizontalBar("HorizontalBarBrArtikalaOG", "Text", sqlResult[1][0]);
+}
+
+function brojArtikalaProsla(){
+    HorizontalBar("HorizontalBarBrArtikalaLG", "Text", sqlResult[1][0]);
+}
+
+function brojTemeljnicaOva(){
+    HorizontalBar("HorizontalBarBrTemeljnicaOG", "Text", sqlResult[1][0]);
+}
+
+function brojTemeljnicaProsla(){
+    HorizontalBar("HorizontalBarBrTemeljnicaLG", "Text", sqlResult[1][0]);
+}
+
+function brojStavakaOva(){
+    HorizontalBar("HorizontalBarBrStavakaOG", "Text", sqlResult[1][0]);
+}
+
+function brojStavakaProsla(){
+    HorizontalBar("HorizontalBarBrStavakaLG", "Text", sqlResult[1][0]);
+}
 
 
 

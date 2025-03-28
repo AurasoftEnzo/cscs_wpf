@@ -1,5 +1,6 @@
 //using CefSharp.DevTools.FedCm;
 using CSCS.InterpreterManager;
+using LiveChartsCore.SkiaSharpView.WPF;
 using SplitAndMerge;
 using System;
 using System.Collections.Generic;
@@ -4096,9 +4097,21 @@ namespace WpfCSCS
 			{
                 return true;
             }
+			else if (widget is CartesianChart)
+			{
+				return true;
+			}
+			else if (widget is PieChart)
+			{
+				return true;
+			}
+			//else if (widget is ...)
+   //         {
+   //             return true;
+   //         }
 
 
-			else if (widget is ComboBox)
+            else if (widget is ComboBox)
 			{
 				var combo = widget as ComboBox;
 				if (index < 0)

@@ -20,13 +20,107 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Rectangle Fill="#FFEEEDF1" RadiusX="7" RadiusY="7" Margin="5" Grid.ColumnSpan="2"/>
+            <Rectangle Fill="#FFEEEDF1" RadiusX="7" RadiusY="7" Margin="5"/>
+            <Rectangle Fill="#FFEEEDF1" RadiusX="7" RadiusY="7" Margin="5" Grid.Column="1"/>
             <Rectangle Fill="#FFEEEDF1" RadiusX="7" RadiusY="7" Margin="5" Grid.Row="1"/>
             <Rectangle Fill="#FFEEEDF1" RadiusX="7" RadiusY="7" Margin="5" Grid.Row="1" Grid.Column="1"/>
-            <lvc:CartesianChart LegendPosition="Right"
+
+            <!--<lvc:CartesianChart LegendPosition="Right"
                             x:Name="ChartPoMjesecima"
                             Margin="23,45,23,10" 
-                               Height="300" Grid.ColumnSpan="2"/>
+                               Height="300" Grid.ColumnSpan="2"/>-->
+
+            <DataGrid GridLinesVisibility="Horizontal"
+          HorizontalGridLinesBrush="#FFD7D6D6"
+      HorizontalAlignment="Center"
+      VerticalAlignment="Top"
+      Height="245"
+      Width="540"
+      IsReadOnly="true"
+      Name="dgNekurentniArtikli"
+          RowHeight="22"
+          FontSize="15"
+      HorizontalScrollBarVisibility="Auto"
+      VerticalScrollBarVisibility="Auto"
+      Background="White"
+      TabIndex="19" Margin="0,42,0,20"  BorderThickness="0,0,0,0">
+                <DataGrid.Resources>
+                    <Style TargetType="{x:Type DataGridColumnHeader}">
+                        <Setter Property="Background"
+                Value="#488A99" />
+                        <Setter Property="Foreground"
+                Value="White" />
+                        <Setter Property="FontSize" Value="17"/>
+
+                        <Setter Property="BorderBrush" Value="White"/>
+                        <Setter Property="BorderThickness" Value="1"/>
+                    </Style>
+                </DataGrid.Resources>
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="No."
+                            Width="28">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="top100_nekurentni_Rbr_ar"
+                                HorizontalContentAlignment="Left" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Šifra artikla"
+                            Width="110">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="top100_nekurentni_sifraArtikla_ar"
+                                HorizontalContentAlignment="Left" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Naziv artikla"
+                            Width="110">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="top100_nekurentni_nazivArtikla_ar"
+                                HorizontalContentAlignment="Left" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Zalihe"
+                            Width="80">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="top100_nekurentni_zalihe_ar"
+                                HorizontalContentAlignment="Right" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Jed.mj."
+                            Width="60">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="top100_nekurentni_jedMjere_ar"
+                                HorizontalContentAlignment="Center" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Nema izlaza od">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="top100_nekurentni_NemaIzlazaOd_ar"
+                                    HorizontalContentAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <ComboBox x:Name="comboBoxNekurentniBrojDana" DataContext="NekurentniBrojDana_cb" FontWeight="Bold"
+                      HorizontalAlignment="Center" Margin="0,15,0,0" VerticalAlignment="Top" Width="47" Height="22" 
+                       />
+            <Label VerticalAlignment="Top" HorizontalAlignment="Left" Width="71" Height="35" Margin="315,10,0,0" 
+    Content="mjeseci"
+    FontSize="16"
+    FontWeight="Bold"/>
+
             <Label HorizontalAlignment="Left" Content="Broj dana" Grid.Row="1" Grid.Column="0" VerticalAlignment="Top" Width="86" FontSize="16" FontWeight="Bold" Margin="23,5,0,0" BorderBrush="{x:Null}"/>
             <ComboBox x:Name="comboBoxNaNuli" DataContext="NaNuli_cb" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,9,415,0" VerticalAlignment="Top" Width="62" Height="22" Grid.Row="1" />
 
@@ -95,7 +189,7 @@
                 </DataGrid.Columns>
             </DataGrid>
             <Label HorizontalAlignment="Left" Content="100 artikala s" Grid.Row="1" Grid.Column="1" VerticalAlignment="Top" Width="114" FontSize="16" FontWeight="Bold" Margin="24,5,0,0" BorderBrush="{x:Null}"/>
-            <Label HorizontalAlignment="Left" Content="Prosječne zalihe po mjesecima" VerticalAlignment="Top" Width="272" FontSize="16" FontWeight="Bold" Margin="23,10,0,0" BorderBrush="{x:Null}" Background="{x:Null}"/>
+            <Label HorizontalAlignment="Left" Content="Nekurentni artikli u posljednjih" VerticalAlignment="Top" Width="245" FontSize="16" FontWeight="Bold" Margin="23,10,0,0" BorderBrush="{x:Null}" Background="{x:Null}"/>
             <DataGrid GridLinesVisibility="Horizontal"
                       HorizontalGridLinesBrush="#FFD7D6D6"
                   Margin="24,32,20,14"
@@ -159,7 +253,7 @@
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    
+
                 </DataGrid.Columns>
             </DataGrid>
             <Button Grid.Column="1"

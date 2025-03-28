@@ -6,7 +6,7 @@
 //using LiveChartsCore.SkiaSharpView.Painting;
 //using LiveChartsCore.SkiaSharpView.VisualElements;
 //using LiveChartsCore.SkiaSharpView.WPF;
-using LiveCharts.Defaults;
+//using LiveCharts.Defaults;
 using LiveChartsCore;
 using LiveChartsCore.ConditionalDraw;
 using LiveChartsCore.Defaults;
@@ -39,8 +39,6 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.CHART, new ChartFunction());
             interpreter.RegisterFunction(Constants.PIE_CHART, new PieChartFunction());
             interpreter.RegisterFunction(Constants.GAUGE_CHART, new GaugeChartFunction());
-            
-
         }
 
         //static List<SolidColorPaint> colorList = new List<SolidColorPaint>()
@@ -51,7 +49,6 @@ namespace WpfCSCS
         //};
 
         CSCS_GUI Gui { get; set; }
-
 
         class ChartFunction : ParserFunction
         {
@@ -107,7 +104,7 @@ namespace WpfCSCS
                             //if (chartsTypes[widgetName] == "columnseries")
                             if (valueVariable.String.ToLower() == "bar")
                             {
-                                temp.Add(new ColumnSeries<double>() { 
+                                temp.Add(new ColumnSeries<double> { 
                                     Values = newList, /*, Fill = colorList[temp.Count]*/
                                     YToolTipLabelFormatter = (chartPoint) => $"{newList[(int)chartPoint.Coordinate.SecondaryValue].ToString("N")}"
                                 });
@@ -305,6 +302,14 @@ namespace WpfCSCS
                             }
                         }
                     }
+                    else if (optionString == "color.labels")
+                    {
+                        var newColor = new SolidColorPaint(SkiaSharp.SKColor.Parse(ToHex((Color)ColorConverter.ConvertFromString(valueVariable.String))));
+
+                        cartesianWidget.XAxes.First().LabelsPaint = newColor;
+                        cartesianWidget.YAxes.First().LabelsPaint = newColor;
+                        cartesianWidget.LegendTextPaint = newColor;
+                    }
                     else if (optionString == "text.seriesnames")
                     {
                         var parameter = Utils.GetSafeString(args, 2);
@@ -366,7 +371,7 @@ namespace WpfCSCS
                         {
                             var temp = pieWidget.Series.ToList();
 
-                            if(value3Variable.Value == 0)
+                            if( double.IsNaN(value3Variable.Value) || value3Variable.Value == 0)
                             {
                                 temp.Add(new PieSeries<double>() { Values = new List<double>() { valueVariable.Value }/*, Fill = colorList[temp.Count]*/, ToolTipLabelFormatter = tooltipFormater});
                             }
@@ -444,9 +449,10 @@ namespace WpfCSCS
                                 break;
                             
                             (seriesList[i] as PieSeries<double>).Fill = new SolidColorPaint(SKColor.Parse(ToHex((Color)ColorConverter.ConvertFromString(valueVariable.Tuple[i].String))));
-                        }      
-                        
-                        //pieWidget.Series = series;
+                            //(seriesList[i] as PieSeries<double>).Stroke = new SolidColorPaint(SKColor.Parse(ToHex((Color)ColorConverter.ConvertFromString(valueVariable.Tuple[i].String))));
+                        }
+
+                        //pieWidget.Series = seriesList;
                     }
                     //else if(optionString == "separatorstep")
                     //{
@@ -470,12 +476,12 @@ namespace WpfCSCS
                             if (chartsTypes[widgetName] == "columnseries")
                             {
                                 //(series as ColumnSeries<double>).TooltipLabelFormatter = (chartPoint) => $"{chartPoint.PrimaryValue.ToString($"N{valueVariable.Value}")}";
-                                (series as ColumnSeries<double>).XToolTipLabelFormatter = (chartPoint) => $"{chartPoint.PrimaryValue.ToString($"N{valueVariable.Value}")}";
+                                (series as ColumnSeries<double>).XToolTipLabelFormatter = (chartPoint) => $"{chartPoint.Coordinate.PrimaryValue.ToString($"N{valueVariable.Value}")}";
                             }
                             else if (chartsTypes[widgetName] == "lineseries")
                             {
                                 //(series as LineSeries<double>).TooltipLabelFormatter = (chartPoint) => $"{chartPoint.PrimaryValue.ToString($"N{valueVariable.Value}")}";
-                                (series as LineSeries<double>).XToolTipLabelFormatter = (chartPoint) => $"{chartPoint.PrimaryValue.ToString($"N{valueVariable.Value}")}";
+                                (series as LineSeries<double>).XToolTipLabelFormatter = (chartPoint) => $"{chartPoint.Coordinate.PrimaryValue.ToString($"N{valueVariable.Value}")}";
                             }
                         }
 
@@ -490,7 +496,7 @@ namespace WpfCSCS
 
             private string tooltipFormater(ChartPoint<double, DoughnutGeometry, LabelGeometry> arg)
             {
-                return arg.PrimaryValue.ToString("N0");
+                return arg.Coordinate.PrimaryValue.ToString("N0");
             }
         }
         

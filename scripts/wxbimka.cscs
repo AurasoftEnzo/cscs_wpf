@@ -7,7 +7,7 @@ Import(strTrim(mpath()) + "CSCS.Math.dll");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbimka_inc_lists.cscs") : strTrim(tpath()) + "wxbimka_inc_lists.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbimka_inc_a.cscs") : strTrim(tpath()) + "wxbimka_inc_a.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbimka_inc_b.cscs") : strTrim(tpath()) + "wxbimka_inc_b.cscs");
-include(DownloadScripts() == true ? Download(ServerAddress() + "wxbimka_inc_c.cscs") : strTrim(tpath()) + "wxbimka_inc_c.cscs");
+// include(DownloadScripts() == true ? Download(ServerAddress() + "wxbimka_inc_c.cscs") : strTrim(tpath()) + "wxbimka_inc_c.cscs");
 
 // include(strTrim(tpath()) + "wxbimka_inc_lists.cscs");
 // include(strTrim(tpath()) + "wxbimka_inc_a.cscs");
@@ -25,12 +25,12 @@ function wxbimka_OnClose()
 }
 function Wxbimka_onDisplay()
 {
-    SetWidgetOptions("EllipseProdajaUGodini", "Visible", false);
-    SetWidgetOptions("EllipseProdajaUMjesecu", "Visible", false);
-    SetWidgetOptions("EllipseProdajaUTjednu", "Visible", false);
-    SetWidgetOptions("EllipseBrojKupaca", "Visible", false);
-    SetWidgetOptions("EllipseBrojRacuna", "Visible", false);
-    SetWidgetOptions("EllipseProsjProdajaPoKupcu", "Visible", false);
+    // SetWidgetOptions("EllipseProdajaUGodini", "Visible", false);
+    // SetWidgetOptions("EllipseProdajaUMjesecu", "Visible", false);
+    // SetWidgetOptions("EllipseProdajaUTjednu", "Visible", false);
+    // SetWidgetOptions("EllipseBrojKupaca", "Visible", false);
+    // SetWidgetOptions("EllipseBrojRacuna", "Visible", false);
+    // SetWidgetOptions("EllipseProsjProdajaPoKupcu", "Visible", false);
 
     args = CommandLineArgs(); 
     if(Size(args) > 2){
@@ -199,7 +199,7 @@ function DisableButtons(){
     SetWidgetOptions("gbPrint", "IsEnabled", "false");
     SetWidgetOptions("gbZaliheI", "IsEnabled", "false");
     SetWidgetOptions("gbZaliheII", "IsEnabled", "false");
-    SetWidgetOptions("gbZaliheIII", "IsEnabled", "false");
+    // SetWidgetOptions("gbZaliheIII", "IsEnabled", "false");
     SetWidgetOptions("gbExit", "IsEnabled", "false");
 }
 
@@ -208,7 +208,7 @@ function EnableButtons(){
     SetWidgetOptions("gbPrint", "IsEnabled", "true");
     SetWidgetOptions("gbZaliheI", "IsEnabled", "true");
     SetWidgetOptions("gbZaliheII", "IsEnabled", "true");
-    SetWidgetOptions("gbZaliheIII", "IsEnabled", "true");
+    // SetWidgetOptions("gbZaliheIII", "IsEnabled", "true");
     SetWidgetOptions("gbExit", "IsEnabled", "true");
 }
 
@@ -264,27 +264,35 @@ function gbPripremi@clicked()
 function callSetStanje(){
     AsyncCall("setStanje", "callSetProsjecnoStanje");
 }
+
 function callSetProsjecnoStanje(){
     AsyncCall("setProsjecnoStanje", "callSetBroj");
 }
 
 //--------------------
-function callSetHorizontalBars(){
-    AsyncCall("setHorizontalBars", "callSetWeekComparison");
-}
-function callSetWeekComparison(){
-    AsyncCall("setWeekComparison", "callSetCustomerAndInvoiceCounts");
-}
-function callSetCustomerAndInvoiceCounts(){
-    AsyncCall("setCustomerAndInvoiceCounts", "callSetSalesRatio");
-}
-function callSetSalesRatio(){
-    AsyncCall("setSalesRatio", "end");
-}
-//---------------
+// function callSetHorizontalBars(){
+//     AsyncCall("setHorizontalBars", "callSetWeekComparison");
+// }
+// function callSetWeekComparison(){
+//     AsyncCall("setWeekComparison", "callSetCustomerAndInvoiceCounts");
+// }
+// function callSetCustomerAndInvoiceCounts(){
+//     AsyncCall("setCustomerAndInvoiceCounts", "callSetSalesRatio");
+// }
+// function callSetSalesRatio(){
+//     AsyncCall("setSalesRatio", "end");
+// }
+//---------------setChartByMonthChart
 
 function callSetBroj(){
-    AsyncCall("setBroj", "end");
+    AsyncCall("setBroj", "callSetChartByMonthChart");
+}
+function callSetChartByMonthChart(){
+    setChartByMonthChart();
+    end();
+}
+function callSetChartByMonth(){
+    AsyncCall("setChartByMonthChart", "end");
 }
 function end(){
     cursor("dflt");
@@ -354,6 +362,432 @@ function gbExit@clicked()
         quit;
     }
 }
+
+
+function setChartByMonth()
+{
+    RunOnMain("setChartByMonth0");
+
+    //MessageBox("start");
+
+    // prošla godina prosjecne zalihe po mjesecima
+    // SQL_str = "SET query_governor_cost_limit 0;";
+    if ( proslaGodinaBaza != "" )
+    {
+        sql_str = "WITH promet AS(";
+        sql_str += " SELECT rmpr_datum_dok,";
+
+        if (prodajna_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_obr, 2) ELSE -round(rmpr_cena_obr, 2) END), 2), 0) AS transaction_amount";
+        }
+        elif (nabavna_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_uk, 2) ELSE -round(rmpr_cena_uk, 2) END), 2), 0) AS transaction_amount";
+        }
+        elif (razlikaUCijeni_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_obr - rmpr_cena_uk, 2) ELSE -round(rmpr_cena_obr - rmpr_cena_uk, 2) END), 2), 0) AS transaction_amount";
+        }
+        elif (tezina_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_tezina, 2) ELSE -round(rmpr_tezina, 2) END), 2), 0) AS transaction_amount";
+        }
+        elif (mx3_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_metx3, 2) ELSE -round(rmpr_metx3, 2) END), 2), 0) AS transaction_amount";
+        }
+        elif (mx2_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_metx2, 2) ELSE -round(rmpr_metx2, 2) END), 2), 0) AS transaction_amount";
+        }
+        elif (met_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_met, 2) ELSE -round(rmpr_met, 2) END), 2), 0) AS transaction_amount";
+        }
+        elif (kom_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_komada, 2) ELSE -round(rmpr_komada, 2) END), 2), 0) AS transaction_amount";
+        }
+
+        sql_str += " FROM " + proslaGodinaBaza + ".dbo.NKMKPROM";
+        sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.NKMKARTI ON RMPR_ARTIKL = ARTI_ARTIKL";
+
+        sql_str += " WHERE year(rmpr_datum_dok) = " + lani_h;
+        filterPart();
+
+        sql_str += " GROUP BY RMPR_DATUM_DOK),";
+        
+        sql_str += " sviDani AS(";
+        sql_str += " SELECT convert(date, DATEADD(DAY,number,'" + lani_h + "-01-01')) as datum,";
+        sql_str += " ISNULL(transaction_amount, 0) as transaction_amount";
+        sql_str += " FROM master..spt_values";
+        sql_str += " LEFT JOIN promet on convert(date, DATEADD(DAY,number,'" + lani_h + "-01-01')) = rmpr_datum_dok";
+        sql_str += " WHERE type = 'P'";
+        sql_str += " AND DATEADD(DAY,number, '" + lani_h + "-01-01') <= '" + lani_h + "-12-31'";
+        sql_str += " ),";
+
+
+        sql_str += " DailyBalance AS (";
+        sql_str += " SELECT datum,";
+        sql_str += " SUM(transaction_amount) OVER (ORDER BY datum ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS cumulative_balance";
+        sql_str += " FROM sviDani),";
+
+        sql_str += " MonthlyBalance AS (";
+        sql_str += " SELECT DATEADD(month, DATEDIFF(month, 0, datum), 0) AS mjesec,";
+        sql_str += " AVG(cumulative_balance) AS monthly_avg_balance";
+        sql_str += " FROM DailyBalance";
+        sql_str += " GROUP BY DATEADD(month, DATEDIFF(month, 0, datum), 0)";
+        sql_str += " )";
+
+        sql_str += " SELECT convert(varchar(7), mjesec, 126),";
+        sql_str += " round(monthly_avg_balance, 2)";
+        sql_str += " FROM MonthlyBalance";
+        sql_str += " ORDER BY mjesec;";
+
+        try
+        {
+            //SaveFile(sql_str);
+            queryResult = sqlquery(SQL_str);
+        }
+        catch(exc)
+        {
+            MessageBox(exc);
+        }
+        
+        RunOnMain("setChartByMonth1");
+
+        //MessageBox("1");
+    }
+    
+    //// tekuća godina prosjecne zalihe po mjesecima
+    sql_str = "WITH promet AS(";
+    sql_str += " SELECT rmpr_datum_dok,";
+
+    if (prodajna_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_obr, 2) ELSE -round(rmpr_cena_obr, 2) END), 2), 0) AS transaction_amount";
+    }
+    elif (nabavna_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_uk, 2) ELSE -round(rmpr_cena_uk, 2) END), 2), 0) AS transaction_amount";
+    }
+    elif (razlikaUCijeni_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_obr - rmpr_cena_uk, 2) ELSE -round(rmpr_cena_obr - rmpr_cena_uk, 2) END), 2), 0) AS transaction_amount";
+    }
+    elif (tezina_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_tezina, 2) ELSE -round(rmpr_tezina, 2) END), 2), 0) AS transaction_amount";
+    }
+    elif (mx3_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_metx3, 2) ELSE -round(rmpr_metx3, 2) END), 2), 0) AS transaction_amount";
+    }
+    elif (mx2_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_metx2, 2) ELSE -round(rmpr_metx2, 2) END), 2), 0) AS transaction_amount";
+    }
+    elif (met_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_met, 2) ELSE -round(rmpr_met, 2) END), 2), 0) AS transaction_amount";
+    }
+    elif (kom_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_komada, 2) ELSE -round(rmpr_komada, 2) END), 2), 0) AS transaction_amount";
+    }
+    
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.NKMKARTI ON RMPR_ARTIKL = ARTI_ARTIKL";
+
+    sql_str += " WHERE year(rmpr_datum_dok) = " + ovagod_h;
+    filterPart();
+
+    sql_str += " GROUP BY RMPR_DATUM_DOK),";
+    
+    sql_str += " sviDani AS(";
+    sql_str += " SELECT convert(date, DATEADD(DAY,number,'" + ovagod_h + "-01-01')) as datum,";
+    sql_str += " ISNULL(transaction_amount, 0) as transaction_amount";
+    sql_str += " FROM master..spt_values";
+    sql_str += " LEFT JOIN promet on convert(date, DATEADD(DAY,number,'" + ovagod_h + "-01-01')) = rmpr_datum_dok";
+    sql_str += " WHERE type = 'P'";
+    if(int(ovagod_h) < int(now("yyyy"))){
+        doDatum = ovagod_h + "-12-31";
+    }else{
+        doDatum = now("yyyy-MM-dd");
+    }
+    sql_str += " AND DATEADD(DAY,number, '" + ovagod_h + "-01-01') <= '" + doDatum + "'";
+    sql_str += " ),";
+
+
+    sql_str += " DailyBalance AS (";
+    sql_str += " SELECT datum,";
+    sql_str += " SUM(transaction_amount) OVER (ORDER BY datum ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS cumulative_balance";
+    sql_str += " FROM sviDani),";
+
+    sql_str += " MonthlyBalance AS (";
+    sql_str += " SELECT DATEADD(month, DATEDIFF(month, 0, datum), 0) AS mjesec,";
+    sql_str += " AVG(cumulative_balance) AS monthly_avg_balance";
+    sql_str += " FROM DailyBalance";
+    sql_str += " GROUP BY DATEADD(month, DATEDIFF(month, 0, datum), 0)";
+    sql_str += " )";
+
+    sql_str += " SELECT convert(varchar(7), mjesec, 126),";
+    sql_str += " round(monthly_avg_balance, 2)";
+    sql_str += " FROM MonthlyBalance";
+    sql_str += " ORDER BY mjesec;";
+    
+    try
+    {
+        //SaveFile(sql_str);
+        queryResult = sqlquery(SQL_str);
+    }
+    catch(exc)
+    {
+        MessageBox(exc);
+    }
+
+    RunOnMain("setChartByMonth2");
+
+    //MessageBox("2");
+
+
+    
+    if ( proslaGodinaBaza != "" )
+    {
+        //prošla godina U i I
+        sql_str = "";
+        sql_str += " WITH promet AS(";
+        sql_str += " SELECT month(rmpr_datum_dok) as mjesec,";
+                
+        if (prodajna_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_obr, 2) ELSE 0 END), 2), 0) AS ulaz,";
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_cena_obr, 2) ELSE 0 END), 2), 0) AS izlaz";
+        }
+        elif (nabavna_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_uk, 2) ELSE 0 END), 2), 0) AS ulaz,";
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_cena_uk, 2) ELSE 0 END), 2), 0) AS izlaz";
+        }
+        elif (razlikaUCijeni_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_obr - rmpr_cena_uk, 2) ELSE 0 END), 2), 0) AS ulaz,";
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_cena_obr - rmpr_cena_uk, 2) ELSE 0 END), 2), 0) AS izlaz";
+        }
+        elif (tezina_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_tezina, 2) ELSE 0 END), 2), 0) AS ulaz,";
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_tezina, 2) ELSE 0 END), 2), 0) AS izlaz";
+        }
+        elif (mx3_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_metx3, 2) ELSE 0 END), 2), 0) AS ulaz,";
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_metx3, 2) ELSE 0 END), 2), 0) AS izlaz";
+        }
+        elif (mx2_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_metx2, 2) ELSE 0 END), 2), 0) AS ulaz,";
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_metx2, 2) ELSE 0 END), 2), 0) AS izlaz";
+        }
+        elif (met_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_met, 2) ELSE 0 END), 2), 0) AS ulaz,";
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_met, 2) ELSE 0 END), 2), 0) AS izlaz";
+        }
+        elif (kom_dn)
+        {
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_komada, 2) ELSE 0 END), 2), 0) AS ulaz,";
+            sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_komada, 2) ELSE 0 END), 2), 0) AS izlaz";
+        }
+
+        sql_str += " FROM " + proslaGodinaBaza + ".dbo.NKMKPROM";
+        sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.NKMKARTI on RMPR_ARTIKL = ARTI_ARTIKL";
+        sql_str += " WHERE RMPR_IZVOR_DOK != 'GO' AND year(rmpr_datum_dok) = " + lani_h;
+        filterPart();
+
+        sql_str += " GROUP BY month(rmpr_datum_dok)),";
+
+        sql_str += " allMonths AS (";
+        sql_str += " SELECT number as mjesec, isnull(ulaz, 0) as ulaz, isnull(izlaz, 0) as izlaz";
+        sql_str += " FROM master..spt_values LEFT JOIN promet on number = mjesec";
+        sql_str += " WHERE type = 'P'";
+        sql_str += " AND number <= 12 AND number > 0";
+        
+        sql_str += " )";
+        sql_str += " SELECT * FROM allMonths";
+        sql_str += " order by mjesec";
+
+        try
+        {
+            //SaveFile(sql_str);
+            queryResult = sqlquery(SQL_str);
+        }
+        catch(exc)
+        {
+            MessageBox(exc);
+        }
+
+        RunOnMain("setChartByMonth3");
+
+        //MessageBox("3");
+    }
+    
+       
+    //trenutna godina U i I
+    sql_str = "";
+    sql_str += " WITH promet AS(";
+    sql_str += " SELECT month(rmpr_datum_dok) as mjesec,";
+    
+    if (prodajna_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_obr, 2) ELSE 0 END), 2), 0) AS ulaz,";
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_cena_obr, 2) ELSE 0 END), 2), 0) AS izlaz";
+    }
+    elif (nabavna_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_uk, 2) ELSE 0 END), 2), 0) AS ulaz,";
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_cena_uk, 2) ELSE 0 END), 2), 0) AS izlaz";
+    }
+    elif (razlikaUCijeni_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_cena_obr - rmpr_cena_uk, 2) ELSE 0 END), 2), 0) AS ulaz,";
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_cena_obr - rmpr_cena_uk, 2) ELSE 0 END), 2), 0) AS izlaz";
+    }
+    elif (tezina_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_tezina, 2) ELSE 0 END), 2), 0) AS ulaz,";
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_tezina, 2) ELSE 0 END), 2), 0) AS izlaz";
+    }
+    elif (mx3_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_metx3, 2) ELSE 0 END), 2), 0) AS ulaz,";
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_metx3, 2) ELSE 0 END), 2), 0) AS izlaz";
+    }
+    elif (mx2_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_metx2, 2) ELSE 0 END), 2), 0) AS ulaz,";
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_metx2, 2) ELSE 0 END), 2), 0) AS izlaz";
+    }
+    elif (met_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_met, 2) ELSE 0 END), 2), 0) AS ulaz,";
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_met, 2) ELSE 0 END), 2), 0) AS izlaz";
+    }
+    elif (kom_dn)
+    {
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN round(rmpr_komada, 2) ELSE 0 END), 2), 0) AS ulaz,";
+        sql_str += " ISNULL(round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN round(rmpr_komada, 2) ELSE 0 END), 2), 0) AS izlaz";
+    }
+    
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.NKMKARTI on RMPR_ARTIKL = ARTI_ARTIKL";
+    sql_str += " WHERE RMPR_IZVOR_DOK != 'GO' AND year(rmpr_datum_dok) = " + ovagod_h;
+    filterPart();
+
+    sql_str += " GROUP BY month(rmpr_datum_dok)),";
+
+    sql_str += " allMonths AS (";
+    sql_str += " SELECT number as mjesec, isnull(ulaz, 0) as ulaz, isnull(izlaz, 0) as izlaz";
+    sql_str += " FROM master..spt_values LEFT JOIN promet on number = mjesec";
+    sql_str += " WHERE type = 'P'";
+    sql_str += " AND number <= 12 AND number > 0";
+    
+    sql_str += " )";
+    sql_str += " SELECT * FROM allMonths";
+    sql_str += " order by mjesec";
+
+    try
+    {
+        //SaveFile(sql_str);
+        queryResult = sqlquery(SQL_str);
+    }
+    catch(exc)
+    {
+        MessageBox(exc);
+    }
+
+    RunOnMain("setChartByMonth4");
+
+    //MessageBox("4");
+}
+
+//clear array + set labels
+function setChartByMonth0(){
+    for(i = 0; i < 24; i++)
+    {
+        ProsjecneZalihePoMjesecima[i] = 0;
+        UlazZalihaPoMjesecima[i] = 0;
+        IzlazZalihaPoMjesecima[i] = 0;
+
+        if(i < 12){
+            ZalihePoMjesecimaLabels[i] = string(i+1) + "./" + lani_h + ".";
+        }else{
+            ZalihePoMjesecimaLabels[i] = string(i-11) + "./" + ovagod_h + ".";
+        }
+    }
+}
+
+
+//prosla godina prosječno po mjesecima
+function setChartByMonth1(){
+    for(i = 1; i <= 12; i++)
+    {
+        ProsjecneZalihePoMjesecima[i - 1] = queryResult[i][1];
+    }
+}
+
+//trenutna godina prosječno po mjesecima
+function setChartByMonth2(){
+    
+    for(i = 1; i <= Size(queryResult)-1; i++)
+    {
+        ProsjecneZalihePoMjesecima[i + 11] = queryResult[i][1];
+    }
+}
+
+//prosla godina ulaz i izlaz
+function setChartByMonth3(){
+    for(i = 1; i <= 12; i++)
+    {
+        UlazZalihaPoMjesecima[i - 1] = queryResult[i][1];
+        IzlazZalihaPoMjesecima[i - 1] = queryResult[i][2];
+    }
+}
+
+//trenutna godina ulaz i izlaz
+function setChartByMonth4(){
+    
+    for(i = 1; i <= Size(queryResult)-1; i++)
+    {
+        UlazZalihaPoMjesecima[i + 11] = queryResult[i][1];
+        IzlazZalihaPoMjesecima[i + 11] = queryResult[i][2];
+    }
+}
+
+function setChartByMonthChart(){
+    Chart("ChartPoMjesecima", "init");
+    //Chart("ChartPoMjesecima", "seriesType", "Columnseries");
+    //Chart("ChartPoMjesecima", "title", "Naslov grafa", 20);
+    Chart("ChartPoMjesecima", "values", "bar", ProsjecneZalihePoMjesecima, "Prosječne zalihe"); // !
+    Chart("ChartPoMjesecima", "values", "line", IzlazZalihaPoMjesecima, "Izlaz zaliha"); // !
+    Chart("ChartPoMjesecima", "values", "line", UlazZalihaPoMjesecima, "Ulaz zaliha"); // !
+    // Chart("ChartPoMjesecima", "values", "bar", arrayTrenutna, STRING(ovagod_h)); //!
+    Chart("ChartPoMjesecima", "SeparatorStep", 1);
+    //Chart("ChartPoMjesecima", "Margins", {50, 20, 0, 30});
+    Chart("ChartPoMjesecima", "TooltipDecimalPlaces", 0);
+    Chart("ChartPoMjesecima", "Color.Series", { "#FFFF7E47", "red", "limegreen"}); 
+    Chart("ChartPoMjesecima", "xlabelsRotation", 90);
+    Chart("ChartPoMjesecima", "labels", "x", 15, ZalihePoMjesecimaLabels);
+    Chart("ChartPoMjesecima", "Color.labels", "White");
+
+    SetWidgetOptions("ChartPoMjesecima", "Visible", "true");
+}
+
+
+
+//--------------------------------------------------------
+
 
 function setStanje(){
 

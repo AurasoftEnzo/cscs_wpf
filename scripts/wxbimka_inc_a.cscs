@@ -84,7 +84,23 @@ function setTop100NekurentniArtikli()
 	SQL_str = "DECLARE @datumDo DATE = '" + datum + "';";
 	SQL_str += " DECLARE @brojDana int = (DATEDIFF(DAY, DATEADD(MONTH, -" + NekurentniBrojDana_cb + ", @datumDo), @datumDo) + 1);";
 
-    sql_str += " WITH InventorySummary AS (";
+    sql_str += " WITH";
+    sql_str += " artikliDobavljacaIKupca";
+    sql_str += " AS(SELECT";
+    sql_str += " distinct RMPR_ARTIKL as artikl";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    if(dobavljacAsortiman != ""){
+        sql_str += " where RMPR_UL_IZL = 'u' and rmpr_partner = '" + dobavljacAsortiman + "'";
+    }
+    sql_str += " INTERSECT";
+    sql_str += " SELECT distinct RMPR_ARTIKL as artikl";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    if(kupacAsortiman != ""){
+        sql_str += " where RMPR_UL_IZL = 'i' and rmpr_partner = '" + kupacAsortiman + "'";
+    }
+    sql_str += " ),";
+
+    sql_str += " InventorySummary AS (";
     sql_str += " SELECT rmpr_artikl,";
     sql_str += " ROUND(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN rmpr_kolicina ELSE 0 END), 4) AS TotalInput,";
     sql_str += " ROUND(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN rmpr_kolicina ELSE 0 END), 4) AS TotalOutput,";
@@ -94,6 +110,7 @@ function setTop100NekurentniArtikli()
     sql_str += " left join " + trenutnaGodinaBaza + ".dbo.nkmkarti on arti_artikl = rmpr_artikl";
     sql_str += " left join " + trenutnaGodinaBaza + ".dbo.nkmkartk on zamk_sif_artikl = rmpr_artikl";
     sql_str += " WHERE arti_tip IN ('R','G','S') AND rmpr_datum_dok <= @datumDo";
+    sql_str += " AND RMPR_ARTIKL IN (SELECT * FROM artikliDobavljacaIKupca)";
 	filterPart();
     sql_str += " GROUP BY rmpr_artikl";
     sql_str += " ),";
@@ -112,6 +129,7 @@ function setTop100NekurentniArtikli()
     sql_str += " WHERE p.rmpr_ul_izl = 'I'";
     sql_str += " AND p.rmpr_datum_dok > ci.LastInputDate";
     sql_str += " AND p.rmpr_datum_dok <= @datumDo";
+    sql_str += " AND p.RMPR_ARTIKL IN (SELECT * FROM artikliDobavljacaIKupca)";
     sql_str += " GROUP BY p.rmpr_artikl";
     sql_str += " )";
 
@@ -217,7 +235,23 @@ function SetDaysOnZero(){
     //     sql_str += " DECLARE @date_to DATE = '" + now("yyyy-MM-dd") + "';";
     // }
 
-    sql_str += " WITH InventoryBalance AS (";
+    sql_str += " WITH";
+    sql_str += " artikliDobavljacaIKupca";
+    sql_str += " AS(SELECT";
+    sql_str += " distinct RMPR_ARTIKL as artikl";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    if(dobavljacAsortiman != ""){
+        sql_str += " where RMPR_UL_IZL = 'u' and rmpr_partner = '" + dobavljacAsortiman + "'";
+    }
+    sql_str += " INTERSECT";
+    sql_str += " SELECT distinct RMPR_ARTIKL as artikl";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    if(kupacAsortiman != ""){
+        sql_str += " where RMPR_UL_IZL = 'i' and rmpr_partner = '" + kupacAsortiman + "'";
+    }
+    sql_str += " ),";
+
+    sql_str += " InventoryBalance AS (";
     sql_str += " SELECT rmpr_artikl, rmpr_datum_dok,";
     sql_str += " SUM(CASE WHEN rmpr_ul_izl = 'U' THEN rmpr_kolicina ELSE -rmpr_kolicina END) AS transaction_amount";
 
@@ -226,6 +260,7 @@ function SetDaysOnZero(){
     
     sql_str += " WHERE rmpr_kolicina <> 0 AND rmpr_datum_dok BETWEEN @date_from AND @date_to";
     sql_str += " AND arti_tip IN ('R', 'G', 'S')";
+    sql_str += " AND RMPR_ARTIKL IN (SELECT * FROM artikliDobavljacaIKupca)";
     
     filterPart();
 
@@ -353,8 +388,23 @@ function SetObrtaj(){
 	
     sql_str += " DECLARE @date_to DATE = '" + ovagod_h + "-" + mjesecDoMM + "-" + daysInMjesecDo + "';"; // NE 31
     
+    sql_str += " WITH";
+    sql_str += " artikliDobavljacaIKupca";
+    sql_str += " AS(SELECT";
+    sql_str += " distinct RMPR_ARTIKL as artikl";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    if(dobavljacAsortiman != ""){
+        sql_str += " where RMPR_UL_IZL = 'u' and rmpr_partner = '" + dobavljacAsortiman + "'";
+    }
+    sql_str += " INTERSECT";
+    sql_str += " SELECT distinct RMPR_ARTIKL as artikl";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    if(kupacAsortiman != ""){
+        sql_str += " where RMPR_UL_IZL = 'i' and rmpr_partner = '" + kupacAsortiman + "'";
+    }
+    sql_str += " ),";
 
-    sql_str += " WITH InventoryBalance AS (";
+    sql_str += " InventoryBalance AS (";
     sql_str += " SELECT rmpr_artikl, rmpr_datum_dok,";
 
     if (prodajna_dn)
@@ -394,6 +444,7 @@ function SetObrtaj(){
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.NKMKARTI ON ARTI_ARTIKL = RMPR_ARTIKL";
     
     sql_str += " WHERE rmpr_datum_dok BETWEEN @date_from AND @date_to";
+    sql_str += " AND RMPR_ARTIKL IN (SELECT * FROM artikliDobavljacaIKupca)";
         
     filterPart();
 
@@ -452,6 +503,7 @@ function SetObrtaj(){
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.NKMKARTI ON ARTI_ARTIKL = RMPR_ARTIKL";
     
     sql_str += " WHERE rmpr_datum_dok BETWEEN @date_from AND @date_to";
+    sql_str += " AND RMPR_ARTIKL IN (SELECT * FROM artikliDobavljacaIKupca)";
         
     filterPart();
 

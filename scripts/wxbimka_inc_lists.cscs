@@ -31,7 +31,7 @@
 
     define ZalihePoMjesecimaLabels type a size 120 array 24;
 
-    define prosjecnoStanjeZalihaOvagodina, prosjecnoStanjeZalihaProslaGodina type n size 12 dec 2;
+    define prosjecnoStanjeZalihaOvagodina, prosjecnoStanjeZalihaProslaGodina type n size 12 dec 0;
 
     define prosjecnoStanjeZalihaOvagodina_string, prosjecnoStanjeZalihaProslaGodina_string type a size 20;
     define postotakProsjecnoStanje type n size 10 dec 2;
@@ -195,6 +195,12 @@
     define partner type a size 10 ;
     define partnerNaziv type a size 50 ;
 
+    define dobavljacAsortiman type a size 10 ;
+    define dobavljacAsortimanNaziv type a size 50 ;
+
+    define kupacAsortiman type a size 10 ;
+    define kupacAsortimanNaziv type a size 50 ;
+
     define regija type a size 6 ;
     define regijaNaziv type a size 30 ;
 
@@ -289,7 +295,9 @@ function ceSkladiste@clicked()
     + "SELECT DISTINCT pkmk_skl_code, pkmk_skl_naziv "
     + " FROM  " + trenutnaGodinaBaza + ".[dbo].[nkmkprom] "
     + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[pkmkskla] ON pkmk_skl_code = rmpr_skladiste"
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkmkarti] ON rmpr_artikl = arti_artikl"
     + " WHERE pkmk_skl_code LIKE '{var1}%' AND pkmk_skl_naziv LIKE '%{var2}%'"
+    + " AND arti_tip NOT IN ('N', 'O', 'P', 'A')"
     + " AND YEAR(rmpr_datum_dok) = " + ovagod_h
     + ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY pkmk_skl_code ASC) AS RowNumber, pkmk_skl_code, pkmk_skl_naziv"
@@ -326,6 +334,7 @@ function ceArtikl@clicked()
     + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkmkarti] ON rmpr_artikl = arti_artikl"
     + " WHERE rmpr_artikl LIKE '%{var1}%' AND arti_naziv LIKE '%{var2}%'"
     + " AND YEAR(rmpr_datum_dok) = " + ovagod_h
+    + " AND arti_tip NOT IN ('N', 'O', 'P', 'A')"
     + ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY rmpr_artikl ASC) AS RowNumber, rmpr_artikl, arti_naziv, arti_tezina, arti_jed_mjere, arti_tip"
     + " FROM artikli ORDER BY RowNumber";
@@ -377,7 +386,7 @@ function ceArtikl@post()
 }
 
 //==============================================================
-function cePartner@clicked()
+function ceDobavljacAsortiman@clicked()
 {
     //F2ListQueryString = "SELECT distinct [NKPR_GL_CUSCOD], [NKSC_PARTNAME], CASE WHEN nksc_cust_vend= 'K' THEN 'Kupac' WHEN nksc_cust_vend= 'D' THEN 'Dobavljač' ELSE 'Kup/Dob' END as PartnerTip FROM  " + trenutnaGodinaBaza + ".[dbo].[NKPRGLOT] LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[NKSCPART] ON NKSC_PARTCODE = NKPR_GL_CUSCOD where NKSC_PARTCODE like '%{var1}%' and NKSC_PARTNAME like '%{var2}%' AND YEAR(nkpr_gl_esd) = " + ovagod_h + " ORDER BY NKPR_GL_CUSCOD";
     
@@ -385,53 +394,121 @@ function cePartner@clicked()
     + " SELECT DISTINCT rmpr_partner, nksc_partname, CASE WHEN nksc_cust_vend = 'K' THEN 'Kupac' WHEN nksc_cust_vend = 'D' THEN 'Dobavljač' ELSE 'Kup/Dob' END AS PartnerTip "
     + " FROM " + trenutnaGodinaBaza + ".[dbo].[nkmkprom] "
     + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkscpart] ON nksc_partcode = rmpr_partner"
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkmkarti] ON rmpr_artikl = arti_artikl"
     + " WHERE nksc_partcode LIKE '%{var1}%' AND nksc_partname LIKE '%{var2}%' "
     + " AND YEAR(rmpr_datum_dok) = " + ovagod_h
+    + " AND arti_tip NOT IN ('N', 'O', 'P', 'A')"
+    + " AND nksc_cust_vend IN ('D', '') "
     + ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY rmpr_partner ASC) AS RowNumber, rmpr_partner, nksc_partname, PartnerTip"
     + " FROM partneri ORDER BY RowNumber";
 
-    sifraFieldPointer -> partner;
-    NazivFieldPointer -> PartnerNaziv;
+    sifraFieldPointer -> dobavljacAsortiman;
+    NazivFieldPointer -> dobavljacAsortimanNaziv;
 
-    windowTitle = "F2 lista Partnera";
-    headersArray = {"R.br.", "Šifra partnera", "Naziv partnera", "Kupac/Dobavljač"};
+    windowTitle = "F2 lista Dobavljača";
+    headersArray = {"R.br.", "Šifra dobavljača", "Naziv dobavljača", "Kupac/Dobavljač"};
     ShowF2List();
     
     if(&sifraFieldPointer != ""){
-        partner = strtrim(&sifraFieldPointer);
-        partnerNaziv = (&NazivFieldPointer);
+        dobavljacAsortiman = strtrim(&sifraFieldPointer);
+        dobavljacAsortimanNaziv = (&NazivFieldPointer);
     }
     else
     {
-        partner = "";
-        partnerNaziv = "";
+        dobavljacAsortiman = "";
+        dobavljacAsortimanNaziv = "";
     }
     searchSifra = "";
     searchNaziv = "";
 }
 
-function cePartner@post()
+function ceDobavljacAsortiman@post()
 {
-    if (partner == "")
+    if (dobavljacAsortiman == "")
     {
-        partnerNaziv = "";
+        dobavljacAsortimanNaziv = "";
     }
     else{
         sqlResult = {};
-        sqlString = "SELECT TOP 1 NKSC_PARTNAME FROM  " + trenutnaGodinaBaza + ".[dbo].[NKSCPART] where NKSC_PARTCODE = '" + partner + "' ORDER BY nksc_partcode";
+        sqlString = "SELECT TOP 1 NKSC_PARTNAME FROM  " + trenutnaGodinaBaza + ".[dbo].[NKSCPART] where NKSC_PARTCODE = '" + dobavljacAsortiman + "' ORDER BY nksc_partcode";
         try{
             sqlResult = SqlQuery(sqlString);
         }catch(ex){
             MessageBox(ex);
         }
         if(sqlResult.length > 1){
-            partnerNaziv = sqlResult[1][0];
+            dobavljacAsortimanNaziv = sqlResult[1][0];
         }
         else{
             MessageBox("Partner ne postoji.");
-            partner = "";
-            partnerNaziv = "";
+            dobavljacAsortiman = "";
+            dobavljacAsortimanNaziv = "";
+            return false;
+        }
+    }
+}
+
+//==============================================================
+
+function ceKupacAsortiman@clicked()
+{
+    //F2ListQueryString = "SELECT distinct [NKPR_GL_CUSCOD], [NKSC_PARTNAME], CASE WHEN nksc_cust_vend= 'K' THEN 'Kupac' WHEN nksc_cust_vend= 'D' THEN 'Dobavljač' ELSE 'Kup/Dob' END as PartnerTip FROM  " + trenutnaGodinaBaza + ".[dbo].[NKPRGLOT] LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[NKSCPART] ON NKSC_PARTCODE = NKPR_GL_CUSCOD where NKSC_PARTCODE like '%{var1}%' and NKSC_PARTNAME like '%{var2}%' AND YEAR(nkpr_gl_esd) = " + ovagod_h + " ORDER BY NKPR_GL_CUSCOD";
+    
+    F2ListQueryString = "WITH partneri AS("
+    + " SELECT DISTINCT rmpr_partner, nksc_partname, CASE WHEN nksc_cust_vend = 'K' THEN 'Kupac' WHEN nksc_cust_vend = 'D' THEN 'Dobavljač' ELSE 'Kup/Dob' END AS PartnerTip "
+    + " FROM " + trenutnaGodinaBaza + ".[dbo].[nkmkprom] "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkscpart] ON nksc_partcode = rmpr_partner"
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkmkarti] ON rmpr_artikl = arti_artikl"
+    + " WHERE nksc_partcode LIKE '%{var1}%' AND nksc_partname LIKE '%{var2}%' "
+    + " AND YEAR(rmpr_datum_dok) = " + ovagod_h
+    + " AND arti_tip NOT IN ('N', 'O', 'P', 'A')"
+    + " AND nksc_cust_vend IN ('K', '') "
+    + ")"
+    + " SELECT ROW_NUMBER() OVER(ORDER BY rmpr_partner ASC) AS RowNumber, rmpr_partner, nksc_partname, PartnerTip"
+    + " FROM partneri ORDER BY RowNumber";
+
+    sifraFieldPointer -> kupacAsortiman;
+    NazivFieldPointer -> kupacAsortimanNaziv;
+
+    windowTitle = "F2 lista Partnera";
+    headersArray = {"R.br.", "Šifra kupca", "Naziv kupca", "Kupac/Dobavljač"};
+    ShowF2List();
+    
+    if(&sifraFieldPointer != ""){
+        kupacAsortiman = strtrim(&sifraFieldPointer);
+        kupacAsortimanNaziv = (&NazivFieldPointer);
+    }
+    else
+    {
+        kupacAsortiman = "";
+        kupacAsortimanNaziv = "";
+    }
+    searchSifra = "";
+    searchNaziv = "";
+}
+
+function ceKupacAsortiman@post()
+{
+    if (kupacAsortiman == "")
+    {
+        kupacAsortimanNaziv = "";
+    }
+    else{
+        sqlResult = {};
+        sqlString = "SELECT TOP 1 NKSC_PARTNAME FROM  " + trenutnaGodinaBaza + ".[dbo].[NKSCPART] where NKSC_PARTCODE = '" + kupacAsortiman + "' ORDER BY nksc_partcode";
+        try{
+            sqlResult = SqlQuery(sqlString);
+        }catch(ex){
+            MessageBox(ex);
+        }
+        if(sqlResult.length > 1){
+            kupacAsortimanNaziv = sqlResult[1][0];
+        }
+        else{
+            MessageBox("Partner ne postoji.");
+            kupacAsortiman = "";
+            kupacAsortimanNaziv = "";
             return false;
         }
     }
@@ -583,6 +660,7 @@ function ceKategorija@clicked()
     + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[pkmkgrup] ON arti_kategorija = mkgr_grupa AND mkgr_vrsta ='K'"
     + " WHERE mkgr_grupa LIKE '%{var1}%' "
     + " AND YEAR(rmpr_datum_dok) = " + ovagod_h
+    + " AND arti_tip NOT IN ('N', 'O', 'P', 'A')"
     + ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY mkgr_grupa ASC) AS RowNumber, mkgr_grupa, naziv"
     + " FROM kategorije WHERE mkgr_grupa IS NOT NULL AND naziv LIKE '%{var2}%' ORDER BY RowNumber";
@@ -643,6 +721,7 @@ function ceKlasa@clicked()
     + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[pkmkgrup] ON arti_klasa = mkgr_grupa AND [mkgr_vrsta] ='L'"
     + " WHERE mkgr_grupa LIKE '%{var1}%'"
     + " AND YEAR(rmpr_datum_dok) = " + ovagod_h
+    + " AND arti_tip NOT IN ('N', 'O', 'P', 'A')"
     + ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY mkgr_grupa ASC) AS RowNumber, mkgr_grupa, naziv"
     + " FROM klase WHERE mkgr_grupa IS NOT NULL AND naziv LIKE '%{var2}%' ORDER BY RowNumber";
@@ -702,8 +781,10 @@ function neOrganizacijskaJedinica@clicked()
     + " SELECT DISTINCT trim(rmpr_objed) as sifraOrgJed, isnull(NKGK_OJ_NAZIV, 'nema naziva') as nazivOrgJed "
     + " FROM  " + trenutnaGodinaBaza + ".[dbo].[nkmkprom]"
     + " LEFT JOIN  " + trenutnaGodinaBaza + ".[dbo].[nkgkoj] ON nkgk_oj_code = rmpr_objed"
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkmkarti] ON rmpr_artikl = arti_artikl"
     + " WHERE nkgk_oj_code LIKE '%{var1}%' AND NKGK_OJ_NAZIV LIKE '%{var2}%' "
     + " AND YEAR(rmpr_datum_dok) = " + ovagod_h
+    + " AND arti_tip NOT IN ('N', 'O', 'P', 'A')"
     + ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY sifraOrgJed ASC) AS RowNumber, sifraOrgJed, nazivOrgJed"
     + " FROM organizacijskeJedinice ORDER BY RowNumber";
@@ -763,8 +844,10 @@ function neRnalog@clicked()
     + " SELECT DISTINCT a.RMPR_RADNI_NALG, c.nkpr_gl_cusnme "
     + " FROM  " + trenutnaGodinaBaza + ".[dbo].[nkmkprom] a"
     + " LEFT JOIN  " + trenutnaGodinaBaza + ".[dbo].[nkprglnl] c ON RMPR_RADNI_NALG = c.nkpr_gl_nalog"
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkmkarti] ON rmpr_artikl = arti_artikl"
     + " WHERE c.nkpr_gl_nalog LIKE '{var1}%' AND c.nkpr_gl_cusnme LIKE '%{var2}%' "
     + " AND YEAR(a.rmpr_datum_dok) = " + ovagod_h
+    + " AND arti_tip NOT IN ('N', 'O', 'P', 'A')"
     + ")"
     + " SELECT ROW_NUMBER() OVER(ORDER BY RMPR_RADNI_NALG ASC) AS RowNumber, RMPR_RADNI_NALG, nkpr_gl_cusnme"
     + " FROM radniNalozi ORDER BY RowNumber";

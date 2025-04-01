@@ -38,7 +38,23 @@ function setDefaultCursor(){
 
 function setKlasaPieChart()
 {
-	sql_str = "SELECT";
+	sql_str = " WITH";
+    sql_str += " artikliDobavljacaIKupca";
+    sql_str += " AS(SELECT";
+    sql_str += " distinct RMPR_ARTIKL as artikl";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    if(dobavljacAsortiman != ""){
+        sql_str += " where RMPR_UL_IZL = 'u' and rmpr_partner = '" + dobavljacAsortiman + "'";
+    }
+    sql_str += " INTERSECT";
+    sql_str += " SELECT distinct RMPR_ARTIKL as artikl";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    if(kupacAsortiman != ""){
+        sql_str += " where RMPR_UL_IZL = 'i' and rmpr_partner = '" + kupacAsortiman + "'";
+    }
+    sql_str += " )";
+
+	sql_str += " SELECT";
 	sql_str += " CASE WHEN num <= 5 THEN Naziv ELSE 'Ostali' END AS Klasa,";
 	sql_str += " round(sum(suma),0) as Origin";
 	sql_str += " FROM (SELECT ISNULL(CASE WHEN SUBSTRING(mkgr_rezerva, 1, 50) > '' THEN SUBSTRING(mkgr_rezerva, 1, 50) ELSE mkgr_naziv END, 'NEDEFINIRANO') as naziv,";
@@ -81,6 +97,7 @@ function setKlasaPieChart()
 	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.pkmkgrup ON arti_klasa = mkgr_grupa AND mkgr_vrsta= 'L'";
 	sql_str += " WHERE year(rmpr_datum_dok) = " + ovagod_h;
 	sql_str += " AND month(rmpr_datum_dok) BETWEEN " + mjesecOd + " AND " + mjesecDo;
+	sql_str += " AND RMPR_ARTIKL IN (SELECT * FROM artikliDobavljacaIKupca)";
 	filterPart();
 
 	sql_str += " GROUP BY SUBSTRING(mkgr_rezerva, 1, 50), mkgr_naziv) t";
@@ -112,7 +129,23 @@ function setPieChart(){
 
 function setKategPieChart()
 {
-	sql_str = "SELECT";
+	sql_str = " WITH";
+    sql_str += " artikliDobavljacaIKupca";
+    sql_str += " AS(SELECT";
+    sql_str += " distinct RMPR_ARTIKL as artikl";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    if(dobavljacAsortiman != ""){
+        sql_str += " where RMPR_UL_IZL = 'u' and rmpr_partner = '" + dobavljacAsortiman + "'";
+    }
+    sql_str += " INTERSECT";
+    sql_str += " SELECT distinct RMPR_ARTIKL as artikl";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    if(kupacAsortiman != ""){
+        sql_str += " where RMPR_UL_IZL = 'i' and rmpr_partner = '" + kupacAsortiman + "'";
+    }
+    sql_str += " )";
+
+	sql_str += " SELECT";
 	sql_str += " CASE WHEN num <= 5 THEN Naziv ELSE 'Ostali' END AS Kategorija,";
 	sql_str += " round(sum(suma),0) as Origin";
 	sql_str += " FROM (SELECT ISNULL(CASE WHEN SUBSTRING(mkgr_rezerva, 1, 50) > '' THEN SUBSTRING(mkgr_rezerva, 1, 50) ELSE mkgr_naziv END, 'NEDEFINIRANO') as naziv,";
@@ -155,6 +188,7 @@ function setKategPieChart()
 	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.pkmkgrup ON arti_kategorija = mkgr_grupa AND mkgr_vrsta= 'K'";
 	sql_str += " WHERE year(rmpr_datum_dok) = " + ovagod_h;
 	sql_str += " AND month(rmpr_datum_dok) BETWEEN " + mjesecOd + " AND " + mjesecDo;
+	sql_str += " AND RMPR_ARTIKL IN (SELECT * FROM artikliDobavljacaIKupca)";
 	filterPart();
 
 	sql_str += " GROUP BY SUBSTRING(mkgr_rezerva, 1, 50), mkgr_naziv) t";
@@ -223,7 +257,23 @@ function setTop100Products()
 		kolona_str = "rmpr_komada";
     }
 
-	sql_str = " WITH ova AS (";
+	sql_str = " WITH";
+    sql_str += " artikliDobavljacaIKupca";
+    sql_str += " AS(SELECT";
+    sql_str += " distinct RMPR_ARTIKL as artikl";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    if(dobavljacAsortiman != ""){
+        sql_str += " where RMPR_UL_IZL = 'u' and rmpr_partner = '" + dobavljacAsortiman + "'";
+    }
+    sql_str += " INTERSECT";
+    sql_str += " SELECT distinct RMPR_ARTIKL as artikl";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    if(kupacAsortiman != ""){
+        sql_str += " where RMPR_UL_IZL = 'i' and rmpr_partner = '" + kupacAsortiman + "'";
+    }
+    sql_str += " ),";
+
+	sql_str += " ova AS (";
 	sql_str += " SELECT Top 100";
 	sql_str += " rmpr_artikl,";
 	sql_str += " ROUND(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN " + kolona_str + " ELSE -" + kolona_str + " END), 4) AS TotalOva";
@@ -239,6 +289,7 @@ function setTop100Products()
     daysInMjesecDo = string(DaysInMonth(int(mjesecDo), int(ovagod_h)));
 
 	sql_str += " WHERE rmpr_datum_dok <= '" + ovagod_h + "-" + mjesecDoMM + "-" + daysInMjesecDo + "'";
+	sql_str += " AND RMPR_ARTIKL IN (SELECT * FROM artikliDobavljacaIKupca)";
 	filterPart();
 
 	sql_str += " GROUP BY rmpr_artikl";
@@ -253,6 +304,7 @@ function setTop100Products()
 	sql_str += " LEFT JOIN " + proslaGodinaBaza + ".dbo.nkmkarti ON rmpr_artikl = arti_artikl";
 	daysInMjesecDo = string(DaysInMonth(int(mjesecDo), int(lani_h)));
 	sql_str += " WHERE rmpr_datum_dok <= '" + lani_h + "-" + mjesecDoMM + "-" + daysInMjesecDo + "'";
+	sql_str += " AND RMPR_ARTIKL IN (SELECT * FROM artikliDobavljacaIKupca)";
 	filterPart();
 
 	sql_str += " GROUP BY rmpr_artikl";
@@ -328,7 +380,23 @@ function setNewProductsDataGrid()
 {
     RunOnMain("setNewProductsDataGrid0");
 
-	sql_str = "SELECT TOP 100";
+	sql_str = " WITH";
+    sql_str += " artikliDobavljacaIKupca";
+    sql_str += " AS(SELECT";
+    sql_str += " distinct RMPR_ARTIKL as artikl";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    if(dobavljacAsortiman != ""){
+        sql_str += " where RMPR_UL_IZL = 'u' and rmpr_partner = '" + dobavljacAsortiman + "'";
+    }
+    sql_str += " INTERSECT";
+    sql_str += " SELECT distinct RMPR_ARTIKL as artikl";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    if(kupacAsortiman != ""){
+        sql_str += " where RMPR_UL_IZL = 'i' and rmpr_partner = '" + kupacAsortiman + "'";
+    }
+    sql_str += " )";
+
+	sql_str += " SELECT TOP 100";
 	sql_str += " ARTI_ARTIKL, ARTI_NAZIV, CONVERT(varchar, ARTI_DAT_PRVI, 3)";
 	sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKARTI";
 	sql_str += " WHERE 1 = 1";
@@ -340,6 +408,7 @@ function setNewProductsDataGrid()
 	{
         sql_str += " AND ARTI_ARTIKL = '" + artikl + "'";
 	}
+	sql_str += " AND ARTI_ARTIKL IN (SELECT * FROM artikliDobavljacaIKupca)";
 	filterPartNKMKARTI();
 	
 	sql_str += " ORDER BY arti_dat_prvi desc";

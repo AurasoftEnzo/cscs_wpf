@@ -1,0 +1,818 @@
+CreateWindow(strTrim(tpath()) + "wxuploadcjenika.xaml");
+
+
+
+// DEFINE arrayRbr type i size 3 array 100;
+// DEFINE arrayNazivFirme type a size 255 array 100;
+// DEFINE arrayPoslovnaGodina type a size 10 array 100;
+// DEFINE arrayNazivBaze type a size 255 array 100;
+// DEFINE arrayDescription type a size 255 array 100;
+
+// DEFINE cntr1 type i size 10;
+// DEFINE actElem1 type i size 10;
+// DEFINE cntr1 type i size 10;
+// DEFINE cntr1 type i size 10;
+
+// DEFINE dialogResult type a size 255;
+
+// DEFINE BackupPath type a size 255;
+// DEFINE BackupFilenames type a size 255 array 100;
+
+// DEFINE LocalBackupPath type a size 255;
+// // DEFINE LocalBackupFilenames type a size 255 array 100;
+// DEFINE localBakFile type a size 255;
+// DEFINE localZipFile type a size 255;
+// DEFINE localBakFilename type a size 255;
+
+
+// DEFINE FinalBackupPath type a size 255;
+
+// DEFINE FtpDirectoryPath type a size 255;
+// DEFINE FtpPort type a size 255;
+
+// DEFINE destinationFile type a size 255;
+
+// DEFINE backupDateShort type a size 8;
+// DEFINE backupTimeShort type a size 6;
+// DEFINE backupDateSQL type a size 10;
+// DEFINE backupTimeSQL type a size 8;
+
+// DEFINE isRunning type l;
+// DEFINE hasErrors type l;
+
+// DEFINE log type a size 1000 array 1000;
+// DEFINE logCount type i size 4;
+// DEFINE logFinal type a size 1000000;
+
+// //mail
+// DEFINE OutgoingEmailServer type a size 100;
+// DEFINE EmailUsername type a size 100;
+// DEFINE EmailPassword type a size 100;
+// DEFINE SenderEmail type a size 100;
+// DEFINE EmailSenderName type a size 100;
+// DEFINE DestinationEmail type a size 100;
+// DEFINE EmailSubject type a size 100;
+// DEFINE NazivFirme type a size 100;
+
+// DEFINE checkboxZakaziArhiviranje type l;
+
+// DEFINE zakazanoTime type t size 8;
+
+// DEFINE zakazanoSati type i size 2;
+// DEFINE zakazanoMinuta type i size 2;
+
+// DEFINE zakazano type l;
+
+// DEFINE ftp type l;
+// DEFINE FtpUsername, FtpPassword type a size 100;
+
+DEFINE winxIniPath type a size 255;
+DEFINE tasproIniPath type a size 255;
+
+DEFINE DatabasePrazno type a size 50;
+DEFINE ShortDbName type a size 5;
+DEFINE ShortDbNameWithoutB type a size 5;
+DEFINE CurrentYearDatabase type a size 255;
+
+DEFINE sqlString type a size 255;
+
+// NKSYSYCO -> NKSYS_VALUE
+DEFINE FTP_SERVER type a size 120; 
+DEFINE FTP_PORT type a size 120; 
+DEFINE FTP_USERNAME type a size 120; 
+DEFINE FTP_PASSWORD type a size 120; 
+DEFINE FTP_DIRECTORY type a size 120; 
+DEFINE CSV_DIRECTORY type a size 120; 
+DEFINE SKLADISTE type a size 120; 
+
+
+
+function wxuploadcjenika_onDisplay()
+{   
+    Cursor("wait");
+
+
+    GetCurrentDatabaseName();
+
+    InitConfigInDbase();
+
+    TRAP("F9", "openConfig");
+
+
+    Cursor("dflt");
+
+
+    // //SaveFile(Encryptstr("setwofish", "wxbackup@aurasoft.hr", "12345"));
+
+    // SetImage("asImage", strtrim(ipath())+"as1.png");
+
+    // Clock("SatLabel");
+
+    // zakazanoSati = 0;
+    // zakazanoMinuta = 0;
+    // checkboxZakaziArhiviranje = false;
+
+    // logCount = 0;
+
+    // GetDatabaseNames();
+    
+    // DisplayArray("datagridDatabases", "close");
+    // DisplayArraySetup("datagridDatabases", counterFld: cntr1, activeElements: actElem1, maxElements: 100);
+
+    
+
+    // if(!DIR_EXISTS(BackupPath)){
+    //     MAKE_DIR(BackupPath);
+    //     //MessageBox("Kreiran je direktorij BackupPath iz ini datoteke");
+    // }
+   
+    // if(!DIR_EXISTS(LocalBackupPath)){
+    //     MAKE_DIR(LocalBackupPath);
+    //     //MessageBox("Kreiran je direktorij LocalBackupPath iz ini datoteke");
+    // }
+
+
+    // isRunning = false;
+    // hasErrors = false;
+
+    // SetFocus("btnPokreni");
+}
+
+function GetCurrentDatabaseName(){
+
+    // naziv database "prazno"(npr. "C__DATAX__B") iz Winx.ini
+    winxIniPath = strtrim(wpath()) + "winx.ini";
+
+    if(!regedit("regOpen", winxIniPath, "rtFile")){
+        MessageBox("Datoteka " + winxIniPath + " nije dostupna.");
+        Cursor("dflt");
+        quit;
+    }
+
+    DatabasePrazno = regedit("regReadStr", 'MSSQL_SERVER', 'UserBase');
+    if(DatabasePrazno == ""){
+        MessageBox("Potrebno je podesiti UserBase(DatabasePrazno) u ini datoteci.");
+        regedit("regWriteStr", 'MSSQL_SERVER', 'UserBase', "");
+        Cursor("dflt");
+        quit;
+    }
+
+    regedit("regClose");
+    //--------------
+
+    // kratki naziv baze(npr. "B25") iz Taspro.ini
+    tasproIniPath = strtrim(wpath()) + "taspro.ini";
+
+    if(!regedit("regOpen", tasproIniPath, "rtFile")){
+        MessageBox("Datoteka " + tasproIniPath + " nije dostupna.");
+        Cursor("dflt");
+        quit;
+    }
+
+    ShortDbName = regedit("regReadStr", 'Setup', 'DfltCompanyCode');
+    if(ShortDbName == ""){
+        MessageBox("Potrebno je podesiti DfltCompanyCode(ShortDbName) u ini datoteci.");
+        regedit("regWriteStr", 'Setup', 'DfltCompanyCode', "");
+        Cursor("dflt");
+        quit;
+    }
+
+    regedit("regClose");
+
+    ShortDbNameWithoutB = substring(ShortDbName, 1, 2);
+    //--------------
+
+    //sql upit -> C__DATAX__B.dbo.NKSYCCYR WHERE kratkiNazivBaze = 'B25' -> dobit puno ime baze trenutne godine
+    sqlString = "SELECT SY_CC_DBASE from " + DatabasePrazno + ".dbo.NKSYCCYR WHERE SY_CC_CODE = '" + ShortDbNameWithoutB + "'";
+    // Msg(sqlString);
+    sqlResult = SqlQuery(sqlString);
+
+    if(Size(sqlResult) <= 1){
+        MessageBox("Greška prilikom dohvata trenutne godine iz baze.");
+        Cursor("dflt");
+        quit;
+    }else{
+        CurrentYearDatabase = strTrim(sqlResult[1][0]);
+    }
+
+    return;
+}
+
+function InitConfigInDbase(){
+    // FTP_SERVER
+    if(!recordExistsInNKSYSYCO("FTP_SERVER")){
+        AddRecordInNKSYSYCO("FTP_SERVER", "Adresa FTP servera");
+    }else{
+        sqlString = "SELECT RTRIM(NKSYS_VALUE) from " + CurrentYearDatabase + 
+        ".dbo.NKSYSYCO WHERE NKSYS_MODUL = 'WKPO' AND NKSYS_GRUP = 'CJENIK' AND NKSYS_GRUP2 = 'WEB' AND NKSYS_FIELD = 'FTP_SERVER'";
+        sqlResult = SqlQuery(sqlString);
+        FTP_SERVER = sqlResult[1][0];
+    }
+    
+    // FTP_PORT
+    if(!recordExistsInNKSYSYCO("FTP_PORT")){
+        AddRecordInNKSYSYCO("FTP_PORT", "Port FTP servera");
+    }else{
+        sqlString = "SELECT RTRIM(NKSYS_VALUE) from " + CurrentYearDatabase + 
+        ".dbo.NKSYSYCO WHERE NKSYS_MODUL = 'WKPO' AND NKSYS_GRUP = 'CJENIK' AND NKSYS_GRUP2 = 'WEB' AND NKSYS_FIELD = 'FTP_PORT'";
+        sqlResult = SqlQuery(sqlString);
+        FTP_PORT = sqlResult[1][0];
+    }
+
+    // FTP_USERNAME
+    if(!recordExistsInNKSYSYCO("FTP_USERNAME")){
+        AddRecordInNKSYSYCO("FTP_USERNAME", "Korisničko ime za FTP server");
+    }else{
+        sqlString = "SELECT RTRIM(NKSYS_VALUE) from " + CurrentYearDatabase + 
+        ".dbo.NKSYSYCO WHERE NKSYS_MODUL = 'WKPO' AND NKSYS_GRUP = 'CJENIK' AND NKSYS_GRUP2 = 'WEB' AND NKSYS_FIELD = 'FTP_USERNAME'";
+        sqlResult = SqlQuery(sqlString);
+        FTP_USERNAME = sqlResult[1][0];
+    }
+
+    // FTP_PASSWORD
+    if(!recordExistsInNKSYSYCO("FTP_PASSWORD")){
+        AddRecordInNKSYSYCO("FTP_PASSWORD", "Lozinka za FTP server");
+    }else{
+        sqlString = "SELECT RTRIM(NKSYS_VALUE) from " + CurrentYearDatabase + 
+        ".dbo.NKSYSYCO WHERE NKSYS_MODUL = 'WKPO' AND NKSYS_GRUP = 'CJENIK' AND NKSYS_GRUP2 = 'WEB' AND NKSYS_FIELD = 'FTP_PASSWORD'";
+        sqlResult = SqlQuery(sqlString);
+        FTP_PASSWORD = sqlResult[1][0];
+    }
+
+    // FTP_DIRECTORY
+    if(!recordExistsInNKSYSYCO("FTP_DIRECTORY")){
+        AddRecordInNKSYSYCO("FTP_DIRECTORY", "Direktorij na FTP serveru");
+    }else{
+        sqlString = "SELECT RTRIM(NKSYS_VALUE) from " + CurrentYearDatabase + 
+        ".dbo.NKSYSYCO WHERE NKSYS_MODUL = 'WKPO' AND NKSYS_GRUP = 'CJENIK' AND NKSYS_GRUP2 = 'WEB' AND NKSYS_FIELD = 'FTP_DIRECTORY'";
+        sqlResult = SqlQuery(sqlString);
+        FTP_DIRECTORY = sqlResult[1][0];
+    }
+
+    // CSV_DIRECTORY
+    if(!recordExistsInNKSYSYCO("CSV_DIRECTORY")){
+        AddRecordInNKSYSYCO("CSV_DIRECTORY", "Direktorij za CSV datoteke cjenika");
+    }else{
+        sqlString = "SELECT RTRIM(NKSYS_VALUE) from " + CurrentYearDatabase + 
+        ".dbo.NKSYSYCO WHERE NKSYS_MODUL = 'WKPO' AND NKSYS_GRUP = 'CJENIK' AND NKSYS_GRUP2 = 'WEB' AND NKSYS_FIELD = 'CSV_DIRECTORY'";
+        sqlResult = SqlQuery(sqlString);
+        CSV_DIRECTORY = sqlResult[1][0];
+    }
+
+    // SKLADISTE
+    if(!recordExistsInNKSYSYCO("SKLADISTE")){
+        AddRecordInNKSYSYCO("SKLADISTE", "Šifra skladišta za cjenik");
+    }else{
+        sqlString = "SELECT RTRIM(NKSYS_VALUE) from " + CurrentYearDatabase + 
+        ".dbo.NKSYSYCO WHERE NKSYS_MODUL = 'WKPO' AND NKSYS_GRUP = 'CJENIK' AND NKSYS_GRUP2 = 'WEB' AND NKSYS_FIELD = 'SKLADISTE'";
+        sqlResult = SqlQuery(sqlString);
+        SKLADISTE = sqlResult[1][0];
+    }
+}
+
+function recordExistsInNKSYSYCO(fieldName){
+    sqlString = "SELECT COUNT(*) from " + CurrentYearDatabase + 
+        ".dbo.NKSYSYCO WHERE NKSYS_MODUL = 'WKPO' AND NKSYS_GRUP = 'CJENIK' AND NKSYS_GRUP2 = 'WEB' AND NKSYS_FIELD = '" + fieldName + "'";
+    sqlResult = SqlQuery(sqlString);
+    if(sqlResult[1][0] == 0){
+        return false;
+    }else{
+        return true;
+    }
+}
+
+function AddRecordInNKSYSYCO(fieldName, description){
+    sqlString = "INSERT INTO " + CurrentYearDatabase + 
+        ".dbo.NKSYSYCO (NKSYS_MODUL, NKSYS_GRUP, NKSYS_GRUP2, NKSYS_FIELD, NKSYS_VALUE, NKSYS_DESC) VALUES ('WKPO', 'CJENIK', 'WEB', '" + fieldName + "', '', '" + description + "')";
+    sqlResult = SqlNonQuery(sqlString);
+}
+
+function openConfig(){
+    include(strtrim(tpath()) + "wxuploadcjenika_config.cscs");
+    ModalWindow(strtrim(tpath()) + "wxuploadcjenika_config.xaml");
+}
+
+
+
+
+
+// function GetDatabaseNames(){
+//     sqlQueryString = "SELECT [SY_CC_USER], [SY_CC_YEAR], [SY_CC_DBASE], [SY_CC_DESC]" +
+//         " FROM " + CommonDBGet() + ".[dbo].[NKSYCCYR]" +
+//         " WHERE SY_CC_REZ1 = 'D'";
+//     try
+//     {
+//         sqlResult = sqlQuery(sqlQueryString);
+
+//         for(i = 1; i < size(sqlResult); i++){
+//             arrayRbr[i - 1] = i;
+//             arrayNazivFirme[i - 1] = strtrim(sqlResult[i][0]);
+//             arrayPoslovnaGodina[i - 1] = strtrim(string(sqlResult[i][1]));
+//             arrayNazivBaze[i - 1] = strtrim(sqlResult[i][2]);
+//             arrayDescription[i - 1] = strtrim(sqlResult[i][3]);
+//         }
+
+//         // actElem1 = Size(sqlResult) - 1;
+
+//         //Dictionary
+//         arrayRbr[Size(sqlResult) - 1] = Size(sqlResult);
+//         arrayNazivFirme[Size(sqlResult) - 1] = "DICTIONARY";
+//         arrayPoslovnaGodina[Size(sqlResult) - 1] = "0";
+//         arrayNazivBaze[Size(sqlResult) - 1] = "Dictionary";
+//         arrayDescription[Size(sqlResult) - 1] = "Dictionary";
+
+//         actElem1 = Size(sqlResult);
+//     }
+//     catch(exc)
+//     {
+//         MessageBox("Greška na GetDatabaseNames():" + "\n" + exc);
+//         Cursor("dflt");
+//         quit;
+//     }
+// }
+
+// function btnSelectBackupLocation@clicked(){
+//     if(isRunning || zakazano){
+//         return;
+//     }
+    
+//     if(FinalBackupPath == ""){
+//         dialogResult = getPath(wpath(), "Odaberite direktorij za arhivu");
+//     }
+//     else{
+//         dialogResult = getPath(FinalBackupPath, "Odaberite direktorij za arhivu");
+//     }
+
+//     if(dialogResult != ""){
+//         FinalBackupPath = dialogResult;
+//         if(substring(FinalBackupPath, FinalBackupPath.length - 1, 1) != "\\"){
+//             FinalBackupPath += "\\";
+//         }
+//     }
+// }
+
+// function cbZakaziArhiviranje@Clicked(){
+//     if(!checkboxZakaziArhiviranje){
+//         zakazano = false;
+//         CancelScheduledFunction();
+//         SetWidgetOptions("StatusLabel", "Content", "");
+//         SetWidgetOptions("StatusLabel2", "Content", "");
+
+//         if(!regedit("regOpen", winxIniPath, "rtFile")){
+//             MessageBox("Datoteka " + winxIniPath + " nije dostupna.");
+//             Cursor("dflt");
+//             quit;
+//         }
+//         regedit("regWriteStr", 'BACKUP', 'Zakazano', string(zakazano));
+//         regedit("regClose");
+//     }
+// }
+
+// function btnPokreni@clicked()
+// {
+//     //supress running multiple times
+//     if(isRunning){
+//         return;
+//     }
+
+//     winxIniPath = strtrim(wpath()) + "winx.ini";
+
+//     if(!DIR_EXISTS(BackupPath)){
+//         MessageBox("Potrebno je podesiti path za kreiranje arhive(BackupPath) u ini datoteci.");
+//         Cursor("dflt");
+//         return;
+//     }
+    
+//     if(!DIR_EXISTS(LocalBackupPath)){
+//         MessageBox("Potrebno je podesiti lokalni path za kreiranje arhive(LocalBackupPath) u ini datoteci.");
+//         Cursor("dflt");
+//         return;
+//     }
+    
+    
+
+//     if(FinalBackupPath.length > 2 && substring(FinalBackupPath, 1, 1) == ":"){
+//         ftp = false;
+//     }else{
+//         ftp = true;
+//     }
+
+//     if(ftp == false){
+//         if(!DIR_EXISTS(FinalBackupPath)){
+//             MessageBox("Direktorij za arhivu ne postoji.\nMolim odaberite drugi direktorij.");
+//             return;
+//         }
+//     }
+//     else{
+//         //ftp
+//         if(!regedit("regOpen", winxIniPath, "rtFile")){
+//             MessageBox("Datoteka " + winxIniPath + " nije dostupna.");
+//             Cursor("dflt");
+//             quit;
+//         }
+
+
+//         FtpDirectoryPath = regedit("regReadStr", 'BACKUP', 'FtpDirectoryPath');
+//         if(FtpDirectoryPath == ""){
+//             regedit("regWriteStr", 'BACKUP', 'FtpDirectoryPath', "");
+//             FtpDirectoryPath = "";
+//         }
+        
+//         FtpPort = regedit("regReadStr", 'BACKUP', 'FtpPort');
+//         if(FtpPort == ""){
+//             regedit("regWriteStr", 'BACKUP', 'FtpPort', "0");
+//             FtpPort = "0";
+//         }
+
+
+//         FtpUsername = regedit("regReadStr", 'BACKUP', 'FtpUsername');
+//         if(FtpUsername == ""){
+//             MessageBox("Potrebno je podesiti FTP username u ini datoteci.");
+//             regedit("regWriteStr", 'BACKUP', 'FtpUsername', "");
+//             Cursor("dflt");
+//             quit;
+//         }
+//         //decrypt
+//         FtpUsername = Decryptstr("setwofish", FtpUsername, "12345");
+        
+//         FtpPassword = regedit("regReadStr", 'BACKUP', 'FtpPassword');
+//         if(FtpPassword == ""){
+//             MessageBox("Potrebno je podesiti FTP password u ini datoteci.");
+//             regedit("regWriteStr", 'BACKUP', 'FtpPassword', "");
+//             Cursor("dflt");
+//             quit;
+//         }
+//         //decrypt
+//         FtpPassword = Decryptstr("setwofish", FtpPassword, "12345");
+
+//         regedit("regClose");
+//     }
+
+
+//     if(checkboxZakaziArhiviranje == true){
+//         satiString = string(zakazanoSati);
+//         minutaString = string(zakazanoMinuta);
+//         if(satiString.length < 2){
+//             satiString = "0" + satiString;
+//         }
+//         if(minutaString.length < 2){
+//             minutaString = "0" + minutaString;
+//         }
+//         zakazanoTime = satiString + ":" + minutaString + ":00";
+        
+//         ScheduleFunction(zakazanoTime, "PokreniAsync");
+        
+//         zakazano = true;
+
+//         if(!regedit("regOpen", winxIniPath, "rtFile")){
+//             MessageBox("Datoteka " + winxIniPath + " nije dostupna.");
+//             Cursor("dflt");
+//             quit;
+//         }
+//         regedit("regWriteStr", 'BACKUP', 'Zakazano', string(zakazano));
+//         regedit("regWriteStr", 'BACKUP', 'ZakazanoSati', string(zakazanoSati));
+//         regedit("regWriteStr", 'BACKUP', 'ZakazanoMinuta', string(zakazanoMinuta));
+//         regedit("regClose");
+
+//         SetWidgetOptions("StatusLabel", "Content", "");
+//         SetWidgetOptions("StatusLabel2", "Content", "Sljedeće arhiviranje zakazano u " + zakazanoTime);
+//     }
+//     else{
+//         PokreniAsync();
+//     }
+// }
+
+// function nbSati@textChange(){
+//     // if(checkboxZakaziArhiviranje == true){
+//     //     UpdateTimer();
+//     // }
+// }
+
+// function nbMinuta@textChange(){
+//     // if(checkboxZakaziArhiviranje == true){
+//     //     UpdateTimer();
+//     // }
+// }
+
+
+// function PokreniAsync(){
+//     AsyncCall("Pokreni", "Gotovo");
+// }
+
+// function Pokreni(){
+
+//     isRunning = true;
+//     hasErrors = false;
+
+//     RunOnMain("SetWidgetsBackupStart");
+
+
+//     //clear log
+//     for(i = 0; i < logCount; i++){
+//         log[i] = "";
+//     }
+//     logCount = 0;
+
+//     backupDateSQL = Now("yyyy-MM-dd");
+//     backupTimeSQL = Now("HH:mm:ss");
+//     // backupDateShort = substring(backupDateSQL, 0, 4) + substring(backupDateSQL, 5, 2) + substring(backupDateSQL, 8, 2);
+//     // backupTimeShort = substring(backupTimeSQL, 0, 2) + substring(backupTimeSQL, 3, 2) + substring(backupTimeSQL, 6, 2);
+//     backupDateShort = strReplace(backupDateSQL, "-", "");
+//     backupTimeShort = strReplace(backupTimeSQL, ":", "");
+
+//     for(i = 0; i < actElem1; i++){
+//         logAdd("");
+//         logAdd("----- Arhiviranje baze " + arrayNazivBaze[i] + "(" + arrayNazivFirme[i] + " - " + arrayPoslovnaGodina[i] + ")" + " -----");
+//         if(!CreateDBBackup(arrayNazivBaze[i], arrayNazivFirme[i], arrayPoslovnaGodina[i], i)){
+//             hasErrors = true;
+//             continue;
+//         }
+
+//         if(!MoveBackupFileLocally(BackupFilenames[i], arrayNazivBaze[i])){
+//             hasErrors = true;
+//             continue;
+//         }       
+
+//         localZipFile = substring(localBakFile, 0, localBakFile.length - 4) + ".zip";
+//         if(!ZipFile(localBakFile, localZipFile)){
+//             logAdd(arrayNazivBaze[i] + ": GREŠKA pri kreiranju .zip datoteke");
+//             hasErrors = true;
+//             continue;
+//         }
+//         else{
+//             logAdd(arrayNazivBaze[i] + ": Kreirana .zip datoteka");
+//             try{
+//                 Delete(localBakFile);
+//                 logAdd(arrayNazivBaze[i] + ": .bak datoteka obrisana");
+//             }catch(exc){
+//                 logAdd(arrayNazivBaze[i] + ": GREŠKA brisanja .bak datoteke");
+//                 hasErrors = true;
+//             }
+//         }
+
+//         if(ftp){
+//             //ftp
+//             if(!UploadZipFile(substring(localBakFilename, 0, localBakFilename.length - 4) + ".zip", arrayNazivBaze[i])){
+//                 hasErrors = true;
+//                 continue;
+//             }
+//         }
+//         else{
+//             //local
+//             if(!MoveZipFileToFinal(substring(localBakFilename, 0, localBakFilename.length - 4) + ".zip", arrayNazivBaze[i])){
+//                 hasErrors = true;
+//                 continue;
+//             }
+//         }
+//     }
+
+//     SendEmail();
+
+//     //RunOnMain("SetDflt");
+//     if(hasErrors){
+//         // MessageBox("Arhiviranje dovršeno s greškama.");
+//         RunOnMain("SetWidgetsBackupErrors");
+//     }
+//     else{
+//         //MessageBox("Arhiviranje uspješno dovršeno.");
+//         RunOnMain("SetWidgetsBackupOk");
+//     }
+    
+//     isRunning = false;
+//     hasErrors = false;
+// }
+
+
+
+// function SetWidgetsBackupStart(){
+//     //SetWidgetOptions("btnPokreni", "Content", "Prekini arhiviranje");
+//     SetWidgetOptions("StatusLabel", "Content", "Arhiviranje u tijeku...");
+//     SetWidgetOptions("StatusLabel2", "Content", "");
+    
+//     SetWidgetOptions("cbZakaziArhiviranje", "IsEnabled", "false");
+    
+//     // SetWidgetOptions("nbSati", "IsEnabled", "false");
+//     // SetWidgetOptions("nbMinuta", "IsEnabled", "false");
+//     Cursor("wait");
+// }
+
+// function SetWidgetsBackupErrors(){
+//     SetWidgetOptions("StatusLabel", "Content", "Arhiviranje dovršeno s greškama!");
+//     SetWidgetOptions("cbZakaziArhiviranje", "IsEnabled", "true");
+//     if(zakazano){
+//         SetWidgetOptions("StatusLabel2", "Content", "Sljedeće arhiviranje zakazano u " + zakazanoTime);
+//     }
+//     // SetWidgetOptions("nbSati", "IsEnabled", "true");
+//     // SetWidgetOptions("nbMinuta", "IsEnabled", "true");
+//     Cursor("dflt");
+// }
+
+// function SetWidgetsBackupOk(){
+//     SetWidgetOptions("StatusLabel", "Content", "Arhiviranje uspješno dovršeno");
+//     SetWidgetOptions("cbZakaziArhiviranje", "IsEnabled", "true");
+//     if(zakazano){
+//         SetWidgetOptions("StatusLabel2", "Content", "Sljedeće arhiviranje zakazano u " + zakazanoTime);
+//     }
+//     // SetWidgetOptions("nbSati", "IsEnabled", "true");
+//     // SetWidgetOptions("nbMinuta", "IsEnabled", "true");
+//     Cursor("dflt");
+// }
+
+
+// function Gotovo(){
+// }
+
+// //---------------------------------------------------------
+
+// function CreateDBBackup(dbName, nazivFirme, poslovnaGodina, counter){
+
+//     BackupFilenames[counter] = nazivFirme + "_" + poslovnaGodina + "_" + dbName + ".bak";
+
+//     sqlQueryString = "BACKUP DATABASE " + dbName +
+//         " TO DISK = '" + BackupPath + BackupFilenames[counter] + "' " +
+//         " WITH INIT, NOSKIP, NOFORMAT, COPY_ONLY";
+    
+//     try
+//     {
+//         sqlResult = sqlNonQuery(sqlQueryString);
+//         logAdd(dbName + ": Kreirana .bak datoteka");
+//         return true;
+//     }
+//     catch(exc)
+//     {
+//         logAdd(dbName + ": GREŠKA pri kreiranju .bak datoteke: " + exc);
+//         return false;
+//     }
+// }
+
+// function MoveBackupFileLocally(backupFilename, dbName){
+//     try
+//     {
+//         localBakFile = LocalBackupPath + backupFilename;
+//         localBakFilename = backupFilename;
+
+//         move(BackupPath + backupFilename, LocalBackupPath + backupFilename);
+        
+//         logAdd(dbName + ": Premještena .bak datoteka");
+//         return true;
+//     }
+//     catch(exc)
+//     {
+//         logAdd(dbName + ": GREŠKA pri premještanju .bak datoteke: " + exc);
+//         return false;
+//     }
+    
+// }
+
+// function MoveZipFileToFinal(zipFilename, dbName){
+//     try
+//     {
+//         destinationFile = FinalBackupPath + substring(zipFilename, 0, zipFilename.length - 4) + "_" + backupDateShort + "_" + backupTimeShort + ".zip";
+        
+//         if(FLSZE(LocalBackupPath + zipFilename) * 5 > DSPCE(substring(destinationFile, 0, 1))){
+//             logAdd(dbName + ": UPOZORENJE: Preostalo je malo mjesta na disku");
+//         }
+
+//         move(LocalBackupPath + zipFilename, destinationFile);
+        
+//         logAdd(dbName + ": Premještena .zip datoteka");
+//         return true;
+//     }
+//     catch(exc)
+//     {
+//         logAdd(dbName + ": GREŠKA pri premještanju .zip datoteke: " + exc);
+//         return false;
+//     }
+    
+// }
+
+// function UploadZipFile(zipFilename, dbName){
+//     try
+//     {
+//         destinationFilename = substring(zipFilename, 0, zipFilename.length - 4) + "_" + backupDateShort + "_" + backupTimeShort + ".zip";
+//         destinationFilePath = LocalBackupPath + destinationFilename;
+
+//         move(LocalBackupPath + zipFilename, destinationFilePath);
+        
+//         FTP("ftp", "s", FinalBackupPath, FtpPort, FtpUsername, FtpPassword, FtpDirectoryPath, LocalBackupPath, destinationFilename);
+//         //FTPUploadFile(destinationFile, FinalBackupPath, 21, FtpUsername, FtpPassword);
+//         logAdd(dbName + ": .zip datoteka uploadana");
+
+//         Delete(destinationFilePath);
+//         logAdd(dbName + ": .zip datoteka obrisana");
+
+//         return true;
+//     }
+//     catch(exc)
+//     {
+//         logAdd(dbName + ": GREŠKA pri uploadanju .zip datoteke: " + exc);
+//         return false;
+//     }
+// }
+
+// //-- EMAIL --------------------------------------------------------------
+
+// function SendEmail(){
+    
+//     if(!regedit("regOpen", winxIniPath, "rtFile")){
+//         MessageBox("Datoteka " + winxIniPath + " nije dostupna. Mail nije poslan.");
+//         return;
+//     }
+
+//     OutgoingEmailServer = regedit("regReadStr", 'EMAIL', 'OutgoingEmailServer');
+//     if(OutgoingEmailServer == ""){
+//         MessageBox("Potrebno je podesiti adresu izlaznog e-mail poslužitelja(OutgoingEmailServer) u ini datoteci.");
+//         regedit("regWriteStr", 'EMAIL', 'OutgoingEmailServer', "");
+//         return;
+//     }
+
+//     EmailUsername = regedit("regReadStr", 'EMAIL', 'EmailUsername');
+//     if(EmailUsername == ""){
+//         MessageBox("Potrebno je podesiti korisničko ime za slanje e-maila(EmailUsername) u ini datoteci.");
+//         regedit("regWriteStr", 'EMAIL', 'EmailUsername', "");
+//         return;
+//     }
+//     EmailUsername = Decryptstr("setwofish", EmailUsername, "12345");
+
+//     EmailPassword = regedit("regReadStr", 'EMAIL', 'EmailPassword');
+//     if(EmailPassword == ""){
+//         MessageBox("Potrebno je podesiti lozinku za slanje e-maila(EmailPassword) u ini datoteci.");
+//         regedit("regWriteStr", 'EMAIL', 'EmailPassword', "");
+//         return;
+//     }
+//     EmailPassword = Decryptstr("setwofish", EmailPassword, "12345");
+
+//     SenderEmail = regedit("regReadStr", 'EMAIL', 'SenderEmail');
+//     if(SenderEmail == ""){
+//         MessageBox("Potrebno je podesiti e-mail pošiljatelja(SenderEmail) u ini datoteci.");
+//         regedit("regWriteStr", 'EMAIL', 'SenderEmail', "");
+//         return;
+//     }
+    
+//     EmailSenderName = regedit("regReadStr", 'EMAIL', 'EmailSenderName');
+//     if(EmailSenderName == ""){
+//         MessageBox("Potrebno je podesiti ime pošiljatelja e-maila(EmailSenderName) u ini datoteci.");
+//         regedit("regWriteStr", 'EMAIL', 'EmailSenderName', "");
+//         return;
+//     }
+
+//     DestinationEmail = regedit("regReadStr", 'EMAIL', 'DestinationEmail');
+//     if(DestinationEmail == ""){
+//         MessageBox("Potrebno je podesiti adresu primatelja e-maila(DestinationEmail) u ini datoteci.");
+//         regedit("regWriteStr", 'EMAIL', 'DestinationEmail', "");
+//         return;
+//     }
+
+//     NazivFirme = regedit("regReadStr", 'COMPANY', 'NazivFirme');
+//     if(NazivFirme == ""){
+//         MessageBox("Potrebno je podesiti naziv firme(NazivFirme) u ini datoteci.");
+//         regedit("regWriteStr", 'COMPANY', 'NazivFirme', "");
+//         NazivFirme = "???";
+//     }
+
+//     regedit("regClose");
+    
+//     EmailSubject = "ASConto Zapisnik arhive(" + backupDateSQL + " " + backupTimeSQL + ") za " + NazivFirme;
+
+//     FormatLog();
+
+//     try{
+//         ok  = EMAIL("emlSendMsg", logFinal, "", "", OutgoingEmailServer, EmailPassword, EmailUsername, SenderEmail, EmailSenderName, DestinationEmail, EmailSubject);   
+//         //MessageBox(ok);
+//     }catch(ex){
+//         logFinal += "\n" + "GREŠKA pri slanju e-maila: " + ex;
+//     }
+    
+//     SaveFile(logFinal, BackupPath + "Log\\" + backupDateShort + "_" + backupTimeShort + ".txt");
+// }
+
+// //-- LOG ------------------------------------------------
+
+// function logAdd(text){
+//     log[logCount] = strTrim(text);
+//     logCount++;
+// }
+
+// function FormatLog(){
+//     logFinal = "";
+
+//     if(hasErrors){
+//         logFinal += "Arhiviranje dovršeno s greškama!\n";
+//     }
+//     else{
+//         logFinal += "Arhiviranje uspješno dovršeno.\n";
+//     }
+
+//     for(i = 0; i < logCount; i++){
+//         logFinal += log[i] + "\n";
+//     }
+// }
+
+// function ListLog(){
+//     for(i = 0; i < logCount; i++){
+//         MessageBox(log[i]);
+//     }
+// }
+
+// //-----------------------------------------------------
+

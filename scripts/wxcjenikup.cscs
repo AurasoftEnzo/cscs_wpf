@@ -1,4 +1,4 @@
-CreateWindow(strTrim(tpath()) + "wxuploadcjenika.xaml");
+CreateWindow(strTrim(tpath()) + "wxcjenikup.xaml");
 
 
 
@@ -74,7 +74,7 @@ DEFINE ShortDbName type a size 5;
 DEFINE ShortDbNameWithoutB type a size 5;
 DEFINE CurrentYearDatabase type a size 255;
 
-DEFINE sqlString type a size 255;
+DEFINE sqlString type a size 10000;
 
 // NKSYSYCO -> NKSYS_VALUE
 DEFINE FTP_SERVER type a size 120; 
@@ -84,20 +84,37 @@ DEFINE FTP_PASSWORD type a size 120;
 DEFINE FTP_DIRECTORY type a size 120; 
 DEFINE CSV_DIRECTORY type a size 120; 
 DEFINE SKLADISTE type a size 120; 
+//E-MAIL config
+DEFINE EMAIL_SERVER type a size 120; // mail server
+DEFINE EMAIL_USERNAME type a size 120; 
+DEFINE EMAIL_PASSWORD type a size 120; 
+DEFINE EMAIL_SENDR_ADD type a size 120; // email sender address
+DEFINE EMAIL_SENDR_NME type a size 120; // email sender name
+DEFINE EMAIL_DEST_ADD type a size 120; // recipient(s) address(es)
+
+DEFINE CSVFileLine type a size 300;
+
+// DEFINE ARTI_ARTIKL, ARTI_SIFART_BAR type a size 15;
+DEFINE sifraArtikla, barkod type a size 15;
 
 
-
-function wxuploadcjenika_onDisplay()
+function wxcjenikup_onDisplay()
 {   
     Cursor("wait");
 
+    // NKSYLOGS -> 'P'
+
 
     GetCurrentDatabaseName();
+    //DELETE !!!
+    CurrentYearDatabase = "V__DATAX_GZ__BGZ";
 
     InitConfigInDbase();
 
     TRAP("F9", "openConfig");
 
+
+    //EMAIL("emlSendMsg", "BODY 2", "", "", "mail.aurasoft.hr", "AuraSoft123", "upload-cjenika@aurasoft.hr", "upload-cjenika@aurasoft.hr", "Upload Cjenika", "dalibor@aurasoft.hr, enzo@aurasoft.hr", "NASLOV 2");   
 
     Cursor("dflt");
 
@@ -137,6 +154,14 @@ function wxuploadcjenika_onDisplay()
 
     // SetFocus("btnPokreni");
 }
+
+
+function wxcjenikup_onClose()
+{   
+    // NKSYLOGS -> 'R'
+}
+
+//---------------------------------------------------
 
 function GetCurrentDatabaseName(){
 
@@ -268,6 +293,67 @@ function InitConfigInDbase(){
         sqlResult = SqlQuery(sqlString);
         SKLADISTE = sqlResult[1][0];
     }
+
+    //// EMAIL CONFIG
+    // EMAIL_SERVER
+    if(!recordExistsInNKSYSYCO("EMAIL_SERVER")){
+        AddRecordInNKSYSYCO("EMAIL_SERVER", "(outgoing) e-mail server");
+    }else{
+        sqlString = "SELECT RTRIM(NKSYS_VALUE) from " + CurrentYearDatabase + 
+        ".dbo.NKSYSYCO WHERE NKSYS_MODUL = 'WKPO' AND NKSYS_GRUP = 'CJENIK' AND NKSYS_GRUP2 = 'WEB' AND NKSYS_FIELD = 'EMAIL_SERVER'";
+        sqlResult = SqlQuery(sqlString);
+        EMAIL_SERVER = sqlResult[1][0];
+    }
+    
+    // EMAIL_USERNAME
+    if(!recordExistsInNKSYSYCO("EMAIL_USERNAME")){
+        AddRecordInNKSYSYCO("EMAIL_USERNAME", "E-mail username");
+    }else{
+        sqlString = "SELECT RTRIM(NKSYS_VALUE) from " + CurrentYearDatabase + 
+        ".dbo.NKSYSYCO WHERE NKSYS_MODUL = 'WKPO' AND NKSYS_GRUP = 'CJENIK' AND NKSYS_GRUP2 = 'WEB' AND NKSYS_FIELD = 'EMAIL_USERNAME'";
+        sqlResult = SqlQuery(sqlString);
+        EMAIL_USERNAME = sqlResult[1][0];
+    }
+    
+    // EMAIL_PASSWORD
+    if(!recordExistsInNKSYSYCO("EMAIL_PASSWORD")){
+        AddRecordInNKSYSYCO("EMAIL_PASSWORD", "E-mail password");
+    }else{
+        sqlString = "SELECT RTRIM(NKSYS_VALUE) from " + CurrentYearDatabase + 
+        ".dbo.NKSYSYCO WHERE NKSYS_MODUL = 'WKPO' AND NKSYS_GRUP = 'CJENIK' AND NKSYS_GRUP2 = 'WEB' AND NKSYS_FIELD = 'EMAIL_PASSWORD'";
+        sqlResult = SqlQuery(sqlString);
+        EMAIL_PASSWORD = sqlResult[1][0];
+    }
+    
+    // EMAIL_SENDR_ADD
+    if(!recordExistsInNKSYSYCO("EMAIL_SENDR_ADD")){
+        AddRecordInNKSYSYCO("EMAIL_SENDR_ADD", "Sender e-mail address");
+    }else{
+        sqlString = "SELECT RTRIM(NKSYS_VALUE) from " + CurrentYearDatabase + 
+        ".dbo.NKSYSYCO WHERE NKSYS_MODUL = 'WKPO' AND NKSYS_GRUP = 'CJENIK' AND NKSYS_GRUP2 = 'WEB' AND NKSYS_FIELD = 'EMAIL_SENDR_ADD'";
+        sqlResult = SqlQuery(sqlString);
+        EMAIL_SENDR_ADD = sqlResult[1][0];
+    }
+    
+    // EMAIL_SENDR_NME
+    if(!recordExistsInNKSYSYCO("EMAIL_SENDR_NME")){
+        AddRecordInNKSYSYCO("EMAIL_SENDR_NME", "Sender name");
+    }else{
+        sqlString = "SELECT RTRIM(NKSYS_VALUE) from " + CurrentYearDatabase + 
+        ".dbo.NKSYSYCO WHERE NKSYS_MODUL = 'WKPO' AND NKSYS_GRUP = 'CJENIK' AND NKSYS_GRUP2 = 'WEB' AND NKSYS_FIELD = 'EMAIL_SENDR_NME'";
+        sqlResult = SqlQuery(sqlString);
+        EMAIL_SENDR_NME = sqlResult[1][0];
+    }
+    
+    // EMAIL_DEST_ADD
+    if(!recordExistsInNKSYSYCO("EMAIL_DEST_ADD")){
+        AddRecordInNKSYSYCO("EMAIL_DEST_ADD", "Destination e-mail addresses");
+    }else{
+        sqlString = "SELECT RTRIM(NKSYS_VALUE) from " + CurrentYearDatabase + 
+        ".dbo.NKSYSYCO WHERE NKSYS_MODUL = 'WKPO' AND NKSYS_GRUP = 'CJENIK' AND NKSYS_GRUP2 = 'WEB' AND NKSYS_FIELD = 'EMAIL_DEST_ADD'";
+        sqlResult = SqlQuery(sqlString);
+        EMAIL_DEST_ADD = sqlResult[1][0];
+    }
 }
 
 function recordExistsInNKSYSYCO(fieldName){
@@ -288,12 +374,86 @@ function AddRecordInNKSYSYCO(fieldName, description){
 }
 
 function openConfig(){
-    include(strtrim(tpath()) + "wxuploadcjenika_config.cscs");
-    ModalWindow(strtrim(tpath()) + "wxuploadcjenika_config.xaml");
+    include(strtrim(tpath()) + "wxcjenikup_config.cscs");
+    ModalWindow(strtrim(tpath()) + "wxcjenikup_config.xaml");
 }
 
+function btnPosalji@clicked(){
+    PosaljiCjenik();
+}
+
+function PosaljiCjenik(){
+
+    // NKSYLOGS -> 'U'
 
 
+
+    CreateCSVFile();
+
+
+
+    // if(UploadCSVFileToFTP()){
+    //     // logAdd("CSV datoteka(cjenik) uspješno poslana na FTP server.");
+    // }else{
+    //     // logAdd("GREŠKA: CSV datoteka(cjenik) nije poslana na FTP server.");
+    // }
+
+
+
+    // SaveLogLocally();
+
+    // SendEmail();
+
+
+
+    // NKSYLOGS -> 'I'
+}
+
+function CreateCSVFile(){
+    
+    // Create empty file
+    SaveFile("", CSV_DIRECTORY + "cjenik_temp.csv");
+    // KORIGIRAT nazive kolona!!
+    CSVFileLine = "naziv proizvoda|šifra proizvoda|marka proizvoda|jedinična količina|jedinicu mjere|maloprodajna cijena|cijena za jedinicu mjere|barkod|kategorija proizvoda";
+    // Append line
+    SaveFile(CSVFileLine, CSV_DIRECTORY + "cjenik_temp.csv", "A");
+
+
+    // TRIMAT !!!
+    sqlString = "SELECT" +
+    " ARTI_NAZIV, trim(ARTI_ARTIKL), 'marka proizvoda', ARTI_FAKTOR_JMJ, ARTI_JED_MJERE, 199.00/*ZAMK_CENA_PROD*/, 9.99/*cij.zajed.mj.*/, trim(ARTI_SIFART_BAR) /*barkod*/, ARTI_KATEGORIJA" + 
+    " FROM " + CurrentYearDatabase + ".dbo.NKMKARTI" + 
+    " LEFT JOIN " + CurrentYearDatabase + ".dbo.NKMKARTK on ARTI_ARTIKL = ZAMK_SIF_ARTIKL" + 
+    " WHERE ZAMK_SKLADISTE = 100" +
+    " AND ZAMK_BR_NA_SKL <> 0" +
+    " AND (ARTI_ARTIKL != '' or ARTI_SIFART_BAR != '')";
+    
+    // SaveFile(sqlString, CSV_DIRECTORY + "upit.sql");
+
+    sqlResult = SqlQuery(sqlString);
+
+    for(i = 1; i < Size(sqlResult); i++){
+        PopuniArtiklIBarkod(sqlResult[i][1], sqlResult[i][7]);
+        
+        CSVFileLine = sqlResult[i][0] + "|" + sifraArtikla + "|"
+        + sqlResult[i][2] + "|" + sqlResult[i][3] + "|"
+        + sqlResult[i][4] + "|" + sqlResult[i][5] + "|"
+        + sqlResult[i][6] + "|" + barkod + "|"
+        + sqlResult[i][8];
+        
+        // Append to file
+        SaveFile(CSVFileLine, CSV_DIRECTORY + "cjenik_temp.csv", "A");
+    }
+}
+
+function PopuniArtiklIBarkod(ARTI_ARTIKL, ARTI_SIFART_BAR){
+    sifraArtikla = "";
+    barkod = "";
+
+    // if(ARTI_ARTIKL) ...
+
+
+}
 
 
 // function GetDatabaseNames(){
@@ -330,6 +490,8 @@ function openConfig(){
 //         quit;
 //     }
 // }
+
+
 
 // function btnSelectBackupLocation@clicked(){
 //     if(isRunning || zakazano){

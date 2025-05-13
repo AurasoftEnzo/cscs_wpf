@@ -92,10 +92,24 @@ DEFINE EMAIL_SENDR_ADD type a size 120; // email sender address
 DEFINE EMAIL_SENDR_NME type a size 120; // email sender name
 DEFINE EMAIL_DEST_ADD type a size 120; // recipient(s) address(es)
 
-DEFINE CSVFileLine type a size 300;
+DEFINE CSVFileLine type a size 3000;
 
 // DEFINE ARTI_ARTIKL, ARTI_SIFART_BAR type a size 15;
-DEFINE sifraArtikla, barkod type a size 15;
+
+DEFINE nazivProizvoda type a size 50;
+DEFINE sifraArtikla type a size 15;
+DEFINE markaProizvoda type a size 22;
+DEFINE jedinicnaKolicina type a size 18;
+DEFINE jedinicaMjere type a size 14;
+DEFINE maloprodajnaCijena type a size 19;
+DEFINE cijenaZaJedinicuMjere type a size 24;
+DEFINE barkod type a size 15;
+DEFINE kategorijaNaziv type a size 197;
+
+// log
+DEFINE log type a size 10000 array 5000;
+DEFINE logCount type i size 5;
+DEFINE logFinal type a size 50000000;
 
 
 function wxcjenikup_onDisplay()
@@ -117,6 +131,15 @@ function wxcjenikup_onDisplay()
     //EMAIL("emlSendMsg", "BODY 2", "", "", "mail.aurasoft.hr", "AuraSoft123", "upload-cjenika@aurasoft.hr", "upload-cjenika@aurasoft.hr", "Upload Cjenika", "dalibor@aurasoft.hr, enzo@aurasoft.hr", "NASLOV 2");   
 
     Cursor("dflt");
+
+
+    // MessageBox("12345678 = " + string(isBarcode("12345678")));
+    // MessageBox("1234567890123 = " + string(isBarcode("1234567890123")));
+    // MessageBox("5678 = " + string(isBarcode("5678")));
+    // MessageBox("1234567A = " + string(isBarcode("1234567A")));
+    // MessageBox("02345678 = " + string(isBarcode("02345678")));
+    
+    
 
 
     // //SaveFile(Encryptstr("setwofish", "wxbackup@aurasoft.hr", "12345"));
@@ -379,7 +402,9 @@ function openConfig(){
 }
 
 function btnPosalji@clicked(){
+    cursor("wait");
     PosaljiCjenik();
+    cursor("dflt");
 }
 
 function PosaljiCjenik(){
@@ -388,130 +413,209 @@ function PosaljiCjenik(){
 
 
 
-    CreateCSVFile();
-
-
-
-    // if(UploadCSVFileToFTP()){
-    //     // logAdd("CSV datoteka(cjenik) uspješno poslana na FTP server.");
-    // }else{
-    //     // logAdd("GREŠKA: CSV datoteka(cjenik) nije poslana na FTP server.");
+    if(CreateCSVFile()){
+        FTPUpload();
+    }
+    // else{
+    //     //return;
     // }
 
 
 
-    // SaveLogLocally();
-
-    // SendEmail();
-
-
+    
+    FormatLog();
+    SendEmail();
+    SaveLog();
 
     // NKSYLOGS -> 'I'
 }
 
 function CreateCSVFile(){
-    
-    // Create empty file
-    SaveFile("", CSV_DIRECTORY + "cjenik_temp.csv");
-    // KORIGIRAT nazive kolona!!
-    CSVFileLine = "naziv proizvoda|šifra proizvoda|marka proizvoda|jedinična količina|jedinicu mjere|maloprodajna cijena|cijena za jedinicu mjere|barkod|kategorija proizvoda";
-    // Append line
-    SaveFile(CSVFileLine, CSV_DIRECTORY + "cjenik_temp.csv", "A");
-
-
-    // TRIMAT !!!
-    sqlString = "SELECT" +
-    " ARTI_NAZIV, trim(ARTI_ARTIKL), 'marka proizvoda', ARTI_FAKTOR_JMJ, ARTI_JED_MJERE, 199.00/*ZAMK_CENA_PROD*/, 9.99/*cij.zajed.mj.*/, trim(ARTI_SIFART_BAR) /*barkod*/, ARTI_KATEGORIJA" + 
-    " FROM " + CurrentYearDatabase + ".dbo.NKMKARTI" + 
-    " LEFT JOIN " + CurrentYearDatabase + ".dbo.NKMKARTK on ARTI_ARTIKL = ZAMK_SIF_ARTIKL" + 
-    " WHERE ZAMK_SKLADISTE = 100" +
-    " AND ZAMK_BR_NA_SKL <> 0" +
-    " AND (ARTI_ARTIKL != '' or ARTI_SIFART_BAR != '')";
-    
-    // SaveFile(sqlString, CSV_DIRECTORY + "upit.sql");
-
-    sqlResult = SqlQuery(sqlString);
-
-    for(i = 1; i < Size(sqlResult); i++){
-        PopuniArtiklIBarkod(sqlResult[i][1], sqlResult[i][7]);
-        
-        CSVFileLine = sqlResult[i][0] + "|" + sifraArtikla + "|"
-        + sqlResult[i][2] + "|" + sqlResult[i][3] + "|"
-        + sqlResult[i][4] + "|" + sqlResult[i][5] + "|"
-        + sqlResult[i][6] + "|" + barkod + "|"
-        + sqlResult[i][8];
-        
-        // Append to file
+    try{
+        // Create empty file
+        SaveFile("", CSV_DIRECTORY + "cjenik_temp.csv");
+        // KORIGIRAT nazive kolona!!
+        CSVFileLine = 
+            "naziv proizvoda                                   |" + 
+            "šifra proizvoda|" + 
+            "marka proizvoda|" + 
+            "jedinična količina|" + 
+            "jedinica mjere|" + 
+            "maloprodajna cijena|" + 
+            "cijena za jedinicu mjere|" + 
+            "barkod         |" + 
+            "kategorija proizvoda";
+        // Append line
         SaveFile(CSVFileLine, CSV_DIRECTORY + "cjenik_temp.csv", "A");
+
+
+        // TRIMAT !!!
+        sqlString = "SELECT" +
+
+        // " TOP 10" +
+
+        " ARTI_NAZIV as nazivArtikla," + 
+        " trim(ARTI_ARTIKL) as ARTI_ARTIKL," + 
+        // REZ2 PROMIJENIT !!!
+        " (CASE WHEN ARTI_REZX4 = '' THEN '-' ELSE ARTI_REZX4 END) as markaProizvoda," + 
+        " TRIM(CONCAT(trim(ARTI_FAKTOR_JMJ), ' ', TRIM(ARTI_JMJ_DOD))) as jedinicnaKolicina," + 
+        " ARTI_JED_MJERE as jedinicaMjere," + 
+        " CONVERT(varchar(15), ZAMK_CENA_PROD) as maloprodajnaCijena," + 
+        
+        " CONVERT(varchar(10)," + 
+        " (CASE" + 
+        " WHEN ARTI_FAKTOR_JMJ = ''" + 
+        " THEN 0" + 
+        " WHEN CONVERT(float, REPLACE(ARTI_FAKTOR_JMJ, ',', '.')) = 0" + 
+        " THEN 0" + 
+        " ELSE ROUND(((1 / CONVERT(float, REPLACE(ARTI_FAKTOR_JMJ, ',', '.'))) * ZAMK_CENA_PROD), 2)" + 
+        " END" + 
+        " )" + 
+        " ) as cijenaZaJedinicuMjere," + 
+
+        " trim(ARTI_SIFART_BAR) as ARTI_SIFART_BAR," + 
+        " ISNULL((CASE WHEN LEN(MKGR_REZERVA) > 0 THEN MKGR_REZERVA ELSE MKGR_NAZIV END), '-') as kategorijaNaziv" + 
+        
+        " FROM " + CurrentYearDatabase + ".dbo.NKMKARTI" + 
+        " LEFT JOIN " + CurrentYearDatabase + ".dbo.NKMKARTK on ARTI_ARTIKL = ZAMK_SIF_ARTIKL" + 
+        " LEFT JOIN " + CurrentYearDatabase + ".dbo.PKMKGRUP on ARTI_KATEGORIJA = MKGR_GRUPA and MKGR_VRSTA = 'K'" + 
+        
+        " WHERE ZAMK_SKLADISTE = " + SKLADISTE + 
+        " AND ZAMK_BR_NA_SKL <> 0" +
+        " AND (ARTI_ARTIKL != '' or ARTI_SIFART_BAR != '')";
+        
+        // SaveFile(sqlString, CSV_DIRECTORY + "upit.sql");
+        sqlResult = SqlQuery(sqlString);
+
+        for(i = 1; i < Size(sqlResult); i++){
+            PopuniArtiklIBarkod(sqlResult[i][1], sqlResult[i][7]);
+            
+            nazivProizvoda = sqlResult[i][0];
+            markaProizvoda = sqlResult[i][2];
+            jedinicnaKolicina = sqlResult[i][3];
+            jedinicaMjere = sqlResult[i][4];
+            maloprodajnaCijena = sqlResult[i][5];
+            cijenaZaJedinicuMjere = sqlResult[i][6];
+            kategorijaNaziv = sqlResult[i][8];
+
+            // string padding
+            // šifra proizvoda
+            for(k = sifraArtikla.length; k < 15; k++){
+                sifraArtikla = sifraArtikla + " ";
+            }
+            // markaProizvoda
+            for(k = markaProizvoda.length; k < 15; k++){
+                markaProizvoda += " ";
+            }
+            // jedinicna kolicina
+            for(k = jedinicnaKolicina.length; k < 18; k++){
+                jedinicnaKolicina += " ";
+            }
+            // jedinica mjere
+            for(k = jedinicaMjere.length; k < 14; k++){
+                jedinicaMjere += " ";
+            }
+            // maloprodajna cijena
+            for(k = maloprodajnaCijena.length; k < 19; k++){
+                maloprodajnaCijena += " ";
+            }
+            // cijena za jedinicu mjere
+            for(k = cijenaZaJedinicuMjere.length; k < 24; k++){
+                cijenaZaJedinicuMjere += " ";
+            }
+            // barkod
+            for(k = barkod.length; k < 15; k++){
+                barkod += " ";
+            }
+            // kategorija proizvoda
+            for(k = kategorijaNaziv.length; k < 197; k++){
+                kategorijaNaziv += " ";
+            }
+            
+            CSVFileLine = nazivProizvoda + "|" + sifraArtikla + "|"
+            + markaProizvoda + "|" + jedinicnaKolicina + "|"
+            + jedinicaMjere + "|" + maloprodajnaCijena + "|"
+            + cijenaZaJedinicuMjere + "|" + barkod + "|"
+            + kategorijaNaziv;
+            
+            // Append to file
+            SaveFile(CSVFileLine, CSV_DIRECTORY + "cjenik_temp.csv", "A");
+        }
+
+        // MessageBox("CSV datoteka(cjenik) uspješno kreirana.");
+        LogAdd("CSV datoteka(cjenik) uspješno kreirana.");
+
+        return true;
+
+    }catch(exc){
+        LogAdd("GREŠKA: Greška kreiranja CSV datoteke(cjenika): " + exc);
+        return false;
     }
+    
 }
 
 function PopuniArtiklIBarkod(ARTI_ARTIKL, ARTI_SIFART_BAR){
     sifraArtikla = "";
     barkod = "";
 
-    // if(ARTI_ARTIKL) ...
+    if(isBarcode(ARTI_ARTIKL)){
+        barkod = ARTI_ARTIKL;
+        sifraArtikla = ARTI_SIFART_BAR;
+    }elif(isBarcode(ARTI_SIFART_BAR)){
+        barkod = ARTI_SIFART_BAR;
+        sifraArtikla = ARTI_ARTIKL;
+    }else{
+        barkod = "";
+        sifraArtikla = ARTI_ARTIKL; // !!!
+    }
+}
 
+function isBarcode(stringValue){
+    if(stringValue.length == 13 || stringValue.length == 8){
+        isNumeric = true;
+        for(j = 0; j < stringValue.length; j++){
+            currentLetter = substring(stringValue, j, 1);
+            if(
+                currentLetter == "0" ||
+                currentLetter == "1" ||
+                currentLetter == "2" ||
+                currentLetter == "3" ||
+                currentLetter == "4" ||
+                currentLetter == "5" ||
+                currentLetter == "6" ||
+                currentLetter == "7" ||
+                currentLetter == "8" ||
+                currentLetter == "9")
+            {
+                
+            }
+            else{
+                isNumeric = false;
+            }
+        }
+        return isNumeric;
+    }
+    else{
+        return false;
+    }
+}
 
+function FTPUpload(){
+    try{
+        FTP("ftp", "s", FTP_SERVER, int(FTP_PORT), FTP_USERNAME, FTP_PASSWORD, FTP_DIRECTORY, CSV_DIRECTORY, "cjenik_temp.csv");
+        LogAdd("CSV datoteka(cjenik) uspješno poslana na FTP server.");
+    }catch(exc){
+        LogAdd("GREŠKA: CSV datoteka(cjenik) NIJE poslana na FTP server: " + exc);
+    }
 }
 
 
-// function GetDatabaseNames(){
-//     sqlQueryString = "SELECT [SY_CC_USER], [SY_CC_YEAR], [SY_CC_DBASE], [SY_CC_DESC]" +
-//         " FROM " + CommonDBGet() + ".[dbo].[NKSYCCYR]" +
-//         " WHERE SY_CC_REZ1 = 'D'";
-//     try
-//     {
-//         sqlResult = sqlQuery(sqlQueryString);
-
-//         for(i = 1; i < size(sqlResult); i++){
-//             arrayRbr[i - 1] = i;
-//             arrayNazivFirme[i - 1] = strtrim(sqlResult[i][0]);
-//             arrayPoslovnaGodina[i - 1] = strtrim(string(sqlResult[i][1]));
-//             arrayNazivBaze[i - 1] = strtrim(sqlResult[i][2]);
-//             arrayDescription[i - 1] = strtrim(sqlResult[i][3]);
-//         }
-
-//         // actElem1 = Size(sqlResult) - 1;
-
-//         //Dictionary
-//         arrayRbr[Size(sqlResult) - 1] = Size(sqlResult);
-//         arrayNazivFirme[Size(sqlResult) - 1] = "DICTIONARY";
-//         arrayPoslovnaGodina[Size(sqlResult) - 1] = "0";
-//         arrayNazivBaze[Size(sqlResult) - 1] = "Dictionary";
-//         arrayDescription[Size(sqlResult) - 1] = "Dictionary";
-
-//         actElem1 = Size(sqlResult);
-//     }
-//     catch(exc)
-//     {
-//         MessageBox("Greška na GetDatabaseNames():" + "\n" + exc);
-//         Cursor("dflt");
-//         quit;
-//     }
-// }
 
 
 
-// function btnSelectBackupLocation@clicked(){
-//     if(isRunning || zakazano){
-//         return;
-//     }
-    
-//     if(FinalBackupPath == ""){
-//         dialogResult = getPath(wpath(), "Odaberite direktorij za arhivu");
-//     }
-//     else{
-//         dialogResult = getPath(FinalBackupPath, "Odaberite direktorij za arhivu");
-//     }
 
-//     if(dialogResult != ""){
-//         FinalBackupPath = dialogResult;
-//         if(substring(FinalBackupPath, FinalBackupPath.length - 1, 1) != "\\"){
-//             FinalBackupPath += "\\";
-//         }
-//     }
-// }
+
+
 
 // function cbZakaziArhiviranje@Clicked(){
 //     if(!checkboxZakaziArhiviranje){
@@ -529,6 +633,12 @@ function PopuniArtiklIBarkod(ARTI_ARTIKL, ARTI_SIFART_BAR){
 //         regedit("regClose");
 //     }
 // }
+
+
+
+
+
+
 
 // function btnPokreni@clicked()
 // {
@@ -643,6 +753,8 @@ function PopuniArtiklIBarkod(ARTI_ARTIKL, ARTI_SIFART_BAR){
 //         PokreniAsync();
 //     }
 // }
+
+
 
 // function nbSati@textChange(){
 //     // if(checkboxZakaziArhiviranje == true){
@@ -784,197 +896,51 @@ function PopuniArtiklIBarkod(ARTI_ARTIKL, ARTI_SIFART_BAR){
 // function Gotovo(){
 // }
 
-// //---------------------------------------------------------
 
-// function CreateDBBackup(dbName, nazivFirme, poslovnaGodina, counter){
 
-//     BackupFilenames[counter] = nazivFirme + "_" + poslovnaGodina + "_" + dbName + ".bak";
 
-//     sqlQueryString = "BACKUP DATABASE " + dbName +
-//         " TO DISK = '" + BackupPath + BackupFilenames[counter] + "' " +
-//         " WITH INIT, NOSKIP, NOFORMAT, COPY_ONLY";
+
+//-- LOG ------------------------------------------------
+
+function LogAdd(text){
+    log[logCount] = Now("HH:mm:ss") + " - " + strTrim(text);
+    logCount++;
+}
+
+function FormatLog(){
+    logFinal = "";
+
+    // if(hasErrors){
+    //     logFinal += "Slanje cjenika dovršeno s greškama!\n";
+    // }
+    // else{
+    //     logFinal += "Slanje cjenika uspješno dovršeno.\n";
+    // }
+
+    for(i = 0; i < logCount; i++){
+        logFinal += log[i] + "\n";
+    }
+}
+
+function SaveLog(){
+    MAKE_DIR(CSV_DIRECTORY + "Logs\\");
+    SaveFile(logFinal, CSV_DIRECTORY + "Logs\\" + Now("yyyy-MM-dd") + "_" + Now("HH-mm-ss") + "_log.txt");
+}
+
+
+//-- EMAIL --------------------------------------------------------------
+
+function SendEmail(){
     
-//     try
-//     {
-//         sqlResult = sqlNonQuery(sqlQueryString);
-//         logAdd(dbName + ": Kreirana .bak datoteka");
-//         return true;
-//     }
-//     catch(exc)
-//     {
-//         logAdd(dbName + ": GREŠKA pri kreiranju .bak datoteke: " + exc);
-//         return false;
-//     }
-// }
+    // EmailSubject = "Upload cjenika (NOW("yyyy-MM-dd HH:mm:ss")) za " + IME_TRGOVINE;
+    EmailSubject = "Test 1 - cjenik";
 
-// function MoveBackupFileLocally(backupFilename, dbName){
-//     try
-//     {
-//         localBakFile = LocalBackupPath + backupFilename;
-//         localBakFilename = backupFilename;
-
-//         move(BackupPath + backupFilename, LocalBackupPath + backupFilename);
-        
-//         logAdd(dbName + ": Premještena .bak datoteka");
-//         return true;
-//     }
-//     catch(exc)
-//     {
-//         logAdd(dbName + ": GREŠKA pri premještanju .bak datoteke: " + exc);
-//         return false;
-//     }
-    
-// }
-
-// function MoveZipFileToFinal(zipFilename, dbName){
-//     try
-//     {
-//         destinationFile = FinalBackupPath + substring(zipFilename, 0, zipFilename.length - 4) + "_" + backupDateShort + "_" + backupTimeShort + ".zip";
-        
-//         if(FLSZE(LocalBackupPath + zipFilename) * 5 > DSPCE(substring(destinationFile, 0, 1))){
-//             logAdd(dbName + ": UPOZORENJE: Preostalo je malo mjesta na disku");
-//         }
-
-//         move(LocalBackupPath + zipFilename, destinationFile);
-        
-//         logAdd(dbName + ": Premještena .zip datoteka");
-//         return true;
-//     }
-//     catch(exc)
-//     {
-//         logAdd(dbName + ": GREŠKA pri premještanju .zip datoteke: " + exc);
-//         return false;
-//     }
-    
-// }
-
-// function UploadZipFile(zipFilename, dbName){
-//     try
-//     {
-//         destinationFilename = substring(zipFilename, 0, zipFilename.length - 4) + "_" + backupDateShort + "_" + backupTimeShort + ".zip";
-//         destinationFilePath = LocalBackupPath + destinationFilename;
-
-//         move(LocalBackupPath + zipFilename, destinationFilePath);
-        
-//         FTP("ftp", "s", FinalBackupPath, FtpPort, FtpUsername, FtpPassword, FtpDirectoryPath, LocalBackupPath, destinationFilename);
-//         //FTPUploadFile(destinationFile, FinalBackupPath, 21, FtpUsername, FtpPassword);
-//         logAdd(dbName + ": .zip datoteka uploadana");
-
-//         Delete(destinationFilePath);
-//         logAdd(dbName + ": .zip datoteka obrisana");
-
-//         return true;
-//     }
-//     catch(exc)
-//     {
-//         logAdd(dbName + ": GREŠKA pri uploadanju .zip datoteke: " + exc);
-//         return false;
-//     }
-// }
-
-// //-- EMAIL --------------------------------------------------------------
-
-// function SendEmail(){
-    
-//     if(!regedit("regOpen", winxIniPath, "rtFile")){
-//         MessageBox("Datoteka " + winxIniPath + " nije dostupna. Mail nije poslan.");
-//         return;
-//     }
-
-//     OutgoingEmailServer = regedit("regReadStr", 'EMAIL', 'OutgoingEmailServer');
-//     if(OutgoingEmailServer == ""){
-//         MessageBox("Potrebno je podesiti adresu izlaznog e-mail poslužitelja(OutgoingEmailServer) u ini datoteci.");
-//         regedit("regWriteStr", 'EMAIL', 'OutgoingEmailServer', "");
-//         return;
-//     }
-
-//     EmailUsername = regedit("regReadStr", 'EMAIL', 'EmailUsername');
-//     if(EmailUsername == ""){
-//         MessageBox("Potrebno je podesiti korisničko ime za slanje e-maila(EmailUsername) u ini datoteci.");
-//         regedit("regWriteStr", 'EMAIL', 'EmailUsername', "");
-//         return;
-//     }
-//     EmailUsername = Decryptstr("setwofish", EmailUsername, "12345");
-
-//     EmailPassword = regedit("regReadStr", 'EMAIL', 'EmailPassword');
-//     if(EmailPassword == ""){
-//         MessageBox("Potrebno je podesiti lozinku za slanje e-maila(EmailPassword) u ini datoteci.");
-//         regedit("regWriteStr", 'EMAIL', 'EmailPassword', "");
-//         return;
-//     }
-//     EmailPassword = Decryptstr("setwofish", EmailPassword, "12345");
-
-//     SenderEmail = regedit("regReadStr", 'EMAIL', 'SenderEmail');
-//     if(SenderEmail == ""){
-//         MessageBox("Potrebno je podesiti e-mail pošiljatelja(SenderEmail) u ini datoteci.");
-//         regedit("regWriteStr", 'EMAIL', 'SenderEmail', "");
-//         return;
-//     }
-    
-//     EmailSenderName = regedit("regReadStr", 'EMAIL', 'EmailSenderName');
-//     if(EmailSenderName == ""){
-//         MessageBox("Potrebno je podesiti ime pošiljatelja e-maila(EmailSenderName) u ini datoteci.");
-//         regedit("regWriteStr", 'EMAIL', 'EmailSenderName', "");
-//         return;
-//     }
-
-//     DestinationEmail = regedit("regReadStr", 'EMAIL', 'DestinationEmail');
-//     if(DestinationEmail == ""){
-//         MessageBox("Potrebno je podesiti adresu primatelja e-maila(DestinationEmail) u ini datoteci.");
-//         regedit("regWriteStr", 'EMAIL', 'DestinationEmail', "");
-//         return;
-//     }
-
-//     NazivFirme = regedit("regReadStr", 'COMPANY', 'NazivFirme');
-//     if(NazivFirme == ""){
-//         MessageBox("Potrebno je podesiti naziv firme(NazivFirme) u ini datoteci.");
-//         regedit("regWriteStr", 'COMPANY', 'NazivFirme', "");
-//         NazivFirme = "???";
-//     }
-
-//     regedit("regClose");
-    
-//     EmailSubject = "ASConto Zapisnik arhive(" + backupDateSQL + " " + backupTimeSQL + ") za " + NazivFirme;
-
-//     FormatLog();
-
-//     try{
-//         ok  = EMAIL("emlSendMsg", logFinal, "", "", OutgoingEmailServer, EmailPassword, EmailUsername, SenderEmail, EmailSenderName, DestinationEmail, EmailSubject);   
-//         //MessageBox(ok);
-//     }catch(ex){
-//         logFinal += "\n" + "GREŠKA pri slanju e-maila: " + ex;
-//     }
-    
-//     SaveFile(logFinal, BackupPath + "Log\\" + backupDateShort + "_" + backupTimeShort + ".txt");
-// }
-
-// //-- LOG ------------------------------------------------
-
-// function logAdd(text){
-//     log[logCount] = strTrim(text);
-//     logCount++;
-// }
-
-// function FormatLog(){
-//     logFinal = "";
-
-//     if(hasErrors){
-//         logFinal += "Arhiviranje dovršeno s greškama!\n";
-//     }
-//     else{
-//         logFinal += "Arhiviranje uspješno dovršeno.\n";
-//     }
-
-//     for(i = 0; i < logCount; i++){
-//         logFinal += log[i] + "\n";
-//     }
-// }
-
-// function ListLog(){
-//     for(i = 0; i < logCount; i++){
-//         MessageBox(log[i]);
-//     }
-// }
+    try{
+        ok  = EMAIL("emlSendMsg", logFinal, "", "", EMAIL_SERVER, EMAIL_PASSWORD, EMAIL_USERNAME, EMAIL_SENDR_ADD, EMAIL_SENDR_NME, EMAIL_DEST_ADD, EmailSubject);   
+        //MessageBox(ok);
+    }catch(ex){
+        logFinal += "\n" + "GREŠKA pri slanju e-maila: " + ex;
+    }
+}
 
 // //-----------------------------------------------------
-

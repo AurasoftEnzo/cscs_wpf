@@ -70,7 +70,7 @@ DEFINE jedinicaMjere type a size 14;
 DEFINE maloprodajnaCijena type a size 19;
 DEFINE cijenaZaJedinicuMjere type a size 24;
 DEFINE barkod type a size 15;
-DEFINE kategorijaNaziv type a size 197;
+DEFINE kategorijaNaziv type a size 197; // 297
 
 // log
 DEFINE log type a size 10000 array 5000;
@@ -94,8 +94,8 @@ function wxcjenikup_onDisplay()
     GetCurrentDatabaseName();
 
 
-    // //DELETE !!!
-    //CurrentYearDatabase = "V__DATAX_GZ__BGZ";
+    // // FOR TESTING !!!
+    // CurrentYearDatabase = "V__DATAX_GZ__BGZ";
 
 
     
@@ -103,7 +103,7 @@ function wxcjenikup_onDisplay()
     // logAdd("...");  ??
     InitConfigInDbase();
 
-    GetPodaciTrgovine();
+    
 
 
     TRAP("F9", "openConfig");
@@ -498,11 +498,12 @@ function PosaljiCjenik(){
 
 
     SetDateTimeString();
-
-    if(CreateCSVFile()){
-        FTPUpload();
+    if(GetPodaciTrgovine() == true){
+        if(CreateCSVFile()){
+            FTPUpload();
+        }
     }
-
+    
     FormatLog();
     SendEmail();
     SaveLog();
@@ -731,7 +732,7 @@ function FTPUpload(){
     try{
         // RENAME FILE LOCALLY
         brojacInt += 1;
-        newFilename = "MP_" + NazivTrgovine + " " + MjestoTrgovine + "_" + (brojacInt) + "_" + DateTimeString + ".csv";
+        newFilename = "Supermarket_" + NazivTrgovine + " " + MjestoTrgovine + "_" + (brojacInt) + "_" + DateTimeString + ".csv";
         move(CSV_DIRECTORY + "cjenik_temp.csv", CSV_DIRECTORY + newFilename);
 
         FTP("ftp", "s", FTP_SERVER, int(FTP_PORT), FTP_USERNAME, FTP_PASSWORD, FTP_DIRECTORY, CSV_DIRECTORY, newFilename);
@@ -743,10 +744,6 @@ function FTPUpload(){
     }catch(exc){
         LogAdd("CSV datoteka(cjenik) NIJE poslana na FTP server: " + exc, true);
     }
-}
-
-function PovecajBrojac(){
-
 }
 
 //--------------------------------------------------
@@ -804,12 +801,24 @@ function SetDateTimeString(){
 //-----------------------------------------------------
 
 function GetPodaciTrgovine(){
-    sqlString = " SELECT TRIM(PKMK_SKL_NAZIV), TRIM(PKMK_SKL_MJESTO) from " + CurrentYearDatabase + ".dbo.PKMKSKLA WHERE PKMK_SKL_CODE = " + SKLADISTE;
+    try{
+        sqlString = " SELECT TRIM(PKMK_SKL_NAZIV), TRIM(PKMK_SKL_MJESTO) from " + CurrentYearDatabase + ".dbo.PKMKSKLA WHERE PKMK_SKL_CODE = " + SKLADISTE;
     
-    sqlResult = SqlQuery(sqlString);
+        sqlResult = SqlQuery(sqlString);
 
-    NazivTrgovine = sqlResult[1][0];
-    MjestoTrgovine = sqlResult[1][1];
+        NazivTrgovine = sqlResult[1][0];
+        MjestoTrgovine = sqlResult[1][1];
+
+        return true;
+    }
+    catch(exc){
+        LogAdd("Greška prilikom dohvata podataka trgovine(skladišta): " + exc, true);
+
+        NazivTrgovine = "Nepoznato skladište " + SKLADISTE;
+        MjestoTrgovine = "";
+
+        return false;
+    }
 }
 
 //--------------------------------------------------

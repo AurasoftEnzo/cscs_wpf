@@ -70,7 +70,7 @@ DEFINE jedinicaMjere type a size 14;
 DEFINE maloprodajnaCijena type a size 19;
 DEFINE cijenaZaJedinicuMjere type a size 24;
 DEFINE barkod type a size 15;
-DEFINE kategorijaNaziv type a size 197; // 297
+DEFINE kategorijaNaziv type a size 50; // 197; // 297
 
 // log
 DEFINE log type a size 10000 array 5000;
@@ -556,32 +556,52 @@ function CreateCSVFile(){
         SaveFile("", CSV_DIRECTORY + "cjenik_temp.csv");
         // KORIGIRAT nazive kolona!!
         CSVFileLine = 
-            "naziv proizvoda                                   |" + 
-            "šifra proizvoda|" + 
-            "marka proizvoda|" + 
-            "jedinična količina|" + 
-            "jedinica mjere|" + 
-            "maloprodajna cijena|" + 
-            "cijena za jedinicu mjere|" + 
-            "barkod         |" + 
-            "kategorija proizvoda                    " +
-            "                                                                                                                                                             ";
+            "naziv proizvoda                                   ;" + 
+            "šifra proizvoda;" + 
+            "marka proizvoda;" + 
+            "jedinična količina;" + 
+            "jedinica mjere;" + 
+            "maloprodajna cijena;" + 
+            "cijena za jedinicu mjere;" + 
+            "barkod         ;" + 
+            "kategorija proizvoda                              ";
         // Append line
         SaveFile(CSVFileLine, CSV_DIRECTORY + "cjenik_temp.csv", "A");
 
 
         // TRIMAT !!!
-        sqlString = "SELECT" +
+        sqlString = "WITH cte1 AS(" +
 
-        // " TOP 20" +
+        " select" +
+        " CONVERT(DATE, CASE WHEN substring(KS_AR_REZ, 1, 2) = '00' THEN '01/01/01' ELSE substring(KS_AR_REZ, 1, 8) END, 3) as datumOd," +
+        " CONVERT(DATE, CASE WHEN substring(KS_AR_REZ, 9, 2) = '00' THEN '31/12/39' ELSE substring(KS_AR_REZ, 9, 8) END, 3) as datumDo," +
+        " ks_ar_artikl as sifraArtikla," +
+        " KS_AR_cena1 as akcijskaCijena," +
+        " KS_AR_POSTO1 as postotakPopusta," +
+        " KS_AR_REZ1" +
+        " from " + CurrentYearDatabase + ".dbo.nkksartk" +
+        " WHERE KS_AR_REZ1 != 'R'" +
+        " )," +
 
-        " trim(ARTI_NAZIV) as nazivArtikla," + 
+        " cte2 AS(" +
+        " SELECT *" +
+        " FROM cte1" +
+        " WHERE getdate() BETWEEN datumOd AND datumDo" +
+        " )" +
+
+        " SELECT" +
+
+        // // ZAKOMENTIRAT !!!
+        // " TOP 500" +
+        
+        " replace(trim(ARTI_NAZIV), ';', ',') as nazivArtikla," + 
         " trim(ARTI_ARTIKL) as ARTI_ARTIKL," + 
         // REZ2 PROMIJENIT !!!
         " (CASE WHEN ARTI_REZX4 = '' THEN '-' ELSE ARTI_REZX4 END) as markaProizvoda," + 
         " TRIM(CONCAT(trim(ARTI_FAKTOR_JMJ), ' ', TRIM(ARTI_JMJ_DOD))) as jedinicnaKolicina," + 
         " ARTI_JED_MJERE as jedinicaMjere," + 
-        " CONVERT(varchar(15), ZAMK_CENA_PROD) as maloprodajnaCijena," + 
+
+        " CONVERT(varchar(15), CASE WHEN KS_AR_REZ1 = 'A' THEN akcijskaCijena WHEN KS_AR_REZ1 = 'P' THEN (ZAMK_CENA_PROD * (1 - postotakPopusta / 100.0 )) ELSE ZAMK_CENA_PROD END) as maloprodajnaCijena," + 
         
         " CONVERT(varchar(10)," + 
         " (CASE" + 
@@ -590,24 +610,27 @@ function CreateCSVFile(){
         " WHEN CONVERT(float, REPLACE(ARTI_FAKTOR_JMJ, ',', '.')) = 0" + 
         " THEN 0" + 
         " WHEN ARTI_FAKTOR_TIP = 'D'" + 
-        " THEN ROUND((ZAMK_CENA_PROD / CONVERT(float, REPLACE(ARTI_FAKTOR_JMJ, ',', '.'))), 2)" + 
+        " THEN ROUND((CASE WHEN KS_AR_REZ1 = 'A' THEN akcijskaCijena WHEN KS_AR_REZ1 = 'P' THEN (ZAMK_CENA_PROD * (1 - postotakPopusta / 100.0 )) ELSE ZAMK_CENA_PROD END / CONVERT(float, REPLACE(ARTI_FAKTOR_JMJ, ',', '.'))), 2)" + 
         " WHEN ARTI_FAKTOR_TIP = 'M'" + 
-        " THEN ROUND((ZAMK_CENA_PROD * CONVERT(float, REPLACE(ARTI_FAKTOR_JMJ, ',', '.'))), 2)" + 
+        " THEN ROUND((CASE WHEN KS_AR_REZ1 = 'A' THEN akcijskaCijena WHEN KS_AR_REZ1 = 'P' THEN (ZAMK_CENA_PROD * (1 - postotakPopusta / 100.0 )) ELSE ZAMK_CENA_PROD END * CONVERT(float, REPLACE(ARTI_FAKTOR_JMJ, ',', '.'))), 2)" + 
         " ELSE 0" +
         " END" + 
         " )" + 
         " ) as cijenaZaJedinicuMjere," + 
 
         " trim(ARTI_SIFART_BAR) as ARTI_SIFART_BAR," + 
-        " ISNULL((CASE WHEN LEN(MKGR_REZERVA) > 0 THEN MKGR_REZERVA ELSE MKGR_NAZIV END), '-') as kategorijaNaziv" + 
+        " replace(trim(ISNULL((CASE WHEN LEN(MKGR_REZERVA) > 0 THEN MKGR_REZERVA ELSE MKGR_NAZIV END), '-')), ';', ',') as kategorijaNaziv" + 
         
         " FROM " + CurrentYearDatabase + ".dbo.NKMKARTI" + 
         " LEFT JOIN " + CurrentYearDatabase + ".dbo.NKMKARTK on ARTI_ARTIKL = ZAMK_SIF_ARTIKL" + 
         " LEFT JOIN " + CurrentYearDatabase + ".dbo.PKMKGRUP on ARTI_KATEGORIJA = MKGR_GRUPA and MKGR_VRSTA = 'K'" + 
+        " LEFT JOIN cte2 on arti_artikl = sifraArtikla" + 
         
         " WHERE ZAMK_SKLADISTE = " + SKLADISTE + 
         " AND ZAMK_BR_NA_SKL <> 0" +
-        " AND (ARTI_ARTIKL != '' or ARTI_SIFART_BAR != '')";
+        " AND (ARTI_ARTIKL != '' or ARTI_SIFART_BAR != '')" +
+
+        " AND ZAMK_CENA_PROD != 0";
         
         //SaveFile(sqlString, CSV_DIRECTORY + "upit.sql");
         sqlResult = SqlQuery(sqlString);
@@ -657,14 +680,14 @@ function CreateCSVFile(){
                 barkod += " ";
             }
             // kategorija proizvoda
-            for(k = kategorijaNaziv.length; k < 197; k++){
+            for(k = kategorijaNaziv.length; k < 50; k++){
                 kategorijaNaziv += " ";
             }
             
-            CSVFileLine = nazivProizvoda + "|" + sifraArtikla + "|"
-            + markaProizvoda + "|" + jedinicnaKolicina + "|"
-            + jedinicaMjere + "|" + maloprodajnaCijena + "|"
-            + cijenaZaJedinicuMjere + "|" + barkod + "|"
+            CSVFileLine = nazivProizvoda + ";" + sifraArtikla + ";"
+            + markaProizvoda + ";" + jedinicnaKolicina + ";"
+            + jedinicaMjere + ";" + maloprodajnaCijena + ";"
+            + cijenaZaJedinicuMjere + ";" + barkod + ";"
             + kategorijaNaziv;
             
             // Append to file

@@ -783,7 +783,14 @@ function SaveLog(){
 //-- EMAIL --------------------------------------------------------------
 
 function SendEmail(){
-    EmailSubject = "Upload cjenika (" + DateTimeString + ") za " + NazivTrgovine + " " + MjestoTrgovine;
+    EmailSubject = "cjenika (" + DateTimeString + ") za " + NazivTrgovine + " " + MjestoTrgovine;
+
+    if(hasErrors){
+        EmailSubject = "GREŠKA uploada " + EmailSubject;
+    }
+    else{
+        EmailSubject = "Uspješan upload " + EmailSubject;
+    }
 
     try{
         ok  = EMAIL("emlSendMsg", logFinal, "", "", EMAIL_SERVER, EMAIL_PASSWORD, EMAIL_USERNAME, EMAIL_SENDR_ADD, EMAIL_SENDR_NME, EMAIL_DEST_ADD, EmailSubject);   

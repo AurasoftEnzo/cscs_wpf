@@ -540,7 +540,7 @@ namespace WpfCSCS
             var filter = Utils.GetSafeString(args, 3);
             Microsoft.Win32.OpenFileDialog openFileDialog1 = new Microsoft.Win32.OpenFileDialog
             {
-                InitialDirectory = startPath,
+                InitialDirectory = startPath.Replace("/", "\\"),
                 Title = dialogTitle,
 
                 CheckFileExists = true,
@@ -548,7 +548,7 @@ namespace WpfCSCS
 
                 DefaultExt = extension,
                 Filter = filter,
-                FilterIndex = 2,
+                FilterIndex = 0,
                 RestoreDirectory = true,
 
                 ReadOnlyChecked = true,

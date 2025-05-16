@@ -1,0 +1,52 @@
+function wxbackup_config_onDisplay(){
+    
+}
+
+function btnSelectCsvDirectory@clicked(){
+    if(CSV_DIRECTORY == ""){
+        dialogResult = getPath(strTrim(wpath()), "Odaberite direktorij za arhivu");
+    }
+    else{
+        dialogResult = getPath(CSV_DIRECTORY, "Odaberite direktorij za arhivu");
+    }
+
+    if(dialogResult != ""){
+        CSV_DIRECTORY = dialogResult;
+        if(substring(CSV_DIRECTORY, CSV_DIRECTORY.length - 1, 1) != "\\"){
+            CSV_DIRECTORY += "\\";
+        }
+    }
+}
+
+
+function btnSpremiConfig@clicked(){
+    try{
+        // Update in Database
+        updateNKSYSYCO("FTP_SERVER", FTP_SERVER);
+        updateNKSYSYCO("FTP_PORT", FTP_PORT);
+        updateNKSYSYCO("FTP_USERNAME", FTP_USERNAME);
+        updateNKSYSYCO("FTP_PASSWORD", FTP_PASSWORD);
+        updateNKSYSYCO("FTP_DIRECTORY", FTP_DIRECTORY);
+        updateNKSYSYCO("CSV_DIRECTORY", CSV_DIRECTORY);
+        updateNKSYSYCO("SKLADISTE", SKLADISTE);
+        //e-mail
+        updateNKSYSYCO("EMAIL_SERVER", EMAIL_SERVER);
+        updateNKSYSYCO("EMAIL_USERNAME", EMAIL_USERNAME);
+        updateNKSYSYCO("EMAIL_PASSWORD", EMAIL_PASSWORD);
+        updateNKSYSYCO("EMAIL_SENDR_ADD", EMAIL_SENDR_ADD);
+        updateNKSYSYCO("EMAIL_SENDR_NME", EMAIL_SENDR_NME);
+        updateNKSYSYCO("EMAIL_DEST_ADD", EMAIL_DEST_ADD);
+
+        MessageBox("Postavke su spremljene.");
+    }catch(ex){
+        //REMOVE - CHANGE - ...
+        MessageBox("GREŠKA: " + ex);
+    }    
+}
+
+function updateNKSYSYCO(field, newValue){
+    sqlString = "UPDATE " + CurrentYearDatabase + 
+        ".dbo.NKSYSYCO SET NKSYS_VALUE = '" + newValue + "' WHERE NKSYS_MODUL = 'WKPO' " 
+        + "AND NKSYS_GRUP = 'CJENIK' AND NKSYS_GRUP2 = 'WEB' AND NKSYS_FIELD = '" + field + "'";
+    sqlResult = SqlNonQuery(sqlString);    
+}

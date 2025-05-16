@@ -1,0 +1,539 @@
+// Global variables
+DEFINE definedVariables type a size 255;
+DEFINE definedFunctions type a size 255;
+DEFINE knownTokens type a size 255;
+DEFINE systemKeywords type a size 255;
+DEFINE systemFunctions type a size 255;
+DEFINE xamlComponents type a size 255;
+DEFINE errors type a size 255;
+DEFINE braceStack type a size 255;
+DEFINE bracketStack type a size 255;
+DEFINE componentEventMap type a size 255;
+
+Main();
+
+// Entry point
+function Main() {
+    // Msg("MAIN");
+
+    // Prompt for script file name
+    DEFINE fileName type a size 255;
+    fileName = PromptForScriptFile();
+
+    // MSG(fileName);
+
+
+
+    if(IsNullOrWhiteSpace(fileName) || !FileExists(fileName)){
+        MessageBox("Error: File not found or no file specified.");
+        return;
+    }
+
+    // Load system tokens from file
+    LoadSystemTokens();
+
+    // Load event map
+    InitComponentEventMap();
+
+    // First pass: collect tokens
+    FirstPass(fileName);
+
+    // Second pass: validate tokens, semicolons, XAML fields
+    SecondPass(fileName);
+
+    // Third pass: validate braces and brackets
+    ThirdPass(fileName);
+
+    // Validate event handlers vs XAML components and event types
+    ValidateXamlFieldNames(fileName);
+    ValidateEventHandlers(fileName);
+
+    // Display final results
+    DisplayResults();
+}
+
+// === PROMPT AND FILE HANDLING ===
+
+function PromptForScriptFile() {
+    // MessageBox("Enter the name of the .cscs script to verify:");
+    // return InputBox("Script File Name");
+    return GET_FILE("", strtrim(tpath()), "Select a .cscs script file", "Script files (*.cscs)|*.cscs|All files (*.*)|*.*");
+}
+
+function ReadLinesFromFile(path) {
+    RETURN SPLIT(READFILE(path), "\n");
+}
+
+function ReadAllText(path) {
+    RETURN READFILE(path);
+}
+
+// === FIRST PASS: COLLECT TOKENS ===
+
+function FirstPass(fileName) {
+    DEFINE lines type a size 1000;
+    lines = ReadLinesFromFile(fileName);
+
+    FOR_EACH(line IN lines) {
+        line = Trim(line);
+
+        IF (IsNullOrWhiteSpace(line) OR StartsWith(line, "//")) {
+            CONTINUE;
+        }
+
+        IF (Contains(line, "Include(")) {
+            DEFINE includeFile type a size 255;
+            includeFile = ExtractIncludeFile(line);
+            IF (!IsNullOrWhiteSpace(includeFile) AND FileExists(includeFile)) {
+                FirstPass(includeFile);
+            } ELSE {
+                ADD(errors, Format("Line {0}: Included file '{1}' not found or invalid", GetLineNumber(line), includeFile));
+            }
+        }
+
+        IF (StartsWith(line, "DEFINE")) {
+            ParseDefineStatement(line);
+        } ELSE_IF (StartsWith(line, "function")) {
+            ParseFunctionDeclaration(line);
+        } ELSE {
+            ParseOtherTokens(line);
+        }
+    }
+}
+
+function ExtractIncludeFile(line) {
+    RETURN SubstringBetween(line, "Include(\"", "\")");
+}
+
+function ParseDefineStatement(line) {
+    DEFINE parts type a size 255;
+    parts = Split(line, " ");
+    IF (Length(parts) > 2) {
+        DEFINE varName type a size 255;
+        varName = parts[1];
+        IF (Contains(definedVariables, varName)) {
+            ADD(errors, Format("Line {0}: Duplicate variable definition '{1}'", GetLineNumber(line), varName));
+        } ELSE {
+            ADD(definedVariables, varName);
+        }
+    }
+}
+
+function ParseFunctionDeclaration(line) {
+    DEFINE parts type a size 255;
+    parts = Split(line, "(");
+    IF (Length(parts) > 0) {
+        DEFINE funcName type a size 255;
+        funcName = Replace(parts[0], "function", "");
+        funcName = Trim(funcName);
+        ADD(definedFunctions, funcName);
+    }
+}
+
+function ParseOtherTokens(line) {
+    DEFINE tokens type a size 255;
+    tokens = Split(line, " ;(),{}[]");
+
+    FOR_EACH(token IN tokens) {
+        IF (!IsNullOrWhiteSpace(token)) {
+            ADD(knownTokens, token);
+        }
+    }
+}
+
+// === SECOND PASS: VALIDATE TOKENS ===
+
+function SecondPass(fileName) {
+    DEFINE lines type a size 1000;
+    lines = ReadLinesFromFile(fileName);
+
+    DEFINE lineNumber type i;
+    lineNumber = 1;
+
+    FOR_EACH(line IN lines) {
+        line = Trim(line);
+
+        IF (IsNullOrWhiteSpace(line) OR StartsWith(line, "//")) {
+            lineNumber++;
+            CONTINUE;
+        }
+
+        // Token validation
+        DEFINE tokens type a size 255;
+        tokens = Split(line, " ;(),{}[]");
+
+        FOR_EACH(token IN tokens) {
+            IF (token == "" OR Contains(systemKeywords, token) OR EndsWith(token, "()")) {
+                CONTINUE;
+            }
+
+            IF (!Contains(definedVariables, token) AND
+                !Contains(definedFunctions, token) AND
+                !Contains(knownTokens, token) AND
+                !IsSystemToken(token)) {
+                ADD(errors, Format("Line {0}: Unqualified token '{1}'", lineNumber, token));
+            }
+        }
+
+        // Semicolon validation
+        IF (!EndsWith(line, ";") AND
+            !StartsWith(line, "{") AND
+            !StartsWith(line, "}") AND
+            !StartsWith(line, "#") AND
+            !StartsWith(line, "if") AND
+            !StartsWith(line, "else") AND
+            !StartsWith(line, "while") AND
+            !StartsWith(line, "for") AND
+            !StartsWith(line, "switch") AND
+            !StartsWith(line, "case") AND
+            !StartsWith(line, "default")) {
+            ADD(errors, Format("Line {0}: Missing semicolon at end of statement.", lineNumber));
+        }
+
+        lineNumber++;
+    }
+
+    // Validate XAML FieldNames
+    ValidateXamlFieldNames(fileName);
+}
+
+function IsSystemToken(token) {
+    IF (Contains(systemKeywords, token)) {
+        RETURN TRUE;
+    }
+
+    IF (EndsWith(token, "()")) {
+        DEFINE funcName type a size 255;
+        funcName = Substring(token, 0, Length(token) - 2);
+        IF (Contains(systemFunctions, funcName)) {
+            RETURN TRUE;
+        }
+    }
+
+    RETURN FALSE;
+}
+
+// === THIRD PASS: BRACE & BRACKET MATCHING ===
+
+function ThirdPass(fileName) {
+    DEFINE lines type a size 1000;
+    lines = ReadLinesFromFile(fileName);
+
+    DEFINE lineNumber type i;
+    lineNumber = 1;
+
+    Clear(braceStack);
+    Clear(bracketStack);
+
+    FOR_EACH(line IN lines) {
+        line = Trim(line);
+
+        IF (IsNullOrWhiteSpace(line) OR StartsWith(line, "//")) {
+            lineNumber++;
+            CONTINUE;
+        }
+
+        FOR_EACH(char IN line) {
+            IF (char == "{") {
+                PUSH(braceStack, Format("Line {0}: Unmatched opening brace '{{'", lineNumber));
+            } ELSE_IF (char == "}") {
+                IF (IsEmpty(braceStack)) {
+                    ADD(errors, Format("Line {0}: Unmatched closing brace '}}'", lineNumber));
+                } ELSE {
+                    POP(braceStack);
+                }
+            } ELSE_IF (char == "[") {
+                PUSH(bracketStack, Format("Line {0}: Unmatched opening bracket '[", lineNumber));
+            } ELSE_IF (char == "]") {
+                IF (IsEmpty(bracketStack)) {
+                    ADD(errors, Format("Line {0}: Unmatched closing bracket ']'", lineNumber));
+                } ELSE {
+                    POP(bracketStack);
+                }
+            }
+        }
+
+        lineNumber++;
+    }
+
+    WHILE (!IsEmpty(braceStack)) {
+        ADD(errors, POP(braceStack));
+    }
+
+    WHILE (!IsEmpty(bracketStack)) {
+        ADD(errors, POP(bracketStack));
+    }
+}
+
+// === SYSTEM TOKEN LOADING ===
+
+function LoadSystemTokens() {
+    DEFINE filePath type a size 255;
+    filePath = "system_tokens.txt";
+
+    IF (!FileExists(filePath)) {
+        ADD(errors, "Error: system_tokens.txt not found.");
+        RETURN;
+    }
+
+    DEFINE lines type a size 1000;
+    lines = ReadLinesFromFile(filePath);
+
+    FOR_EACH(line IN lines) {
+        line = Trim(line);
+        IF (IsNullOrWhiteSpace(line) OR StartsWith(line, "#")) {
+            CONTINUE;
+        }
+
+        IF (EndsWith(line, "()")) {
+            ADD(systemFunctions, Substring(line, 0, Length(line) - 2));
+        } ELSE {
+            ADD(systemKeywords, line);
+        }
+    }
+}
+
+// === EVENT HANDLER VALIDATION ===
+
+function ValidateXamlFieldNames(fileName) {
+    DEFINE xamlFiles type a size 255;
+    xamlFiles = ExtractXamlFileNames(fileName);
+
+    FOR_EACH(xamlFile IN xamlFiles) {
+        IF (!FileExists(xamlFile)) {
+            ADD(errors, Format("Error: XAML file '{0}' not found.", xamlFile));
+            CONTINUE;
+        }
+
+        DEFINE xamlContent type a size 1000;
+        xamlContent = ReadAllText(xamlFile);
+
+        // Extract FieldName attributes
+        DEFINE fieldNames type a size 255;
+        fieldNames = ExtractFieldNamesFromXaml(xamlContent);
+
+        FOR_EACH(fieldName IN fieldNames) {
+            IF (!Contains(definedVariables, fieldName)) {
+                ADD(errors, Format("XAML Error: FieldName '{0}' in file '{1}' is not defined in the script.", fieldName, xamlFile));
+            }
+        }
+    }
+}
+
+function ValidateEventHandlers(fileName) {
+    DEFINE xamlFiles type a size 255;
+    xamlFiles = ExtractXamlFileNames(fileName);
+
+    FOR_EACH(xamlFile IN xamlFiles) {
+        IF (!FileExists(xamlFile)) {
+            CONTINUE;
+        }
+
+        DEFINE xamlContent type a size 1000;
+        xamlContent = ReadAllText(xamlFile);
+
+        // Extract component names
+        Clear(xamlComponents);
+        ExtractXamlComponentNames(xamlContent);
+
+        // Extract event handlers from current script
+        DEFINE scriptLines type a size 1000;
+        scriptLines = ReadLinesFromFile(fileName);
+
+        Clear(scriptHandlers);
+        ExtractAndValidateScriptHandlers(scriptLines, xamlFile);
+    }
+}
+
+function ExtractXamlComponentNames(xamlContent) {
+    DEFINE lines type a size 1000;
+    lines = Split(xamlContent, "\n");
+
+    FOR_EACH(line IN lines) {
+        line = Trim(line);
+        IF (Contains(line, "Name=\"")) {
+            DEFINE name type a size 255;
+            name = SubstringBetween(line, "Name=\"", "\"");
+            IF (!IsNullOrWhiteSpace(name)) {
+                ADD(xamlComponents, name);
+            }
+        }
+    }
+}
+
+function ExtractXamlFileNames(fileName) {
+    DEFINE xamlFiles type a size 255;
+    DEFINE lines type a size 1000;
+    lines = ReadLinesFromFile(fileName);
+
+    FOR_EACH(line IN lines) {
+        line = Trim(line);
+
+        IF (Contains(line, "CreateWindow(")) {
+            DEFINE xamlFile type a size 255;
+            xamlFile = SubstringBetween(line, "CreateWindow(\"", "\")");
+            IF (!IsNullOrWhiteSpace(xamlFile)) {
+                ADD(xamlFiles, xamlFile);
+            }
+        }
+
+        IF (StartsWith(line, "#WINFORM")) {
+            DEFINE xamlFile type a size 255;
+            xamlFile = Trim(Replace(line, "#WINFORM", ""));
+            IF (!IsNullOrWhiteSpace(xamlFile)) {
+                ADD(xamlFiles, xamlFile);
+            }
+        }
+    }
+
+    RETURN xamlFiles;
+}
+
+function ExtractFieldNamesFromXaml(xamlContent) {
+    DEFINE fieldNames type a size 255;
+    fieldNames = RegexMatches(xamlContent, "FieldName=\"([^\"]+)\"");
+
+    DEFINE result type a size 255;
+    FOR_EACH(match IN fieldNames) {
+        DEFINE name type a size 255;
+        name = SubstringBetween(match, "FieldName=\"", "\"");
+        ADD(result, name);
+    }
+
+    RETURN result;
+}
+
+// Enhanced event handler validation with event type checking
+function GetComponentTypeFromXaml(xamlContent, componentName) {
+    DEFINE lineWithComponent type a size 255;
+    lineWithComponent = FindLineContaining(xamlContent, "Name=\"" + componentName + "\"");
+
+    IF (IsNullOrWhiteSpace(lineWithComponent)) {
+        RETURN "";
+    }
+
+    DEFINE parts type a size 255;
+    parts = Split(lineWithComponent, " ");
+
+    IF (Length(parts) > 0) {
+        RETURN parts[0]; // E.g., Button, NumericBox, etc.
+    }
+
+    RETURN "";
+}
+
+function ValidateEventType(componentName, eventType, componentType) {
+    IF (eventType == "") {
+        RETURN;
+    }
+
+    FOR_EACH(entry IN componentEventMap) {
+        DEFINE keyVal type a size 255;
+        keyVal = Split(entry, ":");
+
+        IF (keyVal[0] == componentType) {
+            DEFINE allowedEvents type a size 255;
+            allowedEvents = Split(keyVal[1], ",");
+
+            IF (!Contains(allowedEvents, eventType)) {
+                ADD(errors, Format("Event '{0}@{1}' is not supported by '{2}'.", componentName, eventType, componentType));
+            }
+
+            RETURN;
+        }
+    }
+
+    ADD(errors, Format("Event '{0}@{1}' has no support info for '{2}'.", componentName, eventType, componentType));
+}
+
+function ExtractAndValidateScriptHandlers(scriptLines, xamlFile) {
+    DEFINE xamlContent type a size 1000;
+    xamlContent = ReadAllText(xamlFile);
+
+    FOR_EACH(line IN scriptLines) {
+        line = Trim(line);
+
+        IF (StartsWith(line, "function ") AND Contains(line, "@")) {
+            DEFINE parts type a size 255;
+            parts = Split(line, " ");
+
+            IF (Length(parts) > 1) {
+                DEFINE funcName type a size 255;
+                funcName = parts[1];
+
+                DEFINE splitName type a size 255;
+                splitName = Split(funcName, "@");
+
+                IF (Length(splitName) >= 2) {
+                    DEFINE componentName type a size 255;
+                    DEFINE eventType type a size 255;
+
+                    componentName = splitName[0];
+                    eventType = splitName[1];
+
+                    IF (EndsWith(eventType, "()")) {
+                        eventType = Substring(eventType, 0, Length(eventType) - 2);
+                    }
+
+                    IF (!Contains(xamlComponents, componentName)) {
+                        ADD(errors, Format("Event handler '{0}@{1}' refers to a non-existent component.", componentName, eventType));
+                        CONTINUE;
+                    }
+
+                    DEFINE componentType type a size 255;
+                    componentType = GetComponentTypeFromXaml(xamlContent, componentName);
+
+                    IF (IsNullOrWhiteSpace(componentType)) {
+                        ADD(errors, Format("Could not determine type of component '{0}'.", componentName));
+                        CONTINUE;
+                    }
+
+                    ValidateEventType(componentName, eventType, componentType);
+                }
+            }
+        }
+    }
+}
+
+// === EVENT MAP INITIALIZATION ===
+
+function InitComponentEventMap() {
+    ADD(componentEventMap, "Button:clicked");
+    ADD(componentEventMap, "NumericBox:clicked,pre,post,TextChange");
+    ADD(componentEventMap, "EnterBox:clicked,pre,post,TextChange");
+    ADD(componentEventMap, "TextBox:pre,post,TextChange");
+    ADD(componentEventMap, "TabControl:change");
+    ADD(componentEventMap, "Navigator:change,afterChange");
+    ADD(componentEventMap, "DataGrid:move,select");
+    ADD(componentEventMap, "DataGridTemplateColumn:header");
+}
+
+// === UTILITIES ===
+
+function FindLineContaining(xamlContent, searchString) {
+    DEFINE lines type a size 1000;
+    lines = Split(xamlContent, "\n");
+
+    FOR_EACH(line IN lines) {
+        IF (Contains(line, searchString)) {
+            RETURN line;
+        }
+    }
+
+    RETURN "";
+}
+
+function DisplayResults() {
+    IF (Length(errors) == 0) {
+        MessageBox("Verification successful! No errors found.");
+    } ELSE {
+        DEFINE errorMessage type a size 1000;
+        errorMessage = Format("Verification completed. Found {0} error(s):", Length(errors));
+
+        FOR_EACH(error IN errors) {
+            errorMessage = Concat(errorMessage, "\n", error);
+        }
+
+        MessageBox(errorMessage);
+    }
+}

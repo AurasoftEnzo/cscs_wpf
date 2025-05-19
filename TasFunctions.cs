@@ -2295,17 +2295,23 @@ d:\temp\aaa.txt, d:\temp\ggg.txt,
 
 	class TPATHFunction : ParserFunction
 	{
-		protected override Variable Evaluate(ParsingScript script)
+        protected override Variable Evaluate(ParsingScript script)
 		{
-			return new Variable(App.GetConfiguration("ScriptsPath", ""));
-		}
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 0, m_name);
+
+            return new Variable(App.GetConfiguration("ScriptsPath", ""));
+        }
 	}
     
     class IPATHFunction : ParserFunction
 	{
 		protected override Variable Evaluate(ParsingScript script)
 		{
-			return new Variable(App.GetConfiguration("ImagesPath", ""));
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 0, m_name);
+
+            return new Variable(App.GetConfiguration("ImagesPath", ""));
 		}
 	}
     
@@ -2313,7 +2319,10 @@ d:\temp\aaa.txt, d:\temp\ggg.txt,
 	{
 		protected override Variable Evaluate(ParsingScript script)
 		{
-			return new Variable(App.GetConfiguration("ModulesPath", ""));
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 0, m_name);
+
+            return new Variable(App.GetConfiguration("ModulesPath", ""));
 		}
 	}
     
@@ -2321,7 +2330,10 @@ d:\temp\aaa.txt, d:\temp\ggg.txt,
 	{
 		protected override Variable Evaluate(ParsingScript script)
 		{
-			return new Variable(App.GetConfiguration("WinxPath", ""));
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 0, m_name);
+
+            return new Variable(App.GetConfiguration("WinxPath", ""));
 		}
 	}
     

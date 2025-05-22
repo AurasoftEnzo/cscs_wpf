@@ -385,14 +385,15 @@ function InitConfigInDbase(){
     if(!recordExistsInNKSYSYCO("BROJAC")){
         AddRecordInNKSYSYCO("BROJAC", "Brojac uploadanih cjenika");
 
-        brojacInt = 0;
+        // brojacInt = 0;
+        updateNKSYSYCO("BROJAC", "1");
     }else{
-        sqlString = "SELECT RTRIM(NKSYS_VALUE) from " + CurrentYearDatabase + 
-        ".dbo.NKSYSYCO WHERE NKSYS_MODUL = 'WKPO' AND NKSYS_GRUP = 'CJENIK' AND NKSYS_GRUP2 = 'WEB' AND NKSYS_FIELD = 'BROJAC'";
-        sqlResult = SqlQuery(sqlString);
-        BROJAC = sqlResult[1][0];
+        // sqlString = "SELECT RTRIM(NKSYS_VALUE) from " + CurrentYearDatabase + 
+        // ".dbo.NKSYSYCO WHERE NKSYS_MODUL = 'WKPO' AND NKSYS_GRUP = 'CJENIK' AND NKSYS_GRUP2 = 'WEB' AND NKSYS_FIELD = 'BROJAC'";
+        // sqlResult = SqlQuery(sqlString);
+        // BROJAC = sqlResult[1][0];
 
-        brojacInt = int(BROJAC);
+        // brojacInt = int(BROJAC);
     }
 }
 
@@ -592,7 +593,7 @@ function CreateCSVFile(){
         " SELECT" +
 
         // // ZAKOMENTIRAT !!!
-        // " TOP 500" +
+        // " TOP 20" +
         
         " replace(trim(ARTI_NAZIV), ';', ',') as nazivArtikla," + 
         " trim(ARTI_ARTIKL) as ARTI_ARTIKL," + 
@@ -754,14 +755,20 @@ function isBarcode(stringValue){
 function FTPUpload(){
     try{
         // RENAME FILE LOCALLY
-        brojacInt += 1;
+        // read brojac from db
+        sqlString = "SELECT RTRIM(NKSYS_VALUE) from " + CurrentYearDatabase + 
+        ".dbo.NKSYSYCO WHERE NKSYS_MODUL = 'WKPO' AND NKSYS_GRUP = 'CJENIK' AND NKSYS_GRUP2 = 'WEB' AND NKSYS_FIELD = 'BROJAC'";
+        sqlResult = SqlQuery(sqlString);
+        BROJAC = sqlResult[1][0];
+        brojacInt = int(BROJAC);
+
         newFilename = "Supermarket_" + NazivTrgovine + " " + MjestoTrgovine + "_" + (brojacInt) + "_" + DateTimeString + ".csv";
         move(CSV_DIRECTORY + "cjenik_temp.csv", CSV_DIRECTORY + newFilename);
 
         FTP("ftp", "s", FTP_SERVER, int(FTP_PORT), FTP_USERNAME, FTP_PASSWORD, FTP_DIRECTORY, CSV_DIRECTORY, newFilename);
 
-        //povecaj brojac
-        updateNKSYSYCO("BROJAC", string(brojacInt));
+        //povecaj brojac u db
+        updateNKSYSYCO("BROJAC", string(brojacInt + 1));
 
         LogAdd("CSV datoteka(cjenik) uspješno poslana na FTP server.");
     }catch(exc){

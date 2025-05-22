@@ -672,6 +672,7 @@ namespace WpfCSCS
                 gui.Interpreter.Run(functionName);
 
                 Timers.timer2 = new System.Timers.Timer(1000 * 60 * 60 * 24);
+                //Timers.timer2 = new System.Timers.Timer(1000 * 60 * 3);
                 Timers.timer2.Elapsed += (Object source2, ElapsedEventArgs e2) =>
                 {
                     gui.Interpreter.Run(functionName);

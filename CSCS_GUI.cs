@@ -275,7 +275,7 @@ namespace SplitAndMerge
 
 	public const string X_ERR = "XErr";
 
-	public const string READ_XML_FILE = "readXmlFile";
+	public const string READ_XML_FILE = "ReadXmlFile";
 	public const string READ_TAGCONTENT_FROM_XMLSTRING = "readTagContentFromXmlString";
 
 	public const string SET_FOCUS = "SetFocus";

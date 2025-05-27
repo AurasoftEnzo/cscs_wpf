@@ -227,6 +227,7 @@ namespace SplitAndMerge
         public const string MATH_PI       = "Math.PI";
         public const string MATH_POW      = "Math.Pow";
         public const string MATH_RANDOM   = "Math.Random";
+        public const string MATH_RANDOM2   = "Math.Random2";
         public const string MATH_ROUND    = "Math.Round";
         public const string MATH_SIGN     = "Math.Sign";
         public const string MATH_SIN      = "Math.Sin";

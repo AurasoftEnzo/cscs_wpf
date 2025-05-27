@@ -54,6 +54,7 @@ namespace CSCSMath
             interpreter.RegisterFunction(Constants.MATH_PI, new PiFunction());
             interpreter.RegisterFunction(Constants.MATH_POW, new PowFunction());
             interpreter.RegisterFunction(Constants.MATH_RANDOM, new GetRandomFunction(true));
+            interpreter.RegisterFunction(Constants.MATH_RANDOM2, new GetRandomFunction(false));
             interpreter.RegisterFunction(Constants.MATH_ROUND, new RoundFunction());
             interpreter.RegisterFunction(Constants.MATH_SQRT, new SqrtFunction());
             interpreter.RegisterFunction(Constants.MATH_SQRT1_2, new Sqrt1_2Function());

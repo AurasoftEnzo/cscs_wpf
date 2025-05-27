@@ -1,0 +1,81 @@
+<Window 
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WpfCSCS.scripts"
+        mc:Ignorable="d"
+        Title="CombineStrTest" Height="450" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- First row -->
+            <RowDefinition Height="Auto"/>
+            <!-- Second row -->
+            <RowDefinition Height="Auto"/>
+            <!-- Third row -->
+        </Grid.RowDefinitions>
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <!-- First column -->
+            <ColumnDefinition Width="Auto"/>
+            <!-- Second column -->
+            <ColumnDefinition Width="*"/>
+            <!-- Third column -->
+        </Grid.ColumnDefinitions>
+
+        <Button Name="Btn1" 
+                Content="Btn1" 
+                HorizontalAlignment="Left" 
+                Margin="50,50,0,0" 
+                VerticalAlignment="Top" 
+                Width="100" 
+                Height="50"
+                Grid.Row="0"/>
+
+		<Button Name="Btn2"
+                Content="Btn2"
+                HorizontalAlignment="Left"
+                Margin="50,50,0,0"
+                VerticalAlignment="Top"
+                Width="100"
+                Height="50"
+                Grid.Row="0"
+				Grid.Column="1"/>
+
+        <TextBox VerticalAlignment="Top"
+                 HorizontalAlignment="Left"
+                 Margin="10,50,0,0"
+                 DataContext="var1" 
+                 Name="TextBox0"
+                 Height="35"
+                 Width="100" 
+                 Grid.Row="0"
+                 Grid.Column="2"
+                 Text="ABC">
+        </TextBox>
+
+        <Label Name="Label1"
+               HorizontalAlignment="Left" 
+               Margin="50,5,0,0" 
+               VerticalAlignment="Center" 
+               VerticalContentAlignment="Center"
+               Width="150"
+               Height="50"
+               Grid.Row="1"               
+               >Nesto:</Label>
+
+		<Label Content="The Clock" 
+			   x:Name="ClockLabel" 			   
+			   FontSize="35" 
+			   HorizontalContentAlignment="Center" 
+			   VerticalContentAlignment="Center" 
+			   Height="60" 
+			   Width="175" 
+			   Margin="15,15,0,0" 
+			   VerticalAlignment="Top" 
+			   HorizontalAlignment="Left"
+			   />
+    </Grid>
+</Window>

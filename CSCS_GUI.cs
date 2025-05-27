@@ -88,6 +88,7 @@ namespace SplitAndMerge
 			interpreter.RegisterFunction("SetText", new SetTextWidgetFunction());
 			interpreter.RegisterFunction("AddWidgetData", new AddWidgetDataFunction());
 			interpreter.RegisterFunction("SetWidgetOptions", new SetWidgetOptionsFunction());
+			interpreter.RegisterFunction("GetWidgetOptions", new GetWidgetOptionsFunction());
 
 			interpreter.RegisterFunction("SetWindowOptions", new SetWindowOptionsFunction());
 
@@ -4849,8 +4850,38 @@ namespace WpfCSCS
 			return color;
 		}
 	}
+	
+	class GetWidgetOptionsFunction : ParserFunction
+	{
+		protected override Variable Evaluate(ParsingScript script)
+		{
+			List<Variable> args = script.GetFunctionArgs();
+			Utils.CheckArgs(args.Count, 2, m_name);
+			var widgetName = Utils.GetSafeString(args, 0).ToLower();
+			var propertyName = Utils.GetSafeString(args, 1).ToLower();
+			
+			var gui = CSCS_GUI.GetInstance(script);
+			
+			FrameworkElement widget = gui.GetWidget(widgetName);
+			
+			var property = widget.GetType().GetProperties().Where(a => a.Name.ToLower() == propertyName).FirstOrDefault();
+			var propValue = property.GetValue(widget);
 
-
+            switch (property.PropertyType)
+			{
+				case Type t when t == typeof(int):
+					return new Variable((int)propValue);
+				case Type t when t == typeof(double):
+					return new Variable((double)propValue);
+				case Type t when t == typeof(string):
+                    return new Variable((string)propValue);
+				case Type t when t == typeof(bool):
+                    return new Variable(Utils.ConvertToBool(propValue));
+				default:
+					return new Variable(propValue.ToString());
+			}
+        }
+	}
 
 	class SetWidgetOptionsFunction_old : ParserFunction
 	{

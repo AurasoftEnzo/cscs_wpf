@@ -8697,7 +8697,7 @@ $@"EXECUTE sp_executesql N'
                         {
                             case "clear":
 
-                                if (Gui.Btrieve.gridsTableClass.Keys.Contains(gridName)) // -> wlistF
+                                if (Gui.Btrieve.gridsTableClass.Keys.Contains(gridName)) // -> wlistF (File = Database/Table)
                                 {
 
                                     //// add new grid row
@@ -8708,7 +8708,7 @@ $@"EXECUTE sp_executesql N'
                                     ////dg.ScrollIntoView(dg.Items.GetItemAt(dg.Items.Count - 1));
                                     //dg.ScrollIntoView(dg.SelectedItem);
                                 }
-                                else if (Gui.Btrieve.gridsArrayClass.Keys.Contains(gridName)) // -> wlistM
+                                else if (Gui.Btrieve.gridsArrayClass.Keys.Contains(gridName)) // -> wlistM (Memory = Arrays)
                                 {
                                     //var currentRowCount = dg.Items.Count;
 

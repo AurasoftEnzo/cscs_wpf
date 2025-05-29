@@ -1,0 +1,117 @@
+<Window 
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+        Title="Financial KPI Dashboard" Height="700" Width="1000">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Filter Panel -->
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+            <TextBlock Text="Year:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+            <ComboBox Name="cmbYear" Width="80"/>
+
+            <TextBlock Text="From Month:" Margin="10,0,5,0"/>
+            <ComboBox Name="cmbFromMonth" Width="80"/>
+
+            <TextBlock Text="To Month:" Margin="10,0,5,0"/>
+            <ComboBox Name="cmbToMonth" Width="80"/>
+
+            <Button Content="Load Data" Width="100" Margin="10,0,0,0" Name="btnLoadData"/>
+        </StackPanel>
+
+        <!-- KPI Panel -->
+        <WrapPanel Grid.Row="1" Margin="0,0,0,10">
+            <!-- A1: Gross Profit -->
+            <Border BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="5">
+                <StackPanel>
+                    <TextBlock Text="A1: Gross Profit" FontWeight="Bold">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Calculated as Sales minus Cost of Goods Sold."/>
+                        </ToolTipService.ToolTip>
+                    </TextBlock>
+                    <TextBlock Name="tbGrossProfit"/>
+                    <TextBlock Name="tbGrossProfitTrend" FontSize="10"/>
+                    <TextBlock Text="(Good: &gt; 20%)" FontSize="10" FontStyle="Italic"/>
+                </StackPanel>
+            </Border>
+
+            <!-- A2: Net Profit Margin -->
+            <Border BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="5">
+                <StackPanel>
+                    <TextBlock Text="A2: Net Profit Margin" FontWeight="Bold">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Net Income divided by Revenue."/>
+                        </ToolTipService.ToolTip>
+                    </TextBlock>
+                    <TextBlock Name="tbNetProfitMargin"/>
+                    <TextBlock Name="tbNetProfitMarginTrend" FontSize="10"/>
+                    <TextBlock Text="(Good: &gt; 5%)" FontSize="10" FontStyle="Italic"/>
+                </StackPanel>
+            </Border>
+
+            <!-- A3: Current Ratio -->
+            <Border BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="5">
+                <StackPanel>
+                    <TextBlock Text="A3: Current Ratio" FontWeight="Bold">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Current Assets / Current Liabilities."/>
+                        </ToolTipService.ToolTip>
+                    </TextBlock>
+                    <TextBlock Name="tbCurrentRatio"/>
+                    <TextBlock Name="tbCurrentRatioTrend" FontSize="10"/>
+                    <TextBlock Text="(Good: 1.2 - 2.0)" FontSize="10" FontStyle="Italic"/>
+                </StackPanel>
+            </Border>
+
+            <!-- A4: Quick Ratio -->
+            <Border BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="5">
+                <StackPanel>
+                    <TextBlock Text="A4: Quick Ratio" FontWeight="Bold">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Cash + Receivables / Current Liabilities."/>
+                        </ToolTipService.ToolTip>
+                    </TextBlock>
+                    <TextBlock Name="tbQuickRatio"/>
+                    <TextBlock Name="tbQuickRatioTrend" FontSize="10"/>
+                    <TextBlock Text="(Good: &gt; 1.0)" FontSize="10" FontStyle="Italic"/>
+                </StackPanel>
+            </Border>
+
+            <!-- A5: ROE -->
+            <Border BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="5">
+                <StackPanel>
+                    <TextBlock Text="A5: Return on Equity" FontWeight="Bold">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Net Income / Shareholder Equity."/>
+                        </ToolTipService.ToolTip>
+                    </TextBlock>
+                    <TextBlock Name="tbROE"/>
+                    <TextBlock Name="tbROETrend" FontSize="10"/>
+                    <TextBlock Text="(Good: &gt; 10%)" FontSize="10" FontStyle="Italic"/>
+                </StackPanel>
+            </Border>
+
+            <!-- A6: Debt-to-Equity -->
+            <Border BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="5">
+                <StackPanel>
+                    <TextBlock Text="A6: Debt-to-Equity" FontWeight="Bold">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Total Liabilities / Shareholder Equity."/>
+                        </ToolTipService.ToolTip>
+                    </TextBlock>
+                    <TextBlock Name="tbDebtToEquity"/>
+                    <TextBlock Name="tbDebtToEquityTrend" FontSize="10"/>
+                    <TextBlock Text="(Good: &lt; 1.0)" FontSize="10" FontStyle="Italic"/>
+                </StackPanel>
+            </Border>
+        </WrapPanel>
+
+        <!-- Chart Panel -->
+        <lvc:CartesianChart Name="RevenueVsCOGSChart" Grid.Row="2" Width="Auto" Height="400"/>
+    </Grid>
+</Window>

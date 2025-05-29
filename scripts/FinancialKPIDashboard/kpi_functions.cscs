@@ -1,0 +1,188 @@
+function LoadKPIs(year, fromMonth, toMonth) {
+    // A1: Gross Profit = Sales - COGS
+    sales = GetSumFromGL("6", "D", year, fromMonth, toMonth);
+    cogs = GetSumFromGL("4", "D", year, fromMonth, toMonth);
+    gp = sales - cogs;
+    SetText("tbGrossProfit", FormatCurrency(gp));
+    SetText("tbGrossProfitTrend", GetTrendIcon(gp, "6|4000", "D", year, fromMonth, toMonth));
+
+    // A2: Net Profit Margin = Net Income / Sales
+    netIncome = GetSumFromGL("95", "D", year, fromMonth, toMonth);
+    npMargin = netIncome / sales;
+    SetText("tbNetProfitMargin", FormatPercentage(npMargin));
+    SetText("tbNetProfitMarginTrend", GetTrendIcon(npMargin, "95|6", "D", year, fromMonth, toMonth));
+
+    // A3: Current Ratio = Current Assets / Liabilities
+    currentAssets = GetSumFromGL("1", "D", year, fromMonth, toMonth);
+    liabilities = GetSumFromGL("2", "P", year, fromMonth, toMonth);
+    cr = currentAssets / liabilities;
+    SetText("tbCurrentRatio", FormatNumber(cr));
+    SetText("tbCurrentRatioTrend", GetTrendIcon(cr, "1|2", "D", year, fromMonth, toMonth));
+
+    // A4: Quick Ratio = Cash + Receivables / Liabilities
+    cashReceivables = GetSumFromGL("12", "D", year, fromMonth, toMonth) +
+                          GetSumFromGL("10", "D", year, fromMonth, toMonth);
+    qr = cashReceivables / liabilities;
+    SetText("tbQuickRatio", FormatNumber(qr));
+    SetText("tbQuickRatioTrend", GetTrendIcon(qr, "12|10|2", "D", year, fromMonth, toMonth));
+
+    // A5: ROE = Net Income / Equity
+    equity = GetSumFromGL("3", "D", year, fromMonth, toMonth);
+    roe = netIncome / equity;
+    SetText("tbROE", FormatPercentage(roe));
+    SetText("tbROETrend", GetTrendIcon(roe, "95|3", "D", year, fromMonth, toMonth));
+
+    // A6: Debt-to-Equity = Total Liabilities / Equity
+    debtToEquity = liabilities / equity;
+    SetText("tbDebtToEquity", FormatNumber(debtToEquity));
+    SetText("tbDebtToEquityTrend", GetTrendIcon(debtToEquity, "2|3", "D", year, fromMonth, toMonth));
+}
+
+// function AddKPI(textBlockName, label, value, rangeDesc, kpiValue, accounts) {
+//     border = CreateElement("Border");
+//     SetProperty(border, "BorderBrush", "Gray");
+//     SetProperty(border, "BorderThickness", "1");
+//     SetProperty(border, "Padding", "10");
+//     SetProperty(border, "Margin", "5");
+
+//     stack = CreateElement("StackPanel");
+
+//     tbLabel = CreateElement("TextBlock");
+//     SetProperty(tbLabel, "Text", label);
+//     SetProperty(tbLabel, "FontWeight", "Bold");
+
+//     tooltip = CreateElement("ToolTip");
+//     SetProperty(tooltip, "Content", GetKPITooltip(label));
+//     SetProperty(tbLabel, "ToolTip", tooltip);
+
+//     tbValue = CreateElement("TextBlock");
+//     tbValue.Name = textBlockName;
+//     SetText(tbValue, value);
+
+//     tbTrend = CreateElement("TextBlock");
+//     tbTrend.Name = textBlockName + "Trend";
+//     SetProperty(tbTrend, "FontSize", "10");
+//     SetText(tbTrend, GetTrendIcon(kpiValue, accounts.Split("|")[0], "D", year, fromMonth, toMonth, accounts.Split("|")[1], "P"));
+
+//     tbRange = CreateElement("TextBlock");
+//     SetProperty(tbRange, "Text", rangeDesc);
+//     SetProperty(tbRange, "FontSize", "10");
+//     SetProperty(tbRange, "FontStyle", "Italic");
+
+//     StackPanel.Add(stack, tbLabel);
+//     StackPanel.Add(stack, tbValue);
+//     StackPanel.Add(stack, tbTrend);
+//     StackPanel.Add(stack, tbRange);
+
+//     Border.Child = stack;
+//     WrapPanel.Add("kpisPanel", border);
+// }
+
+function GetKPITooltip(label) {
+    switch (label) {
+        case "A1: Gross Profit": return "Calculated as Sales minus Cost of Goods Sold.";
+        case "A2: Net Profit Margin": return "Net Income divided by Revenue.";
+        case "A3: Current Ratio": return "Current Assets / Current Liabilities.";
+        case "A4: Quick Ratio": return "Cash + Receivables / Current Liabilities.";
+        case "A5: Return on Equity": return "Net Income / Shareholder Equity.";
+        case "A6: Debt-to-Equity": return "Total Liabilities / Shareholder Equity.";
+        default: return "";
+    }
+}
+
+//-----------------------------
+//-- HELPER FUNCTIONS ---------
+//-----------------------------
+//-----------------------------
+
+function GetSumFromGL(classCode, dp, year, fromMonth, toMonth) {
+    sql = "SELECT SUM(gk_pr_iznos) as aaaaa FROM NKGKPROM WHERE LEFT(gk_pr_konto, " +
+              classCode.Length + ") = '" + classCode + "' AND gk_pr_dp = '" + dp + "'";
+    if (year) {
+        sql += " AND YEAR(gk_pr_date) = " + year;
+    }
+    if (fromMonth && toMonth && year) {
+        sql += " AND MONTH(gk_pr_date) BETWEEN " + fromMonth + " AND " + toMonth;
+    }
+    //SaveFile(sql);
+    result = SQLQuery(sql);
+    //MSG(result);
+    // return Convert.ToDecimal(result[1][0] ?? 0);
+    //MSG(result[1][0]);
+    varRes = double(result[1][0]);
+    return varRes;
+}
+
+function GetTrendIcon(value, acc1, dp1, year, fromMonth, toMonth, acc2="", dp2="") {
+    prevValue = GetPreviousValue(acc1, dp1, year - 1, fromMonth, toMonth, acc2, dp2);
+    if (!prevValue || prevValue == 0) return "";
+
+    change = value - prevValue;
+    if (change > 0) return "<Run Foreground='Green'>?</Run>";
+    else if (change < 0) return "<Run Foreground='Red'>?</Run>";
+    else return "<Run Foreground='Gray'>?</Run>";
+}
+
+function GetPreviousValue(acc1, dp1, prevYear, fromMonth, toMonth, acc2="", dp2="") {
+    val1 = GetSumFromGL(acc1, dp1, prevYear, fromMonth, toMonth);
+    if (acc2 == "") return val1;
+    val2 = GetSumFromGL(acc2, dp2, prevYear, fromMonth, toMonth);
+    return acc2 ? val1 / val2 : val1;
+}
+
+function FormatCurrency(amount) {
+    // return amount.ToString("N2") + " HRK";
+    return string(amount) + " HRK";
+}
+
+function FormatPercentage(value) {
+    if (!value) return "0%";
+    // return (value * 100).ToString("F2") + "%";
+    return string(value * 100) + "%";
+}
+
+function FormatNumber(value) {
+    if (!value) return "0";
+    // return value.ToString("F2");
+    return string(value) + " HRK";
+}
+
+
+//-----------------------------------
+
+function GetTrendIcon(value, accountList, dp, year, fromMonth, toMonth) {
+    prevValue = GetPreviousValue(accountList, dp, year - 1, fromMonth, toMonth);
+    if (!prevValue || prevValue == 0) return "";
+
+    change = value - prevValue;
+    if (change > 0) return "<Run Foreground='Green'>?</Run>";
+    else if (change < 0) return "<Run Foreground='Red'>?</Run>";
+    else return "<Run Foreground='Gray'>?</Run>";
+}
+
+function GetPreviousValue(accList, dp, prevYear, fromMonth, toMonth) {
+    total = 0;
+    accounts = accList.Split("|");
+    foreach (acc in accounts) {
+        total += GetSumFromGL(acc, dp, prevYear, fromMonth, toMonth);
+    }
+    return total;
+}
+
+
+//-----------------------------------
+
+
+// function GetSumFromGL(classCode, dp, year, fromMonth, toMonth) {
+//     sql = "SELECT SUM(gk_pr_iznos) FROM NKGKPROM WHERE LEFT(gk_pr_konto, " +
+//               classCode.Length + ") = '" + classCode + "' AND gk_pr_dp = '" + dp + "'";
+//     if (year) {
+//         sql += " AND YEAR(gk_pr_date) = " + year;
+//     }
+//     if (fromMonth && toMonth && year) {
+//         sql += " AND MONTH(gk_pr_date) BETWEEN " + fromMonth + " AND " + toMonth;
+//     }
+
+//     result = SQLQuery(sql);
+//     return Convert.ToDecimal(result[0][0] ?? 0);
+// }

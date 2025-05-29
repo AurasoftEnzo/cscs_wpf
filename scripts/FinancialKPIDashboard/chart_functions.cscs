@@ -1,0 +1,49 @@
+// function DrawKPICharts(year, fromMonth, toMonth) {
+//     revenueData = {};
+//     cogsData = {};
+
+//     for (m = fromMonth; m <= toMonth; m++) {
+//         rev = GetSumFromGL("6", "D", year, m);
+//         cog = GetSumFromGL("4000", "P", year, m);
+//         Add(revenueData, rev);
+//         Add(cogsData, cog);
+//     }
+
+//     Chart("RevenueVsCOGSChart", "init");
+//     Chart("RevenueVsCOGSChart", "title", "Monthly Revenue vs COGS", 20);
+//     Chart("RevenueVsCOGSChart", "labels", "x", 13, GetMonthLabels(fromMonth, toMonth));
+//     Chart("RevenueVsCOGSChart", "seriesType", "lineSeries");
+
+//     Chart("RevenueVsCOGSChart", "values", "line", revenueData, "Revenue");
+//     Chart("RevenueVsCOGSChart", "values", "line", cogsData, "COGS");
+// }
+
+function DrawKPICharts(year, fromMonth, toMonth) {
+    revenueData = {};
+    cogsData = {};
+
+    for (m = fromMonth; m <= toMonth; m++) {
+        rev = GetSumFromGL("6", "D", year, m, m);
+        cog = GetSumFromGL("4000", "P", year, m, m);
+        Add(revenueData, rev);
+        Add(cogsData, cog);
+    }
+
+    Chart("RevenueVsCOGSChart", "init");
+    Chart("RevenueVsCOGSChart", "title", "Monthly Revenue vs COGS", 20);
+    Chart("RevenueVsCOGSChart", "labels", "x", 13, {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"});
+    Chart("RevenueVsCOGSChart", "seriesType", "lineSeries");
+
+    Chart("RevenueVsCOGSChart", "values", "line", revenueData, "Revenue");
+    Chart("RevenueVsCOGSChart", "values", "line", cogsData, "COGS");
+}
+
+function GetMonthLabels(start, end) {
+    labels = {};
+    monthNames = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+    for (i = start; i <= end; i++) {
+        Add(labels, monthNames[i - 1]);
+    }
+    return labels;
+}
+

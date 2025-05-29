@@ -1,0 +1,46 @@
+MessageBox("...Testing addalltohash...");
+
+// Define a hash variable
+myHash = {};
+
+// Define a list of lines
+//lines = ["Key1=Value1", "Key1=Value2", "key2=Value3"];
+//lines = ["Key1=111", "Key1=222", "Key2=333"];
+lines = {};
+//lines.Add("Key1=Value1");
+//lines.Add("Key1=Value2");
+//lines.Add("Key2=Value3");
+
+lines.Add("Key1=55");
+lines.Add("Key1=66");
+lines.Add("Key2=77");
+
+
+
+
+//addalltohash("myHash", lines, 0, {}, "=");
+//varName 
+//lines
+//fromLine
+//hash2 
+//sepStr 
+
+myHash = {};
+foreach (line in lines) {
+    parts = Split(line, "=");
+    key = parts[0];
+    value = Int(parts[1]); // Convert to integer
+    //AddVariablesToHash("myHash", value, key);
+    addalltohash("myHash", value, key);
+}
+
+
+// Print the hash structure
+//MessageBox(myHash["Key1"][0]);
+//MessageBox(myHash["Key1"]);
+MessageBox(myHash);
+
+quit;
+
+
+["Key1":[0,1], "[]":[0,1,2], "Key2":[2]]

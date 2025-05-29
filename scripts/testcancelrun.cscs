@@ -1,0 +1,27 @@
+MessageBox("...Testing ScheduleRun2...");
+
+DEFINE timeout type R; 
+DEFINE arg type a size 100;
+DEFINE timerId type a size 10;
+DEFINE autoReset type R;
+
+timeout = 5000; // Set timeout to 5 seconds
+arg = "Hello"; //Input argument for scheduled function
+timerId = "11"; 
+autoReset = 1; //When 1, the timer is reset on execution (infinite execution)
+
+// Define a function to be scheduled
+Function MyTask(s) {
+    MSG("Task executed at: " + Now() + "\nInput parameter: " + s);
+}
+
+// Schedule the function execution
+ScheduleRun(timeout, "MyTask", arg, timerId, autoReset);
+
+MSG("Scheduled MyTask to run in " + timeout + " milliseconds.");
+
+//Cancel the function execution
+cancelrun("11");
+MSG("Canceled");
+
+quit;

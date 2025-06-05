@@ -1,52 +1,26 @@
 MessageBox("...Testing add_comp_definition...");
 
-//add_comp_definition			-> Precompiler.AddDefinition(item);
-//add_comp_namespace			
-//clear_comp_definitions
-//clear_comp_namespaces
-//CSHARP_FUNCTION
+DEFINE result type a size 1000;
 
+// Define the namespace
+add_comp_namespace("mynamespace")
 
-add_comp_namespace("using System.Diagnostics");
+// Create the component as an empty object
+mynamespace.mycomponent = {}
 
-// Add a custom namespace
-add_comp_namespace("MyNamespace");
-
-// Define a component with a function
-add_comp_definition("MyNamespace.MyComponent", "
-    csfunction Pozdrav() {
-        //print('Hello, World!');
-    }
-");
-
-// Call the function from the defined component
-MyNamespace.MyComponent.Pozdrav();
-
-
-
-
-
-MSG("END1");
-
-quit;
-
-
-
-add_comp_namespace("using System.Diagnostics");
-add_comp_definition("int m_counter = 10");
-csfunction csharpCode(sender, load) 
-{
-     int a = 10;
-     int b = 20;
-     int c = a + b;
-     Console.WriteLine("c=" + c);
+// Add a method hello to the component
+mynamespace.mycomponent.hello = function()
+{    
+    return "30";
 }
 
-
-
-
-MSG("END");
+// Call the method
+result = mynamespace.mycomponent.hello();
+MSG(result);
 
 quit;
+
+
+
 
 

@@ -1,0 +1,273 @@
+﻿CreateWindow("../../scripts/wxtransferura.xaml");
+
+DEFINE date1 type d size 8;
+date1 = "12/12/12";
+
+DEFINE DatabasePrazno type a size 50;
+DEFINE ShortDbName type a size 5;
+DEFINE ShortDbNameWithoutB type a size 5;
+DEFINE CurrentYearDatabase type a size 255;
+
+CurrentYearDatabase = OdabirBaze();
+
+DEFINE xmlContent type a size 10000 array 5000;
+DEFINE xmlLineCount type R;
+DEFINE xmlAll type a size 50000000;
+
+xmlLineCount = 0;
+
+DEFINE i type R;
+DEFINE j type R;
+
+XML_DIRECTORY = "C:\\TEST\\XML\\";
+
+DEFINE DateTimeString type a size 19;
+
+DEFINE NKPR_GL_NUM type R;
+DEFINE NKPR_GL_INVDTE type D size 10;
+DEFINE NKPR_GL_BROTP type R;
+DEFINE NKPR_GL_SONUM type R;
+DEFINE NKPR_GL_CUSCOD type a size 10;
+DEFINE NKPR_GL_CUSNME type a size 50;
+DEFINE DueDate type D size 10;
+DEFINE NKPR_GL_DESC type a size 40;
+DEFINE NKPR_GL_SHPCOD type a size 10;
+DEFINE NKPR_GL_SHPNME type a size 50;
+DEFINE NKPR_GL_TOTAL type N size 10 dec 2;
+
+DEFINE ID type R;                
+DEFINE NKPR_LN_LOC type R;
+DEFINE NKPR_LN_PCODE type a size 15;
+DEFINE NKPR_LN_PDESC type a size 50;
+DEFINE NKPR_LN_JEDMJ type a size 3;
+DEFINE NKPR_LN_PQTY type N size 10 dec 2;
+DEFINE NKPR_LN_PPRCE type N size 10 dec 2;
+DEFINE NKPR_LN_PEXT type N size 10 dec 2;
+DEFINE NKPR_LN_OBJED type a size 6;
+
+
+function btn1@clicked()
+{
+    SetDateTimeString();
+    
+    MessageBox(date1);
+    MessageBox(CurrentYearDatabase);
+    
+    sqlResultGlave = FetchGlaveRacuna();
+    countGlavaRacuna = Size(sqlResultGlave);
+    //MSG("countGlavaRacuna=" + countGlavaRacuna)
+
+    for(i = 1; i < countGlavaRacuna; i++)
+    {
+        ClearXML();
+
+        NKPR_GL_NUM = sqlResultGlave[i][0];     //int
+        NKPR_GL_INVDTE = sqlResultGlave[i][1];  //date
+        NKPR_GL_BROTP = sqlResultGlave[i][2];   //int
+        NKPR_GL_SONUM = sqlResultGlave[i][3];   //int
+        NKPR_GL_CUSCOD = sqlResultGlave[i][4];  //char(10)
+        NKPR_GL_CUSNME = sqlResultGlave[i][5];  //char(50)
+        DueDate = sqlResultGlave[i][6];         //date
+        NKPR_GL_DESC = sqlResultGlave[i][7];    //char(40)
+        NKPR_GL_SHPCOD = sqlResultGlave[i][8];  //char(10)
+        NKPR_GL_SHPNME = sqlResultGlave[i][9];  //char(50)
+        NKPR_GL_TOTAL = sqlResultGlave[i][10];  //float
+
+        //MSG("i=" + i + " " + NKPR_GL_NUM);
+        //MSG("i=" + i + " " + NKPR_GL_INVDTE);
+        //MSG("i=" + i + " " + NKPR_GL_BROTP);
+        //MSG("i=" + i + " " + NKPR_GL_SONUM);
+        //MSG("i=" + i + " " + NKPR_GL_CUSCOD);
+        //MSG("i=" + i + " " + NKPR_GL_CUSNME);
+        //MSG("i=" + i + " " + DueDate);
+        //MSG("i=" + i + " " + NKPR_GL_DESC);
+        //MSG("i=" + i + " " + NKPR_GL_SHPCOD);
+        //MSG("i=" + i + " " + NKPR_GL_SHPNME);
+        //MSG("i=" + i + " " + NKPR_GL_TOTAL);
+            
+        xmlContent[xmlLineCount] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+        xmlLineCount++;
+
+        xmlContent[xmlLineCount] = "<Invoice>";
+        xmlLineCount++;
+
+        xmlContent[xmlLineCount] = Chr(9) + "<InvoiceHeader>";
+        xmlLineCount++;
+
+        xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<InvoiceNumber>" + NKPR_GL_NUM + "</InvoiceNumber>"; //broj računa
+        xmlLineCount++;
+        xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<InvoiceDate>" + DTOSQL(NKPR_GL_INVDTE) + "</InvoiceDate>"; //datum računa
+        xmlLineCount++;
+        xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<ReceiptNumber>" + String(NKPR_GL_BROTP) + "</ReceiptNumber>"; //Broj primke
+        xmlLineCount++;
+        xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<OrderNumber>" + String(NKPR_GL_SONUM) + "</OrderNumber>"; //Broj narudžbenice
+        xmlLineCount++;
+        xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<VendorCode>" + StrTrim(NKPR_GL_CUSCOD) + "</VendorCode>"; //Šifra dobavljača
+        xmlLineCount++;
+        xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<VendorName>" + StrTrim(NKPR_GL_CUSNME) + "</VendorName>"; //Naziv dobavljača
+        xmlLineCount++;
+        xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<DueDate>" + DTOSQL(DueDate) + "</DueDate>"; //Datum dospjeća
+        xmlLineCount++;
+        xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<Description>" + StrTrim(NKPR_GL_DESC) + "</Description>"; //Napomena
+        xmlLineCount++;
+        xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<DeliveryLocationCode>" + StrTrim(NKPR_GL_SHPCOD) + "</DeliveryLocationCode>"; //Šifra lokacije isporuke
+        xmlLineCount++;
+        xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<DeliveryLocationName>" + StrTrim(NKPR_GL_SHPNME) + "</DeliveryLocationName>"; //Naziv lokacije isporuke
+        xmlLineCount++;
+        xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<InvoiceAmount>" + StrReplace(String(NKPR_GL_TOTAL), "," , ".") + "</InvoiceAmount>"; //Iznos računa (s PDV-om)
+        xmlLineCount++;   
+
+        xmlContent[xmlLineCount] = Chr(9) + "</InvoiceHeader>";
+        xmlLineCount++;
+
+        //************************************************************************************
+
+        sqlResultLinije = FetchLinijeRacuna();
+        countLinijeRacuna = Size(sqlResultLinije);
+        //MSG("countLinijeRacuna=" + countLinijeRacuna)      
+
+        xmlContent[xmlLineCount] = Chr(9) + "<InvoiceItems>";
+        xmlLineCount++;
+
+
+        for (j = 1; j < countLinijeRacuna; j++)
+        {
+            ID = sqlResultLinije[j][0];
+            NKPR_LN_LOC = sqlResultLinije[j][1];    //smallint
+            NKPR_LN_PCODE = sqlResultLinije[j][2];  //char(15)
+            NKPR_LN_PDESC = sqlResultLinije[j][3];  //char(50)
+            NKPR_LN_JEDMJ = sqlResultLinije[j][4];  //char(3)
+            NKPR_LN_PQTY = sqlResultLinije[j][5];   //float
+            NKPR_LN_PPRCE = sqlResultLinije[j][6];  //float
+            NKPR_LN_PEXT = sqlResultLinije[j][7];   //float
+            NKPR_LN_OBJED = sqlResultLinije[j][8];  //char(6)
+
+            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<Item>";
+            xmlLineCount++;
+        
+            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + Chr(9) + "<Location>" + String(NKPR_LN_LOC) + "</Location>"; //Skladište
+            xmlLineCount++;
+            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + Chr(9) + "<ItemCode>" + StrTrim(NKPR_LN_PCODE) + "</ItemCode>"; //Šifra artikla
+            xmlLineCount++;
+            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + Chr(9) + "<ItemName>" + StrTrim(NKPR_LN_PDESC) + "</ItemName>"; //Naziv artikla
+            xmlLineCount++;
+            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + Chr(9) + "<UnitMeasure>" + StrTrim(NKPR_LN_JEDMJ) + "</UnitMeasure>"; //Jedinica mjere
+            xmlLineCount++;
+            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + Chr(9) + "<Quantity>" + StrReplace(String(NKPR_LN_PQTY), "," , ".") + "</Quantity>"; //Količina
+            xmlLineCount++;
+            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + Chr(9) + "<UnitPrice>" + StrReplace(String(NKPR_LN_PPRCE), "," , ".") + "</UnitPrice>"; //Cijena artikla
+            xmlLineCount++;
+            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + Chr(9) + "<ItemAmount>" + StrReplace(String(NKPR_LN_PEXT), "," , ".") + "</ItemAmount>"; //Fakturni iznos + PDV
+            xmlLineCount++;
+            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + Chr(9) + "<Department>" + StrTrim(NKPR_LN_OBJED) + "</Department>"; //Organizacijska jedinica
+            xmlLineCount++;
+
+            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "</Item>";
+            xmlLineCount++;
+        }
+
+        xmlContent[xmlLineCount] = Chr(9) + "</InvoiceItems>";
+        xmlLineCount++;
+        //************************************************************************************
+
+        xmlContent[xmlLineCount] = "</Invoice>";
+        xmlLineCount++;
+
+        FormatXML();
+        SaveXML();
+    }
+
+    MessageBox("END");
+}
+
+function OdabirBaze()
+{
+    return "C__DATAX_Y4__BY4";
+}
+
+function SetDateTimeString()
+{
+    DateTimeString = Now("yyyyMMdd") + "_" + Now("HHmmss");
+}
+
+function FormatXML()
+{
+    xmlAll = "";
+
+    for(x = 0; x < xmlLineCount; x++)
+    {
+        xmlAll += xmlContent[x] + "\n";
+    }
+}
+
+function SaveXML()
+{    
+    MAKE_DIR(XML_DIRECTORY + "\\");
+    SaveFile(xmlAll, XML_DIRECTORY + NKPR_GL_NUM + "_" + DateTimeString + ".txt");
+}
+
+function ClearXML()
+{
+    for(x = 0; x < xmlLineCount; x++)
+    {
+        xmlContent[x] = "";
+    }
+
+    xmlAll = "";
+
+    xmlLineCount = 0;
+}
+
+function FetchGlaveRacuna()
+{
+    sqlString = "SELECT TOP 20 NKPR_GL_NUM, " + //int
+                " NKPR_GL_INVDTE, " + //date
+                " NKPR_GL_BROTP, " + //int
+                " NKPR_GL_SONUM, " + //int
+                " NKPR_GL_CUSCOD, " + //char(10)
+                " NKPR_GL_CUSNME, " + //char(50)                  
+                " DATEADD(DAY, NKPR_GL_NOKAM, NKPR_GL_DVO) as DueDate, " + //date + smallint
+                " NKPR_GL_DESC, " + //char(40)
+                " NKPR_GL_SHPCOD, " + //char(10)
+                " NKPR_GL_SHPNME, " + //char(50)
+                " NKPR_GL_TOTAL " + //float
+
+                " FROM " + CurrentYearDatabase + ".dbo.NKNAGLRN " + 
+                " WHERE NKPR_GL_INVDTE >= CAST('" + DTOSQL(date1) + "' AS DATE)" + 
+                //" AND RacunPoslan = false " + 
+                " ORDER BY NKPR_GL_INVDTE ";
+    
+    //MSG(sqlString);
+
+    sqlResult = SqlQuery(sqlString);
+    
+    //MSG("SIZE: " + Size(sqlResult) );
+
+    return sqlResult;
+}
+
+function FetchLinijeRacuna()
+{
+    sqlString = "SELECT ID, " + //int                
+                " NKPR_LN_LOC, " + //smallint
+                " NKPR_LN_PCODE, " + //char(15)
+                " NKPR_LN_PDESC, " + //char(50)
+                " NKPR_LN_JEDMJ, " + //char(3)
+                " NKPR_LN_PQTY, " + //float
+                " NKPR_LN_PPRCE, " + //float
+                " NKPR_LN_PEXT, " + //float
+                " NKPR_LN_OBJED " + //char(6)
+
+                " FROM " + CurrentYearDatabase + ".dbo.NKNALNRN " + 
+                " WHERE NKPR_LN_INVNM = '" + String(NKPR_GL_NUM) + "'" +
+                " ORDER BY ID "; //trim
+    
+    //MSG(sqlString);
+
+    sqlResult2 = SqlQuery(sqlString);
+    
+    //MSG("SIZE: " + Size(sqlResult2) );
+
+    return sqlResult2;
+}
+

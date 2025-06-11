@@ -248,6 +248,7 @@ namespace SplitAndMerge
             RegisterFunction(Constants.VAR, new VarFunction());
             RegisterFunction(Constants.WAIT, new SignalWaitFunction(false));
             RegisterFunction(Constants.WEB_REQUEST, new WebRequestFunction());
+            RegisterFunction(Constants.WEB_REQUEST_MPFD, new WebRequestMPFDFunction());
 
             RegisterFunction(Constants.ADD_DATA, new DataFunction(DataFunction.DataMode.ADD));
             RegisterFunction(Constants.COLLECT_DATA, new DataFunction(DataFunction.DataMode.SUBSCRIBE));

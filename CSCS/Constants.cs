@@ -160,6 +160,7 @@ namespace SplitAndMerge
         public const string VARIABLE_TYPE = "VariableType";
         public const string WAIT = "wait";
         public const string WEB_REQUEST = "WebRequest";
+        public const string WEB_REQUEST_MPFD = "WebRequestMPFD";
         public const string JSON = "GetVariableFromJson";
 
         public const string START_DEBUGGER = "StartDebugger";

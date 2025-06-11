@@ -1,0 +1,44 @@
+function wxtransferura_config_onDisplay()
+{
+    //MessageBox("FORMA2");
+}
+
+function btnSelectXMLDirectory@clicked()
+{
+    if(XML_DIRECTORY == ""){
+        dialogResult = getPath(strTrim(wpath()), "Odaberite direktorij za XML datoteke");
+    }
+    else{
+        dialogResult = getPath(XML_DIRECTORY, "Odaberite direktorij za XML datoteke");
+    }
+
+    if(dialogResult != ""){
+        XML_DIRECTORY = dialogResult;
+        if(substring(XML_DIRECTORY, XML_DIRECTORY.length - 1, 1) != "\\"){
+            XML_DIRECTORY += "\\";
+        }
+    }
+}
+
+function btnSpremiConfig@clicked()
+{
+    try{
+        // Update in Database
+        updateNKSYSYCO("XML_DIRECTORY", XML_DIRECTORY);        
+        //updateNKSYSYCO...
+        //updateNKSYSYCO...
+
+        MessageBox("Postavke su spremljene.");
+    }catch(ex){
+        //REMOVE - CHANGE - ...
+        MessageBox("GREŠKA: " + ex);
+    }    
+}
+
+function updateNKSYSYCO(field, newValue)
+{
+    sqlString = "UPDATE " + CurrentYearDatabase + 
+        ".dbo.NKSYSYCO SET NKSYS_VALUE = '" + newValue + "' WHERE NKSYS_MODUL = 'WKSY' " 
+        + "AND NKSYS_GRUP = 'TRANSFER' AND NKSYS_GRUP2 = 'DOCUMENTS' AND NKSYS_FIELD = '" + field + "'";
+    sqlResult = SqlNonQuery(sqlString);    
+}

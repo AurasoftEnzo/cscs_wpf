@@ -1,4 +1,7 @@
-﻿CreateWindow("../../scripts/wxtransferura.xaml");
+﻿include(strtrim(tpath()) + "wxtransferura_config.cscs");
+
+//CreateWindow("../../scripts/wxtransferura.xaml");
+CreateWindow(strTrim(tpath()) + "wxtransferura.xaml");
 
 DEFINE date1 type d size 8;
 date1 = "12/12/12";
@@ -8,8 +11,6 @@ DEFINE ShortDbName type a size 5;
 DEFINE ShortDbNameWithoutB type a size 5;
 DEFINE CurrentYearDatabase type a size 255;
 
-CurrentYearDatabase = OdabirBaze();
-
 DEFINE xmlContent type a size 10000 array 5000;
 DEFINE xmlLineCount type R;
 DEFINE xmlAll type a size 50000000;
@@ -18,8 +19,13 @@ xmlLineCount = 0;
 
 DEFINE i type R;
 DEFINE j type R;
+DEFINE x type R;
+DEFINE y type R;
+DEFINE z type R;
 
-XML_DIRECTORY = "C:\\TEST\\XML\\";
+// CONFIG -> on F9 screen -> (NKSYSYCO -> NKSYS_VALUE)
+DEFINE XML_DIRECTORY type a size 120; 
+//XML_DIRECTORY = "C:\\TEST\\XML\\";
 
 DEFINE DateTimeString type a size 19;
 
@@ -45,144 +51,292 @@ DEFINE NKPR_LN_PPRCE type N size 10 dec 2;
 DEFINE NKPR_LN_PEXT type N size 10 dec 2;
 DEFINE NKPR_LN_OBJED type a size 6;
 
+DEFINE isRunning type L;
+DEFINE hasErrors type L;
+DEFINE strNapredak type a size 1000;
+DEFINE countRacuna type R;
 
-function btn1@clicked()
+// log
+DEFINE log type a size 10000 array 5000;
+DEFINE logCount type R;
+DEFINE logFinal type a size 50000000;
+
+function wxtransferura_onDisplay()
 {
-    SetDateTimeString();
-    
-    MessageBox(date1);
-    MessageBox(CurrentYearDatabase);
-    
-    sqlResultGlave = FetchGlaveRacuna();
-    countGlavaRacuna = Size(sqlResultGlave);
-    //MSG("countGlavaRacuna=" + countGlavaRacuna)
+    Cursor("wait");
 
-    for(i = 1; i < countGlavaRacuna; i++)
+    GetCurrentDatabaseName();
+
+    // // FOR TESTING !!!
+    //CurrentYearDatabase = "C__DATAX_Y4__BY4";
+       
+    InitConfigInDbase();
+
+    TRAP("F9", "openConfig");
+    SetImage("asImage", strtrim(ipath())+"as1.png");    
+    //MessageBox("PATH SLIKE = " + strtrim(ipath())+"as1.png");
+
+    isRunning = false;    
+    hasErrors = false;
+
+    SetFocus("btnPosalji");
+
+    Cursor("dflt");
+}
+
+function btnPosalji@clicked()
+{
+    //supress running multiple times
+    if(isRunning)
+    {    
+        return;
+    }
+
+    PosaljiURAAsync();
+}
+
+function PosaljiURAAsync()
+{
+    AsyncCall("PosaljiURA", "Gotovo");
+}
+
+function Gotovo()
+{
+    isRunning = false;
+    Cursor("dflt");
+}   
+
+function PosaljiURA()
+{
+    try
     {
-        ClearXML();
+        isRunning = true;
+        hasErrors = false;
+        ClearLog();        
 
-        NKPR_GL_NUM = sqlResultGlave[i][0];     //int
-        NKPR_GL_INVDTE = sqlResultGlave[i][1];  //date
-        NKPR_GL_BROTP = sqlResultGlave[i][2];   //int
-        NKPR_GL_SONUM = sqlResultGlave[i][3];   //int
-        NKPR_GL_CUSCOD = sqlResultGlave[i][4];  //char(10)
-        NKPR_GL_CUSNME = sqlResultGlave[i][5];  //char(50)
-        DueDate = sqlResultGlave[i][6];         //date
-        NKPR_GL_DESC = sqlResultGlave[i][7];    //char(40)
-        NKPR_GL_SHPCOD = sqlResultGlave[i][8];  //char(10)
-        NKPR_GL_SHPNME = sqlResultGlave[i][9];  //char(50)
-        NKPR_GL_TOTAL = sqlResultGlave[i][10];  //float
+        RunOnMain("SetWidgetsTransferURAStart");
 
-        //MSG("i=" + i + " " + NKPR_GL_NUM);
-        //MSG("i=" + i + " " + NKPR_GL_INVDTE);
-        //MSG("i=" + i + " " + NKPR_GL_BROTP);
-        //MSG("i=" + i + " " + NKPR_GL_SONUM);
-        //MSG("i=" + i + " " + NKPR_GL_CUSCOD);
-        //MSG("i=" + i + " " + NKPR_GL_CUSNME);
-        //MSG("i=" + i + " " + DueDate);
-        //MSG("i=" + i + " " + NKPR_GL_DESC);
-        //MSG("i=" + i + " " + NKPR_GL_SHPCOD);
-        //MSG("i=" + i + " " + NKPR_GL_SHPNME);
-        //MSG("i=" + i + " " + NKPR_GL_TOTAL);
-            
-        xmlContent[xmlLineCount] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
-        xmlLineCount++;
+        SetDateTimeString();
+    
+        MessageBox(date1);
+        MessageBox(CurrentYearDatabase);
+    
+        sqlResultGlave = FetchGlaveRacuna();
+        countGlavaRacuna = Size(sqlResultGlave);
+        //MSG("countGlavaRacuna=" + countGlavaRacuna);
 
-        xmlContent[xmlLineCount] = "<Invoice>";
-        xmlLineCount++;
-
-        xmlContent[xmlLineCount] = Chr(9) + "<InvoiceHeader>";
-        xmlLineCount++;
-
-        xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<InvoiceNumber>" + NKPR_GL_NUM + "</InvoiceNumber>"; //broj računa
-        xmlLineCount++;
-        xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<InvoiceDate>" + DTOSQL(NKPR_GL_INVDTE) + "</InvoiceDate>"; //datum računa
-        xmlLineCount++;
-        xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<ReceiptNumber>" + String(NKPR_GL_BROTP) + "</ReceiptNumber>"; //Broj primke
-        xmlLineCount++;
-        xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<OrderNumber>" + String(NKPR_GL_SONUM) + "</OrderNumber>"; //Broj narudžbenice
-        xmlLineCount++;
-        xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<VendorCode>" + StrTrim(NKPR_GL_CUSCOD) + "</VendorCode>"; //Šifra dobavljača
-        xmlLineCount++;
-        xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<VendorName>" + StrTrim(NKPR_GL_CUSNME) + "</VendorName>"; //Naziv dobavljača
-        xmlLineCount++;
-        xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<DueDate>" + DTOSQL(DueDate) + "</DueDate>"; //Datum dospjeća
-        xmlLineCount++;
-        xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<Description>" + StrTrim(NKPR_GL_DESC) + "</Description>"; //Napomena
-        xmlLineCount++;
-        xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<DeliveryLocationCode>" + StrTrim(NKPR_GL_SHPCOD) + "</DeliveryLocationCode>"; //Šifra lokacije isporuke
-        xmlLineCount++;
-        xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<DeliveryLocationName>" + StrTrim(NKPR_GL_SHPNME) + "</DeliveryLocationName>"; //Naziv lokacije isporuke
-        xmlLineCount++;
-        xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<InvoiceAmount>" + StrReplace(String(NKPR_GL_TOTAL), "," , ".") + "</InvoiceAmount>"; //Iznos računa (s PDV-om)
-        xmlLineCount++;   
-
-        xmlContent[xmlLineCount] = Chr(9) + "</InvoiceHeader>";
-        xmlLineCount++;
-
-        //************************************************************************************
-
-        sqlResultLinije = FetchLinijeRacuna();
-        countLinijeRacuna = Size(sqlResultLinije);
-        //MSG("countLinijeRacuna=" + countLinijeRacuna)      
-
-        xmlContent[xmlLineCount] = Chr(9) + "<InvoiceItems>";
-        xmlLineCount++;
-
-
-        for (j = 1; j < countLinijeRacuna; j++)
+        for(i = 1; i < countGlavaRacuna; i++)
         {
-            ID = sqlResultLinije[j][0];
-            NKPR_LN_LOC = sqlResultLinije[j][1];    //smallint
-            NKPR_LN_PCODE = sqlResultLinije[j][2];  //char(15)
-            NKPR_LN_PDESC = sqlResultLinije[j][3];  //char(50)
-            NKPR_LN_JEDMJ = sqlResultLinije[j][4];  //char(3)
-            NKPR_LN_PQTY = sqlResultLinije[j][5];   //float
-            NKPR_LN_PPRCE = sqlResultLinije[j][6];  //float
-            NKPR_LN_PEXT = sqlResultLinije[j][7];   //float
-            NKPR_LN_OBJED = sqlResultLinije[j][8];  //char(6)
+            ClearXML();
 
-            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<Item>";
+            NKPR_GL_NUM = sqlResultGlave[i][0];     //int
+            NKPR_GL_INVDTE = sqlResultGlave[i][1];  //date
+            NKPR_GL_BROTP = sqlResultGlave[i][2];   //int
+            NKPR_GL_SONUM = sqlResultGlave[i][3];   //int
+            NKPR_GL_CUSCOD = sqlResultGlave[i][4];  //char(10)
+            NKPR_GL_CUSNME = sqlResultGlave[i][5];  //char(50)
+            DueDate = sqlResultGlave[i][6];         //date
+            NKPR_GL_DESC = sqlResultGlave[i][7];    //char(40)
+            NKPR_GL_SHPCOD = sqlResultGlave[i][8];  //char(10)
+            NKPR_GL_SHPNME = sqlResultGlave[i][9];  //char(50)
+            NKPR_GL_TOTAL = sqlResultGlave[i][10];  //float
+
+            //MSG("i=" + i + " " + NKPR_GL_NUM);
+            //MSG("i=" + i + " " + NKPR_GL_INVDTE);
+            //MSG("i=" + i + " " + NKPR_GL_BROTP);
+            //MSG("i=" + i + " " + NKPR_GL_SONUM);
+            //MSG("i=" + i + " " + NKPR_GL_CUSCOD);
+            //MSG("i=" + i + " " + NKPR_GL_CUSNME);
+            //MSG("i=" + i + " " + DueDate);
+            //MSG("i=" + i + " " + NKPR_GL_DESC);
+            //MSG("i=" + i + " " + NKPR_GL_SHPCOD);
+            //MSG("i=" + i + " " + NKPR_GL_SHPNME);
+            //MSG("i=" + i + " " + NKPR_GL_TOTAL);
+            
+            //if (NKPR_GL_NUM == 90200041)
+            //{
+            //   hasErrors = true;
+            //}
+
+            countRacuna = countGlavaRacuna - 1; //zbog header retka
+            strNapredak = "Napredak: " + String(i) + " / " + String(countRacuna);            
+            RunOnMain("SetWidgetsTransferURANapredak", strNapredak);
+
+            xmlContent[xmlLineCount] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
             xmlLineCount++;
+
+            xmlContent[xmlLineCount] = "<Invoice>";
+            xmlLineCount++;
+
+            xmlContent[xmlLineCount] = Chr(9) + "<InvoiceHeader>";
+            xmlLineCount++;
+
+            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<InvoiceNumber>" + NKPR_GL_NUM + "</InvoiceNumber>"; //broj računa
+            xmlLineCount++;
+            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<InvoiceDate>" + DTOSQL(NKPR_GL_INVDTE) + "</InvoiceDate>"; //datum računa
+            xmlLineCount++;
+            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<ReceiptNumber>" + String(NKPR_GL_BROTP) + "</ReceiptNumber>"; //Broj primke
+            xmlLineCount++;
+            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<OrderNumber>" + String(NKPR_GL_SONUM) + "</OrderNumber>"; //Broj narudžbenice
+            xmlLineCount++;
+            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<VendorCode>" + StrTrim(NKPR_GL_CUSCOD) + "</VendorCode>"; //Šifra dobavljača
+            xmlLineCount++;
+            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<VendorName>" + StrTrim(NKPR_GL_CUSNME) + "</VendorName>"; //Naziv dobavljača
+            xmlLineCount++;
+            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<DueDate>" + DTOSQL(DueDate) + "</DueDate>"; //Datum dospjeća
+            xmlLineCount++;
+            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<Description>" + StrTrim(NKPR_GL_DESC) + "</Description>"; //Napomena
+            xmlLineCount++;
+            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<DeliveryLocationCode>" + StrTrim(NKPR_GL_SHPCOD) + "</DeliveryLocationCode>"; //Šifra lokacije isporuke
+            xmlLineCount++;
+            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<DeliveryLocationName>" + StrTrim(NKPR_GL_SHPNME) + "</DeliveryLocationName>"; //Naziv lokacije isporuke
+            xmlLineCount++;
+            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<InvoiceAmount>" + StrReplace(String(NKPR_GL_TOTAL), "," , ".") + "</InvoiceAmount>"; //Iznos računa (s PDV-om)
+            xmlLineCount++;   
+
+            xmlContent[xmlLineCount] = Chr(9) + "</InvoiceHeader>";
+            xmlLineCount++;
+
+            //************************************************************************************
+
+            sqlResultLinije = FetchLinijeRacuna();
+            countLinijeRacuna = Size(sqlResultLinije);
+            //MSG("countLinijeRacuna=" + countLinijeRacuna);      
+
+            xmlContent[xmlLineCount] = Chr(9) + "<InvoiceItems>";
+            xmlLineCount++;
+
+
+            for (j = 1; j < countLinijeRacuna; j++)
+            {
+                ID = sqlResultLinije[j][0];
+                NKPR_LN_LOC = sqlResultLinije[j][1];    //smallint
+                NKPR_LN_PCODE = sqlResultLinije[j][2];  //char(15)
+                NKPR_LN_PDESC = sqlResultLinije[j][3];  //char(50)
+                NKPR_LN_JEDMJ = sqlResultLinije[j][4];  //char(3)
+                NKPR_LN_PQTY = sqlResultLinije[j][5];   //float
+                NKPR_LN_PPRCE = sqlResultLinije[j][6];  //float
+                NKPR_LN_PEXT = sqlResultLinije[j][7];   //float
+                NKPR_LN_OBJED = sqlResultLinije[j][8];  //char(6)
+
+                xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<Item>";
+                xmlLineCount++;
         
-            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + Chr(9) + "<Location>" + String(NKPR_LN_LOC) + "</Location>"; //Skladište
+                xmlContent[xmlLineCount] = Chr(9) + Chr(9) + Chr(9) + "<Location>" + String(NKPR_LN_LOC) + "</Location>"; //Skladište
+                xmlLineCount++;
+                xmlContent[xmlLineCount] = Chr(9) + Chr(9) + Chr(9) + "<ItemCode>" + StrTrim(NKPR_LN_PCODE) + "</ItemCode>"; //Šifra artikla
+                xmlLineCount++;
+                xmlContent[xmlLineCount] = Chr(9) + Chr(9) + Chr(9) + "<ItemName>" + StrTrim(NKPR_LN_PDESC) + "</ItemName>"; //Naziv artikla
+                xmlLineCount++;
+                xmlContent[xmlLineCount] = Chr(9) + Chr(9) + Chr(9) + "<UnitMeasure>" + StrTrim(NKPR_LN_JEDMJ) + "</UnitMeasure>"; //Jedinica mjere
+                xmlLineCount++;
+                xmlContent[xmlLineCount] = Chr(9) + Chr(9) + Chr(9) + "<Quantity>" + StrReplace(String(NKPR_LN_PQTY), "," , ".") + "</Quantity>"; //Količina
+                xmlLineCount++;
+                xmlContent[xmlLineCount] = Chr(9) + Chr(9) + Chr(9) + "<UnitPrice>" + StrReplace(String(NKPR_LN_PPRCE), "," , ".") + "</UnitPrice>"; //Cijena artikla
+                xmlLineCount++;
+                xmlContent[xmlLineCount] = Chr(9) + Chr(9) + Chr(9) + "<ItemAmount>" + StrReplace(String(NKPR_LN_PEXT), "," , ".") + "</ItemAmount>"; //Fakturni iznos + PDV
+                xmlLineCount++;
+                xmlContent[xmlLineCount] = Chr(9) + Chr(9) + Chr(9) + "<Department>" + StrTrim(NKPR_LN_OBJED) + "</Department>"; //Organizacijska jedinica
+                xmlLineCount++;
+
+                xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "</Item>";
+                xmlLineCount++;
+            }
+
+            xmlContent[xmlLineCount] = Chr(9) + "</InvoiceItems>";
             xmlLineCount++;
-            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + Chr(9) + "<ItemCode>" + StrTrim(NKPR_LN_PCODE) + "</ItemCode>"; //Šifra artikla
-            xmlLineCount++;
-            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + Chr(9) + "<ItemName>" + StrTrim(NKPR_LN_PDESC) + "</ItemName>"; //Naziv artikla
-            xmlLineCount++;
-            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + Chr(9) + "<UnitMeasure>" + StrTrim(NKPR_LN_JEDMJ) + "</UnitMeasure>"; //Jedinica mjere
-            xmlLineCount++;
-            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + Chr(9) + "<Quantity>" + StrReplace(String(NKPR_LN_PQTY), "," , ".") + "</Quantity>"; //Količina
-            xmlLineCount++;
-            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + Chr(9) + "<UnitPrice>" + StrReplace(String(NKPR_LN_PPRCE), "," , ".") + "</UnitPrice>"; //Cijena artikla
-            xmlLineCount++;
-            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + Chr(9) + "<ItemAmount>" + StrReplace(String(NKPR_LN_PEXT), "," , ".") + "</ItemAmount>"; //Fakturni iznos + PDV
-            xmlLineCount++;
-            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + Chr(9) + "<Department>" + StrTrim(NKPR_LN_OBJED) + "</Department>"; //Organizacijska jedinica
+            //************************************************************************************
+
+            xmlContent[xmlLineCount] = "</Invoice>";
             xmlLineCount++;
 
-            xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "</Item>";
-            xmlLineCount++;
+            FormatXML();
+            SaveXML();
         }
+    }
+    catch(exc)
+    {
+        hasErrors = true;
+        
+        //LogAdd (NKPR_GL_NUM, exc);
 
-        xmlContent[xmlLineCount] = Chr(9) + "</InvoiceItems>";
-        xmlLineCount++;
-        //************************************************************************************
+        
+    }
 
-        xmlContent[xmlLineCount] = "</Invoice>";
-        xmlLineCount++;
-
-        FormatXML();
-        SaveXML();
+    if(hasErrors)
+    {
+        RunOnMain("SetWidgetsTransferURAErrors");
+    }
+    else{
+        RunOnMain("SetWidgetsTransferURAOk");
     }
 
     MessageBox("END");
 }
 
-function OdabirBaze()
+
+function GetCurrentDatabaseName()
 {
-    return "C__DATAX_Y4__BY4";
+    // naziv database "prazno"(npr. "C__DATAX__B") iz Winx.ini
+    winxIniPath = strtrim(wpath()) + "winx.ini";
+
+    if(!regedit("regOpen", winxIniPath, "rtFile")){
+        MessageBox("Datoteka " + winxIniPath + " nije dostupna.");
+        Cursor("dflt");
+        quit;
+    }
+
+    DatabasePrazno = regedit("regReadStr", 'MSSQL_SERVER', 'UserBase');
+    //MessageBox("DatabasePrazno = " + DatabasePrazno);
+    if(DatabasePrazno == ""){
+        MessageBox("Potrebno je podesiti UserBase(DatabasePrazno) u ini datoteci.");
+        regedit("regWriteStr", 'MSSQL_SERVER', 'UserBase', "");
+        Cursor("dflt");
+        quit;
+    }
+
+    regedit("regClose");
+    //--------------
+
+    // kratki naziv baze(npr. "B25") iz Taspro.ini
+    tasproIniPath = strtrim(wpath()) + "taspro.ini";
+
+    if(!regedit("regOpen", tasproIniPath, "rtFile")){
+        MessageBox("Datoteka " + tasproIniPath + " nije dostupna.");
+        Cursor("dflt");
+        quit;
+    }
+
+    ShortDbName = regedit("regReadStr", 'Setup', 'DfltCompanyCode');
+    //MessageBox("ShortDbName = " + ShortDbName);
+    if(ShortDbName == ""){
+        MessageBox("Potrebno je podesiti DfltCompanyCode(ShortDbName) u ini datoteci.");
+        regedit("regWriteStr", 'Setup', 'DfltCompanyCode', "");
+        Cursor("dflt");
+        quit;
+    }
+
+    regedit("regClose");
+
+    ShortDbNameWithoutB = substring(ShortDbName, 1, 2);
+    //MessageBox("ShortDbNameWithoutB = " + ShortDbNameWithoutB);
+    //--------------
+
+    //sql upit -> C__DATAX__B.dbo.NKSYCCYR WHERE kratkiNazivBaze = 'B25' -> dobit puno ime baze trenutne godine
+    sqlString = "SELECT SY_CC_DBASE from " + DatabasePrazno + ".dbo.NKSYCCYR WHERE SY_CC_CODE = '" + ShortDbNameWithoutB + "'";
+    
+    sqlResult = SqlQuery(sqlString);
+
+    if(Size(sqlResult) <= 1){
+        MessageBox("Greška prilikom dohvata trenutne godine iz baze.");
+        Cursor("dflt");
+        quit;
+    }else{
+        CurrentYearDatabase = strTrim(sqlResult[1][0]);
+    }
+    //MessageBox("CurrentYearDatabase = " + CurrentYearDatabase);
+
+    return;
 }
 
 function SetDateTimeString()
@@ -271,3 +425,104 @@ function FetchLinijeRacuna()
     return sqlResult2;
 }
 
+//********************************************
+
+function openConfig()
+{
+    ModalWindow(strtrim(tpath()) + "wxtransferura_config.xaml");
+}
+
+function InitConfigInDbase()
+{    
+    // XML_DIRECTORY
+    if(!recordExistsInNKSYSYCO("XML_DIRECTORY")){
+        AddRecordInNKSYSYCO("XML_DIRECTORY", "Direktorij za XML datoteke URA");
+    }else{
+        sqlString = "SELECT RTRIM(NKSYS_VALUE) from " + CurrentYearDatabase + 
+        ".dbo.NKSYSYCO WHERE NKSYS_MODUL = 'WKSY' AND NKSYS_GRUP = 'TRANSFER' AND NKSYS_GRUP2 = 'DOCUMENTS' AND NKSYS_FIELD = 'XML_DIRECTORY'";
+        sqlResult = SqlQuery(sqlString);
+        XML_DIRECTORY = sqlResult[1][0];
+    }   
+}
+
+function recordExistsInNKSYSYCO(fieldName)
+{
+    sqlString = "SELECT COUNT(*) from " + CurrentYearDatabase + 
+        ".dbo.NKSYSYCO WHERE NKSYS_MODUL = 'WKSY' AND NKSYS_GRUP = 'TRANSFER' AND NKSYS_GRUP2 = 'DOCUMENTS' AND NKSYS_FIELD = '" + fieldName + "'";
+    sqlResult = SqlQuery(sqlString);
+    if(sqlResult[1][0] == 0){
+        return false;
+    }else{
+        return true;
+    }
+}
+
+function AddRecordInNKSYSYCO(fieldName, description)
+{
+    sqlString = "INSERT INTO " + CurrentYearDatabase + 
+        ".dbo.NKSYSYCO (NKSYS_MODUL, NKSYS_GRUP, NKSYS_GRUP2, NKSYS_FIELD, NKSYS_VALUE, NKSYS_DESC) VALUES ('WKSY', 'TRANSFER', 'DOCUMENTS', '" + fieldName + "', '', '" + description + "')";
+    sqlResult = SqlNonQuery(sqlString);
+}
+
+//********************************************
+
+function SetWidgetsTransferURAStart()
+{
+    SetWidgetOptions("StatusLabel", "Content", "Transfer URA u tijeku...");
+    SetWidgetOptions("StatusLabel2", "Content", "");        
+
+    Cursor("wait");
+}
+function SetWidgetsTransferURANapredak(strNapredak)
+{                 
+    SetWidgetOptions("StatusLabel2", "Content", strNapredak);    
+}
+function SetWidgetsTransferURAErrors()
+{
+    SetWidgetOptions("StatusLabel", "Content", "Transfer URA dovršen s greškama!");               
+    //SetWidgetOptions("StatusLabel2", "Content", "");    
+
+    Cursor("dflt");
+}
+function SetWidgetsTransferURAOk()
+{
+    SetWidgetOptions("StatusLabel", "Content", "Transfer URA uspješno dovršen!");
+    //SetWidgetOptions("StatusLabel2", "Content", "");
+    
+    Cursor("dflt");
+}
+
+//**********************************************
+
+function LogAdd(text)
+{    
+    log[logCount] = Now("HH:mm:ss") + " - " + strTrim(text);
+    logCount++;
+}
+
+function FormatLog()
+{
+    logFinal = "";
+
+    for(y = 0; y < logCount; y++){
+        logFinal += log[y] + "\n";
+    }
+}
+
+function SaveLog()
+{
+    MAKE_DIR(XML_DIRECTORY + "Logs\\");
+    SaveFile(logFinal, XML_DIRECTORY + "Logs\\" + DateTimeString + "_log.txt");
+}
+
+function ClearLog()
+{
+    for (z = 0; z < logCount; z++)
+    {
+        log[z] = "";
+    }    
+
+    logFinal = "";
+
+    logCount = 0;
+}

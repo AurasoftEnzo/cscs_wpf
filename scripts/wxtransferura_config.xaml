@@ -6,74 +6,39 @@
         xmlns:local="clr-namespace:WpfCSCS"
         mc:Ignorable="d"
         Title="Postavke"
-        Height="900"
-        Width="800"
+        Height="320"
+        Width="840"
         ResizeMode="CanMinimize">
-    <Grid>
-        <Label Content="FTP server:" FontSize="20" Height="50" Width="104" Margin="168,9,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-        <Label Content="FTP port:" FontSize="20" Height="50" Width="90" Margin="182,54,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-        <Label Content="FTP username:" FontSize="20" Height="50" Width="139" Margin="133,97,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-        <Label Content="CSV direktorij(lokalno):" FontSize="20" Height="50" Width="210" Margin="62,233,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+    <Grid Margin="0,0,0,0">
+        <Label Content="Računi za posljednjih BROJ DANA:" FontSize="20" Height="50" Width="313" Margin="10,9,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" HorizontalContentAlignment="Right"/>
+        <Label Content="XML direktorij(lokalno):" FontSize="20" Height="50" Width="261" Margin="62,54,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" HorizontalContentAlignment="Right"/>
+        <Label Content="API adresa:" FontSize="20" Height="50" Width="190" Margin="133,97,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" HorizontalContentAlignment="Right"/>
+        <Label Content="API key:" FontSize="20" Height="50" Width="185" Margin="138,142,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" HorizontalContentAlignment="Right"/>
 
+        <TextBox Name="TextBoxBrojDana" DataContext="BROJ_DANA" VerticalContentAlignment="Center" FontSize="20" Height="40" Width="390" Margin="328,10,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" TabIndex="0"/>
+        <TextBox Name="TextBoxXMLDirektorij" DataContext="XML_DIRECTORY" VerticalContentAlignment="Center" FontSize="20" Height="40" Width="390" Margin="328,56,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" TabIndex="1"/>
+        <TextBox Name="TextBoxAPIadresa" DataContext="API_ADRESA" VerticalContentAlignment="Center" FontSize="20" Height="40" Width="390" Margin="328,100,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" TabIndex="3"/>
+        <TextBox Name="TextBoxAPIkey" DataContext="API_KEY" VerticalContentAlignment="Center" FontSize="20" Height="40" Width="390" Margin="328,146,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" TabIndex="4"/>
 
-        <Label Content="Outgoing email server:" FontSize="20" Height="50" Width="214" Margin="58,360,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-        <Label Content="Email username:" FontSize="20" Height="50" Width="157" Margin="115,408,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-        <Label Content="Email password:" FontSize="20" Height="50" Width="154" Margin="118,455,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-        <Label Content="Sender email address:" FontSize="20" Height="50" Width="205" Margin="67,500,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-        <Label Content="Email sender name:" FontSize="20" Height="50" Width="184" Margin="88,547,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-        <Label Content="Destination email:" FontSize="20" Height="50" Width="170" Margin="102,594,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-
-        <TextBox Name="TextBoxFtpServer" DataContext="FTP_SERVER" VerticalContentAlignment="Center" FontSize="20" Height="40" Width="390" Margin="275,9,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" TabIndex="0"/>
-        <TextBox Name="TextBoxFtpPort" DataContext="FTP_PORT" VerticalContentAlignment="Center" FontSize="20" Height="40" Width="390" Margin="275,54,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" TabIndex="1"/>
-        <TextBox Name="TextBoxFtpUsername" DataContext="FTP_USERNAME" VerticalContentAlignment="Center" FontSize="20" Height="40" Width="390" Margin="275,99,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" TabIndex="2"/>
-        <TextBox Name="TextBoxCsvDirektorij" DataContext="CSV_DIRECTORY" VerticalContentAlignment="Center" FontSize="20" Height="40" Width="390" Margin="275,235,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" TabIndex="5"/>
-        <TextBox Name="TextBoxSkladiste" DataContext="SKLADISTE" VerticalContentAlignment="Center" FontSize="20" Height="40" Width="390" Margin="275,280,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" TabIndex="7"/>
-
-        <TextBox Name="TextBoxOutgoingEmailServer" DataContext="EMAIL_SERVER" VerticalContentAlignment="Center" FontSize="20" Height="40" Width="390" Margin="275,360,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" TabIndex="8"/>
-        <TextBox Name="TextBoxEmailUsername" DataContext="EMAIL_USERNAME" VerticalContentAlignment="Center" FontSize="20" Height="40" Width="390" Margin="275,407,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" TabIndex="9"/>
-        <TextBox Name="TextBoxEmailPassword" DataContext="EMAIL_PASSWORD" VerticalContentAlignment="Center" FontSize="20" Height="40" Width="390" Margin="275,454,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" TabIndex="10"/>
-        <TextBox Name="TextBoxSenderEmail" DataContext="EMAIL_SENDR_ADD" VerticalContentAlignment="Center" FontSize="20" Height="40" Width="390" Margin="275,500,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" TabIndex="11"/>
-        <TextBox Name="TextBoxEmailSenderName" DataContext="EMAIL_SENDR_NME" VerticalContentAlignment="Center" FontSize="20" Height="40" Width="390" Margin="275,547,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" TabIndex="12"/>
-        <TextBox Name="TextBoxDestinationEmail" DataContext="EMAIL_DEST_ADD" VerticalContentAlignment="Center" FontSize="20" Height="39" Width="390" Margin="275,594,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" TabIndex="13"/>
         <Button
             Content="Odaberi"
-                Name="btnSelectCsvDirectory"
-                FontSize="20"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Top" 
-            Margin="670,235,0,0" 
+            Name="btnSelectXMLDirectory"
+            FontSize="20"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top"
+            Margin="722,56,0,0"
             Width="100" Height="40"
-            TabIndex="6"/>
-
-
-
+            TabIndex="2"/>
 
         <Button
             Content="Spremi postavke"
-                Name="btnSpremiConfig"
-                FontSize="20"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Top" 
-            Margin="275,675,0,0" 
-            Width="245" Height="60"
-            TabIndex="14"/>
-        <Label Content="FTP password:" FontSize="20" Height="50" Width="134" Margin="138,142,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-        <TextBox x:Name="TextBoxFtpPassword" DataContext="FTP_PASSWORD" VerticalContentAlignment="Center" FontSize="20" Height="40" Width="390" Margin="275,144,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" TabIndex="3"/>
-        <Label Content="FTP direktorij:" FontSize="20" Height="50" Width="130" Margin="142,188,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-        <TextBox x:Name="TextBoxFtpDirektorij" DataContext="FTP_DIRECTORY" VerticalContentAlignment="Center" FontSize="20" Height="40" Width="390" Margin="275,190,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" TabIndex="4"/>
-        <Label Content="Skladište:" FontSize="20" Height="50" Width="90" Margin="182,280,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-		
-		<Label Content="XML direktorij(lokalno):" FontSize="20" Height="50" Width="210" Margin="62,775,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-		<TextBox Name="TextBoxXMLDirektorij" DataContext="XML_DIRECTORY" VerticalContentAlignment="Center" FontSize="20" Height="40" Width="390" Margin="275,775,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" TabIndex="15"/>
-		<Button
-            Content="Odaberi"
-                Name="btnSelectXMLDirectory"
-                FontSize="20"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Top"
-            Margin="670,775,0,0"
-            Width="100" Height="40"
-            TabIndex="16"/>
-		
+            Name="btnSpremiConfig"
+            FontSize="20"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Top" 
+            Margin="0,202,0,0" 
+            Width="244" Height="60"
+            TabIndex="5"/>
+
     </Grid>
 </Window>

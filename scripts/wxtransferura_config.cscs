@@ -1,3 +1,5 @@
+DEFINE ex type a size 5000;
+
 function wxtransferura_config_onDisplay()
 {
     //MessageBox("FORMA2");
@@ -24,9 +26,10 @@ function btnSpremiConfig@clicked()
 {
     try{
         // Update in Database
+        updateNKSYSYCO("BROJ_DANA", BROJ_DANA);
         updateNKSYSYCO("XML_DIRECTORY", XML_DIRECTORY);        
-        //updateNKSYSYCO...
-        //updateNKSYSYCO...
+        updateNKSYSYCO("API_ADRESA", API_ADRESA);
+        updateNKSYSYCO("API_KEY", API_KEY);        
 
         MessageBox("Postavke su spremljene.");
     }catch(ex){

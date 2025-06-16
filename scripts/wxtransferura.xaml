@@ -9,16 +9,15 @@
         Width="800"
 		ResizeMode="CanMinimize">
     <Grid>
-        <wcl:ASDateEditer  FontSize="20"
-                          ButtonWidth="30"
-                          Name="de1"
-                          DisplaySize="8"
-                          DataContext="date1"
-                          VerticalAlignment="Top"
-                          HorizontalAlignment="Left"
-                          Margin="10,10,0,0"
-                          Width="140"
-                          Height="35" />
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0 0" EndPoint="0 1">
+                <LinearGradientBrush.GradientStops>
+                    <GradientStop Offset="0.1" Color="LightSkyBlue" />
+                    <GradientStop Offset="1" Color="{Binding Path=YourBindColor2}" />
+                </LinearGradientBrush.GradientStops>
+            </LinearGradientBrush>
+        </Grid.Background>
+        
         <Button Name="btnPosalji"
                 VerticalAlignment="Top"
                 HorizontalAlignment="Left"

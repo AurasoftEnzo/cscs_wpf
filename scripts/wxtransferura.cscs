@@ -4,7 +4,8 @@
 CreateWindow(strTrim(tpath()) + "wxtransferura.xaml");
 
 DEFINE date1 type d size 8;
-date1 = "12/12/12";
+
+DEFINE intBrojDana type R;
 
 DEFINE DatabasePrazno type a size 50;
 DEFINE ShortDbName type a size 5;
@@ -18,8 +19,6 @@ DEFINE xmlAll type a size 50000000;
 DEFINE xmlValueIn type a size 10000;
 DEFINE xmlValueOut type a size 10000;
 
-xmlLineCount = 0;
-
 DEFINE i type R; //FOR Petlja za GlaveRačuna
 DEFINE j type R; //FOR Petlja za LinijeRačuna
 DEFINE x type R; //FOR Petlja za FormatXML, ClearXML
@@ -27,8 +26,10 @@ DEFINE y type R; //FOR Petlja za FormatLog
 DEFINE z type R; //FOR Petlja za ClearLog
 
 // CONFIG -> on F9 screen -> (NKSYSYCO -> NKSYS_VALUE)
+DEFINE BROJ_DANA type a size 120;
 DEFINE XML_DIRECTORY type a size 120; 
-//XML_DIRECTORY = "C:\\TEST\\XML\\";
+DEFINE API_ADRESA type a size 120;
+DEFINE API_KEY type a size 120;
 
 DEFINE DateTimeString type a size 19;
 
@@ -43,6 +44,8 @@ DEFINE NKPR_GL_DESC type a size 40;
 DEFINE NKPR_GL_SHPCOD type a size 10;
 DEFINE NKPR_GL_SHPNME type a size 50;
 DEFINE NKPR_GL_TOTAL type N size 10 dec 2;
+DEFINE NKPR_GL_JMBG type a size 13;
+DEFINE NKPR_GL_PICTHDR type R;
 
 DEFINE ID type R;                
 DEFINE NKPR_LN_LOC type R;
@@ -66,31 +69,61 @@ DEFINE logFinal type a size 50000000;
 
 DEFINE datumUspjesnoPoslan type a size 10;
 DEFINE timeUspjesnoPoslan type a size 8;
-DEFINE filePath type a size 1000;
+
+DEFINE exc0 type a size 5000; //OnDisplay
+DEFINE exc1 type a size 5000; //PosaljiURA
+DEFINE exc2 type a size 5000; //FOR petlja GlavaRacuna
+DEFINE exc3 type a size 5000; //LOG
+DEFINE exc4 type a size 5000; //SEND TO API
+
+DEFINE xmlfilePath type a size 1000; //SendToAPI, InsertNKSYIMEX
+DEFINE pdffilePath type a size 1000; //SendToAPI
+DEFINE statusCode type R;
+DEFINE resFromAPI type a size 5000;
+DEFINE s1 type a size 5000; //temp za messagebox 
+
 
 function wxtransferura_onDisplay()
 {
-    Cursor("wait");
+    try
+    {
+        Cursor("wait");
 
-    GetCurrentDatabaseName();
+        date1 = Now("dd/MM/yy");
 
-    // // FOR TESTING !!!
-    //CurrentYearDatabase = "C__DATAX_Y4__BY4";
+        //GetCurrentDatabaseName();
+        GetCurrentDatabaseNameFromArguments();
+
+        // // FOR TESTING !!!
+        //CurrentYearDatabase = "C__DATAX_Y4__BY4";
        
-    InitConfigInDbase();
+        InitConfigInDbase();
 
-    TRAP("F9", "openConfig");
-    SetImage("asImage", strtrim(ipath())+"as1.png");    
-    //MessageBox("PATH SLIKE = " + strtrim(ipath())+"as1.png");
+        //MessageBox("BROJ_DANA=" + BROJ_DANA);
+        //MessageBox("XML_DIRECTORY=" + XML_DIRECTORY); 
+        //MessageBox("API_ADRESA=" + API_ADRESA);
+        //MessageBox("API_KEY=" + API_KEY);
 
-    isRunning = false;    
-    hasErrors = false;
+        TRAP("F9", "openConfig");
+        SetImage("asImage", strtrim(ipath())+"as1.png");    
+        //MessageBox("PATH SLIKE = " + strtrim(ipath())+"as1.png");
 
-    SetFocus("btnPosalji");
+        isRunning = false;    
+        hasErrors = false;
 
-    Cursor("dflt");
+        xmlLineCount = 0;
 
-    //MessageBox(AntiXMLSpecialChars("ABC&<>\"'/DEF"));
+        SetFocus("btnPosalji");
+
+        Cursor("dflt");
+
+        //MessageBox(AntiXMLSpecialChars("ABC&<>\"'/DEF"));
+    }
+    catch(exc0)
+    {
+        MessageBox("Greška: " + exc0);
+        quit;
+    }
 }
 
 function btnPosalji@clicked()
@@ -131,6 +164,11 @@ function PosaljiURA()
         countGlavaRacuna = Size(sqlResultGlave);
         //MSG("countGlavaRacuna=" + countGlavaRacuna);        
 
+        if(countGlavaRacuna <= 1)
+        {
+            RunOnMain("SetWidgetsTransferURANemaRacuna");
+        }
+
         for(i = 1; i < countGlavaRacuna; i++)
         {
             try
@@ -150,6 +188,12 @@ function PosaljiURA()
                 NKPR_GL_SHPCOD = sqlResultGlave[i][8];  //char(10)
                 NKPR_GL_SHPNME = sqlResultGlave[i][9];  //char(50)
                 NKPR_GL_TOTAL = sqlResultGlave[i][10];  //float
+                NKPR_GL_JMBG = sqlResultGlave[i][11];   //char(13)
+                NKPR_GL_PICTHDR = sqlResultGlave[i][12];//int   
+
+                xmlfilePath = XML_DIRECTORY + String(NKPR_GL_NUM) + "_" + DateTimeString + ".xml";
+                pdffilePath = "";
+                FetchPdfFileName();
 
                 //MSG("i=" + i + " " + NKPR_GL_NUM);
                 //MSG("i=" + i + " " + NKPR_GL_INVDTE);
@@ -162,7 +206,9 @@ function PosaljiURA()
                 //MSG("i=" + i + " " + NKPR_GL_SHPCOD);
                 //MSG("i=" + i + " " + NKPR_GL_SHPNME);
                 //MSG("i=" + i + " " + NKPR_GL_TOTAL);
-            
+                //MSG("i=" + i + " " + NKPR_GL_JMBG);
+                //MSG("i=" + i + " " + NKPR_GL_PICTHDR);
+                
                 //if (NKPR_GL_NUM == 90200013)
                 //{
                 //    hasErrors = true;
@@ -180,7 +226,7 @@ function PosaljiURA()
                 //}
 
                 countRacuna = countGlavaRacuna - 1; //zbog header retka
-                strNapredak = "Napredak: " + String(i) + " / " + String(countRacuna);            
+                strNapredak = String(i) + " / " + String(countRacuna);            
                 RunOnMain("SetWidgetsTransferURANapredak", strNapredak);
 
                 xmlContent[xmlLineCount] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
@@ -274,9 +320,13 @@ function PosaljiURA()
                 FormatXML();
                 SaveXML();
 
-                resultApi = SendToApi();
+                statusCode == 0;
+                resFromAPI = "";
 
-                if (resultApi == 200)
+                SendToAPI();
+                //one 2 funkcije (USPJEH / NEUSPJEH): podešavaju statusCode i resFromAPI
+
+                if (statusCode == 201)
                 {
                     //Račun je uspješno poslan
                     InsertNKSYIMEX();
@@ -284,7 +334,8 @@ function PosaljiURA()
                 else
                 {
                     hasErrors = true;        
-                    LogAdd("Greška: " + "Račun: " + String(NKPR_GL_NUM)  + " API endpoint je vratio STATUS CODE = " + String(resultApi));
+                    LogAdd("Greška: " + "Račun: " + String(NKPR_GL_NUM)  + " API endpoint je vratio STATUS CODE = " + String(statusCode));
+                    LogAdd("Greška: " + "Račun: " + String(NKPR_GL_NUM)  + " API endpoint je vratio RESPONSE = " + resFromAPI);
                 }
             }
             catch(exc2)
@@ -294,10 +345,10 @@ function PosaljiURA()
             }
         }
     }
-    catch(exc)
+    catch(exc1)
     {
         hasErrors = true;        
-        LogAdd("Greška: " + exc);       
+        LogAdd("Greška: " + exc1);       
     }
 
     try
@@ -317,13 +368,43 @@ function PosaljiURA()
     catch(exc3)
     {
         MessageBox("Greška: (LOG) " + exc3);
-    }
+    }    
 
-    
-
-    MessageBox("END");
+    //MessageBox("END");
 }
 
+
+function GetCurrentDatabaseNameFromArguments(){
+    args = CommandLineArgs(); 
+    
+    //MessageBox(args);
+
+    if(Size(args) > 2){
+        companyCode = args[2];
+        userCode = args[3];
+        CoSet(companyCode);
+    }else{
+        companyCode = Substring(CoGet(), 1, 2); // CoGet -> vuče kratki naziv baze iz app.config-a
+        userCode = "";
+    }
+
+    sqlQueryString = "select SY_CC_DBASE from " + strtrim(CommonDBGet()) + ".dbo.NKSYCCYR WHERE SY_CC_CODE = '" + companyCode + "'";
+    try
+    {
+        sqlResult = sqlQuery(sqlQueryString);
+    }
+    catch(exc)
+    {
+        MessageBox("Ne postoji baza " + companyCode + ".\nExc: " + exc);
+    }
+
+    if (size(sqlResult) > 1)
+    {
+        CurrentYearDatabase = sqlResult[1][0].trim(); // ime baze
+    }
+
+    //MessageBox(CurrentYearDatabase);
+}
 
 function GetCurrentDatabaseName()
 {
@@ -407,7 +488,7 @@ function FormatXML()
 function SaveXML()
 {    
     MAKE_DIR(XML_DIRECTORY + "\\");
-    SaveFile(xmlAll, XML_DIRECTORY + NKPR_GL_NUM + "_" + DateTimeString + ".txt");
+    SaveFile(xmlAll, xmlfilePath);
 }
 
 function ClearXML()
@@ -424,7 +505,19 @@ function ClearXML()
 
 function FetchGlaveRacuna()
 {
-    sqlString = "SELECT TOP 5 NKPR_GL_NUM, " + //int
+    if (BROJ_DANA == "")
+    {
+        intBrojDana = 0;
+    }
+    else
+    {
+        intBrojDana = int(BROJ_DANA);
+    }
+    //MessageBox("intBrojDana = " + String(intBrojDana));
+
+    //sqlString = "SELECT TOP 5 " + 
+    sqlString = "SELECT " + 
+                " NKPR_GL_NUM, " + //int
                 " NKPR_GL_INVDTE, " + //date
                 " NKPR_GL_BROTP, " + //int
                 " NKPR_GL_SONUM, " + //int
@@ -434,10 +527,13 @@ function FetchGlaveRacuna()
                 " NKPR_GL_DESC, " + //char(40)
                 " NKPR_GL_SHPCOD, " + //char(10)
                 " NKPR_GL_SHPNME, " + //char(50)
-                " NKPR_GL_TOTAL " + //float
+                " NKPR_GL_TOTAL, " + //float
+                " NKPR_GL_JMBG, " + //char(13)
+                " NKPR_GL_PICTHDR " + //int
 
                 " FROM " + CurrentYearDatabase + ".dbo.NKNAGLRN " + 
-                " WHERE NKPR_GL_INVDTE >= CAST('" + DTOSQL(date1) + "' AS DATE) " +
+                
+                " WHERE NKPR_GL_INVDTE >= DATEADD(DAY, " + String(-1 * intBrojDana) + ", CAST('" + DTOSQL(date1) + "' AS DATE)) " +
                 
                 //" AND RacunPoslan = false " + 
                 " AND NKPR_GL_NUM NOT IN (SELECT imex_num FROM " + CurrentYearDatabase + ".dbo.NKSYIMEX WHERE imex_tipdoc = 'URADC') " +
@@ -478,6 +574,27 @@ function FetchLinijeRacuna()
     return sqlResult2;
 }
 
+function FetchPdfFileName()
+{
+    if(NKPR_GL_PICTHDR != 0)
+    {
+        sqlString = "SELECT SY_SL_PATH from " + CurrentYearDatabase + 
+            ".dbo.NKSYPICT WHERE SY_SL_TIP = 'UR' AND SY_SL_NUM = " + NKPR_GL_PICTHDR;
+    
+        sqlResult3 = SqlQuery(sqlString);
+
+        countPdfFileNameLines = Size(sqlResult3);
+
+        if(countPdfFileNameLines > 0)
+        {
+            pdffilePath = strTrim(sqlResult3[1][0]);
+        }
+        else
+        {
+            pdffilePath = "";
+        }
+    }
+}
 //********************************************
 
 function openConfig()
@@ -574,7 +691,10 @@ function SetWidgetsTransferURAOk()
     
     Cursor("dflt");
 }
-
+function SetWidgetsTransferURANemaRacuna()
+{
+    SetWidgetOptions("StatusLabel2", "Content", "Nema nijednog računa!");
+}
 //**********************************************
 
 function LogAdd(text)
@@ -639,9 +759,61 @@ function escapeXml(str)
 
 function SendToApi()
 {
-    MessageBox("Send to API:   NKPR_GL_NUM = " + String(NKPR_GL_NUM));
+    //MessageBox("API_ADRESA = " + API_ADRESA);
+    //MessageBox("API_KEY = " + API_KEY);       
     
-    return 200;
+    //MessageBox("NKPR_GL_JMBG = " + NKPR_GL_JMBG);             //OIB
+    //MessageBox("NKPR_GL_NUM = " + String(NKPR_GL_NUM));       //Broj računa
+    //MessageBox("NKPR_GL_INVDTE = " + DTOSQL(NKPR_GL_INVDTE));         //Datum računa
+    //MessageBox("NKPR_GL_TOTAL = " + StrReplace(String(NKPR_GL_TOTAL), "," , "."));   //Total sa PDV?
+    //MessageBox("DueDate" = DTOSQL(DueDate));                          //date + smallint           
+    //MessageBox("xmlfilePath = " + xmlfilePath);    
+    //MessageBox("pdffilePath = " + pdffilePath);
+
+    //MessageBox("Send to API:   NKPR_GL_NUM = " + String(NKPR_GL_NUM));
+
+    //SVE U JEDNOM MessageBox-u
+    s1="SendToApi\n\n";
+    s1+="NKPR_GL_JMBG = " + NKPR_GL_JMBG + "\n";
+    s1+="NKPR_GL_NUM = " + String(NKPR_GL_NUM) + "\n";
+    s1+="NKPR_GL_INVDTE = " + DTOSQL(NKPR_GL_INVDTE) + "\n";
+    s1+="NKPR_GL_TOTAL = " + StrReplace(String(NKPR_GL_TOTAL), "," , ".") + "\n";
+    s1+="DueDate = " + DTOSQL(DueDate) + "\n";
+    s1+="xmlfilePath = " + xmlfilePath + "\n";
+    s1+="pdffilePath = " + pdffilePath + "\n";
+
+    //s1+="API_KEY = " + API_KEY + "\n";
+
+    //MessageBox(s1);
+    
+    try
+    {
+        //OVDJE IDE KOD ZA SLANJE
+        
+        APICALL(NKPR_GL_JMBG,
+                  String(NKPR_GL_NUM), 
+                  DTOSQL(NKPR_GL_INVDTE),
+                  StrReplace(String(NKPR_GL_TOTAL), "," , "."),
+                  DTOSQL(DueDate),
+                  xmlfilePath,
+                  pdffilePath
+                  );
+       
+        //statusCode i resFromAPI podešavaju one 2 funkcije za USPJEH/NEUSPJEH API poziva
+
+        //for testing only
+        //statusCode = 201; //OK = 201
+
+        //throw "API problem";
+    }
+    catch(exc4)
+    {
+        hasErrors = true;        
+        LogAdd("Greška: " + "Račun: " + String(NKPR_GL_NUM)  + " API endpoint vraća grešku: EXCEPTION = " + exc4);                
+    }
+
+
+    
 }
 
 //Uspješno poslane račune sprema se u NKSYIMEX
@@ -656,14 +828,78 @@ function InsertNKSYIMEX()
     //HH:mm:ss    
     timeUspjesnoPoslan = Substring(DateTimeString, 9, 2) + ":" + Substring(DateTimeString, 11, 2) + ":" + Substring(DateTimeString, 13, 2);
     //MessageBox("timeUspjesnoPoslan = " + timeUspjesnoPoslan);
-
-    filePath = XML_DIRECTORY + NKPR_GL_NUM + "_" + DateTimeString + ".txt";
-    //MessageBox("filePath = " + filePath);
+    
+    //MessageBox("xmlfilePath = " + xmlfilePath);
 
     sqlString = "INSERT INTO " + CurrentYearDatabase + 
         ".dbo.NKSYIMEX (IMEX_NUM, IMEX_TIPDOC, IMEX_DATUM, IMEX_TIME, IMEX_PATH, IMEX_WHO, IMEX_DOCUM, IMEX_REZ1, IMEX_REZ2, IMEX_REZ3, IMEX_REZ4, IMEX_REZ5) " + 
-        " VALUES (" + String(NKPR_GL_NUM) + ", 'URADC', '" + datumUspjesnoPoslan + "', '" + timeUspjesnoPoslan + "', '" + filePath + "', '', '', '', '', 0, 0, '') ";
+        " VALUES (" + String(NKPR_GL_NUM) + ", 'URADC', '" + datumUspjesnoPoslan + "', '" + timeUspjesnoPoslan + "', '" + xmlfilePath + "', '', '', '', '', 0, 0, '') ";
     //MessageBox(sqlString);
 
     sqlResult = SqlNonQuery(sqlString);
+}
+
+//**************************************************************
+//*** supplier = OIB dobavljača
+//*** bill_name = broj računa?
+//*** bill_date = datum
+//*** amount_vat = iznos bez? poreza???
+//*** due_date = izračunati datum od 2 kolone
+//*** xml_file = path apsolutni
+//*** pdf_file = path apsolutni
+
+function APICALL(supplier, bill_name, bill_date, amount_vat, due_date, xml_file, pdf_file){
+    headers = {
+            "Authorization" : API_KEY;
+        };
+    body = {
+            ["supplier", supplier, "text"],
+            ["bill_name", bill_name, "text"],
+            ["bill_date", bill_date, "text"], 
+            ["amount_vat", amount_vat, "text"], 
+            ["due_date", due_date, "text"], 
+            //["xml_file", xml_file, "file"],
+            //["pdf_file", pdf_file, "file"]
+
+            //["pdf_file", "C:\\Users\\User\\Desktop\\DeConte API Karlovac\\Racun_123456.pdf", "file"]
+    };
+    if(xml_file != ""){
+        body.add(["xml_file", xml_file, "file"]);
+    }
+    if(pdf_file != ""){
+        body.add(["pdf_file", pdf_file, "file"]);
+    }
+
+
+    WebRequestMPFD(
+        "POST" /* method */,
+        API_ADRESA /* uri */,
+        body, /* array of arrays */
+        bill_name /* tracking */,
+        "uspjesnoSlanje" /* onSuccess */,
+        "greskaSlanja" /* onFailure */,
+        "CustomAuraSoftBoundary", /* boundary */
+        headers /* headers */,
+        1000 * 15 /* timeoutMs */,
+        false /* bool justFire */ // ako je true -> samo šalje zahtjev, ne čeka odgovor... ako je false -> čeka odgovor
+    );
+}
+
+function uspjesnoSlanje(brRac, responseCode, res) {
+    //MSG("Uspješno slanje." + "\nBroj računa: " + brRac + "\nresponseCode: " + responseCode + "\nres: " + res);    
+
+    statusCode = responseCode;
+
+    //res je poruka od servera prema klijentu
+    resFromAPI = res;
+}
+
+function greskaSlanja(brRac, responseCode, res) {
+    
+    //MSG("GREŠKA SLANJA!" + "\nBroj računa: " + brRac + "\nresponseCode: " + responseCode + "\nres: " + res);
+       
+    statusCode = responseCode;
+
+    //res je poruka od servera prema klijentu
+    resFromAPI = res;
 }

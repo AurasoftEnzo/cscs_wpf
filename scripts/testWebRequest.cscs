@@ -1,111 +1,147 @@
 ﻿headers = {
-    // "Content-Type" : "multipart/form-data; boundary=CustomAuraBoundary",
-    "Authorization" : "APIKey 1001_92f4a28acf824e0e9371e0a4f50b08c9"
-    // ,
-    // "Accept" : "application/json"
-    // ,
-    // "User-Agent": "Mozilla/5.0"
+    "Authorization" : "APIKey 123456%fjJDJHikdsD"
 };
 
-
-boundary = "sghsfghsdfth"; // mora biti isti kao u contentType-u
-
-// LOAD - BODY
-loadString = "";
-
-
-oibDobavljaca = "12345678901";
-loadString += "--" + boundary + "\n";
-loadString += "Content-Disposition: form-data; name=\"supplier\"\n\n";
-loadString += oibDobavljaca + "\n";
+load = "{\n" +
+    "  \"billNumber\": \"12345\",\n" +
+    "  \"billDate\": \"2023-10-01\",\n" +
+    "  \"amount\": 150.75,\n" +
+    "  \"currency\": \"HRK\",\n" +
+    "  \"description\": \"Payment for services rendered\"\n" +
+    "}";
 
 
-brojRacuna = "123456";
-loadString += "--" + boundary + "\n";
-loadString += "Content-Disposition: form-data; name=\"bill_name\"\n\n";
-loadString += brojRacuna + "\n";
-
-
-datumRacuna = "2025-06-10";
-loadString += "--" + boundary + "\n";
-loadString += "Content-Disposition: form-data; name=\"bill_date\"\n\n";
-loadString += datumRacuna + "\n";
-
-
-iznosBezPoreza = "64.00";
-loadString += "--" + boundary + "\n";
-loadString += "Content-Disposition: form-data; name=\"amount_vat\"\n\n";
-loadString += iznosBezPoreza + "\n";
-    
-
-datumDospijeca = "2025-07-10";
-loadString += "--" + boundary + "\n";
-loadString += "Content-Disposition: form-data; name=\"due_date\"\n\n";
-loadString += datumDospijeca + "\n";
-
-
-// //XML
-localXmlFilepath = "C:\\Users\\User\\Desktop\\DeConte API Karlovac\\Racun_123456.xml";
-newXmlFilename = "Racun_123456.xml";
-xmlString = "";
-xmlLines = ReadFile(localXmlFilepath);
-for(i = 0; i< Size(xmlLines); i++) {
-    xmlString += xmlLines[i] + "\n";
-}
-loadString += "--" + boundary + "\n";
-loadString += "Content-Disposition: form-data; name=\"xml_file\"; filename=\"" + newXmlFilename + "\"\n";
-loadString += "Content-Type: application/xml\n\n";
-// loadString += "Content-Type: application/octet-stream\n\n";
-loadString += xmlString;
-
-
-//PDF
-localPdfFilepath = "C:\\Users\\User\\Desktop\\DeConte API Karlovac\\Racun_123456.pdf";
-newPdfFilename = "Racun_123456.pdf";
-pdfString = "";
-pdfLines = ReadFile(localPdfFilepath);
-for(i = 0; i< Size(pdfLines); i++) {
-    pdfString += pdfLines[i] + "\n";
-}
-loadString += "--" + boundary + "\n";
-loadString += "Content-Disposition: form-data; name=\"pdf_file\"; filename=\"" + newPdfFilename + "\"\n";
-loadString += "Content-Type: application/pdf\n\n";
-loadString += pdfString;
-
-
-//kraj load-a
-loadString += "--" + boundary + "--\n";
-
-
-MSG("loadString:\n" + loadString);
-
-
-// Poziv API-ja
 webRequestResult = WebRequest(
     "POST" /* method */,
     "https://inp-api.stcr.itcs.hr/approval_app/api-import-approve-bills/create/" /* uri */,
-    loadString /* load */,
-    "abc123" /* tracking */,
+    load /* load */,
+    "request1" /* tracking */,
     "uspjesnoSlanje" /* onSuccess */,
     "greskaSlanja" /* onFailure */,
-    "multipart/form-data; boundary=" + boundary /* contentType */,
+    "application/json" /* contentType */,
     headers /* headers */,
     1000 * 15 /* timeoutMs */,
     false /* bool justFire */ // ako je true -> samo šalje zahtjev, ne čeka odgovor... ako je false -> čeka odgovor
 );
 
 function uspjesnoSlanje(tracking, responseCode, res) {
-    MSG("Uspješno slanje!!!\nres = " + res);
-        // MSG("tracking: " + tracking);
-        // MSG("responseCode: " + responseCode);
-        MSG("res: " + res);
+    MSG("Uspješno slanje!!!\n" + tracking + "\nresponseCode: " + responseCode + "\nres: " + res);
 }
 
 function greskaSlanja(tracking, responseCode, res) {
-    MSG("GREŠKA SLANJA!!!\nres = " + res);
-        // MSG("tracking: " + tracking);
-        // MSG("responseCode: " + responseCode);
-        // MSG("res: " + res);
+    MSG("GREŠKA SLANJA!!!" + "\ntracking: " + tracking + "\nresponseCode: " + responseCode + "\nres: " + res);
 }
 
-// MSG(webRequestResult);
+
+
+// headers = {
+//     // "Content-Type" : "multipart/form-data; boundary=CustomAuraBoundary",
+//     "Authorization" : "APIKey 1001_92f4a28acf824e0e9371e0a4f50b08c9"
+//     // ,
+//     // "Accept" : "application/json"
+//     // ,
+//     // "User-Agent": "Mozilla/5.0"
+// };
+
+
+// boundary = "sghsfghsdfth"; // mora biti isti kao u contentType-u
+
+// // LOAD - BODY
+// loadString = "";
+
+
+// oibDobavljaca = "12345678901";
+// loadString += "--" + boundary + "\n";
+// loadString += "Content-Disposition: form-data; name=\"supplier\"\n\n";
+// loadString += oibDobavljaca + "\n";
+
+
+// brojRacuna = "123456";
+// loadString += "--" + boundary + "\n";
+// loadString += "Content-Disposition: form-data; name=\"bill_name\"\n\n";
+// loadString += brojRacuna + "\n";
+
+
+// datumRacuna = "2025-06-10";
+// loadString += "--" + boundary + "\n";
+// loadString += "Content-Disposition: form-data; name=\"bill_date\"\n\n";
+// loadString += datumRacuna + "\n";
+
+
+// iznosBezPoreza = "64.00";
+// loadString += "--" + boundary + "\n";
+// loadString += "Content-Disposition: form-data; name=\"amount_vat\"\n\n";
+// loadString += iznosBezPoreza + "\n";
+    
+
+// datumDospijeca = "2025-07-10";
+// loadString += "--" + boundary + "\n";
+// loadString += "Content-Disposition: form-data; name=\"due_date\"\n\n";
+// loadString += datumDospijeca + "\n";
+
+
+// // //XML
+// localXmlFilepath = "C:\\Users\\User\\Desktop\\DeConte API Karlovac\\Racun_123456.xml";
+// newXmlFilename = "Racun_123456.xml";
+// xmlString = "";
+// xmlLines = ReadFile(localXmlFilepath);
+// for(i = 0; i< Size(xmlLines); i++) {
+//     xmlString += xmlLines[i] + "\n";
+// }
+// loadString += "--" + boundary + "\n";
+// loadString += "Content-Disposition: form-data; name=\"xml_file\"; filename=\"" + newXmlFilename + "\"\n";
+// loadString += "Content-Type: application/xml\n\n";
+// // loadString += "Content-Type: application/octet-stream\n\n";
+// loadString += xmlString;
+
+
+// //PDF
+// localPdfFilepath = "C:\\Users\\User\\Desktop\\DeConte API Karlovac\\Racun_123456.pdf";
+// newPdfFilename = "Racun_123456.pdf";
+// pdfString = "";
+// pdfLines = ReadFile(localPdfFilepath);
+// for(i = 0; i< Size(pdfLines); i++) {
+//     pdfString += pdfLines[i] + "\n";
+// }
+// loadString += "--" + boundary + "\n";
+// loadString += "Content-Disposition: form-data; name=\"pdf_file\"; filename=\"" + newPdfFilename + "\"\n";
+// loadString += "Content-Type: application/pdf\n\n";
+// loadString += pdfString;
+
+
+// //kraj load-a
+// loadString += "--" + boundary + "--\n";
+
+
+// MSG("loadString:\n" + loadString);
+
+
+// // Poziv API-ja
+// webRequestResult = WebRequest(
+//     "POST" /* method */,
+//     "https://inp-api.stcr.itcs.hr/approval_app/api-import-approve-bills/create/" /* uri */,
+//     loadString /* load */,
+//     "abc123" /* tracking */,
+//     "uspjesnoSlanje" /* onSuccess */,
+//     "greskaSlanja" /* onFailure */,
+//     "multipart/form-data; boundary=" + boundary /* contentType */,
+//     headers /* headers */,
+//     1000 * 15 /* timeoutMs */,
+//     false /* bool justFire */ // ako je true -> samo šalje zahtjev, ne čeka odgovor... ako je false -> čeka odgovor
+// );
+
+// function uspjesnoSlanje(tracking, responseCode, res) {
+//     MSG("Uspješno slanje!!!\nres = " + res);
+//         // MSG("tracking: " + tracking);
+//         // MSG("responseCode: " + responseCode);
+//         MSG("res: " + res);
+// }
+
+// function greskaSlanja(tracking, responseCode, res) {
+//     MSG("GREŠKA SLANJA!!!\nres = " + res);
+//         // MSG("tracking: " + tracking);
+//         // MSG("responseCode: " + responseCode);
+//         // MSG("res: " + res);
+// }
+
+// // MSG(webRequestResult);

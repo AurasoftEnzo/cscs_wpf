@@ -1,0 +1,13 @@
+MessageBox("...Testing dtoc...");
+
+DEFINE datum type d size 8;
+datum = "18/06/25"; //Format: dd/MM/yy
+result = DTOC(datum);
+MessageBox(result); //Output: 18/06/25
+
+DEFINE datum2 type d size 10;
+datum2 = "18/06/2025"; //Format: dd/MM/yyyy
+result = DTOC(datum2, 10);
+MessageBox(result); //Output: 18/06/2025
+
+quit;

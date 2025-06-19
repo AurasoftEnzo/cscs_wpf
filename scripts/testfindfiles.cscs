@@ -1,0 +1,15 @@
+MessageBox("...Testing findfiles...");
+
+cd("C:\TEST");
+
+MessageBox(pwd()); //current directory
+
+MessageBox(findfiles("*.txt")); //Output: ["C:\TEST\a.txt", "C:\TEST\b.txt"]
+
+MessageBox(findfiles("*.txt", "*.jpg")); //Output: ["C:\TEST\a.txt", "C:\TEST\b.txt", "C:\TEST\z.jpg"]
+
+MessageBox(findfiles("*.*")); //Output: ["C:\TEST\New folder", "C:\TEST\a.txt", "C:\TEST\b.txt", "C:\TEST\x.bmp", "C:\TEST\z.jpg"]
+
+MessageBox(findfiles()); //Output: ["C:\TEST\New folder", "C:\TEST\a.txt", "C:\TEST\b.txt", "C:\TEST\x.bmp", "C:\TEST\z.jpg"]
+
+quit;

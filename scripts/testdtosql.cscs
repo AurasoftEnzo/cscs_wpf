@@ -1,0 +1,13 @@
+MessageBox("...Testing dtosql...");
+
+DEFINE datum type d size 8;
+datum = "18/06/25"; 
+result = DTOSQL(datum);
+MessageBox(result); //Output: 2025-06-18
+
+DEFINE datum2 type d size 10;
+datum2 = "18/06/2025"; 
+result = DTOSQL(datum2);
+MessageBox(result); //Output: 2025-06-18
+
+quit;

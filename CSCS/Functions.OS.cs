@@ -1089,6 +1089,37 @@ namespace SplitAndMerge
     {
         static string[] s_allowedMethods = { "GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS", "TRACE" };
 
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 2, m_name);
+            string method = args[0].AsString().ToUpper();
+            string uri = args[1].AsString();
+            Variable bodyArray = Utils.GetSafeVariable(args, 2);
+            string trackingString = Utils.GetSafeString(args, 3);
+            string onSuccess = Utils.GetSafeString(args, 4);
+            string onFailure = Utils.GetSafeString(args, 5, onSuccess);
+            string boundaryString = Utils.GetSafeString(args, 6, "----------" + DateTime.Now.Ticks.ToString("x"));
+            Variable headers = Utils.GetSafeVariable(args, 7);
+            int timeoutMs = Utils.GetSafeInt(args, 8, 10 * 1000);
+            bool justFire = Utils.GetSafeInt(args, 9) > 0;
+
+            if (!s_allowedMethods.Contains(method))
+            {
+                throw new ArgumentException("Unknown web request method: " + method);
+            }
+
+            if (justFire)
+            {
+                Task.Run(() => ProcessWebRequest(uri, method, bodyArray, onSuccess, onFailure, trackingString,
+                                                 boundaryString, headers));
+                return Variable.EmptyInstance;
+            }
+            var res = ProcessWebRequest(uri, method, bodyArray, onSuccess, onFailure, trackingString,
+                                                 boundaryString, headers);
+            return res;
+        }
+
         protected override async Task<Variable> EvaluateAsync(ParsingScript script)
         {
             List<Variable> args = script.GetFunctionArgs();
@@ -1127,37 +1158,6 @@ namespace SplitAndMerge
             byte[] fileData = File.ReadAllBytes(filePath);
             stream.Write(fileData, 0, fileData.Length);
             stream.Write(Encoding.UTF8.GetBytes("\r\n"), 0, 2);
-        }
-
-        protected override Variable Evaluate(ParsingScript script)
-        {
-            List<Variable> args = script.GetFunctionArgs();
-            Utils.CheckArgs(args.Count, 2, m_name);
-            string method = args[0].AsString().ToUpper();
-            string uri = args[1].AsString();
-            Variable bodyArray = Utils.GetSafeVariable(args, 2);
-            string tracking = Utils.GetSafeString(args, 3);
-            string onSuccess = Utils.GetSafeString(args, 4);
-            string onFailure = Utils.GetSafeString(args, 5, onSuccess);
-            string boundaryString = Utils.GetSafeString(args, 6, "----------" + DateTime.Now.Ticks.ToString("x"));
-            Variable headers = Utils.GetSafeVariable(args, 7);
-            int timeoutMs = Utils.GetSafeInt(args, 8, 10 * 1000);
-            bool justFire = Utils.GetSafeInt(args, 9) > 0;
-
-            if (!s_allowedMethods.Contains(method))
-            {
-                throw new ArgumentException("Unknown web request method: " + method);
-            }
-
-            if (justFire)
-            {
-                Task.Run(() => ProcessWebRequest(uri, method, bodyArray, onSuccess, onFailure, tracking,
-                                                 boundaryString, headers));
-                return Variable.EmptyInstance;
-            }
-            var res = ProcessWebRequest(uri, method, bodyArray, onSuccess, onFailure, tracking,
-                                                 boundaryString, headers);
-            return res;
         }
 
         Variable ProcessWebRequest(string uri, string method, Variable bodyArray,

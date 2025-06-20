@@ -1,0 +1,11 @@
+MessageBox("...Testing findstr...");
+
+cd("C:\TEST3");
+
+MessageBox(findstr("aa")); //Output: ["C:\TEST3\a.txt", "C:\TEST3\r.rtf"]
+MessageBox(findstr("bb", "*.txt")); //Output: ["C:\TEST3\a.txt", "C:\TEST3\b.txt"]
+MessageBox(findstr("bb", "*.txt", "*.rtf")); //Output: ["C:\TEST3\a.txt", "C:\TEST3\b.txt", "C:\TEST3\r.rtf"]
+MessageBox(findstr("AA", "*.txt", "*.rtf", "case")); //Output: ["C:\TEST3\r.rtf"]
+
+
+quit;

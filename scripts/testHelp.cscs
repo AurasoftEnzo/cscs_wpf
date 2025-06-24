@@ -1,0 +1,42 @@
+MessageBox("...Testing Help...");
+
+//For all math function CSCS.Math.dll must be imported in script with Import() function.
+Import("C:\Users\User\Documents\GitHub\cscs_wpf\Modules\CSCS.Math.dll");
+
+data = help();
+
+lines = Tokenize(data, "\n");
+
+//MessageBox(lines);
+
+lineCount = size(lines);
+//MessageBox("Number of lines: " + lineCount);
+
+linesPerPage = 50;
+
+res = lineCount / linesPerPage;
+//MessageBox("res = " + res);
+numberOfPages = Math.Ceil(res);
+//MessageBox("numberOfPages=" + numberOfPages);
+
+for (i=0; i<numberOfPages; i++)
+{
+	currentPage = "";
+	currentPage += "PAGE " + String(i+1);
+	currentPage += "\n";
+	currentPage += "\n";
+
+    for (j=0; j<linesPerPage; j++)
+	{
+		offset = i*linesPerPage + j;
+
+		if (offset < lineCount)
+		{			
+			currentPage += lines[offset] + "\n";
+		}
+	}
+	
+	MessageBox(currentPage);
+}
+
+quit;

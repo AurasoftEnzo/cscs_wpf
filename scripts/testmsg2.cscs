@@ -1,0 +1,24 @@
+MessageBox("...Testing msg...");
+
+message = "My message";
+caption = "My caption"; //default = "Info"
+answerType = "ok"; //default="ok", other values for answerType: ok, okcancel, yesno, yesnocancel
+messageType = "info"; //default="info", other values for icon: question, info, warning, error, exclamation, stop, hand, asterisk
+
+MSG(message, caption);
+MSG(message, caption, answerType);
+MSG(message, caption, answerType, messageType);
+
+ret = MSG("My message with question", "My caption", "yesno", "question");
+MSG("ret = " + ret);
+
+if (ret == "Yes")
+{
+	MSG("Return value = Yes")
+}
+else
+{
+	MSG("Return value = No")
+}
+
+quit;

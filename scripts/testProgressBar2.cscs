@@ -1,0 +1,53 @@
+MessageBox("...Testing ProgressBar...");
+
+CreateWindow("../../scripts/testProgressBar2.xaml");
+
+function SetWidgetProgressMaximum(x)
+{    
+    SetWidgetOptions("pb1", "Maximum", x);    
+}
+
+function SetWidgetProgressValue(x)
+{
+    ProgressBar("pb1", x); 
+    //or
+    //SetWidgetOptions("pb1", "Value", x);        
+}
+
+MessageBox("ProgressBar START");
+
+MainWorkAsync();
+
+function MainWorkAsync()
+{
+    AsyncCall("MainWork", "Finished");
+}
+
+function Finished()
+{
+    isRunning = false;    
+    MessageBox("END2");
+}   
+
+function MainWork()
+{
+    isRunning = true;
+
+    RunOnMain("SetWidgetProgressMaximum", 200);
+    
+
+    RunOnMain("SetWidgetProgressValue", 20);
+    sleep(1000);
+    RunOnMain("SetWidgetProgressValue", 40);
+    sleep(1000);
+    RunOnMain("SetWidgetProgressValue", 60);
+    sleep(1000);
+    RunOnMain("SetWidgetProgressValue", 80);
+    sleep(1000);
+    RunOnMain("SetWidgetProgressValue", 100);
+    sleep(1000);
+}
+
+//MessageBox("END");
+
+//quit;

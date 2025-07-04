@@ -1,0 +1,39 @@
+MessageBox("...Testing psinfo...");
+
+Import("C:\Users\User\Documents\GitHub\cscs_wpf\Modules\CSCS.Math.dll");
+
+
+//data = psinfo("notepad");
+data = psinfo("msedge");
+
+lines = Tokenize(data, ",");
+
+lineCount = size(lines);
+
+linesPerPage = 50;
+res = lineCount / linesPerPage;
+
+numberOfPages = Math.Ceil(res);
+
+
+for (i=0; i<numberOfPages; i++)
+{
+	currentPage = "";
+	currentPage += "PAGE " + String(i+1) + "/" + String(numberOfPages);
+	currentPage += "\n";
+	currentPage += "\n";
+
+   	for (j=0; j<linesPerPage; j++)
+	{
+		offset = i*linesPerPage + j;
+
+		if (offset < lineCount)
+		{			
+			currentPage += lines[offset] + "\n";
+		}
+	}
+	
+	MessageBox(currentPage);
+}
+
+quit;

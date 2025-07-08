@@ -1,0 +1,23 @@
+MessageBox("...Testing getinterpreterhandle...");
+
+currentHndl = getinterpreterhandle();
+MessageBox("CURRENT = " + currentHndl);
+
+//a = newinterpreter("C:\Users\User\Documents\GitHub\cscs_wpf\scripts\testnull.cscs", 0); //It doesn't work
+//a = newinterpreter("", 0);
+a = newinterpreter();
+
+setinterpreter(2);
+
+MessageBox("NEW = " + a);
+
+lastHndl = getlastinterpreterhandle();
+MessageBox("LAST HNDL = " + lastHndl);
+
+currentHndl = getinterpreterhandle();
+MessageBox("CURRENT = " + currentHndl);
+
+b = removeinterpreter(lastHndl);
+MessageBox("Removed = " + b); //bool
+
+quit;

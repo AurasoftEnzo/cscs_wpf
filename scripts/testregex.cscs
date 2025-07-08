@@ -1,0 +1,28 @@
+MessageBox("...Testing regex...");
+
+
+pattern = "^[a-zA-Z]+$";
+//pattern = "^\d+$";
+//pattern = "^.{6,}$";
+//pattern = "^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})$";
+
+text = "HelloWorld";
+//text = "123";
+//text = "HelloWorld";
+//text = "HelloWorld@a.com";
+
+result = regex(pattern, text);
+MessageBox(result);
+
+if (size(result) > 0)
+{
+	MessageBox(size(result));
+
+	s1 = result["matches"][0];
+	MessageBox(s1);
+
+	s2 = result["groups"][0];
+	MessageBox(s2);
+}
+
+quit;

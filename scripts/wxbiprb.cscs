@@ -8,6 +8,7 @@ Import(strTrim(mpath()) + "CSCS.Math.dll");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiprb_inc_lists.cscs") : strTrim(tpath()) + "wxbiprb_inc_lists.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiprb_inc_a.cscs") : strTrim(tpath()) + "wxbiprb_inc_a.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiprb_inc_b.cscs") : strTrim(tpath()) + "wxbiprb_inc_b.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiprb_inc_c.cscs") : strTrim(tpath()) + "wxbiprb_inc_c.cscs");
 // include(strTrim(tpath()) + "wxbiprb_inc_lists.cscs");
 // include(strTrim(tpath()) + "wxbiprb_inc_a.cscs");
 // include(strTrim(tpath()) + "wxbiprb_inc_b.cscs");
@@ -267,6 +268,24 @@ function gbProdaja2@clicked()
     //     (
     //         lock{
             result = modalWindow(strTrim(tpath()) +"wxbiprbb.xaml");
+    //        }
+    //    )
+    }
+    else
+    {
+        MessageBox("Molim pripremite osnovne podatke prije nastavka!"); 
+        setfocus("gbPripremi");
+    }    
+}
+
+function gbPovrati@clicked()
+{
+    if (pripremljeno   )
+    {
+    //     thread
+    //     (
+    //         lock{
+            result = modalWindow(strTrim(tpath()) +"wxbiprbc.xaml");
     //        }
     //    )
     }

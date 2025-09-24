@@ -110,10 +110,10 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.HEX, new HEXFunction());
             interpreter.RegisterFunction(Constants.REGEDIT, new REGEDITFunction());
             interpreter.RegisterFunction(Constants.EMAIL, new EMAILFunction());
-	  interpreter.RegisterFunction(Constants.TPATH, new TPATHFunction());
-	  interpreter.RegisterFunction(Constants.IPATH, new IPATHFunction());
-	  interpreter.RegisterFunction(Constants.MPATH, new MPATHFunction());
-	  interpreter.RegisterFunction(Constants.WPATH, new WPATHFunction());
+            interpreter.RegisterFunction(Constants.TPATH, new TPATHFunction());
+            interpreter.RegisterFunction(Constants.IPATH, new IPATHFunction());
+            interpreter.RegisterFunction(Constants.MPATH, new MPATHFunction());
+            interpreter.RegisterFunction(Constants.WPATH, new WPATHFunction());
 
             interpreter.RegisterFunction("FillOutGrid", new FillOutGridFunction());
             interpreter.RegisterFunction("FillOutGridFromDB", new FillOutGridFunction(true));

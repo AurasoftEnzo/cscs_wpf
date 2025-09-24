@@ -1,7 +1,7 @@
-﻿include(strtrim(tpath()) + "wxtransferura_config.cscs");
+﻿include(strtrim(tpath()) + "wxtransferira_config.cscs");
 
-//CreateWindow("../../scripts/wxtransferura.xaml");
-CreateWindow(strTrim(tpath()) + "wxtransferura.xaml");
+//CreateWindow("../../scripts/wxtransferira.xaml");
+CreateWindow(strTrim(tpath()) + "wxtransferira.xaml");
 
 DEFINE date1 type d size 8;
 
@@ -73,7 +73,7 @@ DEFINE datumUspjesnoPoslan type a size 10;
 DEFINE timeUspjesnoPoslan type a size 8;
 
 DEFINE exc0 type a size 5000; //OnDisplay
-DEFINE exc1 type a size 5000; //PosaljiURA
+DEFINE exc1 type a size 5000; //PosaljiIRA
 DEFINE exc2 type a size 5000; //FOR petlja GlavaRacuna
 DEFINE exc3 type a size 5000; //LOG
 DEFINE exc4 type a size 5000; //SEND TO API
@@ -85,7 +85,7 @@ DEFINE resFromAPI type a size 5000;
 DEFINE s1 type a size 5000; //temp za messagebox 
 
 
-function wxtransferura_onDisplay()
+function wxtransferira_onDisplay()
 {
     try
     {
@@ -136,12 +136,12 @@ function btnPosalji@clicked()
         return;
     }
 
-    PosaljiURAAsync();
+    PosaljiIRAAsync();
 }
 
-function PosaljiURAAsync()
+function PosaljiIRAAsync()
 {
-    AsyncCall("PosaljiURA", "Gotovo");
+    AsyncCall("PosaljiIRA", "Gotovo");
 }
 
 function Gotovo()
@@ -150,7 +150,7 @@ function Gotovo()
     Cursor("dflt");
 }   
 
-function PosaljiURA()
+function PosaljiIRA()
 {
     try
     {
@@ -158,7 +158,7 @@ function PosaljiURA()
         hasErrors = false;
         ClearLog();        
 
-        RunOnMain("SetWidgetsTransferURAStart");
+        RunOnMain("SetWidgetsTransferIRAStart");
                    
         //MessageBox(CurrentYearDatabase);
     
@@ -168,7 +168,7 @@ function PosaljiURA()
 
         if(countGlavaRacuna <= 1)
         {
-            RunOnMain("SetWidgetsTransferURANemaRacuna");
+            RunOnMain("SetWidgetsTransferIRANemaRacuna");
         }
 
         for(i = 1; i < countGlavaRacuna; i++)
@@ -192,7 +192,7 @@ function PosaljiURA()
                 NKPR_GL_TOTAL = sqlResultGlave[i][10];  //float
                 NKPR_GL_TAXAMT = sqlResultGlave[i][11];  //float
                 NKPR_GL_JMBG = sqlResultGlave[i][12];   //char(13)
-                NKPR_GL_PICTHDR = sqlResultGlave[i][13];//int
+                NKPR_GL_PICTHDR = sqlResultGlave[i][13];//int   
 
                 xmlfilePath = XML_DIRECTORY + String(NKPR_GL_NUM) + "_" + DateTimeString + ".xml";
                 pdffilePath = "";
@@ -230,7 +230,7 @@ function PosaljiURA()
 
                 countRacuna = countGlavaRacuna - 1; //zbog header retka
                 strNapredak = String(i) + " / " + String(countRacuna);            
-                RunOnMain("SetWidgetsTransferURANapredak", strNapredak);
+                RunOnMain("SetWidgetsTransferIRANapredak", strNapredak);
 
                 xmlContent[xmlLineCount] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
                 xmlLineCount++;
@@ -245,13 +245,13 @@ function PosaljiURA()
                 xmlLineCount++;
                 xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<InvoiceDate>" + AntiXMLSpecialChars(DTOSQL(NKPR_GL_INVDTE)) + "</InvoiceDate>"; //datum računa
                 xmlLineCount++;
-                xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<ReceiptNumber>" + AntiXMLSpecialChars(String(NKPR_GL_BROTP)) + "</ReceiptNumber>"; //Broj primke
+                xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<ReceiptNumber>" + AntiXMLSpecialChars(String(NKPR_GL_BROTP)) + "</ReceiptNumber>"; //Broj otpremnice
                 xmlLineCount++;
-                xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<OrderNumber>" + AntiXMLSpecialChars(String(NKPR_GL_SONUM)) + "</OrderNumber>"; //Broj narudžbenice
+                xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<OrderNumber>" + AntiXMLSpecialChars(String(NKPR_GL_SONUM)) + "</OrderNumber>"; //Broj predračuna
                 xmlLineCount++;
-                xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<VendorCode>" + AntiXMLSpecialChars(StrTrim(NKPR_GL_CUSCOD)) + "</VendorCode>"; //Šifra dobavljača
+                xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<VendorCode>" + AntiXMLSpecialChars(StrTrim(NKPR_GL_CUSCOD)) + "</VendorCode>"; //Šifra kupca
                 xmlLineCount++;
-                xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<VendorName>" + AntiXMLSpecialChars(StrTrim(NKPR_GL_CUSNME)) + "</VendorName>"; //Naziv dobavljača
+                xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<VendorName>" + AntiXMLSpecialChars(StrTrim(NKPR_GL_CUSNME)) + "</VendorName>"; //Naziv kupca
                 xmlLineCount++;
                 xmlContent[xmlLineCount] = Chr(9) + Chr(9) + "<DueDate>" + AntiXMLSpecialChars(DTOSQL(DueDate)) + "</DueDate>"; //Datum dospjeća
                 xmlLineCount++;
@@ -359,14 +359,14 @@ function PosaljiURA()
     {      
         if(hasErrors)
         {
-            RunOnMain("SetWidgetsTransferURAErrors");            
+            RunOnMain("SetWidgetsTransferIRAErrors");            
 
             FormatLog();
             SaveLog();
         }
         else
         {
-            RunOnMain("SetWidgetsTransferURAOk");
+            RunOnMain("SetWidgetsTransferIRAOk");
         }                 
     }
     catch(exc3)
@@ -519,7 +519,7 @@ function FetchGlaveRacuna()
     }
     //MessageBox("intBrojDana = " + String(intBrojDana));
 
-    // sqlString = "SELECT TOP 3 " + 
+    //sqlString = "SELECT TOP 3 " + 
     sqlString = "SELECT " + 
                 " NKPR_GL_NUM, " + //int
                 " NKPR_GL_INVDTE, " + //date
@@ -536,12 +536,12 @@ function FetchGlaveRacuna()
                 " NKPR_GL_JMBG, " + //char(13)
                 " NKPR_GL_PICTHDR " + //int
 
-                " FROM " + CurrentYearDatabase + ".dbo.NKNAGLRN " + 
+                " FROM " + CurrentYearDatabase + ".dbo.NKPRINV " + 
                 
                 " WHERE NKPR_GL_INVDTE >= DATEADD(DAY, " + String(-1 * intBrojDana) + ", CAST('" + DTOSQL(date1) + "' AS DATE)) " +
                 
                 //" AND RacunPoslan = false " + 
-                " AND NKPR_GL_NUM NOT IN (SELECT imex_num FROM " + CurrentYearDatabase + ".dbo.NKSYIMEX WHERE imex_tipdoc = 'URADC') " +
+                " AND NKPR_GL_NUM NOT IN (SELECT imex_num FROM " + CurrentYearDatabase + ".dbo.NKSYIMEX WHERE imex_tipdoc = 'IRADC') " +
 
                 " ORDER BY NKPR_GL_NUM ";
     
@@ -567,7 +567,7 @@ function FetchLinijeRacuna()
                 " NKPR_LN_AMT, " + //float
                 " NKPR_LN_OBJED " + //char(6)
 
-                " FROM " + CurrentYearDatabase + ".dbo.NKNALNRN " + 
+                " FROM " + CurrentYearDatabase + ".dbo.NKPRINVL " + 
                 " WHERE NKPR_LN_INVNM = '" + String(NKPR_GL_NUM) + "'" +
                 " ORDER BY ID "; //trim
     
@@ -585,7 +585,7 @@ function FetchPdfFileName()
     if(NKPR_GL_PICTHDR != 0)
     {
         sqlString = "SELECT SY_SL_PATH from " + CurrentYearDatabase + 
-            ".dbo.NKSYPICT WHERE SY_SL_TIP = 'UR' AND SY_SL_NUM = " + NKPR_GL_PICTHDR;
+            ".dbo.NKSYPICT WHERE SY_SL_TIP = 'IR' AND SY_SL_NUM = " + NKPR_GL_PICTHDR;
     
         sqlResult3 = SqlQuery(sqlString);
 
@@ -605,7 +605,7 @@ function FetchPdfFileName()
 
 function openConfig()
 {
-    ModalWindow(strtrim(tpath()) + "wxtransferura_config.xaml");
+    ModalWindow(strtrim(tpath()) + "wxtransferira_config.xaml");
 }
 
 function InitConfigInDbase()
@@ -622,7 +622,7 @@ function InitConfigInDbase()
 
     // XML_DIRECTORY
     if(!recordExistsInNKSYSYCO("XML_DIRECTORY")){
-        AddRecordInNKSYSYCO("XML_DIRECTORY", "Direktorij za XML datoteke URA");
+        AddRecordInNKSYSYCO("XML_DIRECTORY", "Direktorij za XML datoteke IRA");
     }else{
         sqlString = "SELECT RTRIM(NKSYS_VALUE) from " + CurrentYearDatabase + 
         ".dbo.NKSYSYCO WHERE NKSYS_MODUL = 'WKSY' AND NKSYS_GRUP = 'TRANSFER' AND NKSYS_GRUP2 = 'DOCUMENTS' AND NKSYS_FIELD = 'XML_DIRECTORY'";
@@ -672,32 +672,32 @@ function AddRecordInNKSYSYCO(fieldName, description)
 
 //********************************************
 
-function SetWidgetsTransferURAStart()
+function SetWidgetsTransferIRAStart()
 {
-    SetWidgetOptions("StatusLabel", "Content", "Transfer URA u tijeku...");
+    SetWidgetOptions("StatusLabel", "Content", "Transfer IRA u tijeku...");
     SetWidgetOptions("StatusLabel2", "Content", "");        
 
     Cursor("wait");
 }
-function SetWidgetsTransferURANapredak(strNapredak)
+function SetWidgetsTransferIRANapredak(strNapredak)
 {                 
     SetWidgetOptions("StatusLabel2", "Content", strNapredak);    
 }
-function SetWidgetsTransferURAErrors()
+function SetWidgetsTransferIRAErrors()
 {
-    SetWidgetOptions("StatusLabel", "Content", "Transfer URA dovršen s GREŠKAMA!");               
+    SetWidgetOptions("StatusLabel", "Content", "Transfer IRA dovršen s GREŠKAMA!");               
     //SetWidgetOptions("StatusLabel2", "Content", "");    
 
     Cursor("dflt");
 }
-function SetWidgetsTransferURAOk()
+function SetWidgetsTransferIRAOk()
 {
-    SetWidgetOptions("StatusLabel", "Content", "Transfer URA uspješno dovršen!");
+    SetWidgetOptions("StatusLabel", "Content", "Transfer IRA uspješno dovršen!");
     //SetWidgetOptions("StatusLabel2", "Content", "");
     
     Cursor("dflt");
 }
-function SetWidgetsTransferURANemaRacuna()
+function SetWidgetsTransferIRANemaRacuna()
 {
     SetWidgetOptions("StatusLabel2", "Content", "Nema nijednog računa!");
 }
@@ -839,7 +839,7 @@ function InsertNKSYIMEX()
 
     sqlString = "INSERT INTO " + CurrentYearDatabase + 
         ".dbo.NKSYIMEX (IMEX_NUM, IMEX_TIPDOC, IMEX_DATUM, IMEX_TIME, IMEX_PATH, IMEX_WHO, IMEX_DOCUM, IMEX_REZ1, IMEX_REZ2, IMEX_REZ3, IMEX_REZ4, IMEX_REZ5) " + 
-        " VALUES (" + String(NKPR_GL_NUM) + ", 'URADC', '" + datumUspjesnoPoslan + "', '" + timeUspjesnoPoslan + "', '" + xmlfilePath + "', '', '', '', '', 0, 0, '') ";
+        " VALUES (" + String(NKPR_GL_NUM) + ", 'IRADC', '" + datumUspjesnoPoslan + "', '" + timeUspjesnoPoslan + "', '" + xmlfilePath + "', '', '', '', '', 0, 0, '') ";
     //MessageBox(sqlString);
 
     sqlResult = SqlNonQuery(sqlString);
@@ -864,6 +864,7 @@ function APICALL(supplier, bill_name, bill_date, amount_vat, due_date, xml_file,
             ["bill_date", bill_date, "text"], 
             ["amount_vat", amount_vat, "text"], 
             ["due_date", due_date, "text"], 
+            ["bill_type", "outgoing", "text"]
             //["xml_file", xml_file, "file"],
             //["pdf_file", pdf_file, "file"]
 

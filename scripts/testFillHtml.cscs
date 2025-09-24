@@ -1,0 +1,16 @@
+
+valuesHashtable = {};
+valuesHashtable["title"] = "ASConto - Poslovne Knjige";
+valuesHashtable["companyName"] = "Aura Soft d.o.o.";
+valuesHashtable["companyAddress"] = "Kapetana Lazarića 1d, 52000 Pazin";
+
+MessageBox(valuesHashtable);
+
+quit;
+
+htmlTemplate = ReadFile("C:\\htmls\\template1.html");
+finalHtml = FillHtml(htmlTemplate, "title", "ASConto - Poslovne Knjige");
+finalHtml = FillHtml(htmlTemplate, "companyName", "Aura Soft d.o.o.");
+finalHtml = FillHtml(htmlTemplate, "companyAddress", "Kapetana Lazarića 1d, 52000 Pazin");
+
+finalHtml = FillHtml(htmlTemplate, valuesHashtable);

@@ -1,0 +1,44 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:wcl="clr-namespace:WpfControlsLibrary;assembly=WpfControlsLibrary"
+        xmlns:local="clr-namespace:WpfCSCS"
+        mc:Ignorable="d"
+        Title="Postavke"
+        Height="320" 
+        Width="840"
+        ResizeMode="CanMinimize">
+    <Grid Margin="0,0,0,0">
+        <Label Content="Računi za posljednjih BROJ DANA:" FontSize="20" Height="50" Width="313" Margin="10,9,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" HorizontalContentAlignment="Right"/>
+        <Label Content="XML direktorij(lokalno):" FontSize="20" Height="50" Width="261" Margin="62,54,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" HorizontalContentAlignment="Right"/>
+        <Label Content="API adresa:" FontSize="20" Height="50" Width="190" Margin="133,97,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" HorizontalContentAlignment="Right"/>
+        <Label Content="API key:" FontSize="20" Height="50" Width="185" Margin="138,142,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" HorizontalContentAlignment="Right"/>
+
+        <TextBox Name="TextBoxBrojDana" DataContext="BROJ_DANA" VerticalContentAlignment="Center" FontSize="20" Height="40" Width="390" Margin="328,10,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" TabIndex="0"/>
+        <TextBox Name="TextBoxXMLDirektorij" DataContext="XML_DIRECTORY" VerticalContentAlignment="Center" FontSize="20" Height="40" Width="390" Margin="328,56,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" TabIndex="1"/>
+        <TextBox Name="TextBoxAPIadresa" DataContext="API_ADRESA" VerticalContentAlignment="Center" FontSize="20" Height="40" Width="390" Margin="328,100,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" TabIndex="3"/>
+        <TextBox Name="TextBoxAPIkey" DataContext="API_KEY" VerticalContentAlignment="Center" FontSize="20" Height="40" Width="390" Margin="328,146,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" TabIndex="4"/>
+
+        <Button
+            Content="Odaberi"
+            Name="btnSelectXMLDirectory"
+            FontSize="20"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top"
+            Margin="722,56,0,0"
+            Width="100" Height="40"
+            TabIndex="2"/>
+
+        <Button
+            Content="Spremi postavke"
+            Name="btnSpremiConfig"
+            FontSize="20"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Top" 
+            Margin="0,202,0,0" 
+            Width="244" Height="60"
+            TabIndex="5"/>
+
+    </Grid>
+</Window>

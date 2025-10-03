@@ -1,0 +1,48 @@
+MessageBox("...Testing sqlprocedure...");
+
+sqlconnectionstring("Server=localhost;Database=testdb;User Id=sa;Password=aura;");
+
+//***************
+//Example1
+MessageBox("Example1");
+
+sqlResult = sqlprocedure("spSelectAllStudents");
+
+//there is no header row
+for (i=0; i<Size(sqlresult); i++)
+{
+	id = sqlresult[i][0];
+	name = sqlresult[i][1];
+	gender = sqlresult[i][2];
+
+	MessageBox("id=" + id + " name=" + name + " gender=" + gender);	
+}
+
+//***************
+//Example2
+MessageBox("Example2");
+
+sqlResult = sqlprocedure("spSelectStudentById", 4);
+
+if (Size(sqlResult)>0)
+{
+	id = sqlresult[0][0];
+	name = sqlresult[0][1];
+	gender = sqlresult[0][2];
+
+	MessageBox("id=" + id + " name=" + name + " gender=" + gender);	
+}
+
+//***************
+//Example3
+MessageBox("Example3");
+
+rowsAffected = sqlprocedure("spInsertStudent", 17, 'abc', 'def');
+MessageBox(rowsAffected);
+
+
+//***************
+
+
+
+quit;

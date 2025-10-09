@@ -1,0 +1,13 @@
+MessageBox("...Testing resetfield...");
+
+// In child script - variable has been modified
+var12 = "BBB";
+MessageBox("In child script var12: " + var12);
+
+// Reset to value from main script "main.cscs"
+//resetfield("main", "var12");
+resetfield("DefaultWindow2", "var12");
+
+MessageBox("After reset: " + var12); // Now shows value from main.cscs
+
+quit;

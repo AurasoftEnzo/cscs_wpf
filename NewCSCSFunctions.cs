@@ -1,7 +1,9 @@
-﻿using LiveChartsCore.SkiaSharpView.Painting;
+﻿using DevExpress.XtraRichEdit.Import.Doc;
+using LiveChartsCore.SkiaSharpView.Painting;
 using MapControl;
-using Renci.SshNet.Sftp;
+using Org.BouncyCastle.Tls;
 using Renci.SshNet;
+using Renci.SshNet.Sftp;
 using SplitAndMerge;
 using System;
 using System.Collections.Generic;
@@ -10,6 +12,8 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography.Xml;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
@@ -20,10 +24,9 @@ using System.Windows.Data;
 //using System.Windows.Forms;
 using System.Windows.Media;
 using System.Windows.Threading;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
-using DevExpress.XtraRichEdit.Import.Doc;
-using Org.BouncyCastle.Tls;
+using System.Xml;
 using static System.Net.WebRequestMethods;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
 namespace WpfCSCS
 {
@@ -57,7 +60,10 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.GET_COMP_NAME, new GetCompNameFunction());
 
             interpreter.RegisterFunction(Constants.DAYS_IN_MONTH, new DaysInMonthFunction());
-            
+
+
+            interpreter.RegisterFunction(Constants.File2Base64, new File2Base64Function());
+            interpreter.RegisterFunction(Constants.SignXml, new SignXmlFunction());
         }
         public partial class Constants
         {
@@ -82,6 +88,9 @@ namespace WpfCSCS
             public const string GET_COMP_NAME = "GetCompName";
 
             public const string DAYS_IN_MONTH = "DaysInMonth";
+
+            public const string File2Base64 = "File2Base64";
+            public const string SignXml = "SignXml";
         }
     }
 
@@ -845,6 +854,94 @@ namespace WpfCSCS
             var year = Utils.GetSafeInt(args, 1);
 
             return new Variable(DateTime.DaysInMonth(year, month));
+        }
+    }
+    
+    class File2Base64Function : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+
+            var filePath = Utils.GetSafeString(args, 0);
+
+            if (!System.IO.File.Exists(filePath))
+                return Variable.EmptyInstance;
+
+            var fileBytes = System.IO.File.ReadAllBytes(filePath);
+            var base64String = Convert.ToBase64String(fileBytes);
+
+            return new Variable(base64String);
+        }
+    }
+    
+    
+    class SignXmlFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 4, m_name);
+
+            var xmlPath = Utils.GetSafeString(args, 0);
+            var certificatePath = Utils.GetSafeString(args, 1);
+            var certificatePassword = Utils.GetSafeString(args, 2);
+            var signedXmlPath = Utils.GetSafeString(args, 3);
+
+            if (!System.IO.File.Exists(xmlPath))
+                return new Variable(false);
+            if (!System.IO.File.Exists(certificatePath))
+                return new Variable(false);
+
+            var xmlDoc = new XmlDocument();
+            xmlDoc.Load(xmlPath);
+
+            var cert = new X509Certificate2(certificatePath, certificatePassword);
+
+            return new Variable(SignAndSaveUblInvoice(xmlDoc, cert, signedXmlPath));
+        }
+
+        public bool SignAndSaveUblInvoice(XmlDocument xmlDoc, X509Certificate2 cert, string outputFilePath)
+        {
+            try
+            {
+                // Perform the signing (as demonstrated earlier)
+                SignedXml signedXml = new SignedXml(xmlDoc);
+                signedXml.SigningKey = cert.GetRSAPrivateKey();
+
+                Reference reference = new Reference();
+                reference.Uri = "";
+                reference.AddTransform(new XmlDsigEnvelopedSignatureTransform());
+                signedXml.AddReference(reference);
+
+                KeyInfo keyInfo = new KeyInfo();
+                keyInfo.AddClause(new KeyInfoX509Data(cert));
+                signedXml.KeyInfo = keyInfo;
+
+                signedXml.ComputeSignature();
+                XmlElement xmlDigitalSignature = signedXml.GetXml();
+
+                XmlNamespaceManager nsMgr = new XmlNamespaceManager(xmlDoc.NameTable);
+                nsMgr.AddNamespace("ext", "urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2");
+
+                XmlNode ublExtensionsNode = xmlDoc.SelectSingleNode("//ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent", nsMgr);
+                if (ublExtensionsNode == null)
+                {
+                    throw new Exception("UBLExtension ExtensionContent node not found for inserting signature.");
+                }
+
+                ublExtensionsNode.AppendChild(xmlDoc.ImportNode(xmlDigitalSignature, true));
+
+                // Save the signed XML invoice to the specified file path
+                xmlDoc.Save(outputFilePath);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
         }
     }
 

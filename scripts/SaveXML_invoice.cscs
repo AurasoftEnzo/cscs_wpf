@@ -1,0 +1,483 @@
+// Fiskalizacija 2.0 UBL 2.1 XML Generator - Full Croatian Extensions
+// Include necessary libs (assume in project)
+include(strTrim(tpath()) + "wxsy_lib.cscs"); // For SQL and utils
+
+// Globals
+DEFINE conn_str type a INIT "DRIVER={SQL Server};SERVER=your_server;DATABASE=your_db;Trusted_Connection=yes;"; // Adjust
+DEFINE sqlResult type r;
+DEFINE selectedInvoices type a array 100;
+
+// ---------------------------------------------------------------
+// Global Error Logger – writes to fiskal_error.log
+// ---------------------------------------------------------------
+function LogError(context, msg, exc) {
+    DEFINE conn_str type a INIT "DRIVER={SQL Server};SERVER=your_server;DATABASE=your_db;Trusted_Connection=yes;"; // Adjust
+    DEFINE logFile type a INIT "fiskal_error.log";
+    DEFINE line type a INIT DateNow("yyyy-MM-dd HH:mm:ss") + " | " + context + " | " + msg;
+    IF exc != "" { line += " | Exception: " + exc; }
+    line += "\r\n";
+    TRY {
+        AppendFile(logFile, line);
+    } CATCH(e) {
+        // Fallback: show in console if file fails
+        Print(line);
+    }
+}
+
+// Tax Category Mapping (from NKPR_LN_TXBLE)
+function GetTaxCategory(txble) {
+    DEFINE mapping type a array 5;
+    mapping[0] = "1,S,25,HR:PDV25";
+    mapping[1] = "2,E,13,HR:PDV13";
+    mapping[2] = "3,E,5,HR:PDV5";
+    mapping[3] = "4,Z,0,HR:PDV0-Z";
+    mapping[4] = "5,O,0,HR:PDV0-O";
+    
+    FOR i = 0 TO 4 {
+        IF Substring(mapping[i], 0, 1) == txble {
+            RETURN "id:" + Substring(mapping[i], 2, 1) + ",percent:" + Substring(mapping[i], 4, 2) + ",hrOznaka:" + Substring(mapping[i], 7);
+        }
+    }
+    RETURN "id:S,percent:25,hrOznaka:HR:PDV25";
+}
+
+// Create window (XAML unchanged)
+CreateWindow(strTrim(tpath()) + "fiskal_generator.xaml");
+
+// On display (unchanged)
+function fiskal_generator_OnDisplay() {
+    cursor("wait");
+    sql_str = "SELECT TOP 100 NKPR_GL_NUM, NKPR_GL_INVDTE, NKPR_GL_CUSCOD, NKPR_GL_CUSNME, NKPR_GL_TOTAL ";
+    sql_str += "FROM NKPRINV WHERE YEAR(NKPR_GL_INVDTE) = 2025 ORDER BY NKPR_GL_NUM DESC;";
+    TRY {
+        sqlResult = sqlQuery(sql_str, conn_str);
+    } CATCH(exc) {
+        MessageBox("DB Error: " + exc);
+        RETURN;
+    }
+    
+    FOR i = 1 TO Size(sqlResult) - 1 {
+        invNum = sqlResult[i][0];
+        // Quick tax preview
+        sql_line = "SELECT DISTINCT NKPR_LN_TXBLE FROM NKPRINVL WHERE NKPR_LN_INVNM = '" + invNum + "';";
+        linesTx = sqlQuery(sql_line);
+        taxPreview = "";
+        FOR j = 1 TO Size(linesTx) - 1 {
+            tax = GetTaxCategory(linesTx[j][0]);
+            taxPreview += Substring(tax, Find(tax, "id:") + 3, 1) + " (" + Substring(tax, Find(tax, "percent:") + 8, 2) + "%), ";
+        }
+        row = sqlResult[i][0] + "," + sqlResult[i][1] + "," + sqlResult[i][2] + "," + sqlResult[i][3] + "," + sqlResult[i][4] + "," + taxPreview + ",false";
+        DisplayArrayAdd("dgInvoices", row);
+    }
+    DisplayArraySetup("dgInvoices", activeElements: Size(sqlResult) - 1, maxElements: 100);
+    cursor("dflt");
+}
+
+function btnGenerate@clicked() {
+    cursor("wait");
+    selectedCount = 0;
+    FOR row = 1 TO GetRowCount("dgInvoices") {
+        IF GetCell("dgInvoices", row, 6) == "true" {
+            selectedInvoices[selectedCount] = GetCell("dgInvoices", row, 0);
+            selectedCount += 1;
+        }
+    }
+
+    IF selectedCount == 0 {
+        MessageBox("No invoices selected!");
+        cursor("dflt");
+        RETURN;
+    }
+
+    DEFINE successCount type n init 0;
+    DEFINE failList type a init "";
+
+    FOR i = 0 TO selectedCount - 1 {
+        inv = selectedInvoices[i];
+        IF GenerateUBLXml(inv) {
+            successCount += 1;
+        } ELSE {
+            failList += inv + ", ";
+        }
+    }
+
+    summary = "Generated: " + successCount + "/" + selectedCount;
+    IF failList != "" {
+        summary += "\nFailed: " + RTrim(failList, ", ");
+    }
+    MessageBox(summary);
+    cursor("dflt");
+}
+
+/
+// ---------------------------------------------------------------
+//  GenerateUBLXml – 100 % DYNAMIC Croatian UBL 2.1 e-invoice
+// ---------------------------------------------------------------
+function GenerateUBLXml(invNum) {
+    // -------------------------------------------------------
+    // 1. Load header & lines
+    // -------------------------------------------------------
+    sql_hdr = "SELECT * FROM NKPRINV WHERE NKPR_GL_NUM = '" + invNum + "';";
+    //hdrRes  = SafeSqlQuery(sql_hdr, invNum);
+    hdrRes  = sqlQuery(sql_hdr);
+    IF Size(hdrRes) < 2 { MessageBox("Header not found: " + invNum); RETURN; }
+    hdr = hdrRes[1];                                   // NKPRINV row
+
+    sql_lin = "SELECT * FROM NKPRINVL WHERE NKPR_LN_INVNM = '" + invNum + "';";
+    linRes  = sqlQuery(sql_lin);
+    IF Size(linRes) < 2 { MessageBox("No lines for: " + invNum); RETURN; }
+
+    // -------------------------------------------------------
+    // 2. Helper: tax-category code (S/E/Z/O) from TXBLE
+    // -------------------------------------------------------
+    function GetTaxCat(txble) {
+        DEFINE m type a array 5;
+        m[0]="1,S,25"; m[1]="2,E,13"; m[2]="3,E,5"; m[3]="4,Z,0"; m[4]="5,O,0";
+        FOR i=0 TO 4 { IF Substring(m[i],0,1)==txble { RETURN Substring(m[i],2,1); } }
+        RETURN "S";
+    }
+
+    // -------------------------------------------------------
+    // 3. Build XML string
+    // -------------------------------------------------------
+    DEFINE xml type a init "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+    xml += "<Invoice xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2\"\n";
+    xml += "          xmlns:cac=\"urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2\"\n";
+    xml += "          xmlns:cbc=\"urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2\"\n";
+    xml += "          xmlns:cec=\"urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2\"\n";
+    xml += "          xmlns:hr=\"urn:hr:ext:1.0\">";   // HR extension namespace; Croatian extension; 1..1
+
+    // -----------------------------------------------------------
+    // UBL Extensions – Croatian fiscal metadata (HR-BT-1 … HR-BT-17)
+    // -----------------------------------------------------------
+    xml += "\n  <cec:UBLExtensions>";                               // UBL BT-1..126 Extension point; 0..n
+    xml += "\n    <cec:UBLExtension>";                              // Extension item; 1..n
+    xml += "\n      <cec:ExtensionContent>";                        // Extension content; 1..1
+    xml += "\n        <hr:CroatianInvoiceExtension>";               // Root of Croatian extension; 1..1
+
+    // HR-BT-1  FiscalSecurityCode (ZKI) – placeholder
+    xml += "\n          <hr:FiscalSecurityCode>ZKI_PLACEHOLDER</hr:FiscalSecurityCode>"; // HR-BT-1; Fiscal security code (string); 1..1
+
+    // HR-BT-2  FiscalReceiptNumber (JIR) – placeholder
+    xml += "\n          <hr:FiscalReceiptNumber>JIR_PLACEHOLDER</hr:FiscalReceiptNumber>"; // HR-BT-2; Fiscal receipt number (integer); 1..1
+
+    // HR-BT-3  FiscalOperatorID – from company settings
+    xml += "\n          <hr:FiscalOperatorID>OP123456</hr:FiscalOperatorID>"; // HR-BT-3; Fiscal operator identifier (string); 1..1
+
+    // HR-BT-4  FiscalTimestamp – now
+    xml += "\n          <hr:FiscalTimestamp>" + DateNow("yyyy-MM-dd'T'HH:mm:ss") + "+01:00</hr:FiscalTimestamp>"; // HR-BT-4; Fiscal timestamp (dateTime); 1..1
+
+    // HR-BT-5  CashRegisterID – optional ; ovo je zapravo dio od NKPR_GL_NUM, ima 8 brojki ali ima i strukturu; ako je opcionalno, onda preskočimo
+    xml += "\n          <hr:CashRegisterID>CR001</hr:CashRegisterID>"; // HR-BT-5; Cash register identifier (string); 0..1
+
+    // HR-BT-6  FiscalDeviceSerial – optional ;ako je opcionalno, onda preskočimo
+    xml += "\n          <hr:FiscalDeviceSerial>FD123456789</hr:FiscalDeviceSerial>"; // HR-BT-6; Fiscal device serial number (string); 0..1
+
+    // HR-BT-7  ElectronicSignature – placeholder (filled after signing)        
+    xml += "\n          <hr:ElectronicSignature>SIGNATURE_PLACEHOLDER</hr:ElectronicSignature>"; // HR-BT-7; Electronic signature (base64Binary); 0..1
+
+    // HR-BT-8  QRCodeData – built from mandatory fields ; 
+    qr = "HR|" + hdr[1] + "|" + FormatDate(hdr[3],"yyyy-MM-dd") + "|" + Format(totalPorez,"nofd") + "|" + hdr[4];
+    xml += "\n          <hr:QRCodeData>" + qr + "</hr:QRCodeData>"; // HR-BT-8; QR code data (string); 1..1
+
+    // HR-BT-9  CorrectionReference – empty for normal invoice
+    xml += "\n          <hr:CorrectionReference></hr:CorrectionReference>"; // HR-BT-9; Correction invoice reference (string); 0..1
+
+    // HR-BT-10 SelfInvoiceIndicator
+    xml += "\n          <hr:SelfInvoiceIndicator>false</hr:SelfInvoiceIndicator>"; // HR-BT-10; Self-invoice indicator (boolean); 0..1
+
+    // HR-BT-11 SimplifiedInvoiceIndicator
+    xml += "\n          <hr:SimplifiedInvoiceIndicator>false</hr:SimplifiedInvoiceIndicator>"; // HR-BT-11; Simplified invoice indicator (boolean); 0..1
+
+    // HR-BT-12 ReverseChargeIndicator
+    xml += "\n          <hr:ReverseChargeIndicator>false</hr:ReverseChargeIndicator>"; // HR-BT-12; Reverse charge indicator (boolean); 0..1
+
+    // HR-BT-13 FiscalValidationStatus – will be set after validation
+    xml += "\n          <hr:FiscalValidationStatus>PENDING</hr:FiscalValidationStatus>"; // HR-BT-13; Fiscal validation status (string); 1..1
+
+    // HR-BT-14 TaxAdministrationReference – optional
+    xml += "\n          <hr:TaxAdministrationReference></hr:TaxAdministrationReference>"; // HR-BT-14; Tax administration reference (string); 0..1
+
+    // HR-BT-15 Validation schemas
+    xml += "\n          <hr:ValidationSchemas>"; // HR-BT-15; Validation schemas container; 1..1
+    xml += "\n            <hr:SchemaReference schemeID=\"UBL\">UBL-Invoice-2.1.xsd</hr:SchemaReference>"; // HR-BT-15a; UBL 2.1 schema; 1..1
+    xml += "\n            <hr:SchemaReference schemeID=\"HR-EXT\">HR-UBL-Extension-1.0.xsd</hr:SchemaReference>"; // HR-BT-15b; HR extension schema; 1..1
+    xml += "\n            <hr:SchemaReference schemeID=\"EN16931\">EN16931-CIUS-HR-2025-1.0.xsd</hr:SchemaReference>"; // HR-BT-15c; EN16931 CIUS; 1..1
+    xml += "\n            <hr:SchemaReference schemeID=\"PEPPOL\">PEPPOL-BIS-3.0-Validation.xsd</hr:SchemaReference>"; // HR-BT-15d; Peppol BIS; 1..1
+    xml += "\n            <hr:SchemaReference schemeID=\"HR-FISCAL\">HR-Fiscal-Validation-1.0.xsd</hr:SchemaReference>"; // HR-BT-15e; Croatian fiscal schema; 1..1
+    xml += "\n          </hr:ValidationSchemas>";
+
+    // HR-BT-16 ValidationTimestamp
+    xml += "\n          <hr:ValidationTimestamp>" + DateNow("yyyy-MM-dd'T'HH:mm:ss") + "+01:00</hr:ValidationTimestamp>"; // HR-BT-16; Validation timestamp; 1..1
+
+    // HR-BT-17 ValidationCertificate – optional
+    xml += "\n          <hr:ValidationCertificate></hr:ValidationCertificate>"; // HR-BT-17; Validation certificate (base64Binary); 0..1
+
+    xml += "\n        </hr:CroatianInvoiceExtension>";
+    xml += "\n      </cec:ExtensionContent>";
+    xml += "\n    </cec:UBLExtension>";
+    xml += "\n  </cec:UBLExtensions>";
+
+    // -----------------------------------------------------------
+    // Header – mandatory UBL fields (BT-1 … BT-23) + HR extensions
+    // -----------------------------------------------------------
+    xml += "\n  <cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0#conformant#urn:mfin.gov.hr:ext-2025:1.0</cbc:CustomizationID>"; // HR-BT-18; Croatian CIUS spec; 1..1
+    xml += "\n  <cbc:ProfileID>urn:fdc:peppol.eu:2017:poacc:billing:01:1.0</cbc:ProfileID>"; // UBL BT-23; Business process type; 1..1
+    //ova polja iz arraya hdr su offseti iz NKPRINV tabele, ali nisu točni, treba ih točno segmentirat, nkpr_gl_num je 1
+    xml += "\n  <cbc:ID>" + hdr[1] + "</cbc:ID>";                                   // UBL BT-1; Invoice number; 1..1; ovo treba nkpr_gl_num segmentirati u 3 segmenta u obliku NNNNN-PP-B npr broj računa 25312345 će segmentirat kao PPBNNNNN
+    xml += "\n  <cbc:IssueDate>" + FormatDate(hdr[3],"yyyy-MM-dd") + "</cbc:IssueDate>"; // UBL BT-2; Issue date; 1..1
+    IF hdr[2] != "" { xml += "\n  <cbc:DueDate>" + FormatDate(hdr[2],"yyyy-MM-dd") + "</cbc:DueDate>"; } // UBL BT-9; Due date; 0..1; ovo je nkpr_gl_dvo, nije pod 2
+    xml += "\n  <cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>";                     // UBL BT-3; Invoice type code; 1..1
+    xml += "\n  <cbc:InvoiceType>Standardni račun</cbc:InvoiceType>";               // HR-BT-19; Croatian invoice type description; 0..1
+    xml += "\n  <cbc:Note>Generated by CSCS_WPF</cbc:Note>";                        // UBL BT-22; Note; 0..n
+    xml += "\n  <cbc:TaxPointDate>" + FormatDate(hdr[3],"yyyy-MM-dd") + "</cbc:TaxPointDate>"; // UBL BT-7; Tax point date; 0..1
+    xml += "\n  <cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>";          // UBL BT-5; Document currency; 1..1
+    xml += "\n  <cbc:TaxCurrencyCode>EUR</cbc:TaxCurrencyCode>";                    // UBL BT-6; Tax currency; 0..1
+
+    // Payment terms – simple 30-day example (adapt to your fields)
+    xml += "\n  <cbc:PaymentTermsDescription>Rok plaćanja 30 dana</cbc:PaymentTermsDescription>"; // HR-BT-20; Payment terms description; 0..1
+    xml += "\n  <cac:PaymentTerms>";
+    xml += "\n    <cbc:Note>30 dana od datuma izdavanja</cbc:Note>";                // UBL BT-20; Payment terms note; 0..1
+    xml += "\n    <cbc:SettlementPeriodMeasure unitCode=\"DAY\">30</cbc:SettlementPeriodMeasure>"; // UBL BT-21; Settlement period; 0..1
+    xml += "\n  </cac:PaymentTerms>";
+
+    // -----------------------------------------------------------
+    // Supplier (AccountingSupplierParty)
+    // -----------------------------------------------------------
+    // NOTE: replace the hard-coded values with your company master data, treba select na KPSYMSTR, ima jedan slog,
+    DEFINE supOIB   type a init substring(KPSY_REZERVA, 1, 13) ;   // <-- read from company table KPSYMSTR
+    DEFINE supName  type a init KPSY_COMP_NAME; //tu postoji i  drugi podaci za firmu ako npr u ta polja ne stane potpuni naziv, onda ima dodatni u ini tabli od firme
+    DEFINE supAddr  type a init KPSY_COMP_ADD1 + " "+kpsy_gl_retearn+", " + KPSY_COMP_CITY;
+    DEFINE supGLN   type a init KPSY_REZERVAX; // GLN od firme iz KPSYMSTR
+
+    xml += "\n  <cac:AccountingSupplierParty>";
+    xml += "\n    <cac:Party>";
+    xml += "\n      <cbc:EndpointID schemeID=\"0088\">" + supGLN + "</cbc:EndpointID>"; // UBL BT-58; Seller electronic address; 1..1
+    xml += "\n      <cac:PartyIdentification><cbc:ID schemeID=\"OIB\">" + supOIB + "</cbc:ID></cac:PartyIdentification>"; // HR-BT-23; Supplier OIB; 1..1
+    xml += "\n      <cac:PartyName><cbc:Name>" + supName + "</cbc:Name></cac:PartyName>"; // UBL BT-34; Seller name; 1..1
+    xml += "\n      <cac:PartyLegalEntity><cbc:RegistrationName>" + supName + "</cbc:RegistrationName></cac:PartyLegalEntity>"; // UBL BT-36; Legal name; 1..1 ; ovo je dugi naziv od firme, nalazi se u ini datoteci od firme
+    xml += "\n      <cac:PostalAddress>";
+    xml += "\n        <cbc:StreetName>" + Split(supAddr, ",")[0] + "</cbc:StreetName>"; // UBL BT-40
+    xml += "\n        <cbc:CityName>" + Split(supAddr, ",")[1] + "</cbc:CityName>";    // UBL BT-43
+    xml += "\n        <cbc:PostalZone>"+kpsy_comp_zip+"</cbc:PostalZone>"; // HR-BT-37; Seller postal code; 10000</cbc:PostalZone>";                         // UBL BT-44
+    xml += "\n        <cac:Country><cbc:IdentificationCode>"+sy_sy_sif_drzav+"</cbc:IdentificationCode></cac:Country>"; // UBL BT-45
+    xml += "\n      </cac:PostalAddress>";
+    xml += "\n    </cac:Party>";
+    xml += "\n  </cac:AccountingSupplierParty>";
+
+    // -----------------------------------------------------------
+    // Customer (AccountingCustomerParty) – from header
+    // -----------------------------------------------------------
+    xml += "\n  <cac:AccountingCustomerParty>";
+    xml += "\n    <cac:Party>";
+    IF hdr[4] != "" { xml += "\n      <cbc:EndpointID schemeID=\"0088\">" + hdr[4] + "</cbc:EndpointID>"; } // UBL BT-59; Buyer electronic address; 0..1
+    xml += "\n      <cac:PartyIdentification><cbc:ID schemeID=\"OIB\">" + hdr[4] + "</cbc:ID></cac:PartyIdentification>"; // HR-BT-28; Customer OIB; 1..1
+    xml += "\n      <cac:PartyName><cbc:Name>" + hdr[5] + "</cbc:Name></cac:PartyName>"; // UBL BT-53; Buyer name; 1..1
+    xml += "\n      <cac:PostalAddress>";
+    // (you may have address fields in NKPRINV – fill if present)
+    xml += "\n        <cbc:StreetName></cbc:StreetName>"; // UBL BT-55
+    xml += "\n        <cbc:CityName></cbc:CityName>";    // UBL BT-56
+    xml += "\n        <cbc:PostalZone></cbc:PostalZone>"; // UBL BT-57
+    xml += "\n        <cac:Country><cbc:IdentificationCode>HR</cbc:IdentificationCode></cac:Country>"; // UBL BT-50
+    xml += "\n      </cac:PostalAddress>";
+    xml += "\n    </cac:Party>";
+    xml += "\n  </cac:AccountingCustomerParty>";
+
+    // -----------------------------------------------------------
+    // PaymentMeans (bank transfer) – from header or company defaults
+    // -----------------------------------------------------------
+    DEFINE iban type a init "HR12123456789012345";   // <-- read from company / header
+    xml += "\n  <cac:PaymentMeans>";
+    xml += "\n    <cbc:PaymentMeansCode>31</cbc:PaymentMeansCode>";                     // UBL BT-81; Payment means code; 1..1
+    xml += "\n    <cbc:InstructionNote>REF-" + hdr[1] + "</cbc:InstructionNote>";       // HR-BT-29; Payment reference; 0..1
+    xml += "\n    <cac:PayeeFinancialAccount>";
+    xml += "\n      <cbc:ID>" + iban + "</cbc:ID>";                                     // UBL BT-84; Account ID; 1..1
+    xml += "\n    </cac:PayeeFinancialAccount>";
+    xml += "\n  </cac:PaymentMeans>";
+
+    // -----------------------------------------------------------
+    // CALCULATIONS – lines, tax subtotals, monetary totals
+    // -----------------------------------------------------------
+    DEFINE lineExt type n init 0;      // Σ (PEXT – POREZ)
+    DEFINE taxTotal type n init 0;     // Σ POREZ
+    DEFINE taxGroups type a array 10;
+
+    FOR j = 1 TO Size(linRes)-1 {
+        ln = linRes[j];
+        pext  = Val(ln[4]);                     // NKPR_LN_PEXT
+        porez = Val(ln[5]);                     // NKPR_LN_POREZ
+        net   = pext - porez;
+        lineExt += net;
+        taxTotal += porez;
+
+        rate = Val(ln[17]);                     // NKPR_LN_PRNPR
+        cat  = GetTaxCat(ln[12]);               // NKPR_LN_TXBLE → S/E/Z/O
+
+        found = false;
+        FOR k = 0 TO Size(taxGroups)-1 {
+            IF taxGroups[k].rate == rate {
+                taxGroups[k].net  += net;
+                taxGroups[k].tax  += porez;
+                found = true; BREAK;
+            }
+        }
+        IF NOT found {
+            idx = Size(taxGroups);
+            taxGroups[idx] = {rate:rate, cat:cat, net:net, tax:porez};
+        }
+    }
+
+    // Header discount (NKPR_GL_SCONT) – apply only if NKPR_GL_DANSC empty
+    headerDisc = 0;
+    IF hdr[40] == "" { headerDisc = Val(hdr[39]); }   // <-- adjust offsets!
+    finalNet = lineExt - headerDisc;
+    finalTotal = finalNet + taxTotal;
+
+    // -----------------------------------------------------------
+    // TaxTotal + TaxSubtotal (dynamic)
+    // -----------------------------------------------------------
+    xml += "\n  <cac:TaxTotal>";
+    xml += "\n    <cbc:TaxAmount currencyID=\"EUR\">" + Format(taxTotal,"nofd") + "</cbc:TaxAmount>"; // UBL BT-99; Tax amount; 1..1
+
+    FOR k = 0 TO Size(taxGroups)-1 {
+        g = taxGroups[k];
+        xml += "\n    <cac:TaxSubtotal>";
+        xml += "\n      <cbc:TaxableAmount currencyID=\"EUR\">" + Format(g.net,"nofd") + "</cbc:TaxableAmount>"; // UBL BT-100
+        xml += "\n      <cbc:TaxAmount currencyID=\"EUR\">" + Format(g.tax,"nofd") + "</cbc:TaxAmount>";       // UBL BT-101
+        xml += "\n      <cac:TaxCategory>";
+        xml += "\n        <cbc:ID>" + g.cat + "</cbc:ID>";                     // UBL BT-102; Tax category code
+        xml += "\n        <cbc:Percent>" + Format(g.rate,"nofd") + "</cbc:Percent>"; // HR-BT-32/34; VAT rate
+        xml += "\n        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>"; // UBL BT-138
+        xml += "\n      </cac:TaxCategory>";
+        xml += "\n    </cac:TaxSubtotal>";
+    }
+    xml += "\n  </cac:TaxTotal>";
+
+    // -----------------------------------------------------------
+    // LegalMonetaryTotal
+    // -----------------------------------------------------------
+    xml += "\n  <cac:LegalMonetaryTotal>";
+    xml += "\n    <cbc:LineExtensionAmount currencyID=\"EUR\">" + Format(lineExt,"nofd") + "</cbc:LineExtensionAmount>"; // UBL BT-92
+    xml += "\n    <cbc:TaxExclusiveAmount currencyID=\"EUR\">" + Format(finalNet,"nofd") + "</cbc:TaxExclusiveAmount>"; // UBL BT-94
+    xml += "\n    <cbc:TaxInclusiveAmount currencyID=\"EUR\">" + Format(finalTotal,"nofd") + "</cbc:TaxInclusiveAmount>"; // UBL BT-95
+    xml += "\n    <cbc:PayableAmount currencyID=\"EUR\">" + Format(finalTotal,"nofd") + "</cbc:PayableAmount>";         // UBL BT-115
+    xml += "\n    <cbc:PayableRoundingAmount currencyID=\"EUR\">0.00</cbc:PayableRoundingAmount>"; // HR-BT-35; Rounding; 0..1
+    xml += "\n  </cac:LegalMonetaryTotal>";
+
+    // -----------------------------------------------------------
+    // Invoice lines (dynamic)
+    // -----------------------------------------------------------
+    FOR j = 1 TO Size(linRes)-1 {
+        ln = linRes[j];
+        pext  = Val(ln[4]);  porez = Val(ln[5]);  net = pext - porez;
+        qty   = Val(ln[5]);  price = Val(ln[6]); // NKPR_LN_PQTY, NKPR_LN_PPRCE
+        desc  = ln[4];       // NKPR_LN_PDESC
+        cat   = GetTaxCat(ln[12]);
+        rate  = Val(ln[17]);
+
+        xml += "\n  <cac:InvoiceLine>";
+        xml += "\n    <cbc:ID>" + j + "</cbc:ID>";                                          // UBL BT-127; Line ID; 1..1
+        xml += "\n    <cbc:InvoicedQuantity unitCode=\"C62\">" + qty + "</cbc:InvoicedQuantity>"; // UBL BT-129
+        xml += "\n    <cbc:LineExtensionAmount currencyID=\"EUR\">" + Format(net,"nofd") + "</cbc:LineExtensionAmount>"; // UBL BT-131
+
+        // HR-BT-36 Internal reference (optional)
+        xml += "\n    <cbc:ItemInternalID>" + ln[3] + "</cbc:ItemInternalID>"; // HR-BT-36; Internal item reference; 0..1
+
+        // ---- line attachment (PDF) – embed only if file exists ----
+        attFile = "spec_" + j + ".pdf";
+        IF FileExists(attFile) {
+            pdfB64 = Base64Encode(ReadFile(attFile));
+            xml += "\n    <cac:DocumentReference>";
+            xml += "\n      <cbc:ID>LineAtt-" + j + "</cbc:ID>";                     // UBL BT-128
+            xml += "\n      <cbc:DocumentDescription>Tehnička specifikacija</cbc:DocumentDescription>"; // HR-BT-37
+            xml += "\n      <cac:Attachment>";
+            xml += "\n        <cbc:EmbeddedDocumentBinaryObject mimeCode=\"application/pdf\" filename=\"" + attFile + "\">" + pdfB64 + "</cbc:EmbeddedDocumentBinaryObject>"; // HR-BT-38
+            xml += "\n      </cac:Attachment>";
+            xml += "\n      <hr:LineValidationRef>VAL-LINE-" + j + "</hr:LineValidationRef>"; // HR-BT-39
+            xml += "\n    </cac:DocumentReference>";
+        }
+
+        xml += "\n    <cac:Item>";
+        xml += "\n      <cbc:Name>" + desc + "</cbc:Name>";                         // UBL BT-133
+        xml += "\n      <cbc:Description>" + desc + "</cbc:Description>";          // UBL BT-134; 0..1
+
+        // HS code – optional (you may have a field)
+        xml += "\n      <cac:CommodityClassification>";
+        xml += "\n        <cbc:ItemClassificationCode listID=\"HS\">84713000</cbc:ItemClassificationCode>"; // HR-BT-40
+        xml += "\n      </cac:CommodityClassification>";
+
+        xml += "\n      <cac:ClassifiedTaxCategory>";
+        xml += "\n        <cbc:ID>" + cat + "</cbc:ID>";                           // UBL BT-136
+        xml += "\n        <cbc:Percent>" + Format(rate,"nofd") + "</cbc:Percent>"; // UBL BT-137
+        xml += "\n        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>";   // UBL BT-138
+        xml += "\n      </cac:ClassifiedTaxCategory>";
+        xml += "\n    </cac:Item>";
+
+        xml += "\n    <cac:Price>";
+        xml += "\n      <cbc:PriceAmount currencyID=\"EUR\">" + Format(price,"nofd") + "</cbc:PriceAmount>"; // UBL BT-146
+        xml += "\n      <cbc:BaseQuantity unitCode=\"C62\">1</cbc:BaseQuantity>";                 // UBL BT-148
+        xml += "\n    </cac:Price>";
+
+        xml += "\n  </cac:InvoiceLine>";
+    }
+
+    xml += "\n</Invoice>";
+
+    // -----------------------------------------------------------
+    // Save file
+    // -----------------------------------------------------------
+    // -------------------------------------------------------
+    // 6. Save File – with overwrite check
+    // -------------------------------------------------------
+    DEFINE fileName type a init "UBL_" + invNum + ".xml";
+    TRY {
+        IF FileExists(fileName) {
+            // Optional: backup old file
+            CopyFile(fileName, fileName + ".bak");
+        }
+        SaveFile(fileName, xml);
+        LogError("Success", "UBL generated: " + fileName, "");
+        MessageBox("UBL generated: " + fileName);
+        RETURN true;
+    } CATCH(saveExc) {
+        LogError("FileSave", "Cannot save " + fileName, saveExc);
+        MessageBox("Failed to save XML file: " + fileName);
+        RETURN false;
+    }
+
+}
+
+// Validate Croatian OIB (11 digits, check digit)
+function IsValidOIB(oib) {
+    IF Len(oib) != 11 OR !IsNumeric(oib) { RETURN false; }
+    DEFINE a type n init 10;
+    FOR i = 0 TO 9 {
+        a = a + Val(SubString(oib, i, 1));
+        a = a * 2;
+        IF a > 9 { a = a - 9; }
+    }
+    DEFINE control type n init (11 - (a % 10)) % 10;
+    RETURN Val(SubString(oib, 10, 1)) == control;
+}
+
+// Simple date check
+function IsValidDate(d) {
+    TRY {
+        ParseDate(d, "yyyy-MM-dd");
+        RETURN true;
+    } CATCH(e) {
+        RETURN false;
+    }
+}
+
+function SafeSqlQuery(sql, param) {
+    FOR retry = 1 TO 3 {
+        TRY {
+            RETURN sqlQuery(sql, param);
+        } CATCH(e) {
+            LogError("DB_Retry", "Retry " + retry + ": " + sql, e);
+            IF retry == 3 { THROW e; }
+            Sleep(1000);
+        }
+    }
+}

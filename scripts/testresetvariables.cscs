@@ -1,10 +1,67 @@
+DEFINE s type A size 100;
+s = "ABC";
+
+DEFINE X type R;
+X = 10000;
+
+DEFINE Y type N size 10 dec 2;
+Y = 100.34;
+
+DEFINE z type L;
+z = true;
+
+DEFINE date1 type D size 10;
+date1 = "15/05/2025";
+
+DEFINE time1 type T size 8;
+time1 = "20:00:00";
+
+DEFINE arrInt type R array 10;
+arrInt[0] = 100;
+arrInt[1] = 101;
+
 a = 10;
 b = "Hello!";
 
+list1 = {}; //dynamic list of numbers
+list1.Add(100);
+list1.Add(200);
+list1.Add(300);
+
+dict1["Marko"] = 5;
+dict1["Ivan"] = 4;
+dict1["Petar"] = 3;
+
+arr1 = [11, 22, 33];
+
+//MSG(s); 
+//MSG(X); 
+//MSG(Y); 
+//MSG(z); 
+//MSG(date1); 
+//MSG(time1); 
+//MSG(arrInt); 
+
 MSG("Before reset: " + a + " " + b);
+//MSG("list1 = " + list1);
+//MSG("dict1 = " + dict1);
+//MSG("arr1 = " + arr1);
+
 
 resetvariables();
 
-MSG("After reset: " + a + " " + b); // This should result in an error because 'a' and 'b' are reset.
+
+//MSG(s); // This prints error.
+//MSG(X); // This prints error.
+//MSG(Y); // This prints error.
+//MSG(z); // This prints error.
+//MSG(date1); // This prints error.
+//MSG(time1); // This prints error.
+//MSG(arrInt); // This prints error.
+
+MSG("After reset: " + a + " " + b); // This prints error because 'a' and 'b' are reset.
+//MSG("list1 = " + list1); // This prints error.
+//MSG("dict1 = " + dict1); // This prints error.
+//MSG("arr1 = " + arr1); // This prints error.
 
 MSG("END");

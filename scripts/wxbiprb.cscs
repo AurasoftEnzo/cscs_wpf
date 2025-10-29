@@ -8,7 +8,7 @@ Import(strTrim(mpath()) + "CSCS.Math.dll");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiprb_inc_lists.cscs") : strTrim(tpath()) + "wxbiprb_inc_lists.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiprb_inc_a.cscs") : strTrim(tpath()) + "wxbiprb_inc_a.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiprb_inc_b.cscs") : strTrim(tpath()) + "wxbiprb_inc_b.cscs");
-include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiprb_inc_c.cscs") : strTrim(tpath()) + "wxbiprb_inc_c.cscs");
+// include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiprb_inc_c.cscs") : strTrim(tpath()) + "wxbiprb_inc_c.cscs");
 // include(strTrim(tpath()) + "wxbiprb_inc_lists.cscs");
 // include(strTrim(tpath()) + "wxbiprb_inc_a.cscs");
 // include(strTrim(tpath()) + "wxbiprb_inc_b.cscs");
@@ -152,6 +152,8 @@ function Wxbiprb_onDisplay()
 
     gradoviRB= true;
 
+    datumDATEM_RB = true;
+
     sqlQueryString = " SELECT TOP 1 trim(sy_sp_vl_firma) FROM " + trenutnaGodinaBaza + ".[dbo].[kpsystem]";
     try
     {
@@ -226,7 +228,7 @@ function gbPripremi@clicked()
     else
     {
         GL_oznaka= "";
-    } 
+    }
     AsyncCall("setChartByMonth", "callSetHorizontalBars");
 }
 function callSetHorizontalBars(){
@@ -330,13 +332,13 @@ function setCustomerAndInvoiceCounts()
         {
             if(do_mjeseca)
             {
-                sql_str += " AND month(nkpr_gl_datem) <= " + mjesec_h;
-                sql_str += " AND YEAR(nkpr_gl_datem) = " + lani_h;
+                sql_str += " AND month(" + getDatumString() + ") <= " + mjesec_h;
+                sql_str += " AND YEAR(" + getDatumString() + ") = " + lani_h;
             }
             else
             {
-                sql_str += " AND month(nkpr_gl_datem) = " + mjesec_h;
-                sql_str += " AND YEAR(nkpr_gl_datem) = " + lani_h;
+                sql_str += " AND month(" + getDatumString() + ") = " + mjesec_h;
+                sql_str += " AND YEAR(" + getDatumString() + ") = " + lani_h;
             }
         }
         filterPart();
@@ -360,13 +362,13 @@ function setCustomerAndInvoiceCounts()
     {
         if(do_mjeseca)
         {
-            sql_str += " AND month(nkpr_gl_datem) <= " + mjesec_h;
-            sql_str += " AND YEAR(nkpr_gl_datem) = " + ovagod_h;
+            sql_str += " AND month(" + getDatumString() + ") <= " + mjesec_h;
+            sql_str += " AND YEAR(" + getDatumString() + ") = " + ovagod_h;
         }
         else
         {
-            sql_str += " AND month(nkpr_gl_datem) = " + mjesec_h;
-            sql_str += " AND YEAR(nkpr_gl_datem) = " + ovagod_h;
+            sql_str += " AND month(" + getDatumString() + ") = " + mjesec_h;
+            sql_str += " AND YEAR(" + getDatumString() + ") = " + ovagod_h;
         }
     }
     //sql_str= sql_str* " AND DATEDIFF(day,nkpr_gl_invdte, CURRENT_TIMESTAMP) BETWEEN 0 AND 31"
@@ -390,17 +392,18 @@ function setCustomerAndInvoiceCounts()
     {
         if(do_mjeseca)
         {
-            sql_str += " AND month(nkpr_gl_datem) <= " + mjesec_h;
-            sql_str += " AND YEAR(nkpr_gl_datem) = " + ovagod_h;
+            sql_str += " AND month(" + getDatumString() + ") <= " + mjesec_h;
+            sql_str += " AND YEAR(" + getDatumString() + ") = " + ovagod_h;
         }
         else
         {
-            sql_str += " AND month(nkpr_gl_datem) = " + mjesec_h;
-            sql_str += " AND YEAR(nkpr_gl_datem) = " + ovagod_h;
+            sql_str += " AND month(" + getDatumString() + ") = " + mjesec_h;
+            sql_str += " AND YEAR(" + getDatumString() + ") = " + ovagod_h;
         }
     }
     //sql_str= sql_str* " AND DATEDIFF(day,nkpr_gl_invdte, CURRENT_TIMESTAMP) BETWEEN 0 AND 31"
     filterPart();
+
     sqlResult = SqlQuery(sql_str);
     
     RunOnMain("setCustomerAndInvoiceCounts4");
@@ -689,13 +692,13 @@ function setCustomerAndInvoiceCounts4(){
     {
         if(do_mjeseca)
         {
-            sql_str += " AND month(nkpr_gl_datem)<= " + mjesec_h;
-            sql_str += " AND YEAR(nkpr_gl_datem)= " + ovagod_h;
+            sql_str += " AND month(" + getDatumString() + ")<= " + mjesec_h;
+            sql_str += " AND YEAR(" + getDatumString() + ")= " + ovagod_h;
         }
         else
         {
-            sql_str += " AND month(nkpr_gl_datem)= " + mjesec_h;
-            sql_str += " AND YEAR(nkpr_gl_datem)= " + ovagod_h;
+            sql_str += " AND month(" + getDatumString() + ")= " + mjesec_h;
+            sql_str += " AND YEAR(" + getDatumString() + ")= " + ovagod_h;
         }
     }
     //sql_str= sql_str* " AND DATEDIFF(day,nkpr_gl_invdte, CURRENT_TIMESTAMP) BETWEEN 0 AND 31"
@@ -923,11 +926,11 @@ function setWeekComparison()
 	sql_str = "SELECT TOP 2 CONVERT(char(10), wk_firstofWeek,103) as prviutjednu,";
 	if (neto_dn)
 	{
-		sql_str  += " Sales = round(ISNULL(SUM(CASE WHEN b.nkpr_gl_dviza = 'D' THEN b.nkpr_gl_tecaj * c.nkpr_ln_amt ELSE c.nkpr_ln_amt END) , 0),0)";
+		sql_str  += " Sales = round(ISNULL(SUM(CASE WHEN nkpr_gl_dviza = 'D' THEN nkpr_gl_tecaj * c.nkpr_ln_amt ELSE c.nkpr_ln_amt END) , 0),0)";
 	}
 	elif (razlikaUCijeniField)
 	{
-		sql_str   += " Sales = round(ISNULL(SUM(CASE WHEN b.nkpr_gl_dviza = 'D' THEN b.nkpr_gl_tecaj * (c.nkpr_ln_amt) - c.nkpr_ln_cenan * c.nkpr_ln_qtyz ELSE c.nkpr_ln_amt - c.nkpr_ln_cenan * c.nkpr_ln_qtyz END) , 0),0)";
+		sql_str   += " Sales = round(ISNULL(SUM(CASE WHEN nkpr_gl_dviza = 'D' THEN nkpr_gl_tecaj * (c.nkpr_ln_amt) - c.nkpr_ln_cenan * c.nkpr_ln_qtyz ELSE c.nkpr_ln_amt - c.nkpr_ln_cenan * c.nkpr_ln_qtyz END) , 0),0)";
 	}
 	elif (tezina_dn)
 	{
@@ -951,11 +954,11 @@ function setWeekComparison()
 	}
 	else 
 	{
-		sql_str  += " Sales = round(ISNULL(SUM(CASE WHEN b.nkpr_gl_dviza = 'D' THEN b.nkpr_gl_tecaj * c.nkpr_ln_pext ELSE c.nkpr_ln_pext END) , 0) ,0)";
+		sql_str  += " Sales = round(ISNULL(SUM(CASE WHEN nkpr_gl_dviza = 'D' THEN nkpr_gl_tecaj * c.nkpr_ln_pext ELSE c.nkpr_ln_pext END) , 0) ,0)";
 	}
 	sql_str  += " FROM " + CommonDBGet() +  ".dbo.Kalendar a";
-	sql_str  += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprinv b ON a.[Wk_date] = b.nkpr_gl_datem "; //ON a.[Wk_Week] = datepart(week , b.nkpr_gl_datem) ";
-	sql_str  += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprinvl c ON b.nkpr_gl_num = c.nkpr_ln_invnm";
+	sql_str  += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprinv ON a.[Wk_date] = " + getDatumString() + " "; //ON a.[Wk_Week] = datepart(week , b.nkpr_gl_datem) ";
+	sql_str  += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprinvl c ON nkpr_gl_num = c.nkpr_ln_invnm";
     sql_str  += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkmkarti ON arti_artikl= c.nkpr_ln_pcode";
     if (regija != '')
     {
@@ -965,7 +968,7 @@ function setWeekComparison()
 	//sql_str =  sql_str +  " WHERE [wk_Week]>=  datepart(week , '" + sqlDate(danas) * "') - 1 AND wk_Week<=  datepart(week , '" + sqlDate(danas) * "') AND wk_ISOyear = " +  year(kpsy_fiscal_yr)
     
 	sql_str  += " WHERE wk_year = " + ovagod_h;
-	sql_str  += " AND nkpr_gl_datem >= '" + fiscal_yr + "'";
+	sql_str  += " AND " + getDatumString() + " >= '" + fiscal_yr + "'";
 	sql_str  += " AND nkpr_gl_cuscod <> '" + vlFirma + "'";
     filterPart();
     /*

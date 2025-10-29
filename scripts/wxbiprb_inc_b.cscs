@@ -121,14 +121,14 @@ function setRegionPieChart(){
         sql_str += " FROM " + trenutnaGodinaBaza + " .dbo.nkprinv AS U LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart g ON nkpr_gl_cuscod = nksc_partcode";
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprinvl ON nkpr_gl_num = nkpr_ln_invnm";
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkmkarti ON arti_artikl = nkpr_ln_pcode";
-        sql_str += " WHERE nkpr_gl_cuscod <> '" + vlFirma + "' AND YEAR(nkpr_gl_datem) = " + ovagod_h;
+        sql_str += " WHERE nkpr_gl_cuscod <> '" + vlFirma + "' AND YEAR(" + getDatumString() + ") = " + ovagod_h;
         if (do_mjeseca  )
 		{
-            sql_str += " AND Month(nkpr_gl_datem) <=" + mjesec_h;
+            sql_str += " AND Month(" + getDatumString() + ") <=" + mjesec_h;
 		}	
         else
 		{
-            sql_str += " AND Month(nkpr_gl_datem) =" + mjesec_h;
+            sql_str += " AND Month(" + getDatumString() + ") =" + mjesec_h;
 		}	
         filterPart();
         sql_str += " GROUP BY nkpr_gl_cuscty) t";
@@ -210,14 +210,14 @@ function setRegionPieChart(){
 		}
 		*/
         //sql_str= sql_str* " LEFT JOIN "+dbase_new*".dbo.pkmkgrup as grKateg on grKateg.mkgr_grupa= arti_kategorija AND grKateg.mkgr_vrsta='K'"
-        sql_str += " WHERE nkpr_gl_cuscod <> '" + vlFirma + "' AND YEAR(nkpr_gl_datem)= "+ ovagod_h;
+        sql_str += " WHERE nkpr_gl_cuscod <> '" + vlFirma + "' AND YEAR(" + getDatumString() + ")= "+ ovagod_h;
         if (do_mjeseca)
 		{
-            sql_str += " AND Month(nkpr_gl_datem)<="+mjesec_h;
+            sql_str += " AND Month(" + getDatumString() + ")<="+mjesec_h;
 		}	
         else
 		{
-            sql_str += " AND Month(nkpr_gl_datem)="+mjesec_h;
+            sql_str += " AND Month(" + getDatumString() + ")="+mjesec_h;
 		}	
         filterPart();
         sql_str += " GROUP BY ksdu_sf_opis1) t";
@@ -281,18 +281,18 @@ function setRegionPieChart(){
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprinvl ON nkpr_gl_num = nkpr_ln_invnm";
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkmkarti ON arti_artikl = nkpr_ln_pcode";
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart g ON nkpr_gl_cuscod = nksc_partcode";
-        sql_str += " WHERE nkpr_gl_cuscod <> '" + vlFirma + "' AND YEAR(nkpr_gl_datem)= " + ovagod_h;
+        sql_str += " WHERE nkpr_gl_cuscod <> '" + vlFirma + "' AND YEAR(" + getDatumString() + ")= " + ovagod_h;
         if (razlikaUCijeniField)
 		{
             sql_str += " AND nkpr_gl_invcd= 'D'";
 		}
         if (do_mjeseca)
 		{
-            sql_str += " AND Month(nkpr_gl_datem)<=" + mjesec_h;
+            sql_str += " AND Month(" + getDatumString() + ")<=" + mjesec_h;
 		}	
         else
 		{
-            sql_str += " AND Month(nkpr_gl_datem)="+mjesec_h;
+            sql_str += " AND Month(" + getDatumString() + ")="+mjesec_h;
 		}
         filterPart();
         sql_str += " GROUP BY ksdu_sf_opis1) t";
@@ -372,14 +372,14 @@ function setKategPieChart(){
 	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkmkarti ON arti_artikl = nkpr_ln_pcode";
 	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.pkmkgrup ON arti_kategorija = mkgr_grupa AND mkgr_vrsta= 'K'";
 	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart g ON nkpr_gl_cuscod = nksc_partcode";
-	sql_str += " WHERE nkpr_gl_cuscod <> '" + vlFirma + "' AND YEAR(nkpr_gl_datem) = " + ovagod_h;
+	sql_str += " WHERE nkpr_gl_cuscod <> '" + vlFirma + "' AND YEAR(" + getDatumString() + ") = " + ovagod_h;
 	if (do_mjeseca  )
 	{
-		sql_str += " AND Month(nkpr_gl_datem) <=" + mjesec_h;
+		sql_str += " AND Month(" + getDatumString() + ") <=" + mjesec_h;
 	}	
 	else
 	{
-		sql_str += " AND Month(nkpr_gl_datem) =" + mjesec_h;
+		sql_str += " AND Month(" + getDatumString() + ") =" + mjesec_h;
 	}	
 	// if (kategorija != '' & klasa != '')
 	// {
@@ -471,13 +471,13 @@ function setTop10Products()
 	{
         if (do_mjeseca )
 		{
-            sql_str += " AND month(nkpr_gl_datem) <= " + mjesec_h;
-            sql_str += " AND YEAR(nkpr_gl_datem) = " + ovagod_h;
+            sql_str += " AND month(" + getDatumString() + ") <= " + mjesec_h;
+            sql_str += " AND YEAR(" + getDatumString() + ") = " + ovagod_h;
 		}	
         else
 		{
-            sql_str += " AND month(nkpr_gl_datem) = " + mjesec_h;
-            sql_str += " AND YEAR(nkpr_gl_datem) = " + ovagod_h;
+            sql_str += " AND month(" + getDatumString() + ") = " + mjesec_h;
+            sql_str += " AND YEAR(" + getDatumString() + ") = " + ovagod_h;
         }
     }
 
@@ -568,13 +568,13 @@ function setTop10Products()
 		{
 			if (do_mjeseca )
 			{
-				sql_str += " AND month(nkpr_gl_datem)<= "+mjesec_h;
-				sql_str += " AND YEAR(nkpr_gl_datem)= "+lani_h;
+				sql_str += " AND month(" + getDatumString() + ")<= "+mjesec_h;
+				sql_str += " AND YEAR(" + getDatumString() + ")= "+lani_h;
 			}
 			else
 			{
-				sql_str += " AND month(nkpr_gl_datem)= "+mjesec_h;
-				sql_str += " AND YEAR(nkpr_gl_datem)= "+lani_h;
+				sql_str += " AND month(" + getDatumString() + ")= "+mjesec_h;
+				sql_str += " AND YEAR(" + getDatumString() + ")= "+lani_h;
 			}
 		}
 		filterPart();
@@ -728,13 +728,13 @@ function setCustomerDataGrid()
 	{
         if (do_mjeseca )
 		{
-            sql_str += " AND month(nkpr_gl_datem)<= "+mjesec_h;
-            sql_str += " AND YEAR(nkpr_gl_datem)= "+ovagod_h;
+            sql_str += " AND month(" + getDatumString() + ")<= "+mjesec_h;
+            sql_str += " AND YEAR(" + getDatumString() + ")= "+ovagod_h;
 		}	
         else
 		{
-            sql_str += " AND month(nkpr_gl_datem)= "+mjesec_h;
-            sql_str += " AND YEAR(nkpr_gl_datem)= "+ovagod_h;
+            sql_str += " AND month(" + getDatumString() + ")= "+mjesec_h;
+            sql_str += " AND YEAR(" + getDatumString() + ")= "+ovagod_h;
         }
     }
 
@@ -826,13 +826,13 @@ function setCustomerDataGrid()
 	{
         if (do_mjeseca)
 		{
-            sql_str += " AND month(nkpr_gl_datem)<= "+mjesec_h;
-            sql_str += " AND YEAR(nkpr_gl_datem)= "+lani_h;
+            sql_str += " AND month(" + getDatumString() + ")<= "+mjesec_h;
+            sql_str += " AND YEAR(" + getDatumString() + ")= "+lani_h;
 		}
         else
 		{
-            sql_str += " AND month(nkpr_gl_datem)= "+mjesec_h;
-            sql_str += " AND YEAR(nkpr_gl_datem)= "+lani_h;
+            sql_str += " AND month(" + getDatumString() + ")= "+mjesec_h;
+            sql_str += " AND YEAR(" + getDatumString() + ")= "+lani_h;
         }
     }
 

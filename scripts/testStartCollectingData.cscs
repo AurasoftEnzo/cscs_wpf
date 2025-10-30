@@ -2,12 +2,10 @@ MessageBox("...Testing StartCollectingData...");
 
 
 DEFINE date1 type d size 10;
-date1 = "12/12/2012";
-date1 += 5; // date1 = "12/17/2012"
+date1 = "17/12/2012";
 
 DEFINE time1 type t size 8;
-time1 = "12:12:12";
-time1 += 5; // time1 = "12:12:17"
+time1 = "12:12:17";
 
 
 StartCollectingData("function1" /* s_method */,
@@ -20,7 +18,9 @@ AddDataToCollection("bbbb", 6666, false, "12/12/12", {1, 2, 3, 4, "aa", "bbb", {
 AddDataToCollection("cccc", 7777, "XXXXXXXXXXXXXXXXXXXX", "12/12/12", 12345, "lalala"); 
 //prints immediately -> it calls function1 3 times 
 
-
+//OUTPUT: aaaa5555112/12/1212345lalala17/12/2012 12:12:17
+//OUTPUT: bbbb6666012/12/12[1,2,3,4,"aa","bbb",[5,5,5]]lalala
+//OUTPUT: cccc7777XXXXXXXXXXXXXXXXXXXX12/12/1212345lalala
 //-------------------------------
 
 
@@ -33,8 +33,9 @@ AddDataToCollection("aaaa", "aaaa", "aaaa", "aaaa", "aaaa", "aaaa");
 AddDataToCollection("bbbb", "bbbb", "bbbb", "bbbb", "bbbb", "bbbb");
 AddDataToCollection("cccc", "cccc", "cccc", "cccc", "cccc", "cccc");
 
-resultString = GetCollectedData(); // -> StringBuilder.Clear()
+resultString = GetCollectedData(); // -> StringBuilder.Clear() - it clears the output string
 //it calls function2
+//OUTPUT: aaaaaaaaaaaaaaaaaaaaaaaa bbbbbbbbbbbbbbbbbbbbbbbb cccccccccccccccccccccccc
 //MessageBox("resultString: " + resultString);
 
 //optional
@@ -42,8 +43,9 @@ AddDataToCollection("1111", "1111", "1111", "1111", "1111", "1111");
 AddDataToCollection("2222", "2222", "2222", "2222", "2222", "2222");
 AddDataToCollection("3333", "3333", "3333", "3333", "3333", "3333");
 
-resultString = GetCollectedData(); // -> StringBuilder.Clear()
+resultString = GetCollectedData(); // -> StringBuilder.Clear() - it clears the output string
 //it calls function2
+//OUTPUT: 111111111111111111111111 222222222222222222222222 333333333333333333333333
 //MessageBox("resultString: " + resultString);
 
 

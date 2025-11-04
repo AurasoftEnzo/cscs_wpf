@@ -10,4 +10,39 @@ DEFINE time1 type t size 8;
 time1 = datetime("2025/06/20 12:34:56");
 MSG(time1);
 
+//***********************************************
+
+DEFINE date2 type D size 10;
+DEFINE date3 type D size 10;
+DEFINE date4 type D size 10;
+DEFINE date5 type D size 10;
+DEFINE date6 type D size 10;
+DEFINE date7 type D size 10;
+DEFINE date8 type D size 10;
+
+date2 = DateTime("29/04/2020" , "dd/MM/yyyy");	//returns date
+MSG("date2 = " + date2);
+date3 = DateTime("29/04/20"   , "dd/MM/yy");
+MSG("date3 = " + date3);
+date4 = DateTime("29.04.2020" , "dd.MM.yyyy");
+MSG("date4 = " + date4);
+date5 = DateTime("29-04-2020" , "dd-MM-yyyy");
+MSG("date5 = " + date5);
+date6 = DateTime("29042020"   , "ddMMyyyy");
+MSG("date6 = " + date6);
+date7 = DateTime("20200429"   , "yyyyMMdd");
+MSG("date7 = " + date7);
+date8 = DateTime("2020-04-29" , "yyyy-MM-dd");
+MSG("date8 = " + date8);
+
+
+DEFINE date9 type D size 10;
+date9 = datetime("20.06.2025", "dd.MM.yyyy");
+MSG(date9);
+
+DEFINE time2 type t size 8;
+time2 = datetime("12:34:56", "HH:mm:ss");
+MSG(time2);
+
+
 quit;

@@ -1,4 +1,5 @@
-﻿using DevExpress.XtraRichEdit.Import.Doc;
+﻿using DevExpress.Xpf.Core.Native;
+using DevExpress.XtraRichEdit.Import.Doc;
 using LiveChartsCore.SkiaSharpView.Painting;
 using MapControl;
 using Org.BouncyCastle.Tls;
@@ -62,7 +63,11 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.DAYS_IN_MONTH, new DaysInMonthFunction());
 
 
+            interpreter.RegisterFunction(Constants.FORMAT_NUM, new FormatNumFunction());
+
+
             interpreter.RegisterFunction(Constants.File2Base64, new File2Base64Function());
+            interpreter.RegisterFunction(Constants.Base642File, new Base642FileFunction());
             interpreter.RegisterFunction(Constants.SignXml, new SignXmlFunction());
         }
         public partial class Constants
@@ -89,7 +94,10 @@ namespace WpfCSCS
 
             public const string DAYS_IN_MONTH = "DaysInMonth";
 
+            public const string FORMAT_NUM = "FormatNum";
+
             public const string File2Base64 = "File2Base64";
+            public const string Base642File = "Base642File";
             public const string SignXml = "SignXml";
         }
     }
@@ -857,6 +865,32 @@ namespace WpfCSCS
         }
     }
     
+    class FormatNumFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 3, m_name);
+
+            var value = Utils.GetSafeDouble(args, 0);
+            var decimalPlaces = Utils.GetSafeInt(args, 1);
+            var decimalSeparator = Utils.GetSafeString(args, 2);
+
+            string resultString = value.ToString("F" + decimalPlaces.ToString());
+
+            if(decimalSeparator == ",")
+            {
+                resultString = resultString.Replace(".", ",");
+            }
+            else if (decimalSeparator == ".")
+            {
+                resultString = resultString.Replace(",", ".");
+            }
+
+            return new Variable(resultString);
+        }
+    }
+    
     class File2Base64Function : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -873,6 +907,30 @@ namespace WpfCSCS
             var base64String = Convert.ToBase64String(fileBytes);
 
             return new Variable(base64String);
+        }
+    }
+    
+    class Base642FileFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 2, m_name);
+
+            var base64String = Utils.GetSafeString(args, 0);
+            var filePath = Utils.GetSafeString(args, 1);
+
+            try
+            {
+                var fileBytes = Convert.FromBase64String(base64String);
+                System.IO.File.WriteAllBytes(filePath, fileBytes);
+
+                return new Variable(true);
+            }
+            catch (Exception ex)
+            {
+                return new Variable(false);
+            }
         }
     }
     

@@ -160,7 +160,6 @@ namespace SplitAndMerge
         public const string VARIABLE_TYPE = "VariableType";
         public const string WAIT = "wait";
         public const string WEB_REQUEST = "WebRequest";
-        public const string WEB_REQUEST_MPFD = "WebRequestMPFD";
         public const string JSON = "GetVariableFromJson";
 
         public const string START_DEBUGGER = "StartDebugger";
@@ -228,7 +227,6 @@ namespace SplitAndMerge
         public const string MATH_PI       = "Math.PI";
         public const string MATH_POW      = "Math.Pow";
         public const string MATH_RANDOM   = "Math.Random";
-        public const string MATH_RANDOM2   = "Math.Random2";
         public const string MATH_ROUND    = "Math.Round";
         public const string MATH_SIGN     = "Math.Sign";
         public const string MATH_SIN      = "Math.Sin";

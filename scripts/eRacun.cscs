@@ -653,7 +653,7 @@ function GenerateUBLXml(invNum /* number */) {
             xml += "<cac:InvoiceLine>\n";
             xml += "  <cbc:InvoicedQuantity unitCode=\"C62\">" + FormatNum(NKPR_LN_PQTY, 4, ".") + "</cbc:InvoicedQuantity>\n";
         }
-        xml += "  <cbc:ID>" + NKPR_LN_INVNM + "</cbc:ID>\n";
+        xml += "  <cbc:ID>" + NKPR_LN_BR_LN + "</cbc:ID>\n";
         xml += "  <cbc:LineExtensionAmount currencyID=\"EUR\">" + FormatNum(NKPR_LN_AMT, 2, ".") + "</cbc:LineExtensionAmount>\n";
         xml += "  <cbc:ItemInternalID>" + NKPR_LN_PCODE + "</cbc:ItemInternalID>\n";
 
@@ -700,7 +700,10 @@ function GenerateUBLXml(invNum /* number */) {
                 intCode = ARTI_SIFART_BAR;
             }
         }
-        xml += "    <cac:SellersItemIdentification><cbc:ID>" + intCode + "</cbc:ID></cac:SellersItemIdentification>\n";
+        if (!intCode == "") {
+            intCode= ARTI_ARTIKL;
+            xml += "    <cac:SellersItemIdentification><cbc:ID>" + intCode + "</cbc:ID></cac:SellersItemIdentification>\n";
+        }
         if (ean.length == 13) {
             xml += "    <cac:StandardItemIdentification><cbc:ID schemeID=\"0160\">" + ean + "</cbc:ID></cac:StandardItemIdentification>\n";
         }
@@ -711,7 +714,8 @@ function GenerateUBLXml(invNum /* number */) {
             kpd = ARTI_PRELIMTEZ; 
         }
 
-        if (kpd.length >= 6) {
+        //Uzimati samo tipove artikla R G S N P za KPD - redovni gotovi proizvodi, sastavljeni, usluge i povratna naknada!    
+        if (kpd.length == 6 && (nkpr_ln_ma_us == "R" || nkpr_ln_ma_us == "G" || nkpr_ln_ma_us == "S" || nkpr_ln_ma_us == "N" || nkpr_ln_ma_us == "P)) {
             xml += "    <cac:CommodityClassification>\n";
             xml += "      <cbc:ItemClassificationCode listID=\"KPD\">" + Substring(kpd, 0, 2) + "." + Substring(kpd, 2, 2) + "." + Substring(kpd, 4, 2) + "</cbc:ItemClassificationCode>\n";
             xml += "    </cac:CommodityClassification>\n";

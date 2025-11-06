@@ -224,31 +224,31 @@ function GenerateUBLXml(invNum /* number */) {
     //------------------------
 
     NKPR_GL_NUM = hdrRes[1][0];
-    NKPR_GL_OZNAKA = hdrRes[1][1];
+    NKPR_GL_OZNAKA = hdrRes[1][1].trim();
     NKPR_GL_BROTP = hdrRes[1][2];
     NKPR_GL_REZ1 = hdrRes[1][3];
     NKPR_GL_REZ3 = hdrRes[1][4];
-    NKPR_GL_INVDTE = hdrRes[1][5];
-    NKPR_GL_TIMECR = hdrRes[1][6];
-    NKPR_GL_DVO = hdrRes[1][7];
+    NKPR_GL_INVDTE = hdrRes[1][5].trim();
+    NKPR_GL_TIMECR = hdrRes[1][6].trim();
+    NKPR_GL_DVO = hdrRes[1][7].trim();
     NKPR_GL_NOKAM = hdrRes[1][8];
     NKPR_GL_ROKPL = hdrRes[1][9];
-    NKPR_GL_ESD = hdrRes[1][10];
+    NKPR_GL_ESD = hdrRes[1][10].trim();
     NKPR_GL_PICTHDR = hdrRes[1][11];
     NKPR_GL_PICTFTR = hdrRes[1][12];
-    NKPR_GL_CUSNME = hdrRes[1][13];
-    NKPR_GL_JMBG = hdrRes[1][14];
-    NKPR_GL_CUSA1 = hdrRes[1][15];
-    NKPR_GL_RO = hdrRes[1][16];
-    NKPR_GL_CUSCTY = hdrRes[1][17];
+    NKPR_GL_CUSNME = hdrRes[1][13].trim();
+    NKPR_GL_JMBG = hdrRes[1][14].trim();
+    NKPR_GL_CUSA1 = hdrRes[1][15].trim();
+    NKPR_GL_RO = hdrRes[1][16].trim();
+    NKPR_GL_CUSCTY = hdrRes[1][17].trim();
     NKPR_GL_CUSZIP = hdrRes[1][18];
-    NKPR_GL_DRZAVA = hdrRes[1][19];
-    NKPR_GL_SIF_PL = hdrRes[1][20];
-    NKPR_GL_MODEL = hdrRes[1][21];
-    NKPR_GL_POZIV = hdrRes[1][22];
-    NKPR_GL_RZRVA1 = hdrRes[1][23];
+    NKPR_GL_DRZAVA = hdrRes[1][19].trim();
+    NKPR_GL_SIF_PL = hdrRes[1][20].trim();
+    NKPR_GL_MODEL = hdrRes[1][21].trim();
+    NKPR_GL_POZIV = hdrRes[1][22].trim();
+    NKPR_GL_RZRVA1 = hdrRes[1][23].trim();
     NKPR_GL_TOTAL = hdrRes[1][24];
-    NKPR_GL_DUE_DATE = hdrRes[1][25];
+    NKPR_GL_DUE_DATE = hdrRes[1][25].trim();
 
     // MSG(NKPR_GL_NUM );
     // MSG(NKPR_GL_OZNAKA);
@@ -467,7 +467,7 @@ function GenerateUBLXml(invNum /* number */) {
     // -----------------------------------------------------------
     // Supplier
     // -----------------------------------------------------------
-    supOIB = Substring(KPSY_REZERVA, 0, 13);
+    supOIB = Substring(KPSY_REZERVA, 0, 13); // ??? a ča ne 11(OIB) znakova ?? ili 13(JMBG) + trim() ??
     supName = KPSY_COMP_NAME;
     supAddr = KPSY_COMP_ADD1 + (KPSY_GL_RETEARN != "" ? " " + KPSY_GL_RETEARN : "");
     supCity = KPSY_COMP_CSZ;
@@ -497,7 +497,8 @@ function GenerateUBLXml(invNum /* number */) {
     xml += "    <cac:PartyName><cbc:Name>" + supName + "</cbc:Name></cac:PartyName>\n";
     
     RegistrationName = (NazivFirme != "" ? NazivFirme : KPSY_COMP_NAME);
-    
+    RegistrationName = RegistrationName.trim();
+
     if (KPSY_COMP_JMBFI != "") {
         xml += "    <cac:PartyLegalEntity>\n";
         xml += "      <cbc:RegistrationName>" + RegistrationName + "</cbc:RegistrationName>\n";
@@ -768,13 +769,13 @@ function GenerateUBLXml(invNum /* number */) {
     // -----------------------------------------------------------
     path = "C:\\temp\\";
     fileName = "UBL_" + invNum + ".xml";
-    msg(path + fileName);
+    msg(1 + ": " + path + fileName);
     SaveFile(xml);
     if (Exists(path + fileName)) {
-        msg(2);
+        msg(2 + ": " + path + fileName);
         Copy(path + fileName, path + fileName + ".bak");
     }
-    msg(2);
+    msg(3);
     SaveFile(xml);
     //LogError("UBL_VALIDATED", "Generated & VALIDATED: " + fileName, "");
     MessageBox("UBL generated & VALIDATED: " + fileName);

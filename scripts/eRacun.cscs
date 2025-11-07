@@ -293,7 +293,15 @@ function GenerateUBLXml(invNum /* number */) {
                 NKPR_LN_TXBLE,
                 NKPR_LN_PRNPR,
                 NKPR_LN_JEDMJ,
-                NKPR_LN_PPRCE
+                NKPR_LN_PPRCE,
+                NKPR_LN_PEXT,
+                NKPR_LN_PDISC,
+                NKPR_LN_DISC2,
+                NKPR_LN_DISC2T,
+                NKPR_LN_DISC3,
+                NKPR_LN_DISC3T,
+                NKPR_LN_MA_US,
+                NKPR_LN_BR_LN
                 FROM " + databaseName + ".dbo.NKPRINVL WHERE NKPR_LN_INVNM = @p1 ORDER BY NKPR_LN_INVNM, NKPR_LN_BR_LN;";
     sqlParams = {};
     sqlParams.Add({"@p1", invNum});
@@ -355,7 +363,7 @@ function GenerateUBLXml(invNum /* number */) {
     xml += "    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n";
     xml += "    xsi:schemaLocation=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2 ../xsd/ubl/maindoc/UBL-Invoice-2.1.xsd\">\n";
 
-    // UBL Extensions
+    // BT-1..126 Extension point; 0..n // ???
     xml += "<ext:UBLExtensions>\n";
     xml += "  <ext:UBLExtension>\n";
     xml += "    <ext:ExtensionContent>\n";
@@ -366,26 +374,27 @@ function GenerateUBLXml(invNum /* number */) {
     xml += "  </ext:UBLExtension>\n";
     xml += "</ext:UBLExtensions>\n";
 
-    xml += "<cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0#conformant#urn:mfin.gov.hr:ext-2025:1.0</cbc:CustomizationID>\n";
-    xml += "<cbc:ProfileID>" + profileID + "</cbc:ProfileID>\n";
+    xml += "<cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0#conformant#urn:mfin.gov.hr:ext-2025:1.0</cbc:CustomizationID>\n"; // BT-24; 1..1
+    xml += "<cbc:ProfileID>" + profileID + "</cbc:ProfileID>\n"; // BT-23; 1..1
 
+    // BT-1; Invoice number; 1..1
     // Invoice Number (8 digits: 90100002 -->> 00002-90-1)
     invNumStr = String(NKPR_GL_NUM); // 
     invID = Substring(invNumStr, 3, 5) + "-" + Substring(invNumStr, 0, 2) + "-" + Substring(invNumStr, 2, 1);
     xml += "<cbc:ID>" + invID + "</cbc:ID>\n";
-    xml += "<cbc:IssueDate>" + NKPR_GL_INVDTE + "</cbc:IssueDate>\n";
-    xml += "<cbc:IssueTime>" + NKPR_GL_TIMECR + "</cbc:IssueTime>\n";
+    xml += "<cbc:IssueDate>" + NKPR_GL_INVDTE + "</cbc:IssueDate>\n"; // BT-2; 1..1
+    xml += "<cbc:IssueTime>" + NKPR_GL_TIMECR + "</cbc:IssueTime>\n"; // HR-BT-2; 1..1
 
     // CreditNote: BillingReference
     if (profileID == "P9") {
-        xml += "<cbc:CreditNoteTypeCode>381</cbc:CreditNoteTypeCode>\n";
-        xml += "<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>\n";
-        xml += "<cac:BillingReference>\n";
-        xml += "  <cac:InvoiceDocumentReference>\n";
+        xml += "<cbc:CreditNoteTypeCode>381</cbc:CreditNoteTypeCode>\n"; // BT-3; 1..1
+        xml += "<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>\n"; // BT-5; 1..1 
+        xml += "<cac:BillingReference>\n"; // ???
+        xml += "  <cac:InvoiceDocumentReference>\n"; // BG-3; 0..n
         refStr = String(NKPR_GL_REZ3);
         refID = Substring(refStr, 3, 5) + "-" + Substring(refStr, 0, 2) + "-" + Substring(refStr, 2, 1);
-        xml += "    <cbc:ID>" + refID + "</cbc:ID>\n";
-        xml += "    <cbc:IssueDate>" + NKPR_GL_INVDTE + "</cbc:IssueDate>\n";
+        xml += "    <cbc:ID>" + refID + "</cbc:ID>\n"; // BT-25; 1..1
+        xml += "    <cbc:IssueDate>" + NKPR_GL_INVDTE + "</cbc:IssueDate>\n"; // BT-26; 1..1
         xml += "  </cac:InvoiceDocumentReference>\n";
         xml += "</cac:BillingReference>\n";
     } else {
@@ -556,9 +565,9 @@ function GenerateUBLXml(invNum /* number */) {
         KPKS_PL_NAZIV2 = payRes[1][0].trim();
         KPKS_PL_OPIS = payRes[1][1].trim();
 
-        code3 = Substring(payRes[1][0], 0, 3); // ???
+        code3 = int(Substring(payRes[1][0], 0, 2));
         if (code3 >= 30 && code3 <= 59) { // ???
-            payCode = code3;
+            payCode = string(code3);
         }
     }
 
@@ -646,6 +655,10 @@ function GenerateUBLXml(invNum /* number */) {
     for (j = 1; j < Size(linRes); j++) {
         fillInvoiceLine(j);
 
+        grossAmount = NKPR_LN_PQTY * NKPR_LN_PPRCE;
+        netAmount = NKPR_LN_AMT;
+        discountTotal = grossAmount - netAmount;
+
         if (profileID == "P9") {
             xml += "<CreditNoteLine>\n";
             xml += "  <cbc:CreditedQuantity unitCode=\"C62\">" + FormatNum(NKPR_LN_PQTY, 4, ".") + "</cbc:CreditedQuantity>\n";
@@ -656,6 +669,19 @@ function GenerateUBLXml(invNum /* number */) {
         xml += "  <cbc:ID>" + NKPR_LN_BR_LN + "</cbc:ID>\n";
         xml += "  <cbc:LineExtensionAmount currencyID=\"EUR\">" + FormatNum(NKPR_LN_AMT, 2, ".") + "</cbc:LineExtensionAmount>\n";
         xml += "  <cbc:ItemInternalID>" + NKPR_LN_PCODE + "</cbc:ItemInternalID>\n";
+
+
+        // Line discount
+        if (discountTotal > 0) {
+            xml += "  <cac:AllowanceCharge>\n";
+            xml += "    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>\n";
+            xml += "    <cbc:AllowanceChargeReason>Popust na stavku</cbc:AllowanceChargeReason>\n";
+            xml += "    <cbc:MultiplierFactorNumeric>" + FormatNum((discountTotal / grossAmount) * 100, 2, ".") + "</cbc:MultiplierFactorNumeric>\n";
+            xml += "    <cbc:Amount currencyID=\"EUR\">" + FormatNum(discountTotal, 2, ".") + "</cbc:Amount>\n";
+            xml += "    <cbc:BaseAmount currencyID=\"EUR\">" + FormatNum(grossAmount, 2, ".") + "</cbc:BaseAmount>\n";
+            xml += "  </cac:AllowanceCharge>\n";
+        }
+
 
         // Line attachment
         if (NKPR_LN_SASTAV != 0) {
@@ -695,15 +721,15 @@ function GenerateUBLXml(invNum /* number */) {
             if (ARTI_SIFART_BAR.length == 13) {
                 ean = ARTI_SIFART_BAR;
                 intCode = ARTI_ARTIKL;
-            } else {
+            } else if(ARTI_ARTIKL.length == 13) {
                 ean = ARTI_ARTIKL;
                 intCode = ARTI_SIFART_BAR;
+            } else {
+                intCode = ARTI_ARTIKL;
+                ean = "";
             }
         }
-        if (!intCode == "") {
-            intCode= ARTI_ARTIKL;
-            xml += "    <cac:SellersItemIdentification><cbc:ID>" + intCode + "</cbc:ID></cac:SellersItemIdentification>\n";
-        }
+        xml += "    <cac:SellersItemIdentification><cbc:ID>" + intCode + "</cbc:ID></cac:SellersItemIdentification>\n";
         if (ean.length == 13) {
             xml += "    <cac:StandardItemIdentification><cbc:ID schemeID=\"0160\">" + ean + "</cbc:ID></cac:StandardItemIdentification>\n";
         }
@@ -715,7 +741,7 @@ function GenerateUBLXml(invNum /* number */) {
         }
 
         //Uzimati samo tipove artikla R G S N P za KPD - redovni gotovi proizvodi, sastavljeni, usluge i povratna naknada!    
-        if (kpd.length == 6 && (nkpr_ln_ma_us == "R" || nkpr_ln_ma_us == "G" || nkpr_ln_ma_us == "S" || nkpr_ln_ma_us == "N" || nkpr_ln_ma_us == "P)) {
+        if (kpd.length == 6 && (NKPR_LN_MA_US == "R" || NKPR_LN_MA_US == "G" || NKPR_LN_MA_US == "S" || NKPR_LN_MA_US == "N" || NKPR_LN_MA_US == "P")) {
             xml += "    <cac:CommodityClassification>\n";
             xml += "      <cbc:ItemClassificationCode listID=\"KPD\">" + Substring(kpd, 0, 2) + "." + Substring(kpd, 2, 2) + "." + Substring(kpd, 4, 2) + "</cbc:ItemClassificationCode>\n";
             xml += "    </cac:CommodityClassification>\n";
@@ -745,7 +771,7 @@ function GenerateUBLXml(invNum /* number */) {
         xml += "  </cac:Price>\n";
 
         if (profileID == "P9") {
-            xml += "</CreditNoteLine>\n";
+            xml += "</CreditNoteLine>\n"; // ???
         } else {
             xml += "</cac:InvoiceLine>\n";
         }
@@ -800,6 +826,14 @@ function fillInvoiceLine(lineNum){
     NKPR_LN_PRNPR = linRes[lineNum][8];
     NKPR_LN_JEDMJ = linRes[lineNum][9].trim();
     NKPR_LN_PPRCE = linRes[lineNum][10];
+    NKPR_LN_PEXT = linRes[lineNum][11];
+    NKPR_LN_PDISC = linRes[lineNum][12];
+    NKPR_LN_DISC2 = linRes[lineNum][13];
+    NKPR_LN_DISC2T = linRes[lineNum][14].trim();
+    NKPR_LN_DISC3 = linRes[lineNum][15];
+    NKPR_LN_DISC3T = linRes[lineNum][16].trim();
+    NKPR_LN_MA_US = linRes[lineNum][17].trim();
+    NKPR_LN_BR_LN = linRes[lineNum][18];
 }
 
 

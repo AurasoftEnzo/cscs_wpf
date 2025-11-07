@@ -2136,10 +2136,18 @@ namespace WpfCSCS
 					{
 						var row = new List<object>();
 
-						foreach (KeyValuePair<string, object> kvp in (dg.SelectedItem as ExpandoObject))
+						var selectedItem = dg.Items[dg.SelectedIndex];
+
+						if (selectedItem is DataRowView)
 						{
-							row.Add(kvp.Value);
+							var sidrv = selectedItem as DataRowView;
+							row = sidrv.Row.ItemArray.ToList();
 						}
+
+						//foreach (KeyValuePair<string, object> kvp in (dg.SelectedItem as ExpandoObject))
+						//{
+						//	row.Add(kvp.Value);
+						//}
 
 						gridsSelectedRow[widget.Name.ToLower()] = row;
 					}

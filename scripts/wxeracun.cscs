@@ -403,7 +403,7 @@ function GenerateUBLXml(invNum /* number */) {
             xml += "<cbc:DueDate>" + NKPR_GL_DUE_DATE + "</cbc:DueDate>\n";
         }
         xml += "<cbc:InvoiceTypeCode>" + typeCode + "</cbc:InvoiceTypeCode>\n";
-        xml += "<cbc:InvoiceType>" + invType + "</cbc:InvoiceType>\n";
+        // xml += "<cbc:InvoiceType>" + invType + "</cbc:InvoiceType>\n";
         xml += "<cbc:TaxPointDate>" + NKPR_GL_ESD + "</cbc:TaxPointDate>\n";
         xml += "<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>\n";
         xml += "<cbc:TaxCurrencyCode>EUR</cbc:TaxCurrencyCode>\n";
@@ -414,12 +414,12 @@ function GenerateUBLXml(invNum /* number */) {
                 ptDesc += " nakon roka za provjeru od " + NKPR_GL_ROKPL + " dana";
             }
             ptDesc += ". Rok plaćanja teče od: " + NKPR_GL_DVO;
-            xml += "<cbc:PaymentTermsDescription>" + ptDesc + "</cbc:PaymentTermsDescription>\n";
+            // xml += "<cbc:PaymentTermsDescription>" + ptDesc + "</cbc:PaymentTermsDescription>\n";
 
-            xml += "<cac:PaymentTerms>\n";
-            xml += "  <cbc:Note>Rok plaćanja teče od datuma " + NKPR_GL_DVO + "</cbc:Note>\n";
-            xml += "  <cbc:SettlementPeriodMeasure unitCode=\"DAY\">" + NKPR_GL_NOKAM + NKPR_GL_ROKPL + "</cbc:SettlementPeriodMeasure>\n";
-            xml += "</cac:PaymentTerms>\n";
+            // xml += "<cac:PaymentTerms>\n";
+            // xml += "  <cbc:Note>Rok plaćanja teče od datuma " + NKPR_GL_DVO + "</cbc:Note>\n";
+            // xml += "  <cbc:SettlementPeriodMeasure unitCode=\"DAY\">" + NKPR_GL_NOKAM + NKPR_GL_ROKPL + "</cbc:SettlementPeriodMeasure>\n";
+            // xml += "</cac:PaymentTerms>\n";
         }
     }
 
@@ -794,22 +794,26 @@ function GenerateUBLXml(invNum /* number */) {
     //     return false;
     // }
 
+    result = VerifyXML(xml);
+    MSG(result);
+
     // -----------------------------------------------------------
     // 9. Save only if valid
     // -----------------------------------------------------------
     path = "C:\\temp\\";
-    fileName = "UBL_" + invNum + ".xml";
-    msg(1 + ": " + path + fileName);
-    SaveFile(xml);
-    if (Exists(path + fileName)) {
-        msg(2 + ": " + path + fileName);
-        Copy(path + fileName, path + fileName + ".bak");
-    }
-    msg(3);
-    SaveFile(xml);
-    //LogError("UBL_VALIDATED", "Generated & VALIDATED: " + fileName, "");
-    MessageBox("UBL generated & VALIDATED: " + fileName);
-    return true;
+    // fileName = "UBL_" + invNum + ".xml";
+    fileName = "a.xml";
+    // msg(1 + ": " + path + fileName);
+    SaveFile(xml, path + fileName);
+    // if (Exists(path + fileName)) {
+    //     msg(2 + ": " + path + fileName);
+    //     Copy(path + fileName, path + fileName + ".bak");
+    // }
+    // msg(3);
+    // SaveFile(xml);
+    // //LogError("UBL_VALIDATED", "Generated & VALIDATED: " + fileName, "");
+    // MessageBox("UBL generated & VALIDATED: " + fileName);
+    // return true;
 }
 
 

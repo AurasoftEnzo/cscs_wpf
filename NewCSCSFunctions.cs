@@ -5,6 +5,7 @@ using MapControl;
 using Org.BouncyCastle.Tls;
 using Renci.SshNet;
 using Renci.SshNet.Sftp;
+using SkiaSharp;
 using SplitAndMerge;
 using System;
 using System.Collections.Generic;
@@ -26,6 +27,7 @@ using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Threading;
 using System.Xml;
+using System.Xml.Schema;
 using static System.Net.WebRequestMethods;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
@@ -72,6 +74,7 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.File2Base64, new File2Base64Function());
             interpreter.RegisterFunction(Constants.Base642File, new Base642FileFunction());
             interpreter.RegisterFunction(Constants.SignXml, new SignXmlFunction());
+            interpreter.RegisterFunction(Constants.VerifyXml, new VerifyXmlFunction());
         }
         public partial class Constants
         {
@@ -105,6 +108,7 @@ namespace WpfCSCS
             public const string File2Base64 = "File2Base64";
             public const string Base642File = "Base642File";
             public const string SignXml = "SignXml";
+            public const string VerifyXml = "VerifyXml";
         }
     }
 
@@ -1260,6 +1264,80 @@ namespace WpfCSCS
             catch (Exception ex)
             {
                 return false;
+            }
+        }
+    }
+    
+    class VerifyXmlFunction : ParserFunction
+    {
+        private List<string> verificationMessages;
+        bool hasErrors;
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+
+            var xmlContent = Utils.GetSafeString(args, 0);
+
+
+            verificationMessages = new List<string>();
+            hasErrors = false;
+
+
+            //var invoiceSchema = Directory.GetFiles("C:\\temp\\schemas\\maindoc", )
+
+            var invoiceSchema = "C:\\temp\\schemas\\maindoc\\UBL-Invoice-2.1.xsd";
+
+            XmlSchemaSet schemas = new XmlSchemaSet();
+            schemas.Add("urn:oasis:names:specification:ubl:schema:xsd:Invoice-2", invoiceSchema); // You can specify a namespace if your XSD uses one
+
+            XmlReaderSettings settings = new XmlReaderSettings();
+            settings.Schemas = schemas;
+            settings.ValidationType = ValidationType.Schema;
+            settings.ValidationEventHandler += ValidationHandler;
+
+
+
+            using (StringReader stringReader = new StringReader(xmlContent))
+            using (XmlReader xmlReader = XmlReader.Create(stringReader, settings))
+            {
+                try
+                {
+                    while (xmlReader.Read()) { }
+                    
+                }
+                catch (XmlException ex)
+                {
+                    verificationMessages.Add($"XML Parsing Error: {ex.Message}");
+                    return new Variable(false);
+                }
+                finally
+                {
+                    System.IO.File.WriteAllText("C:\\temp\\xml_verification_log.txt", string.Join(Environment.NewLine, verificationMessages));
+                }
+
+                if (!hasErrors)
+                {
+                    return new Variable(true);
+                }
+                else
+                {
+                    return new Variable(false);
+                }
+            }
+
+        }
+
+        private void ValidationHandler(object sender, ValidationEventArgs e)
+        {
+            if (e.Severity == XmlSeverityType.Error)
+            {
+                verificationMessages.Add($"Validation Error: {e.Message}");
+                hasErrors = true;
+            }
+            else
+            {
+                verificationMessages.Add($"Validation Warning: {e.Message}");
             }
         }
     }

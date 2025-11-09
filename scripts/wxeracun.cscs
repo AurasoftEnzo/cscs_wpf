@@ -327,25 +327,37 @@ function GenerateUBLXml(invNum /* number */) {
             invType = "Djelomični i konačni račun";
         }
     } elif (NKPR_GL_OZNAKA == "P") {
-        profileID = "P4";
+        //za ovaj tip računa ne treba unositit KPD!!!
+        if (!nkpr_gl_cusord == ""){
+            profileID = "P4";
+        } else {
+            //ako ima narudžbenicu kupca onda je P6, inače je P4
+            profileID = "P6";
+        }
         typeCode = "386";
         invType = "Avansno plaćanje (plaćanje unaprijed)";
     } elif (NKPR_GL_OZNAKA == "R") {
+        //sa ovim tipom se isto može napravii storno računa
         profileID = "P9";
         typeCode = "381";
+        invType = "Izdavanje računa za isporuke prema ugovoru";
+    } elif (NKPR_GL_OZNAKA == "T") {
+        //sa ovim tipom se radi terećenje, iznosi su svi u plusu, ali element je DebitNote
+        profileID = "P1";
+        typeCode = "383";
         invType = "Izdavanje računa za isporuke prema ugovoru";
     } elif (NKPR_GL_OZNAKA == "O") {
         if (NKPR_GL_REZ3 != 0) {
             profileID = "P9";
             typeCode = "381";
-            invType = "Kreditni račun (negativni iznosi, povrati)";
+            invType = "Kreditni račun - Credit Note (negativni iznosi, povrati) - u pravilu su iznosi u minusu, osim ako se odobrava cassa sconto";
         }
     } elif (NKPR_GL_OZNAKA == "X") {
+        //ovo se tako koristi u Poslovnim knjigama, i iznosi u linijama su u minusu; sa ovim tipom može se unositi i terećenje ali ako su iznosi u PLUSU!!
         profileID = "P10";
         typeCode = "384";
         invType = "Korektivni račun (storno ili ispravak)";
     }
-
     // -----------------------------------------------------------
     // 4. Start XML Builder
     // -----------------------------------------------------------
@@ -353,6 +365,8 @@ function GenerateUBLXml(invNum /* number */) {
 
     if (profileID == "P9") {
         xml += "<CreditNote xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2\"\n";
+    } elif (nkpr_gl_oznaka == 'T') {
+        xml += "<DebitNote xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:DebitNote-2\"\n";
     } else {
         xml += "<Invoice xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2\"\n";
     }
@@ -497,6 +511,7 @@ function GenerateUBLXml(invNum /* number */) {
         exit;
     }
     NazivFirme = regedit("regReadStr", 'COMPANY', 'NazivFirme');
+    SavePath = regedit("regReadStr", 'EMAIL', 'EmailFilePath');
     regedit("regClose");
 
     xml += "<cac:AccountingSupplierParty>\n";
@@ -648,7 +663,6 @@ function GenerateUBLXml(invNum /* number */) {
     xml += "  <cbc:PayableAmount currencyID=\"EUR\">" + FormatNum(payable, 2, ".") + "</cbc:PayableAmount>\n";
     if (rounding != 0) { xml += "  <cbc:PayableRoundingAmount currencyID=\"EUR\">" + FormatNum(rounding, 2, ".") + "</cbc:PayableRoundingAmount>\n"; }
     xml += "</cac:LegalMonetaryTotal>\n";
-
     // -----------------------------------------------------------
     // Invoice Lines
     // -----------------------------------------------------------
@@ -662,6 +676,9 @@ function GenerateUBLXml(invNum /* number */) {
         if (profileID == "P9") {
             xml += "<CreditNoteLine>\n";
             xml += "  <cbc:CreditedQuantity unitCode=\"C62\">" + FormatNum(NKPR_LN_PQTY, 4, ".") + "</cbc:CreditedQuantity>\n";
+        } elif (nkpr_gl_oznaka == 'T') {
+            xml += "<DebitNoteLine>\n";
+            xml += "  <cbc:DebitedQuantity unitCode=\"C62\">" + FormatNum(NKPR_LN_PQTY, 4, ".") + "</cbc:DebitedQuantity>\n";
         } else {
             xml += "<cac:InvoiceLine>\n";
             xml += "  <cbc:InvoicedQuantity unitCode=\"C62\">" + FormatNum(NKPR_LN_PQTY, 4, ".") + "</cbc:InvoicedQuantity>\n";
@@ -671,8 +688,14 @@ function GenerateUBLXml(invNum /* number */) {
         xml += "  <cbc:ItemInternalID>" + NKPR_LN_PCODE + "</cbc:ItemInternalID>\n";
 
 
-        // Line discount
+        // Line discount - standardni popust na IZNOS stavke!
+        //ako je u nksysyco - 'IR','','','PopustNaCijenu'= 'D' onda se popust ne prikazuje ovdje nego u cijeni malo niže, i to samo prvi popust u polju nkpr_ln_disc
+        //inače se oba popusta prikazuju ovdje - nkpr_ln_disc i nkpr_ln_pstop
+        //znači ako je discounttotal<> 0 i ako nije 'D' u nksysyco onda se prikazuje ovdje oba popusta
+        //iznos popusta u linijama je u polju nkpr_ln_popl i to je ukupan popust koji uključuje polja nlpr_ln_disc, nkpr_ln_pstop i popust iz zaglavlja (na cijeli račun)
+        //u plju nkpr_ln_popu je samo popust iz zaglavlja nkpr_gl_sconto koji je tu prenešen na linije, a računa se samo ako je u polju NKPR_GL_DANSC= 0
         if (discountTotal > 0) {
+            //discounTotal je sveukupni popust za tu liniju!
             xml += "  <cac:AllowanceCharge>\n";
             xml += "    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>\n";
             xml += "    <cbc:AllowanceChargeReason>Popust na stavku</cbc:AllowanceChargeReason>\n";
@@ -771,7 +794,9 @@ function GenerateUBLXml(invNum /* number */) {
         xml += "  </cac:Price>\n";
 
         if (profileID == "P9") {
-            xml += "</CreditNoteLine>\n"; // ???
+            xml += "</cac:CreditNoteLine>\n"; // ???
+        } elif (nkpr_gl_oznaka == 'T') {
+            xml += "</cac:DebitNoteLine>\n";
         } else {
             xml += "</cac:InvoiceLine>\n";
         }
@@ -779,10 +804,12 @@ function GenerateUBLXml(invNum /* number */) {
 
     // Close root
     if (profileID == "P9") {
-        xml += "</CreditNote>\n";
-    } else {
-        xml += "</Invoice>\n";
-    }
+        xml += "</cac:CreditNote>\n";
+        } elif (nkpr_gl_oznaka == 'T') {
+            xml += "</cac:DebitNote>\n";
+        } else {
+            xml += "</cac:Invoice>\n";
+        }
 
     // -----------------------------------------------------------
     // 8. XSD VALIDATION BEFORE SAVING
@@ -794,17 +821,50 @@ function GenerateUBLXml(invNum /* number */) {
     //     return false;
     // }
 
-    result = VerifyXML(xml);
-    MSG(result);
+    //result = VerifyXML(xml);
+    //MSG(result);
 
     // -----------------------------------------------------------
     // 9. Save only if valid
     // -----------------------------------------------------------
-    path = "C:\\temp\\";
+    //path = "C:\\winx\\emailfls\\";
     // fileName = "UBL_" + invNum + ".xml";
-    fileName = "a.xml";
-    // msg(1 + ": " + path + fileName);
-    SaveFile(xml, path + fileName);
+
+    filename2="";
+    fileName2= SavePath*parsefile(attachmentPdfPath, "pfName")+'.XML';
+
+    //fileName = "a.xml";
+    SaveFile(xml,fileName2);
+    //ako je sve prošlo bez greške, XML fajl je validiran, potpisan i poslat - u NKSYELOG treba upisati zapis o slanju, najprije status A pa konačno C
+    sql_ins = "INSERT INTO " + databaseName + ".dbo.NKSYELOG (sy_elog_date, sy_elog_num, sy_elog_status,sy_elog_person, sy_elog_estring, sy_elog_type, sy_elog_time,sy_elog_desc,sy_elog_rez3) " +
+              "VALUES (@p1, @p2, @p3, @p4, @p5, @p6,@p7,@p8,@p9);";
+    sqlParams = {};
+    sqlParams.Add({"@p1", nkpr_gl_invdte});
+    sqlParams.Add({"@p2", invNum});
+    sqlParams.Add({"@p3", "A"});
+    sqlParams.Add({"@p4", userCode});
+    sqlParams.Add({"@p5", "" });
+    sqlParams.Add({"@p6", "IR"});
+    sqlParams.Add({"@p7", Now(, "HH:mm:ss")}); 
+    sqlParams.Add({"@p8", ""}); //"New Invoice/HOA Sent with attachment: " + fileName2});
+    sqlParams.Add({"@p9", Now(, "dd/MM/yy")});
+    sqlQuery(sql_ins, sqlParams);
+    //
+    sql_ins = "INSERT INTO " + databaseName + ".dbo.NKSYELOG (sy_elog_date, sy_elog_num, sy_elog_status,sy_elog_person, sy_elog_estring, sy_elog_type, sy_elog_time,sy_elog_desc,sy_elog_rez3) " +
+              "VALUES (@p1, @p2, @p3, @p4, @p5, @p6,@p7,@p8,@p9);";
+    sqlParams = {};
+    sqlParams.Add({"@p1", nkpr_gl_invdte});
+    sqlParams.Add({"@p2", invNum});
+    sqlParams.Add({"@p3", "C"});
+    sqlParams.Add({"@p4", userCode});
+    sqlParams.Add({"@p5", "" });
+    sqlParams.Add({"@p6", "IR"});
+    sqlParams.Add({"@p7", Now(, "HH:mm:ss")}); 
+    sqlParams.Add({"@p8",""}); //"New Invoice/HOA Sent with attachment: " + fileName2});
+    sqlParams.Add({"@p9", Now(, "dd/MM/yy")});
+    sqlQuery(sql_ins, sqlParams);
+
+
     // if (Exists(path + fileName)) {
     //     msg(2 + ": " + path + fileName);
     //     Copy(path + fileName, path + fileName + ".bak");
@@ -813,7 +873,7 @@ function GenerateUBLXml(invNum /* number */) {
     // SaveFile(xml);
     // //LogError("UBL_VALIDATED", "Generated & VALIDATED: " + fileName, "");
     // MessageBox("UBL generated & VALIDATED: " + fileName);
-    // return true;
+    return true;
 }
 
 

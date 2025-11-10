@@ -814,7 +814,7 @@ function GenerateUBLXml(invNum /* number */) {
         //Uzimati samo tipove artikla R G S N P za KPD - redovni gotovi proizvodi, sastavljeni, usluge i povratna naknada!    
         if (kpd.length == 6 && (NKPR_LN_MA_US == "R" || NKPR_LN_MA_US == "G" || NKPR_LN_MA_US == "S" || NKPR_LN_MA_US == "N" || NKPR_LN_MA_US == "P")) {
             xml += "    <cac:CommodityClassification>\n";
-            xml += "      <cbc:ItemClassificationCode listID=\"KPD\">" + Substring(kpd, 0, 2) + "." + Substring(kpd, 2, 2) + "." + Substring(kpd, 4, 2) + "</cbc:ItemClassificationCode>\n";
+            xml += "      <cbc:ItemClassificationCode listID=\"CG\">" + Substring(kpd, 0, 2) + "." + Substring(kpd, 2, 2) + "." + Substring(kpd, 4, 2) + "</cbc:ItemClassificationCode>\n";
             xml += "    </cac:CommodityClassification>\n";
         }
 

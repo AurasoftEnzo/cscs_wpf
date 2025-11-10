@@ -52,7 +52,7 @@ if (size(sqlResult) > 1)
 
 // KPSYMSTR
 sqlQueryString = " SELECT TOP 1 KPSY_REZERVA, KPSY_COMP_NAME, KPSY_COMP_ADD1, KPSY_GL_RETEARN, KPSY_COMP_CSZ, KPSY_COMP_ZIP,
-                KPSY_COMP_JMBFI, KPSY_COMP_PHONE, KPSY_COMP_EMAIL
+                KPSY_COMP_JMBFI, KPSY_COMP_PHONE, KPSY_COMP_EMAIL, KPSY_PO_FREIGHT
                     FROM " + databaseName + ".dbo.KPSYMSTR";
 try
 {
@@ -79,6 +79,7 @@ if (size(sqlResult) > 1)
     KPSY_COMP_JMBFI = sqlResult[1][6].trim();
     KPSY_COMP_PHONE = sqlResult[1][7].trim();
     KPSY_COMP_EMAIL = sqlResult[1][8].trim();
+    KPSY_PO_FREIGHT = substring(sqlResult[1][9], 0, 2).trim();
 } 
 
 
@@ -92,7 +93,7 @@ exit;
 
 
 function GenerateUBLXml(invNum /* number */) {
-     
+    
     // -----------------------------------------------------------
     // 1. Load Header
     // -----------------------------------------------------------
@@ -106,7 +107,7 @@ function GenerateUBLXml(invNum /* number */) {
                 CONVERT(VARCHAR(10), NKPR_GL_ESD, 23) as NKPR_GL_ESD,
                 NKPR_GL_PICTHDR, NKPR_GL_PICTFTR, NKPR_GL_CUSNME, NKPR_GL_JMBG,
                 NKPR_GL_CUSA1, NKPR_GL_RO, NKPR_GL_CUSCTY, NKPR_GL_CUSZIP, NKPR_GL_DRZAVA, NKPR_GL_SIF_PL, NKPR_GL_MODEL,
-                NKPR_GL_POZIV, NKPR_GL_RZRVA1, NKPR_GL_TOTAL,
+                NKPR_GL_POZIV, NKPR_GL_RZRVA1, NKPR_GL_TOTAL, NKPR_GL_CUSORD, NKPR_GL_CUSST,
                 CONVERT(varchar(10), DATEADD(DAY, NKPR_GL_NOKAM + NKPR_GL_ROKPL, NKPR_GL_DVO), 23) as NKPR_GL_DUE_DATE
 
                 FROM " + databaseName + ".dbo.NKPRINV WHERE NKPR_GL_NUM = @p1;"; //NKSC_ZR_KONTO, NKSC_ZR_NAZIV
@@ -248,7 +249,9 @@ function GenerateUBLXml(invNum /* number */) {
     NKPR_GL_POZIV = hdrRes[1][22].trim();
     NKPR_GL_RZRVA1 = hdrRes[1][23].trim();
     NKPR_GL_TOTAL = hdrRes[1][24];
-    NKPR_GL_DUE_DATE = hdrRes[1][25].trim();
+    NKPR_GL_CUSORD = hdrRes[1][25].trim();
+    NKPR_GL_CUSST = hdrRes[1][26].trim();
+    NKPR_GL_DUE_DATE = hdrRes[1][27].trim();
 
     // MSG(NKPR_GL_NUM );
     // MSG(NKPR_GL_OZNAKA);
@@ -328,29 +331,29 @@ function GenerateUBLXml(invNum /* number */) {
         }
     } elif (NKPR_GL_OZNAKA == "P") {
         //za ovaj tip računa ne treba unositit KPD!!!
-        if (!nkpr_gl_cusord == ""){
+        if (NKPR_GL_CUSORD == ""){
             profileID = "P4";
         } else {
-            //ako ima narudžbenicu kupca onda je P6, inače je P4
+            //a ako ima narudžbenicu onda je P6
             profileID = "P6";
         }
         typeCode = "386";
         invType = "Avansno plaćanje (plaćanje unaprijed)";
     } elif (NKPR_GL_OZNAKA == "R") {
-        //sa ovim tipom se isto može napravii storno računa
+        //sa ovim tipom se isto može napraviti storno računa
         profileID = "P9";
         typeCode = "381";
-        invType = "Izdavanje računa za isporuke prema ugovoru";
+        invType = "Reklamacija ili povrat robe (CreditNote)";
     } elif (NKPR_GL_OZNAKA == "T") {
         //sa ovim tipom se radi terećenje, iznosi su svi u plusu, ali element je DebitNote
         profileID = "P1";
         typeCode = "383";
-        invType = "Izdavanje računa za isporuke prema ugovoru";
+        invType = "Terećenje (DebitNote)";
     } elif (NKPR_GL_OZNAKA == "O") {
         if (NKPR_GL_REZ3 != 0) {
             profileID = "P9";
             typeCode = "381";
-            invType = "Kreditni račun - Credit Note (negativni iznosi, povrati) - u pravilu su iznosi u minusu, osim ako se odobrava cassa sconto";
+            invType = "Kreditni račun (CreditNote)"; // (negativni iznosi, povrati) - u pravilu su iznosi u minusu, osim ako se odobrava cassa sconto";
         }
     } elif (NKPR_GL_OZNAKA == "X") {
         //ovo se tako koristi u Poslovnim knjigama, i iznosi u linijama su u minusu; sa ovim tipom može se unositi i terećenje ali ako su iznosi u PLUSU!!
@@ -365,17 +368,22 @@ function GenerateUBLXml(invNum /* number */) {
 
     if (profileID == "P9") {
         xml += "<CreditNote xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2\"\n";
-    } elif (nkpr_gl_oznaka == 'T') {
+    } elif (NKPR_GL_OZNAKA == 'T') {
         xml += "<DebitNote xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:DebitNote-2\"\n";
     } else {
         xml += "<Invoice xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2\"\n";
     }
+    
+    xml += "    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n";
+    xml += "    xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n";
+    
     xml += "    xmlns:cac=\"urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2\"\n";
     xml += "    xmlns:cbc=\"urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2\"\n";
     xml += "    xmlns:ext=\"urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2\"\n";
-    xml += "    xmlns:hr=\"urn:mfin.gov.hr:hr-ubl-extension:1.0\"\n";
-    xml += "    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n";
-    xml += "    xsi:schemaLocation=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2 ../xsd/ubl/maindoc/UBL-Invoice-2.1.xsd\">\n";
+
+    xml += "    xmlns:hr=\"urn:mfin.gov.hr:schema:xsd:HRExtensionAggregateComponents-1\">\n";
+    
+    // xml += "    xsi:schemaLocation=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2 ../xsd/ubl/maindoc/UBL-Invoice-2.1.xsd\">\n";
 
     // BT-1..126 Extension point; 0..n // ???
     xml += "<ext:UBLExtensions>\n";
@@ -403,7 +411,7 @@ function GenerateUBLXml(invNum /* number */) {
     if (profileID == "P9") {
         xml += "<cbc:CreditNoteTypeCode>381</cbc:CreditNoteTypeCode>\n"; // BT-3; 1..1
         xml += "<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>\n"; // BT-5; 1..1 
-        xml += "<cac:BillingReference>\n"; // ???
+        xml += "<cac:BillingReference>\n";
         xml += "  <cac:InvoiceDocumentReference>\n"; // BG-3; 0..n
         refStr = String(NKPR_GL_REZ3);
         refID = Substring(refStr, 3, 5) + "-" + Substring(refStr, 0, 2) + "-" + Substring(refStr, 2, 1);
@@ -422,20 +430,23 @@ function GenerateUBLXml(invNum /* number */) {
         xml += "<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>\n";
         xml += "<cbc:TaxCurrencyCode>EUR</cbc:TaxCurrencyCode>\n";
 
-        if (profileID != "P4") {
-            ptDesc = "Rok plaćanja je " + NKPR_GL_NOKAM + " dana";
-            if (NKPR_GL_ROKPL != 0) {
-                ptDesc += " nakon roka za provjeru od " + NKPR_GL_ROKPL + " dana";
-            }
-            ptDesc += ". Rok plaćanja teče od: " + NKPR_GL_DVO;
-            // xml += "<cbc:PaymentTermsDescription>" + ptDesc + "</cbc:PaymentTermsDescription>\n";
 
-            // xml += "<cac:PaymentTerms>\n";
-            // xml += "  <cbc:Note>Rok plaćanja teče od datuma " + NKPR_GL_DVO + "</cbc:Note>\n";
-            // xml += "  <cbc:SettlementPeriodMeasure unitCode=\"DAY\">" + NKPR_GL_NOKAM + NKPR_GL_ROKPL + "</cbc:SettlementPeriodMeasure>\n";
-            // xml += "</cac:PaymentTerms>\n";
-        }
+
+        // if (profileID != "P4") {
+        //     ptDesc = "Rok plaćanja je " + NKPR_GL_NOKAM + " dana";
+        //     if (NKPR_GL_ROKPL != 0) {
+        //         ptDesc += " nakon roka za provjeru od " + NKPR_GL_ROKPL + " dana";
+        //     }
+        //     ptDesc += ". Rok plaćanja teče od: " + NKPR_GL_DVO;
+        //     // xml += "<cbc:PaymentTermsDescription>" + ptDesc + "</cbc:PaymentTermsDescription>\n";
+
+        //     // xml += "<cac:PaymentTerms>\n";
+        //     // xml += "  <cbc:Note>Rok plaćanja teče od datuma " + NKPR_GL_DVO + "</cbc:Note>\n";
+        //     // xml += "  <cbc:SettlementPeriodMeasure unitCode=\"DAY\">" + NKPR_GL_NOKAM + NKPR_GL_ROKPL + "</cbc:SettlementPeriodMeasure>\n";
+        //     // xml += "</cac:PaymentTerms>\n";
+        // }
     }
+
 
     // -----------------------------------------------------------
     // Header Attachments
@@ -517,33 +528,40 @@ function GenerateUBLXml(invNum /* number */) {
     xml += "<cac:AccountingSupplierParty>\n";
     xml += "  <cac:Party>\n";
     xml += "    <cbc:EndpointID schemeID=\"9934\">" + supOIB + "</cbc:EndpointID>\n";
-    xml += "    <cac:PartyIdentification><cbc:ID schemeID=\"OIB\">" + supOIB + "</cbc:ID></cac:PartyIdentification>\n";
+    xml += "    <cac:PartyIdentification><cbc:ID>" + "9934:" + supOIB + "</cbc:ID></cac:PartyIdentification>\n";
     xml += "    <cac:PartyName><cbc:Name>" + supName + "</cbc:Name></cac:PartyName>\n";
     
-    RegistrationName = (NazivFirme != "" ? NazivFirme : KPSY_COMP_NAME);
-    RegistrationName = RegistrationName.trim();
-
-    if (KPSY_COMP_JMBFI != "") {
-        xml += "    <cac:PartyLegalEntity>\n";
-        xml += "      <cbc:RegistrationName>" + RegistrationName + "</cbc:RegistrationName>\n";
-        xml += "      <cbc:CompanyID schemeID=\"MBS\">" + KPSY_COMP_JMBFI + "</cbc:CompanyID>\n";
-        xml += "    </cac:PartyLegalEntity>\n";
-    }
-
     xml += "    <cac:PostalAddress>\n";
     xml += "      <cbc:StreetName>" + supAddr + "</cbc:StreetName>\n";
     xml += "      <cbc:CityName>" + supCity + "</cbc:CityName>\n";
     xml += "      <cbc:PostalZone>" + supZip + "</cbc:PostalZone>\n";
     xml += "      <cac:Country><cbc:IdentificationCode>" + supCountry + "</cbc:IdentificationCode></cac:Country>\n";
     xml += "    </cac:PostalAddress>\n";
-    xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + supOIB + "</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>\n";
-    xml += "    <cac:PartyLegalEntity><cbc:RegistrationName>" + RegistrationName + "</cbc:RegistrationName></cac:PartyLegalEntity>\n";
+    
+    xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + KPSY_PO_FREIGHT + supOIB + "</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>\n";
+
+    RegistrationName = (NazivFirme != "" ? NazivFirme : KPSY_COMP_NAME);
+    RegistrationName = RegistrationName.trim();
+
+
+    xml += "    <cac:PartyLegalEntity>\n";
+    xml += "      <cbc:RegistrationName>" + RegistrationName + "</cbc:RegistrationName>\n";
+    if (KPSY_COMP_JMBFI != "") {
+        // xml += "      <cbc:CompanyID schemeID=\"MBS\">" + KPSY_COMP_JMBFI + "</cbc:CompanyID>\n";
+        xml += "      <cbc:CompanyID>" + KPSY_COMP_JMBFI + "</cbc:CompanyID>\n";
+    }
+    xml += "    </cac:PartyLegalEntity>\n";
+
+
+    // ??? - ovo ne?
     if (KPSY_COMP_PHONE != "" || KPSY_COMP_EMAIL != "") {
         xml += "    <cac:Contact>\n";
         if (KPSY_COMP_PHONE != "") { xml += "      <cbc:Telephone>" + KPSY_COMP_PHONE + "</cbc:Telephone>\n"; }
         if (KPSY_COMP_EMAIL != "") { xml += "      <cbc:ElectronicMail>" + KPSY_COMP_EMAIL + "</cbc:ElectronicMail>\n"; }
         xml += "    </cac:Contact>\n";
     }
+
+
     xml += "  </cac:Party>\n";
     xml += "</cac:AccountingSupplierParty>\n";
 
@@ -553,17 +571,41 @@ function GenerateUBLXml(invNum /* number */) {
     xml += "<cac:AccountingCustomerParty>\n";
     xml += "  <cac:Party>\n";
     xml += "    <cbc:EndpointID schemeID=\"9934\">" + NKPR_GL_JMBG + "</cbc:EndpointID>\n";
-    xml += "    <cac:PartyIdentification><cbc:ID schemeID=\"OIB\">" + NKPR_GL_JMBG + "</cbc:ID></cac:PartyIdentification>\n";
+    xml += "    <cac:PartyIdentification><cbc:ID>" + "9934:" + NKPR_GL_JMBG + "</cbc:ID></cac:PartyIdentification>\n";
+
     xml += "    <cac:PartyName><cbc:Name>" + NKPR_GL_CUSNME + "</cbc:Name></cac:PartyName>\n";
+
     xml += "    <cac:PostalAddress>\n";
+
     gl_ro = (NKPR_GL_RO != "" ? " " + NKPR_GL_RO : "");
     StreetName = NKPR_GL_CUSA1 + gl_ro;
+
     xml += "      <cbc:StreetName>" + StreetName + "</cbc:StreetName>\n";
+    // xml += "      <cbc:AdditionalStreetName>***put 6***</cbc:AdditionalStreetName>\n";
     xml += "      <cbc:CityName>" + NKPR_GL_CUSCTY + "</cbc:CityName>\n";
     xml += "      <cbc:PostalZone>" + NKPR_GL_CUSZIP + "</cbc:PostalZone>\n";
+    // xml += "      <cbc:CountrySubentity>***Grad Zagreb***</cbc:CountrySubentity>\n";
     xml += "      <cac:Country><cbc:IdentificationCode>" + NKPR_GL_DRZAVA + "</cbc:IdentificationCode></cac:Country>\n";
     xml += "    </cac:PostalAddress>\n";
-    xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + NKPR_GL_JMBG + "</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>\n";
+
+    if(NKPR_GL_CUSST == ""){
+        MessageBox("Kupac nema unesenu oznaku države uz OIB!");
+        return false;
+    }
+    xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + NKPR_GL_CUSST + NKPR_GL_JMBG + "</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>\n";
+    
+
+
+    // ??? PartyLegalEntity
+    xml += "    <cac:PartyLegalEntity>\n";
+    xml += "      <cbc:RegistrationName>" + NKPR_GL_CUSNME + "</cbc:RegistrationName>\n";
+    // if (KPSY_COMP_JMBFI != "") {
+    //     // xml += "      <cbc:CompanyID schemeID=\"MBS\">" + KPSY_COMP_JMBFI + "</cbc:CompanyID>\n";
+    //     // xml += "      <cbc:CompanyID>" +  + "</cbc:CompanyID>\n";
+    // }
+    xml += "    </cac:PartyLegalEntity>\n";
+
+    
     xml += "  </cac:Party>\n";
     xml += "</cac:AccountingCustomerParty>\n";
 
@@ -600,7 +642,7 @@ function GenerateUBLXml(invNum /* number */) {
         NKSC_ZR_NAZIV = bankRes[1][1].trim();
         xml += "  <cac:PayeeFinancialAccount>\n";
         xml += "    <cbc:ID>" + NKSC_ZR_KONTO + "</cbc:ID>\n";
-        xml += "    <cbc:AccountType>TRAN</cbc:AccountType>\n";
+        // xml += "    <cbc:AccountType>TRAN</cbc:AccountType>\n";
         xml += "    <cbc:Name>" + NKSC_ZR_NAZIV + "</cbc:Name>\n";
         xml += "  </cac:PayeeFinancialAccount>\n";
     }
@@ -661,12 +703,15 @@ function GenerateUBLXml(invNum /* number */) {
     xml += "  <cbc:TaxInclusiveAmount currencyID=\"EUR\">" + FormatNum(total, 2, ".") + "</cbc:TaxInclusiveAmount>\n";
     if (prepaid > 0) { xml += "  <cbc:PrepaidAmount currencyID=\"EUR\">" + FormatNum(prepaid, 2, ".") + "</cbc:PrepaidAmount>\n"; }
     xml += "  <cbc:PayableAmount currencyID=\"EUR\">" + FormatNum(payable, 2, ".") + "</cbc:PayableAmount>\n";
-    if (rounding != 0) { xml += "  <cbc:PayableRoundingAmount currencyID=\"EUR\">" + FormatNum(rounding, 2, ".") + "</cbc:PayableRoundingAmount>\n"; }
+    // if (rounding != 0) { xml += "  <cbc:PayableRoundingAmount currencyID=\"EUR\">" + FormatNum(rounding, 2, ".") + "</cbc:PayableRoundingAmount>\n"; }
     xml += "</cac:LegalMonetaryTotal>\n";
+    
+
     // -----------------------------------------------------------
     // Invoice Lines
     // -----------------------------------------------------------
     for (j = 1; j < Size(linRes); j++) {
+
         fillInvoiceLine(j);
 
         grossAmount = NKPR_LN_PQTY * NKPR_LN_PPRCE;
@@ -675,18 +720,20 @@ function GenerateUBLXml(invNum /* number */) {
 
         if (profileID == "P9") {
             xml += "<CreditNoteLine>\n";
+            xml += "  <cbc:ID>" + NKPR_LN_BR_LN + "</cbc:ID>\n";
             xml += "  <cbc:CreditedQuantity unitCode=\"C62\">" + FormatNum(NKPR_LN_PQTY, 4, ".") + "</cbc:CreditedQuantity>\n";
         } elif (nkpr_gl_oznaka == 'T') {
             xml += "<DebitNoteLine>\n";
+            xml += "  <cbc:ID>" + NKPR_LN_BR_LN + "</cbc:ID>\n";
             xml += "  <cbc:DebitedQuantity unitCode=\"C62\">" + FormatNum(NKPR_LN_PQTY, 4, ".") + "</cbc:DebitedQuantity>\n";
         } else {
             xml += "<cac:InvoiceLine>\n";
+            xml += "  <cbc:ID>" + NKPR_LN_BR_LN + "</cbc:ID>\n";
             xml += "  <cbc:InvoicedQuantity unitCode=\"C62\">" + FormatNum(NKPR_LN_PQTY, 4, ".") + "</cbc:InvoicedQuantity>\n";
         }
-        xml += "  <cbc:ID>" + NKPR_LN_BR_LN + "</cbc:ID>\n";
-        xml += "  <cbc:LineExtensionAmount currencyID=\"EUR\">" + FormatNum(NKPR_LN_AMT, 2, ".") + "</cbc:LineExtensionAmount>\n";
-        xml += "  <cbc:ItemInternalID>" + NKPR_LN_PCODE + "</cbc:ItemInternalID>\n";
 
+        xml += "  <cbc:LineExtensionAmount currencyID=\"EUR\">" + FormatNum(NKPR_LN_AMT, 2, ".") + "</cbc:LineExtensionAmount>\n";
+        // xml += "  <cbc:ItemInternalID>" + NKPR_LN_PCODE + "</cbc:ItemInternalID>\n";
 
         // Line discount - standardni popust na IZNOS stavke!
         //ako je u nksysyco - 'IR','','','PopustNaCijenu'= 'D' onda se popust ne prikazuje ovdje nego u cijeni malo niže, i to samo prvi popust u polju nkpr_ln_disc
@@ -695,7 +742,7 @@ function GenerateUBLXml(invNum /* number */) {
         //iznos popusta u linijama je u polju nkpr_ln_popl i to je ukupan popust koji uključuje polja nlpr_ln_disc, nkpr_ln_pstop i popust iz zaglavlja (na cijeli račun)
         //u plju nkpr_ln_popu je samo popust iz zaglavlja nkpr_gl_sconto koji je tu prenešen na linije, a računa se samo ako je u polju NKPR_GL_DANSC= 0
         if (discountTotal > 0) {
-            //discounTotal je sveukupni popust za tu liniju!
+            //discountTotal je sveukupni popust za tu liniju!
             xml += "  <cac:AllowanceCharge>\n";
             xml += "    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>\n";
             xml += "    <cbc:AllowanceChargeReason>Popust na stavku</cbc:AllowanceChargeReason>\n";
@@ -704,7 +751,6 @@ function GenerateUBLXml(invNum /* number */) {
             xml += "    <cbc:BaseAmount currencyID=\"EUR\">" + FormatNum(grossAmount, 2, ".") + "</cbc:BaseAmount>\n";
             xml += "  </cac:AllowanceCharge>\n";
         }
-
 
         // Line attachment
         if (NKPR_LN_SASTAV != 0) {
@@ -735,7 +781,8 @@ function GenerateUBLXml(invNum /* number */) {
         sqlParams = {};
         sqlParams.Add({"@p1", NKPR_LN_PCODE});
         artRes = sqlQuery(sql_art, sqlParams);
-        ean = ""; intCode = "";
+        ean = "";
+        intCode = "";
         if (Size(artRes) >= 2) {
             ARTI_ARTIKL = artRes[1][0].trim();
             ARTI_SIFART_BAR = artRes[1][1].trim();
@@ -744,7 +791,7 @@ function GenerateUBLXml(invNum /* number */) {
             if (ARTI_SIFART_BAR.length == 13) {
                 ean = ARTI_SIFART_BAR;
                 intCode = ARTI_ARTIKL;
-            } else if(ARTI_ARTIKL.length == 13) {
+            } elif(ARTI_ARTIKL.length == 13) {
                 ean = ARTI_ARTIKL;
                 intCode = ARTI_SIFART_BAR;
             } else {
@@ -763,6 +810,7 @@ function GenerateUBLXml(invNum /* number */) {
             kpd = ARTI_PRELIMTEZ; 
         }
 
+        // ???
         //Uzimati samo tipove artikla R G S N P za KPD - redovni gotovi proizvodi, sastavljeni, usluge i povratna naknada!    
         if (kpd.length == 6 && (NKPR_LN_MA_US == "R" || NKPR_LN_MA_US == "G" || NKPR_LN_MA_US == "S" || NKPR_LN_MA_US == "N" || NKPR_LN_MA_US == "P")) {
             xml += "    <cac:CommodityClassification>\n";
@@ -784,6 +832,7 @@ function GenerateUBLXml(invNum /* number */) {
         xml += "      <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
         xml += "      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>\n";
         xml += "    </cac:ClassifiedTaxCategory>\n";
+
         xml += "  </cac:Item>\n";
 
         // Price
@@ -800,16 +849,18 @@ function GenerateUBLXml(invNum /* number */) {
         } else {
             xml += "</cac:InvoiceLine>\n";
         }
+
     }
+
 
     // Close root
     if (profileID == "P9") {
         xml += "</CreditNote>\n";
-        } elif (nkpr_gl_oznaka == 'T') {
-            xml += "</DebitNote>\n";
-        } else {
-            xml += "</Invoice>\n";
-        }
+    } elif (nkpr_gl_oznaka == 'T') {
+        xml += "</DebitNote>\n";
+    } else {
+        xml += "</Invoice>\n";
+    }
 
     // -----------------------------------------------------------
     // 8. XSD VALIDATION BEFORE SAVING
@@ -824,45 +875,51 @@ function GenerateUBLXml(invNum /* number */) {
     //result = VerifyXML(xml);
     //MSG(result);
 
+
     // -----------------------------------------------------------
     // 9. Save only if valid
     // -----------------------------------------------------------
     //path = "C:\\winx\\emailfls\\";
     // fileName = "UBL_" + invNum + ".xml";
 
-    filename2="";
-    fileName2= SavePath*parsefile(attachmentPdfPath, "pfName")+'.XML';
+
+    // filename2 = "";
+    fileName2 = SavePath + parsefile(attachmentPdfPath, "pfName") + ".xml";
 
     //fileName = "a.xml";
-    SaveFile(xml,fileName2);
-    //ako je sve prošlo bez greške, XML fajl je validiran, potpisan i poslat - u NKSYELOG treba upisati zapis o slanju, najprije status A pa konačno C
-    sql_ins = "INSERT INTO " + databaseName + ".dbo.NKSYELOG (sy_elog_date, sy_elog_num, sy_elog_status,sy_elog_person, sy_elog_estring, sy_elog_type, sy_elog_time,sy_elog_desc,sy_elog_rez3) " +
-              "VALUES (@p1, @p2, @p3, @p4, @p5, @p6,@p7,@p8,@p9);";
-    sqlParams = {};
-    sqlParams.Add({"@p1", nkpr_gl_invdte});
-    sqlParams.Add({"@p2", invNum});
-    sqlParams.Add({"@p3", "A"});
-    sqlParams.Add({"@p4", userCode});
-    sqlParams.Add({"@p5", "" });
-    sqlParams.Add({"@p6", "IR"});
-    sqlParams.Add({"@p7", Now(, "HH:mm:ss")}); 
-    sqlParams.Add({"@p8", ""}); //"New Invoice/HOA Sent with attachment: " + fileName2});
-    sqlParams.Add({"@p9", Now(, "dd/MM/yy")});
-    sqlQuery(sql_ins, sqlParams);
-    //
-    sql_ins = "INSERT INTO " + databaseName + ".dbo.NKSYELOG (sy_elog_date, sy_elog_num, sy_elog_status,sy_elog_person, sy_elog_estring, sy_elog_type, sy_elog_time,sy_elog_desc,sy_elog_rez3) " +
-              "VALUES (@p1, @p2, @p3, @p4, @p5, @p6,@p7,@p8,@p9);";
-    sqlParams = {};
-    sqlParams.Add({"@p1", nkpr_gl_invdte});
-    sqlParams.Add({"@p2", invNum});
-    sqlParams.Add({"@p3", "C"});
-    sqlParams.Add({"@p4", userCode});
-    sqlParams.Add({"@p5", "" });
-    sqlParams.Add({"@p6", "IR"});
-    sqlParams.Add({"@p7", Now(, "HH:mm:ss")}); 
-    sqlParams.Add({"@p8",""}); //"New Invoice/HOA Sent with attachment: " + fileName2});
-    sqlParams.Add({"@p9", Now(, "dd/MM/yy")});
-    sqlQuery(sql_ins, sqlParams);
+    SaveFile(xml, fileName2);
+
+
+    // //ako je sve prošlo bez greške, XML fajl je validiran, potpisan i poslat - u NKSYELOG treba upisati zapis o slanju, najprije status A pa konačno C
+    // sql_ins = "INSERT INTO " + databaseName + ".dbo.NKSYELOG (sy_elog_date, sy_elog_num, sy_elog_status, sy_elog_person, sy_elog_estring, sy_elog_type, sy_elog_time,sy_elog_desc, sy_elog_rez3) " +
+    //           "VALUES (@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);";
+    // sqlParams = {};
+    // sqlParams.Add({"@p1", NKPR_GL_INVDTE});
+    // sqlParams.Add({"@p2", invNum});
+    // sqlParams.Add({"@p3", "A"});
+    // sqlParams.Add({"@p4", userCode});
+    // sqlParams.Add({"@p5", "" });
+    // sqlParams.Add({"@p6", "IR"});
+    // sqlParams.Add({"@p7", Now("HH:mm:ss")});
+    // sqlParams.Add({"@p8", ""}); //"New Invoice/HOA Sent with attachment: " + fileName2});
+    // sqlParams.Add({"@p9", Now("yyyy-MM-dd")});
+    // sqlQuery(sql_ins, sqlParams);
+    // //
+    // sql_ins = "INSERT INTO " + databaseName + ".dbo.NKSYELOG (sy_elog_date, sy_elog_num, sy_elog_status, sy_elog_person, sy_elog_estring, sy_elog_type, sy_elog_time,sy_elog_desc, sy_elog_rez3) " +
+    //           "VALUES (@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);";
+    // sqlParams = {};
+    // sqlParams.Add({"@p1", NKPR_GL_INVDTE});
+    // sqlParams.Add({"@p2", invNum});
+    // sqlParams.Add({"@p3", "C"});
+    // sqlParams.Add({"@p4", userCode});
+    // sqlParams.Add({"@p5", "" });
+    // sqlParams.Add({"@p6", "IR"});
+    // sqlParams.Add({"@p7", Now("HH:mm:ss")}); 
+    // sqlParams.Add({"@p8",""}); //"New Invoice/HOA Sent with attachment: " + fileName2});
+    // sqlParams.Add({"@p9", Now("yyyy-MM-dd")});
+    // sqlQuery(sql_ins, sqlParams);
+
+
 
 
     // if (Exists(path + fileName)) {
@@ -898,6 +955,7 @@ function fillInvoiceLine(lineNum){
     NKPR_LN_DISC3T = linRes[lineNum][16].trim();
     NKPR_LN_MA_US = linRes[lineNum][17].trim();
     NKPR_LN_BR_LN = linRes[lineNum][18];
+    return;
 }
 
 

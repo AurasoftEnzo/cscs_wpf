@@ -5,6 +5,7 @@ using MapControl;
 using Org.BouncyCastle.Tls;
 using Renci.SshNet;
 using Renci.SshNet.Sftp;
+using Saxon.Api;
 using SkiaSharp;
 using SplitAndMerge;
 using System;
@@ -28,6 +29,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using System.Xml;
 using System.Xml.Schema;
+using System.Xml.Xsl;
 using static System.Net.WebRequestMethods;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
@@ -74,7 +76,8 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.File2Base64, new File2Base64Function());
             interpreter.RegisterFunction(Constants.Base642File, new Base642FileFunction());
             interpreter.RegisterFunction(Constants.SignXml, new SignXmlFunction());
-            interpreter.RegisterFunction(Constants.VerifyXml, new VerifyXmlFunction());
+            interpreter.RegisterFunction(Constants.ValidateSch, new ValidateSchFunction());
+            interpreter.RegisterFunction(Constants.ValidateXsd, new ValidateXsdFunction());
         }
         public partial class Constants
         {
@@ -108,7 +111,8 @@ namespace WpfCSCS
             public const string File2Base64 = "File2Base64";
             public const string Base642File = "Base642File";
             public const string SignXml = "SignXml";
-            public const string VerifyXml = "VerifyXml";
+            public const string ValidateSch = "ValidateSch";
+            public const string ValidateXsd = "ValidateXsd";
         }
     }
 
@@ -1267,8 +1271,118 @@ namespace WpfCSCS
             }
         }
     }
-    
-    class VerifyXmlFunction : ParserFunction
+
+    class ValidateSchFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 4, m_name);
+
+            var xmlContent = Utils.GetSafeString(args, 0);
+            var schFilesArray = Utils.GetSafeVariable(args, 1);
+            var transpilerPath = Utils.GetSafeString(args, 2);
+            var logFilePath = Utils.GetSafeString(args, 3);
+
+
+            List<string> schFiles = new List<string>();
+            if (schFilesArray.Tuple != null)
+            {
+                foreach (var schFileVar in schFilesArray.Tuple)
+                {
+                    schFiles.Add(schFileVar.AsString());
+                }
+            }
+
+            try
+            {
+                StringBuilder allErrors = new StringBuilder();
+
+                var processor = new Processor();
+                var compiler = processor.NewXsltCompiler();
+
+                foreach (string schFile in schFiles)
+                {
+                    if (!System.IO.File.Exists(schFile))
+                    {
+                        allErrors.AppendLine("\nSchematron not found: " + schFile);
+                        continue;
+                    }
+
+                    // Step 1: Compile Schematron .sch to .xsl
+                    string compiledXslPath = Path.GetTempFileName() + ".xsl";
+
+                    var exec1 = compiler.Compile(new Uri(transpilerPath));
+                    var transformer1 = exec1.Load();
+                    transformer1.SetInputStream(new FileStream(schFile, FileMode.Open, FileAccess.Read), new Uri(schFile));
+
+                    using (var outputStream = new FileStream(compiledXslPath, FileMode.Create))
+                    {
+                        var serializer = processor.NewSerializer();
+                        serializer.SetOutputStream(outputStream);
+                        transformer1.Run(serializer);
+                    }
+
+                    // Step 2: Validate XML using compiled XSLT
+                    string resultPath = Path.GetTempFileName() + ".xml";
+
+                    var exec2 = compiler.Compile(new Uri(compiledXslPath));
+                    var transformer2 = exec2.Load();
+
+                    using (var xmlStream = new MemoryStream(Encoding.UTF8.GetBytes(xmlContent)))
+                    {
+                        transformer2.SetInputStream(xmlStream, new Uri("file:///temp.xml"));
+
+                        using (var resultStream = new FileStream(resultPath, FileMode.Create))
+                        {
+                            var serializer = processor.NewSerializer();
+                            serializer.SetOutputStream(resultStream);
+                            transformer2.Run(serializer);
+                        }
+                    }
+
+                    // Step 3: Parse SVRL result for errors
+                    XmlDocument svrlDoc = new XmlDocument();
+                    svrlDoc.Load(resultPath);
+
+                    var ns = new XmlNamespaceManager(svrlDoc.NameTable);
+                    ns.AddNamespace("svrl", "http://purl.oclc.org/dsdl/svrl");
+                    var failedAsserts = svrlDoc.SelectNodes("//svrl:failed-assert", ns);
+                    var successfulReports = svrlDoc.SelectNodes("//svrl:successful-report", ns);
+
+                    if (failedAsserts.Count > 0 || successfulReports.Count > 0)
+                    {
+                        allErrors.AppendLine("=== Errors from " + Path.GetFileName(schFile) + " ===");
+                        foreach (XmlNode assert in failedAsserts)
+                        {
+                            allErrors.AppendLine("");
+                            allErrors.AppendLine("FAILED: " + assert.SelectSingleNode("svrl:text", ns)?.InnerText);
+                            var location = assert.SelectSingleNode("@location", ns);
+                            if (location != null) allErrors.AppendLine("Location: " + location.Value);
+                        }
+                        allErrors.AppendLine("");
+                        allErrors.AppendLine("");
+                    }
+
+                    // Cleanup
+                    if (System.IO.File.Exists(compiledXslPath))
+                        System.IO.File.Delete(compiledXslPath);
+                    if (System.IO.File.Exists(resultPath))
+                        System.IO.File.Delete(resultPath);
+                }
+
+                System.IO.File.WriteAllText(logFilePath, allErrors.ToString());
+                return new Variable(allErrors.Length == 0 ? true : false);
+            }
+            catch (Exception ex)
+            {
+                System.IO.File.WriteAllText(logFilePath, "ex.Message: " + ex.Message);
+                return new Variable(false);
+            }
+        }
+    }
+
+    class ValidateXsdFunction : ParserFunction
     {
         private List<string> verificationMessages;
         bool hasErrors;
@@ -1304,7 +1418,7 @@ namespace WpfCSCS
                 try
                 {
                     while (xmlReader.Read()) { }
-                    
+
                 }
                 catch (XmlException ex)
                 {

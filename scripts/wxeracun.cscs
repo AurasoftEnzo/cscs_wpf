@@ -876,6 +876,21 @@ function GenerateUBLXml(invNum /* number */) {
     //MSG(result);
 
 
+    schFiles = {};
+    schFiles.Add("C:\\temp\\HRUBLValidator\\HRUBLSchematron\\HR-CIUS-EXT-EN16931-UBL.sch");
+
+    if(!ValidateSch(xml, schFiles, "C:\\temp\\schematron\\transpile.xsl", SavePath + parsefile(attachmentPdfPath, "pfName") + ".err")){
+        MessageBox("XML FAILED SCH VALIDATION\n\nSee .err file for details.");
+        return false;
+    }
+
+    // if(!ValidateSch(xml, schFiles, validationErrors)){
+    //     // LogError("XSD_FAIL", "Validation failed for " + invNum, validationErrors);
+    //     MessageBox("XML FAILED XSD VALIDATION\n\n" + validationErrors);
+    //     return false;
+    // }   
+
+
     // -----------------------------------------------------------
     // 9. Save only if valid
     // -----------------------------------------------------------

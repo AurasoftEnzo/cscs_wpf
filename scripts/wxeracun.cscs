@@ -104,7 +104,8 @@ function GenerateUBLXml(invNum /* number */) {
                 NKPR_GL_PICTHDR, NKPR_GL_PICTFTR, NKPR_GL_CUSNME, NKPR_GL_JMBG,
                 NKPR_GL_CUSA1, NKPR_GL_RO, NKPR_GL_CUSCTY, NKPR_GL_CUSZIP, NKPR_GL_DRZAVA, NKPR_GL_SIF_PL, NKPR_GL_MODEL,
                 NKPR_GL_POZIV, NKPR_GL_RZRVA1, NKPR_GL_TOTAL, NKPR_GL_CUSORD, NKPR_GL_CUSST,
-                CONVERT(varchar(10), DATEADD(DAY, NKPR_GL_NOKAM + NKPR_GL_ROKPL, NKPR_GL_DVO), 23) as NKPR_GL_DUE_DATE,nkpr_gl_slsp
+                NKPR_GL_ENTBY,
+                CONVERT(varchar(10), DATEADD(DAY, NKPR_GL_NOKAM + NKPR_GL_ROKPL, NKPR_GL_DVO), 23) as NKPR_GL_DUE_DATE
 
                 FROM " + databaseName + ".dbo.NKPRINV WHERE NKPR_GL_NUM = @p1;"; //NKSC_ZR_KONTO, NKSC_ZR_NAZIV
     sqlParams = {};
@@ -139,19 +140,7 @@ function GenerateUBLXml(invNum /* number */) {
     // hdr["NKPR_GL_ESD"] = hdrRes[10];
     // hdr["NKPR_GL_PICTHDR"] = hdrRes[11];
     // hdr["NKPR_GL_CUSNME"] = hdrRes[12];
-    // hdr["NKPR_GL_JMBG"] = hdrRes[13];
-    // hdr["NKPR_GL_CUSA1"] = hdrRes[14];
-    // hdr["NKPR_GL_RO"] = hdrRes[15];
-    // hdr["NKPR_GL_CUSCTY"] = hdrRes[16];
-    // hdr["NKPR_GL_CUSZIP"] = hdrRes[17];
-    // hdr["NKPR_GL_DRZAVA"] = hdrRes[18];
-    // hdr["NKPR_GL_SIF_PL"] = hdrRes[19];
-    // hdr["NKPR_GL_MODEL"] = hdrRes[20];
-    // hdr["NKPR_GL_POZIV"] = hdrRes[21];
-    // hdr["NKPR_GL_RZRVA1"] = hdrRes[22];
-    // hdr["NKPR_GL_TOTAL"] = hdrRes[23];
-    // hdr["NKPR_GL_DUE_DATE"] = hdrRes[24];
-    // hdr["NKPR_GL_SLSP"] = hdrRes[25];
+    // ...
    
     //------------------------
 
@@ -176,16 +165,7 @@ function GenerateUBLXml(invNum /* number */) {
     //     NKPR_GL_JMBG = null;
     //     NKPR_GL_CUSA1 = null;
     //     NKPR_GL_RO = null;
-    //     NKPR_GL_CUSCTY = null;
-    //     NKPR_GL_CUSZIP = null;
-    //     NKPR_GL_DRZAVA = null;
-    //     NKPR_GL_SIF_PL = null;
-    //     NKPR_GL_MODEL = null;
-    //     NKPR_GL_POZIV = null;
-    //     NKPR_GL_RZRVA1 = null;
-    //     NKPR_GL_TOTAL = null;
-    //     NKPR_GL_DUE_DATE = null;
-    //     NKPR_GL_SLSP = null;
+    // ...
 
     //     hdrClass(sqlRow){
     //         NKPR_GL_NUM = sqlRow[0];
@@ -197,24 +177,7 @@ function GenerateUBLXml(invNum /* number */) {
     //         NKPR_GL_TIMECR = sqlRow[6];
     //         NKPR_GL_DVO = sqlRow[7];
     //         NKPR_GL_NOKAM = sqlRow[8];
-    //         NKPR_GL_ROKPL = sqlRow[9];
-    //         NKPR_GL_ESD = sqlRow[10];
-    //         NKPR_GL_PICTHDR = sqlRow[11];
-    //         NKPR_GL_CUSNME = sqlRow[12];
-    //         NKPR_GL_JMBG = sqlRow[13];
-    //         NKPR_GL_CUSA1 = sqlRow[14];
-    //         NKPR_GL_RO = sqlRow[15];
-    //         NKPR_GL_CUSCTY = sqlRow[16];
-    //         NKPR_GL_CUSZIP = sqlRow[17];
-    //         NKPR_GL_DRZAVA = sqlRow[18];
-    //         NKPR_GL_SIF_PL = sqlRow[19];
-    //         NKPR_GL_MODEL = sqlRow[20];
-    //         NKPR_GL_POZIV = sqlRow[21];
-    //         NKPR_GL_RZRVA1 = sqlRow[22];
-    //         NKPR_GL_TOTAL = sqlRow[23];
-    //         NKPR_GL_DUE_DATE = sqlRow[24];
-    //         NKPR_GL_DUE_DATE = sqlRow[24];
-    //         NKPR_GL_SLSP = sqlRow[25];}
+    // ...
     // };
 
     // hdr = new hdrClass(hdrRes[1]);
@@ -250,9 +213,9 @@ function GenerateUBLXml(invNum /* number */) {
     NKPR_GL_TOTAL = hdrRes[1][24];
     NKPR_GL_CUSORD = hdrRes[1][25].trim();
     NKPR_GL_CUSST = hdrRes[1][26].trim();
-    NKPR_GL_DUE_DATE = hdrRes[1][27].trim();
-    NKPR_GL_DUE_DATE = hdrRes[1][27].trim();
-    NKPR_GL_SLSP = hdrRes[1][28].trim();
+    NKPR_GL_ENTBY = hdrRes[1][27].trim();
+    NKPR_GL_DUE_DATE = hdrRes[1][28].trim();
+
 
     // MSG(NKPR_GL_NUM );
     // MSG(NKPR_GL_OZNAKA);
@@ -265,23 +228,7 @@ function GenerateUBLXml(invNum /* number */) {
     // MSG(NKPR_GL_NOKAM);
     // MSG(NKPR_GL_ROKPL);
     // MSG(NKPR_GL_ESD);
-    // MSG(NKPR_GL_PICTHDR);
-    // MSG(NKPR_GL_CUSNME);
-    // MSG(NKPR_GL_JMBG);
-    // MSG(NKPR_GL_CUSA1);
-    // MSG(NKPR_GL_RO);
-    // MSG(NKPR_GL_CUSCTY);
-    // MSG(NKPR_GL_CUSZIP);
-    // MSG(NKPR_GL_DRZAVA);
-    // MSG(NKPR_GL_SIF_PL);
-    // MSG(NKPR_GL_MODEL);
-    // MSG(NKPR_GL_POZIV);
-    // MSG(NKPR_GL_RZRVA1);
-    // MSG(NKPR_GL_TOTAL);
-    // MSG(NKPR_GL_DUE_DATE);
-    // MSG(NKPR_GL_NOKAM + NKPR_GL_ROKPL);
-    // MSG(NKPR_GL_DUE_DATE);
-    // MSG(NKPR_GL_SLSP);
+    // ...
 
 
     // -----------------------------------------------------------
@@ -315,6 +262,22 @@ function GenerateUBLXml(invNum /* number */) {
         MessageBox("Račun " + invNum + " nema linija!");
         return false;
     }
+    
+    // -----------------------------------------------------------
+    // 2.1. Load KPSYUSER
+    // -----------------------------------------------------------
+    sql_lin = "SELECT
+                KPSY_USER_NAZIV
+                FROM " + databaseName + ".dbo.KPSYUSER WHERE KPSY_USER_ZNAK = @p1";
+    sqlParams = {};
+    sqlParams.Add({"@p1", NKPR_GL_ENTBY});
+    kpsyuserRes = sqlQuery(sql_lin, sqlParams);
+    if (Size(kpsyuserRes) < 2) {
+        MessageBox("Nema podataka za o prodavaču " + NKPR_GL_ENTBY + "!");
+        return false;
+    }
+
+    KPSY_USER_NAZIV = kpsyuserRes[1][0].trim();
 
     // -----------------------------------------------------------
     // 3. Determine ProfileID, TypeCode, Invoice Type
@@ -383,7 +346,7 @@ function GenerateUBLXml(invNum /* number */) {
     xml += "    xmlns:cbc=\"urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2\"\n";
     xml += "    xmlns:ext=\"urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2\"\n";
 
-    xml += "    xmlns:hr=\"urn:mfin.gov.hr:schema:xsd:HRExtensionAggregateComponents-1\">\n";
+    xml += "    xmlns:hrextac=\"urn:mfin.gov.hr:schema:xsd:HRExtensionAggregateComponents-1\">\n";
     
     // xml += "    xsi:schemaLocation=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2 ../xsd/ubl/maindoc/UBL-Invoice-2.1.xsd\">\n";
 
@@ -399,6 +362,14 @@ function GenerateUBLXml(invNum /* number */) {
     xml += "                <hrextac:HRTaxSubtotal>\n";
     xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">6.25</cbc:TaxableAmount>\n";
     xml += "                    <cbc:TaxAmount currencyID=\"EUR\">1.56</cbc:TaxAmount>\n";
+    xml += "                    <hrextac:HRTaxCategory>\n";
+    xml += "                        <cbc:ID>S</cbc:ID>\n";
+    xml += "                        <cbc:Name>HR:PDV0</cbc:Name>\n";
+    xml += "                        <cbc:Percent>0.00</cbc:Percent>\n";
+    xml += "                        <hrextac:HRTaxScheme>\n";
+    xml += "                            <cbc:ID>VAT</cbc:ID>\n";
+    xml += "                        </hrextac:HRTaxScheme>\n";
+    xml += "                    </hrextac:HRTaxCategory>\n";
     xml += "                </hrextac:HRTaxSubtotal>\n";
     xml += "                <hrextac:HRTaxSubtotal>\n";
     xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">0.00</cbc:TaxableAmount>\n";
@@ -455,9 +426,10 @@ function GenerateUBLXml(invNum /* number */) {
     xml += "    </hrextac:HRLegalMonetaryTotal>\n";
     xml += "</hrextac:HRFISK20Data>\n";
 
-    xml += "      <sig:UBLDocumentSignatures xmlns:sig=\"urn:oasis:names:specification:ubl:schema:xsd:CommonSignatureComponents-2\">\n";
-    xml += "        <sac:SignatureInformation xmlns:sac=\"urn:oasis:names:specification:ubl:schema:xsd:SignatureAggregateComponents-2\"></sac:SignatureInformation>\n";
-    xml += "      </sig:UBLDocumentSignatures>\n";
+    // xml += "      <sig:UBLDocumentSignatures xmlns:sig=\"urn:oasis:names:specification:ubl:schema:xsd:CommonSignatureComponents-2\">\n";
+    // xml += "        <sac:SignatureInformation xmlns:sac=\"urn:oasis:names:specification:ubl:schema:xsd:SignatureAggregateComponents-2\"></sac:SignatureInformation>\n";
+    // xml += "      </sig:UBLDocumentSignatures>\n";
+
     xml += "    </ext:ExtensionContent>\n";
     xml += "  </ext:UBLExtension>\n";
     xml += "</ext:UBLExtensions>\n";
@@ -470,7 +442,7 @@ function GenerateUBLXml(invNum /* number */) {
     invNumStr = String(NKPR_GL_NUM); // 
     invID = Substring(invNumStr, 3, 5) + "-" + Substring(invNumStr, 0, 2) + "-" + Substring(invNumStr, 2, 1);
     xml += "<cbc:ID>" + invID + "</cbc:ID>\n";
-    xml += "<cbc:CopyIndicator>false</cbc:CopyIndicator>\n"; // BT-127; 0..1
+    xml += "<cbc:CopyIndicator>false</cbc:CopyIndicator>\n"; // HR-BT-1; 0..1
     xml += "<cbc:IssueDate>" + NKPR_GL_INVDTE + "</cbc:IssueDate>\n"; // BT-2; 1..1
     xml += "<cbc:IssueTime>" + NKPR_GL_TIMECR + "</cbc:IssueTime>\n"; // HR-BT-2; 1..1
 
@@ -493,8 +465,15 @@ function GenerateUBLXml(invNum /* number */) {
         }
         xml += "<cbc:InvoiceTypeCode>" + typeCode + "</cbc:InvoiceTypeCode>\n";
         // xml += "<cbc:InvoiceType>" + invType + "</cbc:InvoiceType>\n";
+
+        note = "";
+        if(NKPR_GL_ENTBY != ""){
+            note += NKPR_GL_ENTBY + "#" + KPSY_USER_NAZIV;
+        }
+        xml += "<cbc:Note>" + note + "</cbc:Note>\n";
+
         xml += "<cbc:TaxPointDate>" + NKPR_GL_ESD + "</cbc:TaxPointDate>\n";
-        xml += "<cbc:Note>" + nkpr_gl_slsp + "#" + kpsy_user_name + "</cbc:Note>\n";
+        
         xml += "<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>\n";
         xml += "<cbc:TaxCurrencyCode>EUR</cbc:TaxCurrencyCode>\n";
 
@@ -930,47 +909,57 @@ function GenerateUBLXml(invNum /* number */) {
         xml += "</Invoice>\n";
     }
 
-    // -----------------------------------------------------------
-    // 8. XSD VALIDATION BEFORE SAVING
-    // -----------------------------------------------------------
-    // validationErrors = "";
-    // if (!ValidateUBLXml(xml, validationErrors)) {
-    //     LogError("XSD_FAIL", "Validation failed for " + invNum, validationErrors);
-    //     MessageBox("XML FAILED XSD VALIDATION\n\n" + validationErrors);
-    //     return false;
-    // }
-
-    //result = VerifyXML(xml);
-    //MSG(result);
-
-
-    schFiles = {};
-    schFiles.Add("C:\\temp\\schematron\\HR-CIUS-EXT-EN16931-UBL.sch");
-
-    if(!ValidateSch(xml, schFiles, "C:\\temp\\schematron\\transpile.xsl", SavePath + parsefile(attachmentPdfPath, "pfName") + ".err")){
-        MessageBox("XML FAILED SCH VALIDATION\n\nSee .err file  for details.");
-        return false;
-    }
-
-    // if(!ValidateSch(xml, schFiles, validationErrors)){
-    //     // LogError("XSD_FAIL", "Validation failed for " + invNum, validationErrors);
-    //     MessageBox("XML FAILED XSD VALIDATION\n\n" + validationErrors);
-    //     return false;
-    // }   
-
 
     // -----------------------------------------------------------
     // 9. Save only if valid
     // -----------------------------------------------------------
-    //path = "C:\\winx\\emailfls\\";
-    // fileName = "UBL_" + invNum + ".xml";
+
+    fileName = SavePath + parsefile(attachmentPdfPath, "pfName") + ".xml";
+    SaveFile(xml, fileName);
 
 
-    // filename2 = "";
-    fileName2 = SavePath + parsefile(attachmentPdfPath, "pfName") + ".xml";
+    // -----------------------------------------------------------
+    // 8.0. VALIDATION 
+    // -----------------------------------------------------------
 
-    //fileName = "a.xml";
-    SaveFile(xml, fileName2);
+    xsdValidationResultOutputFile = SavePath + parsefile(attachmentPdfPath, "pfName") + "_XSD.err";
+    schValidationResultOutputFile = SavePath + parsefile(attachmentPdfPath, "pfName") + "_SCH.err";
+    
+    // -----------------------------------------------------------
+    // 8.1. DELETE OLDER VALIDATION OUTPUT FILES (IF EXIST)
+    // -----------------------------------------------------------
+
+    if(Exists(xsdValidationResultOutputFile)){
+        Delete(xsdValidationResultOutputFile);
+    }
+    
+    if(Exists(schValidationResultOutputFile)){
+        Delete(schValidationResultOutputFile);
+    }
+
+    // -----------------------------------------------------------
+    // 8.2. XSD VALIDATION 
+    // -----------------------------------------------------------
+    xsdFiles = {};
+    xsdFiles.Add("C:\\temp\\schemas\\maindoc\\UBL-Invoice-2.1.xsd");
+    if (!ValidateXsd(xml, xsdFiles, xsdValidationResultOutputFile)) {
+        // LogError("XSD_FAIL", "Validation failed for " + invNum, validationErrors);
+        MessageBox("xml FAILED XSD validation\n\nSee _XSD.err file for details.");
+        return false;
+    }
+
+    // -----------------------------------------------------------
+    // 8.3. SCH VALIDATION 
+    // -----------------------------------------------------------
+    schFiles = {};
+    schFiles.Add("C:\\temp\\schematron\\HR-CIUS-EXT-EN16931-UBL.sch");
+
+    if(!ValidateSch(xml, schFiles, "C:\\temp\\schematron\\transpile.xsl", schValidationResultOutputFile)){
+        MessageBox("xml FAILED SCH validation\n\nSee _SCH.err file for details.");
+        return false;
+    }
+
+    
 
 
     // //ako je sve prošlo bez greške, XML fajl je validiran, potpisan i poslat - u NKSYELOG treba upisati zapis o slanju, najprije status A pa konačno C
@@ -1164,4 +1153,37 @@ function GetMimeType(file) {
 
 
 
+/*
 
+//error logging
+
+// // ---------------------------------------------------------------
+// // Comprehensive Error Logging System for UBL Generation
+// // ---------------------------------------------------------------
+// function LogError(context, message, exception = "") {
+//     logPath = "fiskal_error.log";
+//     timestamp = FormatDate(Now(), "yyyy-MM-dd HH:mm:ss");
+//     logLine = timestamp + " | " + context + " | " + message;
+//     if (exception != "") {
+//         logLine += " | Exception: " + exception;
+//     }
+//     logLine += "\r\n";
+ 
+//     try {
+//         SaveFile(logPath, logLine); ovo mi se čini da ni u sintaxi ali imamo i append
+//     } catch (e) {
+//         MessageBox("CRITICAL: Cannot write to log file: " + logPath + "\nError: " + e);
+//     }
+// }
+ 
+//Primjer :
+// LogError("INPUT", "Invalid invoice number", "invNum=" + invNum);
+ 
+//I datoteke:
+ 
+2025-11-06 23:05:11 | START | Generating UBL for invoice | invNum=90100002
+2025-11-06 23:05:12 | DB_HEADER_RETRY | Attempt 1 failed | Connection timeout
+2025-11-06 23:05:13 | LINE_PROCESS | Failed line 3 | Null reference
+2025-11-06 23:05:14 | SUCCESS | UBL generated | UBL_90100002.xml
+
+*/

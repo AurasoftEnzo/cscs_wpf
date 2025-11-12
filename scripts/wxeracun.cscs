@@ -217,17 +217,17 @@ function GenerateUBLXml(invNum /* number */) {
     NKPR_GL_DUE_DATE = hdrRes[1][28].trim();
 
 
-    // MSG(NKPR_GL_NUM );
-    // MSG(NKPR_GL_OZNAKA);
-    // MSG(NKPR_GL_BROTP );
-    // MSG(NKPR_GL_REZ1);
-    // MSG(NKPR_GL_REZ3);
-    // MSG(NKPR_GL_INVDTE);
-    // MSG(NKPR_GL_TIMECR);
-    // MSG(NKPR_GL_DVO);
-    // MSG(NKPR_GL_NOKAM);
-    // MSG(NKPR_GL_ROKPL);
-    // MSG(NKPR_GL_ESD);
+    // MessageBox(NKPR_GL_NUM );
+    // MessageBox(NKPR_GL_OZNAKA);
+    // MessageBox(NKPR_GL_BROTP );
+    // MessageBox(NKPR_GL_REZ1);
+    // MessageBox(NKPR_GL_REZ3);
+    // MessageBox(NKPR_GL_INVDTE);
+    // MessageBox(NKPR_GL_TIMECR);
+    // MessageBox(NKPR_GL_DVO);
+    // MessageBox(NKPR_GL_NOKAM);
+    // MessageBox(NKPR_GL_ROKPL);
+    // MessageBox(NKPR_GL_ESD);
     // ...
 
 
@@ -326,6 +326,32 @@ function GenerateUBLXml(invNum /* number */) {
         typeCode = "384";
         invType = "Korektivni račun (storno ili ispravak)";
     }
+
+    // -----------------------------------------------------------
+    // Tax Calculation
+    // -----------------------------------------------------------
+    sql_tax = "SELECT SUM(NKPR_LN_POREZ) AS POREZ, SUM(NKPR_LN_AMT) AS OSNOVICA, NKPR_LN_PRNPR, PKFK_TAX_OBJED " +
+              "FROM " + databaseName + ".dbo.NKPRINVL LEFT JOIN " + databaseName + ".dbo.PKFKPORZ ON PKFK_TAX_CODE = NKPR_LN_TXBLE " +
+              "WHERE NKPR_LN_INVNM = @p1 AND NKPR_LN_TXBLE <> 0 " +
+              "GROUP BY NKPR_LN_PRNPR, PKFK_TAX_OBJED ORDER BY NKPR_LN_PRNPR;";
+    sqlParams = {};
+    sqlParams.Add({"@p1", invNum});
+    taxRes = sqlQuery(sql_tax, sqlParams);
+
+    
+    totalPorez = 0;
+    totalOsnovica = 0;
+
+    for (i = 1; i < Size(taxRes); i++) {
+        row = taxRes[i];
+        totalPorez += row[0];
+        totalOsnovica += row[1];
+    }
+
+
+    
+
+    
     // -----------------------------------------------------------
     // 4. Start XML Builder
     // -----------------------------------------------------------
@@ -356,75 +382,101 @@ function GenerateUBLXml(invNum /* number */) {
     xml += "    <ext:ExtensionContent>\n";
     //OVO treba urediti prema HR zahtjevima, za sada je samo primjer
     //potrebno je poreze potražit iz linija i sa for petljom popunit linije ispod
+
     xml += "        <hrextac:HRFISK20Data>\n";
     xml += "            <hrextac:HRTaxTotal>\n";
-    xml += "                <cbc:TaxAmount currencyID=\"EUR\">1.56</cbc:TaxAmount>\n";
-    xml += "                <hrextac:HRTaxSubtotal>\n";
-    xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">6.25</cbc:TaxableAmount>\n";
-    xml += "                    <cbc:TaxAmount currencyID=\"EUR\">1.56</cbc:TaxAmount>\n";
-    xml += "                    <hrextac:HRTaxCategory>\n";
-    xml += "                        <cbc:ID>S</cbc:ID>\n";
-    xml += "                        <cbc:Name>HR:PDV0</cbc:Name>\n";
-    xml += "                        <cbc:Percent>0.00</cbc:Percent>\n";
-    xml += "                        <hrextac:HRTaxScheme>\n";
-    xml += "                            <cbc:ID>VAT</cbc:ID>\n";
-    xml += "                        </hrextac:HRTaxScheme>\n";
-    xml += "                    </hrextac:HRTaxCategory>\n";
-    xml += "                </hrextac:HRTaxSubtotal>\n";
-    xml += "                <hrextac:HRTaxSubtotal>\n";
-    xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">0.00</cbc:TaxableAmount>\n";
-    xml += "                    <cbc:TaxAmount currencyID=\"EUR\">0.00</cbc:TaxAmount>\n";
-    xml += "                    <hrextac:HRTaxCategory>\n";
-    xml += "                        <cbc:ID>S</cbc:ID>\n";
-    xml += "                        <cbc:Name>HR:PDV0</cbc:Name>\n";
-    xml += "                        <cbc:Percent>0.00</cbc:Percent>\n";
-    xml += "                        <hrextac:HRTaxScheme>\n";
-    xml += "                            <cbc:ID>VAT</cbc:ID>\n";
-    xml += "                        </hrextac:HRTaxScheme>\n";
-    xml += "                    </hrextac:HRTaxCategory>\n";
-    xml += "                </hrextac:HRTaxSubtotal>\n";
-    xml += "                <hrextac:HRTaxSubtotal>\n";
-    xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">0.19</cbc:TaxableAmount>\n";
-    xml += "                    <cbc:TaxAmount currencyID=\"EUR\">0.00</cbc:TaxAmount>\n";
-    xml += "                    <hrextac:HRTaxCategory>\n";
-    xml += "                        <cbc:ID>S</cbc:ID>\n";
-    xml += "                        <cbc:Name>HR:PDV25</cbc:Name>\n";
-    xml += "                        <cbc:Percent>25.00</cbc:Percent>\n";
-    xml += "                        <hrextac:HRTaxScheme>\n";
-    xml += "                            <cbc:ID>VAT</cbc:ID>\n";
-    xml += "                        </hrextac:HRTaxScheme>\n";
-    xml += "                    </hrextac:HRTaxCategory>\n";
-    xml += "                </hrextac:HRTaxSubtotal>\n";
-    xml += "                <hrextac:HRTaxSubtotal>\n";
-    xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">0.19</cbc:TaxableAmount>\n";
-    xml += "                    <cbc:TaxAmount currencyID=\"EUR\">0.00</cbc:TaxAmount>\n";
-    xml += "                    <hrextac:HRTaxCategory>\n";
-    xml += "                        <cbc:ID>O</cbc:ID>\n";
-    xml += "                        <cbc:Name>HR:PP</cbc:Name>\n";
-    xml += "                        <cbc:Percent>0.00</cbc:Percent>\n";
-    xml += "                        <hrextac:HRTaxScheme>\n";
-    xml += "                            <cbc:ID>LOC</cbc:ID>\n";
-    xml += "                        </hrextac:HRTaxScheme>\n";
-    xml += "                    </hrextac:HRTaxCategory>\n";
-    xml += "                </hrextac:HRTaxSubtotal>\n";
-    xml += "                <hrextac:HRTaxSubtotal>\n";
-    xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">0.00</cbc:TaxableAmount>\n";
-    xml += "                    <cbc:TaxAmount currencyID=\"EUR\">0.00</cbc:TaxAmount>\n";
-    xml += "                    <hrextac:HRTaxCategory>\n";
-    xml += "                        <cbc:ID>S</cbc:ID>\n";
-    xml += "                        <cbc:Name>HR:PDV5</cbc:Name>\n";
-    xml += "                        <cbc:Percent>5.00</cbc:Percent>\n";
-    xml += "                        <hrextac:HRTaxScheme>\n";
-    xml += "                            <cbc:ID>VAT</cbc:ID>\n";
-    xml += "                        </hrextac:HRTaxScheme>\n";
-    xml += "                    </hrextac:HRTaxCategory>\n";
-    xml += "                </hrextac:HRTaxSubtotal>\n";
+    xml += "                <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(totalPorez, 2, ".") + "</cbc:TaxAmount>\n";
+    
+
+
+
+    for (i = 1; i < Size(taxRes); i++) {
+        row = taxRes[i];
+
+        POREZ = row[0];
+        OSNOVICA = row[1];
+        NKPR_LN_PRNPR = row[2];
+        PKFK_TAX_OBJED = Substring(row[3], 0, 2).trim();
+
+        xml += "                <hrextac:HRTaxSubtotal>\n";
+        xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
+        xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
+        xml += "                    <hrextac:HRTaxCategory>\n";
+        xml += "                        <cbc:ID>" + PKFK_TAX_OBJED + "</cbc:ID>\n";
+        xml += "                        <cbc:Name>" + "HR:PDV" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Name>\n";
+        xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
+        xml += "                        <hrextac:HRTaxScheme>\n";
+        xml += "                            <cbc:ID>VAT</cbc:ID>\n";
+        xml += "                        </hrextac:HRTaxScheme>\n";
+        xml += "                    </hrextac:HRTaxCategory>\n";
+        xml += "                </hrextac:HRTaxSubtotal>\n";
+    }
+
+
+
+
+    
+
+
+                                                        // xml += "                <hrextac:HRTaxSubtotal>\n";
+                                                        // xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">6.25</cbc:TaxableAmount>\n";
+                                                        // xml += "                    <cbc:TaxAmount currencyID=\"EUR\">1.56</cbc:TaxAmount>\n";
+                                                        // xml += "                    <hrextac:HRTaxCategory>\n";
+                                                        // xml += "                        <cbc:ID>S</cbc:ID>\n";
+                                                        // xml += "                        <cbc:Name>HR:PDV0</cbc:Name>\n";
+                                                        // xml += "                        <cbc:Percent>0.00</cbc:Percent>\n";
+                                                        // xml += "                        <hrextac:HRTaxScheme>\n";
+                                                        // xml += "                            <cbc:ID>VAT</cbc:ID>\n";
+                                                        // xml += "                        </hrextac:HRTaxScheme>\n";
+                                                        // xml += "                    </hrextac:HRTaxCategory>\n";
+                                                        // xml += "                </hrextac:HRTaxSubtotal>\n";
+                                                        
+                                                        // xml += "                <hrextac:HRTaxSubtotal>\n";
+                                                        // xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">0.00</cbc:TaxableAmount>\n";
+                                                        // xml += "                    <cbc:TaxAmount currencyID=\"EUR\">0.00</cbc:TaxAmount>\n";
+                                                        // xml += "                    <hrextac:HRTaxCategory>\n";
+                                                        // xml += "                        <cbc:ID>S</cbc:ID>\n";
+                                                        // xml += "                        <cbc:Name>HR:PDV0</cbc:Name>\n";
+                                                        // xml += "                        <cbc:Percent>0.00</cbc:Percent>\n";
+                                                        // xml += "                        <hrextac:HRTaxScheme>\n";
+                                                        // xml += "                            <cbc:ID>VAT</cbc:ID>\n";
+                                                        // xml += "                        </hrextac:HRTaxScheme>\n";
+                                                        // xml += "                    </hrextac:HRTaxCategory>\n";
+                                                        // xml += "                </hrextac:HRTaxSubtotal>\n";
+
+
+                                        // xml += "                <hrextac:HRTaxSubtotal>\n";
+                                        // xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">0.19</cbc:TaxableAmount>\n";
+                                        // xml += "                    <cbc:TaxAmount currencyID=\"EUR\">0.00</cbc:TaxAmount>\n";
+                                        // xml += "                    <hrextac:HRTaxCategory>\n";
+                                        // xml += "                        <cbc:ID>O</cbc:ID>\n";
+                                        // xml += "                        <cbc:Name>HR:PP</cbc:Name>\n";
+                                        // xml += "                        <cbc:Percent>0.00</cbc:Percent>\n";
+                                        // xml += "                        <hrextac:HRTaxScheme>\n";
+                                        // xml += "                            <cbc:ID>LOC</cbc:ID>\n";
+                                        // xml += "                        </hrextac:HRTaxScheme>\n";
+                                        // xml += "                    </hrextac:HRTaxCategory>\n";
+                                        // xml += "                </hrextac:HRTaxSubtotal>\n";
+
+                                        // xml += "                <hrextac:HRTaxSubtotal>\n";
+                                        // xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">0.00</cbc:TaxableAmount>\n";
+                                        // xml += "                    <cbc:TaxAmount currencyID=\"EUR\">0.00</cbc:TaxAmount>\n";
+                                        // xml += "                    <hrextac:HRTaxCategory>\n";
+                                        // xml += "                        <cbc:ID>S</cbc:ID>\n";
+                                        // xml += "                        <cbc:Name>HR:PDV5</cbc:Name>\n";
+                                        // xml += "                        <cbc:Percent>5.00</cbc:Percent>\n";
+                                        // xml += "                        <hrextac:HRTaxScheme>\n";
+                                        // xml += "                            <cbc:ID>VAT</cbc:ID>\n";
+                                        // xml += "                        </hrextac:HRTaxScheme>\n";
+                                        // xml += "                    </hrextac:HRTaxCategory>\n";
+                                        // xml += "                </hrextac:HRTaxSubtotal>\n";
+
     xml += "            </hrextac:HRTaxTotal>\n";
-    xml += "    <hrextac:HRLegalMonetaryTotal>\n";
-    xml += "        <cbc:TaxExclusiveAmount currencyID=\"EUR\">6.25</cbc:TaxExclusiveAmount>\n";
-    xml += "        <hrextac:OutOfScopeOfVATAmount currencyID=\"EUR\">0.19</hrextac:OutOfScopeOfVATAmount>\n";
-    xml += "    </hrextac:HRLegalMonetaryTotal>\n";
-    xml += "</hrextac:HRFISK20Data>\n";
+    xml += "            <hrextac:HRLegalMonetaryTotal>\n";
+    xml += "              <cbc:TaxExclusiveAmount currencyID=\"EUR\">" + "0.00" + "</cbc:TaxExclusiveAmount>\n";
+    xml += "              <hrextac:OutOfScopeOfVATAmount currencyID=\"EUR\">" + "0.00" + "</hrextac:OutOfScopeOfVATAmount>\n";
+    xml += "            </hrextac:HRLegalMonetaryTotal>\n";
+    xml += "        </hrextac:HRFISK20Data>\n";
 
     // xml += "      <sig:UBLDocumentSignatures xmlns:sig=\"urn:oasis:names:specification:ubl:schema:xsd:CommonSignatureComponents-2\">\n";
     // xml += "        <sac:SignatureInformation xmlns:sac=\"urn:oasis:names:specification:ubl:schema:xsd:SignatureAggregateComponents-2\"></sac:SignatureInformation>\n";
@@ -608,8 +660,16 @@ function GenerateUBLXml(invNum /* number */) {
         xml += "    </cac:Contact>\n";
     }
 
-
     xml += "  </cac:Party>\n";
+
+
+    
+    xml += "  <cac:SellerContact>";
+    xml += "    <cbc:ID>12345678903</cbc:ID>";
+    xml += "    <cbc:Name>Operater1</cbc:Name>";
+    xml += "  </cac:SellerContact>";
+
+
     xml += "</cac:AccountingSupplierParty>\n";
 
     // -----------------------------------------------------------
@@ -695,24 +755,28 @@ function GenerateUBLXml(invNum /* number */) {
     }
     xml += "</cac:PaymentMeans>\n";
 
-    // -----------------------------------------------------------
-    // Tax Calculation
-    // -----------------------------------------------------------
-    sql_tax = "SELECT SUM(NKPR_LN_POREZ) AS POREZ, SUM(NKPR_LN_AMT) AS OSNOVICA, NKPR_LN_PRNPR, PKFK_TAX_OBJED " +
-              "FROM " + databaseName + ".dbo.NKPRINVL LEFT JOIN " + databaseName + ".dbo.PKFKPORZ ON PKFK_TAX_CODE = NKPR_LN_TXBLE " +
-              "WHERE NKPR_LN_INVNM = @p1 AND NKPR_LN_TXBLE <> 0 " +
-              "GROUP BY NKPR_LN_PRNPR, PKFK_TAX_OBJED ORDER BY NKPR_LN_PRNPR;";
-    sqlParams = {};
-    sqlParams.Add({"@p1", invNum});
-    taxRes = sqlQuery(sql_tax, sqlParams);
-    totalPorez = 0;
-    totalOsnovica = 0;
 
-    for (i = 1; i < Size(taxRes); i++) {
-        row = taxRes[i];
-        totalPorez += row[0];
-        totalOsnovica += row[1];
-    }
+
+                //                     // -----------------------------------------------------------
+                //                     // Tax Calculation
+                //                     // -----------------------------------------------------------
+                // sql_tax = "SELECT SUM(NKPR_LN_POREZ) AS POREZ, SUM(NKPR_LN_AMT) AS OSNOVICA, NKPR_LN_PRNPR, PKFK_TAX_OBJED " +
+                //           "FROM " + databaseName + ".dbo.NKPRINVL LEFT JOIN " + databaseName + ".dbo.PKFKPORZ ON PKFK_TAX_CODE = NKPR_LN_TXBLE " +
+                //           "WHERE NKPR_LN_INVNM = @p1 AND NKPR_LN_TXBLE <> 0 " +
+                //           "GROUP BY NKPR_LN_PRNPR, PKFK_TAX_OBJED ORDER BY NKPR_LN_PRNPR;";
+                // sqlParams = {};
+                // sqlParams.Add({"@p1", invNum});
+                // taxRes = sqlQuery(sql_tax, sqlParams);
+
+                // totalPorez = 0;
+                // totalOsnovica = 0;
+
+                // for (i = 1; i < Size(taxRes); i++) {
+                //     row = taxRes[i];
+                //     totalPorez += row[0];
+                //     totalOsnovica += row[1];
+                // }
+
 
 
     // FORMAT mora bit npr. 123.45, ne 123,45... i 123.00 ne 123 // ???
@@ -768,15 +832,15 @@ function GenerateUBLXml(invNum /* number */) {
         if (profileID == "P9") {
             xml += "<CreditNoteLine>\n";
             xml += "  <cbc:ID>" + NKPR_LN_BR_LN + "</cbc:ID>\n";
-            xml += "  <cbc:CreditedQuantity unitCode=\"C62\">" + FormatNum(NKPR_LN_PQTY, 4, ".") + "</cbc:CreditedQuantity>\n";
+            xml += "  <cbc:CreditedQuantity unitCode=\"" + GetUNUnitCode(NKPR_LN_JEDMJ) + "\">" + FormatNum(NKPR_LN_PQTY, 4, ".") + "</cbc:CreditedQuantity>\n";
         } elif (nkpr_gl_oznaka == 'T') {
             xml += "<DebitNoteLine>\n";
             xml += "  <cbc:ID>" + NKPR_LN_BR_LN + "</cbc:ID>\n";
-            xml += "  <cbc:DebitedQuantity unitCode=\"C62\">" + FormatNum(NKPR_LN_PQTY, 4, ".") + "</cbc:DebitedQuantity>\n";
+            xml += "  <cbc:DebitedQuantity unitCode=\"" + GetUNUnitCode(NKPR_LN_JEDMJ) + "\">" + FormatNum(NKPR_LN_PQTY, 4, ".") + "</cbc:DebitedQuantity>\n";
         } else {
             xml += "<cac:InvoiceLine>\n";
             xml += "  <cbc:ID>" + NKPR_LN_BR_LN + "</cbc:ID>\n";
-            xml += "  <cbc:InvoicedQuantity unitCode=\"C62\">" + FormatNum(NKPR_LN_PQTY, 4, ".") + "</cbc:InvoicedQuantity>\n";
+            xml += "  <cbc:InvoicedQuantity unitCode=\"" + GetUNUnitCode(NKPR_LN_JEDMJ) + "\">" + FormatNum(NKPR_LN_PQTY, 4, ".") + "</cbc:InvoicedQuantity>\n";
         }
 
         xml += "  <cbc:LineExtensionAmount currencyID=\"EUR\">" + FormatNum(NKPR_LN_AMT, 2, ".") + "</cbc:LineExtensionAmount>\n";
@@ -883,10 +947,9 @@ function GenerateUBLXml(invNum /* number */) {
         xml += "  </cac:Item>\n";
 
         // Price
-        unitCode = GetUNUnitCode(NKPR_LN_JEDMJ);
         xml += "  <cac:Price>\n";
         xml += "    <cbc:PriceAmount currencyID=\"EUR\">" + FormatNum(NKPR_LN_PPRCE, 4, ".") + "</cbc:PriceAmount>\n";
-        xml += "    <cbc:BaseQuantity unitCode=\"" + unitCode + "\">1</cbc:BaseQuantity>\n";
+        xml += "    <cbc:BaseQuantity unitCode=\"" + GetUNUnitCode(NKPR_LN_JEDMJ) + "\">1</cbc:BaseQuantity>\n";
         xml += "  </cac:Price>\n";
 
         if (profileID == "P9") {
@@ -911,24 +974,22 @@ function GenerateUBLXml(invNum /* number */) {
 
 
     // -----------------------------------------------------------
-    // 9. Save only if valid
+    // 9. Save xml BEFORE validation
     // -----------------------------------------------------------
-
-    fileName = SavePath + parsefile(attachmentPdfPath, "pfName") + ".xml";
-    SaveFile(xml, fileName);
+    xmlFileName = SavePath + parsefile(attachmentPdfPath, "pfName") + ".xml";
+    SaveFile(xml, xmlFileName);
 
 
     // -----------------------------------------------------------
     // 8.0. VALIDATION 
     // -----------------------------------------------------------
-
     xsdValidationResultOutputFile = SavePath + parsefile(attachmentPdfPath, "pfName") + "_XSD.err";
     schValidationResultOutputFile = SavePath + parsefile(attachmentPdfPath, "pfName") + "_SCH.err";
     
+
     // -----------------------------------------------------------
     // 8.1. DELETE OLDER VALIDATION OUTPUT FILES (IF EXIST)
     // -----------------------------------------------------------
-
     if(Exists(xsdValidationResultOutputFile)){
         Delete(xsdValidationResultOutputFile);
     }
@@ -936,6 +997,7 @@ function GenerateUBLXml(invNum /* number */) {
     if(Exists(schValidationResultOutputFile)){
         Delete(schValidationResultOutputFile);
     }
+
 
     // -----------------------------------------------------------
     // 8.2. XSD VALIDATION 
@@ -948,6 +1010,18 @@ function GenerateUBLXml(invNum /* number */) {
         return false;
     }
 
+
+
+    // // signature testing
+    // // signature testing
+    // // signature testing
+    // // signature testing
+    // MessageBox(SignXml(xmlFileName, "C:\\temp\\cert\\p12_aurasoft_demo.p12", "Aurasoft1", SavePath + parsefile(attachmentPdfPath, "pfName") + "_signed.xml"));
+    // return false;
+
+
+
+
     // -----------------------------------------------------------
     // 8.3. SCH VALIDATION 
     // -----------------------------------------------------------
@@ -959,7 +1033,11 @@ function GenerateUBLXml(invNum /* number */) {
         return false;
     }
 
+
     
+
+
+
 
 
     // //ako je sve prošlo bez greške, XML fajl je validiran, potpisan i poslat - u NKSYELOG treba upisati zapis o slanju, najprije status A pa konačno C
@@ -973,7 +1051,7 @@ function GenerateUBLXml(invNum /* number */) {
     // sqlParams.Add({"@p5", "" });
     // sqlParams.Add({"@p6", "IR"});
     // sqlParams.Add({"@p7", Now("HH:mm:ss")});
-    // sqlParams.Add({"@p8", ""}); //"New Invoice/HOA Sent with attachment: " + fileName2});
+    // sqlParams.Add({"@p8", ""}); //"New Invoice/HOA Sent with attachment: " + xmlFileName});
     // sqlParams.Add({"@p9", Now("yyyy-MM-dd")});
     // sqlQuery(sql_ins, sqlParams);
     // //
@@ -987,7 +1065,7 @@ function GenerateUBLXml(invNum /* number */) {
     // sqlParams.Add({"@p5", "" });
     // sqlParams.Add({"@p6", "IR"});
     // sqlParams.Add({"@p7", Now("HH:mm:ss")}); 
-    // sqlParams.Add({"@p8",""}); //"New Invoice/HOA Sent with attachment: " + fileName2});
+    // sqlParams.Add({"@p8",""}); //"New Invoice/HOA Sent with attachment: " + xmlFileName});
     // sqlParams.Add({"@p9", Now("yyyy-MM-dd")});
     // sqlQuery(sql_ins, sqlParams);
 
@@ -995,10 +1073,10 @@ function GenerateUBLXml(invNum /* number */) {
 
 
     // if (Exists(path + fileName)) {
-    //     msg(2 + ": " + path + fileName);
+    //     MessageBox(2 + ": " + path + fileName);
     //     Copy(path + fileName, path + fileName + ".bak");
     // }
-    // msg(3);
+    // MessageBox(3);
     // SaveFile(xml);
     // //LogError("UBL_VALIDATED", "Generated & VALIDATED: " + fileName, "");
     // MessageBox("UBL generated & VALIDATED: " + fileName);

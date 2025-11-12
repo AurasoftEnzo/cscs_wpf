@@ -1353,11 +1353,13 @@ namespace WpfCSCS
 
                     if (failedAsserts.Count > 0 || successfulReports.Count > 0)
                     {
+                        int errorCounter = 0;
+
                         allErrors.AppendLine("=== Errors from " + Path.GetFileName(schFile) + " ===");
                         foreach (XmlNode assert in failedAsserts)
                         {
                             allErrors.AppendLine("");
-                            allErrors.AppendLine("FAILED: " + assert.SelectSingleNode("svrl:text", ns)?.InnerText);
+                            allErrors.AppendLine(++errorCounter + ". " + "FAILED: " + assert.SelectSingleNode("svrl:text", ns)?.InnerText);
                             var location = assert.SelectSingleNode("@location", ns);
                             if (location != null) allErrors.AppendLine("Location: " + location.Value);
                         }
@@ -1372,7 +1374,9 @@ namespace WpfCSCS
                         System.IO.File.Delete(resultPath);
                 }
 
-                System.IO.File.WriteAllText(logFilePath, allErrors.ToString());
+                if (allErrors.Length > 0) {
+                    System.IO.File.WriteAllText(logFilePath, allErrors.ToString());
+                }
                 return new Variable(allErrors.Length == 0 ? true : false);
             }
             catch (Exception ex)

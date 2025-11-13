@@ -77,8 +77,8 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.File2Base64, new File2Base64Function());
             interpreter.RegisterFunction(Constants.Base642File, new Base642FileFunction());
             interpreter.RegisterFunction(Constants.SignXml, new SignXmlFunction());
-            interpreter.RegisterFunction(Constants.ValidateSch, new ValidateSchFunction());
             interpreter.RegisterFunction(Constants.ValidateXsd, new ValidateXsdFunction());
+            interpreter.RegisterFunction(Constants.ValidateSch, new ValidateSchFunction());
         }
         public partial class Constants
         {
@@ -112,8 +112,8 @@ namespace WpfCSCS
             public const string File2Base64 = "File2Base64";
             public const string Base642File = "Base642File";
             public const string SignXml = "SignXml";
-            public const string ValidateSch = "ValidateSch";
             public const string ValidateXsd = "ValidateXsd";
+            public const string ValidateSch = "ValidateSch";
         }
     }
 
@@ -1273,6 +1273,132 @@ namespace WpfCSCS
         }
     }
 
+    class ValidateXsdFunction : ParserFunction
+    {
+        private List<string> verificationMessages;
+        bool hasErrors;
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 3, m_name);
+
+            var xmlContent = Utils.GetSafeString(args, 0);
+            var xsdFilesArray = Utils.GetSafeVariable(args, 1);
+            var logFilePath = Utils.GetSafeString(args, 2);
+
+            verificationMessages = new List<string>();
+            hasErrors = false;
+
+            ////var invoiceSchema = Directory.GetFiles("C:\\temp\\schemas\\maindoc", )
+
+            //var invoiceSchema = "C:\\temp\\schemas\\maindoc\\UBL-Invoice-2.1.xsd";
+
+            //XmlSchemaSet schemas = new XmlSchemaSet();
+            //schemas.Add("urn:oasis:names:specification:ubl:schema:xsd:Invoice-2", invoiceSchema); // You can specify a namespace if your XSD uses one
+
+            //XmlReaderSettings settings = new XmlReaderSettings();
+            //settings.Schemas = schemas;
+            //settings.ValidationType = ValidationType.Schema;
+            //settings.ValidationEventHandler += ValidationHandler;
+
+            //using (StringReader stringReader = new StringReader(xmlContent))
+            //using (XmlReader xmlReader = XmlReader.Create(stringReader, settings))
+            //{
+            //    try
+            //    {
+            //        while (xmlReader.Read()) { }
+
+            //    }
+            //    catch (XmlException ex)
+            //    {
+            //        verificationMessages.Add($"XML Parsing Error: {ex.Message}");
+            //        return new Variable(false);
+            //    }
+            //    finally
+            //    {
+            //        System.IO.File.WriteAllText("C:\\temp\\xml_verification_log.txt", string.Join(Environment.NewLine, verificationMessages));
+            //    }
+
+            //    if (!hasErrors)
+            //    {
+            //        return new Variable(true);
+            //    }
+            //    else
+            //    {
+            //        return new Variable(false);
+            //    }
+            //}
+
+            try
+            {
+                List<string> xsdFiles = new List<string>();
+                if (xsdFilesArray.Tuple != null)
+                {
+                    foreach (var xsdFileVar in xsdFilesArray.Tuple)
+                    {
+                        xsdFiles.Add(xsdFileVar.AsString());
+                    }
+                }
+
+                // Create XmlReaderSettings and load schema
+                XmlReaderSettings settings = new XmlReaderSettings();
+                foreach (string xsdFile in xsdFiles)
+                {
+                    if (System.IO.File.Exists(xsdFile))
+                    {
+                        settings.Schemas.Add(null, xsdFile); // !!!
+                    }
+                    else
+                    {
+                        verificationMessages.Add("\n.xsd schema file not found: " + xsdFile);
+                        hasErrors = true;
+                        continue;
+                    }
+                }
+                settings.ValidationType = ValidationType.Schema;
+                settings.ValidationEventHandler += new ValidationEventHandler(ValidationHandler);
+
+                // Validate the XML string
+                using (StringReader stringReader = new StringReader(xmlContent))
+                using (XmlReader reader = XmlReader.Create(stringReader, settings))
+                {
+                    try
+                    {
+                        while (reader.Read()) { }
+                        if (hasErrors)
+                        {
+                            System.IO.File.WriteAllText(logFilePath, string.Join("\n\n", verificationMessages));
+                        }
+                        return new Variable(!hasErrors);
+                    }
+                    catch (XmlException ex)
+                    {
+                        System.IO.File.WriteAllText(logFilePath, $"XML parsing error: {ex.Message}");
+                        return new Variable(false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.IO.File.WriteAllText(logFilePath, "ex.Message: " + ex.Message);
+                return new Variable(false);
+            }
+        }
+
+        private void ValidationHandler(object sender, ValidationEventArgs e)
+        {
+            if (e.Severity == XmlSeverityType.Error)
+            {
+                verificationMessages.Add($"Validation ERROR: {e.Message}");
+                hasErrors = true;
+            }
+            else
+            {
+                verificationMessages.Add($"Validation Warning: {e.Message}");
+            }
+        }
+    }
+
     class ValidateSchFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -1374,7 +1500,8 @@ namespace WpfCSCS
                         System.IO.File.Delete(resultPath);
                 }
 
-                if (allErrors.Length > 0) {
+                if (allErrors.Length > 0)
+                {
                     System.IO.File.WriteAllText(logFilePath, allErrors.ToString());
                 }
                 return new Variable(allErrors.Length == 0 ? true : false);
@@ -1386,125 +1513,4 @@ namespace WpfCSCS
             }
         }
     }
-
-    class ValidateXsdFunction : ParserFunction
-    {
-        private List<string> verificationMessages;
-        bool hasErrors;
-        protected override Variable Evaluate(ParsingScript script)
-        {
-            List<Variable> args = script.GetFunctionArgs();
-            Utils.CheckArgs(args.Count, 3, m_name);
-
-            var xmlContent = Utils.GetSafeString(args, 0);
-            var xsdFilesArray = Utils.GetSafeVariable(args, 1);
-            var logFilePath = Utils.GetSafeString(args, 2);
-
-            verificationMessages = new List<string>();
-            hasErrors = false;
-
-            ////var invoiceSchema = Directory.GetFiles("C:\\temp\\schemas\\maindoc", )
-
-            //var invoiceSchema = "C:\\temp\\schemas\\maindoc\\UBL-Invoice-2.1.xsd";
-
-            //XmlSchemaSet schemas = new XmlSchemaSet();
-            //schemas.Add("urn:oasis:names:specification:ubl:schema:xsd:Invoice-2", invoiceSchema); // You can specify a namespace if your XSD uses one
-
-            //XmlReaderSettings settings = new XmlReaderSettings();
-            //settings.Schemas = schemas;
-            //settings.ValidationType = ValidationType.Schema;
-            //settings.ValidationEventHandler += ValidationHandler;
-
-            //using (StringReader stringReader = new StringReader(xmlContent))
-            //using (XmlReader xmlReader = XmlReader.Create(stringReader, settings))
-            //{
-            //    try
-            //    {
-            //        while (xmlReader.Read()) { }
-
-            //    }
-            //    catch (XmlException ex)
-            //    {
-            //        verificationMessages.Add($"XML Parsing Error: {ex.Message}");
-            //        return new Variable(false);
-            //    }
-            //    finally
-            //    {
-            //        System.IO.File.WriteAllText("C:\\temp\\xml_verification_log.txt", string.Join(Environment.NewLine, verificationMessages));
-            //    }
-
-            //    if (!hasErrors)
-            //    {
-            //        return new Variable(true);
-            //    }
-            //    else
-            //    {
-            //        return new Variable(false);
-            //    }
-            //}
-
-            try
-            {
-                List<string> xsdFiles = new List<string>();
-                if (xsdFilesArray.Tuple != null)
-                {
-                    foreach (var xsdFileVar in xsdFilesArray.Tuple)
-                    {
-                        xsdFiles.Add(xsdFileVar.AsString());
-                    }
-                }
-
-                // Create XmlReaderSettings and load schema
-                XmlReaderSettings settings = new XmlReaderSettings();
-                foreach (string xsdFile in xsdFiles)
-                {
-                    if (System.IO.File.Exists(xsdFile))
-                    {
-                        settings.Schemas.Add(null, xsdFile); // !!!
-                    }
-                }
-                settings.ValidationType = ValidationType.Schema;
-                settings.ValidationEventHandler += new ValidationEventHandler(ValidationHandler);
-
-                // Validate the XML string
-                using (StringReader stringReader = new StringReader(xmlContent))
-                using (XmlReader reader = XmlReader.Create(stringReader, settings))
-                {
-                    try
-                    {
-                        while (reader.Read()) { }
-                        if (hasErrors)
-                        {
-                            System.IO.File.WriteAllText(logFilePath, string.Join("\n\n", verificationMessages));
-                        }
-                        return new Variable(!hasErrors);
-                    }
-                    catch (XmlException ex)
-                    {
-                        System.IO.File.WriteAllText(logFilePath, $"XML parsing error: {ex.Message}");
-                        return new Variable(false);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                System.IO.File.WriteAllText(logFilePath, "ex.Message: " + ex.Message);
-                return new Variable(false);
-            }
-        }
-
-        private void ValidationHandler(object sender, ValidationEventArgs e)
-        {
-            if (e.Severity == XmlSeverityType.Error)
-            {
-                verificationMessages.Add($"Validation ERROR: {e.Message}");
-                hasErrors = true;
-            }
-            else
-            {
-                verificationMessages.Add($"Validation Warning: {e.Message}");
-            }
-        }
-    }
-
 }

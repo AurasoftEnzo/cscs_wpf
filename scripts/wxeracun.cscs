@@ -80,9 +80,9 @@ if (size(sqlResult) > 1)
 
 
 if(!GenerateUBLXml(invNum)){
-    MessageBox("Greška pri generiranju UBL XML-a za račun " + invNum + "!");    
+    //MessageBox("Greška pri generiranju UBL XML-a za račun " + invNum + "!");    
 }else{
-    MessageBox("UBL XML je uspješno generiran za račun " + invNum + ".");    
+    //MessageBox("UBL XML je uspješno generiran za račun " + invNum + ".");    
 }
 
 exit;
@@ -412,64 +412,57 @@ function GenerateUBLXml(invNum /* number */) {
         xml += "                </hrextac:HRTaxSubtotal>\n";
     }
 
+        // xml += "                <hrextac:HRTaxSubtotal>\n";
+        // xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">6.25</cbc:TaxableAmount>\n";
+        // xml += "                    <cbc:TaxAmount currencyID=\"EUR\">1.56</cbc:TaxAmount>\n";
+        // xml += "                    <hrextac:HRTaxCategory>\n";
+        // xml += "                        <cbc:ID>S</cbc:ID>\n";
+        // xml += "                        <cbc:Name>HR:PDV0</cbc:Name>\n";
+        // xml += "                        <cbc:Percent>0.00</cbc:Percent>\n";
+        // xml += "                        <hrextac:HRTaxScheme>\n";
+        // xml += "                            <cbc:ID>VAT</cbc:ID>\n";
+        // xml += "                        </hrextac:HRTaxScheme>\n";
+        // xml += "                    </hrextac:HRTaxCategory>\n";
+        // xml += "                </hrextac:HRTaxSubtotal>\n";
 
+        // xml += "                <hrextac:HRTaxSubtotal>\n";
+        // xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">0.00</cbc:TaxableAmount>\n";
+        // xml += "                    <cbc:TaxAmount currencyID=\"EUR\">0.00</cbc:TaxAmount>\n";
+        // xml += "                    <hrextac:HRTaxCategory>\n";
+        // xml += "                        <cbc:ID>S</cbc:ID>\n";
+        // xml += "                        <cbc:Name>HR:PDV0</cbc:Name>\n";
+        // xml += "                        <cbc:Percent>0.00</cbc:Percent>\n";
+        // xml += "                        <hrextac:HRTaxScheme>\n";
+        // xml += "                            <cbc:ID>VAT</cbc:ID>\n";
+        // xml += "                        </hrextac:HRTaxScheme>\n";
+        // xml += "                    </hrextac:HRTaxCategory>\n";
+        // xml += "                </hrextac:HRTaxSubtotal>\n";
 
+        // xml += "                <hrextac:HRTaxSubtotal>\n";
+        // xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">0.19</cbc:TaxableAmount>\n";
+        // xml += "                    <cbc:TaxAmount currencyID=\"EUR\">0.00</cbc:TaxAmount>\n";
+        // xml += "                    <hrextac:HRTaxCategory>\n";
+        // xml += "                        <cbc:ID>O</cbc:ID>\n";
+        // xml += "                        <cbc:Name>HR:PP</cbc:Name>\n";
+        // xml += "                        <cbc:Percent>0.00</cbc:Percent>\n";
+        // xml += "                        <hrextac:HRTaxScheme>\n";
+        // xml += "                            <cbc:ID>LOC</cbc:ID>\n";
+        // xml += "                        </hrextac:HRTaxScheme>\n";
+        // xml += "                    </hrextac:HRTaxCategory>\n";
+        // xml += "                </hrextac:HRTaxSubtotal>\n";
 
-    
-
-
-                                                        // xml += "                <hrextac:HRTaxSubtotal>\n";
-                                                        // xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">6.25</cbc:TaxableAmount>\n";
-                                                        // xml += "                    <cbc:TaxAmount currencyID=\"EUR\">1.56</cbc:TaxAmount>\n";
-                                                        // xml += "                    <hrextac:HRTaxCategory>\n";
-                                                        // xml += "                        <cbc:ID>S</cbc:ID>\n";
-                                                        // xml += "                        <cbc:Name>HR:PDV0</cbc:Name>\n";
-                                                        // xml += "                        <cbc:Percent>0.00</cbc:Percent>\n";
-                                                        // xml += "                        <hrextac:HRTaxScheme>\n";
-                                                        // xml += "                            <cbc:ID>VAT</cbc:ID>\n";
-                                                        // xml += "                        </hrextac:HRTaxScheme>\n";
-                                                        // xml += "                    </hrextac:HRTaxCategory>\n";
-                                                        // xml += "                </hrextac:HRTaxSubtotal>\n";
-                                                        
-                                                        // xml += "                <hrextac:HRTaxSubtotal>\n";
-                                                        // xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">0.00</cbc:TaxableAmount>\n";
-                                                        // xml += "                    <cbc:TaxAmount currencyID=\"EUR\">0.00</cbc:TaxAmount>\n";
-                                                        // xml += "                    <hrextac:HRTaxCategory>\n";
-                                                        // xml += "                        <cbc:ID>S</cbc:ID>\n";
-                                                        // xml += "                        <cbc:Name>HR:PDV0</cbc:Name>\n";
-                                                        // xml += "                        <cbc:Percent>0.00</cbc:Percent>\n";
-                                                        // xml += "                        <hrextac:HRTaxScheme>\n";
-                                                        // xml += "                            <cbc:ID>VAT</cbc:ID>\n";
-                                                        // xml += "                        </hrextac:HRTaxScheme>\n";
-                                                        // xml += "                    </hrextac:HRTaxCategory>\n";
-                                                        // xml += "                </hrextac:HRTaxSubtotal>\n";
-
-
-                                        // xml += "                <hrextac:HRTaxSubtotal>\n";
-                                        // xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">0.19</cbc:TaxableAmount>\n";
-                                        // xml += "                    <cbc:TaxAmount currencyID=\"EUR\">0.00</cbc:TaxAmount>\n";
-                                        // xml += "                    <hrextac:HRTaxCategory>\n";
-                                        // xml += "                        <cbc:ID>O</cbc:ID>\n";
-                                        // xml += "                        <cbc:Name>HR:PP</cbc:Name>\n";
-                                        // xml += "                        <cbc:Percent>0.00</cbc:Percent>\n";
-                                        // xml += "                        <hrextac:HRTaxScheme>\n";
-                                        // xml += "                            <cbc:ID>LOC</cbc:ID>\n";
-                                        // xml += "                        </hrextac:HRTaxScheme>\n";
-                                        // xml += "                    </hrextac:HRTaxCategory>\n";
-                                        // xml += "                </hrextac:HRTaxSubtotal>\n";
-
-                                        // xml += "                <hrextac:HRTaxSubtotal>\n";
-                                        // xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">0.00</cbc:TaxableAmount>\n";
-                                        // xml += "                    <cbc:TaxAmount currencyID=\"EUR\">0.00</cbc:TaxAmount>\n";
-                                        // xml += "                    <hrextac:HRTaxCategory>\n";
-                                        // xml += "                        <cbc:ID>S</cbc:ID>\n";
-                                        // xml += "                        <cbc:Name>HR:PDV5</cbc:Name>\n";
-                                        // xml += "                        <cbc:Percent>5.00</cbc:Percent>\n";
-                                        // xml += "                        <hrextac:HRTaxScheme>\n";
-                                        // xml += "                            <cbc:ID>VAT</cbc:ID>\n";
-                                        // xml += "                        </hrextac:HRTaxScheme>\n";
-                                        // xml += "                    </hrextac:HRTaxCategory>\n";
-                                        // xml += "                </hrextac:HRTaxSubtotal>\n";
+        // xml += "                <hrextac:HRTaxSubtotal>\n";
+        // xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">0.00</cbc:TaxableAmount>\n";
+        // xml += "                    <cbc:TaxAmount currencyID=\"EUR\">0.00</cbc:TaxAmount>\n";
+        // xml += "                    <hrextac:HRTaxCategory>\n";
+        // xml += "                        <cbc:ID>S</cbc:ID>\n";
+        // xml += "                        <cbc:Name>HR:PDV5</cbc:Name>\n";
+        // xml += "                        <cbc:Percent>5.00</cbc:Percent>\n";
+        // xml += "                        <hrextac:HRTaxScheme>\n";
+        // xml += "                            <cbc:ID>VAT</cbc:ID>\n";
+        // xml += "                        </hrextac:HRTaxScheme>\n";
+        // xml += "                    </hrextac:HRTaxCategory>\n";
+        // xml += "                </hrextac:HRTaxSubtotal>\n";
 
     xml += "            </hrextac:HRTaxTotal>\n";
     xml += "            <hrextac:HRLegalMonetaryTotal>\n";
@@ -974,7 +967,7 @@ function GenerateUBLXml(invNum /* number */) {
 
 
     // -----------------------------------------------------------
-    // 9. Save xml BEFORE validation
+    // ...Save xml BEFORE validation
     // -----------------------------------------------------------
     xmlFileName = SavePath + parsefile(attachmentPdfPath, "pfName") + ".xml";
     SaveFile(xml, xmlFileName);
@@ -983,6 +976,16 @@ function GenerateUBLXml(invNum /* number */) {
     // -----------------------------------------------------------
     // 8.0. VALIDATION 
     // -----------------------------------------------------------
+
+    IniPath = strtrim(wpath()) + "winx.ini";
+    if(!regedit("regOpen", IniPath, "rtFile")){
+        MessageBox("Datoteka " + IniPath + " nije dostupna.");
+        exit;
+    }
+    SchemasPath = regedit("regReadStr", 'ERACUN', 'SchemasPath');
+    regedit("regClose");
+    
+
     xsdValidationResultOutputFile = SavePath + parsefile(attachmentPdfPath, "pfName") + "_XSD.err";
     schValidationResultOutputFile = SavePath + parsefile(attachmentPdfPath, "pfName") + "_SCH.err";
     
@@ -1003,7 +1006,7 @@ function GenerateUBLXml(invNum /* number */) {
     // 8.2. XSD VALIDATION 
     // -----------------------------------------------------------
     xsdFiles = {};
-    xsdFiles.Add("C:\\temp\\schemas\\maindoc\\UBL-Invoice-2.1.xsd");
+    xsdFiles.Add(SchemasPath + "xsd\\maindoc\\UBL-Invoice-2.1.xsd");
     if (!ValidateXsd(xml, xsdFiles, xsdValidationResultOutputFile)) {
         // LogError("XSD_FAIL", "Validation failed for " + invNum, validationErrors);
         MessageBox("xml FAILED XSD validation\n\nSee _XSD.err file for details.");
@@ -1011,32 +1014,27 @@ function GenerateUBLXml(invNum /* number */) {
     }
 
 
-
-    // // signature testing
-    // // signature testing
-    // // signature testing
-    // // signature testing
-    // MessageBox(SignXml(xmlFileName, "C:\\temp\\cert\\p12_aurasoft_demo.p12", "Aurasoft1", SavePath + parsefile(attachmentPdfPath, "pfName") + "_signed.xml"));
-    // return false;
-
-
-
-
     // -----------------------------------------------------------
     // 8.3. SCH VALIDATION 
     // -----------------------------------------------------------
     schFiles = {};
-    schFiles.Add("C:\\temp\\schematron\\HR-CIUS-EXT-EN16931-UBL.sch");
-
-    if(!ValidateSch(xml, schFiles, "C:\\temp\\schematron\\transpile.xsl", schValidationResultOutputFile)){
+    schFiles.Add(SchemasPath + "schematron\\HR-CIUS-EXT-EN16931-UBL.sch");
+    // schFiles.Add(SchemasPath + "schematron\\preprocessed\\EN16931-UBL-validation-preprocessed.sch");
+    if(!ValidateSch(xml, schFiles, SchemasPath + "schematron\\transpile.xsl", schValidationResultOutputFile)){
         MessageBox("xml FAILED SCH validation\n\nSee _SCH.err file for details.");
         return false;
     }
 
 
     
+    // schFiles = {};
+    // // schFiles.Add(SchemasPath + "schematron\\EN16931-UBL-validation.sch");
+    // schFiles.Add(SchemasPath + "schematron\\preprocessed\\EN16931-UBL-validation-preprocessed.sch");
 
-
+    // if(!ValidateSch(xml, schFiles, SchemasPath + "schematron\\transpile.xsl", schValidationResultOutputFile)){
+    //     MessageBox("xml FAILED SCH validation\n\nSee _SCH.err file for details.");
+    //     return false;
+    // }
 
 
 
@@ -1218,8 +1216,6 @@ function GetUNUnitCode(jedmj) {
 
 function GetMimeType(file) {
     ext = ParseFile(file, "pfExt").Lower(); // StrLower(string)
-    msg(ext);
-    exit;
     if (ext == "pdf")  { return "application/pdf"; }
     if (ext == "docx") { return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"; }
     if (ext == "xlsx") { return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"; }

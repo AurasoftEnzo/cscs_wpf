@@ -594,6 +594,8 @@ function GenerateUBLXml(invNum /* number */) {
     // Supplier
     // -----------------------------------------------------------
     supOIB = Substring(KPSY_REZERVA, 0, 13); // ??? a ča ne 11(OIB) znakova ?? ili 13(JMBG) + trim() ??
+    supOIBParts = supOIB.split(" ");
+    supOIB = supOIBParts[0];
     supName = KPSY_COMP_NAME;
     supAddr = KPSY_COMP_ADD1 + (KPSY_GL_RETEARN != "" ? " " + KPSY_GL_RETEARN : "");
     supCity = KPSY_COMP_CSZ;
@@ -1026,7 +1028,9 @@ function GenerateUBLXml(invNum /* number */) {
     }
 
 
-    
+    MSG(SignXml(xmlFileName, "C:\\Users\\User\\Documents\\__ERACUN_FISKALIZACIJA_2.0\\cert\\p12_aurasoft_demo.p12", "Aurasoft1", xmlFileName + ".sig.xml"));
+
+
     // schFiles = {};
     // // schFiles.Add(SchemasPath + "schematron\\EN16931-UBL-validation.sch");
     // schFiles.Add(SchemasPath + "schematron\\preprocessed\\EN16931-UBL-validation-preprocessed.sch");

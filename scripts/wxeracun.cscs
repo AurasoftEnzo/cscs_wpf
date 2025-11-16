@@ -48,7 +48,7 @@ if (size(sqlResult) > 1)
   
 // KPSYMSTR
 sqlQueryString = " SELECT TOP 1 KPSY_REZERVA, KPSY_COMP_NAME, KPSY_COMP_ADD1, KPSY_GL_RETEARN, KPSY_COMP_CSZ, KPSY_COMP_ZIP,
-                KPSY_COMP_JMBFI, KPSY_COMP_PHONE, KPSY_COMP_EMAIL, KPSY_PO_FREIGHT
+                KPSY_COMP_JMBFI, KPSY_COMP_PHONE, KPSY_COMP_EMAIL, KPSY_PO_FREIGHT, KPSY_REZERVAX
                     FROM " + databaseName + ".dbo.KPSYMSTR";
 try
 {
@@ -76,13 +76,14 @@ if (size(sqlResult) > 1)
     KPSY_COMP_PHONE = sqlResult[1][7].trim();
     KPSY_COMP_EMAIL = sqlResult[1][8].trim();
     KPSY_PO_FREIGHT = substring(sqlResult[1][9], 0, 2).trim();
+    KPSY_REZERVAX = sqlResult[1][10].trim(); // Supplier GLN
 } 
 
 
 if(!GenerateUBLXml(invNum)){
-    //MessageBox("Greška pri generiranju UBL XML-a za račun " + invNum + "!");    
+    MessageBox("Greška pri generiranju UBL XML-a za račun " + invNum + "!");    
 }else{
-    //MessageBox("UBL XML je uspješno generiran za račun " + invNum + ".");    
+    MessageBox("UBL XML je uspješno generiran za račun " + invNum + ".");    
 }
 
 exit;
@@ -104,10 +105,11 @@ function GenerateUBLXml(invNum /* number */) {
                 NKPR_GL_PICTHDR, NKPR_GL_PICTFTR, NKPR_GL_CUSNME, NKPR_GL_JMBG,
                 NKPR_GL_CUSA1, NKPR_GL_RO, NKPR_GL_CUSCTY, NKPR_GL_CUSZIP, NKPR_GL_DRZAVA, NKPR_GL_SIF_PL, NKPR_GL_MODEL,
                 NKPR_GL_POZIV, NKPR_GL_RZRVA1, NKPR_GL_TOTAL, NKPR_GL_CUSORD, NKPR_GL_CUSST,
-                NKPR_GL_ENTBY,
-                CONVERT(varchar(10), DATEADD(DAY, NKPR_GL_NOKAM + NKPR_GL_ROKPL, NKPR_GL_DVO), 23) as NKPR_GL_DUE_DATE
+                NKPR_GL_ENTBY,nkpr_gl_bropis, nkpr_gl_bropis1,
+                CONVERT(varchar(10), DATEADD(DAY, NKPR_GL_NOKAM + NKPR_GL_ROKPL, NKPR_GL_DVO), 23) as NKPR_GL_DUE_DATE,
+                nksc_sop
 
-                FROM " + databaseName + ".dbo.NKPRINV WHERE NKPR_GL_NUM = @p1;"; //NKSC_ZR_KONTO, NKSC_ZR_NAZIV
+                FROM " + databaseName + ".dbo.NKPRINV LEFT JOIN " + databaseName + ".dbo.NKSCPART ON nkpr_gl_cuscod= nksc_partvode WHERE NKPR_GL_NUM = @p1;"; //NKSC_ZR_KONTO, NKSC_ZR_NAZIV
     sqlParams = {};
     sqlParams.Add({"@p1", invNum});
     hdrRes = sqlQuery(sql_hdr, sqlParams);
@@ -214,8 +216,18 @@ function GenerateUBLXml(invNum /* number */) {
     NKPR_GL_CUSORD = hdrRes[1][25].trim();
     NKPR_GL_CUSST = hdrRes[1][26].trim();
     NKPR_GL_ENTBY = hdrRes[1][27].trim();
-    NKPR_GL_DUE_DATE = hdrRes[1][28].trim();
+    NKPR_GL_BROPIS = hdrRes[1][28].trim();
+    NKPR_GL_bropis1 = hdrRes[1][29].trim();
+    NKPR_GL_DUE_DATE = hdrRes[1][30].trim();
+    nksc_sop = hdrRes[1][31].trim(); // Customer GLN
 
+    // Debug: Check GLN validity for customer and supplier
+    if (nksc_sop != "" && nksc_sop.length == 13) {
+        // MessageBox("Koristimo GLN za kupca: " + nksc_sop + " umjesto OIB-a");
+    }
+    if (KPSY_REZERVAX != "" && KPSY_REZERVAX.length == 13) {
+        // MessageBox("Koristimo GLN za dobavljača: " + KPSY_REZERVAX + " umjesto OIB-a");
+    }
 
     // MessageBox(NKPR_GL_NUM );
     // MessageBox(NKPR_GL_OZNAKA);
@@ -253,7 +265,9 @@ function GenerateUBLXml(invNum /* number */) {
                 NKPR_LN_DISC3,
                 NKPR_LN_DISC3T,
                 NKPR_LN_MA_US,
-                NKPR_LN_BR_LN
+                NKPR_LN_BR_LN,
+                NKPR_LN_BROPI,
+                NKPRLN_BROPI1
                 FROM " + databaseName + ".dbo.NKPRINVL WHERE NKPR_LN_INVNM = @p1 ORDER BY NKPR_LN_INVNM, NKPR_LN_BR_LN;";
     sqlParams = {};
     sqlParams.Add({"@p1", invNum});
@@ -264,10 +278,10 @@ function GenerateUBLXml(invNum /* number */) {
     }
     
     // -----------------------------------------------------------
-    // 2.1. Load KPSYUSER
+    // 2.1. Load KPSYUSER and find user OIB
     // -----------------------------------------------------------
     sql_lin = "SELECT
-                KPSY_USER_NAZIV
+                KPSY_USER_NAZIV, kpsy_user_code
                 FROM " + databaseName + ".dbo.KPSYUSER WHERE KPSY_USER_ZNAK = @p1";
     sqlParams = {};
     sqlParams.Add({"@p1", NKPR_GL_ENTBY});
@@ -278,6 +292,21 @@ function GenerateUBLXml(invNum /* number */) {
     }
 
     KPSY_USER_NAZIV = kpsyuserRes[1][0].trim();
+    userCode = kpsyuserRes[1][1].trim();
+    //
+    sql_oib = "SELECT
+                NKSYS_VALUE
+                FROM " + databaseName + ".dbo.NKSYSYCO WHERE NKSYS_MODULE = 'WKSY' AND NKSYS_GRUPA = 'USER' AND NKSYS_GRUP2= @p1 AND NKSYS_FIELD = 'OIB';";
+    sqlParams = {};
+    sqlParams.Add({"@p1", userCode});
+    sqlParams.Add({"@'OIB';";
+    sqlParams = {};
+    kpsyuserRes = sqlQuery(sql_oib, sqlParams);
+    if (Size(kpsyuserRes) < 2) {
+        MessageBox("Nema podataka za OIB prodavača " + NKPR_GL_ENTBY +"/" + userCode + "!");
+        return false;
+    }
+    UserOib = kpsyuserRes[1][0].trim();
 
     // -----------------------------------------------------------
     // 3. Determine ProfileID, TypeCode, Invoice Type
@@ -330,7 +359,13 @@ function GenerateUBLXml(invNum /* number */) {
     // -----------------------------------------------------------
     // Tax Calculation
     // -----------------------------------------------------------
-    sql_tax = "SELECT SUM(NKPR_LN_POREZ) AS POREZ, SUM(NKPR_LN_AMT) AS OSNOVICA, NKPR_LN_PRNPR, PKFK_TAX_OBJED " +
+    //PKFK_TAX_TIP - '' - simple tax code; S= compound tax code Porez1+Porez2; Z - compound tax code Porez1*(1+Porez2)
+    //PKFK_TAX_DOBOPC - Code of internal note about tax exempt
+    //PKFK_TY_P_PORZ - 'P' -porez PDV; 'R' - pretporez PDV; T - porez na potrošnju; 'O' - ostali porezi 
+    //PKFK_TAX_POR1 - first tax code if compound code
+    //PKFK_TAX_POR2 - second tax code if compound code
+
+    sql_tax = "SELECT SUM(NKPR_LN_POREZ) AS POREZ, SUM(NKPR_LN_AMT) AS OSNOVICA, NKPR_LN_PRNPR, PKFK_TAX_OBJED , PKFK_TAX_DOBOPC, pkfk_tax_tip, PKFK_TAX_P_PORZ, PKFK_TAX_POR1, PKFK_TAX_POR2 " +
               "FROM " + databaseName + ".dbo.NKPRINVL LEFT JOIN " + databaseName + ".dbo.PKFKPORZ ON PKFK_TAX_CODE = NKPR_LN_TXBLE " +
               "WHERE NKPR_LN_INVNM = @p1 AND NKPR_LN_TXBLE <> 0 " +
               "GROUP BY NKPR_LN_PRNPR, PKFK_TAX_OBJED ORDER BY NKPR_LN_PRNPR;";
@@ -347,6 +382,163 @@ function GenerateUBLXml(invNum /* number */) {
         totalPorez += row[0];
         totalOsnovica += row[1];
     }
+
+    // -----------------------------------------------------------
+    // Create taxRes2 - Refactor compound tax codes into individual codes
+    // -----------------------------------------------------------
+    
+    // First, get individual tax rates for compound tax codes
+    sql_individual_taxes = "SELECT PKFK_TAX_CODE, PKFK_TAX_RATE, PKFK_TAX_OBJED, PKFK_TAX_P_PORZ " +
+                          "FROM " + databaseName + ".dbo.PKFKPORZ " +
+                          "WHERE PKFK_TAX_TIP = '' OR PKFK_TAX_TIP IS NULL;";
+    individualTaxRes = sqlQuery(sql_individual_taxes, {});
+    
+    // Create a lookup for individual tax rates
+    taxRateLookup = {};
+    for (i = 1; i < Size(individualTaxRes); i++) {
+        taxCode = individualTaxRes[i][0];
+        taxRate = individualTaxRes[i][1];
+        taxCategory = individualTaxRes[i][2];
+        taxType = individualTaxRes[i][3];
+        taxRateLookup[taxCode] = {"rate": taxRate, "category": taxCategory, "type": taxType};
+    }
+    
+    // Create taxRes2 structure - same as taxRes but with compound taxes split
+    taxRes2 = {};
+    taxRes2.Add(taxRes[0]); // Copy header row
+    
+    for (i = 1; i < Size(taxRes); i++) {
+        row = taxRes[i];
+        
+        POREZ = row[0];
+        OSNOVICA = row[1]; 
+        NKPR_LN_PRNPR = row[2];
+        PKFK_TAX_OBJED = row[3];
+        PKFK_TAX_DOBOPC = row[4];
+        PKFK_TAX_TIP = row[5];
+        PKFK_TAX_P_PORZ = row[6];
+        PKFK_TAX_POR1 = row[7];
+        PKFK_TAX_POR2 = row[8];
+        
+        if (PKFK_TAX_TIP == "S" && PKFK_TAX_POR1 != "" && PKFK_TAX_POR2 != "") {
+            // This is a compound tax code (additive) - split into two individual codes
+            
+            // Get individual tax rates with error checking
+            tax1Info = taxRateLookup[PKFK_TAX_POR1];
+            tax2Info = taxRateLookup[PKFK_TAX_POR2];
+            
+            if (tax1Info == null) {
+                MessageBox("Greška: Nije pronađen pojedinačni porez '" + PKFK_TAX_POR1 + "' za složeni porez!");
+                return false;
+            }
+            if (tax2Info == null) {
+                MessageBox("Greška: Nije pronađen pojedinačni porez '" + PKFK_TAX_POR2 + "' za složeni porez!");
+                return false;
+            }
+                // Calculate individual tax amounts
+                // For compound type 'S': total_rate = rate1 + rate2
+                // So: tax1_amount = (rate1 / total_rate) * total_tax_amount
+                //     tax2_amount = (rate2 / total_rate) * total_tax_amount
+                
+                rate1 = tax1Info["rate"];
+                rate2 = tax2Info["rate"];
+                totalCompoundRate = rate1 + rate2;
+                
+                if (totalCompoundRate > 0) {
+                    tax1Amount = (rate1 / totalCompoundRate) * POREZ;
+                    tax2Amount = (rate2 / totalCompoundRate) * POREZ;
+                } else {
+                    tax1Amount = 0;
+                    tax2Amount = 0;
+                }
+                
+                // Add first individual tax
+                newRow1 = {};
+                newRow1.Add(tax1Amount);                    // POREZ
+                newRow1.Add(OSNOVICA);                      // OSNOVICA (same base amount)
+                newRow1.Add(rate1);                         // NKPR_LN_PRNPR
+                newRow1.Add(tax1Info["category"]);          // PKFK_TAX_OBJED
+                newRow1.Add(PKFK_TAX_DOBOPC);              // PKFK_TAX_DOBOPC
+                newRow1.Add("");                            // PKFK_TAX_TIP (empty for individual)
+                newRow1.Add(tax1Info["type"]);             // PKFK_TAX_P_PORZ
+                newRow1.Add("");                            // PKFK_TAX_POR1 (empty for individual)
+                newRow1.Add("");                            // PKFK_TAX_POR2 (empty for individual)
+                taxRes2.Add(newRow1);
+                
+                // Add second individual tax
+                newRow2 = {};
+                newRow2.Add(tax2Amount);                    // POREZ
+                newRow2.Add(OSNOVICA);                      // OSNOVICA (same base amount)
+                newRow2.Add(rate2);                         // NKPR_LN_PRNPR
+                newRow2.Add(tax2Info["category"]);          // PKFK_TAX_OBJED
+                newRow2.Add(PKFK_TAX_DOBOPC);              // PKFK_TAX_DOBOPC
+                newRow2.Add("");                            // PKFK_TAX_TIP (empty for individual)
+                newRow2.Add(tax2Info["type"]);             // PKFK_TAX_P_PORZ
+                newRow2.Add("");                            // PKFK_TAX_POR1 (empty for individual)
+                newRow2.Add("");                            // PKFK_TAX_POR2 (empty for individual)
+                taxRes2.Add(newRow2);
+            
+        } elif (PKFK_TAX_TIP == "Z" && PKFK_TAX_POR1 != "" && PKFK_TAX_POR2 != "") {
+            // This is a compound tax code (multiplicative) - Z type: rate1 * (1 + rate2)
+            
+            // Get individual tax rates with error checking
+            tax1Info = taxRateLookup[PKFK_TAX_POR1];
+            tax2Info = taxRateLookup[PKFK_TAX_POR2];
+            
+            if (tax1Info == null) {
+                MessageBox("Greška: Nije pronađen pojedinačni porez '" + PKFK_TAX_POR1 + "' za složeni porez!");
+                return false;
+            }
+            if (tax2Info == null) {
+                MessageBox("Greška: Nije pronađen pojedinačni porez '" + PKFK_TAX_POR2 + "' za složeni porez!");
+                return false;
+            }
+                rate1 = tax1Info["rate"];
+                rate2 = tax2Info["rate"];
+                
+                // For type Z: effective_rate = rate1 * (1 + rate2/100)
+                // Calculate base amounts for each tax proportionally
+                baseForTax1 = OSNOVICA;
+                tax1Amount = (baseForTax1 * rate1) / 100;
+                
+                baseForTax2 = OSNOVICA;
+                tax2Amount = (baseForTax2 * rate2) / 100;
+                
+                // Add first individual tax
+                newRow1 = {};
+                newRow1.Add(tax1Amount);                    // POREZ
+                newRow1.Add(baseForTax1);                   // OSNOVICA
+                newRow1.Add(rate1);                         // NKPR_LN_PRNPR
+                newRow1.Add(tax1Info["category"]);          // PKFK_TAX_OBJED
+                newRow1.Add(PKFK_TAX_DOBOPC);              // PKFK_TAX_DOBOPC
+                newRow1.Add("");                            // PKFK_TAX_TIP (empty for individual)
+                newRow1.Add(tax1Info["type"]);             // PKFK_TAX_P_PORZ
+                newRow1.Add("");                            // PKFK_TAX_POR1 (empty for individual)
+                newRow1.Add("");                            // PKFK_TAX_POR2 (empty for individual)
+                taxRes2.Add(newRow1);
+                
+                // Add second individual tax
+                newRow2 = {};
+                newRow2.Add(tax2Amount);                    // POREZ
+                newRow2.Add(baseForTax2);                   // OSNOVICA
+                newRow2.Add(rate2);                         // NKPR_LN_PRNPR
+                newRow2.Add(tax2Info["category"]);          // PKFK_TAX_OBJED
+                newRow2.Add(PKFK_TAX_DOBOPC);              // PKFK_TAX_DOBOPC
+                newRow2.Add("");                            // PKFK_TAX_TIP (empty for individual)
+                newRow2.Add(tax2Info["type"]);             // PKFK_TAX_P_PORZ
+                newRow2.Add("");                            // PKFK_TAX_POR1 (empty for individual)
+                newRow2.Add("");                            // PKFK_TAX_POR2 (empty for individual)
+                taxRes2.Add(newRow2);
+            
+        } else {
+            // This is already an individual tax code, copy as-is
+            taxRes2.Add(row);
+        }
+    }
+
+//tu sada treba dodatno razdraditi poreze prema HR zahtjevima, za slučaj da je to sastavljeni porez od dva poreza, jedan PDV a drugi porez na potrošnju
+//zadržati treba vrstu iz Table PKFKPORZ - PKFK_TAX_P_PORZ
+//ako je samo jedan porez onda je sve ok kao do sada, a ako je dva onda treba razdvojiti
 
 
     
@@ -390,23 +582,35 @@ function GenerateUBLXml(invNum /* number */) {
 
 
 
-    for (i = 1; i < Size(taxRes); i++) {
-        row = taxRes[i];
+    for (i = 1; i < Size(taxRes2); i++) {
+        row = taxRes2[i];
 
         POREZ = row[0];
         OSNOVICA = row[1];
         NKPR_LN_PRNPR = row[2];
         PKFK_TAX_OBJED = Substring(row[3], 0, 2).trim();
+        PKFK_TAX_P_PORZ = row[6]; // Get tax type (P=PDV, T=Consumption tax, etc.)
 
         xml += "                <hrextac:HRTaxSubtotal>\n";
         xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
         xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
         xml += "                    <hrextac:HRTaxCategory>\n";
         xml += "                        <cbc:ID>" + PKFK_TAX_OBJED + "</cbc:ID>\n";
-        xml += "                        <cbc:Name>" + "HR:PDV" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Name>\n";
+        
+        // Set tax name and scheme based on tax type
+        taxName = "HR:PDV" + FormatNum(NKPR_LN_PRNPR, 0, ".");
+        taxSchemeID = "VAT";
+        if (PKFK_TAX_P_PORZ == "T") {
+            taxName = "HR:PP" + FormatNum(NKPR_LN_PRNPR, 0, ".");
+            taxSchemeID = "LOC";
+        } elif (PKFK_TAX_P_PORZ == "O") {
+            taxName = "HR:OTH" + FormatNum(NKPR_LN_PRNPR, 0, ".");
+            taxSchemeID = "LOC";
+        }
+        xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
         xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
         xml += "                        <hrextac:HRTaxScheme>\n";
-        xml += "                            <cbc:ID>VAT</cbc:ID>\n";
+        xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
         xml += "                        </hrextac:HRTaxScheme>\n";
         xml += "                    </hrextac:HRTaxCategory>\n";
         xml += "                </hrextac:HRTaxSubtotal>\n";
@@ -512,10 +716,36 @@ function GenerateUBLXml(invNum /* number */) {
         // xml += "<cbc:InvoiceType>" + invType + "</cbc:InvoiceType>\n";
 
         note = "";
-        if(NKPR_GL_ENTBY != ""){
-            note += NKPR_GL_ENTBY + "#" + KPSY_USER_NAZIV;
+        if nkpr_gl_bropis != "" {
+            sql_note = "SELECT kppr_op_text FROM " + databaseName + ".dbo.KPPROPIS WHERE kppr_op_num = @p1 ORDER BY kppr_op_num, kppr_op_lin;";
+            sqlParams = {};
+            sqlParams.Add({"@p1", NKPR_GL_bropis});
+            noteRes = sqlQuery(sql_note, sqlParams);
+            if (Size(noteRes) >= 2)) {
+                for (j = 1; j < Size(noteRes); j++) {   
+                    note += noteRes[j][0];
+                }
+            }    
         }
-        xml += "<cbc:Note>" + note + "</cbc:Note>\n";
+        note += "  ";
+        if nkpr_gl_bropis1 != "" {
+            sql_note = "SELECT kppr_op_text FROM " + databaseName + ".dbo.KPPROPIS WHERE kppr_op_num = @p1 ORDER BY kppr_op_num, kppr_op_lin;";
+            sqlParams = {};
+            sqlParams.Add({"@p1", NKPR_GL_bropis1});
+            noteRes = sqlQuery(sql_note, sqlParams);
+            if (Size(noteRes) >= 2)) {
+                for (j = 1; j < Size(noteRes); j++) {   
+                    note += noteRes[j][0];
+                }
+            }    
+        }
+        note += "  ";
+        if(NKPR_GL_ENTBY != ""){
+            note += NKPR_GL_ENTBY + ": " + KPSY_USER_NAZIV;
+        }
+        if (note != "") {
+            xml += "<cbc:Note>" + note + "#AAI#" + "</cbc:Note>\n"; // BT-21, 0..1 (note code) and BT-22; 1..1 note text
+        }
 
         xml += "<cbc:TaxPointDate>" + NKPR_GL_ESD + "</cbc:TaxPointDate>\n";
         
@@ -554,8 +784,8 @@ function GenerateUBLXml(invNum /* number */) {
             mime = GetMimeType(SY_SL_PATH);
             b64 = File2Base64(SY_SL_PATH);
             xml += "<cac:AdditionalDocumentReference>\n";
-            xml += "  <cbc:ID>" + NKPR_GL_PICTHDR + "</cbc:ID>\n"; // ???
-            xml += "  <cbc:DocumentTypeCode>130</cbc:DocumentTypeCode>\n";
+            xml += "  <cbc:ID>" + NKPR_GL_PICTHDR + "</cbc:ID>\n"; 
+            xml += "  <cbc:DocumentTypeCode>130</cbc:DocumentTypeCode>\n"; //130 must be used for INVOICE type document
             xml += "  <cbc:DocumentDescription>" + SY_SL_OPIS + "</cbc:DocumentDescription>\n";
             xml += "  <cac:Attachment>\n";
             xml += "    <cbc:EmbeddedDocumentBinaryObject mimeCode=\"" + mime + "\" filename=\"" + ParseFile(SY_SL_PATH, "pfName") + "." + ParseFile(SY_SL_PATH, "pfExt") + "\">" + b64 + "</cbc:EmbeddedDocumentBinaryObject>\n";
@@ -621,8 +851,20 @@ function GenerateUBLXml(invNum /* number */) {
 
     xml += "<cac:AccountingSupplierParty>\n";
     xml += "  <cac:Party>\n";
-    xml += "    <cbc:EndpointID schemeID=\"9934\">" + supOIB + "</cbc:EndpointID>\n";
-    xml += "    <cac:PartyIdentification><cbc:ID>" + "9934:" + supOIB + "</cbc:ID></cac:PartyIdentification>\n";
+    
+    // Use GLN (0088 scheme) if available and valid (13 characters), otherwise use OIB (9934 scheme)
+    supSchemeID = "9934";
+    supEndpointID = supOIB;
+    supPartyID = "9934:" + supOIB;
+    
+    if (KPSY_REZERVAX != "" && KPSY_REZERVAX.length == 13) {
+        supSchemeID = "0088";
+        supEndpointID = KPSY_REZERVAX;
+        supPartyID = "0088:" + KPSY_REZERVAX;
+    }
+    
+    xml += "    <cbc:EndpointID schemeID=\"" + supSchemeID + "\">" + supEndpointID + "</cbc:EndpointID>\n";
+    xml += "    <cac:PartyIdentification><cbc:ID>" + supPartyID + "</cbc:ID></cac:PartyIdentification>\n";
     xml += "    <cac:PartyName><cbc:Name>" + supName + "</cbc:Name></cac:PartyName>\n";
     
     xml += "    <cac:PostalAddress>\n";
@@ -659,9 +901,9 @@ function GenerateUBLXml(invNum /* number */) {
 
 
     
-    xml += "  <cac:SellerContact>";
-    xml += "    <cbc:ID>12345678903</cbc:ID>";
-    xml += "    <cbc:Name>Operater1</cbc:Name>";
+    xml += "  <cac:SellerContact>"; //možda bi tu trebalo zapravo OIB i naziv prodavača a ne operatera???? ali u dokumentaciji piše operatera!
+    xml += "    <cbc:ID>" + UserOib + "</cbc:ID>"; //HR-BT-5; 1..1 ; OIB operatera
+    xml += "    <cbc:Name>" + KPSY_USER_NAZIV + "</cbc:Name>"; //HR-BT-4; 0..1 ; naziv operatera
     xml += "  </cac:SellerContact>";
 
 
@@ -672,8 +914,20 @@ function GenerateUBLXml(invNum /* number */) {
     // -----------------------------------------------------------
     xml += "<cac:AccountingCustomerParty>\n";
     xml += "  <cac:Party>\n";
-    xml += "    <cbc:EndpointID schemeID=\"9934\">" + NKPR_GL_JMBG + "</cbc:EndpointID>\n";
-    xml += "    <cac:PartyIdentification><cbc:ID>" + "9934:" + NKPR_GL_JMBG + "</cbc:ID></cac:PartyIdentification>\n";
+    
+    // Use GLN (0088 scheme) if available and valid (13 characters), otherwise use OIB (9934 scheme)
+    cusSchemeID = "9934";
+    cusEndpointID = NKPR_GL_JMBG;
+    cusPartyID = "9934:" + NKPR_GL_JMBG;
+    
+    if (nksc_sop != "" && nksc_sop.length == 13) {
+        cusSchemeID = "0088";
+        cusEndpointID = nksc_sop;
+        cusPartyID = "0088:" + nksc_sop;
+    }
+    
+    xml += "    <cbc:EndpointID schemeID=\"" + cusSchemeID + "\">" + cusEndpointID + "</cbc:EndpointID>\n";
+    xml += "    <cac:PartyIdentification><cbc:ID>" + cusPartyID + "</cbc:ID></cac:PartyIdentification>\n";
 
     xml += "    <cac:PartyName><cbc:Name>" + NKPR_GL_CUSNME + "</cbc:Name></cac:PartyName>\n";
 
@@ -777,13 +1031,14 @@ function GenerateUBLXml(invNum /* number */) {
     // FORMAT mora bit npr. 123.45, ne 123,45... i 123.00 ne 123 // ???
     xml += "<cac:TaxTotal>\n";
     xml += "  <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(totalPorez, 2, ".") + "</cbc:TaxAmount>\n";
-    for (i = 1; i < Size(taxRes); i++) {
-        row = taxRes[i];
+    for (i = 1; i < Size(taxRes2); i++) {
+        row = taxRes2[i];
 
         POREZ = row[0];
         OSNOVICA = row[1];
         NKPR_LN_PRNPR = row[2];
         PKFK_TAX_OBJED = Substring(row[3], 0, 2).trim();
+        PKFK_TAX_P_PORZ = row[6]; // Get tax type
 
         xml += "  <cac:TaxSubtotal>\n";
         xml += "    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
@@ -791,7 +1046,13 @@ function GenerateUBLXml(invNum /* number */) {
         xml += "    <cac:TaxCategory>\n";
         xml += "      <cbc:ID>" + PKFK_TAX_OBJED + "</cbc:ID>\n";
         xml += "      <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
-        xml += "      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>\n";
+        
+        // Use appropriate tax scheme based on tax type
+        taxSchemeID = "VAT";
+        if (PKFK_TAX_P_PORZ == "T" || PKFK_TAX_P_PORZ == "O") {
+            taxSchemeID = "LOC";
+        }
+        xml += "      <cac:TaxScheme><cbc:ID>" + taxSchemeID + "</cbc:ID></cac:TaxScheme>\n";
         xml += "    </cac:TaxCategory>\n";
         xml += "  </cac:TaxSubtotal>\n";
     }
@@ -837,7 +1098,31 @@ function GenerateUBLXml(invNum /* number */) {
             xml += "  <cbc:ID>" + NKPR_LN_BR_LN + "</cbc:ID>\n";
             xml += "  <cbc:InvoicedQuantity unitCode=\"" + GetUNUnitCode(NKPR_LN_JEDMJ) + "\">" + FormatNum(NKPR_LN_PQTY, 4, ".") + "</cbc:InvoicedQuantity>\n";
         }
-
+        noteText= "";
+        if nkpr_ln_bropi1 != "" {
+            sql_note = "SELECT kppr_op_text FROM " + databaseName + ".dbo.KPPROPIS WHERE kppr_op_num = @p1 ORDER BY kppr_op_num, kppr_op_lin;";
+            sqlParams = {};
+            sqlParams.Add({"@p1", NKPR_LN_bropi1});
+            noteRes = sqlQuery(sql_note, sqlParams);
+            if (Size(noteRes) >= 2)) {
+                for (j = 1; j < Size(linRes); j++) {   
+                    noteText += noteRes[j][0];
+                }
+            }    
+            }
+        if nkpr_ln_bropi != "" {
+            sql_note = "SELECT kppr_op_text FROM " + databaseName + ".dbo.KPPROPIS WHERE kppr_op_num = @p1 ORDER BY kppr_op_num, kppr_op_lin;";
+            sqlParams = {};
+            sqlParams.Add({"@p1", NKPR_LN_bropi});
+            noteRes = sqlQuery(sql_note, sqlParams);
+            if (Size(noteRes) >= 2)) {
+                noteText += 
+                for (j = 1; j < Size(linRes); j++) {   
+                    noteText += noteRes[j][0];
+                }
+            }    
+            }
+            xml += "  <cbc:Note>"+noteText+"</cbc:Note>\n"; //BT-127, 0..1        
         xml += "  <cbc:LineExtensionAmount currencyID=\"EUR\">" + FormatNum(NKPR_LN_AMT, 2, ".") + "</cbc:LineExtensionAmount>\n";
         // xml += "  <cbc:ItemInternalID>" + NKPR_LN_PCODE + "</cbc:ItemInternalID>\n";
 
@@ -1014,6 +1299,17 @@ function GenerateUBLXml(invNum /* number */) {
         MessageBox("xml FAILED XSD validation\n\nSee _XSD.err file for details.");
         return false;
     }
+
+
+
+    // // signature testing
+    // // signature testing
+    // // signature testing
+    // // signature testing
+    // MessageBox(SignXml(xmlFileName, "C:\\temp\\cert\\p12_aurasoft_demo.p12", "Aurasoft1", SavePath + parsefile(attachmentPdfPath, "pfName") + "_signed.xml"));
+    // return false;
+
+
 
 
     // -----------------------------------------------------------

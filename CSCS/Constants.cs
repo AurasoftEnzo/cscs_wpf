@@ -195,6 +195,7 @@ namespace SplitAndMerge
         public const string TOKENIZE      = "Tokenize";
         public const string TRIM          = "Trim";
         public const string UPPER         = "Upper";
+        public const string TOSTRING      = "ToString";
 
         // Math Functions
         public const string MATH_ABS      = "Math.Abs";

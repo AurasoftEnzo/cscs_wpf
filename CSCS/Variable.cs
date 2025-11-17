@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using System.Globalization;
 
 namespace SplitAndMerge
 {
@@ -1970,6 +1971,71 @@ namespace SplitAndMerge
             {
                 List<Variable> results = GetAllKeys();
                 return new Variable(results);
+            }
+            else if (propName.Equals(Constants.TOSTRING, StringComparison.OrdinalIgnoreCase))
+            {
+                List<Variable> args = script.GetFunctionArgs();
+                Utils.CheckArgs(args.Count, 0, propName);
+
+                string format = "";
+                if (args.Count >= 1)
+                {
+                    format = Utils.GetSafeString(args, 0);
+                }
+
+                string decimalSeparator = "";
+                if (args.Count >= 2)
+                {
+                    decimalSeparator = Utils.GetSafeString(args, 1);
+                }
+
+                if (decimalSeparator == "")
+                {
+                    decimalSeparator = CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator;                    
+                }
+
+                string thousandsSeparator = "";
+                if (args.Count >= 3)
+                {
+                    thousandsSeparator = Utils.GetSafeString(args, 2);
+                }                
+
+                string tempStr = "";
+                switch (Type)
+                {
+                    case VarType.NUMBER:
+                        NumberFormatInfo customFormat = new NumberFormatInfo
+                        {
+                            NumberDecimalSeparator = decimalSeparator,
+                            NumberGroupSeparator = thousandsSeparator,  
+                            NumberGroupSizes = new[] { 3 }  //sets grouping to 3 digits
+                        };
+                        tempStr = AsDouble().ToString(format, customFormat);                       
+                        break;
+                    case VarType.DATETIME:                         
+                        tempStr = AsDateTime().ToString(format);
+                        break;
+                    case VarType.OBJECT:                         
+                        tempStr = Object != null ? Object.ToString() : "null";
+                        break;
+                    case VarType.ARRAY:
+                    case VarType.ARRAY_NUM:
+                    case VarType.ARRAY_STR:
+                        tempStr = AsString();
+                        break;
+                    case VarType.NONE:                        
+                        tempStr = AsString();
+                        break;
+                    case VarType.STRING:
+                        tempStr = AsString();
+                        break;
+                    default:
+                        tempStr = AsString();
+                        break;
+                }
+                
+
+                return new Variable(tempStr);
             }
 
             return result;

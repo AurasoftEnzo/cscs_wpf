@@ -492,7 +492,7 @@ function CreateDBBackup(dbName, nazivFirme, poslovnaGodina, counter){
     
     try
     {
-        sqlResult = sqlNonQuery(sqlQueryString);
+        sqlResult = sqlNonQuery(sqlQueryString, {}, 60 * 5);
         logAdd(dbName + ": Kreirana .bak datoteka");
         return true;
     }

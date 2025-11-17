@@ -74,7 +74,7 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.WEB_REQUEST_MPFD, new WebRequestMPFDFunction());
             //interpreter.RegisterFunction(Constants.MATH_RANDOM2, CSCS.Math. ???  GetRandomFunction(false));
 
-            interpreter.RegisterFunction(Constants.SQLNonQuery, new SQLNonQueryFunction());
+            interpreter.RegisterFunction(Constants.SQLNonQuery, new SQLNonQueryFunction()); // override of SQLNonQueryFunction in Functions.SQL
 
 
             interpreter.RegisterFunction(Constants.File2Base64, new File2Base64Function());
@@ -1177,6 +1177,7 @@ namespace WpfCSCS
             var queryStatement = Utils.GetSafeString(args, 0);
             var spArgs = Utils.GetSafeVariable(args, 1);
             var sp = SQLQueryFunction.GetParameters(spArgs);
+            var timeoutSeconds = Utils.GetSafeInt(args, 2, 60);
 
             int result = 0;
             using (SqlConnection con = new SqlConnection(CSCS_SQL.ConnectionString))
@@ -1188,7 +1189,7 @@ namespace WpfCSCS
                         cmd.Parameters.AddRange(sp.ToArray());
                     }
                     con.Open();
-                    cmd.CommandTimeout = 60 * 5;
+                    cmd.CommandTimeout = timeoutSeconds;
                     result = cmd.ExecuteNonQuery();
                 }
             }

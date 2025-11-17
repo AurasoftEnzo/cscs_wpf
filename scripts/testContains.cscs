@@ -1,0 +1,72 @@
+MessageBox("...Testing Contains...");
+
+//***********************************
+MSG("Dynamic list of integers");
+
+a = {};
+
+a.add(5);
+a.add(10);
+a.add(15);
+a.add(20);
+a.add(25);
+
+MSG(a.Contains(15)); //output: 1
+MSG(a.Contains(115)); //output: 0
+
+//***********************************
+MSG("Array of integers");
+
+DEFINE b type R array 10;
+
+b[0] = 2;
+b[1] = 4;
+b[2] = 6;
+b[3] = 8;
+b[4] = 10;
+
+MSG(b.Contains(4)); //output: 1
+MSG(b.Contains(104)); //output: 0
+
+//***********************************
+MSG("String");
+
+DEFINE s type a size 100;
+
+s = "ABCDEF";
+
+MSG(s.Contains("BC")); //output: 1
+MSG(s.Contains("BD")); //output: 0
+
+//***********************************
+MSG("Array of strings");
+
+DEFINE ss type a size 100 array 10;
+
+ss[0] = "ABC";
+ss[1] = "DEF";
+ss[2] = "GHI";
+ss[3] = "JKL";
+ss[4] = "MNO";
+
+MSG(ss.Contains("DEF")); //output: 1
+MSG(ss.Contains("LM"));  //output: 0
+MSG(ss.Contains("MN"));  //output: 0
+
+//***********************************
+MSG("Dynamic list of strings");
+
+sss = {};
+
+sss.Add("ABC");
+sss.Add("DEF");
+sss.Add("GHI");
+sss.Add("JKL");
+sss.Add("MNO");
+
+MSG(sss.Contains("DEF")); //output: 1
+MSG(sss.Contains("LM"));  //output: 0
+MSG(sss.Contains("MN")); //output: 0
+
+
+quit;

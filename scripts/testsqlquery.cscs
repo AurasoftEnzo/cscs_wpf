@@ -1,0 +1,24 @@
+MessageBox("...Testing sqlquery...");
+
+
+sqlconnectionstring("Server=localhost;Database=testdb;User Id=sa;Password=aura;");
+
+sqlResult = sqlquery("SELECT id, name, gender FROM tbl_students");
+
+MessageBox("Size(sqlResult) = " + Size(sqlResult));
+
+if (Size(sqlResult) < 2) {
+	MessageBox("No records found.");
+	quit;
+}
+
+for(i = 1; i < Size(sqlResult); i++)
+{
+	id = sqlResult[i][0];
+	name = sqlResult[i][1];
+	gender = sqlResult[i][2];
+
+	MessageBox("id = " + id + "\n" + "name = " + name + "\n" + "gender = " + gender);
+}
+
+quit;

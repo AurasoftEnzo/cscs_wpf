@@ -1,0 +1,31 @@
+MessageBox("...Testing DEFINE INIT 2...");
+
+
+//MSG(MyFunc(11, 22));
+
+function MyFunc(a, b)
+{
+    c = a + b;
+    return c;
+}
+
+//IT DOESN'T WORK
+//DEFINE w type R INIT MyFunc(111, 222); //Function
+//MSG(w);
+
+//IT DOESN'T WORK
+//value1 = 3;
+//DEFINE w type R INIT (2*value1);//Expression that uses value from dynamically created variable
+//MSG(w);
+
+//IT DOESN'T WORK
+//DEFINE value2 type R INIT 100;
+//DEFINE w type R INIT (2*value2); //Expression that uses value from variable created with DEFINE
+//MSG(w);
+
+//IT DOESN'T WORK
+//DEFINE value3 type R INIT 100;
+//DEFINE w type R INIT (3 * value3); //Expression with spaces
+//MSG(w);
+
+quit;

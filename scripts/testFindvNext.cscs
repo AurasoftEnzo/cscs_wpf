@@ -1,0 +1,140 @@
+// //---------------------------------------------------
+
+// DEFINE NKPRINV_hndl type i;
+
+// NKPRINV_hndl = openv("NKPRINV", "BD2", "a");
+// // NKPRINV_hndl = openv("NKPRINV", "BD2");
+
+// MessageBox("start");
+
+// findv(NKPRINV_hndl, "f", "NKPR_GL_NUM");
+
+// for(j = 0; j < 999999; j++){
+
+//     // MessageBox(nkpr_gl_num + " - " + nkpr_gl_cuscod + " - " + nkpr_gl_invdte);
+//     findv(NKPRINV_hndl, "n");
+
+//     if(flerr()){
+//         break;
+//     }
+// }
+
+// MessageBox("end");
+
+
+// //MessageBox("start = " + start + ", end = " + Now());
+
+// quit;
+
+//----------------------------------------------------------------------
+
+
+
+DEFINE NKPRINV_hndl type i;
+
+
+
+// NKPRINV_hndl = openv("NKPRINV", "BD2", "a");
+// MessageBox("start");
+
+// findv(NKPRINV_hndl, "f", "NKPR_GL_NUM");
+
+// for(j = 0; j < 999999; j++){
+
+//     //MessageBox(nkpr_gl_num + " - " + nkpr_gl_cuscod + " - " + nkpr_gl_invdte);
+//     findv(NKPRINV_hndl, "n");
+
+//     if(flerr()){
+//         break;
+//     }
+// }
+
+// MessageBox("end");
+
+// quit;
+
+
+
+CreateWindow(strtrim(tpath())+"testFindvNext.xaml");
+
+function testFindvNext_onDisplay(){
+    
+
+    NKPRINV_hndl = openv("NKPRINV", "BD2", "a");
+    // NKPRINV_hndl = openv("NKPRINV", "BD2");
+
+    findv(NKPRINV_hndl, "f", "NKPR_GL_NUM");
+}
+
+
+function btnPrev@clicked(){
+    findv(NKPRINV_hndl, "p");
+}
+
+function btnNext@clicked(){
+    findv(NKPRINV_hndl, "n");
+}
+
+function btn2@clicked(){
+    
+    loop();
+    return;
+    
+    MessageBox(nkpr_gl_num);
+    MessageBox(nkpr_gl_num + 1);
+
+    MessageBox(nkpr_gl_cuscod);
+    MessageBox(nkpr_gl_cuscod + 1);
+
+    MessageBox(nkpr_gl_invdte);
+    MessageBox(nkpr_gl_invdte + 1);
+
+    MessageBox(nkpr_gl_timecr);
+    MessageBox(nkpr_gl_timecr + 1);
+    
+    MessageBox(nkpr_gl_total);
+    MessageBox(nkpr_gl_total + 1);
+    
+    //-----
+    
+    
+    // MessageBox("nkpr_gl_num - " + nkpr_gl_num);
+    // MessageBox("nkpr_gl_num + 1 - " + nkpr_gl_num + 1);
+
+    // MessageBox("nkpr_gl_cuscod - " + nkpr_gl_cuscod);
+    // MessageBox("nkpr_gl_cuscod + 1 - " + nkpr_gl_cuscod + 1);
+
+    // MessageBox("nkpr_gl_invdte - " + nkpr_gl_invdte);
+    // MessageBox("nkpr_gl_invdte + 1 - " + nkpr_gl_invdte + 1);
+
+    // MessageBox("nkpr_gl_timecr - " + nkpr_gl_timecr);
+    // MessageBox("nkpr_gl_timecr + 1 - " + nkpr_gl_timecr + 1);
+
+    // MessageBox("nkpr_gl_total - " + nkpr_gl_total);
+    // MessageBox("nkpr_gl_total + 1 - " + nkpr_gl_total + 1);
+}
+
+function loop(){
+
+    // NoRefs();
+
+    MessageBox("start");
+
+    findv(NKPRINV_hndl, "f", "NKPR_GL_NUM");
+
+    for(j = 0; j < 500; j++){
+
+        // MessageBox(nkpr_gl_num + " - " + nkpr_gl_cuscod + " - " + nkpr_gl_invdte);
+        findv(NKPRINV_hndl, "n");
+
+        if(flerr()){
+            break;
+        }
+    }
+
+    MessageBox("end");
+
+    // Refs();
+
+    // RefreshForm();
+}

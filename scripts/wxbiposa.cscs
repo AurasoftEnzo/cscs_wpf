@@ -1,5 +1,7 @@
 //include(strTrim(tpath()) +"chainLib.cscs");
 
+include(strTrim(tpath()) + "wxsy_lib.cscs");
+
 Import(strTrim(mpath()) + "CSCS.Math.dll");
 
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiposa_inc_lists.cscs") : strTrim(tpath()) + "wxbiposa_inc_lists.cscs");
@@ -18,6 +20,10 @@ include(DownloadScripts() == true ? Download(ServerAddress() + "wxbiposa_inc_c.c
 CreateWindow(strTrim(tpath()) + "wxbiposa.xaml");
 // CreateWindowXaml("wxbiposa.xaml");
 
+function Wxbiposa_OnClose()
+{
+    save_logs("I", userCode, WhoAmI());
+}
 function Wxbiposa_onDisplay()
 {
     SetWidgetOptions("EllipseProdajaUGodini", "Visible", false);
@@ -31,9 +37,13 @@ function Wxbiposa_onDisplay()
     if(Size(args) > 2){
         companyCode = args[2];
         userCode = args[3];
+        CoSet(companyCode);
     }else{
         companyCode = Substring(CoGet(), 1, 2);
     }
+    
+    save_logs("U", userCode, WhoAmI());
+
     sqlQueryString = "select SY_CC_USER, SY_CC_YEAR, SY_CC_DBASE from " + strtrim(CommonDBGet()) + ".dbo.NKSYCCYR WHERE SY_CC_CODE = '" + companyCode + "'";
     try
     {
@@ -147,9 +157,29 @@ function Wxbiposa_onDisplay()
     gradoviRB= true;
 }
 
+function DisableButtons(){
+    SetWidgetOptions("gbPripremi", "IsEnabled", "false");
+    SetWidgetOptions("gbPrint", "IsEnabled", "false");
+    SetWidgetOptions("gbProdaja1", "IsEnabled", "false");
+    SetWidgetOptions("gbProdaja2", "IsEnabled", "false");
+    SetWidgetOptions("gbProdaja3", "IsEnabled", "false");
+    SetWidgetOptions("gbExit", "IsEnabled", "false");
+}
+
+function EnableButtons(){
+    SetWidgetOptions("gbPripremi", "IsEnabled", "true");
+    SetWidgetOptions("gbPrint", "IsEnabled", "true");
+    SetWidgetOptions("gbProdaja1", "IsEnabled", "true");
+    SetWidgetOptions("gbProdaja2", "IsEnabled", "true");
+    SetWidgetOptions("gbProdaja3", "IsEnabled", "true");
+    SetWidgetOptions("gbExit", "IsEnabled", "true");
+}
+
 function gbPripremi@clicked()
 {
+    DisableButtons();
     cursor("wait");
+
     gl_oznaka= "";
     if (tip_racuna== "STANDARDNI")
     {
@@ -173,8 +203,10 @@ function gbPripremi@clicked()
     setCustomerAndInvoiceCounts();
     setCash();
     setSalesRatio();
+    
     pripremljeno = true;
     cursor("dflt");
+    EnableButtons();
 }
 
 function gbProdaja1@clicked()

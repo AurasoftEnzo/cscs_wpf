@@ -1,0 +1,66 @@
+MessageBox("...Testing variable.Type...");
+
+DEFINE s type A size 100;
+DEFINE x type B;
+DEFINE y type I;
+DEFINE z type R;
+DEFINE u type N size 10 dec 2;
+DEFINE v type L;
+DEFINE date1 type D size 10;
+DEFINE time1 type T size 8;
+DEFINE arrInt type R array 10;
+
+s = "Some Text";
+x = 50;
+y = 10000;
+z = 1000000000;
+u = 100.12;
+v = true;
+
+date1 = "15/05/2025";
+time1 = "20:00:00";
+
+a = 10;
+
+lista = {};
+lista.Add(5);
+lista.Add(10);
+lista.Add(15);
+
+dict["Marko"] = 5;
+dict["Ivan"] = 4;
+dict["Petar"] = 3;
+
+arr1 = [11, 22, 33];
+
+MessageBox("s is " + s.Type); //STRING
+MessageBox("x is " + x.Type); //NUMBER
+MessageBox("y is " + y.Type); //NUMBER
+MessageBox("z is " + z.Type); //NUMBER
+MessageBox("u is " + u.Type); //NUMBER
+MessageBox("v is " + v.Type); //NUMBER
+
+MessageBox("date1 is " + date1.Type); //NONE
+MessageBox("time1 is " + time1.Type); //NONE
+
+MessageBox("arrInt is " + arrInt.type); //ARRAY
+
+MessageBox("expression1 is " + (a*2).Type); //NUMBER
+MessageBox("expression2 is " + ("ABC" + "DEF").Type); //STRING
+
+MessageBox("a is " + a.Type); //NUMBER
+
+MessageBox("lista is " + lista.Type); //ARRAY
+MessageBox("dict is " + dict.Type); //ARRAY
+MessageBox("arr1 is " + arr1.Type); //ARRAY
+
+if (a.Type == "NUMBER")
+{
+     MessageBox("Variable a is a NUMBER");
+}
+else
+{
+    MessageBox("Variable a is not a NUMBER");
+}
+
+quit;

@@ -1,0 +1,23 @@
+MessageBox("...Testing format...");
+
+//CreateWindow("../../scripts/testformat.xaml");
+
+DEFINE iznos type N size 14 dec 2;
+DEFINE iznos_string type a size 20;
+DEFINE iznos_string2 type a size 20;
+
+iznos = 2234.89;
+
+Format("iznos", "nofd", "nocma", recv: "iznos_string"); //recv works, nofd doesn't work, nocma works?
+//Format("iznos", "nofd", recv: "iznos_string"); //recv works, nofd doesn't work
+
+//HorizontalBar("HorizontalBar3", "Text", iznos_string);
+MessageBox("Formatted value: " + iznos_string);
+
+//Format("iznos", "off", recv: "iznos_string2");
+//HorizontalBar("HorizontalBar3", "Text", iznos_string2);
+//MessageBox("NonFormatted value: " + iznos_string2);
+
+MessageBox("END");
+
+quit;

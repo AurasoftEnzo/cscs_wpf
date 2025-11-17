@@ -1,0 +1,371 @@
+CreateWindow("../../scripts/CombineStrTest.xaml");
+
+//GETPATH
+//DEFINE defaultPath type a size 1000;
+//DEFINE dialogCaption type a size 1000;
+//DEFINE SelectedPath type a size 1000;	
+//defaultPath = "C:/TEST/";
+//MSG(defaultPath);
+//dialogCaption = "Test Path";
+//MSG(dialogCaption);
+//SelectedPath = GetPath(defaultPath, dialogCaption);
+//MSG(SelectedPath);
+
+
+//ZIPFILE
+//DEFINE filePath type a size 1000;
+//DEFINE zipFilePath type a size 1000;
+//DEFINE newOrAdd type a size 10;
+//DEFINE ret type L;	
+//filePath = "C:/TEST/a.txt";
+//zipFilePath = "C:/TEST/z.zip";
+//newOrAdd = "new";
+//ret = ZipFile(filePath , zipFilePath, newOrAdd);
+//MSG(ret); //true => Sucess , false => Failure
+
+//filePath = "C:/TEST/b.txt";
+//newOrAdd ="add";
+
+//ret = ZipFile(filePath , zipFilePath, newOrAdd);
+//MSG(ret);
+
+
+
+//SCHEDULEFUNCTION
+//Example 1
+//DEFINE timeVar type T size 8;
+//DEFINE functionName type a size 1000;
+
+//timeVar = "09:43:00";
+//functionName = "TestFunction";
+//ScheduleFunction(timeVar, functionName);
+//MSG("Program execution continues");
+
+//function TestFunction() 
+//{
+//	MSG("TestFunction is running");
+//}
+
+//Example 2
+//DEFINE timeVar type T size 8;
+//DEFINE functionName type a size 1000;
+
+//timeVar = "10:08:00";
+//functionName = "TestFunctionAsync";
+//ScheduleFunction(timeVar, functionName);
+//MSG("Program execution continues");
+
+//function TestFunctionAsync() 
+//{
+//	MSG("TestFunctionAsync is running");
+//	AsyncCall("FunctionAbc", "FunctionFinished");
+//}
+
+//function FunctionAbc()
+//{
+//    MSG("FunctionAbc");
+//}
+
+//function FunctionFinished()
+//{
+//    MSG("FunctionFinished");
+//}
+
+//CancelScheduledFunction();
+//MSG("Program execution continues2");
+
+
+
+
+//DEFINE widgetName type a size 1000;
+//widgetName = "ClockLabel";
+//Clock(widgetName);
+
+//**************************************************************
+
+DEFINE protocol type a size 10;
+DEFINE sendOrReceive type a size 10;
+DEFINE serverAddress type a size 1000;
+DEFINE port type R;
+DEFINE username type a size 100;
+DEFINE password type a size 100;
+DEFINE serverDirectoryPath type a size 1000;
+DEFINE localDirectoryPath type a size 1000;
+DEFINE filename type a size 1000;	
+
+protocol = "ftp";
+sendOrReceive ="r";
+serverAddress = "ftp.aurasoft.hr";
+port = 21;
+username = "dalibor@aurasoft.hr";
+password = "AuraSoft123";
+serverDirectoryPath = "NOVO/";
+localDirectoryPath = "C:/Test2/";
+filename = "a.txt";
+
+//MSG("Prije FTP-a");
+//FTP(protocol, sendOrReceive, serverAddress, port, username, password, serverDirectoryPath, localDirectoryPath, filename);
+//MSG("Nakon FTP-a");
+//*************************************************************
+
+//GetCompName
+//DEFINE machineName type a size 100;
+//machineName = GetCompName();
+//MSG(machineName);
+
+
+//DaysInMonth
+DEFINE month type R;
+DEFINE year type R;
+DEFINE days type R;
+
+month = 5;
+year = 2025;
+days = DaysInMonth(month, year);
+MSG(days);
+
+
+
+
+
+
+
+//**************************************************************
+
+
+DEFINE var1 type a size 100;
+var1 = "startValue";
+//MSG(var1);
+
+DEFINE var2 type B;
+DEFINE var3 type I;
+DEFINE var4 type R;
+var2 = 50;
+var3 = 10000;
+var4 = 1000000000;
+//MSG(var2);
+//MSG(var3);
+//MSG(var4);
+
+DEFINE var5 type N size 10 dec 3;
+var5 = 12345.123;
+//MSG(var5);
+
+DEFINE var6 type L;
+var6 = true;
+//MSG(var6); //=> 1
+var6 = false;
+//MSG(var6); //=> 0
+
+var6 = 1;
+if (var6) 
+{
+   //MSG("TRUE"); //=> TRUE
+}
+if (var6 == true) 
+{
+   //MSG("TRUE2"); //=> TRUE
+}
+if (var6 == 1) 
+{
+   //MSG("TRUE3"); //=> TRUE
+}
+//MSG(var6); //=>1
+
+
+var6 = 0;
+if (!var6)
+{
+   //MSG("FALSE");
+}
+if (var6 == false)
+{
+   //MSG("FALSE2");
+}
+if (var6 == 0)
+{
+   //MSG("FALSE3");
+}
+//MSG(var6);
+
+
+//DEFINE var7 type D size 10;
+//var7 = "15/05/2025";
+//MSG(var7);
+//var7 = Now("dd/MM/yyyy");
+//MSG(var7);
+
+DEFINE var7 type D size 8;
+var7 = "15/05/25";
+//MSG(var7);
+var7 = Now("dd/MM/yy");
+//MSG(var7);
+
+
+DEFINE var8 type T size 8;
+//var8 = "20:00:00";
+var8 = Now("HH:mm:ss");
+//MSG(var8);
+
+DEFINE var8b type T size 5;
+//var8b = "20:00";
+var8b = Now("HH:mm");
+//MSG(var8b);
+
+
+
+
+
+DEFINE var9 type R array 10;
+var9[0] = 100;
+var9[1] = 101;
+//MSG(var9[0]);
+//MSG(size(var9));
+
+
+DEFINE var10 type a size 100 array 20;
+var10[0] = "Adam";
+var10[1] = "Bob";
+var10[2] = "Charlie";
+var10[3] = var10[0] + var10[1] + var10[2];
+//MSG(var10[3]);
+//MSG(size(var10)); //this prints 20
+
+
+DEFINE var11 type a size 100 UP;
+var11 = "abc";
+var11 = var10[3];
+//MSG(var11);
+
+
+
+DEFINE var12 type a size 100 RESET;
+//MSG(var12);
+
+
+DEFINE var14 type a size 100 INIT "ABC";
+DEFINE var15 type R INIT 1000;
+DEFINE var16 type N size 10 dec 2 INIT 25,00;
+DEFINE var17 type L INIT true;
+DEFINE var18 type D size 10 INIT "15/05/2025";
+DEFINE var19 type T size 8 INIT "20:00:00";
+//MSG(var14);
+//MSG(var15);
+//MSG(var16);
+//MSG(var17);
+//MSG(var18);
+//MSG(var19);
+//OVO DOLJE NE RADI
+//DEFINE var20 type D size 10 array 2 INIT "15/05/2025", "16/05/2025";
+//MSG(var20[0]);
+//MSG(var20[1]);
+//DEFINE var21 type R array 2 INIT 14, 15;
+//MSG(var21[0]);
+//MSG(var21[1]);
+//MSG(var21);
+
+//VALUE - NE DELA
+DEFINE x type a size 100; 
+DEFINE y type a size 100; 
+DEFINE z type a size 100; 
+//DEFINE xyz type a size 100 value x+y+z;
+x="ABC";
+y="DEF";
+z="GHI";
+//MSG(x);
+//MSG(y);
+//MSG(z);
+//MSG(xyz);
+
+DEFINE var22 type a size 10;
+DEFINE var23 DUP "var22";
+var22 = "A234567890";
+var23 = "B234567890";
+//MSG(var22);
+//MSG(var23);
+
+function Btn1@Clicked(sender, load) 
+{
+  //B = byte (size 1byte) 0..255
+  //I = signed small int (size 2byte) -32768..+32767
+  //R = integer (size 4byte) -2.147.483.648..+2.147.483.647 
+  //N = double (pazi DEFINE varName type N size 9 dec 2;)
+  //L = Bool pazi vrijednosti su true i false => Dela (.T. .TRUE. .F. .FALSE. => Ne dela)
+
+  DEFINE var13 type R LOCAL;
+  var13 = 111;
+  //MSG(var13);
+
+
+
+  //MessageBox("START Btn1","Naslov","ok","info");  
+
+  //TEXTBOX0
+  //var1 = "newValue";
+
+  //MessageBox("EXIT Btn1","Naslov","ok","info");  
+  //exit();
+}
+
+function Btn2@Clicked(sender, load) 
+{
+
+  //MessageBox("START Btn2","Naslov2","ok","info");  
+
+  DEFINE var13 type R LOCAL;
+  var13 = 222;
+  MSG(var13);
+  
+
+  //MessageBox("EXIT Btn2","Naslov2","ok","info");  
+  //exit();
+}
+
+
+//******************************************************************
+//GetSQLRecord
+
+DEFINE database type a size 100;
+
+DEFINE nkpr_gl_num type r size 15;
+DEFINE nkpr_gl_cuscod type a size 20;
+DEFINE nkpr_gl_cusnme type a size 100;
+DEFINE nkpr_gl_invdte type d size 8;
+DEFINE nkpr_gl_timecr type t size 8;
+DEFINE nkpr_gl_total type n size 15 dec 15;
+
+DEFINE nkpr_ln_pcode type a size 100;
+DEFINE nkpr_ln_pdesc type a size 100;
+DEFINE nkpr_ln_pqty type n size 15 dec 15;
+DEFINE nkpr_ln_pprce type n size 15 dec 15;
+DEFINE nkpr_ln_pext type n size 15 dec 15;
+
+DEFINE i type R;
+DEFINE j type R;
+
+database = "V__DATAX_GZ__BGZ";
+
+SqlResultGlaveRacuna = SqlQuery("SELECT TOP 3 nkpr_gl_num, nkpr_gl_cuscod, nkpr_gl_cusnme, CONVERT(varchar(8), nkpr_gl_invdte, 3) as nkpr_gl_invdte, CONVERT(varchar(8), nkpr_gl_timecr, 8) as nkpr_gl_timecr, nkpr_gl_total FROM " + database + ".dbo.nkprinv ORDER BY nkpr_gl_num");
+
+for(i = 1; i < Size(SqlResultGlaveRacuna); i++)
+{    
+    GetSQLRecord(SqlResultGlaveRacuna[0], SqlResultGlaveRacuna[i]);
+    MSG("GLAVA: " + nkpr_gl_num + " " + nkpr_gl_cuscod + " " + nkpr_gl_total);
+
+    SqlResultLinijeRacuna = SqlQuery("SELECT TOP 2 nkpr_ln_pcode, nkpr_ln_pdesc, nkpr_ln_pqty, nkpr_ln_pprce, nkpr_ln_pext FROM " + database + ".dbo.nkprinvl WHERE nkpr_ln_invnm = " + SqlResultGlaveRacuna[i][0] + " ORDER BY nkpr_ln_br_ln");
+    
+    for(j = 1; j < Size(SqlResultLinijeRacuna); j++){   
+
+        GetSQLRecord(SqlResultLinijeRacuna[0], SqlResultLinijeRacuna[j]);
+        MSG("LINIJA: " + nkpr_ln_pcode + " " + nkpr_ln_pdesc + " " + nkpr_ln_pqty + " " + nkpr_ln_pprce + " " + nkpr_ln_pext);
+    }
+}
+
+quit;
+
+
+
+
+
+
+

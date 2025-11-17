@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="packages\CefSharp.Common.124.3.20\build\CefSharp.Common.props" Condition="Exists('packages\CefSharp.Common.124.3.20\build\CefSharp.Common.props')" />
   <Import Project="packages\chromiumembeddedframework.runtime.win-x86.124.3.2\build\chromiumembeddedframework.runtime.win-x86.props" Condition="Exists('packages\chromiumembeddedframework.runtime.win-x86.124.3.2\build\chromiumembeddedframework.runtime.win-x86.props')" />
   <Import Project="packages\chromiumembeddedframework.runtime.win-x64.124.3.2\build\chromiumembeddedframework.runtime.win-x64.props" Condition="Exists('packages\chromiumembeddedframework.runtime.win-x64.124.3.2\build\chromiumembeddedframework.runtime.win-x64.props')" />
+  <Import Project="packages\CefSharp.Common.124.3.20\build\CefSharp.Common.props" Condition="Exists('packages\CefSharp.Common.124.3.20\build\CefSharp.Common.props')" />
   <Import Project="packages\cef.redist.x86.120.2.7\build\cef.redist.x86.props" Condition="Exists('packages\cef.redist.x86.120.2.7\build\cef.redist.x86.props')" />
   <Import Project="packages\cef.redist.x64.120.2.7\build\cef.redist.x64.props" Condition="Exists('packages\cef.redist.x64.120.2.7\build\cef.redist.x64.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -31,6 +31,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -43,7 +44,13 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="BouncyCastle.Cryptography, Version=2.0.0.0, Culture=neutral, PublicKeyToken=072edcf4a5328938, processorArchitecture=MSIL">
-      <HintPath>packages\BouncyCastle.Cryptography.2.2.1\lib\net461\BouncyCastle.Cryptography.dll</HintPath>
+      <HintPath>packages\BouncyCastle.Cryptography.2.4.0\lib\net461\BouncyCastle.Cryptography.dll</HintPath>
+    </Reference>
+    <Reference Include="CefSharp, Version=124.3.20.0, Culture=neutral, PublicKeyToken=40c4b6fc221f4138, processorArchitecture=MSIL">
+      <HintPath>packages\CefSharp.Common.124.3.20\lib\net462\CefSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="CefSharp.Core, Version=124.3.20.0, Culture=neutral, PublicKeyToken=40c4b6fc221f4138, processorArchitecture=MSIL">
+      <HintPath>packages\CefSharp.Common.124.3.20\lib\net462\CefSharp.Core.dll</HintPath>
     </Reference>
     <Reference Include="DevExpress.Charts.v18.2.Core, Version=18.2.14.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a, processorArchitecture=MSIL" />
     <Reference Include="DevExpress.Data.v18.2, Version=18.2.14.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" />
@@ -69,49 +76,66 @@
     <Reference Include="EPPlus.System.Drawing, Version=6.1.1.0, Culture=neutral, PublicKeyToken=2308d35469c9bac0, processorArchitecture=MSIL">
       <HintPath>packages\EPPlus.System.Drawing.6.1.1\lib\net462\EPPlus.System.Drawing.dll</HintPath>
     </Reference>
+    <Reference Include="GLWpfControl, Version=3.3.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\OpenTK.GLWpfControl.3.3.0\lib\net452\GLWpfControl.dll</HintPath>
+    </Reference>
     <Reference Include="HarfBuzzSharp, Version=1.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <HintPath>packages\HarfBuzzSharp.7.3.0.1\lib\net462\HarfBuzzSharp.dll</HintPath>
+      <HintPath>packages\HarfBuzzSharp.8.3.1-preview.2.3\lib\net462\HarfBuzzSharp.dll</HintPath>
     </Reference>
-    <Reference Include="LiveCharts, Version=0.9.7.0, Culture=neutral, PublicKeyToken=0bc1f845d1ebb8df, processorArchitecture=MSIL">
-      <HintPath>packages\LiveCharts.0.9.7\lib\net45\LiveCharts.dll</HintPath>
+    <Reference Include="IKVM.OpenJDK.Charsets, Version=8.1.5717.0, Culture=neutral, PublicKeyToken=13235d27fcbfff58, processorArchitecture=MSIL">
+      <HintPath>packages\Saxon-HE.10.9.0\lib\net35\IKVM.OpenJDK.Charsets.dll</HintPath>
     </Reference>
-    <Reference Include="LiveCharts.Wpf, Version=0.9.7.0, Culture=neutral, PublicKeyToken=0bc1f845d1ebb8df, processorArchitecture=MSIL">
-      <HintPath>packages\LiveCharts.Wpf.0.9.7\lib\net45\LiveCharts.Wpf.dll</HintPath>
+    <Reference Include="IKVM.OpenJDK.Core, Version=8.1.5717.0, Culture=neutral, PublicKeyToken=13235d27fcbfff58, processorArchitecture=MSIL">
+      <HintPath>packages\Saxon-HE.10.9.0\lib\net35\IKVM.OpenJDK.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="IKVM.OpenJDK.Localedata, Version=8.1.5717.0, Culture=neutral, PublicKeyToken=13235d27fcbfff58, processorArchitecture=MSIL">
+      <HintPath>packages\Saxon-HE.10.9.0\lib\net35\IKVM.OpenJDK.Localedata.dll</HintPath>
+    </Reference>
+    <Reference Include="IKVM.OpenJDK.Text, Version=8.1.5717.0, Culture=neutral, PublicKeyToken=13235d27fcbfff58, processorArchitecture=MSIL">
+      <HintPath>packages\Saxon-HE.10.9.0\lib\net35\IKVM.OpenJDK.Text.dll</HintPath>
+    </Reference>
+    <Reference Include="IKVM.OpenJDK.Util, Version=8.1.5717.0, Culture=neutral, PublicKeyToken=13235d27fcbfff58, processorArchitecture=MSIL">
+      <HintPath>packages\Saxon-HE.10.9.0\lib\net35\IKVM.OpenJDK.Util.dll</HintPath>
+    </Reference>
+    <Reference Include="IKVM.OpenJDK.XML.API, Version=8.1.5717.0, Culture=neutral, PublicKeyToken=13235d27fcbfff58, processorArchitecture=MSIL">
+      <HintPath>packages\Saxon-HE.10.9.0\lib\net35\IKVM.OpenJDK.XML.API.dll</HintPath>
+    </Reference>
+    <Reference Include="IKVM.Runtime, Version=8.1.5717.0, Culture=neutral, PublicKeyToken=13235d27fcbfff58, processorArchitecture=MSIL">
+      <HintPath>packages\Saxon-HE.10.9.0\lib\net35\IKVM.Runtime.dll</HintPath>
     </Reference>
     <Reference Include="LiveChartsCore, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc92a3e13d40c573, processorArchitecture=MSIL">
-      <HintPath>packages\LiveChartsCore.2.0.0-rc2\lib\netstandard2.0\LiveChartsCore.dll</HintPath>
+      <HintPath>packages\LiveChartsCore.2.0.0-rc5.4\lib\net462\LiveChartsCore.dll</HintPath>
     </Reference>
     <Reference Include="LiveChartsCore.SkiaSharpView, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc92a3e13d40c573, processorArchitecture=MSIL">
-      <HintPath>packages\LiveChartsCore.SkiaSharpView.2.0.0-rc2\lib\netstandard2.0\LiveChartsCore.SkiaSharpView.dll</HintPath>
+      <HintPath>packages\LiveChartsCore.SkiaSharpView.2.0.0-rc5.4\lib\net462\LiveChartsCore.SkiaSharpView.dll</HintPath>
     </Reference>
     <Reference Include="LiveChartsCore.SkiaSharpView.WPF, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc92a3e13d40c573, processorArchitecture=MSIL">
-      <HintPath>packages\LiveChartsCore.SkiaSharpView.WPF.2.0.0-rc2\lib\net462\LiveChartsCore.SkiaSharpView.WPF.dll</HintPath>
+      <HintPath>packages\LiveChartsCore.SkiaSharpView.WPF.2.0.0-rc5.4\lib\net462\LiveChartsCore.SkiaSharpView.WPF.dll</HintPath>
     </Reference>
-    <Reference Include="MapControl.WPF, Version=10.5.0.0, Culture=neutral, PublicKeyToken=f26fcf0059638459, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>Modules\MapControl\MapControl.WPF.dll</HintPath>
+    <Reference Include="MapControl.WPF, Version=9.0.0.0, Culture=neutral, PublicKeyToken=f26fcf0059638459, processorArchitecture=MSIL">
+      <HintPath>packages\XAML.MapControl.9.0.0\lib\net462\MapControl.WPF.dll</HintPath>
     </Reference>
     <Reference Include="MapUiTools.WPF, Version=10.5.0.0, Culture=neutral, PublicKeyToken=f26fcf0059638459, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Modules\MapControl\MapUiTools.WPF.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>packages\Microsoft.Bcl.AsyncInterfaces.8.0.0\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
+    <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=9.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.Bcl.AsyncInterfaces.9.0.0\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Extensions.Caching.Abstractions, Version=8.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
       <HintPath>packages\Microsoft.Extensions.Caching.Abstractions.8.0.0\lib\net462\Microsoft.Extensions.Caching.Abstractions.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Extensions.Caching.Memory, Version=8.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
-      <HintPath>packages\Microsoft.Extensions.Caching.Memory.8.0.0\lib\net462\Microsoft.Extensions.Caching.Memory.dll</HintPath>
+    <Reference Include="Microsoft.Extensions.Caching.Memory, Version=5.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.Extensions.Caching.Memory.5.0.0\lib\net461\Microsoft.Extensions.Caching.Memory.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions, Version=8.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
-      <HintPath>packages\Microsoft.Extensions.DependencyInjection.Abstractions.8.0.0\lib\net462\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions, Version=5.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.Extensions.DependencyInjection.Abstractions.5.0.0\lib\net461\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Extensions.Logging.Abstractions, Version=8.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
-      <HintPath>packages\Microsoft.Extensions.Logging.Abstractions.8.0.0\lib\net462\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions, Version=7.0.0.1, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.Extensions.Logging.Abstractions.7.0.1\lib\net462\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Extensions.Options, Version=8.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
-      <HintPath>packages\Microsoft.Extensions.Options.8.0.0\lib\net462\Microsoft.Extensions.Options.dll</HintPath>
+    <Reference Include="Microsoft.Extensions.Options, Version=5.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.Extensions.Options.5.0.0\lib\net461\Microsoft.Extensions.Options.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Extensions.Primitives, Version=8.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
       <HintPath>packages\Microsoft.Extensions.Primitives.8.0.0\lib\net462\Microsoft.Extensions.Primitives.dll</HintPath>
@@ -135,17 +159,29 @@
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>packages\Newtonsoft.Json.13.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="OpenTK, Version=3.3.1.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
+      <HintPath>packages\OpenTK.3.3.1\lib\net20\OpenTK.dll</HintPath>
+    </Reference>
+    <Reference Include="Renci.SshNet, Version=2024.2.0.1, Culture=neutral, PublicKeyToken=1cee9f8bde3db106, processorArchitecture=MSIL">
+      <HintPath>packages\SSH.NET.2024.2.0\lib\net462\Renci.SshNet.dll</HintPath>
+    </Reference>
+    <Reference Include="saxon-he-10.9, Version=10.9.0.0, Culture=neutral, PublicKeyToken=e1fdd002d5083fe6, processorArchitecture=MSIL">
+      <HintPath>packages\Saxon-HE.10.9.0\lib\net35\saxon-he-10.9.dll</HintPath>
+    </Reference>
+    <Reference Include="saxon-he-api-10.9, Version=10.9.0.0, Culture=neutral, PublicKeyToken=e1fdd002d5083fe6, processorArchitecture=MSIL">
+      <HintPath>packages\Saxon-HE.10.9.0\lib\net35\saxon-he-api-10.9.dll</HintPath>
+    </Reference>
     <Reference Include="SkiaSharp, Version=2.88.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <HintPath>packages\SkiaSharp.2.88.7\lib\net462\SkiaSharp.dll</HintPath>
+      <HintPath>packages\SkiaSharp.2.88.9\lib\net462\SkiaSharp.dll</HintPath>
     </Reference>
     <Reference Include="SkiaSharp.HarfBuzz, Version=2.88.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <HintPath>packages\SkiaSharp.HarfBuzz.2.88.7\lib\net462\SkiaSharp.HarfBuzz.dll</HintPath>
+      <HintPath>packages\SkiaSharp.HarfBuzz.2.88.9\lib\net462\SkiaSharp.HarfBuzz.dll</HintPath>
     </Reference>
     <Reference Include="SkiaSharp.Views.Desktop.Common, Version=2.88.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <HintPath>packages\SkiaSharp.Views.Desktop.Common.2.88.7\lib\net462\SkiaSharp.Views.Desktop.Common.dll</HintPath>
+      <HintPath>packages\SkiaSharp.Views.Desktop.Common.2.88.9\lib\net462\SkiaSharp.Views.Desktop.Common.dll</HintPath>
     </Reference>
     <Reference Include="SkiaSharp.Views.WPF, Version=2.88.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <HintPath>packages\SkiaSharp.Views.WPF.2.88.7\lib\net462\SkiaSharp.Views.WPF.dll</HintPath>
+      <HintPath>packages\SkiaSharp.Views.WPF.2.88.9\lib\net462\SkiaSharp.Views.WPF.dll</HintPath>
     </Reference>
     <Reference Include="Spire.Pdf, Version=8.7.2.0, Culture=neutral, PublicKeyToken=663f351905198cb3, processorArchitecture=MSIL">
       <HintPath>packages\FreeSpire.XLS.12.7.0\lib\net40\Spire.Pdf.dll</HintPath>
@@ -171,7 +207,11 @@
     <Reference Include="System.Drawing.Common, Version=4.0.0.2, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>packages\System.Drawing.Common.4.7.3\lib\net461\System.Drawing.Common.dll</HintPath>
     </Reference>
+    <Reference Include="System.Formats.Asn1, Version=8.0.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>packages\System.Formats.Asn1.8.0.1\lib\net462\System.Formats.Asn1.dll</HintPath>
+    </Reference>
     <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Management" />
     <Reference Include="System.Memory, Version=4.0.1.2, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>packages\System.Memory.4.5.5\lib\net461\System.Memory.dll</HintPath>
@@ -190,12 +230,19 @@
       <HintPath>packages\System.Runtime.CompilerServices.Unsafe.6.0.0\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
     </Reference>
     <Reference Include="System.Security" />
+    <Reference Include="System.Text.Encodings.Web, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>packages\System.Text.Encodings.Web.8.0.0\lib\net462\System.Text.Encodings.Web.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Text.Json, Version=8.0.0.5, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>packages\System.Text.Json.8.0.5\lib\net462\System.Text.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>packages\System.Threading.Tasks.Extensions.4.5.4\lib\net461\System.Threading.Tasks.Extensions.dll</HintPath>
     </Reference>
     <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>packages\System.ValueTuple.4.5.0\lib\net47\System.ValueTuple.dll</HintPath>
     </Reference>
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Core" />
@@ -236,8 +283,43 @@
     <Compile Include="Locking.cs" />
     <Compile Include="NavigatorClass.cs" />
     <Compile Include="NewCSCSFunctions.cs" />
-    <Compile Include="Reporting.cs" />
+    <Compile Include="Reporting\ReportBuilderReporting\ReportBuilderDictionary.cs" />
+    <Compile Include="Reporting_old.cs" />
+    <Compile Include="Reporting\DevExpressReporting\DevExpressReporting.cs" />
+    <Compile Include="Reporting\ReportBuilderReporting\ReportBuilderDll.cs" />
+    <Compile Include="Reporting\ReportBuilderReporting\ReportBuilderReporting.cs" />
+    <Compile Include="Reporting\Reporting.cs" />
     <Compile Include="ReturnKeyUtil.cs" />
+    <None Include="scripts\DaliborTest.cscs" />
+    <None Include="scripts\testsqlcursorclose.cscs" />
+    <None Include="scripts\testsqlcursorcurrentrow.cscs" />
+    <None Include="scripts\testsqlcursorinit.cscs" />
+    <None Include="scripts\testsqlcursornext.cscs" />
+    <None Include="scripts\testsqlcursortotal.cscs" />
+    <None Include="scripts\testsqldescribe.cscs" />
+    <None Include="scripts\testsqldropdb.cscs" />
+    <None Include="scripts\testremoveinterpreter.cscs" />
+    <None Include="scripts\testDEFINEarrayofboolean.cscs" />
+    <None Include="scripts\testDEFINEarrayofdate.cscs" />
+    <None Include="scripts\testDEFINEarrayofdouble.cscs" />
+    <None Include="scripts\testDEFINEarrayofinteger.cscs" />
+    <None Include="scripts\testDEFINEarrayofstring.cscs" />
+    <None Include="scripts\testDEFINEarrayoftime.cscs" />
+    <None Include="scripts\testDEFINEBoolean.cscs" />
+    <None Include="scripts\testDEFINEDate2.cscs" />
+    <None Include="scripts\testDEFINEDouble.cscs" />
+    <None Include="scripts\testDEFINEDUP.cscs" />
+    <None Include="scripts\testDEFINEinit.cscs" />
+    <None Include="scripts\testDEFINEInteger.cscs" />
+    <None Include="scripts\testDEFINEString.cscs" />
+    <None Include="scripts\testDEFINETime.cscs" />
+    <None Include="scripts\testDEFINEUP.cscs" />
+    <None Include="scripts\testgetinterpreterhandle.cscs" />
+    <None Include="scripts\testgetlastinterpreterhandle.cscs" />
+    <None Include="scripts\testloadermain.cscs" />
+    <None Include="scripts\testdtos.cscs" />
+    <None Include="scripts\testGetSqlRecord2.cscs" />
+    <None Include="scripts\testgoto2.cscs" />
     <Compile Include="SpecialWindow.cs" />
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
@@ -269,9 +351,65 @@
     <Compile Include="CSCS_GUI.cs" />
     <Compile Include="TasFunctions.cs" />
     <Compile Include="TestClass1.cs" />
+    <None Include="scripts\testdefault.cscs" />
+    <None Include="scripts\testDefineLocal.cscs" />
+    <None Include="scripts\testdelete.cscs" />
+    <None Include="scripts\testdir.cscs" />
+    <None Include="scripts\testdow.cscs" />
+    <None Include="scripts\testdtoc.cscs" />
+    <None Include="scripts\testdtosql.cscs" />
+    <None Include="scripts\testexists.cscs" />
+    <None Include="scripts\testfindfiles.cscs" />
+    <None Include="scripts\testfindstr.cscs" />
+    <None Include="scripts\testfind_index.cscs" />
+    <None Include="scripts\testflsze.cscs" />
+    <None Include="scripts\testformat.cscs" />
+    <None Include="scripts\testfree.cscs" />
+    <None Include="scripts\testgetcolumn.cscs" />
+    <None Include="scripts\testgetkeys.cscs" />
+    <None Include="scripts\testgosub.cscs" />
+    <None Include="scripts\testHelp.cscs" />
+    <None Include="scripts\testImport.cscs" />
+    <None Include="scripts\testimportdll.cscs" />
+    <None Include="scripts\testincludes.cscs" />
+    <None Include="scripts\testipath.cscs" />
+    <None Include="scripts\testkill.cscs" />
+    <None Include="scripts\testmarshal.cscs" />
+    <None Include="scripts\testmkdir.cscs" />
+    <None Include="scripts\testMore.cscs" />
+    <None Include="scripts\testmove.cscs" />
+    <None Include="scripts\testmpath.cscs" />
+    <None Include="scripts\testmsg.cscs" />
+    <None Include="scripts\testmsg2.cscs" />
+    <None Include="scripts\testnameexists.cscs" />
+    <None Include="scripts\testnewinterpreter.cscs" />
+    <None Include="scripts\testnewinterpreter2.cscs" />
+    <None Include="scripts\testnull.cscs" />
+    <None Include="scripts\testProgressBar2.cscs" />
+    <None Include="scripts\testpsinfo.cscs" />
+    <None Include="scripts\testpwd.cscs" />
+    <None Include="scripts\testreadfile.cscs" />
+    <None Include="scripts\testregex.cscs" />
+    <None Include="scripts\testremoveat.cscs" />
+    <None Include="scripts\testrun.cscs" />
+    <None Include="scripts\testsetinterpreter.cscs" />
+    <None Include="scripts\testsqlallprocedures.cscs" />
+    <None Include="scripts\testsqlalltables.cscs" />
+    <None Include="scripts\testsqlconnectionstring.cscs" />
+    <None Include="scripts\testsqlcreatedb.cscs" />
+    <None Include="scripts\testsqldroptable.cscs" />
+    <None Include="scripts\testunmarshal.cscs" />
+    <None Include="scripts\wxtransferura_config.cscs" />
     <Page Include="scripts\ChainChlid.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="scripts\CombineStrTest.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="scripts\DaliborTest.xaml">
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="scripts\DefaultWindow.xaml">
       <SubType>Designer</SubType>
@@ -336,6 +474,13 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="scripts\SelectedViewList.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="scripts\setwindowoptions.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="scripts\tabControl2.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -344,8 +489,15 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="scripts\testAddButton.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="scripts\testBrowser.xaml">
       <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="scripts\testFindvNext.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </Page>
     <Page Include="scripts\testMapControl.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -369,6 +521,9 @@
     </Page>
     <Page Include="scripts\testProgressBar.xaml">
       <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="scripts\testProgressBar2.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="scripts\testScript2.xaml">
@@ -403,6 +558,14 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="scripts\wxbackup.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="scripts\wxbackup_config.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="scripts\wxbicfa.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -427,6 +590,50 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="scripts\wxbigk.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="scripts\wxbigka.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="scripts\wxbigkb.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="scripts\wxbigkc.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="scripts\wxbigkd.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="scripts\wxbigke.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="scripts\wxbigk_postavke.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="scripts\wxbimka.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="scripts\wxbimkaa.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="scripts\wxbimkab.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="scripts\wxbimkac.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="scripts\wxbinaa.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -436,6 +643,34 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="scripts\wxbinaab.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="scripts\wxbioda.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="scripts\wxbiodaa.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="scripts\wxbiodab.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="scripts\wxbiodac.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="scripts\wxbiodad.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="scripts\wxbiodae.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="scripts\wxbioda_dodatniIzbor.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -456,6 +691,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="scripts\wxbiprb.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="scripts\wxbiprbc.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -499,6 +738,22 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="scripts\wxcjenikup.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="scripts\wxcjenikup_config.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="scripts\wxtransferura.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="scripts\wxtransferura_config.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">
@@ -518,12 +773,15 @@
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
+    <None Include="OpenTK.dll.config" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
+    <None Include="scripts\DaliborReport10.cscs" />
     <None Include="scripts\defaultWindow.cscs" />
     <None Include="scripts\dgtest.cscs" />
     <None Include="scripts\drugiProgram.cscs" />
@@ -533,7 +791,35 @@
     <None Include="scripts\printPlugin.cscs" />
     <None Include="scripts\start.cscs" />
     <None Include="scripts\test2bind.cscs" />
+    <None Include="scripts\testadd.cscs" />
+    <None Include="scripts\testAddButton.cscs" />
+    <None Include="scripts\testadd_comp_definition.cscs" />
+    <None Include="scripts\testcase.cscs" />
+    <None Include="scripts\testcd...cscs" />
+    <None Include="scripts\testcd.cscs" />
+    <None Include="scripts\testclr.cscs" />
+    <None Include="scripts\testCOGet.cscs" />
+    <None Include="scripts\testcommondbget.cscs" />
+    <None Include="scripts\testconsole.log.cscs" />
+    <None Include="scripts\testContains.cscs" />
+    <None Include="scripts\testCopy.cscs" />
+    <None Include="scripts\testCOSet.cscs" />
+    <None Include="scripts\testcounttokens.cscs" />
+    <None Include="scripts\testctod.cscs" />
+    <None Include="scripts\testcurrentpath.cscs" />
+    <None Include="scripts\testcursor.cscs" />
+    <None Include="scripts\testdatetime.cscs" />
+    <None Include="scripts\testdecode.cscs" />
+    <None Include="scripts\testdecodefile.cscs" />
+    <None Include="scripts\testencode.cscs" />
+    <None Include="scripts\testencodefile.cscs" />
+    <None Include="scripts\testFTPreceiveFileFromServer.cscs" />
+    <None Include="scripts\testFTPsendFileToServer.cscs" />
+    <None Include="scripts\testresetvariables.cscs" />
+    <None Include="scripts\testsetwindowoptions.cscs" />
+    <None Include="scripts\testswitch.cscs" />
     <None Include="scripts\testTPATH.cscs" />
+    <None Include="scripts\testVar.cscs" />
     <None Include="scripts\wpfgui.cscs" />
   </ItemGroup>
   <ItemGroup>
@@ -570,21 +856,17 @@
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('packages\Microsoft.Web.WebView2.1.0.1823.32\build\Microsoft.Web.WebView2.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.Web.WebView2.1.0.1823.32\build\Microsoft.Web.WebView2.targets'))" />
-    <Error Condition="!Exists('packages\HarfBuzzSharp.NativeAssets.macOS.7.3.0.1\build\net462\HarfBuzzSharp.NativeAssets.macOS.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\HarfBuzzSharp.NativeAssets.macOS.7.3.0.1\build\net462\HarfBuzzSharp.NativeAssets.macOS.targets'))" />
-    <Error Condition="!Exists('packages\HarfBuzzSharp.NativeAssets.Win32.7.3.0.1\build\net462\HarfBuzzSharp.NativeAssets.Win32.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\HarfBuzzSharp.NativeAssets.Win32.7.3.0.1\build\net462\HarfBuzzSharp.NativeAssets.Win32.targets'))" />
-    <Error Condition="!Exists('packages\SkiaSharp.NativeAssets.macOS.2.88.7\build\net462\SkiaSharp.NativeAssets.macOS.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\SkiaSharp.NativeAssets.macOS.2.88.7\build\net462\SkiaSharp.NativeAssets.macOS.targets'))" />
-    <Error Condition="!Exists('packages\SkiaSharp.NativeAssets.Win32.2.88.7\build\net462\SkiaSharp.NativeAssets.Win32.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\SkiaSharp.NativeAssets.Win32.2.88.7\build\net462\SkiaSharp.NativeAssets.Win32.targets'))" />
     <Error Condition="!Exists('packages\cef.redist.x64.120.2.7\build\cef.redist.x64.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\cef.redist.x64.120.2.7\build\cef.redist.x64.props'))" />
     <Error Condition="!Exists('packages\cef.redist.x86.120.2.7\build\cef.redist.x86.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\cef.redist.x86.120.2.7\build\cef.redist.x86.props'))" />
-    <Error Condition="!Exists('packages\chromiumembeddedframework.runtime.win-x64.124.3.2\build\chromiumembeddedframework.runtime.win-x64.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\chromiumembeddedframework.runtime.win-x64.124.3.2\build\chromiumembeddedframework.runtime.win-x64.props'))" />
-    <Error Condition="!Exists('packages\chromiumembeddedframework.runtime.win-x86.124.3.2\build\chromiumembeddedframework.runtime.win-x86.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\chromiumembeddedframework.runtime.win-x86.124.3.2\build\chromiumembeddedframework.runtime.win-x86.props'))" />
     <Error Condition="!Exists('packages\CefSharp.Common.124.3.20\build\CefSharp.Common.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\CefSharp.Common.124.3.20\build\CefSharp.Common.props'))" />
     <Error Condition="!Exists('packages\CefSharp.Common.124.3.20\build\CefSharp.Common.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\CefSharp.Common.124.3.20\build\CefSharp.Common.targets'))" />
+    <Error Condition="!Exists('packages\chromiumembeddedframework.runtime.win-x64.124.3.2\build\chromiumembeddedframework.runtime.win-x64.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\chromiumembeddedframework.runtime.win-x64.124.3.2\build\chromiumembeddedframework.runtime.win-x64.props'))" />
+    <Error Condition="!Exists('packages\chromiumembeddedframework.runtime.win-x86.124.3.2\build\chromiumembeddedframework.runtime.win-x86.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\chromiumembeddedframework.runtime.win-x86.124.3.2\build\chromiumembeddedframework.runtime.win-x86.props'))" />
+    <Error Condition="!Exists('packages\SkiaSharp.NativeAssets.macOS.2.88.9\build\net462\SkiaSharp.NativeAssets.macOS.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\SkiaSharp.NativeAssets.macOS.2.88.9\build\net462\SkiaSharp.NativeAssets.macOS.targets'))" />
+    <Error Condition="!Exists('packages\SkiaSharp.NativeAssets.Win32.2.88.9\build\net462\SkiaSharp.NativeAssets.Win32.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\SkiaSharp.NativeAssets.Win32.2.88.9\build\net462\SkiaSharp.NativeAssets.Win32.targets'))" />
   </Target>
   <Import Project="packages\Microsoft.Web.WebView2.1.0.1823.32\build\Microsoft.Web.WebView2.targets" Condition="Exists('packages\Microsoft.Web.WebView2.1.0.1823.32\build\Microsoft.Web.WebView2.targets')" />
-  <Import Project="packages\HarfBuzzSharp.NativeAssets.macOS.7.3.0.1\build\net462\HarfBuzzSharp.NativeAssets.macOS.targets" Condition="Exists('packages\HarfBuzzSharp.NativeAssets.macOS.7.3.0.1\build\net462\HarfBuzzSharp.NativeAssets.macOS.targets')" />
-  <Import Project="packages\HarfBuzzSharp.NativeAssets.Win32.7.3.0.1\build\net462\HarfBuzzSharp.NativeAssets.Win32.targets" Condition="Exists('packages\HarfBuzzSharp.NativeAssets.Win32.7.3.0.1\build\net462\HarfBuzzSharp.NativeAssets.Win32.targets')" />
-  <Import Project="packages\SkiaSharp.NativeAssets.macOS.2.88.7\build\net462\SkiaSharp.NativeAssets.macOS.targets" Condition="Exists('packages\SkiaSharp.NativeAssets.macOS.2.88.7\build\net462\SkiaSharp.NativeAssets.macOS.targets')" />
-  <Import Project="packages\SkiaSharp.NativeAssets.Win32.2.88.7\build\net462\SkiaSharp.NativeAssets.Win32.targets" Condition="Exists('packages\SkiaSharp.NativeAssets.Win32.2.88.7\build\net462\SkiaSharp.NativeAssets.Win32.targets')" />
   <Import Project="packages\CefSharp.Common.124.3.20\build\CefSharp.Common.targets" Condition="Exists('packages\CefSharp.Common.124.3.20\build\CefSharp.Common.targets')" />
+  <Import Project="packages\SkiaSharp.NativeAssets.macOS.2.88.9\build\net462\SkiaSharp.NativeAssets.macOS.targets" Condition="Exists('packages\SkiaSharp.NativeAssets.macOS.2.88.9\build\net462\SkiaSharp.NativeAssets.macOS.targets')" />
+  <Import Project="packages\SkiaSharp.NativeAssets.Win32.2.88.9\build\net462\SkiaSharp.NativeAssets.Win32.targets" Condition="Exists('packages\SkiaSharp.NativeAssets.Win32.2.88.9\build\net462\SkiaSharp.NativeAssets.Win32.targets')" />
 </Project>

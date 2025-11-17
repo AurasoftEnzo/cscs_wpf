@@ -1,0 +1,57 @@
+listaRacuna = {}; // new Racun[];
+
+class Racun{
+    brojRacuna = 0;
+    partnerSifra = "";
+    partnerNaziv = "";
+    datumRacuna = "00/00/00";
+    iznosRacuna = 0;
+    linijeRacuna = {};// new LinijaRacuna[]
+
+    Racun(brRac, partSif, partNaz, datRac, iznRac, linRac){
+        brojRacuna = brRac;
+        partnerSifra = partSif;
+        partnerNaziv = partNaz;
+        datumRacuna = datRac;
+        iznosRacuna = iznRac;
+        linijeRacuna = linRac;
+    }
+}
+
+class LinijaRacuna{
+    sifraArtikla = "";
+    nazivArtikla = "";
+    kolicina = 0;
+    cijena = 0;
+    iznos = 0;
+
+    LinijaRacuna(sifArt, nazArt, kol, cij, izn){
+        sifraArtikla = sifArt;
+        nazivArtikla = nazArt;
+        kolicina = kol;
+        cijena = cij;
+        iznos = izn;
+    }
+}
+
+SqlResult = SqlQuery("SELECT TOP 3 nkpr_gl_num, nkpr_gl_cuscod, nkpr_gl_cusnme, CONVERT(varchar(8), nkpr_gl_invdte, 3), nkpr_gl_total FROM nkprinv ORDER BY nkpr_gl_num");
+
+for(i = 1; i < Size(SqlResult); i++){
+    
+    SqlResult2 = SqlQuery("SELECT nkpr_ln_pcode, nkpr_ln_pdesc, nkpr_ln_pqty, nkpr_ln_pprce, nkpr_ln_pext FROM nkprinvl WHERE nkpr_ln_invnm = " + SqlResult[1][0]);
+    
+    tempLinijeRacuna = {};
+    for(j = 1; j < Size(SqlResult2); j++){   
+
+        GetSQLRecord(SqlResult2);
+        tempLinijeRacuna.Add(new LinijaRacuna(strtrim(SqlResult2[j][0]),strtrim(SqlResult2[j][1]),SqlResult2[j][2],SqlResult2[j][3],SqlResult2[j][4]));
+    }
+
+    listaRacuna.Add(new Racun(SqlResult[i][0],strtrim(SqlResult[i][1]),strtrim(SqlResult[i][2]),strtrim(SqlResult[i][3]),SqlResult[i][4],tempLinijeRacuna));
+}
+
+MessageBox(listaRacuna[2].brojRacuna);
+MessageBox(listaRacuna[2].iznosRacuna);
+MessageBox(listaRacuna[2].linijeRacuna[0].iznos);
+
+PrintOOP();

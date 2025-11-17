@@ -1,0 +1,41 @@
+MessageBox("...Testing datetime without define...");
+
+date1 = DateTime("2020/04/29" , "yyyy/MM/dd");	//returns date
+MSG(date1);
+date1.add("3M");
+MSG(date1);
+
+date2 = DateTime("29/04/2020" , "dd/MM/yyyy");	//returns date
+MSG("date2 = " + date2);
+date3 = DateTime("29/04/20"   , "dd/MM/yy");
+MSG("date3 = " + date3);
+date4 = DateTime("29.04.2020" , "dd.MM.yyyy");
+MSG("date4 = " + date4);
+date5 = DateTime("29-04-2020" , "dd-MM-yyyy");
+MSG("date5 = " + date5);
+date6 = DateTime("29042020"   , "ddMMyyyy");
+MSG("date6 = " + date6);
+date7 = DateTime("20200429"   , "yyyyMMdd");
+MSG("date7 = " + date7);
+date8 = DateTime("2020-04-29" , "yyyy-MM-dd");
+MSG("date8 = " + date8);
+
+time1 = DateTime("05:06:07", "HH:mm:ss");
+MSG("time1 = " + time1);
+time2 = DateTime("05:06", "HH:mm");
+MSG("time2 = " + time2);
+
+datetimex = DateTime("29/04/2020 05:06:07", "dd/MM/yyyy HH:mm:ss");
+MSG("datetimex = " + datetimex);
+
+
+//***********************************************
+
+datetime1 = DateTime(); //current date and time
+MSG("datetime1 = " + datetime1);
+MSG("Current date = " + datetime1.ToString("dd.MM.yyyy"));	//current date
+MSG("Current time = " + datetime1.ToString("HH:mm"));		//current time
+
+
+
+quit;

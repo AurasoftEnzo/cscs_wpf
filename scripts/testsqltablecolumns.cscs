@@ -1,0 +1,16 @@
+MessageBox("...Testing sqltablecolumns...");
+
+sqlconnectionstring("Server=localhost;Database=testdb;User Id=sa;Password=aura;");
+
+tableName = "tbl_students";
+namesOnly = 1; //can be 0 or 1
+
+columns = sqltablecolumns(tableName, namesOnly);
+
+MessageBox(columns);
+MessageBox(columns[0]);
+MessageBox(columns[1]);
+MessageBox(columns[2]);
+
+
+quit;

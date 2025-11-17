@@ -1,0 +1,33 @@
+MessageBox("...Testing sqlcursorcurrentrow...");
+
+sqlconnectionstring("Server=localhost;Database=testdb;User Id=sa;Password=aura;");
+
+// Initialize the cursor with a SQL query
+cursorId = SQLCursorInit("SELECT id, name, gender FROM tbl_students WHERE id < 5 ORDER BY id");
+//cursorId = SQLCursorInit("testdb.dbo.tbl_students");
+
+countRows = SQLCursorTotal(cursorId);
+MessageBox("countRows = " + countRows);
+
+row = SQLCursorNext(cursorId);
+while (size(row)>0)
+{
+    //MessageBox(row);
+    //MssageBox(row[0] + "\n" + row[1] + "\n" + row[2]);//1, pawan, male
+    
+    //DO STUFF WITH ROW VALUES
+    id = row[0];
+    name = row[1];
+    gender = row[2];
+
+    currentRowIndex = SQLCursorCurrentRow(cursorId);
+    MessageBox("currentRowIndex = " + currentRowIndex);
+
+    row = SQLCursorNext(cursorId);
+}
+
+SQLCursorClose(cursorId);
+
+MessageBox("END");
+
+quit;

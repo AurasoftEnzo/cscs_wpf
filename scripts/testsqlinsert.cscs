@@ -1,0 +1,30 @@
+MessageBox("...Testing sqlinsert...");
+
+
+sqlconnectionstring("Server=localhost;Database=testdb;User Id=sa;Password=aura;");
+
+tableName = "tbl_students";
+columnsStr = "id,name,gender";
+
+//*********************************************
+//1 row
+row = {151, 'Alice', 'female'};
+
+rowsAttempted = sqlinsert(tableName, columnsStr, row);
+
+MessageBox("rowsAttempted = " + rowsAttempted);
+
+//*********************************************
+//multiple rows
+values = {};
+row = {161, 'Mary', 'female'};
+values.Add(row);
+row = {162, 'John', 'male'};
+values.Add(row);
+
+rowsAttempted = sqlinsert(tableName, columnsStr, values);
+
+MessageBox("rowsAttempted = " + rowsAttempted);
+
+
+quit;

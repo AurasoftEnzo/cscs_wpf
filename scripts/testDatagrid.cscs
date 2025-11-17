@@ -1,0 +1,84 @@
+sqlconnectionstring("Server=localhost;Database=testdb;User Id=sa;Password=aura;");
+
+define studentid_ar type R array 10;
+define studentname_ar type a size 30 array 10;
+define studentgender_ar type a size 10 array 10;
+define studentamount_ar type N size 14 dec 2 array 10;
+define studentfinished_ar type L array 10;
+define studentdate_ar type a size 8 array 10;
+define studenttime_ar type a size 8 array 10;
+
+define cntr type R;
+
+//DATAGRID ROW SINGLE-CLICK
+function dgStudents@move()
+{
+	datarow = GetSelectedGridRow("dgStudents");
+
+	if (Size(datarow)>0)
+	{
+	  SetText("labelID", datarow[0]);
+	  SetText("labelname", datarow[1]);
+	  SetText("labelgender", datarow[2]);
+	  SetText("labelamount", datarow[3]);
+	  SetText("labelfinished", datarow[4]);
+	  SetText("labeldate", datarow[5]);
+	  SetText("labeltime", datarow[6]);
+	}	
+}
+
+//BUTTON CLICK
+function fetchdata@Clicked(sender, load) 
+{
+	cntr = 0;
+
+	try	
+	{
+		sqlResult = sqlquery("SELECT TOP 3 id, name, gender, amount, finished, CONVERT(char(8),  datein, 3) AS datein, CONVERT(char(8), timein, 20) as timein  FROM tblstudents");		 
+	}
+	catch(exc)
+	{
+		MessageBox(exc);
+	}
+
+	//MessageBox("Size(sqlResult) = " + Size(sqlResult));
+
+	if (Size(sqlResult) < 2) {
+		MessageBox("No records found.");
+		quit;
+	}
+
+	for(i = 1; i < Size(sqlResult); i++)
+	{
+		id = sqlResult[i][0];
+		name = sqlResult[i][1];
+		gender = sqlResult[i][2];
+		amount = sqlResult[i][3];
+		finished = sqlResult[i][4];
+		datein = sqlResult[i][5];
+		timein = sqlResult[i][6];		
+
+		//MessageBox("id = " + id + "\n" + "name = " + name + "\n" + "gender = " + gender + "\n" + "amount = " + amount + "\n" + "finished = " + finished + "\n" + "datein = " + datein + "\n" + "timein = " + timein);
+	}
+
+	//******************************
+
+	//FILL THE ARRAYS WITH DATA
+	for ( i = 1; i < Size(sqlResult); i++ )
+    {
+		studentid_ar[i - 1] = sqlResult[i][0];
+		studentname_ar[i - 1] = sqlResult[i][1];
+		studentgender_ar[i - 1] = sqlResult[i][2];
+		studentamount_ar[i - 1] = sqlResult[i][3]; 
+		studentfinished_ar[i - 1] = sqlResult[i][4]; 
+		studentdate_ar[i - 1] = sqlResult[i][5];
+		studenttime_ar[i - 1] = sqlResult[i][6];
+	}
+
+	//INITIALIZE DATAGRID dgStudents
+	Format("studentamount_ar", "nofd"); //"no fixed decimals" (suppress trailing zero decimals) and enable thousands-separators when the value is rendered
+    DisplayArray("dgStudents", "close");
+    DisplayArraySetup("dgStudents", counterFld: cntr, activeElements: Size(sqlResult) - 1, maxElements: 10);
+}
+
+win = CreateWindow("../../scripts/testDatagrid.xaml");

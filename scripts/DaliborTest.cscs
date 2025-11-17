@@ -1,0 +1,55 @@
+﻿CreateWindow("../../scripts/DaliborTest.xaml");
+
+DEFINE i type R init 0;
+DEFINE index type R;
+
+function button1@clicked()
+{  
+    //    MSG("CLICKED");
+    //setwidgetoptions("tabControl", "position", 2);
+    //setwidgetoptions("tabControl", "SelectedIndex", 2);
+
+    //DELA
+    i++;
+    setwidgetoptions("tabControl", "SelectedIndex", i);
+    
+
+function textBox1@pre()
+{
+    MSG("PRE");
+}
+
+function textBox1@post()
+{
+    MSG("POST");
+}
+
+function tabControl@change(sender, load)
+{
+    //MSG("CHANGE");
+
+    //MSG("SelectedIndex = " + GetWidgetOptions("tabControl", "SelectedIndex")); // int
+    //MSG("DataContext = " + GetWidgetOptions("tabControl", "DataContext")); // string
+    //MSG("IsEnabled = " + GetWidgetOptions("tabControl", "IsEnabled")); // bool
+    
+    //visibilityValue =  GetWidgetOptions("tabControl", "Visibility"); // enum (Visibility)
+    //color =  GetWidgetOptions("tabControl", "Background"); // SolidColorBrush.ToString()
+
+    /*
+        if(strLower(visibilityValue) == "visible"){
+            MSG("is visible");
+        }elif(strLower(visibilityValue) == "collapsed"){
+            MSG("NOT visible");
+        }else{ // hidden
+            MSG("NOT visible");
+        }
+    */
+
+    //MSG(color);
+
+    //tabControl = (TabControl)sender;
+
+    
+    index = GetWidgetOptions("tabControl", "SelectedIndex"); // int
+    MSG(index);
+}

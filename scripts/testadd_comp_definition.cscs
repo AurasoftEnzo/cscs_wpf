@@ -1,0 +1,26 @@
+MessageBox("...Testing add_comp_definition...");
+
+DEFINE result type a size 1000;
+
+// Define the namespace
+add_comp_namespace("mynamespace")
+
+// Create the component as an empty object
+mynamespace.mycomponent = {}
+
+// Add a method hello to the component
+mynamespace.mycomponent.hello = function()
+{    
+    return "30";
+}
+
+// Call the method
+result = mynamespace.mycomponent.hello();
+MSG(result);
+
+quit;
+
+
+
+
+

@@ -1,0 +1,64 @@
+CreateWindow("../../scripts/testformat2.xaml");
+
+MessageBox("...Testing format 2...");
+
+//POPIS ARRAY-a
+
+//T10CNTRZ_AR		No.
+//T10MODULZ_AR		Modul
+//T10RACUNZ_AR		Raèun
+//T10DATUMZ_AR		Datum
+//T10TIMEZ_AR		Sat
+//T10NAMEZ_AR		Dobavljaè
+//T10IZNOSZ_AR		Ukupno
+
+define T10CNTRZ_AR type i size 2 array 10;
+define T10MODULZ_AR type a size 1 array 10;
+define T10RACUNZ_AR type r size 8 array 10;
+define T10DATUMZ_AR type d size 8 array 10;
+define T10TIMEZ_AR type t size 8 array 10;
+define T10NAMEZ_AR type a size 30 array 10;
+define T10IZNOSZ_AR type n size 14 dec 2 array 10;
+
+DEFINE date1 type D size 8;
+DEFINE time1 type T size 8;
+DEFINE cntr2 type i;
+
+date1 = "15/05/25";
+time1 = "20:00:00";
+
+for ( i = 1; i <= 10; i++ )
+{   
+    T10CNTRZ_AR[i - 1] = i;
+    T10MODULZ_AR[i - 1] = "M";
+    T10RACUNZ_AR[i - 1] =  100 + i; 
+    T10DATUMZ_AR[i - 1] =  date1 + i;    
+    T10TIMEZ_AR[i - 1] =  time1 + i;
+    T10NAMEZ_AR[i - 1] =  "Name" + i;
+    T10IZNOSZ_AR[i - 1] =  1000.12 + i;        
+}
+
+//testni ispis
+for( i=0; i<10; i++)
+{
+    //MessageBox(T10CNTRZ_AR[i]);
+    //MessageBox(T10MODULZ_AR[i]);
+    //MessageBox(T10RACUNZ_AR[i]);
+    //MessageBox(T10DATUMZ_AR[i]);
+    //MessageBox(T10TIMEZ_AR[i]);
+    //MessageBox(T10NAMEZ_AR[i]);
+    //MessageBox(T10IZNOSZ_AR[i]);
+}
+
+cntr2 = 0;
+
+//Format("T10IZNOSZ_AR", "nofd"); //No fractional digits (decimal places)
+//Format("T10IZNOSZ_AR", "nocma"); //No thousands comma separators
+Format("T10IZNOSZ_AR", "nofd", "nocma"); //No fractional digits (decimal places), No thousands comma separators
+
+DisplayArray("dgRacuniLast", "close");
+DisplayArraySetup("dgRacuniLast", counterFld: cntr2, activeElements: 10, maxElements: 10);
+
+MessageBox("END");
+
+quit;

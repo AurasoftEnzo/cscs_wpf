@@ -1,0 +1,21 @@
+MessageBox("...Testing GetColumn...");
+
+DEFINE col type R;
+DEFINE fromRow type R;
+
+arrayVar = {
+        ["supplier", "12345678901", "text1"], 
+        ["bill_name", "123456", "text2"],
+        ["bill_date", "2025-06-10", "text3"], 
+        ["amount_vat", "64.00", "text4"], 
+        ["due_date", "2025-07-10", "text5"], 
+        ["xml_file", "C:\\Users\\a.xml", "file6"], 
+        ["pdf_file", "C:\\Users\\b.pdf", "file7"]
+};
+
+col = 2;
+fromRow = 4;
+
+MessageBox(GetColumn(arrayVar, col, fromRow)); //Output: ["text5", "file6", "file7"]
+
+quit;

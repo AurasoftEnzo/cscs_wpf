@@ -1,0 +1,201 @@
+
+// function ReportProba@Clicked(sender, load) {
+  //B = byte (size 1byte) 0..255
+  //I = signed small int (size 2byte) -32768..+32767
+  //R = integer (size 4byte) -2.147.483.648..+2.147.483.647 
+  //N = double (pazi DEFINE varName type N size 9 dec 2;)
+  //L = Bool pazi vrijednosti su true i false => Dela (.T. .TRUE. .F. .FALSE. => Ne dela)
+
+
+
+
+  MessageBox("START","Naslov","ok","info");  
+
+  DEFINE report1_hndl type R;
+  DEFINE report2_hndl type R;
+  DEFINE report3_hndl type R;
+  DEFINE report4_hndl type R;  
+
+  report1_hndl = SetupReport(strtrim(tpath()) + "DatasetiRacuni1_N.rtm");
+  report2_hndl = SetupReport(2, 1);
+  report3_hndl = SetupReport(3, 2);
+  report4_hndl = SetupReport(4, 2);
+    
+  DEFINE BrojRacuna type a size 20;
+  DEFINE Kupac type a size 100;    
+  DEFINE TOTAL type N size 9 dec 2;
+  DEFINE MemoOpisKupca type a size 100;
+  //DEFINE MemoOpisKupca type N size 9 dec 2;
+  //DEFINE MemoOpisKupca type B;
+  //DEFINE MemoOpisKupca type I;
+  //DEFINE MemoOpisKupca type R;
+  //DEFINE MemoOpisKupca type L;
+  DEFINE RichOpisRacuna type a size 100;
+  //DEFINE RichOpisRacuna type N size 9 dec 2;
+  //DEFINE RichOpisRacuna type B;
+  //DEFINE RichOpisRacuna type I;
+  //DEFINE RichOpisRacuna type R;
+  //DEFINE RichOpisRacuna type L;
+  DEFINE Placeno type L;
+
+  DEFINE Artikl type a size 100;    
+  DEFINE Komada type N size 9 dec 2;
+  DEFINE Cijena type N size 9 dec 2;
+  DEFINE MemoNapomena type a size 100;  
+  DEFINE RichNapomena type a size 100;  
+
+  DEFINE Opis type a size 100; 
+  
+  DEFINE Slika type a size 100; 
+  DEFINE SlikaPath type a size 100;
+
+  DEFINE reportHandle type R;
+  DEFINE nazivKontrole type a size 100;
+  DEFINE nazivParametra type a size 100;
+  DEFINE valueString type a size 100;
+  DEFINE valueInt type R;
+
+  DEFINE s1 type a size 100;
+  DEFINE s2 type a size 100;
+  DEFINE s3 type a size 100;
+ 
+  for(int i=1; i<=5; i++)
+  {
+     BrojRacuna = String(i) + "/2025";
+     //MessageBox(BrojRacuna,"Naslov","ok","info");
+     Kupac = "Kupac" + String(i);
+     TOTAL = 0;
+     MemoOpisKupca = "MemoOpisKupca" + String(i);
+     RichOpisRacuna = "RichOpisRacuna" + String(i);
+     if ((i % 2) == 1)
+     {
+        Placeno = true;
+     }
+     else
+     {
+        Placeno = false;
+     }
+
+     OutputReport(1);
+
+     for(int j=0; j<5; j++)
+     {
+        Artikl = "Artikl" + String(100 * i + j);
+        Komada = 10 + j;
+        Cijena = 1000.00 + j;
+        if ((i==1) && (j==3))
+        {
+           Cijena = -10000.00;
+        }
+        if ((i==2) && (j==2))
+        {
+           Cijena = -8000.00;
+        }
+        MemoNapomena = "ABC" + String(j);
+        RichNapomena = "DEF" + String(j);
+
+        OutputReport(2);
+
+        if (Cijena < 0)
+        {       
+            SetParamReport(2, "ppDBTextCijena", "FontColor", "RED"); 
+            SetParamReport(2, "ppDBTextCijena", "FontStyle", "Bold");
+        }
+        else
+        {
+            SetParamReport(2, "ppDBTextCijena", "FontColor", "BLACK");
+            SetParamReport(2, "ppDBTextCijena", "FontStyle", "");
+        }
+
+        TOTAL = TOTAL + Cijena;
+
+        for(int k=1; k<=2; k++)
+        {
+           Opis = "Opis" + string(k); 
+
+           OutputReport(3);
+        }
+
+        for(int k=1; k<=2; k++)
+        {
+           if ((i==1) && (j==2))
+           {
+              Slika = "Slika" + string(k);
+              
+              s1 = "D:\\SLIKE\\";
+              s2 = string(k);
+              s3 = ".bmp";
+              SlikaPath = s1 + s2 + s3;
+
+              OutputReport(4);
+           }           
+        }
+     }
+
+     if (TOTAL < 0)
+     {       
+        SetParamReport(1, "ppDBTextTOTAL", "FontColor", "RED"); 
+        SetParamReport(1, "ppDBTextTOTAL", "FontStyle", "Bold");
+     }
+     else
+     {
+        SetParamReport(1, "ppDBTextTOTAL", "FontColor", "BLACK");
+        SetParamReport(1, "ppDBTextTOTAL", "FontStyle", "");
+     }
+
+     UpdateReport(1, "TOTAL");
+
+
+  }
+
+
+  
+
+       // Opis = "Opis1";
+       // OutputReport(3);
+
+       // Opis = "Opis2";
+       // OutputReport(3);
+
+       // Slika = "Slika1";
+      //  SlikaPath = "D:\SLIKE\1.bmp";
+      //  OutputReport(4);
+
+      //  Slika = "Slika2";
+      //  SlikaPath = "D:\SLIKE\2.bmp";
+      //  OutputReport(4);
+
+    
+       // Slika = "Slika3";
+       // SlikaPath = "D:\SLIKE\3.bmp";
+       // OutputReport(4);
+
+    
+    
+
+  
+
+      //  Opis = "Opis7";
+      //  OutputReport(3);
+
+      //  Opis = "Opis8";
+      //  OutputReport(3);
+
+      //  Slika = "Slika4";
+      //  //SlikaPath = "D:\SLIKE\4.bmp";
+      //  SlikaPath = "";
+       // OutputReport(4);
+    
+    
+
+    
+    
+
+  PrintReport(1);
+
+  MessageBox("EXIT","Naslov","ok","info");  
+  exit;
+  
+// }
+
+// win = CreateWindow("../../scripts/DaliborReport10.xaml");

@@ -572,38 +572,43 @@ function filterPart()
     {
         sql_str += " AND kdib_gl_banka IN (" + BANKA_str + ")";
     }
-    if (KONTO_str != "" || KONTO_posl_akt_str != "" || KONTO_financ_akt_str != "" || KONTO_invest_akt_str != "")
-    {
-        KONTO_final_string = "";
 
-        if(KONTO_str != ""){
-            KONTO_final_string += KONTO_str;
-            KONTO_final_string += (KONTO_final_string != "" ? "," : "");
-        }
-        if(cbKontoPoslAkt == true && KONTO_posl_akt_str != ""){
-            KONTO_final_string += KONTO_posl_akt_str;
-            KONTO_final_string += (KONTO_final_string != "" ? "," : "");
-        }
-        
-        if(cbKontoFinancAkt == true && KONTO_financ_akt_str != ""){
-            KONTO_final_string += KONTO_financ_akt_str;
-            KONTO_final_string += (KONTO_final_string != "" ? "," : "");
-        }
-        
-        if(cbKontoInvestAkt == true && KONTO_invest_akt_str != ""){
-            KONTO_final_string += KONTO_invest_akt_str;
-            KONTO_final_string += (KONTO_final_string != "" ? "," : "");
-        }
-        
-        // charCount = lchr(KONTO_final_string, "l");
-        // KONTO_final_string = substring(KONTO_final_string, 0, charCount - 1);
-
-        if(KONTO_final_string.length > 0){
-            KONTO_final_string = substring(KONTO_final_string, 0, KONTO_final_string.length - 1);
-            //MessageBox(KONTO_final_string);
-            sql_str += " AND kdib_ln_konto IN (" + KONTO_final_string + ")";
-        }
+    //-------------------------------
+    KONTO_final_string = "";
+    
+    if(KONTO_str != ""){
+        KONTO_final_string += KONTO_str;
+        KONTO_final_string += (KONTO_final_string != "" ? "," : "");
     }
+    
+    if(cbKontoPoslAkt == true && KONTO_posl_akt_str != ""){
+        KONTO_final_string += KONTO_posl_akt_str;
+        KONTO_final_string += (KONTO_final_string != "" ? "," : "");
+    }
+    
+    if(cbKontoFinancAkt == true && KONTO_financ_akt_str != ""){
+        KONTO_final_string += KONTO_financ_akt_str;
+        KONTO_final_string += (KONTO_final_string != "" ? "," : "");
+    }
+    
+    if(cbKontoInvestAkt == true && KONTO_invest_akt_str != ""){
+        KONTO_final_string += KONTO_invest_akt_str;
+        KONTO_final_string += (KONTO_final_string != "" ? "," : "");
+    }
+    
+    // charCount = lchr(KONTO_final_string, "l");
+    // KONTO_final_string = substring(KONTO_final_string, 0, charCount - 1);
+
+    if(KONTO_final_string.length > 0){
+        KONTO_final_string = substring(KONTO_final_string, 0, KONTO_final_string.length - 1);
+        //MessageBox(KONTO_final_string);
+        sql_str += " AND kdib_ln_konto IN (" + KONTO_final_string + ")";
+    }else{
+        sql_str += " AND 1 <> 1";
+    }
+
+    //-------------------------------
+
     if (Izvadak != "")
     {
         sql_str += " AND kdib_gl_num = '" + Izvadak + "'";

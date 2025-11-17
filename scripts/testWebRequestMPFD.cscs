@@ -1,0 +1,35 @@
+headers = {
+    "Authorization" : "APIKey 1001_92f4a28acf824e0e9371e0a4f50b08c9"
+};
+body = {
+        ["supplier", "12345678901", "text"], /* [{name}, {value}, {type}] */
+        ["bill_name", "123456", "text"],
+        ["bill_date", "2025-06-10", "text"], 
+        ["amount_vat", "64.00", "text"], 
+        ["due_date", "2025-07-10", "text"], 
+        ["xml_file", "C:\\Users\\User\\Desktop\\DeConte API Karlovac\\Racun_123456.xml", "file"], /* [{name}, {fullPath}, {type}] */
+        ["pdf_file", "C:\\Users\\User\\Desktop\\DeConte API Karlovac\\Racun_123456.pdf", "file"]
+};
+
+WebRequestMPFD(
+    "POST" /* method */,
+    "https://inp-api.stcr.itcs.hr/approval_app/api-import-approve-bills/create/" /* uri */,
+    body, /* array of arrays */
+    "endpoint1" /* tracking */,
+    "uspjesnoSlanje" /* onSuccess */,
+    "greskaSlanja" /* onFailure */,
+    "CustomAuraBoundary", /* boundary */
+    headers /* headers */,
+    1000 * 15 /* timeoutMs */,
+    true /* bool justFire */ // ako je true -> samo šalje zahtjev, ne čeka odgovor... ako je false -> čeka odgovor
+);
+
+
+
+function uspjesnoSlanje(tracking, responseCode, res) {
+    MSG("Uspješno slanje!!!\n" + tracking + "\nresponseCode: " + responseCode + "\nres: " + res);
+}
+
+function greskaSlanja(tracking, responseCode, res) {
+    MSG("GREŠKA SLANJA!!!" + "\ntracking: " + tracking + "\nresponseCode: " + responseCode + "\nres: " + res);
+}

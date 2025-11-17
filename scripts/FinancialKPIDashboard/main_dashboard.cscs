@@ -1,0 +1,48 @@
+// #WINFORM main_dashboard.xaml;
+CreateWindow(strTrim(tpath()) + "FinancialKPIDashboard\\main_dashboard.xaml");
+
+Include(tpath() + "FinancialKPIDashboard\\kpi_functions.cscs");
+
+
+function main_dashboard_OnStart() {
+    PopulateYearComboBox();
+    PopulateMonthComboBoxes();
+}
+
+function PopulateYearComboBox() {
+    years = {2020, 2021, 2022, 2023, 2024};
+    // years = {"2020", "2021", "2022", "2023"};
+
+    // FillWidget("cmbYear", years);
+    AddWidgetData("cmbYear", years);
+    
+    // ??
+    SetText("cmbYear", "2024");
+}
+
+function PopulateMonthComboBoxes() {
+    months = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+    AddWidgetData("cmbFromMonth", months);
+    AddWidgetData("cmbToMonth", months);
+    
+    // ??
+    SetText("cmbFromMonth", "Jan");
+    SetText("cmbToMonth", "Dec");
+}
+
+function btnLoadData@Clicked() {
+    //??
+    year = GetText("cmbYear");
+
+    fromMonth = IndexOfMonth(GetText("cmbFromMonth")) + 1;
+    toMonth = IndexOfMonth(GetText("cmbToMonth")) + 1;
+
+    // ??????????
+    LoadKPIs(year, fromMonth, toMonth);
+    DrawKPICharts(year, fromMonth, toMonth);
+}
+
+function IndexOfMonth(monthName) {
+    months = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+    return Find_Index(months, monthName);
+}

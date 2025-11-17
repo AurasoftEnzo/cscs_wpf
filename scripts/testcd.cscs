@@ -1,0 +1,13 @@
+MessageBox("...Testing cd...");
+
+DEFINE currentDirectory type a size 1000;
+DEFINE newDirectory type a size 1000;
+
+currentDirectory = Pwd(); // Returns current directory name
+MSG(currentDirectory); //output: C:\Users\User\Documents\GitHub\cscs_wpf\bin\Debug
+
+cd("C:\TEST"); //change directory to C:\TEST
+newDirectory = Pwd();
+MSG(newDirectory);
+
+MSG(cd("C:\TEST2"));

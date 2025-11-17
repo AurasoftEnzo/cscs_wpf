@@ -1,0 +1,2195 @@
+//akoje kdib_gl_banka='' to bi značilo da niej bilo priliva niti odliva nego da je kompenzacija
+
+//include(strTrim(tpath()) +"chainLib.cscs");
+
+include(strTrim(tpath()) + "wxsy_lib.cscs");
+
+Import(strTrim(mpath()) + "CSCS.Math.dll");
+
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbioda_inc_lists.cscs") : strTrim(tpath()) + "wxbioda_inc_lists.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbioda_inc_a.cscs") : strTrim(tpath()) + "wxbioda_inc_a.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbioda_inc_b.cscs") : strTrim(tpath()) + "wxbioda_inc_b.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbioda_inc_c.cscs") : strTrim(tpath()) + "wxbioda_inc_c.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbioda_inc_d.cscs") : strTrim(tpath()) + "wxbioda_inc_d.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbioda_inc_e.cscs") : strTrim(tpath()) + "wxbioda_inc_e.cscs");
+// include(strTrim(tpath()) + "wxbioda_inc_lists.cscs");
+// include(strTrim(tpath()) + "wxbioda_inc_a.cscs");
+// include(strTrim(tpath()) + "wxbioda_inc_b.cscs");
+// include(strTrim(tpath()) + "wxbioda_inc_c.cscs");
+// include(strTrim(tpath()) + "wxbioda_inc_d.cscs");
+// include(strTrim(tpath()) + "wxbioda_inc_e.cscs");
+// IncludeScript("wxbioda_inc_lists.cscs"); //look-up lists
+// IncludeScript("wxbioda_inc_a.cscs"); //look-up lists
+// IncludeScript("wxbioda_inc_b.cscs"); //look-up lists
+// IncludeScript("wxbioda_inc_c.cscs"); //look-up lists
+// IncludeScript("wxbioda_inc_d.cscs"); //look-up lists
+// IncludeScript("wxbioda_inc_e.cscs"); //look-up lists
+
+CreateWindow(strTrim(tpath()) + "wxbioda.xaml");
+// CreateWindowXaml("wxbioda.xaml");
+
+function wxbioda_OnClose()
+{
+    save_logs("I", userCode, WhoAmI());
+}
+function wxbioda_onDisplay()
+{
+    cursor("wait");
+
+    SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Visible", false);
+    SetWidgetOptions("EllipseProdajaUMjesecuPriliv", "Visible", false);
+    SetWidgetOptions("EllipseProdajaUTjednuPriliv", "Visible", false);
+    SetWidgetOptions("EllipseProdajaUGodiniOdliv", "Visible", false);
+    SetWidgetOptions("EllipseProdajaUMjesecuOdliv", "Visible", false);
+    SetWidgetOptions("EllipseProdajaUTjednuOdliv", "Visible", false);
+    // SetWidgetOptions("EllipseBrojKupaca", "Visible", false);
+    // SetWidgetOptions("EllipseBrojRacuna", "Visible", false);
+    // SetWidgetOptions("EllipseProsjProdajaPoKupcu", "Visible", false);
+
+    bruto_rb = true;
+    neto_rb = false;
+    brojRadnika_rb = false;
+    
+    rad_rb = true;
+    // bolovanje_rb = false;
+    doprinosiIzPlace_rb = false;
+    doprinosiNaPlacu_rb = false;
+    olaksice_rb = false;
+    osobniOdbitak_rb = false;
+    porez_rb = false;
+    prirez_rb = false;
+    naknade_rb = false;
+    obustave_rb = false;   
+    
+    redoviti_cb = true;
+    poduzetnik_cb = true;
+    beneficirani_cb = true;
+    volonter_cb = true;
+    pripravnik_cb = true;
+    obrtnik_cb = true;
+    nijeZaposlen_cb = true;
+    porodiljskiDopust_cb = true;
+    ugovorODjelu_cb = true;
+    obracunNaknada_cb = true;
+    
+    spolSve_rb = true;
+    spolMusko_rb = false;
+    spolZensko_rb = false;
+    spolNijeUneseno_rb = false;
+
+    punoRadnoVrijeme_cb = true;
+    nepunoRadnoVrijeme_cb = true;
+
+    ugovorNaOdredeno_cb = true;
+    ugovorNaNeodredeno_cb = true;
+    
+    zaposleniUCijelomPeriodu_cb = false;
+
+    args = CommandLineArgs(); 
+    if(Size(args) > 2){
+        companyCode = args[2];
+        userCode = args[3];
+        CoSet(companyCode);
+    }else{
+        companyCode = Substring(CoGet(), 1, 2);
+    }
+
+    save_logs("U", userCode, WhoAmI());
+
+    sqlQueryString = "select SY_CC_USER, SY_CC_YEAR, SY_CC_DBASE from " + strtrim(CommonDBGet()) + ".dbo.NKSYCCYR WHERE SY_CC_CODE = '" + companyCode + "'";
+    try
+    {
+        sqlResult = sqlQuery(sqlQueryString);
+    }
+    catch(exc)
+    {
+        MessageBox(exc);
+    }
+    if (ffile(strTrim(tpath())+"CompanyLogo.jpg",'f') == "CompanyLogo.jpg")
+    { 
+        setimage("Logo",strTrim(tpath())+"CompanyLogo.jpg");
+    }
+    else
+    {
+        if (ffile(strTrim(tpath())+"AuraSoftLogo.png",'f') == "AuraSoftLogo.png")
+        {
+           setimage("Logo",strTrim(tpath())+"AuraSoftLogo.png");
+        }
+        else
+        {
+            MessageBox("Molim da postavite logo znak firme kao: "+strTrim(tpath())+"CompanyLogo.jpg");
+        }
+    }
+    //tableHndl = OPENV("KPSYMSTR","B"+companycode); //, coGet());
+    //InvHeadHndl = OPENV("NKPRINV","B"+companycode); //, coGet());
+    //InvlineHndl = OPENV("NKPRINVL","B"+companycode); //, coGet());
+    sveDrzave_dn= true;
+    robaUsl_dn= true;
+    postotakMj = 0;
+    postotak= 0;
+    //skladiste = 0;
+    sklad_str= "";
+    //searchSklSifra = "";
+    searchSklNaziv = "";
+    if (size(sqlResult) > 1)
+    {
+        imeFirme = sqlResult[1][0].trim(); // KAMEND
+        ovagod_h = sqlResult[1][1].trim(); // 2022
+    }    
+    lani_h = string(int(ovagod_h) - 1); // 2
+    trenutnaGodinaBaza = sqlResult[1][2].trim(); // ime baze
+    sqlQueryString = " SELECT TOP 1 kpsy_comp_name,kpsy_po_freight,FORMAT([KPSY_FISCAL_YR], 'yyyy-MM-dd'),kpsy_ku_pnb FROM " + trenutnaGodinaBaza + ".[dbo].[KPSYMSTR]";
+    try
+    {
+        sqlResult = sqlQuery(sqlQueryString);
+    }
+    catch(exc)
+    {
+        MessageBox(exc);
+    }
+    if (size(sqlResult) > 1)
+    {
+        proslaGodina = (int(ovagod_h) - 1);
+        nazivFirme = sqlResult[1][0].trim();
+        kpsy_po_freight= sqlResult[1][1].trim();
+        fiscal_yr = sqlResult[1][2];
+        local = sqlResult[1][3];
+    } 
+    neto_dn = true;
+    SetWindowOptions("wxbiodaWindow", "title", "Dashboard - Plaće za " + nazivFirme + " - " + ovagod_h + ". godina");
+
+    //kasnije zamijenit sa funkcijom, kada se bude koristi adictionary
+    sqlQueryString = "select SY_CC_DBASE from " + CommonDBGet() + ".dbo.NKSYCCYR WHERE SY_CC_USER = '" + imeFirme + "' AND SY_CC_YEAR = '" + (int(ovagod_h) - 1) + "'";
+    try
+    {
+        sqlResult = sqlQuery(sqlQueryString);
+        if (size(sqlResult) > 1)
+        {
+            proslaGodinaBaza = sqlResult[1][0].trim();
+        }  
+    }
+    catch(exc)
+    {
+        MessageBox(exc);
+    }
+    EUCountries= "'AT', 'BE', 'BG', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR', 'HU', 'IE', 'IT', 'LT', 'LU', 'LV', 'MT', 'NL', 'PL', 'PT', 'RO', 'SE', 'SI', 'SK', 'QP', 'QR', 'QV'";
+    if(local== 'S' || local== 'B')
+    {
+        EUCountries= EUCountries+",'HR'";
+    }
+    sqlNaDan = ovagod_h + "-12-31";
+    sqlOdDana = string(int(ovagod_h) - 1) + "-01-01";
+    //danas_chr= Now("dd/MM/yyyy");
+    danas_h = Now("dd/MM/yyyy");
+    //danas_h= danas_chr;
+    if (now("yyyy") > ovagod_h)
+    {
+        //danas_h= "31/12/"+subString(ovagod_h,2,2); //riješiti kada dobijemo funkciju ctod()
+    }
+
+    comboItems0 = {"Obračun za mjesec", "Mjesec isplate plaće", "Mjesec obračuna plaće"};
+    AddWidgetData("comboBoxMjesec1", comboItems0);
+    SetWidgetOptions("comboBoxMjesec1", "SelectedIndex", 0);
+
+    comboItems1 = {};
+    for(i = int(Now("yyyy")); i >= 1900 ; i--){
+        comboItems1.add(i);
+    }
+    AddWidgetData("comboBoxMjesec1_godina", comboItems1);
+    SetWidgetOptions("comboBoxMjesec1_godina", "SelectedIndex", 0);
+
+    comboItems2 = {};
+    for(i = 1; i <= 12 ; i++){
+        comboItems2.add(i);
+    }
+    AddWidgetData("comboBoxMjesec1_odMjeseca", comboItems2);
+    // SetWidgetOptions("comboBoxMjesec1_odMjeseca", "SelectedIndex", int(Now("MM")) - 1);
+    SetWidgetOptions("comboBoxMjesec1_odMjeseca", "SelectedIndex", 0);
+    
+    AddWidgetData("comboBoxMjesec1_doMjeseca", comboItems2);
+    SetWidgetOptions("comboBoxMjesec1_doMjeseca", "SelectedIndex", int(Now("MM")) - 1);
+
+    mjesec_h = Now("MM");
+    mjesec_h = string(int(mjesec_h) - 1);
+    mjesec_h= Mjesec_h <= "0" ? "1" : mjesec_h;
+    proslimjesec = string(int(mjesec_h) - 1);
+    mjesec_h0X = mjesec_h.length == 1 ? "0" + mjesec_h : mjesec_h;
+    proslimjesec0X = proslimjesec.length == 1 ? "0" + proslimjesec : proslimjesec;
+    do_mjeseca = true;
+    comboItems = {"SVI TIPOVI","STANDARDNI", "PREDUJAM", "VL.POTROŠNJA", "REKLAMIRANI", "ODOBRENJE", "TEREĆENJE", "NEZARAČUNANI OBR.", "STORNO"};
+    AddWidgetData(cbTipRacuna, comboItems);
+    pripremljeno = false;
+    setFocus("gbPripremi");
+    tip_racuna= "SVI TIPOVI";
+    gradoviRB= true;
+
+    // //read acc(konto) from .ini
+    // sqlQueryString = " SELECT TOP 1 sy_cc_user FROM " + CommonDBGet() + ".[dbo].[nksyccyr] WHERE SY_CC_CODE = '" + companyCode + "'";
+    // try
+    // {
+    //     sqlResult = sqlQuery(sqlQueryString);
+    // }
+    // catch(exc)
+    // {
+    //     MessageBox(exc);
+    // }
+    // iniFilename = strtrim(sqlResult[1][0]) + ".ini";
+    // iniFilename = string(wpath()) + iniFilename;
+    // if(regedit("regOpen", iniFilename, "rtFile")){
+    //     KONTO_posl_akt_str = regedit("regReadStr", 'DASH_CASH_FLOW', 'KontaPoslAkt');
+    //     KONTO_financ_akt_str = regedit("regReadStr", 'DASH_CASH_FLOW', 'KontaFinancAkt');
+    //     KONTO_invest_akt_str = regedit("regReadStr", 'DASH_CASH_FLOW', 'KontaInvestAkt');
+    //     regedit("regClose");
+    // }else{
+    //     MessageBox("Datoteka " + iniFilename + " nije dostupna.");
+    //     quit;
+    // }
+
+    // cbKontoPoslAkt = true;
+    // cbKontoFinancAkt = true;
+    // cbKontoInvestAkt = true;
+
+    //---------------------------
+
+    sqlQueryString = "select OD_FK_SATI_DAN from " + trenutnaGodinaBaza + ".dbo.nkodfkin";
+    //MessageBox(sqlQueryString);
+    try
+    {
+        sqlResult = sqlQuery(sqlQueryString);
+        if (size(sqlResult) > 1)
+        {
+            punoRadnoVrijemeSati = int(sqlResult[1][0]);
+            //MessageBox(punoRadnoVrijemeSati);
+        }  
+    }
+    catch(exc)
+    {
+        MessageBox(exc);
+    }
+
+
+    bojeArray = {129, 178, 154};
+    //bojeArray2 = {196, 224, 138};
+
+    comboItems3 = {"Iznos", "Sati", "Broj zaposlenika"};
+    AddWidgetData("comboBoxBolovanja", comboItems3);
+    SetWidgetOptions("comboBoxBolovanja", "SelectedIndex", 0);
+    
+    comboItems4 = {"Iznos", "Sati", "Broj zaposlenika"};
+    AddWidgetData("comboBoxPrekovremeni", comboItems4);
+    SetWidgetOptions("comboBoxPrekovremeni", "SelectedIndex", 0);
+
+    cursor("dflt");
+}
+
+function DisableButtons(){
+    SetWidgetOptions("gbPripremi", "IsEnabled", "false");
+    SetWidgetOptions("gbPrint", "IsEnabled", "false");
+    SetWidgetOptions("gbPlace1", "IsEnabled", "false");
+    SetWidgetOptions("gbPlace2", "IsEnabled", "false");
+    SetWidgetOptions("gbPlace3", "IsEnabled", "false");
+    SetWidgetOptions("gbExit", "IsEnabled", "false");
+}
+
+function EnableButtons(){
+    SetWidgetOptions("gbPripremi", "IsEnabled", "true");
+    SetWidgetOptions("gbPrint", "IsEnabled", "true");
+    SetWidgetOptions("gbPlace1", "IsEnabled", "true");
+    SetWidgetOptions("gbPlace2", "IsEnabled", "true");
+    SetWidgetOptions("gbPlace3", "IsEnabled", "true");
+    SetWidgetOptions("gbExit", "IsEnabled", "true");
+}
+
+function gbPripremi@clicked()
+{
+    // MessageBox("Mjesec1od: " + mjesec1od + ", mjesec1do: " + mjesec1do + ", godina1: " + godina1);
+    // MessageBox(comboBoxMjesec1selected);
+    //return;
+
+    DisableButtons();
+    cursor("wait");
+    
+
+    ovagod_h = godina1;
+    lani_h = string(int(godina1)-1);
+
+    // SetWidgetOptions("comboBoxBolovanja", "SelectedIndex", 0);
+    // SetWidgetOptions("comboBoxPrekovremeni", "SelectedIndex", 0);
+
+
+
+    // //provjera da li su sva konta odabrana
+    // sqlQueryString = "SELECT DISTINCT trim(gk_ac_konto)"
+    // + " FROM  " + trenutnaGodinaBaza + ".[dbo].[kpkdibgl] "
+    // + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[kpkdibln] ON kdib_gl_num = kdib_ln_num "
+    // + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkacct ON kdib_ln_konto = gk_ac_konto "
+    // + " WHERE YEAR(kdib_gl_datum) = " + ovagod_h
+    // + " AND kdib_ln_iznos != 0";
+
+    // try
+    // {
+    //     sqlResult = sqlQuery(sqlQueryString);
+    // }
+    // catch(exc)
+    // {
+    //     MessageBox(exc);
+    // }
+
+    // kontoPoslZarez = (KONTO_posl_akt_str != "" ? "," : "");
+    // kontoFinancZarez = (KONTO_financ_akt_str != "" ? "," : "");
+    // kontoInvestZarez = (KONTO_invest_akt_str != "" ? "," : "");
+    // odabranaKonta = KONTO_posl_akt_str + kontoPoslZarez + KONTO_financ_akt_str + kontoFinancZarez + KONTO_invest_akt_str + kontoInvestZarez;
+    // if(odabranaKonta != ""){
+    //     odabranaKonta = substring(odabranaKonta, 0, odabranaKonta.length - 1);
+    // }
+
+    // listaOdabranihKonta = odabranaKonta.split(",");
+    // for(i = 0; i < size(listaOdabranihKonta); i++){
+    //     listaOdabranihKonta[i] = listaOdabranihKonta[i].replace("'", ""); // 
+    // }
+    
+    // for(i = 1; i < size(sqlresult); i++){
+    //     if(!listaOdabranihKonta.contains(sqlResult[i][0])){
+    //         MessageBox("Nisu odabrana sva konta!");
+    //         cursor("dflt");
+    //         return;
+    //     }
+    // }
+
+    // if(listaOdabranihKonta.contains("")){
+    //     MessageBox("asdasdasd");
+    // }
+    
+    // if(listaOdabranihKonta.contains("1000008")){
+    //     MessageBox("1000008");
+    // }
+    
+
+    //MessageBox(listaOdabranihKonta);
+
+    /*
+    gl_oznaka= "";
+    if (tip_racuna== "STANDARDNI")
+    {
+        GL_oznaka= "S";
+    }
+    elif (tip_racuna== "PREDUJAM")
+    {
+        GL_oznaka= "P";
+    }    
+    elif (tip_racuna== "VL.POTROŠNJA")
+    {
+        GL_oznaka= "V";
+    }    
+    elif (tip_racuna== "REKLAMIRANI")
+    {
+        GL_oznaka= "R";
+    }    
+    elif (tip_racuna== "ODOBRENJE")
+    {
+        GL_oznaka= "O";
+    }    
+    elif (tip_racuna== "TEREĆENJE")
+    {
+        GL_oznaka= "T";
+    }    
+    elif (tip_racuna== "NEZARAČUNANI OBR.")
+    {
+        GL_oznaka= "N";
+    }    
+    elif (tip_racuna== "STORNO")
+    {
+        GL_oznaka= "X";
+    }    
+    else
+    {
+        GL_oznaka= "";
+    } 
+    */
+    
+    // AsyncCall("setChartByMonth", "callSetHorizontalBars");
+
+    clearData();
+    AsyncCall("setMainData", "callSetAvgAndMedian");    
+}
+function callSetAvgAndMedian(){
+    AsyncCall("setAvgAndMedian", "callSetBrNovozaposlenihIPrekidaRadOdn");
+}
+function callSetBrNovozaposlenihIPrekidaRadOdn(){
+    AsyncCall("setBrNovozaposlenihIPrekidaRadOdn", "callSetBruto");
+}
+
+function callSetBruto(){
+    AsyncCall("setBruto", "callSetNeto");
+}
+function callSetNeto(){
+    AsyncCall("setNeto", "callSetBrRadnika");
+}
+function callSetBrRadnika(){
+    AsyncCall("setBrRadnika", "callSetAvg");
+}
+function callSetAvg(){
+    AsyncCall("setAvg", "callSetMedian");
+}
+function callSetMedian(){
+    AsyncCall("setMedian", "callSetBrNovozaposlenih");
+}
+function callSetBrNovozaposlenih(){
+    AsyncCall("setBrNovozaposlenih", "callSetBrPrekidaRadOdn");
+}
+function callSetBrPrekidaRadOdn(){
+    AsyncCall("setBrPrekidaRadOdn", "callSetBolovanje");
+}
+function callSetBolovanje(){
+    AsyncCall("setBolovanje", "callSetPrekovremeni");
+}
+function callSetPrekovremeni(){
+    AsyncCall("setPrekovremeni", "end");
+}
+
+// function callSetHorizontalBars(){
+//     AsyncCall("setHorizontalBars", "callSetWeekComparison");
+// }
+
+// function callSetWeekComparison(){
+//     AsyncCall("setWeekComparison", "callSetPieCharts");
+// }
+
+// function callSetPieCharts(){
+//     AsyncCall("setPieCharts", "end");
+// }
+
+// function callSetCashFlowRatio(){
+//     AsyncCall("setCashFlowRatio", "end");
+// }
+function end(){
+
+    cursor("dflt");
+    pripremljeno = true;
+    EnableButtons();
+}
+
+function gbDodatniIzbor@clicked()
+{
+    modalWindow(strTrim(tpath()) +"wxbioda_dodatniIzbor.xaml");    
+}
+
+function gbZatvori@clicked(){
+    SetWindowModalResult(false);
+}
+
+// function saveKontoFilterButton@clicked(){
+//     try{
+//         regedit("regOpen", iniFilename, "rtFile");
+//         regedit("regWriteStr", 'DASH_CASH_FLOW', 'KontaPoslAkt', "'" + KONTO_posl_akt_str + "'");
+//         regedit("regWriteStr", 'DASH_CASH_FLOW', 'KontaFinancAkt', "'" + KONTO_financ_akt_str + "'");
+//         regedit("regWriteStr", 'DASH_CASH_FLOW', 'KontaInvestAkt', "'" + KONTO_invest_akt_str + "'");
+//         regedit("regClose");
+//         MessageBox("Uspješno spremljeno.");
+//     }catch(exc){
+//         MessageBox(exc);
+//     }
+// }
+
+// function takeAllKontoButton@clicked(){
+//     kontoPoslZarez = (KONTO_posl_akt_str != "" ? "," : "");
+//     kontoFinancZarez = (KONTO_financ_akt_str != "" ? "," : "");
+//     kontoInvestZarez = (KONTO_invest_akt_str != "" ? "," : "");
+//     odabranaKonta = KONTO_posl_akt_str + kontoPoslZarez + KONTO_financ_akt_str + kontoFinancZarez + KONTO_invest_akt_str + kontoInvestZarez;
+//     if(odabranaKonta != ""){
+//         odabranaKonta = substring(odabranaKonta, 0, odabranaKonta.length - 1);
+//     }
+
+//     sqlQueryString = " SELECT DISTINCT gk_ac_konto"
+//     + " FROM  " + trenutnaGodinaBaza + ".[dbo].[kpkdibgl] "
+//     + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[kpkdibln] ON kdib_gl_num = kdib_ln_num "
+//     + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkacct ON kdib_ln_konto = gk_ac_konto "
+//     + " WHERE 1 = 1";
+//     if(odabranaKonta != ""){
+//         sqlQueryString += " AND gk_ac_konto NOT IN (" + odabranaKonta + ")";
+//     }
+//     sqlQueryString += " AND YEAR(kdib_gl_datum) = " + ovagod_h
+//     + " AND kdib_ln_iznos != 0";
+//     //SaveFile(sqlQueryString);
+
+//     try
+//     {
+//         sqlResult = sqlQuery(sqlQueryString);
+//     }
+//     catch(exc)
+//     {
+//         MessageBox("A1: "+exc);
+//     }
+
+//     //MessageBox(sqlResult);
+
+//     kontoTempString = "";
+//     for(i = 1; i < size(sqlResult); i++){
+//         kontoTempString += "'" + strTrim(sqlResult[i][0]) + "',";
+//     }
+//     if(kontoTempString != ""){
+//         kontoTempString = substring(kontoTempString, 0, kontoTempString.length - 1);
+//         KONTO_posl_akt_str += kontoTempString;
+//     }
+// }
+
+function gbPlace1@clicked()
+{
+    if (pripremljeno   ) 
+    {
+        result = modalWindow(strTrim(tpath()) +"wxbiodaa.xaml");
+    }
+    else
+    {
+        MessageBox("Molim pripremite osnovne podatke prije nastavka!"); 
+        setfocus("gbPripremi");
+    }    
+}
+
+function gbPlace2@clicked()
+{
+    if (pripremljeno   )
+    {
+    //     thread
+    //     (
+    //         lock{
+            result = modalWindow(strTrim(tpath()) +"wxbiodab.xaml");
+    //        }
+    //    )
+    }
+    else
+    {
+        MessageBox("Molim pripremite osnovne podatke prije nastavka!"); 
+        setfocus("gbPripremi");
+    }    
+}
+
+function gbPlace3@clicked()
+{
+    if (pripremljeno   ) 
+    {
+        result = modalWindow(strTrim(tpath()) +"wxbiodac.xaml");
+    }
+    else
+    {
+        MessageBox("Molim pripremite osnovne podatke prije nastavka!"); 
+        setfocus("gbPripremi");
+    }    
+}
+
+function gbOdliv2@clicked()
+{
+    if (pripremljeno)
+    {
+    //     thread
+    //     (
+    //         lock{
+            result = modalWindow(strTrim(tpath()) +"wxbiodad.xaml");
+    //        }
+    //    )
+    }
+    else
+    {
+        MessageBox("Molim pripremite osnovne podatke prije nastavka!"); 
+        setfocus("gbPripremi");
+    }    
+}
+
+function gbCashFlow2@clicked()
+{
+    if (pripremljeno   )
+    {
+    //     thread
+    //     (
+    //         lock{
+            result = modalWindow(strTrim(tpath()) +"wxbiodae.xaml");
+    //        }
+    //    )
+    }
+    else
+    {
+        MessageBox("Molim pripremite osnovne podatke prije nastavka!"); 
+        setfocus("gbPripremi");
+    }    
+}
+
+function gbExit@clicked()
+{
+    if(Size(args) > 2)
+    {
+        //comming from tas
+        exit;
+    }
+    else
+    {    
+        //comming from mainmenu
+        quit;
+    }
+}
+
+//--------------------------------------------------
+
+function clearData(){
+
+    tot_bruto_trenutna = 0;
+    tot_bruto_prosla = 0;
+    indexBruto = 0;
+
+    tot_neto_trenutna = 0;
+    tot_neto_prosla = 0;
+    indexNeto = 0;
+
+    tot_brRadnika_trenutna = 0;
+    tot_brRadnika_prosla = 0;
+    indexBrRadnika = 0;
+   
+//----
+
+    trenutnaAvgPlaca = 0;
+    proslaAvgPlaca = 0;
+    indexAvg = 0;
+
+    trenutnaMedianPlaca = 0;
+    proslaMedianPlaca = 0;
+    indexMedian = 0;
+    
+//----
+
+    trenutnaBrNovozaposlenih = 0;
+    proslaBrNovozaposlenih = 0;
+    indexBrNovozaposlenih = 0;
+    
+    trenutnaBrPrekidaRadOdn = 0;
+    proslaBrPrekidaRadOdn = 0;
+    indexBrPrekidaRadOdn = 0;
+
+//---
+
+    tot_bolovanja_trenutna = 0;
+    tot_bolovanja_prosla = 0;
+    
+    tot_bolovanjaKol_trenutna = 0;
+    tot_bolovanjaKol_prosla = 0;
+
+    tot_bolovanjaBrRadnika_trenutna = 0;
+    tot_bolovanjaBrRadnika_prosla = 0;
+    
+    indexBolovanja = 0;
+
+//---
+
+    tot_prekovremeni_trenutna = 0;
+    tot_prekovremeni_prosla = 0;
+ 
+    tot_prekovremeniKol_trenutna = 0;
+    tot_prekovremeniKol_prosla = 0;
+    
+    tot_prekovremeniBrRadnika_trenutna = 0;
+    tot_prekovremeniBrRadnika_prosla = 0;
+    
+    indexPrekovremeni = 0;
+
+//---
+
+
+
+    HorizontalBar("HorizontalBarOGBruto", "Text", "");
+    HorizontalBar("HorizontalBarOGBruto", "BarWidth", 0);
+    
+    HorizontalBar("HorizontalBarPGBruto", "Text", "");
+    HorizontalBar("HorizontalBarPGBruto", "BarWidth", 0);
+    
+    HorizontalBar("HorizontalBarOGNeto", "Text", "");
+    HorizontalBar("HorizontalBarOGNeto", "BarWidth", 0);
+
+    HorizontalBar("HorizontalBarPGNeto", "Text", "");
+    HorizontalBar("HorizontalBarPGNeto", "BarWidth", 0);
+    
+    HorizontalBar("HorizontalBarOGBrojZaposlenika", "Text", "");
+    HorizontalBar("HorizontalBarOGBrojZaposlenika", "BarWidth", 0);
+
+    HorizontalBar("HorizontalBarPGBrojZaposlenika", "Text", "");
+    HorizontalBar("HorizontalBarPGBrojZaposlenika", "BarWidth", 0);
+    
+    HorizontalBar("HorizontalBarOGAvg", "Text", "");
+    HorizontalBar("HorizontalBarOGAvg", "BarWidth", 0);
+    
+    HorizontalBar("HorizontalBarPGAvg", "Text", "");
+    HorizontalBar("HorizontalBarPGAvg", "BarWidth", 0);
+    
+    HorizontalBar("HorizontalBarOGMedian", "Text", "");
+    HorizontalBar("HorizontalBarOGMedian", "BarWidth", 0);
+    
+    HorizontalBar("HorizontalBarPGMedian", "Text", "");
+    HorizontalBar("HorizontalBarPGMedian", "BarWidth", 0);
+    
+
+    HorizontalBar("HorizontalBarOGBrNovozaposlenih", "Text", "");
+    HorizontalBar("HorizontalBarOGBrNovozaposlenih", "BarWidth", 0);
+    
+    HorizontalBar("HorizontalBarPGBrNovozaposlenih", "Text", "");
+    HorizontalBar("HorizontalBarPGBrNovozaposlenih", "BarWidth", 0);
+    
+    HorizontalBar("HorizontalBarOGBrPrekidaRadOdn", "Text", "");
+    HorizontalBar("HorizontalBarOGBrPrekidaRadOdn", "BarWidth", 0);
+    
+    HorizontalBar("HorizontalBarPGBrPrekidaRadOdn", "Text", "");
+    HorizontalBar("HorizontalBarPGBrPrekidaRadOdn", "BarWidth", 0);
+    
+
+
+    HorizontalBar("HorizontalBarOGBolovanja", "Text", "");
+    HorizontalBar("HorizontalBarOGBolovanja", "BarWidth", 0);
+
+    HorizontalBar("HorizontalBarPGBolovanja", "Text", "");
+    HorizontalBar("HorizontalBarPGBolovanja", "BarWidth", 0);
+
+    HorizontalBar("HorizontalBarOGPrekovremeni", "Text", "");
+    HorizontalBar("HorizontalBarOGPrekovremeni", "BarWidth", 0);
+    
+    HorizontalBar("HorizontalBarPGPrekovremeni", "Text", "");
+    HorizontalBar("HorizontalBarPGPrekovremeni", "BarWidth", 0);
+
+    //...
+}
+
+// Bruto, neto, broj zaposlenika, bolovanja, prekovremeni
+function setMainData(){
+    sql_str = "SELECT TOP 24";
+    if(comboBoxMjesec1selected == "Obračun za mjesec"){
+        // sql_str += " odob_gl_god + CASE WHEN LEN(odob_gl_mjesec) = 1 THEN '0' + odob_gl_mjesec ELSE ODOB_GL_MJESEC END";
+        sql_str += " odob_gl_god";
+    }elif(comboBoxMjesec1selected == "Mjesec isplate plaće"){
+        // sql_str += " CONVERT(varchar(6), ODOB_GL_DAT_ISP, 112)";
+        sql_str += " CONVERT(varchar(4), year(ODOB_GL_DAT_ISP))";
+    }elif(comboBoxMjesec1selected == "Mjesec obračuna plaće"){
+        // sql_str += " CONVERT(varchar(6), ODOB_GL_DATUM, 112)";
+        sql_str += " CONVERT(varchar(6), year(ODOB_GL_DATUM))";
+    }
+    // sql_str += " as god_mjesec, ";
+    sql_str += " as godina, ";
+
+    // if(neto_rb == true && (rad_rb == true || bolovanje_rb == true)){
+    //     sql_str += " round(sum(odob_ln_neto), 2)";
+    // }elif(brojRadnika_rb == true){
+    //     sql_str += " count(distinct odob_ln_osoba)";
+    // }else{
+    //     sql_str += " round(sum(odob_ln_iznos), 2)";
+    // }
+
+    // sql_str += " round(sum(odob_ln_ukupno), 2) as bruto,";
+
+
+    // sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G') THEN odob_ln_ukupno WHEN odob_ln_vrsta IN ('I') THEN odob_ln_iznos ELSE 0 END), 2) as bruto,";
+    // sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G', 'I') THEN odob_ln_neto ELSE 0 END), 2) as neto,";
+    sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G') THEN odob_ln_ukupno ELSE odob_ln_iznos END), 2) as bruto,";
+    sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G') THEN odob_ln_neto ELSE odob_ln_iznos END), 2) as neto,";
+    
+    sql_str += " count(distinct odob_ln_osoba) as brRadnika,";
+    
+    
+    // dole u sredini
+    sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('G', 'I') THEN odob_ln_iznos ELSE 0 END), 2) as bolovanja,";
+    sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('G', 'I') THEN convert(float, REPLACE(odob_ln_kol, ',', '.')) ELSE 0 END), 2) as bolovanjaKol,";
+    sql_str += " count(distinct CASE WHEN odob_ln_vrsta IN ('G', 'I') THEN odob_ln_osoba ELSE null END) as bolovanjaBrRadnika,";
+
+    // dole desno
+    sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('C') THEN odob_ln_iznos ELSE 0 END), 2) as prekovremeni,";
+    sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('C') THEN convert(float, REPLACE(odob_ln_kol, ',', '.')) ELSE 0 END), 2) as prekovremeniKol,";
+    sql_str += " count(distinct CASE WHEN odob_ln_vrsta IN ('C') THEN odob_ln_osoba ELSE null END) as prekovremeniBrRadnika";
+
+
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkodobgl";
+    //sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobos on odob_gl_num = odob_os_num";
+	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobln ON odob_gl_num = odob_ln_num";
+	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodradn ON od_ms_br_rad = odob_ln_osoba";
+
+
+    sql_str += " WHERE "; 
+    if(comboBoxMjesec1selected == "Obračun za mjesec"){
+        sql_str += " (odob_gl_god = " + godina1 + " OR odob_gl_god = " + string(int(godina1)-1) + ")";
+        sql_str += " AND convert(int, odob_gl_mjesec) >= " + int(mjesec1od) + " AND convert(int, odob_gl_mjesec) <= " + int(mjesec1do);
+    }elif(comboBoxMjesec1selected == "Mjesec isplate plaće"){
+        sql_str += " (year(ODOB_GL_DAT_ISP) = " + godina1 + " OR year(ODOB_GL_DAT_ISP) = " + string(int(godina1)-1) + ")";
+        sql_str += " AND month(ODOB_GL_DAT_ISP) >= " + int(mjesec1od) + " AND month(ODOB_GL_DAT_ISP) <= " + int(mjesec1do);
+    }elif(comboBoxMjesec1selected == "Mjesec obračuna plaće"){
+        sql_str += " (year(ODOB_GL_DATUM) = " + godina1 + " OR year(ODOB_GL_DATUM) = " + string(int(godina1)-1) + ")";
+        sql_str += " AND month(ODOB_GL_DATUM) >= " + int(mjesec1od) + " AND month(ODOB_GL_DATUM) <= " + int(mjesec1do);
+    }
+
+    //sql_str += " AND odob_ln_vrsta IN ('A', 'C', 'E', 'G')";
+
+    // filterPart(false);
+    filterPart();
+    
+    if(comboBoxMjesec1selected == "Obračun za mjesec"){
+        // sql_str += " GROUP BY odob_gl_god + CASE WHEN LEN(odob_gl_mjesec) = 1 THEN '0' + odob_gl_mjesec ELSE ODOB_GL_MJESEC END";
+        sql_str += " GROUP BY odob_gl_god";
+    }elif(comboBoxMjesec1selected == "Mjesec isplate plaće"){
+        // sql_str += " GROUP BY CONVERT(varchar(6), ODOB_GL_DAT_ISP, 112)";
+        sql_str += " GROUP BY year(ODOB_GL_DAT_ISP)";
+    }elif(comboBoxMjesec1selected == "Mjesec obračuna plaće"){
+        // sql_str += " GROUP BY CONVERT(varchar(6), ODOB_GL_DATUM, 112)";
+        sql_str += " GROUP BY year(ODOB_GL_DATUM)";
+    }
+
+    // sql_str += " ORDER BY god_mjesec DESC";
+    sql_str += " ORDER BY godina DESC";
+    try
+    {
+        //SaveFile(sql_str);
+        queryResult = sqlquery(SQL_str);
+        //SaveFile(queryResult);
+    }
+    catch(exc)
+    {
+        MessageBox(exc);
+    }
+
+    RunOnMain("setMainData1");
+}
+
+function setMainData1(){
+    
+    // for(i = 0; i < 12; i++)
+    // {
+    //     arrayProslaBruto[i]= 0; 
+    //     arrayTrenutnaBruto[i] = 0;
+        
+    //     arrayProslaNeto[i] = 0;
+    //     arrayTrenutnaNeto[i] = 0;
+        
+    //     arrayProslaBrRadnika[i] = 0;
+    //     arrayTrenutnaBrRadnika[i] = 0;
+    // }
+
+    for(i = 1; i <= Size(queryResult) - 1; i++)
+    {
+        //ar_mjesec = int(substring(queryResult[i][0], 4, 2));
+        // ar_godina = string(substring(queryResult[i][0], 0, 4));
+        ar_godina = queryResult[i][0];
+
+        if(ar_godina == godina1){
+            tot_bruto_trenutna = math.round(queryResult[i][1]);
+            tot_neto_trenutna = math.round(queryResult[i][2]);
+            tot_brRadnika_trenutna = math.round(queryResult[i][3]);
+            tot_bolovanja_trenutna = math.round(queryResult[i][4]);
+            tot_bolovanjaKol_trenutna = math.round(queryResult[i][5]);
+            tot_bolovanjaBrRadnika_trenutna = math.round(queryResult[i][6]);
+            tot_prekovremeni_trenutna = math.round(queryResult[i][7]);
+            tot_prekovremeniKol_trenutna = math.round(queryResult[i][8]);
+            tot_prekovremeniBrRadnika_trenutna = math.round(queryResult[i][9]);
+        }else{
+            tot_bruto_prosla = math.round(queryResult[i][1]);
+            tot_neto_prosla = math.round(queryResult[i][2]);
+            tot_brRadnika_prosla = math.round(queryResult[i][3]);
+            tot_bolovanja_prosla = math.round(queryResult[i][4]);
+            tot_bolovanjaKol_prosla = math.round(queryResult[i][5]);
+            tot_bolovanjaBrRadnika_prosla = math.round(queryResult[i][6]);
+            tot_prekovremeni_prosla = math.round(queryResult[i][7]);
+            tot_prekovremeniKol_prosla = math.round(queryResult[i][8]);
+            tot_prekovremeniBrRadnika_prosla = math.round(queryResult[i][9]);
+        }
+
+        // //tot_place -> godina1
+        // if (ar_godina == godina1 && ar_mjesec >= int(mjesec1od) && ar_mjesec <= int(mjesec1do))
+        // {
+        //     tot_place += queryResult[i][1]; 
+        // }
+    }
+
+    // tot_bruto_trenutna = 0;
+    // tot_bruto_prosla = 0;
+    
+    // tot_neto_trenutna = 0;
+    // tot_neto_prosla = 0;
+    
+    // tot_brRadnika_trenutna = 0;
+    // tot_brRadnika_prosla = 0;
+
+    // for(i = 0; i < 12; i++){
+    //     tot_bruto_trenutna += arrayTrenutnaBruto[i];
+    //     tot_bruto_prosla += arrayProslaBruto[i];
+
+    //     tot_neto_trenutna += arrayTrenutnaNeto[i];
+    //     tot_neto_prosla += arrayProslaNeto[i];
+
+    //     tot_brRadnika_trenutna += arrayTrenutnaBrRadnika[i];
+    //     tot_brRadnika_prosla += arrayProslaBrRadnika[i];
+    // }
+}
+
+
+// Avg plaća i median plaća
+function setAvgAndMedian(){
+    sql_str = "WITH cte AS(";
+    sql_str += " SELECT";
+
+    if(comboBoxMjesec1selected == "Obračun za mjesec"){
+        // sql_str += " odob_gl_god + CASE WHEN LEN(odob_gl_mjesec) = 1 THEN '0' + odob_gl_mjesec ELSE ODOB_GL_MJESEC END";
+        sql_str += " odob_gl_god as godina, ";
+        sql_str += " odob_gl_mjesec as mjesec, ";
+    }elif(comboBoxMjesec1selected == "Mjesec isplate plaće"){
+        // sql_str += " CONVERT(varchar(6), ODOB_GL_DAT_ISP, 112)";
+        sql_str += " CONVERT(varchar(4), year(ODOB_GL_DAT_ISP)) as godina, ";
+        sql_str += " CONVERT(varchar(4), month(ODOB_GL_DAT_ISP)) as mjesec, ";
+    }elif(comboBoxMjesec1selected == "Mjesec obračuna plaće"){
+        // sql_str += " CONVERT(varchar(6), ODOB_GL_DATUM, 112)";
+        sql_str += " CONVERT(varchar(6), year(ODOB_GL_DATUM)) as godina, ";
+        sql_str += " CONVERT(varchar(6), month(ODOB_GL_DATUM)) as mjesec, ";
+    }
+    sql_str += " odob_ln_osoba as osoba,";
+
+    // sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G') THEN odob_ln_ukupno WHEN odob_ln_vrsta IN ('I') THEN odob_ln_iznos ELSE 0 END), 2) as bruto";
+    sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G') THEN odob_ln_ukupno ELSE 0 END), 2) as bruto";
+    
+
+        // --round(sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G', 'I') THEN odob_ln_ukupno ELSE 0 END), 2) as bruto, 
+        
+        // --round(sum(odob_ln_neto), 2) as neto, 
+        // --round(sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G', 'I') THEN odob_ln_neto ELSE 0 END), 2) as neto, 
+    
+    // if(neto_rb == true && (rad_rb == true || bolovanje_rb == true)){
+    //     sql_str += " round(sum(odob_ln_neto), 2)";
+    // }elif(brojRadnika_rb == true){
+    //     sql_str += " count(distinct odob_ln_osoba)";
+    // }else{
+    //     sql_str += " round(sum(odob_ln_iznos), 2)";
+    // }
+
+    // sql_str += " round(sum(odob_ln_ukupno), 2) as bruto,";
+    // sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G', 'I') THEN odob_ln_ukupno ELSE 0 END), 2) as bruto,";
+    // sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('A', 'C', 'E', 'G', 'I') THEN odob_ln_neto ELSE 0 END), 2) as neto,";
+    
+    // sql_str += " count(distinct odob_ln_osoba) as brRadnika,";
+    
+    // sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('G', 'I') THEN odob_ln_iznos ELSE 0 END), 2) as bolovanja,";
+    // sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('G', 'I') THEN convert(float, REPLACE(odob_ln_kol, ',', '.')) ELSE 0 END), 2) as bolovanjaKol,";
+    // sql_str += " count(distinct CASE WHEN odob_ln_vrsta IN ('G', 'I') THEN odob_ln_osoba ELSE null END) as bolovanjaBrRadnika,";
+
+    // sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('C') THEN odob_ln_iznos ELSE 0 END), 2) as prekovremeni,";
+    // sql_str += " round(sum(CASE WHEN odob_ln_vrsta IN ('C') THEN convert(float, REPLACE(odob_ln_kol, ',', '.')) ELSE 0 END), 2) as prekovremeniKol,";
+    // sql_str += " count(distinct CASE WHEN odob_ln_vrsta IN ('C') THEN odob_ln_osoba ELSE null END) as prekovremeniBrRadnika";
+
+
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkodobgl";
+    //sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobos on odob_gl_num = odob_os_num";
+	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobln ON odob_gl_num = odob_ln_num";
+	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodradn ON od_ms_br_rad = odob_ln_osoba";
+
+
+    sql_str += " WHERE "; 
+    if(comboBoxMjesec1selected == "Obračun za mjesec"){
+        sql_str += " (odob_gl_god = " + godina1 + " OR odob_gl_god = " + string(int(godina1)-1) + ")";
+        sql_str += " AND convert(int, odob_gl_mjesec) >= " + int(mjesec1od) + " AND convert(int, odob_gl_mjesec) <= " + int(mjesec1do);
+    }elif(comboBoxMjesec1selected == "Mjesec isplate plaće"){
+        sql_str += " (year(ODOB_GL_DAT_ISP) = " + godina1 + " OR year(ODOB_GL_DAT_ISP) = " + string(int(godina1)-1) + ")";
+        sql_str += " AND month(ODOB_GL_DAT_ISP) >= " + int(mjesec1od) + " AND month(ODOB_GL_DAT_ISP) <= " + int(mjesec1do);
+    }elif(comboBoxMjesec1selected == "Mjesec obračuna plaće"){
+        sql_str += " (year(ODOB_GL_DATUM) = " + godina1 + " OR year(ODOB_GL_DATUM) = " + string(int(godina1)-1) + ")";
+        sql_str += " AND month(ODOB_GL_DATUM) >= " + int(mjesec1od) + " AND month(ODOB_GL_DATUM) <= " + int(mjesec1do);
+    }
+
+    // sql_str += " AND odob_ln_vrsta IN ('A', 'C', 'E', 'G', 'I')";
+    sql_str += " AND odob_ln_vrsta IN ('A', 'C', 'E', 'G')";
+
+    filterPart(false);
+    
+    if(comboBoxMjesec1selected == "Obračun za mjesec"){
+        // sql_str += " GROUP BY odob_gl_god + CASE WHEN LEN(odob_gl_mjesec) = 1 THEN '0' + odob_gl_mjesec ELSE ODOB_GL_MJESEC END";
+        sql_str += " GROUP BY odob_gl_god, odob_gl_mjesec";
+    }elif(comboBoxMjesec1selected == "Mjesec isplate plaće"){
+        // sql_str += " GROUP BY CONVERT(varchar(6), ODOB_GL_DAT_ISP, 112)";
+        sql_str += " GROUP BY year(ODOB_GL_DAT_ISP), month(ODOB_GL_DAT_ISP)";
+    }elif(comboBoxMjesec1selected == "Mjesec obračuna plaće"){
+        // sql_str += " GROUP BY CONVERT(varchar(6), ODOB_GL_DATUM, 112)";
+        sql_str += " GROUP BY year(ODOB_GL_DATUM), month(ODOB_GL_DATUM)";
+    }
+    sql_str += ", odob_ln_osoba";
+
+    // sql_str += " ORDER BY god_mjesec DESC";
+    // sql_str += " ORDER BY godina DESC";
+
+
+    sql_str += " ) SELECT godina, round(avg(bruto), 2) as brutoAvg FROM cte WHERE bruto != 0"; //! bruto != 0
+    sql_str += " group by godina, osoba order by godina desc, brutoAvg asc";
+
+    try
+    {
+        //SaveFile(sql_str);
+        queryResult = sqlquery(SQL_str);
+        //SaveFile(queryResult);
+    }
+    catch(exc)
+    {
+        MessageBox(exc);
+    }
+
+    RunOnMain("setAvgAndMedian1");
+}
+
+function setAvgAndMedian1(){
+
+    trenutnaCntr = 0;
+    proslaCntr = 0;
+
+    for(i = 1; i <= Size(queryResult) - 1; i++)
+    {
+        if(queryResult[i][0] == godina1){
+            arrayTrenutnaAvgPlaca[trenutnaCntr] = queryResult[i][1];
+            trenutnaCntr++;
+        }
+        elif(queryResult[i][0] == string(int(godina1) - 1)){
+            arrayProslaAvgPlaca[proslaCntr] = queryResult[i][1];
+            proslaCntr++;
+        }
+        
+        // //tot_place -> godina1
+        // if (ar_godina == godina1 && ar_mjesec >= int(mjesec1od) && ar_mjesec <= int(mjesec1do))
+        // {
+        //     tot_place += queryResult[i][1]; 
+        // }
+    }
+
+    // MessageBox(arrayTrenutnaAvgPlaca);
+    // MessageBox(arrayProslaAvgPlaca);
+}
+
+
+// Broj novozaposlenih i broj prekida radnog odnosa
+function setBrNovozaposlenihIPrekidaRadOdn(){
+    //Novozaposleni
+    sql_str = " SELECT";
+    sql_str += " year(od_ms_dat_zap) as godina,";
+    sql_str += " count(distinct od_ms_br_rad) as brRadnika";
+    
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkodradn";
+	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobln ON od_ms_br_rad = odob_ln_osoba";
+	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobgl  ON odob_gl_num = odob_ln_num";
+
+    sql_str += " WHERE "; 
+    sql_str += " month(od_ms_dat_zap) >= " + int(mjesec1od) + " AND month(od_ms_dat_zap) <= " + int(mjesec1do);
+    sql_str += " AND year(od_ms_dat_zap) IN (" + int(godina1) + ", " + (int(godina1) - 1) + ")";
+
+    filterPart(false);
+    
+    sql_str += " GROUP BY year(od_ms_dat_zap)";
+   
+    sql_str += " ORDER BY godina desc";
+    
+    try
+    {
+        //SaveFile(sql_str);
+        queryResult = sqlquery(SQL_str);
+        //SaveFile(queryResult);
+    }
+    catch(exc)
+    {
+        MessageBox(exc);
+    }
+
+    RunOnMain("setBrNovozaposlenihIPrekidaRadOdn1");
+
+
+    //PREKIDI
+    sql_str = " SELECT";
+    sql_str += " year(od_ms_dat_prest) as godina,";
+    sql_str += " count(distinct od_ms_br_rad) as brRadnika";
+    
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkodradn";
+	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobln ON od_ms_br_rad = odob_ln_osoba";
+	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodobgl  ON odob_gl_num = odob_ln_num";
+
+    sql_str += " WHERE "; 
+    sql_str += " month(od_ms_dat_prest) >= " + int(mjesec1od) + " AND month(od_ms_dat_prest) <= " + int(mjesec1do);
+    sql_str += " AND year(od_ms_dat_prest) IN (" + int(godina1) + ", " + (int(godina1) - 1) + ")";
+
+    filterPart(false);
+    
+    sql_str += " GROUP BY year(od_ms_dat_prest)";
+   
+    sql_str += " ORDER BY godina desc";
+    
+    try
+    {
+        //SaveFile(sql_str);
+        queryResult = sqlquery(SQL_str);
+        //SaveFile(queryResult);
+    }
+    catch(exc)
+    {
+        MessageBox(exc);
+    }
+
+    RunOnMain("setBrNovozaposlenihIPrekidaRadOdn2");
+
+}
+
+function setBrNovozaposlenihIPrekidaRadOdn1(){
+    for(i = 1; i <= Size(queryResult) - 1; i++)
+    {
+        if(queryResult[i][0] == godina1){
+            trenutnaBrNovozaposlenih = queryResult[i][1];
+        }
+        elif(queryResult[i][0] == string(int(godina1) - 1)){
+            proslaBrNovozaposlenih = queryResult[i][1];
+        }
+    }
+}
+
+function setBrNovozaposlenihIPrekidaRadOdn2(){
+for(i = 1; i <= Size(queryResult) - 1; i++)
+    {
+        if(queryResult[i][0] == godina1){
+            trenutnaBrPrekidaRadOdn = queryResult[i][1];
+        }
+        elif(queryResult[i][0] == string(int(godina1) - 1)){
+            proslaBrPrekidaRadOdn = queryResult[i][1];
+        }
+    }
+}
+
+
+
+
+function setBruto(){
+    RunOnMain("HorizontalBarsBruto");
+}
+function setNeto(){
+    RunOnMain("HorizontalBarsNeto");
+}
+function setBrRadnika(){
+    RunOnMain("HorizontalBarsBrRadnika");
+}
+function setAvg(){
+    RunOnMain("HorizontalBarsAvg");
+}
+function setMedian(){
+    RunOnMain("HorizontalBarsMedian");
+}
+function setBrNovozaposlenih(){
+    RunOnMain("HorizontalBarsBrNovozaposlenih");
+}
+function setBrPrekidaRadOdn(){
+    RunOnMain("HorizontalBarsBrPrekidaRadOdn");
+}
+function setBolovanje(){
+    RunOnMain("HorizontalBarsBolovanje");
+}
+function setPrekovremeni(){
+    RunOnMain("HorizontalBarsPrekovremeni");
+}
+
+
+
+function HorizontalBarsBruto(){
+    if (Math.Abs(tot_bruto_trenutna) > Math.Abs(tot_bruto_prosla))
+    {
+        if(tot_bruto_prosla != 0)
+        {
+            ratio = 1.00 * tot_bruto_trenutna/tot_bruto_prosla;
+            HorizontalBar("HorizontalBarOGBruto", "BarWidth", 90);
+            HorizontalBar("HorizontalBarPGBruto", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarPGBruto", "BarWidth", 0);
+            if(tot_bruto_trenutna != 0)
+            {
+                HorizontalBar("HorizontalBarOGBruto", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarOGBruto", "BarWidth", 0);
+            }
+        }
+    }
+    else
+    {
+        if(tot_bruto_trenutna != 0)
+        {
+            ratio = 1.00 * tot_bruto_prosla/tot_bruto_trenutna;
+            HorizontalBar("HorizontalBarPGBruto", "BarWidth", 90);
+            HorizontalBar("HorizontalBarOGBruto", "BarWidth", 90/ratio);
+            // HorizontalBar("HorizontalBarOG1", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarOGBruto", "BarWidth", 0);
+            if(tot_bruto_prosla != 0)
+            {
+                HorizontalBar("HorizontalBarPGBruto", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarPGBruto", "BarWidth", 0);
+            }
+        }
+    }
+
+    // //ellipse(strelica gore/dolje)
+    // SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Visible", true);
+    // if (tot_ovagod_priliv > tot_lani_priliv)
+    // {
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Lime");
+    // }
+    // elif(tot_ovagod_priliv < tot_lani_priliv)
+    // {
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Red");
+    // }
+    // else{
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Gray");
+    // }
+    // if(tot_ovagod_priliv == 0 || tot_lani_priliv == 0){
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Visible", false);
+    // }
+
+    Format("tot_bruto_trenutna", "nofd", recv: "tot_bruto_trenutna_string");
+    HorizontalBar("HorizontalBarOGBruto", "Text", tot_bruto_trenutna_string);
+    HorizontalBar("HorizontalBarOGBruto", "Color", bojeArray);
+    Format("tot_bruto_prosla", "nofd", recv: "tot_bruto_prosla_string");
+    HorizontalBar("HorizontalBarPGBruto", "Text", tot_bruto_prosla_string);
+    HorizontalBar("HorizontalBarPGBruto", "Color", bojeArray);
+
+    //index bruto
+    if(tot_bruto_prosla == 0)
+    {
+        indexBruto = 0;
+    }
+    else
+    {
+        indexBruto = Math.Round((100.00 * (tot_bruto_trenutna - tot_bruto_prosla) / tot_bruto_prosla), 2);
+    }
+}
+
+function HorizontalBarsNeto(){
+    if (Math.Abs(tot_neto_trenutna) > Math.Abs(tot_neto_prosla))
+    {
+        if(tot_neto_prosla != 0)
+        {
+            ratio = 1.00 * tot_neto_trenutna/tot_neto_prosla;
+            HorizontalBar("HorizontalBarOGNeto", "BarWidth", 90);
+            HorizontalBar("HorizontalBarPGNeto", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarPGNeto", "BarWidth", 0);
+            if(tot_neto_trenutna != 0)
+            {
+                HorizontalBar("HorizontalBarOGNeto", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarOGNeto", "BarWidth", 0);
+            }
+        }
+    }
+    else
+    {
+        if(tot_neto_trenutna != 0)
+        {
+            ratio = 1.00 * tot_neto_prosla/tot_neto_trenutna;
+            HorizontalBar("HorizontalBarPGNeto", "BarWidth", 90);
+            HorizontalBar("HorizontalBarOGNeto", "BarWidth", 90/ratio);
+            // HorizontalBar("HorizontalBarOG1", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarOGNeto", "BarWidth", 0);
+            if(tot_neto_prosla != 0)
+            {
+                HorizontalBar("HorizontalBarPGNeto", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarPGNeto", "BarWidth", 0);
+            }
+        }
+    }
+
+    // //ellipse(strelica gore/dolje)
+    // SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Visible", true);
+    // if (tot_ovagod_priliv > tot_lani_priliv)
+    // {
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Lime");
+    // }
+    // elif(tot_ovagod_priliv < tot_lani_priliv)
+    // {
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Red");
+    // }
+    // else{
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Gray");
+    // }
+    // if(tot_ovagod_priliv == 0 || tot_lani_priliv == 0){
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Visible", false);
+    // }
+
+    Format("tot_neto_trenutna", "nofd", recv: "tot_neto_trenutna_string");
+    HorizontalBar("HorizontalBarOGNeto", "Text", tot_neto_trenutna_string);
+    HorizontalBar("HorizontalBarOGNeto", "Color", bojeArray);
+    Format("tot_neto_prosla", "nofd", recv: "tot_neto_prosla_string");
+    HorizontalBar("HorizontalBarPGNeto", "Text", tot_neto_prosla_string);
+    HorizontalBar("HorizontalBarPGNeto", "Color", bojeArray);
+
+    //index neto
+    if(tot_neto_prosla == 0)
+    {
+        indexNeto = 0;
+    }
+    else
+    {
+        indexNeto = Math.Round((100.00 * (tot_neto_trenutna - tot_neto_prosla) / tot_neto_prosla), 2);
+    }
+}
+
+function HorizontalBarsBrRadnika(){
+    if (Math.Abs(tot_brRadnika_trenutna) > Math.Abs(tot_brRadnika_prosla))
+    {
+        if(tot_brRadnika_prosla != 0)
+        {
+            ratio = 1.00 * tot_brRadnika_trenutna/tot_brRadnika_prosla;
+            HorizontalBar("HorizontalBarOGBrojZaposlenika", "BarWidth", 90);
+            HorizontalBar("HorizontalBarPGBrojZaposlenika", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarPGBrojZaposlenika", "BarWidth", 0);
+            if(tot_brRadnika_trenutna != 0)
+            {
+                HorizontalBar("HorizontalBarOGBrojZaposlenika", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarOGBrojZaposlenika", "BarWidth", 0);
+            }
+        }
+    }
+    else
+    {
+        if(tot_brRadnika_trenutna != 0)
+        {
+            ratio = 1.00 * tot_brRadnika_prosla/tot_brRadnika_trenutna;
+            HorizontalBar("HorizontalBarPGBrojZaposlenika", "BarWidth", 90);
+            HorizontalBar("HorizontalBarOGBrojZaposlenika", "BarWidth", 90/ratio);
+            // HorizontalBar("HorizontalBarOG1", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarOGBrojZaposlenika", "BarWidth", 0);
+            if(tot_brRadnika_prosla != 0)
+            {
+                HorizontalBar("HorizontalBarPGBrojZaposlenika", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarPGBrojZaposlenika", "BarWidth", 0);
+            }
+        }
+    }
+
+    // //ellipse(strelica gore/dolje)
+    // SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Visible", true);
+    // if (tot_ovagod_priliv > tot_lani_priliv)
+    // {
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Lime");
+    // }
+    // elif(tot_ovagod_priliv < tot_lani_priliv)
+    // {
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Red");
+    // }
+    // else{
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Gray");
+    // }
+    // if(tot_ovagod_priliv == 0 || tot_lani_priliv == 0){
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Visible", false);
+    // }
+
+    Format("tot_brRadnika_trenutna", "nofd", recv: "tot_brRadnika_trenutna_string");
+    HorizontalBar("HorizontalBarOGBrojZaposlenika", "Text", tot_brRadnika_trenutna_string);
+    HorizontalBar("HorizontalBarOGBrojZaposlenika", "Color", bojeArray);
+    Format("tot_brRadnika_prosla", "nofd", recv: "tot_brRadnika_prosla_string");
+    HorizontalBar("HorizontalBarPGBrojZaposlenika", "Text", tot_brRadnika_prosla_string);
+    HorizontalBar("HorizontalBarPGBrojZaposlenika", "Color", bojeArray);
+
+    //index broj radnika
+    if(tot_brRadnika_prosla == 0)
+    {
+        indexBrRadnika = 0;
+    }
+    else
+    {
+        indexBrRadnika = Math.Round((100.00 * (tot_brRadnika_trenutna - tot_brRadnika_prosla) / tot_brRadnika_prosla), 2);
+    }
+}
+
+
+function HorizontalBarsAvg(){
+
+    if(trenutnaCntr > 0){
+        for(i = 0; i < trenutnaCntr; i++){
+            trenutnaAvgPlaca += arrayTrenutnaAvgPlaca[i];
+        }
+        trenutnaAvgPlaca = trenutnaAvgPlaca / trenutnaCntr;
+    }
+    if(proslaCntr > 0){
+        for(i = 0; i < proslaCntr; i++){
+            proslaAvgPlaca += arrayProslaAvgPlaca[i];
+        }
+        proslaAvgPlaca = proslaAvgPlaca / proslaCntr;
+    }
+
+    if (Math.Abs(trenutnaAvgPlaca) > Math.Abs(proslaAvgPlaca))
+    {
+        if(proslaAvgPlaca != 0)
+        {
+            ratio = 1.00 * trenutnaAvgPlaca/proslaAvgPlaca;
+            HorizontalBar("HorizontalBarOGAvg", "BarWidth", 90);
+            HorizontalBar("HorizontalBarPGAvg", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarPGAvg", "BarWidth", 0);
+            if(trenutnaAvgPlaca != 0)
+            {
+                HorizontalBar("HorizontalBarOGAvg", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarOGAvg", "BarWidth", 0);
+            }
+        }
+    }
+    else
+    {
+        if(trenutnaAvgPlaca != 0)
+        {
+            ratio = 1.00 * proslaAvgPlaca/trenutnaAvgPlaca;
+            HorizontalBar("HorizontalBarPGAvg", "BarWidth", 90);
+            HorizontalBar("HorizontalBarOGAvg", "BarWidth", 90/ratio);
+            // HorizontalBar("HorizontalBarOG1", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarOGAvg", "BarWidth", 0);
+            if(proslaAvgPlaca != 0)
+            {
+                HorizontalBar("HorizontalBarPGAvg", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarPGAvg", "BarWidth", 0);
+            }
+        }
+    }
+
+    // //ellipse(strelica gore/dolje)
+    // SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Visible", true);
+    // if (tot_ovagod_priliv > tot_lani_priliv)
+    // {
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Lime");
+    // }
+    // elif(tot_ovagod_priliv < tot_lani_priliv)
+    // {
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Red");
+    // }
+    // else{
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Gray");
+    // }
+    // if(tot_ovagod_priliv == 0 || tot_lani_priliv == 0){
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Visible", false);
+    // }
+
+    Format("trenutnaAvgPlaca", "nofd", recv: "trenutnaAvgPlaca_string");
+    HorizontalBar("HorizontalBarOGAvg", "Text", trenutnaAvgPlaca_string);
+    HorizontalBar("HorizontalBarOGAvg", "Color", bojeArray);
+    Format("proslaAvgPlaca", "nofd", recv: "proslaAvgPlaca_string");
+    HorizontalBar("HorizontalBarPGAvg", "Text", proslaAvgPlaca_string);
+    HorizontalBar("HorizontalBarPGAvg", "Color", bojeArray);
+
+    //index broj radnika
+    if(proslaAvgPlaca == 0)
+    {
+        indexAvg = 0;
+    }
+    else
+    {
+        indexAvg = Math.Round((100.00 * (trenutnaAvgPlaca - proslaAvgPlaca) / proslaAvgPlaca), 2);
+    }
+}
+
+
+function HorizontalBarsMedian(){
+    
+    if(trenutnaCntr > 1){
+        if(trenutnaCntr % 2 == 0){
+            medianIndex = (trenutnaCntr / 2) - 1;
+        }
+        else{
+            medianIndex = (Math.Ceil(1.0 * trenutnaCntr / 2 ) - 1);
+        }
+
+        var1 = arrayTrenutnaAvgPlaca[medianIndex];
+        var2 = arrayTrenutnaAvgPlaca[medianIndex + 1];
+
+        trenutnaMedianPlaca = 1.0 * (var1 + var2) / 2;
+    }else{
+        for(i = 0; i < trenutnaCntr; i++){
+            trenutnaMedianPlaca += arrayTrenutnaAvgPlaca[i];
+        }
+    }
+    
+    if(proslaCntr > 1){
+        if(proslaCntr % 2 == 0){
+            medianIndex = (proslaCntr / 2) - 1;
+        }
+        else{
+            medianIndex = (Math.Ceil(1.0 * proslaCntr / 2 ) - 1);
+        }
+
+        var1 = arrayProslaAvgPlaca[medianIndex];
+        var2 = arrayProslaAvgPlaca[medianIndex + 1];
+
+        proslaMedianPlaca = 1.0 * (var1 + var2) / 2;
+    }else{
+        for(i = 0; i < proslaCntr; i++){
+            proslaMedianPlaca += arrayProslaAvgPlaca[i];
+        }
+    }
+
+
+    if (Math.Abs(trenutnaMedianPlaca) > Math.Abs(proslaMedianPlaca))
+    {
+        if(proslaMedianPlaca != 0)
+        {
+            ratio = 1.00 * trenutnaMedianPlaca/proslaMedianPlaca;
+            HorizontalBar("HorizontalBarOGMedian", "BarWidth", 90);
+            HorizontalBar("HorizontalBarPGMedian", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarPGMedian", "BarWidth", 0);
+            if(trenutnaMedianPlaca != 0)
+            {
+                HorizontalBar("HorizontalBarOGMedian", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarOGMedian", "BarWidth", 0);
+            }
+        }
+    }
+    else
+    {
+        if(trenutnaMedianPlaca != 0)
+        {
+            ratio = 1.00 * proslaMedianPlaca/trenutnaMedianPlaca;
+            HorizontalBar("HorizontalBarPGMedian", "BarWidth", 90);
+            HorizontalBar("HorizontalBarOGMedian", "BarWidth", 90/ratio);
+            // HorizontalBar("HorizontalBarOG1", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarOGMedian", "BarWidth", 0);
+            if(proslaMedianPlaca != 0)
+            {
+                HorizontalBar("HorizontalBarPGMedian", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarPGMedian", "BarWidth", 0);
+            }
+        }
+    }
+
+    // //ellipse(strelica gore/dolje)
+    // SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Visible", true);
+    // if (tot_ovagod_priliv > tot_lani_priliv)
+    // {
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Lime");
+    // }
+    // elif(tot_ovagod_priliv < tot_lani_priliv)
+    // {
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Red");
+    // }
+    // else{
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Gray");
+    // }
+    // if(tot_ovagod_priliv == 0 || tot_lani_priliv == 0){
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Visible", false);
+    // }
+
+    Format("trenutnaMedianPlaca", "nofd", recv: "trenutnaMedianPlaca_string");
+    HorizontalBar("HorizontalBarOGMedian", "Text", trenutnaMedianPlaca_string);
+    HorizontalBar("HorizontalBarOGMedian", "Color", bojeArray);
+    Format("proslaMedianPlaca", "nofd", recv: "proslaMedianPlaca_string");
+    HorizontalBar("HorizontalBarPGMedian", "Text", proslaMedianPlaca_string);
+    HorizontalBar("HorizontalBarPGMedian", "Color", bojeArray);
+
+    //index broj radnika
+    if(proslaMedianPlaca == 0)
+    {
+        indexMedian = 0;
+    }
+    else
+    {
+        indexMedian = Math.Round((100.00 * (trenutnaMedianPlaca - proslaMedianPlaca) / proslaMedianPlaca), 2);
+    }
+}
+
+
+function HorizontalBarsBrNovozaposlenih(){
+    
+    if (Math.Abs(trenutnaBrNovozaposlenih) > Math.Abs(proslaBrNovozaposlenih))
+    {
+        if(proslaBrNovozaposlenih != 0)
+        {
+            ratio = 1.00 * trenutnaBrNovozaposlenih/proslaBrNovozaposlenih;
+            HorizontalBar("HorizontalBarOGBrNovozaposlenih", "BarWidth", 90);
+            HorizontalBar("HorizontalBarPGBrNovozaposlenih", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarPGBrNovozaposlenih", "BarWidth", 0);
+            if(trenutnaBrNovozaposlenih != 0)
+            {
+                HorizontalBar("HorizontalBarOGBrNovozaposlenih", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarOGBrNovozaposlenih", "BarWidth", 0);
+            }
+        }
+    }
+    else
+    {
+        if(trenutnaBrNovozaposlenih != 0)
+        {
+            ratio = 1.00 * proslaBrNovozaposlenih/trenutnaBrNovozaposlenih;
+            HorizontalBar("HorizontalBarPGBrNovozaposlenih", "BarWidth", 90);
+            HorizontalBar("HorizontalBarOGBrNovozaposlenih", "BarWidth", 90/ratio);
+            // HorizontalBar("HorizontalBarOG1", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarOGBrNovozaposlenih", "BarWidth", 0);
+            if(proslaBrNovozaposlenih != 0)
+            {
+                HorizontalBar("HorizontalBarPGBrNovozaposlenih", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarPGBrNovozaposlenih", "BarWidth", 0);
+            }
+        }
+    }
+
+    // //ellipse(strelica gore/dolje)
+    // SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Visible", true);
+    // if (tot_ovagod_priliv > tot_lani_priliv)
+    // {
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Lime");
+    // }
+    // elif(tot_ovagod_priliv < tot_lani_priliv)
+    // {
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Red");
+    // }
+    // else{
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Gray");
+    // }
+    // if(tot_ovagod_priliv == 0 || tot_lani_priliv == 0){
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Visible", false);
+    // }
+
+    Format("trenutnaBrNovozaposlenih", "nofd", recv: "trenutnaBrNovozaposlenih_string");
+    HorizontalBar("HorizontalBarOGBrNovozaposlenih", "Text", trenutnaBrNovozaposlenih_string);
+    HorizontalBar("HorizontalBarOGBrNovozaposlenih", "Color", bojeArray);
+    Format("proslaBrNovozaposlenih", "nofd", recv: "proslaBrNovozaposlenih_string");
+    HorizontalBar("HorizontalBarPGBrNovozaposlenih", "Text", proslaBrNovozaposlenih_string);
+    HorizontalBar("HorizontalBarPGBrNovozaposlenih", "Color", bojeArray);
+
+    //index broj radnika
+    if(proslaBrNovozaposlenih == 0)
+    {
+        indexBrNovozaposlenih = 0;
+    }
+    else
+    {
+        indexBrNovozaposlenih = Math.Round((100.00 * (trenutnaBrNovozaposlenih - proslaBrNovozaposlenih) / proslaBrNovozaposlenih), 2);
+    }
+}
+
+function HorizontalBarsBrPrekidaRadOdn(){
+    
+    if (Math.Abs(trenutnaBrPrekidaRadOdn) > Math.Abs(proslaBrPrekidaRadOdn))
+    {
+        if(proslaBrPrekidaRadOdn != 0)
+        {
+            ratio = 1.00 * trenutnaBrPrekidaRadOdn/proslaBrPrekidaRadOdn;
+            HorizontalBar("HorizontalBarOGBrPrekidaRadOdn", "BarWidth", 90);
+            HorizontalBar("HorizontalBarPGBrPrekidaRadOdn", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarPGBrPrekidaRadOdn", "BarWidth", 0);
+            if(trenutnaBrPrekidaRadOdn != 0)
+            {
+                HorizontalBar("HorizontalBarOGBrPrekidaRadOdn", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarOGBrPrekidaRadOdn", "BarWidth", 0);
+            }
+        }
+    }
+    else
+    {
+        if(trenutnaBrPrekidaRadOdn != 0)
+        {
+            ratio = 1.00 * proslaBrPrekidaRadOdn/trenutnaBrPrekidaRadOdn;
+            HorizontalBar("HorizontalBarPGBrPrekidaRadOdn", "BarWidth", 90);
+            HorizontalBar("HorizontalBarOGBrPrekidaRadOdn", "BarWidth", 90/ratio);
+            // HorizontalBar("HorizontalBarOG1", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarOGBrPrekidaRadOdn", "BarWidth", 0);
+            if(proslaBrPrekidaRadOdn != 0)
+            {
+                HorizontalBar("HorizontalBarPGBrPrekidaRadOdn", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarPGBrPrekidaRadOdn", "BarWidth", 0);
+            }
+        }
+    }
+
+    // //ellipse(strelica gore/dolje)
+    // SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Visible", true);
+    // if (tot_ovagod_priliv > tot_lani_priliv)
+    // {
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Lime");
+    // }
+    // elif(tot_ovagod_priliv < tot_lani_priliv)
+    // {
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Red");
+    // }
+    // else{
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Gray");
+    // }
+    // if(tot_ovagod_priliv == 0 || tot_lani_priliv == 0){
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Visible", false);
+    // }
+
+    Format("trenutnaBrPrekidaRadOdn", "nofd", recv: "trenutnaBrPrekidaRadOdn_string");
+    HorizontalBar("HorizontalBarOGBrPrekidaRadOdn", "Text", trenutnaBrPrekidaRadOdn_string);
+    HorizontalBar("HorizontalBarOGBrPrekidaRadOdn", "Color", bojeArray);
+    Format("proslaBrPrekidaRadOdn", "nofd", recv: "proslaBrPrekidaRadOdn_string");
+    HorizontalBar("HorizontalBarPGBrPrekidaRadOdn", "Text", proslaBrPrekidaRadOdn_string);
+    HorizontalBar("HorizontalBarPGBrPrekidaRadOdn", "Color", bojeArray);
+
+    //index broj radnika
+    if(proslaBrPrekidaRadOdn == 0)
+    {
+        indexBrPrekidaRadOdn = 0;
+    }
+    else
+    {
+        indexBrPrekidaRadOdn = Math.Round((100.00 * (trenutnaBrPrekidaRadOdn - proslaBrPrekidaRadOdn) / proslaBrPrekidaRadOdn), 2);
+    }
+}
+
+function HorizontalBarsBolovanje(){
+
+    if(bolovanja_cb == "Iznos"){
+        tot_bolovanja_trenutna_temp = tot_bolovanja_trenutna;
+        tot_bolovanja_prosla_temp = tot_bolovanja_prosla;
+    }
+    elif(bolovanja_cb == "Sati"){
+        tot_bolovanja_trenutna_temp = tot_bolovanjaKol_trenutna;
+        tot_bolovanja_prosla_temp = tot_bolovanjaKol_prosla;
+    }
+    elif(bolovanja_cb == "Broj zaposlenika"){
+        tot_bolovanja_trenutna_temp = tot_bolovanjaBrRadnika_trenutna;
+        tot_bolovanja_prosla_temp = tot_bolovanjaBrRadnika_prosla;
+    }
+
+    if (Math.Abs(tot_bolovanja_trenutna_temp) > Math.Abs(tot_bolovanja_prosla_temp))
+    {
+        if(tot_bolovanja_prosla_temp != 0)
+        {
+            ratio = 1.00 * tot_bolovanja_trenutna_temp/tot_bolovanja_prosla_temp;
+            HorizontalBar("HorizontalBarOGBolovanja", "BarWidth", 90);
+            HorizontalBar("HorizontalBarPGBolovanja", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarPGBolovanja", "BarWidth", 0);
+            if(tot_bolovanja_trenutna_temp != 0)
+            {
+                HorizontalBar("HorizontalBarOGBolovanja", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarOGBolovanja", "BarWidth", 0);
+            }
+        }
+    }
+    else
+    {
+        if(tot_bolovanja_trenutna_temp != 0)
+        {
+            ratio = 1.00 * tot_bolovanja_prosla_temp/tot_bolovanja_trenutna_temp;
+            HorizontalBar("HorizontalBarPGBolovanja", "BarWidth", 90);
+            HorizontalBar("HorizontalBarOGBolovanja", "BarWidth", 90/ratio);
+            // HorizontalBar("HorizontalBarOG1", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarOGBolovanja", "BarWidth", 0);
+            if(tot_bolovanja_prosla_temp != 0)
+            {
+                HorizontalBar("HorizontalBarPGBolovanja", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarPGBolovanja", "BarWidth", 0);
+            }
+        }
+    }
+
+    // //ellipse(strelica gore/dolje)
+    // SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Visible", true);
+    // if (tot_ovagod_priliv > tot_lani_priliv)
+    // {
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Lime");
+    // }
+    // elif(tot_ovagod_priliv < tot_lani_priliv)
+    // {
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Red");
+    // }
+    // else{
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Gray");
+    // }
+    // if(tot_ovagod_priliv == 0 || tot_lani_priliv == 0){
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Visible", false);
+    // }
+
+    Format("tot_bolovanja_trenutna_temp", "nofd", recv: "tot_bolovanja_trenutna_string");
+    HorizontalBar("HorizontalBarOGBolovanja", "Text", tot_bolovanja_trenutna_string);
+    HorizontalBar("HorizontalBarOGBolovanja", "Color", bojeArray);
+    Format("tot_bolovanja_prosla_temp", "nofd", recv: "tot_bolovanja_prosla_string");
+    HorizontalBar("HorizontalBarPGBolovanja", "Text", tot_bolovanja_prosla_string);
+    HorizontalBar("HorizontalBarPGBolovanja", "Color", bojeArray);
+
+    //index broj radnika
+    if(tot_bolovanja_prosla_temp == 0)
+    {
+        indexBolovanja = 0;
+    }
+    else
+    {
+        indexBolovanja = Math.Round((100.00 * (tot_bolovanja_trenutna_temp - tot_bolovanja_prosla_temp) / tot_bolovanja_prosla_temp), 2);
+    }
+}
+
+function HorizontalBarsPrekovremeni(){
+
+    if(prekovremeni_cb == "Iznos"){
+        tot_prekovremeni_trenutna_temp = tot_prekovremeni_trenutna;
+        tot_prekovremeni_prosla_temp = tot_prekovremeni_prosla;
+    }
+    elif(prekovremeni_cb == "Sati"){
+        tot_prekovremeni_trenutna_temp = tot_prekovremeniKol_trenutna;
+        tot_prekovremeni_prosla_temp = tot_prekovremeniKol_prosla;
+    }
+    elif(prekovremeni_cb == "Broj zaposlenika"){
+        tot_prekovremeni_trenutna_temp = tot_prekovremeniBrRadnika_trenutna;
+        tot_prekovremeni_prosla_temp = tot_prekovremeniBrRadnika_prosla;
+    }
+
+    if (Math.Abs(tot_prekovremeni_trenutna_temp) > Math.Abs(tot_prekovremeni_prosla_temp))
+    {
+        if(tot_prekovremeni_prosla_temp != 0)
+        {
+            ratio = 1.00 * tot_prekovremeni_trenutna_temp/tot_prekovremeni_prosla_temp;
+            HorizontalBar("HorizontalBarOGPrekovremeni", "BarWidth", 90);
+            HorizontalBar("HorizontalBarPGPrekovremeni", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarPGPrekovremeni", "BarWidth", 0);
+            if(tot_prekovremeni_trenutna_temp != 0)
+            {
+                HorizontalBar("HorizontalBarOGPrekovremeni", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarOGPrekovremeni", "BarWidth", 0);
+            }
+        }
+    }
+    else
+    {
+        if(tot_prekovremeni_trenutna_temp != 0)
+        {
+            ratio = 1.00 * tot_prekovremeni_prosla_temp/tot_prekovremeni_trenutna_temp;
+            HorizontalBar("HorizontalBarPGPrekovremeni", "BarWidth", 90);
+            HorizontalBar("HorizontalBarOGPrekovremeni", "BarWidth", 90/ratio);
+            // HorizontalBar("HorizontalBarOG1", "BarWidth", 90/ratio);
+        }
+        else
+        {
+            HorizontalBar("HorizontalBarOGPrekovremeni", "BarWidth", 0);
+            if(tot_prekovremeni_prosla_temp != 0)
+            {
+                HorizontalBar("HorizontalBarPGPrekovremeni", "BarWidth", 90);
+            }
+            else
+            {
+                HorizontalBar("HorizontalBarPGPrekovremeni", "BarWidth", 0);
+            }
+        }
+    }
+
+    // //ellipse(strelica gore/dolje)
+    // SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Visible", true);
+    // if (tot_ovagod_priliv > tot_lani_priliv)
+    // {
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Lime");
+    // }
+    // elif(tot_ovagod_priliv < tot_lani_priliv)
+    // {
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Red");
+    // }
+    // else{
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Color", "Gray");
+    // }
+    // if(tot_ovagod_priliv == 0 || tot_lani_priliv == 0){
+    //     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Visible", false);
+    // }
+
+    Format("tot_prekovremeni_trenutna_temp", "nofd", recv: "tot_prekovremeni_trenutna_string");
+    HorizontalBar("HorizontalBarOGPrekovremeni", "Text", tot_prekovremeni_trenutna_string);
+    HorizontalBar("HorizontalBarOGPrekovremeni", "Color", bojeArray);
+    Format("tot_prekovremeni_prosla_temp", "nofd", recv: "tot_prekovremeni_prosla_string");
+    HorizontalBar("HorizontalBarPGPrekovremeni", "Text", tot_prekovremeni_prosla_string);
+    HorizontalBar("HorizontalBarPGPrekovremeni", "Color", bojeArray);
+
+    //index broj radnika
+    if(tot_prekovremeni_prosla_temp == 0)
+    {
+        indexPrekovremeni = 0;
+    }
+    else
+    {
+        indexPrekovremeni = Math.Round((100.00 * (tot_prekovremeni_trenutna_temp - tot_prekovremeni_prosla_temp) / tot_prekovremeni_prosla_temp), 2);
+    }
+}
+
+
+
+function comboBoxBolovanja@SelectionChanged(){
+    if(!pripremljeno){
+        return;
+    }
+
+    //MessageBox(bolovanja_cb);
+    HorizontalBarsBolovanje();
+}
+
+function comboBoxPrekovremeni@SelectionChanged(){
+    if(!pripremljeno){
+        return;
+    }
+
+    //MessageBox(prekovremeni_cb);
+    HorizontalBarsPrekovremeni();
+}
+
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//---------------------------------------------------------------
+
+
+
+// function setPieCharts(){
+//     RunOnMain("setPieCharts1");
+// }
+
+// function setPieCharts1(){
+
+//     //Pie Chart Priliv
+//     PieChart("PieChartPriliv", "init");
+//     PieChart("PieChartPriliv", "seriesType", "pie");
+//     PieChart("PieChartPriliv", "title", "Pie Chart Title", 20);  
+
+//     //Pie Chart Odliv
+//     PieChart("PieChartOdliv", "init");
+//     PieChart("PieChartOdliv", "seriesType", "pie");
+//     PieChart("PieChartOdliv", "title", "Pie Chart Title", 20);
+
+//     //poslovne aktivnosti
+//     sql_str = "SELECT ";
+//     sql_str += " isnull(sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END), 0) AS Odliv, ";
+//     sql_str += " isnull(sum(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END), 0) AS Priliv ";
+//     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl"; 
+//     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
+//     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
+//     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
+//     sql_str += " WHERE 1 = 1 AND kpsy_bnk_blag <> 'D' AND year(kdib_gl_datum) = " + ovagod_h; 
+//     if (do_mjeseca)
+// 	{
+// 		sql_str += " AND month(kdib_gl_datum) <= '" + mjesec_h + "'";
+// 	}
+// 	else
+// 	{
+// 		sql_str += " AND month(kdib_gl_datum) = '" + mjesec_h + "'";
+// 	}
+//     filterPartPieCharts();
+//     if(KONTO_posl_akt_str != ""){
+//         sql_str += " AND kdib_ln_konto IN (" + KONTO_posl_akt_str + ")";
+//     }
+//     else{
+//         sql_str += " AND 1 <> 1";
+//     }
+    
+//     try
+//     {
+//         //SaveFile(sql_str);
+//         queryResult = sqlquery(SQL_str);
+//     }
+//     catch(exc)
+//     {
+//         MessageBox(exc);
+//     }
+
+
+//     PieChart("PieChartPriliv", "values", queryResult[1][1], "Posl.", 0, 50);
+//     PieChart("PieChartOdliv", "values", queryResult[1][0], "Posl.", 0, 50);
+
+
+//     //financijske aktivnosti
+//     sql_str = "SELECT ";
+//     sql_str += " isnull(sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END), 0) AS Odliv, ";
+//     sql_str += " isnull(sum(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END), 0) AS Priliv ";
+//     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl"; 
+//     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
+//     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
+//     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
+//     sql_str += " WHERE 1 = 1 AND kpsy_bnk_blag <> 'D' AND year(kdib_gl_datum) = " + ovagod_h; 
+//     if (do_mjeseca)
+// 	{
+// 		sql_str += " AND month(kdib_gl_datum) <= '" + mjesec_h + "'";
+// 	}
+// 	else
+// 	{
+// 		sql_str += " AND month(kdib_gl_datum) = '" + mjesec_h + "'";
+// 	}
+//     filterPartPieCharts();
+//     if(KONTO_financ_akt_str != ""){
+//         sql_str += " AND kdib_ln_konto IN (" + KONTO_financ_akt_str + ")";
+//     }
+//     else{
+//         sql_str += " AND 1 <> 1";
+//     }
+
+//     try
+//     {
+//         //SaveFile(sql_str);
+//         queryResult = sqlquery(SQL_str);
+//     }
+//     catch(exc)
+//     {
+//         MessageBox(exc);
+//     }
+
+//     PieChart("PieChartPriliv", "values", queryResult[1][1], "Financ.", 0, 50);
+//     PieChart("PieChartOdliv", "values", queryResult[1][0], "Financ.", 0, 50);
+    
+    
+//     //investicijske aktivnosti
+//     sql_str = "SELECT ";
+//     sql_str += " isnull(sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END), 0) AS Odliv, ";
+//     sql_str += " isnull(sum(CASE WHEN kdib_ln_dp='P' THEN kdib_ln_iznos ELSE 0 END), 0) AS Priliv ";
+//     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl"; 
+//     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
+//     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
+//     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpsybank ON kdib_gl_banka = kpsy_bnk_code";
+//     sql_str += " WHERE 1 = 1 AND kpsy_bnk_blag <> 'D' AND year(kdib_gl_datum) = " + ovagod_h; 
+//     if (do_mjeseca)
+// 	{
+// 		sql_str += " AND month(kdib_gl_datum) <= '" + mjesec_h + "'";
+// 	}
+// 	else
+// 	{
+// 		sql_str += " AND month(kdib_gl_datum) = '" + mjesec_h + "'";
+// 	}
+//     filterPartPieCharts();
+//     if(KONTO_invest_akt_str != ""){
+//         sql_str += " AND kdib_ln_konto IN (" + KONTO_invest_akt_str + ")";
+//     }
+//     else{
+//         sql_str += " AND 1 <> 1";
+//     }
+
+//     try
+//     {
+//         //SaveFile(sql_str);
+//         queryResult = sqlquery(SQL_str);
+//     }
+//     catch(exc)
+//     {
+//         MessageBox(exc);
+//     }
+
+//     PieChart("PieChartPriliv", "values", queryResult[1][1], "Invest.", 0, 50);
+//     PieChart("PieChartOdliv", "values", queryResult[1][0], "Invest.", 0, 50);
+// }
+
+//---------------------------------------------------------------
+
+
+function gbPrint@clicked(){
+    PrintWindow(WhoAmI() + "_" + userCode + ".jpg");
+}
+function gbPrint1@clicked(){
+    PrintWindow(WhoAmI() + "_" + userCode + ".jpg");
+}
+function gbPrint2@clicked(){
+    PrintWindow(WhoAmI() + "_" + userCode + ".jpg");
+}
+function gbPrint3@clicked(){
+    PrintWindow(WhoAmI() + "_" + userCode + ".jpg");
+}
+function gbPrint4@clicked(){
+    PrintWindow(WhoAmI() + "_" + userCode + ".jpg");
+}
+function gbPrint5@clicked(){
+    PrintWindow(WhoAmI() + "_" + userCode + ".jpg");
+}

@@ -1,0 +1,25 @@
+CreateWindow(strtrim(tpath()) + "mainScript1.xaml");
+
+MessageBox("0");
+AsyncCall("asyncFunction", "done");
+AsyncCall("asyncFunction2", "done2");
+MessageBox("x");
+
+function asyncFunction(){
+    quit;
+    MessageBox("2"); // does not display -> ok
+}
+
+function asyncFunction2(){
+    for(i = 0; i < 100000; i++){
+        
+    }
+}
+
+function done(){
+    MessageBox("3"); // does not display -> ok
+}
+
+function done2(){
+    MessageBox("4"); // displays -> not ok
+}

@@ -105,14 +105,15 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.ELOC, new ELOCFunction());
             interpreter.RegisterFunction(Constants.ASC, new ASCFunction());
             interpreter.RegisterFunction(Constants.DOM, new DOMFunction());
+            interpreter.RegisterFunction(Constants.FLSZE, new FLSZEFunction());
             interpreter.RegisterFunction(Constants.DSPCE, new DSPCEFunction());
             interpreter.RegisterFunction(Constants.HEX, new HEXFunction());
             interpreter.RegisterFunction(Constants.REGEDIT, new REGEDITFunction());
             interpreter.RegisterFunction(Constants.EMAIL, new EMAILFunction());
-	  interpreter.RegisterFunction(Constants.TPATH, new TPATHFunction());
-	  interpreter.RegisterFunction(Constants.IPATH, new IPATHFunction());
-	  interpreter.RegisterFunction(Constants.MPATH, new MPATHFunction());
-	  interpreter.RegisterFunction(Constants.WPATH, new WPATHFunction());
+            interpreter.RegisterFunction(Constants.TPATH, new TPATHFunction());
+            interpreter.RegisterFunction(Constants.IPATH, new IPATHFunction());
+            interpreter.RegisterFunction(Constants.MPATH, new MPATHFunction());
+            interpreter.RegisterFunction(Constants.WPATH, new WPATHFunction());
 
             interpreter.RegisterFunction("FillOutGrid", new FillOutGridFunction());
             interpreter.RegisterFunction("FillOutGridFromDB", new FillOutGridFunction(true));
@@ -539,7 +540,7 @@ namespace WpfCSCS
             var filter = Utils.GetSafeString(args, 3);
             Microsoft.Win32.OpenFileDialog openFileDialog1 = new Microsoft.Win32.OpenFileDialog
             {
-                InitialDirectory = startPath,
+                InitialDirectory = startPath.Replace("/", "\\"),
                 Title = dialogTitle,
 
                 CheckFileExists = true,
@@ -547,7 +548,7 @@ namespace WpfCSCS
 
                 DefaultExt = extension,
                 Filter = filter,
-                FilterIndex = 2,
+                FilterIndex = 0,
                 RestoreDirectory = true,
 
                 ReadOnlyChecked = true,
@@ -1597,15 +1598,16 @@ namespace WpfCSCS
             List<Variable> args = script.GetFunctionArgs();
             Utils.CheckArgs(args.Count, 2, m_name);
             var key = Utils.GetSafeString(args, 0);
-            var toRun = args.FirstOrDefault(p => p.CurrentAssign.ToLower() == "gosub");
+            //var toRun = args.FirstOrDefault(p => p.CurrentAssign.ToLower() == "gosub");
+            var toRun = Utils.GetSafeString(args, 1).ToLower();
             var gui = script.Context as CSCS_GUI;
             Window win;
-            Key keyPressed =new ReturnKeyUtil().ReturnKey(key);
+            Key keyPressed = new ReturnKeyUtil().ReturnKey(key);
           
-
             if (CSCS_GUI.File2Window.TryGetValue(script.Filename, out win))
             {
-                var ib = new InputBinding(new KeyCommand((object arg1) => { return true; }, (object obj) => { gui.Interpreter.Run(toRun.String, null, null, null, script); }), new KeyGesture(keyPressed));
+                //var ib = new InputBinding(new KeyCommand((object arg1) => { return true; }, (object obj) => { gui.Interpreter.Run(toRun.String, null, null, null, script); }), new KeyGesture(keyPressed));
+                var ib = new InputBinding(new KeyCommand((object arg1) => { return true; }, (object obj) => { gui.Interpreter.Run(toRun, null, null, null, script); }), new KeyGesture(keyPressed));
                 win.InputBindings.Add(ib);
             }
 
@@ -1769,19 +1771,52 @@ namespace WpfCSCS
         }
     }
     
+    class FLSZEFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+            var filePath = Utils.GetSafeString(args, 0);
+
+            if (File.Exists(filePath))
+            {
+                FileInfo fInfo = new FileInfo(filePath);
+
+                return new Variable(fInfo.Length);
+            }
+            
+            return new Variable(0);
+        }
+    }
+    
     class DSPCEFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
         {
-            foreach (DriveInfo drive in DriveInfo.GetDrives())
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 0, m_name);
+            var driveLetter = Utils.GetSafeString(args, 0);
+
+            if (string.IsNullOrEmpty(driveLetter))
             {
-                var tmp = System.AppDomain.CurrentDomain.BaseDirectory.Substring(0, 3);
-                if (drive.IsReady && drive.Name.ToLower() == tmp.ToLower())
-                {
-                    return new Variable(drive.TotalFreeSpace); ;
-                }
+                driveLetter = System.AppDomain.CurrentDomain.BaseDirectory.Substring(0, 1);
             }
-            return Variable.EmptyInstance;
+
+            var drives = DriveInfo.GetDrives();
+            var drive = drives.FirstOrDefault(p=>p.Name.Substring(0, 1).ToLower() == driveLetter.ToLower());
+
+            return new Variable(drive.TotalFreeSpace);
+
+            //foreach (DriveInfo drive in DriveInfo.GetDrives())
+            //{
+            //    var tmp = System.AppDomain.CurrentDomain.BaseDirectory.Substring(0, 3);
+            //    if (drive.IsReady && drive.Name.ToLower() == tmp.ToLower())
+            //    {
+            //        return new Variable(drive.TotalFreeSpace);
+            //    }
+            //}
+            //return Variable.EmptyInstance;
         }
     }
     
@@ -1943,24 +1978,32 @@ namespace WpfCSCS
 
     class EMAILFunction : ParserFunction
     {
-        private bool SetupMail(string podaci, string outgoingServer, string password, string username, string senderMail, string senderUsername)
+        private bool SetupMail(string podaci, string outgoingServer, string password, string username, string senderMail, string senderUsername, string to, string subject)
         {
             bool ok = true;
-            var to = GetTo(podaci);
-            var subject = GetSubject(podaci);
-            var body = GetiBody(podaci);
-            var cc = GetCC(podaci);
-            var bcc = GetBCC(podaci);
-            var atch = GetATCH(podaci);
-            
-            foreach (var item in to)
+            //var to = GetTo(podaci);
+            //var subject = GetSubject(podaci);
+            //var body = GetiBody(podaci);
+            var body = podaci;
+
+            //var cc = GetCC(podaci);
+            //var bcc = GetBCC(podaci);
+            //var atch = GetATCH(podaci);
+
+            foreach (var email in to.Split(','))
             {
-                if(ok)
-                ok =  Send(item, senderMail, subject + DateTime.Now.ToString("ddMMYY HHmmss"), body, outgoingServer, username, password, cc, bcc, atch);
+                ok = Send(email.Trim(), senderMail, subject, body, outgoingServer, username, password /*, cc, bcc, atch*/);
             }
+
+            //foreach (var item in to)
+            //{
+            //    if(ok)
+            //    ok =  Send(item, senderMail, subject, body, outgoingServer, username, password /*, cc, bcc, atch*/);
+            //}
+
             return ok;
         }
-        public bool Send(string addressTo, string addressFrom, string subject, string body, string outgoingServer , string username, string password, List<string> cc, List<string> bcc, List<string> atchs)
+        public bool Send(string addressTo, string addressFrom, string subject, string body, string outgoingServer , string username, string password, List<string> cc = null, List<string> bcc = null, List<string> atchs = null)
         {
             MailAddress to = new MailAddress(addressTo);
             MailAddress from = new MailAddress(addressFrom);
@@ -1996,21 +2039,17 @@ namespace WpfCSCS
 
             SmtpClient smtp = new SmtpClient();
             smtp.Host = outgoingServer;
-            smtp.Port = 25;
+            smtp.Port = 587; //25
+            smtp.UseDefaultCredentials = false;
             smtp.Credentials = new NetworkCredential(username, password);
             smtp.DeliveryMethod = SmtpDeliveryMethod.Network;
             smtp.EnableSsl = true;
 
-            try
-            {
-                smtp.Send(email);
-                return true;
-            }
-            catch (SmtpException ex)
-            {
-                return false;
-            }
+            
+            smtp.Send(email);
+            return true;
         }
+
         private List<string> GetTo(string podaci)
         {
             bool start = false;
@@ -2188,29 +2227,34 @@ namespace WpfCSCS
             var gui = CSCS_GUI.GetInstance(script);
 
             var option = Utils.GetSafeString(args, 0);
-            var podaci = Utils.GetSafeString(args, 1);
+            //var podaci = Utils.GetSafeString(args, 1);
+            var text = Utils.GetSafeString(args, 1);
             var widgetName = Utils.GetSafeString(args, 2);
             var saveAttachsFolder = Utils.GetSafeString(args,3);
             var outgoingServer = Utils.GetSafeString(args,4);
             var password = Utils.GetSafeString(args,5);
             var username = Utils.GetSafeString(args,6);
             var senderMail = Utils.GetSafeString(args,7);
-            var senderUsername = Utils.GetSafeString(args,8);
+            var senderName = Utils.GetSafeString(args,8);
+            var to = Utils.GetSafeString(args,9);
+            var subject = Utils.GetSafeString(args,10);
+
             switch (option.ToLower())
             {
                 case "emlsendmsg":
-                    var widget1 = gui.GetWidget(podaci);
-                    if (widget1 is ListBox)
-                    {
-                        string text = null;
-                        var asmemobox = widget1 as ListBox;
-                        foreach (var item in asmemobox.Items)
-                        {
-                            text = text +((ListBoxItem) item).Content + System.Environment.NewLine;
-                        }
-                        return new Variable(SetupMail(text, outgoingServer, password, username, senderMail, senderUsername));
-                    }
-                    return new Variable(false);
+                    //var widget1 = gui.GetWidget(podaci);
+                    //if (widget1 is ListBox)
+                    //{
+                    //    string text = null;
+                    //    var asmemobox = widget1 as ListBox;
+                    //    foreach (var item in asmemobox.Items)
+                    //    {
+                    //        text = text +((ListBoxItem) item).Content + System.Environment.NewLine;
+                    //    }
+                    //    return new Variable(SetupMail(text, outgoingServer, password, username, senderMail, senderUsername));
+                    //}
+                    return new Variable(SetupMail(text, outgoingServer, password, username, senderMail, senderName, to, subject));
+                    
                 case "test":
                     var widget = gui.GetWidget(widgetName);
                     if (widget is ASMemoBox)
@@ -2237,7 +2281,7 @@ ovo je testni mail!!
 \Attachments
 d:\temp\aaa.txt, d:\temp\ggg.txt, 
                     ";
-                        var text = asmemobox.Text;
+                        //var text = asmemobox.Text;
                     }
                     break;
                 default:
@@ -2251,17 +2295,23 @@ d:\temp\aaa.txt, d:\temp\ggg.txt,
 
 	class TPATHFunction : ParserFunction
 	{
-		protected override Variable Evaluate(ParsingScript script)
+        protected override Variable Evaluate(ParsingScript script)
 		{
-			return new Variable(App.GetConfiguration("ScriptsPath", ""));
-		}
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 0, m_name);
+
+            return new Variable(App.GetConfiguration("ScriptsPath", ""));
+        }
 	}
     
     class IPATHFunction : ParserFunction
 	{
 		protected override Variable Evaluate(ParsingScript script)
 		{
-			return new Variable(App.GetConfiguration("ImagesPath", ""));
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 0, m_name);
+
+            return new Variable(App.GetConfiguration("ImagesPath", ""));
 		}
 	}
     
@@ -2269,7 +2319,10 @@ d:\temp\aaa.txt, d:\temp\ggg.txt,
 	{
 		protected override Variable Evaluate(ParsingScript script)
 		{
-			return new Variable(App.GetConfiguration("ModulesPath", ""));
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 0, m_name);
+
+            return new Variable(App.GetConfiguration("ModulesPath", ""));
 		}
 	}
     
@@ -2277,7 +2330,10 @@ d:\temp\aaa.txt, d:\temp\ggg.txt,
 	{
 		protected override Variable Evaluate(ParsingScript script)
 		{
-			return new Variable(App.GetConfiguration("WinxPath", ""));
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 0, m_name);
+
+            return new Variable(App.GetConfiguration("WinxPath", ""));
 		}
 	}
     
@@ -2498,21 +2554,22 @@ d:\temp\aaa.txt, d:\temp\ggg.txt,
         protected override Variable Evaluate(ParsingScript script)
         {
             List<Variable> args = script.GetFunctionArgs();
-            Utils.CheckArgs(args.Count, 2, m_name);
+            Utils.CheckArgs(args.Count, 3, m_name);
 
             var gui = CSCS_GUI.GetInstance(script);
 
             var columnHeaders = new List<string>();
             //var columnTags = new List<string>();
 
-            var windowTitle = Utils.GetSafeString(args, 0);
-            var columnHeadersVariableArray = Utils.GetSafeVariable(args, 1);
+            var dgName = Utils.GetSafeString(args, 0).ToLower();
+            var windowTitle = Utils.GetSafeString(args, 1);
+            var columnHeadersVariableArray = Utils.GetSafeVariable(args, 2);
             for(int i = 0; i < columnHeadersVariableArray.Tuple.Count; i++)
             {
                 columnHeaders.Add(columnHeadersVariableArray.Tuple[i].String);
             }
 
-            var widget = gui.GetWidget("dgF2List");
+            var widget = gui.GetWidget(dgName);
 
             if (widget == null)
             {
@@ -2725,7 +2782,7 @@ d:\temp\aaa.txt, d:\temp\ggg.txt,
 
             var gui = CSCS_GUI.GetInstance(script);
 
-            return new Variable(Path.GetFileNameWithoutExtension(script.Filename));
+            return new Variable(Path.GetFileNameWithoutExtension(script.Filename).ToUpper());
         }
     }
     

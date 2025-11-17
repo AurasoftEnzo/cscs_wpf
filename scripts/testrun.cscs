@@ -1,0 +1,16 @@
+MessageBox("...Testing run...");
+
+DEFINE processID type R;
+
+// Start a process (e.g., open Notepad)
+processID = run("notepad.exe", "C:\TEST\a.txt");
+MessageBox("Started Notepad with Process ID: " + processID);
+
+Sleep(5000);  // Sleep for 5 seconds
+
+// Kill the process
+kill(processID);
+
+MessageBox("END");
+
+quit;

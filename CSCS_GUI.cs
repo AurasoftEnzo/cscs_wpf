@@ -1,5 +1,6 @@
 //using CefSharp.DevTools.FedCm;
 using CSCS.InterpreterManager;
+using LiveChartsCore.SkiaSharpView.WPF;
 using SplitAndMerge;
 using System;
 using System.Collections.Generic;
@@ -28,7 +29,7 @@ using System.Windows.Threading;
 using System.Windows.Xps;
 using WpfControlsLibrary;
 using WpfCSCS;
-
+using WpfCSCS.Reporting;
 using static WpfCSCS.Btrieve;
 
 namespace SplitAndMerge
@@ -87,6 +88,7 @@ namespace SplitAndMerge
 			interpreter.RegisterFunction("SetText", new SetTextWidgetFunction());
 			interpreter.RegisterFunction("AddWidgetData", new AddWidgetDataFunction());
 			interpreter.RegisterFunction("SetWidgetOptions", new SetWidgetOptionsFunction());
+			interpreter.RegisterFunction("GetWidgetOptions", new GetWidgetOptionsFunction());
 
 			interpreter.RegisterFunction("SetWindowOptions", new SetWindowOptionsFunction());
 
@@ -153,7 +155,10 @@ namespace SplitAndMerge
 	public const string UPDATE_REPORT = "UpdateReport";
 	public const string PRINT_REPORT = "PrintReport";
 
-	public const string PRINT_SQL_REPORT = "PrintSqlReport";
+	public const string SET_PARAM_REPORT = "SetParamReport";
+	public const string GET_PARAM_REPORT = "GetParamReport";
+
+	//public const string PRINT_SQL_REPORT = "PrintSqlReport";
 
 	public const string MAINMENU = "#MAINMENU";
 	public const string WINFORM = "#WINFORM";
@@ -202,6 +207,7 @@ namespace SplitAndMerge
 	public const string YEAR = "Year";
 	public const string DOM = "DOM";
 	public const string DOW = "DOW";
+	public const string FLSZE = "FLSZE";
 	public const string DSPCE = "DSPCE";
 	public const string HEX = "HEX";
 	public const string REGEDIT = "REGEDIT";
@@ -270,7 +276,7 @@ namespace SplitAndMerge
 
 	public const string X_ERR = "XErr";
 
-	public const string READ_XML_FILE = "readXmlFile";
+	public const string READ_XML_FILE = "ReadXmlFile";
 	public const string READ_TAGCONTENT_FROM_XMLSTRING = "readTagContentFromXmlString";
 
 	public const string SET_FOCUS = "SetFocus";
@@ -618,7 +624,7 @@ namespace WpfCSCS
 			TasFunctionsInstance.Init(this);
 			NewCSCSFunctionsInstance.Init(this);
             ChartsInstance.Init(this);
-			ReportFunction.Init(Interpreter);
+			Reporting.Reporting.Init(Interpreter);
 			Excel.Init(Interpreter);
 			NavigatorClassInstance.Init(Interpreter);
 			CommandsInstance.Init(this);
@@ -2130,10 +2136,18 @@ namespace WpfCSCS
 					{
 						var row = new List<object>();
 
-						foreach (KeyValuePair<string, object> kvp in (dg.SelectedItem as ExpandoObject))
+						var selectedItem = dg.Items[dg.SelectedIndex];
+
+						if (selectedItem is DataRowView)
 						{
-							row.Add(kvp.Value);
+							var sidrv = selectedItem as DataRowView;
+							row = sidrv.Row.ItemArray.ToList();
 						}
+
+						//foreach (KeyValuePair<string, object> kvp in (dg.SelectedItem as ExpandoObject))
+						//{
+						//	row.Add(kvp.Value);
+						//}
 
 						gridsSelectedRow[widget.Name.ToLower()] = row;
 					}
@@ -4010,6 +4024,12 @@ namespace WpfCSCS
 		public static Variable GetText(FrameworkElement widget)
 		{
 			string result = "";
+			//if (widget is ASHorizontalBar)
+			//{
+			//	var ashb = widget as ASHorizontalBar;
+			//	result = ashb.Text;
+			//}
+			
 			if (widget is ContentControl)
 			{
 				var contentable = widget as ContentControl;
@@ -4072,7 +4092,35 @@ namespace WpfCSCS
 		public static bool SetText(FrameworkElement widget, string text, int index = -1)
 		{
 			var dispatcher = Application.Current.Dispatcher;
-			if (widget is ComboBox)
+
+			// for skipping setting text on some widgets, to prevent displaying text "System.Windows.Controls.Grid" in place of content
+			if (widget is ASHorizontalBar)
+			{
+				return true;
+			}
+			else if(widget is Button)
+			{
+                return true;
+            }
+			else if(widget is GroupBox)
+			{
+                return true;
+            }
+			else if (widget is CartesianChart)
+			{
+				return true;
+			}
+			else if (widget is PieChart)
+			{
+				return true;
+			}
+			//else if (widget is ...)
+   //         {
+   //             return true;
+   //         }
+
+
+            else if (widget is ComboBox)
 			{
 				var combo = widget as ComboBox;
 				if (index < 0)
@@ -4810,8 +4858,38 @@ namespace WpfCSCS
 			return color;
 		}
 	}
+	
+	class GetWidgetOptionsFunction : ParserFunction
+	{
+		protected override Variable Evaluate(ParsingScript script)
+		{
+			List<Variable> args = script.GetFunctionArgs();
+			Utils.CheckArgs(args.Count, 2, m_name);
+			var widgetName = Utils.GetSafeString(args, 0).ToLower();
+			var propertyName = Utils.GetSafeString(args, 1).ToLower();
+			
+			var gui = CSCS_GUI.GetInstance(script);
+			
+			FrameworkElement widget = gui.GetWidget(widgetName);
+			
+			var property = widget.GetType().GetProperties().Where(a => a.Name.ToLower() == propertyName).FirstOrDefault();
+			var propValue = property.GetValue(widget);
 
-
+            switch (property.PropertyType)
+			{
+				case Type t when t == typeof(int):
+					return new Variable((int)propValue);
+				case Type t when t == typeof(double):
+					return new Variable((double)propValue);
+				case Type t when t == typeof(string):
+                    return new Variable((string)propValue);
+				case Type t when t == typeof(bool):
+                    return new Variable(Utils.ConvertToBool(propValue));
+				default:
+					return new Variable(propValue.ToString());
+			}
+        }
+	}
 
 	class SetWidgetOptionsFunction_old : ParserFunction
 	{
@@ -5135,30 +5213,100 @@ namespace WpfCSCS
 			return new Variable(contents);
 		}
 	}
-	class SaveFileFunction : ParserFunction
-	{
-		protected override Variable Evaluate(ParsingScript script)
-		{
-			List<Variable> args = script.GetFunctionArgs();
-			string text = Utils.GetSafeString(args, 0);
 
-			return SaveFile(text);
-		}
-		public static Variable SaveFile(string text)
-		{
-			Microsoft.Win32.SaveFileDialog saveFile = new Microsoft.Win32.SaveFileDialog();
-			if (saveFile.ShowDialog() != true)
-			{
-				return Variable.EmptyInstance;
-			}
+	//class SaveFileFunction : ParserFunction
+	//{
+	//	protected override Variable Evaluate(ParsingScript script)
+	//	{
+	//		List<Variable> args = script.GetFunctionArgs();
+	//		string text = Utils.GetSafeString(args, 0);
 
-			var fileName = saveFile.FileName;
-			File.WriteAllText(fileName, text);
-			return new Variable(fileName);
-		}
-	}
+	//		return SaveFile(text);
+	//	}
+	//	public static Variable SaveFile(string text)
+	//	{
+	//		Microsoft.Win32.SaveFileDialog saveFile = new Microsoft.Win32.SaveFileDialog();
+	//		if (saveFile.ShowDialog() != true)
+	//		{
+	//			return Variable.EmptyInstance;
+	//		}
 
-	class SetColorFunction : ParserFunction
+	//		var fileName = saveFile.FileName;
+	//		File.WriteAllText(fileName, text);
+	//		return new Variable(fileName);
+	//	}
+	//}
+
+    class SaveFileFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            // Get the function arguments
+            List<Variable> args = script.GetFunctionArgs();
+
+            // Ensure at least one argument (textToSave) is provided
+            if (args.Count == 0)
+            {
+                throw new ArgumentException("At least one argument (textToSave) is required.");
+            }
+
+            string textToSave = Utils.GetSafeString(args, 0); // First argument: text to save
+            string fileName = Utils.GetSafeString(args, 1);   // Second argument: file name (optional)
+            string appendFlag = Utils.GetSafeString(args, 2); // Third argument: append flag (optional)
+
+            // Call the SaveToFile method with the provided arguments
+            return SaveToFile(textToSave, fileName, appendFlag);
+        }
+
+        public static Variable SaveToFile(string textToSave, string fileName = null, string appendFlag = null)
+        {
+            // If no file name is provided, prompt the user to select a file
+            if (string.IsNullOrEmpty(fileName))
+            {
+                Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog();
+                saveFileDialog.Filter = "Text Files (*.txt)|*.txt|All Files (*.*)|*.*";
+                if (saveFileDialog.ShowDialog() != true)
+                {
+                    return Variable.EmptyInstance; // User canceled the dialog
+                }
+                fileName = saveFileDialog.FileName;
+            }
+
+            // Determine whether to append or overwrite the file
+            bool append = !string.IsNullOrEmpty(appendFlag) && appendFlag.ToUpper() == "A";
+
+            //create directory if it doesn't exist
+            string directory = Path.GetDirectoryName(fileName);
+            if (!Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            // Save or append the text to the file
+            try
+            {
+                if (append)
+                {
+					var ienumString = new List<string>();
+					ienumString.Add(textToSave);
+                    File.AppendAllLines(fileName, ienumString);
+                }
+                else
+                {
+                    File.WriteAllText(fileName, textToSave);
+                }
+                return new Variable(fileName); // Return the file name
+            }
+            catch (Exception ex)
+            {
+                // Handle any errors (e.g., invalid path, unauthorized access)
+                return new Variable($"Error: {ex.Message}");
+            }
+        }
+    }
+
+
+    class SetColorFunction : ParserFunction
 	{
 		bool m_bgColor;
 
@@ -6349,6 +6497,7 @@ namespace WpfCSCS
 
             var fileName = Utils.GetSafeString(args, 0);
 			var imagesPath = App.GetConfiguration("ImagesPath", "");
+			Directory.CreateDirectory(Path.Combine(imagesPath, "screenshots"));
             var imagePath = Path.Combine(imagesPath, "screenshots", fileName);
 
 			//var imagePath = Path.Combine(App.GetConfiguration("ImagesPath", ""), "tempScreenshot.jpg");
@@ -7129,10 +7278,11 @@ namespace WpfCSCS
 					return;
 				}
 				AssignedString = value;
-				if (!LocalAssign)
-				{
-					Size = 0;
-				}
+				//// ???????????
+				//if (!LocalAssign)
+				//{
+				//	Size = 0;
+				//}
 				m_string = value;
 				Type = VarType.STRING;
 			}

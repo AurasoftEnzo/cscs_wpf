@@ -1,0 +1,23 @@
+
+MessageBox("start");
+
+Thread {
+    var1 = ThreadId();
+    MessageBox(var1);
+    func1();
+    MessageBox("dddddd"); 
+    MessageBox("eeeee"); 
+    quit();
+    MessageBox("kraj");
+}
+
+MessageBox("main thread id = " + threadId());
+
+MessageBox("end");
+
+function func1(){
+    MessageBox("aaaaa1");
+    MessageBox("aaaaa2");
+    return(); // must have "()"
+    MessageBox("aaaaa3");
+}

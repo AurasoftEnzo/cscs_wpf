@@ -1,0 +1,264 @@
+﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WpfCSCS"
+        xmlns:wcl="clr-namespace:WpfControlsLibrary;assembly=WpfControlsLibrary"
+        xmlns:asdads="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+        xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+        xmlns:dxc="http://schemas.devexpress.com/winfx/2008/xaml/charts"
+        xmlns:SKCharts="clr-namespace:LiveChartsCore.SkiaSharpView.SKCharts;assembly=LiveChartsCore.SkiaSharpView"
+        mc:Ignorable="d"
+        Title="Plaće II"
+        Height="675"
+        Width="1200" MinHeight="540" MinWidth="960" WindowStartupLocation="CenterScreen">
+    <Viewbox Stretch="Uniform">
+        <Grid Width="1162" Margin="15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition  Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Rectangle Fill="#FFEEEDF1" RadiusX="7" RadiusY="7" Margin="5"/>
+            <Rectangle Fill="#FFEEEDF1" RadiusX="7" RadiusY="7" Margin="5" Grid.Column="1"/>
+            <Rectangle Fill="#FFEEEDF1" RadiusX="7" RadiusY="7" Margin="5" Grid.Row="1" Grid.ColumnSpan="2"/>
+            <Label Name="Top6Banaka" VerticalAlignment="Top" HorizontalAlignment="Left" Width="82" Height="35" Margin="238,10,0,0"
+                   Content="plaća" Grid.Column="1"
+                   FontSize="16"
+                   FontWeight="Bold"/>
+            <lvc:CartesianChart LegendPosition="Right"
+                          Name="ChartPoMjesecima2"
+                          VerticalAlignment="Top"
+                          HorizontalAlignment="Center" Grid.Column="1"
+                          Width="581"
+                          Height="283" FontSize="10" Margin="0,47,0,0"/>
+
+            <Label Name="Top10Artikli" VerticalAlignment="Top" HorizontalAlignment="Left" Width="290" Height="35" Margin="10,10,0,0" 
+                   Content="Lista zaposlenika"
+                   Grid.Row="1"
+                   FontSize="16"
+                   FontWeight="Bold"/>
+
+            <DataGrid GridLinesVisibility="Horizontal"
+                      HorizontalGridLinesBrush="#FFD7D6D6"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Top"
+                      Height="245"
+                      Width="1120"
+                      IsReadOnly="true"
+                      Name="dgListaZaposlenika"
+                      RowHeight="22"
+                      FontSize="15"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto"
+                      Background="White"
+                      TabIndex="19" Margin="0,42,0,20" Grid.Row="1" Grid.ColumnSpan="2" BorderThickness="0,0,0,0">
+                <DataGrid.Resources>
+                    <Style TargetType="{x:Type DataGridColumnHeader}">
+                        <Setter Property="Background"
+                                Value="#FF0000A0" />
+                        <Setter Property="Foreground"
+                                Value="White" />
+                        <Setter Property="FontSize" Value="17"/>
+                        <Setter Property="BorderBrush" Value="White"/>
+                        <Setter Property="BorderThickness" Value="1"/>
+                    </Style>
+                </DataGrid.Resources>
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="R.br."
+                                            Width="45">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="LstRadnRbr_ar"
+                                                HorizontalContentAlignment="Left" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Šifra zaposlenika"
+                                            Width="150">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="LstRadnSifraRadnika_ar"
+                                                HorizontalContentAlignment="Left" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Prezime"
+                                            Width="130">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="LstRadnPrezime_ar"
+                                                HorizontalContentAlignment="Left" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Ime"
+                                            Width="130">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="LstRadnIme_ar"
+                                                HorizontalContentAlignment="Left" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Ugovorena plaća  ">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="LstRadnUgovorenaPlaca_ar"
+                                                HorizontalContentAlignment="Right" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Spol  ">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell 
+                                    FieldName="LstRadnSpol_ar"
+                                    HorizontalContentAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Header="Starost(godina)  ">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell 
+                                    FieldName="LstRadnGodine_ar"
+                                    HorizontalContentAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Radni staž(ukupno)  ">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell 
+                                    FieldName="LstRadnStazUkupno_ar"
+                                    HorizontalContentAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Radni staž(u firmi)  ">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell 
+                                    FieldName="LstRadnStazUFirmi_ar"
+                                    HorizontalContentAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Posljednja bruto plaća  ">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell 
+                                    FieldName="LstRadnPosljPlacaBruto_ar"
+                                    HorizontalContentAlignment="Right"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Header="Posljednja neto plaća  ">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell 
+                                    FieldName="LstRadnPosljPlacaNeto_ar"
+                                    HorizontalContentAlignment="Right"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Prosječna bruto plaća  ">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell 
+                                    FieldName="LstRadnProsjPlacaBruto_ar"
+                                    HorizontalContentAlignment="Right"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Prosječna neto plaća  ">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell 
+                                    FieldName="LstRadnProsjPlacaNeto_ar"
+                                    HorizontalContentAlignment="Right"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+
+                    <DataGridTemplateColumn Header="Prebivalište  ">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell 
+                                    FieldName="LstRadnPrebivaliste_ar"
+                                    HorizontalContentAlignment="Left"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Radno vrijeme(sati)  ">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell 
+                                    FieldName="LstRadnRadnoVrijeme_ar"
+                                    HorizontalContentAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Ugovor na  ">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell 
+                                    FieldName="LstRadnUgovorNa_ar"
+                                    HorizontalContentAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Stručna sprema  " Width="180">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell 
+                FieldName="LstRadnStrSprema_ar"
+                HorizontalContentAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <Button Grid.Column="1"
+VerticalAlignment="Top"
+Height="39"
+Margin="0,11,10,0"
+FontFamily="lato"
+Visibility="Visible"
+BorderBrush="Transparent"
+BorderThickness="0"
+Padding="-8"
+x:Name="gbPrint2"
+Background="gray"
+TabIndex="35"
+Foreground="#FFFDFDFD"
+Content="Ispis"
+FontSize="20"
+HorizontalAlignment="Right"
+Width="110">
+                <Button.Resources>
+                    <Style TargetType="{x:Type Border}">
+                        <Setter Property="CornerRadius"
+            Value="6" />
+                    </Style>
+                </Button.Resources>
+            </Button>
+            <lvc:CartesianChart LegendPosition="Right"
+                x:Name="ChartPoMjesecima"
+                Margin="23,45,23,10"
+                Height="300" />
+            <Label HorizontalAlignment="Left" x:Name="poMjesecimaLabel" Content="" VerticalAlignment="Top" Width="374" FontSize="16" FontWeight="Bold" Margin="171,10,0,0" BorderBrush="{x:Null}" Background="{x:Null}"/>
+            <ComboBox x:Name="comboBoxProsjecnaMedijalna" DataContext="ProsjecnaMedijalna_cb" Grid.Column="1" HorizontalAlignment="Right" Margin="0,14,439,0" VerticalAlignment="Top" Width="121" Height="22" />
+            <ComboBox x:Name="comboBoxBrutoNeto" DataContext="BrutoNeto_cb" Grid.Column="1" HorizontalAlignment="Right" Margin="0,14,345,0" VerticalAlignment="Top" Width="89" Height="22" />
+            <ComboBox x:Name="comboBoxPoMjesecima" DataContext="poMjesecima_cb" HorizontalAlignment="Right" Margin="0,15,404,0" VerticalAlignment="Top" Width="158" Height="22" />
+        </Grid>
+    </Viewbox>
+</Window>

@@ -1,0 +1,48 @@
+MessageBox("...Testing newinterpreter2...");
+//Each interpreter instance has its own variables
+//interpreter1 => has variables: 
+//interpreter2 => has variables: inter3, inter4
+//interpreter3 => has variables: x
+//interpreter4 => has variables: x
+//If you want to use the variable, you should previously set the current interpreter instance 
+//newinterpreter creates new interpreter instance and sets current interpreter to the new one
+
+//on the beginning we have 2 interpreters (1 and 2)
+MessageBox("LAST INTERPRETER = " + getlastinterpreterhandle());
+
+
+
+// Create two interpreters (3 and 4)
+inter3 = newinterpreter();	//this creates third interpreter, the variable inter3 is created in interpreter2 
+							//current interpreter is (3)
+
+setinterpreter(2);	//return to initial interpreter (2) because we want to have variable inter4 in interpreter2 
+
+inter4 = newinterpreter();	//this creates fourth interpreter, the variable inter4 is created in interpreter2
+							//current interpreter is (4)
+
+setinterpreter(2);	//return to initial interpreter (2) because we want to have variable inter3 in interpreter2
+
+
+// Set to third interpreter
+setinterpreter(inter3);
+x = "Third interpreter";	//this variable x is in interpreter3
+
+setinterpreter(2);	//return to initial interpreter (2)
+
+// Set to fourth interpreter
+setinterpreter(inter4);
+x = "Fourth interpreter";	//this variable x is in interpreter4
+
+setinterpreter(2);	//return to initial interpreter (2) where the variable inter3 is
+
+// Switch back to third
+setinterpreter(inter3);
+MessageBox(x);	// Outputs: Third interpreter
+
+setinterpreter(2);	//return to initial interpreter (2) where the variable inter4 is
+
+setinterpreter(inter4);
+MessageBox(x);	// Outputs: Fourth interpreter
+
+quit;

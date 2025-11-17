@@ -1,0 +1,35 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:wcl="clr-namespace:WpfControlsLibrary;assembly=WpfControlsLibrary"
+        mc:Ignorable="d"
+        Title="Transfer URA"
+        Height="450"
+        Width="800"
+		ResizeMode="CanMinimize">
+    <Grid>
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0 0" EndPoint="0 1">
+                <LinearGradientBrush.GradientStops>
+                    <GradientStop Offset="0.1" Color="LightSkyBlue" />
+                    <GradientStop Offset="1" Color="{Binding Path=YourBindColor2}" />
+                </LinearGradientBrush.GradientStops>
+            </LinearGradientBrush>
+        </Grid.Background>
+        
+        <Button Name="btnPosalji"
+                VerticalAlignment="Top"
+                HorizontalAlignment="Left"
+                Margin="300,10,0,0"
+                Width="200"
+                Height="50"
+                Content="POŠALJI ULAZNE RAČUNE" />
+		
+		<Image x:Name="asImage" DataContext="Slika" Height="90" Width="100" Margin="100,100,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+
+		<Label Content="" Name="StatusLabel" FontSize="25" HorizontalContentAlignment="Center" Height="50" Width="570" Margin="110,250,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+		<Label Content="" Name="StatusLabel2" FontSize="25" HorizontalContentAlignment="Center" Height="45" Width="570" Margin="110,300,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+
+	</Grid>
+</Window>

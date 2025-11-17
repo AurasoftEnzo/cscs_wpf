@@ -1,0 +1,38 @@
+args = CommandLineArgs(); 
+if(Size(args) >= 11){
+    ftpProtocol = args[2];
+    sendOrRecieve = args[3];
+    ftpAddress = args[4];
+    ftpPort = args[5];
+    ftpUsername = args[6];
+    ftpPassword = args[7];
+    ftpDirectoryPath = args[8];
+    localDirectoryPath = args[9];
+    filename = args[10];
+    
+    try{
+        FTP(ftpProtocol, sendOrRecieve, ftpAddress, ftpPort, ftpUsername, ftpPassword, ftpDirectoryPath, localDirectoryPath, filename);
+    }catch(ex){
+        AppendLine(localDirectoryPath + "errors.txt", "Error: " + ex + " " + "Filename: " + filename);
+        exit;
+    }
+    
+    // try{
+    //     // dodaj "/" na kraj ako nema
+    //     if(substring(localDirectoryPath, localDirectoryPath.length - 1, 1) != "/"){
+    //         localDirectoryPath += "/";
+    //     }
+
+    //     // ... provjerit ...
+    //     move(localDirectoryPath + filename, localDirectoryPath + substring(filename, 0, filename.length - 4) + ".bcx");
+
+    // }catch(ex){
+    //     MessageBox("Error: " + ex);
+    //     exit;
+    // }
+}else{
+    // AppendLine(localDirectoryPath + "errors.txt", "Error: " + "Invalid number of arguments: " + Size(args) + ". Args: " + args);
+    MessageBox("Error: " + "Invalid number of arguments: " + Size(args) + ". Args: " + args);
+}
+
+exit;

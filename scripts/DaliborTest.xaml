@@ -1,0 +1,82 @@
+<Window 
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WpfCSCS.scripts"
+        mc:Ignorable="d"
+        Title="CombineStrTest" Height="450" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- First row -->
+            <RowDefinition Height="Auto"/>
+            <!-- Second row -->
+            <RowDefinition Height="Auto"/>
+            <!-- Third row -->
+        </Grid.RowDefinitions>
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <!-- First column -->
+            <ColumnDefinition Width="Auto"/>
+            <!-- Second column -->
+            <ColumnDefinition Width="*"/>
+            <!-- Third column -->
+        </Grid.ColumnDefinitions>
+
+        <Button Name="button1" 
+                Content="Button text" 
+                HorizontalAlignment="Left" 
+                VerticalAlignment="Top" 
+                Margin="50,50,0,0"                 
+                Width="100" 
+                Height="50"
+                Grid.Row="0"/>
+
+        <TextBox Name="textBox1"
+                 VerticalAlignment="Top"
+                 HorizontalAlignment="Left"
+                 Margin="10,50,0,0"
+                 DataContext="var1"                  
+                 Height="35"
+                 Width="100" 
+                 Grid.Row="0"
+                 Grid.Column="2"
+                 Text="ABC">
+        </TextBox>
+
+        <Label Name="Label1"
+               HorizontalAlignment="Left" 
+               Margin="50,5,0,0" 
+               VerticalAlignment="Center" 
+               VerticalContentAlignment="Center"
+               Width="150"
+               Height="50"
+               Grid.Row="1"               
+               >Nesto:</Label>
+
+        <TabControl Name="tabControl"
+                    DataContext="aaa1"
+                    IsEnabled="True"
+                    Visibility="Visible"
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    Background="Red"
+                    >
+            <TabItem Header="tab1" Name="tabItem1">
+                <Grid></Grid>
+            </TabItem>
+            <TabItem Header="tab2" Name="tabItem2">
+                <Grid></Grid>
+            </TabItem>
+            <TabItem Header="tab3" Name="tabItem3">
+                <Grid></Grid>
+            </TabItem>
+            <TabItem Header="tab4" Name="tabItem4">
+                <Grid></Grid>
+            </TabItem>
+        </TabControl>
+
+    </Grid>
+</Window>

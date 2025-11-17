@@ -2,6 +2,8 @@
 
 //include(strTrim(tpath()) +"chainLib.cscs");
 
+include(strTrim(tpath()) + "wxsy_lib.cscs");
+
 Import(strTrim(mpath()) + "CSCS.Math.dll");
 
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbicfa_inc_lists.cscs") : strTrim(tpath()) + "wxbicfa_inc_lists.cscs");
@@ -26,6 +28,10 @@ include(DownloadScripts() == true ? Download(ServerAddress() + "wxbicfa_inc_e.cs
 CreateWindow(strTrim(tpath()) + "wxbicfa.xaml");
 // CreateWindowXaml("wxbicfa.xaml");
 
+function Wxbicfa_OnClose()
+{
+    save_logs("I", userCode, WhoAmI());
+}
 function Wxbicfa_onDisplay()
 {
     SetWidgetOptions("EllipseProdajaUGodiniPriliv", "Visible", false);
@@ -42,9 +48,12 @@ function Wxbicfa_onDisplay()
     if(Size(args) > 2){
         companyCode = args[2];
         userCode = args[3];
+        CoSet(companyCode);
     }else{
         companyCode = Substring(CoGet(), 1, 2);
     }
+
+    save_logs("U", userCode, WhoAmI());
 
     sqlQueryString = "select SY_CC_USER, SY_CC_YEAR, SY_CC_DBASE from " + strtrim(CommonDBGet()) + ".dbo.NKSYCCYR WHERE SY_CC_CODE = '" + companyCode + "'";
     try
@@ -181,8 +190,31 @@ function Wxbicfa_onDisplay()
     cbKontoInvestAkt = true;
 }
 
+function DisableButtons(){
+    SetWidgetOptions("gbPripremi", "IsEnabled", "false");
+    SetWidgetOptions("gbPrint", "IsEnabled", "false");
+    SetWidgetOptions("gbPriliv1", "IsEnabled", "false");
+    SetWidgetOptions("gbPriliv2", "IsEnabled", "false");
+    SetWidgetOptions("gbOdliv1", "IsEnabled", "false");
+    SetWidgetOptions("gbOdliv2", "IsEnabled", "false");
+    SetWidgetOptions("gbCashFlow2", "IsEnabled", "false");
+    SetWidgetOptions("gbExit", "IsEnabled", "false");
+}
+
+function EnableButtons(){
+    SetWidgetOptions("gbPripremi", "IsEnabled", "true");
+    SetWidgetOptions("gbPrint", "IsEnabled", "true");
+    SetWidgetOptions("gbPriliv1", "IsEnabled", "true");
+    SetWidgetOptions("gbPriliv2", "IsEnabled", "true");
+    SetWidgetOptions("gbOdliv1", "IsEnabled", "true");
+    SetWidgetOptions("gbOdliv2", "IsEnabled", "true");
+    SetWidgetOptions("gbCashFlow2", "IsEnabled", "true");
+    SetWidgetOptions("gbExit", "IsEnabled", "true");
+}
+
 function gbPripremi@clicked()
 {
+    DisableButtons();
     cursor("wait");
     
     //provjera da li su sva konta odabrana
@@ -293,6 +325,7 @@ function callSetPieCharts(){
 function end(){
     cursor("dflt");
     pripremljeno = true;
+    EnableButtons();
 }
 
 function saveKontoFilterButton@clicked(){
@@ -595,6 +628,7 @@ function setHorizontalBars1(){
     HorizontalBar("HorizontalBarLGPriliv", "Color", bojeArray);
 
     HorizontalBar("HorizontalBarTotPriliv", "Text", tot_ovagod_priliv_string);
+    HorizontalBar("HorizontalBarTotPriliv", "Color", bojeArray);
 
     //ODLIV GODINE
     if (Math.Abs(tot_ovagod_odliv) > Math.Abs(tot_lani_odliv))
@@ -666,7 +700,7 @@ function setHorizontalBars1(){
     HorizontalBar("HorizontalBarLGOdliv", "Color", bojeArray);
 
     HorizontalBar("HorizontalBarTotOdliv", "Text", tot_ovagod_odliv_string);
-
+    HorizontalBar("HorizontalBarTotOdliv", "Color", bojeArray);
 
     sql_str = "SELECT sum(kpsy_bnk_saldo) as poc_stanje ";
     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpsybank";

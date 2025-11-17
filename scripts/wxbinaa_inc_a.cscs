@@ -17,7 +17,7 @@ function wxbinaaa_onStart()
     Chart("ChartPoMjesecima", "values", "stacked", arrayTrenutnaKontiranje, STRING(ovagod_h) + ". - kontiranje", 1, 15);
     Chart("ChartPoMjesecima", "SeparatorStep", 1);
     
-    Chart("ChartPoMjesecima", "Margins", {60, 20, 10, 0});
+    // Chart("ChartPoMjesecima", "Margins", {60, 20, 10, 0});
     
     Chart("ChartPoMjesecima", "TooltipDecimalPlaces", 0);
     Chart("ChartPoMjesecima", "Color.Series", { "#75c8ff", "#4184d1", "#ffff4f", "#f59f49"}); 
@@ -41,7 +41,7 @@ function wxbinaaa_onStart()
     Chart("ChartPoDanima", "values", "line", arrayAvr, "Prosjek7dana");
     Chart("ChartPoDanima", "Color.Series", { "#0091D5", "#EA6A47"});
     
-    Chart("ChartPoDanima", "Margins", {60, 0, 10, 0});
+    // Chart("ChartPoDanima", "Margins", {60, 0, 10, 0});
     
     //
     cntr2= 0;
@@ -161,7 +161,7 @@ function setTop10InvoicesDataGrid()
 		{
 		if (do_mjeseca)
 		{
-			sql_str += " AND month(nkpr_gl_datem)<=  " + mjesec_h ;
+			sql_str += " AND month(nkpr_gl_datem) <=  " + mjesec_h ;
 			sql_str += " AND YEAR(nkpr_gl_datem) =  " + ovagod_h ;
 		}
 		else 
@@ -387,7 +387,7 @@ function setChartByMonth(){
         sql_str += " ORDER BY CONVERT(varchar(6),nkpr_gl_datem,112);";
         try
         {
-            // SaveFile(sql_str);
+           // SaveFile(sql_str);
             queryResult = sqlquery(SQL_str);
         }
         catch(exc)
@@ -436,7 +436,6 @@ function setChartByMonth(){
         
         RunOnMain("setChartByMonth2");
     }
-    
     //sada tekuća godina nabava
     sql_str = "SELECT '1' as tip,CONVERT(varchar(6),nkpr_gl_datem,112) as yyyymm, ";
     if (neto_dn)
@@ -531,8 +530,11 @@ function setChartByMonth(){
     {
         MessageBox(exc);
     }
-    
+    if (Size(queryResult)> 1)
+    {
     RunOnMain("setChartByMonth4");
+    }
+
 }
 
 function setChartByMonth1(){
@@ -691,9 +693,10 @@ function setChartByMonth4(){
 
     for(i = 1; i <= Size(queryResult)-1; i++)
     {
+
         ar_cntr_kontiranje = int(substring(queryResult[i][1],4,2)); //nađimo koji je to mjesec
         arrayTrenutnaKontiranje[ar_cntr_kontiranje - 1] = math.round(queryResult[i][2] / 1000.0); 
-        sales_month_ar_kontiranje[ar_cntr-1] = queryResult[i][2];
+        sales_month_ar_kontiranje[ar_cntr_kontiranje-1] = queryResult[i][2]; //GREŠKA!!!
         mjesec_h0X = mjesec_h.length == 1 ? "0" + mjesec_h : mjesec_h;
         proslimjesec = string(int(mjesec_h) - 1); // 1
         proslimjesec0X = proslimjesec.length == 1 ? "0" + proslimjesec : proslimjesec;
@@ -825,7 +828,7 @@ function setLast10InvoicesDataGrid()
 	}
 	else 
 	{
-		sql_str += " month(CASE WHEN kpsp_gl_datcr != '1900-01-01' THEN kpsp_gl_datcr ELSE kpsp_gl_dat_dok END) =  " + mjesec_h;
+		sql_str += " AND month(CASE WHEN kpsp_gl_datcr != '1900-01-01' THEN kpsp_gl_datcr ELSE kpsp_gl_dat_dok END) =  " + mjesec_h;
 	}
     filterPartKontiranje();
 
@@ -960,7 +963,7 @@ function setTop10InvoicesDataGrid()
 	}
 	else 
 	{
-		sql_str += " month(kpsp_gl_datem) =  " + mjesec_h;
+		sql_str += " AND month(kpsp_gl_datem) =  " + mjesec_h;
 	}
     filterPartKontiranje();
 

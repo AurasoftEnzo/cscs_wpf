@@ -198,6 +198,12 @@
     define br_neazur_string type a size 30;
     define local type a size 1;
 
+    DEFINE datumDATEM_RB type l; // datum knjiženja
+    DEFINE datumINVDTE_RB type l; // datum izdavanja računa
+    DEFINE datumESD_RB type l; // datum isporuke
+    DEFINE datumDVO_RB type l; // datum dužničko vjerovničkog odnosa
+    DEFINE datumDOSPIJECA_RB type l; // datum dospijeća // NKPR_GL_DVO + NKPR_GL_NOKAM + NKPR_GL_ROKPL
+
 //=============================================
 
 // // F2 SKLADISTA
@@ -917,4 +923,32 @@ function filterPart2()
 		}
 	}
 
+}
+
+function getDatumString(){
+    // msg("datumDATEM_RB = " + datumDATEM_RB + "\n" + "" +
+    //     "datumINVDTE_RB = " + datumINVDTE_RB + "\n" +
+    //     "datumESD_RB = " + datumESD_RB + "\n" +
+    //     "datumDVO_RB = " + datumDVO_RB + "\n" +
+    //     "datumDOSPIJECA_RB = " + datumDOSPIJECA_RB + "\n"
+    // );
+
+    if(datumDATEM_RB){
+        return "nkpr_gl_datem";
+    }
+    elif(datumINVDTE_RB){
+        return "nkpr_gl_invdte";
+    }
+    elif(datumESD_RB){
+        return "nkpr_gl_esd";
+    }
+    elif(datumDVO_RB){
+        return "nkpr_gl_dvo";
+    }
+    elif(datumDOSPIJECA_RB){
+        return "(DATEADD(day, NKPR_GL_NOKAM + NKPR_GL_ROKPL, NKPR_GL_DVO))";
+    }
+    else{
+        return "";
+    }
 }

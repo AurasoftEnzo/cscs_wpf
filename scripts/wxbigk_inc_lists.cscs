@@ -1,0 +1,1814 @@
+    include(strTrim(tpath()) + "F2ListLib.cscs");
+    // includeScript("F2ListLib.cscs");
+    
+    define kategorija,klasa type a size 6 up;
+    define kategNaziv,klasaNaziv,KomercNaziv type a size 50;
+    define komercijalist type r size 6;
+    define sveDrzave_dn,eu_dn,izvoz_dn,domaca_dn type l;
+    define eucountries type a size 200;
+
+    define bruto_rb type l;
+    define neto_rb type l;
+    define brojRadnika_rb type l;
+
+    define rad_rb type l;
+    // define bolovanje_rb type l;
+    define doprinosiIzPlace_rb type l;
+    define doprinosiNaPlacu_rb type l;
+    define olaksice_rb type l;
+    define osobniOdbitak_rb type l;
+    define porez_rb type l;
+    define prirez_rb type l;
+    define naknade_rb type l;
+    define obustave_rb type l;
+    
+    define redoviti_cb, poduzetnik_cb, beneficirani_cb, volonter_cb, pripravnik_cb type l;
+    define obrtnik_cb, nijeZaposlen_cb, porodiljskiDopust_cb, ugovorODjelu_cb, obracunNaknada_cb type l;
+
+    define comboBoxMjesec1selected type a size 100;
+
+    define rnalog type r size 8;
+    define rnalogNaziv type a size 50;
+    define mx3_dn,mx2_dn,met_dn,kom_dn type l;
+    define neto_dn,do_mjeseca,ruc_dn,bruto_dn,tezina_dn,do_mjeseca2 type l;
+    define nazivFirme type a size 50;
+    DEFINE ratio type n size 10 dec 2;
+
+    define tip_racuna type a size 30;
+    define gl_oznaka type a size 1 up;
+    
+    DEFINE skladiste type a size 3;
+    DEFINE skladisteNaziv type a size 50;
+
+
+    DEFINE ARTI_ARTIKL_ARR type a size 30 array 50000;
+    DEFINE ARTI_NAZIV_ARR type a size 50 array 50000;
+    DEFINE NKSC_PARTCODE_ARR type a size 10 array 50000;
+    DEFINE NKSC_PARTNAME_ARR type a size 50 array 50000;
+
+    DEFINE KSDU_SF_CODE_ARR type a size 6 array 5000;
+    DEFINE KSDU_SF_OPIS1_ARR type a size 30 array 5000;
+
+    DEFINE PKMK_SKL_CODE_arr type i size 3 array 300;
+
+    DEFINE PKMK_SKL_NAZIV_arr type a size 50 array 300;
+    DEFINE cntr1,cntr2,cntr3,cntr4 type i;
+    define ovagod_h,lani_h,ovagod_h2 type a size 4;
+
+    
+    DEFINE tot_ovagod_mp type n size 14 dec 0 ;
+    DEFINE tot_ovagod_ukupno type n size 14 dec 0 ;
+    
+    DEFINE postotak type n size 10 dec 2 ;
+    DEFINE postotakMj type n size 10 dec 2 ;
+    //define postotakTj type n size 10 dec 2 ;
+    DEFINE artiklNaziv type a size 30;
+    define artikl type a size 15 ;
+
+
+
+
+    DEFINE tot_ovagod_priliv, tot_ovagod_odliv type n size 14 dec 0;
+    DEFINE tot_lani_priliv, tot_lani_odliv type n size 14 dec 0;
+    DEFINE tot_ovajmj_priliv, tot_ovajmj_odliv type n size 14 dec 0 ;
+    DEFINE tot_proslimj_priliv, tot_proslimj_odliv type n size 14 dec 0 ;
+
+
+
+    DEFINE tot_ovagod_priliv_string type a size 20;
+    DEFINE tot_ovagod_priliv_mp_string type a size 20;
+    DEFINE tot_ovagod_priliv_ukupno_string type a size 20;
+    DEFINE tot_lani_priliv_string type a size 20;
+    DEFINE tot_ovajmj_priliv_string type a size 20;
+    DEFINE tot_proslimj_priliv_string type a size 20;
+    DEFINE tot_ovajTj_priliv_string type a size 20;
+    DEFINE tot_ProsliTj_priliv_string type a size 20;
+    
+    DEFINE tot_ovagod_odliv_string type a size 20;
+    DEFINE tot_ovagod_odliv_mp_string type a size 20;
+    DEFINE tot_ovagod_odliv_ukupno_string type a size 20;
+    DEFINE tot_lani_odliv_string type a size 20;
+    DEFINE tot_ovajmj_odliv_string type a size 20;
+    DEFINE tot_proslimj_odliv_string type a size 20;
+    DEFINE tot_ovajTj_odliv_string type a size 20;
+    DEFINE tot_ProsliTj_odliv_string type a size 20;
+
+    define stanjeOvagod, pocetnoStanjeOvagod type n size 14 dec 0;
+    define tot_stanjeOvagod, tot_pocetnoStanjeOvagod type a size 20;
+
+	define nameArt type a size 40;
+	define codeArt_ar type a size 15 array 10;
+    define salesArt1_ar type n size 14 dec 0 array 10;
+    define salesArt2_ar type n size 14 dec 0 array 10;
+    define NameArt_ar type a size 40 array 10;
+    define top10Art_ar type i size 2 array 10;
+    define indexArt_ar type n size 4 dec 0 array 10;
+    define imageArt_ar type a size 120 array 10;
+    define ArtikliCntr type i size 2;
+
+    define namePart type a size 40;
+    define salesPart1_ar type n size 14 dec 0 array 10;
+    define salesPart2_ar type n size 14 dec 0 array 10;
+    define NamePart_ar type a size 40 array 10;
+    define CodePart_ar type a size 10 array 10;
+    define top10Part_ar type i array 10;
+    define indexPart_ar type n size 4 dec 0 array 10;
+    define imagePart_ar type a size 120 array 10;
+    define salesCntr type i;
+    define sales1 type n size 16 dec 2;
+    define sales2 type n size 16 dec 2;
+	define sklad_str type a size 100;
+	
+
+    define KONTO_str type a size 100;
+
+    define br_kupaca_og, br_kupaca_lg type i size 5;
+    define prodaja_kup_og, prodaja_kup_lg type n size 14;
+    define broj_rac_og, broj_rac_lg type r size 6;
+    define prod_kup_indx type n size 10 dec 2;
+
+    DEFINE arrayProslaIznosi, arrayTrenutnaIznosi type n size 14 array 12;
+    
+    DEFINE arrayProslaBruto, arrayTrenutnaBruto type n size 14 array 12;
+    DEFINE arrayProslaNeto, arrayTrenutnaNeto type n size 14 array 12;
+    DEFINE arrayProslaBrRadnika, arrayTrenutnaBrRadnika type n size 14 array 12;
+
+    DEFINE arrayProslaPriliv, arrayProslaOdliv type n size 14 array 12;
+    DEFINE arrayTrenutnaPriliv, arrayTrenutnaOdliv type n size 14 array 12;
+
+	define tot_place type n size 14;
+    
+	define tot_ovajTj_priliv type n size 14;
+	define tot_prosliTj_priliv type n size 14;
+	define tot_ovajTj_odliv type n size 14;
+	define tot_prosliTj_odliv type n size 14;
+	define sales_ar type n size 14 dec 0 array 10;        
+	define postotakPriliv, postotakOdliv type n size 10 dec 2;
+	define postotakMjPriliv, postotakMjOdliv type n size 10 dec 2;
+	define postotakTjPriliv, postotakTjOdliv type n size 10 dec 2;
+	define week_c type a size 10;
+	define week_p type a size 10;
+	define week type i;
+
+    DEFINE sales_month_ar type n size 14 dec 0 array 24;
+    DEFINE CNTR type i size 3;
+    DEFINE cntry type i size 3;
+    DEFINE arrayProsla type n size 14 array 12;
+    DEFINE arrayTrenutna type n size 14 array 12;
+
+  	define t10Iznosz_ar type n size 14 dec 2 array 10;
+	define t10Namez_ar type a size 30 array 10;
+	define t10Cntrz_ar type i size 2 array 10;
+	define t10Datumz_ar type d size 8 array 10;
+	define t10Timez_ar type t size 8 array 10;
+	define T10DATUMDOKZ_AR type d size 8 array 10;
+    define t10Racunz_ar type r size 8 array 10;
+ 	define T10Cntrz type i;
+	define t10DatRac type l;
+
+    define t10IznosMj_ar type n size 14 dec 2 array 10;
+	define t10NameMj_ar type a size 30 array 10;
+	define t10CntrMj_ar type i size 2 array 10;
+	define t10DatumMj_ar type d size 8 array 10;
+	define t10RacunMj_ar type r size 8 array 10;
+
+    define T10CntrMj type i;
+	define T10Cntrz type i;
+	define t10DatRac type l;
+
+    define mjesec1od, mjesec1do type a size 2;
+    define godina1 type a size 4 ;
+    define byMonthNum type i;
+
+
+    
+
+    define partner type a size 10;
+    define partnerNaziv type a size 50;
+    
+    define Izvadak type a size 10 ;
+    define IzvadakNaziv type a size 50 ;
+    
+    define Konto type a size 10 ;
+    define KontoNaziv type a size 50 ;
+
+    define regija type a size 6 ;
+    define regijaNaziv type a size 30 ;
+
+    define kategorija type a size 6 ;
+    define kategorijaNaziv type a size 50 ;
+
+    define klasa type a size 6 ;
+    define klasaNaziv type a size 50 ;
+
+    define isporuka type a size 10 ;
+    define isporukaNaziv type a size 50 ;
+
+    define komercijalist type a size 6 ;
+    define komercijalistNaziv type a size 50 ;
+
+    define rnalog type a size 8 ;
+    define rnalogNaziv type a size 50 ;
+
+    define do_mjeseca type l;
+
+    define danas_h type d size 10;
+
+    DEFINE razlikaUCijeniField type l;
+    DEFINE tezina_dn type l;
+
+    DEFINE searchSklSifra type i size 5;
+    DEFINE searchSklNaziv type a size 50;
+    DEFINE searchArtiklSifra type a size 50;
+    DEFINE searchArtiklNaziv type a size 50;
+
+    DEFINE searchPartnerSifra type a size 50;
+    DEFINE searchPartnerNaziv type a size 50;
+
+    DEFINE searchRegijaSifra type a size 50;
+    DEFINE searchRegijaNaziv type a size 50;
+    DEFINE searchKategorijaSifra type a size 50;
+    DEFINE searchKategorijaNaziv type a size 50;
+    DEFINE searchKlasaSifra type a size 50;
+    DEFINE searchKlasaNaziv type a size 50;
+    DEFINE searchIsporukaSifra type a size 50;
+    DEFINE searchIsporukaNaziv type a size 50;
+    DEFINE searchRnalogSifra type a size 50;
+    DEFINE searchRnalogNaziv type a size 50;
+    DEFINE searchKomercijalistSifra type a size 50;
+    DEFINE searchKomercijalistNaziv type a size 50;
+
+    DEFINE regijeRB type l;
+    DEFINE drzaveRB type l;
+    DEFINE gradoviRB type l;
+
+
+    DEFINE spolSve_rb type l;
+    DEFINE spolMusko_rb type l;
+    DEFINE spolZensko_rb type l;
+    DEFINE spolNijeUneseno_rb type l;
+
+
+    DEFINE nazivFirme type a size 100;
+
+    DEFINE pripremljeno type l;
+    define in_string type a size 300;
+    DEFINE companyCode type a size 3 up;
+    DEFINE userCode type a size 20;    
+    define proslaGodinaBaza type a size 200; 
+
+    DEFINE sqlNaDan type a size 10;  
+    DEFINE sqlOdDana type a size 10;  
+    DEFINE fiscal_yr type a size 10;  
+    DEFINE br_kupaca_og_string, br_kupaca_lg_string type a size 50;
+    DEFINE broj_rac_og_string, broj_rac_lg_string type a size 50;
+    DEFINE prodaja_kup_og_string, prodaja_kup_lg_string type a size 50;
+    define dan2 type i;
+    define tableHndl type i;
+    define pieChartStr type a size 20;
+    define refreshpie type l;    
+    define br_wait type r;
+    define br_neazur type r;
+    define br_wait_string type a size 30;
+    define br_neazur_string type a size 30;
+    define local type a size 1;
+
+    define iniFilename type a size 100;
+
+    define KONTO_posl_akt_str type a size 10000;
+    define KONTO_financ_akt_str type a size 10000;
+    define KONTO_invest_akt_str type a size 10000;
+    
+    //define KONTO_final_string type a size 10000;
+    define odabranaKonta type a size 10000;
+
+    define cbKontoPoslAkt type l;
+    define cbKontoFinancAkt type l;
+    define cbKontoInvestAkt type l;
+
+    define obrtaj type n size 14 dec 2;
+    define brojDanaZaNaplatu type n size 5 dec 2;
+    define obrtaj_string, brojDanaZaNaplatu_string type a size 30;
+    define brojProteklihDana type i size 3;
+    define datum1, datum2 type d size 10;
+
+    define F2ListQueryString type a size 20000;
+
+
+
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+//-----------------------------------
+    DEFINE zaposlenik type a size 10;
+    DEFINE zaposlenikNaziv type a size 50;
+
+    DEFINE brojeviObracuna type a size 10;
+    DEFINE brojeviObracunaNaziv type a size 50;
+
+    DEFINE strucnaSprema type a size 10;
+    DEFINE strucnaSpremaNaziv type a size 50;
+
+    DEFINE mjestoStanovanja type a size 10;
+    DEFINE mjestoStanovanjaNaziv type a size 50;
+
+    DEFINE mjestoZaposlenja type a size 10;
+    DEFINE mjestoZaposlenjaNaziv type a size 50;
+
+    DEFINE nazivRadnogMjesta type a size 10;
+    DEFINE nazivRadnogMjestaNaziv type a size 50;
+
+    DEFINE organizacijskeJedinice type a size 10;
+    DEFINE organizacijskeJediniceNaziv type a size 50;
+
+    DEFINE elementiObracuna type a size 10;
+    DEFINE elementiObracunaNaziv type a size 50;
+//-----------------------------------
+
+//---------------------------------
+    define ZAPOSLENIK_str type a size 5000;
+    define BROJEVI_OBRACUNA_str type a size 15000;
+    define STRUCNA_SPREMA_str type a size 15000;
+    define MJESTO_STANOVANJA_str type a size 15000;
+    define MJESTO_ZAPOSLENJA_str type a size 15000;
+    define NAZIV_RADNOG_MJESTA_str type a size 15000;
+    define ORGANIZACIJSKE_JEDINICE_str type a size 15000;
+    define ELEMENTI_OBRACUNA_str type a size 15000;
+//---------------------------------
+
+//---------------------------------
+    DEFINE tot_bruto_trenutna type n size 14 dec 0;
+    DEFINE tot_bruto_prosla type n size 14 dec 0;
+    
+    DEFINE tot_neto_trenutna type n size 14 dec 0;
+    DEFINE tot_neto_prosla type n size 14 dec 0;
+    
+    DEFINE tot_brRadnika_trenutna type n size 14 dec 0;
+    DEFINE tot_brRadnika_prosla type n size 14 dec 0;
+
+    define trenutnaAvgPlaca type n size 14 dec 0;
+    define proslaAvgPlaca type n size 14 dec 0;
+
+    define trenutnaMedianPlaca type n size 14 dec 0;
+    define proslaMedianPlaca type n size 14 dec 0;
+
+
+    define trenutnaBrNovozaposlenih type n size 14 dec 0;
+    define proslaBrNovozaposlenih type n size 14 dec 0;
+    
+    define trenutnaBrPrekidaRadOdn type n size 14 dec 0;
+    define proslaBrPrekidaRadOdn type n size 14 dec 0;
+
+
+    DEFINE tot_bolovanja_trenutna type n size 14 dec 0;
+    DEFINE tot_bolovanja_prosla type n size 14 dec 0;
+    DEFINE tot_bolovanjaKol_trenutna type n size 14 dec 0;
+    DEFINE tot_bolovanjaKol_prosla type n size 14 dec 0;
+    DEFINE tot_bolovanjaBrRadnika_trenutna type n size 14 dec 0;
+    DEFINE tot_bolovanjaBrRadnika_prosla type n size 14 dec 0;
+
+    DEFINE tot_prekovremeni_trenutna type n size 14 dec 0;
+    DEFINE tot_prekovremeni_prosla type n size 14 dec 0;
+    DEFINE tot_prekovremeniKol_trenutna type n size 14 dec 0;
+    DEFINE tot_prekovremeniKol_prosla type n size 14 dec 0;
+    DEFINE tot_prekovremeniBrRadnika_trenutna type n size 14 dec 0;
+    DEFINE tot_prekovremeniBrRadnika_prosla type n size 14 dec 0;
+//---------------------------------
+
+//----- strings ----------------------------
+    DEFINE tot_bruto_trenutna_string type a size 20;
+    DEFINE tot_bruto_prosla_string type a size 20;
+
+    DEFINE tot_neto_trenutna_string type a size 20;
+    DEFINE tot_neto_prosla_string type a size 20;
+    
+    DEFINE tot_brRadnika_trenutna_string type a size 20;
+    DEFINE tot_brRadnika_prosla_string type a size 20;
+    
+    DEFINE trenutnaAvgPlaca_string type a size 20;
+    DEFINE proslaAvgPlaca_string type a size 20;
+    
+    DEFINE trenutnaMedianPlaca_string type a size 20;
+    DEFINE proslaMedianPlaca_string type a size 20;
+
+    
+    DEFINE trenutnaBrNovozaposlenih_string type a size 20;
+    DEFINE proslaBrNovozaposlenih_string type a size 20;
+
+    DEFINE trenutnaBrPrekidaRadOdn_string type a size 20;
+    DEFINE proslaBrPrekidaRadOdn_string type a size 20;
+
+
+
+    DEFINE tot_bolovanja_trenutna_string type a size 20;
+    DEFINE tot_bolovanja_prosla_string type a size 20;
+
+    // DEFINE tot_bolovanjaKol_trenutna_string type a size 20;
+    // DEFINE tot_bolovanjaKol_prosla_string type a size 20;
+
+    DEFINE tot_prekovremeni_trenutna_string type a size 20;
+    DEFINE tot_prekovremeni_prosla_string type a size 20;
+    
+    // DEFINE tot_prekovremeniKol_trenutna_string type a size 20;
+    // DEFINE tot_prekovremeniKol_prosla_string type a size 20;
+
+//---------------------------------
+
+    DEFINE tot_bolovanja_trenutna_temp type n size 14 dec 0;
+    DEFINE tot_bolovanja_prosla_temp type n size 14 dec 0;
+
+    DEFINE tot_prekovremeni_trenutna_temp type n size 14 dec 0;
+    DEFINE tot_prekovremeni_prosla_temp type n size 14 dec 0;
+    
+    //---------------------------
+    
+    define indexBruto type n size 10 dec 2;
+    define indexNeto type n size 10 dec 2;
+    define indexBrRadnika type n size 10 dec 2;
+    define indexAvg type n size 10 dec 2;
+    define indexMedian type n size 10 dec 2;
+    define indexBrNovozaposlenih type n size 10 dec 2;
+    define indexBrPrekidaRadOdn type n size 10 dec 2;
+
+    define indexBolovanja type n size 10 dec 2;
+    define indexPrekovremeni type n size 10 dec 2;
+
+    //---------------------------
+
+    define ar_mjesec type i size 2;
+    define ar_godina type a size 4;
+
+    //---------------------------
+
+    define bolovanja_cb type a size 30;
+    define prekovremeni_cb type a size 30;
+    
+        //---------------------------
+    //---------------------------
+    //---------------------------
+
+    define arrayTrenutnaAvgPlaca type n size 14 dec 2 array 10000;
+    define arrayProslaAvgPlaca type n size 14 dec 2 array 10000;
+
+    //---------------------------
+    //---------------------------
+    //---------------------------
+    
+    define ProsjecnaMedijalna_cb type a size 30;
+    define BrutoNeto_cb type a size 30;
+
+//---------------------------
+
+    DEFINE arrayProslaBrutoAvg, arrayTrenutnaBrutoAvg type n size 14 array 12;
+    DEFINE arrayProslaNetoAvg, arrayTrenutnaNetoAvg type n size 14 array 12;
+    DEFINE arrayProslaBrutoMedian, arrayTrenutnaBrutoMedian type n size 14 array 12;
+    DEFINE arrayProslaNetoMedian, arrayTrenutnaNetoMedian type n size 14 array 12;
+
+//---------------------------
+
+define punoRadnoVrijeme_cb type l;
+define nepunoRadnoVrijeme_cb type l;
+
+define punoRadnoVrijemeSati type n size 2;
+//---------------------------
+
+define ugovorNaOdredeno_cb type l;
+define ugovorNaNeodredeno_cb type l;
+
+//---------------------------
+
+define LstRadnRbr_ar type i size 5 array 5000;
+define LstRadnSifraRadnika_ar type a size 10 array 5000;
+define LstRadnPrezime_ar type a size 50 array 5000;
+define LstRadnIme_ar type a size 50 array 5000;
+define LstRadnUgovorenaPlaca_ar type n size 10 dec 2 array 5000;
+define LstRadnSpol_ar type a size 1 array 5000;
+define LstRadnGodine_ar type i size 3 array 5000;
+define LstRadnStazUkupno_ar type i size 3 array 5000;
+define LstRadnStazUFirmi_ar type i size 3 array 5000;
+define LstRadnPosljPlacaBruto_ar type n size 10 dec 2 array 5000;
+define LstRadnPosljPlacaNeto_ar type n size 10 dec 2 array 5000;
+define LstRadnProsjPlacaBruto_ar type n size 10 dec 2 array 5000;
+define LstRadnProsjPlacaNeto_ar type n size 10 dec 2 array 5000;
+define LstRadnStrSprema_ar type a size 40 array 5000;
+define LstRadnPrebivaliste_ar type a size 40 array 5000;
+define LstRadnRadnoVrijeme_ar type i size 3 array 5000;
+define LstRadnUgovorNa_ar type a size 40 array 5000;
+
+//---------------------------
+
+define poMjesecima_cb type a size 30;
+
+//---------------------------
+
+define dobneSkupine_cb type a size 30;
+
+define zaposleniUCijelomPeriodu_cb type l;
+//---------------------------
+
+define arrayBrojRadnikaDobneSkupine type i size 5 array 11;
+define arrayProsjecnaBrutoPlacaDobneSkupine type n size 10 dec 2 array 11;
+define arrayProsjecnaNetoPlacaDobneSkupine type n size 10 dec 2 array 11;
+
+// //=============================================================
+// //=== F2 sifra zaposlenika ==========================================
+
+// function ceSifraZaposlenika@clicked()
+// {
+//     F2ListQueryString = "WITH zaposlenici AS("
+//     + " SELECT DISTINCT trim(od_ms_br_rad) as sifraZaposlenika, trim(od_ms_prezime) + ' ' + trim(od_ms_ime) as prezimeIme, trim(od_ms_djel) as oib, OD_MS_STATUS as radniStatus, trim(nkod_sf_opis1) opisRadMj, trim(od_ms_mjes_stan) as mjestoStanovanja"
+//     + " FROM " + trenutnaGodinaBaza + ".dbo.nkodradn "
+//     + " LEFT JOIN " + CommonDBGet() + ".dbo.nkodsifr ON nkod_sf_code = od_ms_sif_radmj AND nkod_sf_tip = 'I'"
+//     + " WHERE od_ms_br_rad like '%{var1}%' AND trim(od_ms_prezime) + ' ' + trim(od_ms_ime) like '%{var2}%'";
+    
+//     if(ZAPOSLENIK_str != ""){
+//         F2ListQueryString += " AND od_ms_br_rad NOT IN (" + ZAPOSLENIK_str + ")";
+//     }
+
+//     F2ListQueryString += ")"
+//     + " SELECT ROW_NUMBER() OVER(ORDER BY sifraZaposlenika ASC) AS RowNumber, sifraZaposlenika, prezimeIme, oib, radniStatus, opisRadMj, mjestoStanovanja"
+//     + " FROM zaposlenici ORDER BY RowNumber";
+
+//     zaposlenik = "";
+//     zaposlenikNaziv = "";
+//     sifraFieldPointer -> zaposlenik;
+//     NazivFieldPointer -> zaposlenikNaziv; 
+
+//     windowTitle = "F2 lista zaposlenika";
+//     headersArray = {"R.br.   ", "Šifra zaposlenika   ", "Ime zaposlenika   ", "OIB   ", "Status   ", "Radno mjesto   ", "Mjesto stanovanja   "};
+    
+//     ShowF2List();
+    
+//     if(&sifraFieldPointer != ""){
+//         zaposlenik = &sifraFieldPointer;
+//         if (zaposlenik != "")
+//         {
+//             ZAPOSLENIK_str = (ZAPOSLENIK_str == "") ? (ZAPOSLENIK_str + "'"+zaposlenik+"'") : (ZAPOSLENIK_str + ",'" + zaposlenik+"'");
+//         }    
+//     }
+//     searchSifra = "";
+//     searchNaziv = "";
+// }
+
+// //--- View zaposlenika ------------------------------------------------------
+
+// function gbSifraZaposlenika_view@clicked(){
+
+//     F2ListQueryString = "WITH zaposlenici AS("
+//     + " SELECT DISTINCT trim(od_ms_br_rad) as sifraZaposlenika, trim(od_ms_prezime) + ' ' + trim(od_ms_ime) as prezimeIme, trim(od_ms_djel) as oib, OD_MS_STATUS as radniStatus, trim(nkod_sf_opis1) opisRadMj, trim(od_ms_mjes_stan) as mjestoStanovanja"
+//     + " FROM " + trenutnaGodinaBaza + ".dbo.nkodradn "
+//     + " LEFT JOIN " + CommonDBGet() + ".dbo.nkodsifr ON nkod_sf_code = od_ms_sif_radmj AND nkod_sf_tip = 'I'";
+    
+//     if(ZAPOSLENIK_str != ""){
+//         F2ListQueryString += " WHERE od_ms_br_rad IN ({var1})";
+//     }
+//     else{
+//         F2ListQueryString += " WHERE 1 <> 1";
+//     }
+
+//     F2ListQueryString += ")"
+//     + " SELECT ROW_NUMBER() OVER(ORDER BY sifraZaposlenika ASC) AS RowNumber, sifraZaposlenika, prezimeIme, oib, radniStatus, opisRadMj, mjestoStanovanja"
+//     + " FROM zaposlenici ORDER BY RowNumber";
+
+//     windowTitle = "Odabrani zaposlenici";
+//     headersArray = {"R.br.   ", "Šifra zaposlenika   ", "Ime zaposlenika   ", "OIB   ", "Status   ", "Radno mjesto   ", "Mjesto stanovanja   "};
+
+//     sifraFieldPointer -> ZAPOSLENIK_str;
+
+//     ShowSelectedViewList();
+    
+//     ZAPOSLENIK_str = &sifraFieldPointer;
+// }
+
+// //========================================================================
+// //=== F2 brojeva obračuna plaća ==========================================
+
+// function ceBrojeviObracuna@clicked()
+// {
+//     F2ListQueryString = "WITH brObracuna AS("
+//     + " SELECT DISTINCT ODOB_GL_NUM as brojObracuna, ODOB_GL_DATUM as datumObracuna, trim(ODOB_GL_OPIS) as opis, trim(ODOB_GL_GOD) + '-' + trim(ODOB_GL_MJESEC) as mjesec, convert(varchar, ODOB_GL_DAT_ISP, 3) as datumIsplate, ODOB_GL_BR_RAD as brojRadnika, ODOB_GL_FONDST as fondSati"
+//     + " FROM " + trenutnaGodinaBaza + ".dbo.nkodobgl "
+//     //+ " LEFT JOIN " + CommonDBGet() + ".dbo.nkodsifr ON nkod_sf_code = od_ms_sif_radmj AND nkod_sf_tip = 'I'"
+//     + " WHERE ODOB_GL_NUM like '%{var1}%' AND ODOB_GL_OPIS like '%{var2}%'";
+    
+//     if(BROJEVI_OBRACUNA_str != ""){
+//         F2ListQueryString += " AND ODOB_GL_NUM NOT IN (" + BROJEVI_OBRACUNA_str + ")";
+//     }
+
+//     F2ListQueryString += ")"
+//     + " SELECT ROW_NUMBER() OVER(ORDER BY datumObracuna DESC) AS RowNumber, brojObracuna, convert(varchar, datumObracuna, 3), opis, mjesec, datumIsplate, brojRadnika, fondSati"
+//     + " FROM brObracuna ORDER BY RowNumber";
+
+//     brojeviObracuna = "";
+//     brojeviObracunaNaziv = "";
+//     sifraFieldPointer -> brojeviObracuna;
+//     NazivFieldPointer -> brojeviObracunaNaziv; 
+
+//     windowTitle = "F2 lista obračuna plaća";
+//     headersArray = {"R.br.   ", "Broj obračuna   ", "Datum obračuna   ", "Opis   ", "Za mjesec   ", "Datum isplate   ", "Broj radnika   ", "Fond sati   "};
+    
+//     ShowF2List();
+    
+//     if(&sifraFieldPointer != ""){
+//         brojeviObracuna = &sifraFieldPointer;
+//         if (brojeviObracuna != "")
+//         {
+//             BROJEVI_OBRACUNA_str = (BROJEVI_OBRACUNA_str == "") ? (BROJEVI_OBRACUNA_str + "'"+brojeviObracuna+"'") : (BROJEVI_OBRACUNA_str + ",'" + brojeviObracuna+"'");
+//         }    
+//     }
+//     searchSifra = "";
+//     searchNaziv = "";
+// }
+
+// //--- View brojeva obračuna plaća -------------------------------------------
+
+// function gbBrojeviObracuna_view@clicked(){
+
+//     F2ListQueryString = "WITH brObracuna AS("
+//     + " SELECT DISTINCT ODOB_GL_NUM as brojObracuna, convert(varchar, ODOB_GL_DATUM, 3) as datumObracuna, trim(ODOB_GL_OPIS) as opis, trim(ODOB_GL_GOD) + '-' + trim(ODOB_GL_MJESEC) as mjesec, convert(varchar, ODOB_GL_DAT_ISP, 3) as datumIsplate, ODOB_GL_BR_RAD as brojRadnika, ODOB_GL_FONDST as fondSati"
+//     + " FROM " + trenutnaGodinaBaza + ".dbo.nkodobgl ";
+//     //+ " LEFT JOIN " + CommonDBGet() + ".dbo.nkodsifr ON nkod_sf_code = od_ms_sif_radmj AND nkod_sf_tip = 'I'";
+    
+//     if(BROJEVI_OBRACUNA_str != ""){
+//         F2ListQueryString += " WHERE ODOB_GL_NUM IN ({var1})";
+//     }
+//     else{
+//         F2ListQueryString += " WHERE 1 <> 1";
+//     }
+
+//     F2ListQueryString += ")"
+//     + " SELECT ROW_NUMBER() OVER(ORDER BY datumObracuna DESC) AS RowNumber, brojObracuna, datumObracuna, opis, mjesec, datumIsplate, brojRadnika, fondSati"
+//     + " FROM brObracuna ORDER BY RowNumber";
+
+//     windowTitle = "Odabrani obračuni plaća";
+//     headersArray = {"R.br.   ", "Broj obračuna   ", "Datum obračuna   ", "Opis   ", "Za mjesec   ", "Datum isplate   ", "Broj radnika   ", "Fond sati   "};
+
+//     sifraFieldPointer -> BROJEVI_OBRACUNA_str;
+
+//     ShowSelectedViewList();
+    
+//     BROJEVI_OBRACUNA_str = &sifraFieldPointer;
+// }
+
+// //========================================================================
+// //=== F2 postojeća stručna sprema ==========================================
+
+// function ceStrucnaSprema@clicked()
+// {    
+//     // F2ListQueryString = "WITH strucnaSprema AS("
+//     // + " SELECT DISTINCT trim(NKOD_SF_CODE) as sifraSS, trim(NKOD_SF_NAZIV) as nazivSS"
+//     // + " FROM " + CommonDBGet() + ".dbo.nkodsifr "
+//     // //+ " LEFT JOIN " + CommonDBGet() + ".dbo.nkodsifr ON nkod_sf_code = od_ms_sif_radmj AND nkod_sf_tip = 'I'"
+//     // + " WHERE NKOD_SF_CODE like '%{var1}%' AND NKOD_SF_NAZIV like '%{var2}%' AND NKOD_SF_TIP = 'c'";
+    
+//     // if(STRUCNA_SPREMA_str != ""){
+//     //     F2ListQueryString += " AND NKOD_SF_CODE NOT IN (" + STRUCNA_SPREMA_str + ")";
+//     // }
+
+//     // F2ListQueryString += ")"
+//     // + " SELECT ROW_NUMBER() OVER(ORDER BY sifraSS ASC) AS RowNumber, sifraSS, nazivSS"
+//     // + " FROM strucnaSprema ORDER BY RowNumber";
+    
+    
+//     F2ListQueryString = "WITH strucnaSprema AS("
+//     + " SELECT DISTINCT trim(OD_MS_SIF_ST_SP) as sifraSS, isnull(CASE WHEN trim(NKOD_SF_NAZIV) <> '' THEN trim(NKOD_SF_NAZIV) ELSE trim(NKOD_SF_OPIS1) END, 'nema naziva') as nazivSS"
+//     + " FROM " + trenutnaGodinaBaza + ".dbo.nkodradn "
+//     + " LEFT JOIN " + CommonDBGet() + ".dbo.nkodsifr ON nkod_sf_code = OD_MS_SIF_ST_SP AND NKOD_SF_TIP = 'c'"
+    
+//     + " WHERE trim(OD_MS_SIF_ST_SP) like '%{var1}%' AND isnull(CASE WHEN trim(NKOD_SF_NAZIV) <> '' THEN trim(NKOD_SF_NAZIV) ELSE trim(NKOD_SF_OPIS1) END, '') like '%{var2}%'";
+    
+//     if(STRUCNA_SPREMA_str != ""){
+//         F2ListQueryString += " AND OD_MS_SIF_ST_SP NOT IN (" + STRUCNA_SPREMA_str + ")";
+//     }
+
+//     F2ListQueryString += ")"
+//     + " SELECT ROW_NUMBER() OVER(ORDER BY sifraSS ASC) AS RowNumber, sifraSS, nazivSS"
+//     + " FROM strucnaSprema"
+//     + " WHERE sifraSS <> ''"
+//     + " ORDER BY RowNumber";
+
+//     strucnaSprema = "";
+//     strucnaSpremaNaziv = "";
+//     sifraFieldPointer -> strucnaSprema;
+//     NazivFieldPointer -> strucnaSpremaNaziv; 
+
+//     windowTitle = "F2 lista stručnih sprema";
+//     headersArray = {"R.br.   ", "Šifra   ", "Naziv                                                                                                      "};
+    
+//     ShowF2List();
+    
+//     if(&sifraFieldPointer != ""){
+//         strucnaSprema = &sifraFieldPointer;
+//         if (strucnaSprema != "")
+//         {
+//             STRUCNA_SPREMA_str = (STRUCNA_SPREMA_str == "") ? (STRUCNA_SPREMA_str + "'"+strucnaSprema+"'") : (STRUCNA_SPREMA_str + ",'" + strucnaSprema+"'");
+//         }    
+//     }
+//     searchSifra = "";
+//     searchNaziv = "";
+// }
+
+// //--- View postojeća stručna sprema -------------------------------------------
+
+// function gbStrucnaSprema_view@clicked(){
+
+//     F2ListQueryString = "WITH strucnaSprema AS("
+//     + " SELECT DISTINCT trim(OD_MS_SIF_ST_SP) as sifraSS, isnull(CASE WHEN trim(NKOD_SF_NAZIV) <> '' THEN trim(NKOD_SF_NAZIV) ELSE trim(NKOD_SF_OPIS1) END, 'nema naziva') as nazivSS"
+//     + " FROM " + trenutnaGodinaBaza + ".dbo.nkodradn "
+//     + " LEFT JOIN " + CommonDBGet() + ".dbo.nkodsifr ON nkod_sf_code = OD_MS_SIF_ST_SP AND NKOD_SF_TIP = 'c'";
+
+//     if(STRUCNA_SPREMA_str != ""){
+//         F2ListQueryString += " WHERE OD_MS_SIF_ST_SP IN ({var1})";
+//     }
+//     else{
+//         F2ListQueryString += " WHERE 1 <> 1";
+//     }
+
+//     // F2ListQueryString += " AND NKOD_SF_TIP = 'c')"
+//     F2ListQueryString += " )"
+//     + " SELECT ROW_NUMBER() OVER(ORDER BY sifraSS ASC) AS RowNumber, sifraSS, nazivSS"
+//     + " FROM strucnaSprema ORDER BY RowNumber";
+
+//     windowTitle = "Odabrane stručne spreme";
+//     headersArray = {"R.br.   ", "Šifra   ", "Naziv                                                                                                      "};
+
+//     sifraFieldPointer -> STRUCNA_SPREMA_str;
+
+//     ShowSelectedViewList();
+    
+//     STRUCNA_SPREMA_str = &sifraFieldPointer;
+// }
+
+// //========================================================================
+// //=== F2 mjesto stanovanja ==========================================
+
+// function ceMjestoStanovanja@clicked()
+// {    
+//     F2ListQueryString = "WITH mjStanovanja AS("
+//     + " SELECT DISTINCT trim(OD_MS_ISPLAT_MJ) as sifraMjestaIsplate, isnull(trim(KSDU_SF_OPIS1), 'nema naziva') as nazivMjestaIsplate"
+//     + " FROM " + trenutnaGodinaBaza + ".dbo.nkodradn "
+//     + " LEFT JOIN " + CommonDBGet() + ".dbo.KPSYSIFA on KSDU_SF_CODE = OD_MS_ISPLAT_MJ AND KSDU_SF_TIP = 'S'"
+//     + " WHERE OD_MS_ISPLAT_MJ like '%{var1}%' AND isnull(KSDU_SF_OPIS1, 'nema naziva') like '%{var2}%'";
+    
+//     if(MJESTO_STANOVANJA_str != ""){
+//         F2ListQueryString += " AND OD_MS_ISPLAT_MJ NOT IN (" + MJESTO_STANOVANJA_str + ")";
+//     }
+
+//     F2ListQueryString += ")"
+//     + " SELECT ROW_NUMBER() OVER(ORDER BY sifraMjestaIsplate ASC) AS RowNumber, sifraMjestaIsplate, nazivMjestaIsplate"
+//     + " FROM mjStanovanja"
+//     + " WHERE sifraMjestaIsplate <> ''"
+//     + " ORDER BY RowNumber";
+
+//     mjestoStanovanja = "";
+//     mjestoStanovanjaNaziv = "";
+//     sifraFieldPointer -> mjestoStanovanja;
+//     NazivFieldPointer -> mjestoStanovanjaNaziv; 
+
+//     windowTitle = "F2 lista mjesta stanovanja";
+//     headersArray = {"R.br.   ", "Šifra mjesta   ", "Naziv mjesta                                                                                                      "};
+    
+//     ShowF2List();
+    
+//     if(&sifraFieldPointer != ""){
+//         mjestoStanovanja = &sifraFieldPointer;
+//         if (mjestoStanovanja != "")
+//         {
+//             MJESTO_STANOVANJA_str = (MJESTO_STANOVANJA_str == "") ? (MJESTO_STANOVANJA_str + "'"+mjestoStanovanja+"'") : (MJESTO_STANOVANJA_str + ",'" + mjestoStanovanja+"'");
+//         }    
+//     }
+//     searchSifra = "";
+//     searchNaziv = "";
+// }
+
+// //--- View mjesto stanovanja -------------------------------------------
+
+// function gbMjestoStanovanja_view@clicked(){
+
+//     F2ListQueryString = "WITH mjStanovanja AS("
+//     + " SELECT DISTINCT trim(OD_MS_ISPLAT_MJ) as sifraMjestaIsplate, isnull(trim(KSDU_SF_OPIS1), 'nema naziva') as nazivMjestaIsplate"
+//     + " FROM " + trenutnaGodinaBaza + ".dbo.nkodradn "
+//     + " LEFT JOIN " + CommonDBGet() + ".dbo.KPSYSIFA on KSDU_SF_CODE = OD_MS_ISPLAT_MJ AND KSDU_SF_TIP = 'S'";
+    
+//     if(MJESTO_STANOVANJA_str != ""){
+//         F2ListQueryString += " WHERE OD_MS_ISPLAT_MJ IN ({var1})";
+//     }
+//     else{
+//         F2ListQueryString += " WHERE 1 <> 1";
+//     }
+
+//     F2ListQueryString += ")"
+//     + " SELECT ROW_NUMBER() OVER(ORDER BY sifraMjestaIsplate ASC) AS RowNumber, sifraMjestaIsplate, nazivMjestaIsplate"
+//     + " FROM mjStanovanja ORDER BY RowNumber";
+
+//     windowTitle = "Odabrana mjesta stanovanja";
+//     headersArray = {"R.br.   ", "Šifra mjesta   ", "Naziv mjesta                                                                                                      "};
+
+//     sifraFieldPointer -> MJESTO_STANOVANJA_str;
+
+//     ShowSelectedViewList();
+    
+//     MJESTO_STANOVANJA_str = &sifraFieldPointer;
+// }
+
+// //========================================================================
+// //=== F2 mjesto zaposlenja ==========================================
+
+// function ceMjestoZaposlenja@clicked()
+// {    
+//     F2ListQueryString = "WITH mjZaposlenja AS("
+//     + " SELECT DISTINCT trim(OD_MS_POSL_JED) as sifraMjestaZaposlenja, isnull(trim(KSDU_SF_OPIS1), 'nema naziva') as nazivMjestaZaposlenja"
+//     + " FROM " + trenutnaGodinaBaza + ".dbo.nkodradn "
+//     + " LEFT JOIN " + CommonDBGet() + ".dbo.KPSYSIFA on KSDU_SF_CODE = OD_MS_POSL_JED AND KSDU_SF_TIP = 'S'"
+//     + " WHERE OD_MS_POSL_JED like '%{var1}%' AND isnull(KSDU_SF_OPIS1, 'nema naziva') like '%{var2}%'";
+    
+//     if(MJESTO_ZAPOSLENJA_str != ""){
+//         F2ListQueryString += " AND OD_MS_POSL_JED NOT IN (" + MJESTO_ZAPOSLENJA_str + ")";
+//     }
+
+//     F2ListQueryString += ")"
+//     + " SELECT ROW_NUMBER() OVER(ORDER BY sifraMjestaZaposlenja ASC) AS RowNumber, sifraMjestaZaposlenja, nazivMjestaZaposlenja"
+//     + " FROM mjZaposlenja"
+//     + " WHERE sifraMjestaZaposlenja <> ''"
+//     + " ORDER BY RowNumber";
+
+//     mjestoZaposlenja = "";
+//     mjestoZaposlenjaNaziv = "";
+//     sifraFieldPointer -> mjestoZaposlenja;
+//     NazivFieldPointer -> mjestoZaposlenjaNaziv; 
+
+//     windowTitle = "F2 lista mjesta zaposlenja";
+//     headersArray = {"R.br.   ", "Šifra mjesta   ", "Naziv mjesta                                                                                                      "};
+    
+//     ShowF2List();
+    
+//     if(&sifraFieldPointer != ""){
+//         mjestoZaposlenja = &sifraFieldPointer;
+//         if (mjestoZaposlenja != "")
+//         {
+//             MJESTO_ZAPOSLENJA_str = (MJESTO_ZAPOSLENJA_str == "") ? (MJESTO_ZAPOSLENJA_str + "'"+mjestoZaposlenja+"'") : (MJESTO_ZAPOSLENJA_str + ",'" + mjestoZaposlenja+"'");
+//         }    
+//     }
+//     searchSifra = "";
+//     searchNaziv = "";
+// }
+
+// //--- View mjesto zaposlenja -------------------------------------------
+
+// function gbMjestoZaposlenja_view@clicked(){
+
+//     F2ListQueryString = "WITH mjZaposlenja AS("
+//     + " SELECT DISTINCT trim(OD_MS_POSL_JED) as sifraMjestaZaposlenja, isnull(trim(KSDU_SF_OPIS1), 'nema naziva') as nazivMjestaZaposlenja"
+//     + " FROM " + trenutnaGodinaBaza + ".dbo.nkodradn "
+//     + " LEFT JOIN " + CommonDBGet() + ".dbo.KPSYSIFA on KSDU_SF_CODE = OD_MS_POSL_JED AND KSDU_SF_TIP = 'S'";
+    
+//     if(MJESTO_ZAPOSLENJA_str != ""){
+//         F2ListQueryString += " WHERE OD_MS_POSL_JED IN ({var1})";
+//     }
+//     else{
+//         F2ListQueryString += " WHERE 1 <> 1";
+//     }
+
+//     F2ListQueryString += ")"
+//     + " SELECT ROW_NUMBER() OVER(ORDER BY sifraMjestaZaposlenja ASC) AS RowNumber, sifraMjestaZaposlenja, nazivMjestaZaposlenja"
+//     + " FROM mjZaposlenja ORDER BY RowNumber";
+
+//     windowTitle = "Odabrana mjesta zaposlenja";
+//     headersArray = {"R.br.   ", "Šifra mjesta   ", "Naziv mjesta                                                                                                      "};
+
+//     sifraFieldPointer -> MJESTO_ZAPOSLENJA_str;
+
+//     ShowSelectedViewList();
+    
+//     MJESTO_ZAPOSLENJA_str = &sifraFieldPointer;
+// }
+
+
+// //========================================================================
+// //=== F2 naziv radnog mjesta ==========================================
+
+// function ceNazivRadnogMjesta@clicked()
+// {    
+//     F2ListQueryString = "WITH nazivRadMj AS("
+//     + " SELECT DISTINCT trim(OD_MS_SIF_RADMJ) as sifraRadnogMjesta, isnull(trim(NKOD_SF_OPIS1), 'nema naziva') as nazivRadnogMjesta"
+//     + " FROM " + trenutnaGodinaBaza + ".dbo.nkodradn "
+//     + " LEFT JOIN " + CommonDBGet() + ".dbo.nkodsifr on NKOD_SF_CODE = OD_MS_SIF_RADMJ AND NKOD_SF_TIP = 'I'"
+//     + " WHERE OD_MS_SIF_RADMJ like '%{var1}%' AND isnull(trim(NKOD_SF_OPIS1), 'nema naziva') like '%{var2}%'";
+    
+//     if(NAZIV_RADNOG_MJESTA_str != ""){
+//         F2ListQueryString += " AND OD_MS_SIF_RADMJ NOT IN (" + NAZIV_RADNOG_MJESTA_str + ")";
+//     }
+
+//     F2ListQueryString += ")"
+//     + " SELECT ROW_NUMBER() OVER(ORDER BY sifraRadnogMjesta ASC) AS RowNumber, sifraRadnogMjesta, nazivRadnogMjesta"
+//     + " FROM nazivRadMj"
+//     + " WHERE sifraRadnogMjesta <> ''"
+//     + " ORDER BY RowNumber";
+
+//     nazivRadnogMjesta = "";
+//     nazivRadnogMjestaNaziv = "";
+//     sifraFieldPointer -> nazivRadnogMjesta;
+//     NazivFieldPointer -> nazivRadnogMjestaNaziv; 
+
+//     windowTitle = "F2 lista radnih mjesta";
+//     headersArray = {"R.br.   ", "Šifra radnog mjesta   ", "Naziv radnog mjesta                                                                                                      "};
+    
+//     ShowF2List();
+    
+//     if(&sifraFieldPointer != ""){
+//         nazivRadnogMjesta = &sifraFieldPointer;
+//         if (nazivRadnogMjesta != "")
+//         {
+//             NAZIV_RADNOG_MJESTA_str = (NAZIV_RADNOG_MJESTA_str == "") ? (NAZIV_RADNOG_MJESTA_str + "'"+nazivRadnogMjesta+"'") : (NAZIV_RADNOG_MJESTA_str + ",'" + nazivRadnogMjesta+"'");
+//         }    
+//     }
+//     searchSifra = "";
+//     searchNaziv = "";
+// }
+
+// //--- View naziv radnog mjesta -------------------------------------------
+
+// function gbNazivRadnogMjesta_view@clicked(){
+
+//     F2ListQueryString = "WITH nazivRadMj AS("
+//     + " SELECT DISTINCT trim(OD_MS_SIF_RADMJ) as sifraRadnogMjesta, isnull(trim(NKOD_SF_OPIS1), 'nema naziva') as nazivRadnogMjesta"
+//     + " FROM " + trenutnaGodinaBaza + ".dbo.nkodradn "
+//     + " LEFT JOIN " + CommonDBGet() + ".dbo.nkodsifr on NKOD_SF_CODE = OD_MS_SIF_RADMJ AND NKOD_SF_TIP = 'I'";
+    
+//     if(NAZIV_RADNOG_MJESTA_str != ""){
+//         F2ListQueryString += " WHERE OD_MS_SIF_RADMJ IN ({var1})";
+//     }
+//     else{
+//         F2ListQueryString += " WHERE 1 <> 1";
+//     }
+
+//     F2ListQueryString += ")"
+//     + " SELECT ROW_NUMBER() OVER(ORDER BY sifraRadnogMjesta ASC) AS RowNumber, sifraRadnogMjesta, nazivRadnogMjesta"
+//     + " FROM nazivRadMj ORDER BY RowNumber";
+
+//     windowTitle = "Odabrana radna mjesta";
+//     headersArray = {"R.br.   ", "Šifra radnog mjesta   ", "Naziv radnog mjesta                                                                                                      "};
+
+//     sifraFieldPointer -> NAZIV_RADNOG_MJESTA_str;
+
+//     ShowSelectedViewList();
+    
+//     NAZIV_RADNOG_MJESTA_str = &sifraFieldPointer;
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//========================================================================
+//=== F2 organizacijske jedinice ==========================================
+
+function ceOrganizacijskeJedinice@clicked()
+{
+    F2ListQueryString = "WITH orgJedinice AS("
+    + " SELECT DISTINCT trim(od_ms_objed) as sifraOrgJed, isnull(NKGK_OJ_NAZIV, 'nema naziva') as nazivOrgJed"
+    + " FROM " + trenutnaGodinaBaza + ".dbo.nkodradn "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkoj ON nkgk_oj_code = od_ms_objed"
+    + " WHERE od_ms_objed like '%{var1}%' AND isnull(NKGK_OJ_NAZIV, 'nema naziva') like '%{var2}%'";
+    
+    if(ORGANIZACIJSKE_JEDINICE_str != ""){
+        F2ListQueryString += " AND od_ms_objed NOT IN (" + ORGANIZACIJSKE_JEDINICE_str + ")";
+    }
+
+    F2ListQueryString += ")"
+    + " SELECT ROW_NUMBER() OVER(ORDER BY sifraOrgJed ASC) AS RowNumber, sifraOrgJed, nazivOrgJed"
+    + " FROM orgJedinice"
+    + " WHERE sifraOrgJed <> ''"
+    + " ORDER BY RowNumber";
+
+    organizacijskeJedinice = "";
+    organizacijskeJediniceNaziv = "";
+    sifraFieldPointer -> organizacijskeJedinice;
+    NazivFieldPointer -> organizacijskeJediniceNaziv; 
+
+    windowTitle = "F2 lista organizacijskih jedinica";
+    headersArray = {"R.br.   ", "Šifra org. jed.   ", "Naziv org. jed.                                                                                                      "};
+    
+    ShowF2List();
+    
+    if(&sifraFieldPointer != ""){
+        organizacijskeJedinice = &sifraFieldPointer;
+        if (organizacijskeJedinice != "")
+        {
+            ORGANIZACIJSKE_JEDINICE_str = (ORGANIZACIJSKE_JEDINICE_str == "") ? (ORGANIZACIJSKE_JEDINICE_str + "'"+organizacijskeJedinice+"'") : (ORGANIZACIJSKE_JEDINICE_str + ",'" + organizacijskeJedinice+"'");
+        }    
+    }
+    searchSifra = "";
+    searchNaziv = "";
+
+
+
+    
+    // F2ListQueryString = "WITH orgJedinice AS("
+    // + " SELECT DISTINCT trim(NKGK_OJ_CODE) as sifraOrgJed, isnull(trim(NKGK_OJ_NAZIV), 'nema naziva') as nazivOrgJed"
+    // + " FROM " + trenutnaGodinaBaza + ".dbo.nkgkoj "
+    // //+ " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkoj ON nkgk_oj_code = od_ms_objed"
+    // + " WHERE NKGK_OJ_CODE like '%{var1}%' AND isnull(trim(NKGK_OJ_NAZIV), 'nema naziva') like '%{var2}%'";
+    
+    // if(ORGANIZACIJSKE_JEDINICE_str != ""){
+    //     F2ListQueryString += " AND NKGK_OJ_CODE NOT IN (" + ORGANIZACIJSKE_JEDINICE_str + ")";
+    // }
+
+    // F2ListQueryString += ")"
+    // + " SELECT ROW_NUMBER() OVER(ORDER BY sifraOrgJed ASC) AS RowNumber, sifraOrgJed, nazivOrgJed"
+    // + " FROM orgJedinice ORDER BY RowNumber";
+
+    // organizacijskeJedinice = "";
+    // organizacijskeJediniceNaziv = "";
+    // sifraFieldPointer -> organizacijskeJedinice;
+    // NazivFieldPointer -> organizacijskeJediniceNaziv; 
+
+    // windowTitle = "F2 lista organizacijskih jedinica";
+    // headersArray = {"R.br.   ", "Šifra org. jed.   ", "Naziv org. jed.                                                                                                      "};
+    
+    // ShowF2List();
+    
+    // if(&sifraFieldPointer != ""){
+    //     organizacijskeJedinice = &sifraFieldPointer;
+    //     if (organizacijskeJedinice != "")
+    //     {
+    //         ORGANIZACIJSKE_JEDINICE_str = (ORGANIZACIJSKE_JEDINICE_str == "") ? (ORGANIZACIJSKE_JEDINICE_str + "'"+organizacijskeJedinice+"'") : (ORGANIZACIJSKE_JEDINICE_str + ",'" + organizacijskeJedinice+"'");
+    //     }    
+    // }
+    // searchSifra = "";
+    // searchNaziv = "";
+}
+
+//--- View organizacijske jedinice -------------------------------------------
+
+function gbOrganizacijskeJedinice_view@clicked(){
+
+    F2ListQueryString = "WITH orgJedinice AS("
+    + " SELECT DISTINCT trim(od_ms_objed) as sifraOrgJed, isnull(NKGK_OJ_NAZIV, 'nema naziva') as nazivOrgJed"
+    + " FROM " + trenutnaGodinaBaza + ".dbo.nkodradn "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkoj ON nkgk_oj_code = od_ms_objed";
+    
+    if(ORGANIZACIJSKE_JEDINICE_str != ""){
+        F2ListQueryString += " WHERE od_ms_objed IN ({var1})";
+    }
+    else{
+        F2ListQueryString += " WHERE 1 <> 1";
+    }
+
+    F2ListQueryString += ")"
+    + " SELECT ROW_NUMBER() OVER(ORDER BY sifraOrgJed ASC) AS RowNumber, sifraOrgJed, nazivOrgJed"
+    + " FROM orgJedinice ORDER BY RowNumber";
+
+    windowTitle = "Odabrane organizacijske jedinice";
+    headersArray = {"R.br.   ", "Šifra org. jed.   ", "Naziv org. jed.                                                                                                      "};
+
+    sifraFieldPointer -> ORGANIZACIJSKE_JEDINICE_str;
+
+    ShowSelectedViewList();
+    
+    ORGANIZACIJSKE_JEDINICE_str = &sifraFieldPointer;
+    
+    
+    // F2ListQueryString = "WITH orgJedinice AS("
+    // + " SELECT DISTINCT trim(NKGK_OJ_CODE) as sifraOrgJed, isnull(trim(NKGK_OJ_NAZIV), 'nema naziva') as nazivOrgJed"
+    // + " FROM " + trenutnaGodinaBaza + ".dbo.nkgkoj ";
+    // //+ " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkgkoj ON nkgk_oj_code = od_ms_objed";
+    
+    // if(ORGANIZACIJSKE_JEDINICE_str != ""){
+    //     F2ListQueryString += " WHERE NKGK_OJ_CODE IN ({var1})";
+    // }
+    // else{
+    //     F2ListQueryString += " WHERE 1 <> 1";
+    // }
+
+    // F2ListQueryString += ")"
+    // + " SELECT ROW_NUMBER() OVER(ORDER BY sifraOrgJed ASC) AS RowNumber, sifraOrgJed, nazivOrgJed"
+    // + " FROM orgJedinice ORDER BY RowNumber";
+
+    // windowTitle = "Odabrane organizacijske jedinice";
+    // headersArray = {"R.br.   ", "Šifra org. jed.   ", "Naziv org. jed.                                                                                                      "};
+
+    // sifraFieldPointer -> ORGANIZACIJSKE_JEDINICE_str;
+
+    // ShowSelectedViewList();
+    
+    // ORGANIZACIJSKE_JEDINICE_str = &sifraFieldPointer;
+}
+
+// //========================================================================
+// //=== F2 elementi obračuna ==========================================
+
+// function ceElementiObracuna@clicked()
+// {
+//     F2ListQueryString = "WITH elemObracuna AS("
+//     + " SELECT DISTINCT trim(odob_ln_sifra) as sifraOrgJed, trim(OD_EL_OPIS) as nazivOrgJed, trim(OD_EL_VRSTA) as vrstaOrgJed, trim(OD_EL_JMJ) as jmjOrgJed"
+//     //+ " SELECT DISTINCT trim(od_ms_br_rad) as sifraZaposlenika, trim(od_ms_prezime) + ' ' + trim(od_ms_ime) as prezimeIme, trim(od_ms_djel) as oib, trim(nkod_sf_opis1) opisRadMj, trim(od_ms_mjes_stan) as mjestoStanovanja"
+//     + " FROM " + trenutnaGodinaBaza + ".dbo.nkodobln "
+//     + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodelem ON odob_ln_sifra = od_el_code"
+//     + " WHERE odob_ln_sifra like '%{var1}%' AND trim(OD_EL_OPIS) like '%{var2}%'";
+    
+//     if(ELEMENTI_OBRACUNA_str != ""){
+//         F2ListQueryString += " AND odob_ln_sifra NOT IN (" + ELEMENTI_OBRACUNA_str + ")";
+//     }
+
+//     F2ListQueryString += ")"
+//     + " SELECT ROW_NUMBER() OVER(ORDER BY sifraOrgJed ASC) AS RowNumber, sifraOrgJed, nazivOrgJed, vrstaOrgJed, jmjOrgJed"
+//     + " FROM elemObracuna ORDER BY RowNumber";
+
+//     elementiObracuna = "";
+//     elementiObracunaNaziv = "";
+//     sifraFieldPointer -> elementiObracuna;
+//     NazivFieldPointer -> elementiObracunaNaziv;
+
+//     windowTitle = "F2 lista elemenata obračuna";
+//     headersArray = {"R.br.   ", "Šifra elementa   ", "Opis elementa   ", "Vrsta elementa   ", "Jedinica mjere                                   "};
+    
+//     ShowF2List();
+    
+//     if(&sifraFieldPointer != ""){
+//         elementiObracuna = &sifraFieldPointer;
+//         if (elementiObracuna != "")
+//         {
+//             ELEMENTI_OBRACUNA_str = (ELEMENTI_OBRACUNA_str == "") ? (ELEMENTI_OBRACUNA_str + "'"+elementiObracuna+"'") : (ELEMENTI_OBRACUNA_str + ",'" + elementiObracuna+"'");
+//         }    
+//     }
+//     searchSifra = "";
+//     searchNaziv = "";
+    
+    
+//     // F2ListQueryString = "WITH elemObracuna AS("
+//     // + " SELECT DISTINCT trim(OD_EL_CODE) as sifraOrgJed, trim(OD_EL_OPIS) as nazivOrgJed, trim(OD_EL_VRSTA) as vrstaOrgJed, trim(OD_EL_JMJ) as jmjOrgJed"
+//     // //+ " SELECT DISTINCT trim(od_ms_br_rad) as sifraZaposlenika, trim(od_ms_prezime) + ' ' + trim(od_ms_ime) as prezimeIme, trim(od_ms_djel) as oib, trim(nkod_sf_opis1) opisRadMj, trim(od_ms_mjes_stan) as mjestoStanovanja"
+//     // + " FROM " + trenutnaGodinaBaza + ".dbo.nkodelem "
+//     // //+ " LEFT JOIN " + CommonDBGet() + ".dbo.nkodsifr ON nkod_sf_code = od_ms_sif_radmj AND nkod_sf_tip = 'I'"
+//     // + " WHERE OD_EL_CODE like '%{var1}%' AND trim(OD_EL_OPIS) like '%{var2}%'";
+    
+//     // if(ELEMENTI_OBRACUNA_str != ""){
+//     //     F2ListQueryString += " AND OD_EL_CODE NOT IN (" + ELEMENTI_OBRACUNA_str + ")";
+//     // }
+
+//     // F2ListQueryString += ")"
+//     // + " SELECT ROW_NUMBER() OVER(ORDER BY sifraOrgJed ASC) AS RowNumber, sifraOrgJed, nazivOrgJed, vrstaOrgJed, jmjOrgJed"
+//     // + " FROM elemObracuna ORDER BY RowNumber";
+
+//     // elementiObracuna = "";
+//     // elementiObracunaNaziv = "";
+//     // sifraFieldPointer -> elementiObracuna;
+//     // NazivFieldPointer -> elementiObracunaNaziv;
+
+//     // windowTitle = "F2 lista elemenata obračuna";
+//     // headersArray = {"R.br.   ", "Šifra elementa   ", "Opis elementa   ", "Vrsta elementa   ", "Jedinica mjere                                   "};
+    
+//     // ShowF2List();
+    
+//     // if(&sifraFieldPointer != ""){
+//     //     elementiObracuna = &sifraFieldPointer;
+//     //     if (elementiObracuna != "")
+//     //     {
+//     //         ELEMENTI_OBRACUNA_str = (ELEMENTI_OBRACUNA_str == "") ? (ELEMENTI_OBRACUNA_str + "'"+elementiObracuna+"'") : (ELEMENTI_OBRACUNA_str + ",'" + elementiObracuna+"'");
+//     //     }    
+//     // }
+//     // searchSifra = "";
+//     // searchNaziv = "";
+// }
+
+// //--- View elementi obračuna -------------------------------------------
+
+// function gbElementiObracuna_view@clicked(){
+
+//     F2ListQueryString = "WITH elemObracuna AS("
+//     + " SELECT DISTINCT trim(odob_ln_sifra) as sifraOrgJed, trim(OD_EL_OPIS) as nazivOrgJed, trim(OD_EL_VRSTA) as vrstaOrgJed, trim(OD_EL_JMJ) as jmjOrgJed"
+//     + " FROM " + trenutnaGodinaBaza + ".dbo.nkodobln "
+//     + " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkodelem ON odob_ln_sifra = od_el_code";
+//     //+ " LEFT JOIN " + CommonDBGet() + ".dbo.nkodsifr ON nkod_sf_code = od_ms_sif_radmj AND nkod_sf_tip = 'I'";
+    
+//     if(ELEMENTI_OBRACUNA_str != ""){
+//         F2ListQueryString += " WHERE odob_ln_sifra IN ({var1})";
+//     }
+//     else{
+//         F2ListQueryString += " WHERE 1 <> 1";
+//     }
+
+//     F2ListQueryString += ")"
+//     + " SELECT ROW_NUMBER() OVER(ORDER BY sifraOrgJed ASC) AS RowNumber, sifraOrgJed, nazivOrgJed, vrstaOrgJed, jmjOrgJed"
+//     + " FROM elemObracuna ORDER BY RowNumber";
+
+//     windowTitle = "Odabrani elementi obračuna";
+//     headersArray = {"R.br.   ", "Šifra elementa   ", "Opis elementa   ", "Vrsta elementa   ", "Jedinica mjere                                            "};
+
+//     sifraFieldPointer -> ELEMENTI_OBRACUNA_str;
+
+//     ShowSelectedViewList();
+    
+//     ELEMENTI_OBRACUNA_str = &sifraFieldPointer;
+    
+    
+//     // F2ListQueryString = "WITH elemObracuna AS("
+//     // + " SELECT DISTINCT trim(OD_EL_CODE) as sifraOrgJed, trim(OD_EL_OPIS) as nazivOrgJed, trim(OD_EL_VRSTA) as vrstaOrgJed, trim(OD_EL_JMJ) as jmjOrgJed"
+//     // + " FROM " + trenutnaGodinaBaza + ".dbo.nkodelem ";
+//     // //+ " LEFT JOIN " + CommonDBGet() + ".dbo.nkodsifr ON nkod_sf_code = od_ms_sif_radmj AND nkod_sf_tip = 'I'";
+    
+//     // if(ELEMENTI_OBRACUNA_str != ""){
+//     //     F2ListQueryString += " WHERE OD_EL_CODE IN ({var1})";
+//     // }
+//     // else{
+//     //     F2ListQueryString += " WHERE 1 <> 1";
+//     // }
+
+//     // F2ListQueryString += ")"
+//     // + " SELECT ROW_NUMBER() OVER(ORDER BY sifraOrgJed ASC) AS RowNumber, sifraOrgJed, nazivOrgJed, vrstaOrgJed, jmjOrgJed"
+//     // + " FROM elemObracuna ORDER BY RowNumber";
+
+//     // windowTitle = "Odabrani elementi obračuna";
+//     // headersArray = {"R.br.   ", "Šifra elementa   ", "Opis elementa   ", "Vrsta elementa   ", "Jedinica mjere                                            "};
+
+//     // sifraFieldPointer -> ELEMENTI_OBRACUNA_str;
+
+//     // ShowSelectedViewList();
+    
+//     // ELEMENTI_OBRACUNA_str = &sifraFieldPointer;
+// }
+
+
+
+
+
+
+  //========================================================
+//------------------------------------------------------------
+  //========================================================
+//------------------------------------------------------------
+  //========================================================
+//------------------------------------------------------------
+  //========================================================
+//------------------------------------------------------------
+  //========================================================
+//------------------------------------------------------------
+  //========================================================
+//------------------------------------------------------------
+
+
+
+
+
+function filterPart(elementPlaceFilter = true)
+{
+    if(elementPlaceFilter){
+        if(rad_rb == true){
+            sql_str += " AND odob_ln_vrsta IN ('A', 'C', 'E', 'G')"; // ukupno i neto
+        }elif(doprinosiIzPlace_rb == true){
+            sql_str += " AND odob_ln_vrsta = 'K'"; // iznos!
+        }elif(doprinosiNaPlacu_rb == true){
+            sql_str += " AND odob_ln_vrsta = 'N'"; // iznos!
+        }
+        // elif(bolovanje_rb == true){
+        //     sql_str += " AND odob_ln_vrsta IN ('G', 'I')";
+        // }
+        elif(olaksice_rb == true){
+            sql_str += " AND odob_ln_vrsta = 'J'"; // iznos!
+        }elif(osobniOdbitak_rb == true){
+            sql_str += " AND odob_ln_vrsta = 'Q'"; // iznos!
+        }elif(porez_rb == true){
+            sql_str += " AND odob_ln_vrsta = 'R'"; // iznos!
+        }elif(prirez_rb == true){
+            sql_str += " AND odob_ln_vrsta = 'T'"; // iznos!
+        }elif(naknade_rb == true){
+            sql_str += " AND odob_ln_vrsta IN ('X', 'I')"; // iznos!
+        }elif(obustave_rb == true){
+            sql_str += " AND odob_ln_vrsta = 'V'"; // iznos!
+        }
+    }
+    
+
+    radniStatus_str = "";
+    if(redoviti_cb == true){
+        radniStatus_str += " OR od_ms_status = 'R'";
+    }
+    if(poduzetnik_cb == true){
+        radniStatus_str += " OR od_ms_status = 'F'";
+    }
+    if(beneficirani_cb == true){
+        radniStatus_str += " OR od_ms_status = 'B'";
+    }
+    if(volonter_cb == true){
+        radniStatus_str += " OR od_ms_status = 'V'";
+    }
+    if(pripravnik_cb == true){
+        radniStatus_str += " OR od_ms_status = 'P'";
+    }
+    if(obrtnik_cb == true){
+        radniStatus_str += " OR od_ms_status = 'O'";
+    }
+    if(nijeZaposlen_cb == true){
+        radniStatus_str += " OR od_ms_status = 'N'";
+    }
+    if(porodiljskiDopust_cb == true){
+        radniStatus_str += " OR od_ms_status = 'L'";
+    }
+    if(ugovorODjelu_cb == true){
+        radniStatus_str += " OR od_ms_status = 'U'";
+    }
+    if(obracunNaknada_cb == true){
+        radniStatus_str += " OR od_ms_status = 'A'";
+    }
+
+    if(radniStatus_str == ""){
+        radniStatus_str = "1 <> 1";
+    }else{
+        radniStatus_str = radniStatus_str.substring(4, radniStatus_str.length - 4);
+    }   
+    sql_str += " AND (" + radniStatus_str + ")";
+
+
+    if (ZAPOSLENIK_str != "")
+    {
+        sql_str += " AND odob_ln_osoba IN (" + ZAPOSLENIK_str + ")";
+    }
+    if (BROJEVI_OBRACUNA_str != "")
+    {
+        sql_str += " AND ODOB_GL_NUM IN (" + BROJEVI_OBRACUNA_str + ")";
+    }
+    if (STRUCNA_SPREMA_str != "")
+    {
+        sql_str += " AND OD_MS_SIF_ST_SP IN (" + STRUCNA_SPREMA_str  + ")";
+    }
+    if (MJESTO_STANOVANJA_str != "")
+    {
+        sql_str += " AND OD_MS_ISPLAT_MJ IN (" + MJESTO_STANOVANJA_str + ")";
+    }
+    if (MJESTO_ZAPOSLENJA_str != "")
+    {
+        sql_str += " AND OD_MS_POSL_JED IN (" + MJESTO_ZAPOSLENJA_str + ")";
+    }
+    if (NAZIV_RADNOG_MJESTA_str != "")
+    {
+        sql_str += " AND OD_MS_SIF_RADMJ IN (" + NAZIV_RADNOG_MJESTA_str + ")";
+    }
+    if (ORGANIZACIJSKE_JEDINICE_str != "")
+    {
+        sql_str += " AND od_ms_objed IN (" + ORGANIZACIJSKE_JEDINICE_str + ")";
+    }
+    if (ELEMENTI_OBRACUNA_str != "")
+    {
+        sql_str += " AND odob_ln_sifra IN (" + ELEMENTI_OBRACUNA_str + ")";
+    }
+    
+    
+    // if (spolSve_rb)
+    // {
+    //     sql_str += " AND od_ms_spol IN (" +  + ")";
+    // }
+    if (spolMusko_rb)
+    {
+        sql_str += " AND od_ms_spol = 'M'";
+    }
+    if (spolZensko_rb)
+    {
+        sql_str += " AND od_ms_spol = 'Z'";
+    }
+    if (spolNijeUneseno_rb)
+    {
+        sql_str += " AND od_ms_spol = ''";
+    }
+
+
+    sql_str += " AND (select count(*) from";
+    sql_str += " (select monthNumber, ODOB_GL_NUM, godina, mjesec, isnull(ODOB_GL_FONDST, 32767) as fondSati, isnull(ukupnoSati, 0) as ukupnoSati from"; 
+    sql_str += " (SELECT DISTINCT * FROM"; 
+    sql_str += " (VALUES (1), (2), (3), (4), (5), (6), (7), (8), (9), (10), (11), (12))"; 
+    sql_str += " AS aaa1(monthNumber)) months";
+    sql_str += " left join (";
+    sql_str += " select distinct"; 
+    sql_str += " ODOB_GL_NUM, ";
+    if(comboBoxMjesec1selected == "Obračun za mjesec"){
+        sql_str += " convert(int, ODOB_GL_GOD) as godina, convert(int, ODOB_GL_MJESEC) as mjesec, ";
+    }elif(comboBoxMjesec1selected == "Mjesec isplate plaće"){
+        sql_str += " year(odob_gl_dat_isp) as godina, month(odob_gl_dat_isp) as mjesec, ";
+    }elif(comboBoxMjesec1selected == "Mjesec obračuna plaće"){
+        sql_str += " year(odob_gl_datum) as godina, month(odob_gl_datum) as mjesec, ";
+    }
+    sql_str += " ODOB_GL_FONDST,";
+    sql_str += " sum(convert(float, replace(ODOB_LN_KOL, ',','.'))) as ukupnoSati"; 
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkodobgl"; 
+    sql_str += " left join " + trenutnaGodinaBaza + ".dbo.NKODOBLN on ODOB_GL_NUM = ODOB_LN_NUM"; 
+    sql_str += " left join " + trenutnaGodinaBaza + ".dbo.nkodelem on OD_EL_CODE = ODOB_LN_SIFRA"; 
+    sql_str += " WHERE OD_EL_VRSTA IN ('A', 'G', 'I')"; 
+    sql_str += " AND ODOB_GL_TIP != 'K'"; 
+    sql_str += " AND ODOB_LN_OSOBA = od_ms_br_rad"; 
+    if(comboBoxMjesec1selected == "Obračun za mjesec"){
+        sql_str += " AND convert(int, ODOB_GL_MJESEC) BETWEEN " + mjesec1od + " AND " + mjesec1do + "";
+        sql_str += " AND convert(int, ODOB_GL_GOD) = " + godina1 + "";
+    }elif(comboBoxMjesec1selected == "Mjesec isplate plaće"){
+        sql_str += " and month(odob_gl_dat_isp) BETWEEN " + mjesec1od + " AND " + mjesec1do + "";
+        sql_str += " AND year(odob_gl_dat_isp) = " + godina1 + " ";
+    }elif(comboBoxMjesec1selected == "Mjesec obračuna plaće"){
+        sql_str += " and month(odob_gl_datum) BETWEEN " + mjesec1od + " AND " + mjesec1do + "";
+        sql_str += " AND year(odob_gl_datum) = " + godina1 + " ";
+    }
+    sql_str += " group by ODOB_GL_NUM, ODOB_GL_FONDST, "; 
+    if(comboBoxMjesec1selected == "Obračun za mjesec"){
+        sql_str += " convert(int, ODOB_GL_MJESEC), convert(int, ODOB_GL_GOD)";
+    }elif(comboBoxMjesec1selected == "Mjesec isplate plaće"){
+        sql_str += " month(odob_gl_dat_isp), year(odob_gl_dat_isp)";
+    }elif(comboBoxMjesec1selected == "Mjesec obračuna plaće"){
+        sql_str += " month(odob_gl_datum), year(odob_gl_datum)";
+    }
+    sql_str += " ) aaa2 on MonthNumber = mjesec";
+    sql_str += " WHERE monthNumber BETWEEN " + mjesec1od + " AND " + mjesec1do + ") aaa3";
+    // if(zaposleniUCijelomPeriodu_cb)
+    // {
+    //     sql_str += " WHERE isnull(fondSati, 32767) - isnull(ukupnoSati, 0) = 0) = (" + mjesec1do + " - " + mjesec1od + " + 1)";
+    // }
+    // else{
+    //     sql_str += " WHERE isnull(ukupnoSati, 0) > 0 ) > 0";  
+    // }
+    if(zaposleniUCijelomPeriodu_cb){
+        if(punoRadnoVrijeme_cb && !nepunoRadnoVrijeme_cb){
+            sql_str += " WHERE isnull(fondSati, 32767) - isnull(ukupnoSati, 0) = 0  AND isnull(ukupnoSati, 0) > 0) = (" + mjesec1do + " - " + mjesec1od + " + 1)";
+        }
+        elif(!punoRadnoVrijeme_cb && nepunoRadnoVrijeme_cb){
+            sql_str += " WHERE isnull(fondSati, 32767) - isnull(ukupnoSati, 0) > 0 AND isnull(ukupnoSati, 0) > 0) = (" + mjesec1do + " - " + mjesec1od + " + 1)";
+        }
+        elif(punoRadnoVrijeme_cb && nepunoRadnoVrijeme_cb){
+            sql_str += " WHERE isnull(fondSati, 32767) - isnull(ukupnoSati, 0) >= 0 AND isnull(ukupnoSati, 0) > 0) = (" + mjesec1do + " - " + mjesec1od + " + 1)";
+        }else{
+            sql_str += " WHERE 1 <> 1) = (1)";
+        }
+    }
+    elif(!zaposleniUCijelomPeriodu_cb){  
+        if(punoRadnoVrijeme_cb && !nepunoRadnoVrijeme_cb){
+            sql_str += " WHERE isnull(fondSati, 32767) - isnull(ukupnoSati, 0) = 0  AND isnull(ukupnoSati, 0) > 0 ) > 0";
+        }
+        elif(!punoRadnoVrijeme_cb && nepunoRadnoVrijeme_cb){
+            sql_str += " WHERE isnull(fondSati, 32767) - isnull(ukupnoSati, 0) > 0 AND isnull(ukupnoSati, 0) > 0) > 0";
+        }
+        elif(punoRadnoVrijeme_cb && nepunoRadnoVrijeme_cb){
+            sql_str += " WHERE isnull(fondSati, 32767) - isnull(ukupnoSati, 0) >= 0 AND isnull(ukupnoSati, 0) > 0) > 0";
+        }else{
+            sql_str += " WHERE 1 <> 1) = (1)";
+        }
+    }
+
+
+
+
+    
+    // if(!punoRadnoVrijeme_cb && !nepunoRadnoVrijeme_cb)
+    // {
+    //     sql_str += " AND 1 <> 1";
+    // }
+    // elif(!punoRadnoVrijeme_cb && nepunoRadnoVrijeme_cb)
+    // {
+    //     sql_str += " AND OD_MS_DRV11 < " + punoRadnoVrijemeSati;
+    // }
+    // elif(punoRadnoVrijeme_cb && !nepunoRadnoVrijeme_cb)
+    // {
+    //     sql_str += " AND OD_MS_DRV11 >= " + punoRadnoVrijemeSati;
+    // }
+    
+    
+    
+    if(!ugovorNaOdredeno_cb && !ugovorNaNeodredeno_cb)
+    {
+        sql_str += " AND 1 <> 1";
+    }
+    elif(!ugovorNaOdredeno_cb && ugovorNaNeodredeno_cb)
+    {
+        sql_str += " AND OD_MS_GO_DO = '1900-01-01'";
+    }
+    elif(ugovorNaOdredeno_cb && !ugovorNaNeodredeno_cb)
+    {
+        sql_str += " AND OD_MS_GO_DO <> '1900-01-01'";
+    }
+}
+
+
+
+// function filterPartListaZaposlenika()
+// {
+//     sql_str += " AND CASE WHEN (SELECT count(distinct odob_ln_num)";
+//     sql_str += " from " + trenutnaGodinaBaza + ".dbo.nkodobln";
+//     sql_str += " left join " + trenutnaGodinaBaza + ".dbo.nkodobgl on odob_ln_num = ODOB_GL_NUM";
+    
+//     sql_str += " left join " + trenutnaGodinaBaza + ".dbo.nkodelem on OD_EL_CODE = ODOB_LN_SIFRA"; 
+
+//     sql_str += " where ODOB_LN_OSOBA = OD_MS_BR_RAD";
+//     if(comboBoxMjesec1selected == "Obračun za mjesec"){
+//         sql_str += " and convert(int, ODOB_GL_MJESEC) >= " + mjesec1od + " ";
+//         sql_str += " and convert(int, ODOB_GL_MJESEC) <= " + mjesec1do + " ";
+//         sql_str += " AND convert(int, ODOB_GL_GOD) = " + godina1 + " ";
+//     }elif(comboBoxMjesec1selected == "Mjesec isplate plaće"){
+//         sql_str += " and month(odob_gl_dat_isp) >= " + mjesec1od + " ";
+//         sql_str += " and month(odob_gl_dat_isp) <= " + mjesec1do + " ";
+//         sql_str += " AND year(odob_gl_dat_isp) = " + godina1 + " ";
+//     }elif(comboBoxMjesec1selected == "Mjesec obračuna plaće"){
+//         sql_str += " and month(odob_gl_datum) >= " + mjesec1od + " ";
+//         sql_str += " and month(odob_gl_datum) <= " + mjesec1do + " ";
+//         sql_str += " AND year(odob_gl_datum) = " + godina1 + " ";
+//     }
+    
+//     if(rad_rb == true){
+//         sql_str += " AND OD_EL_VRSTA IN ('A', 'C', 'E', 'G')";
+//     }elif(doprinosiIzPlace_rb == true){
+//         sql_str += " AND OD_EL_VRSTA = 'K'";
+//     }elif(doprinosiNaPlacu_rb == true){
+//         sql_str += " AND OD_EL_VRSTA = 'N'";
+//     }
+//     // elif(bolovanje_rb == true){
+//     //     sql_str += " AND odob_ln_vrsta IN ('G', 'I')";
+//     // }
+//     elif(olaksice_rb == true){
+//         sql_str += " AND OD_EL_VRSTA = 'J'";
+//     }elif(osobniOdbitak_rb == true){
+//         sql_str += " AND OD_EL_VRSTA = 'Q'";
+//     }elif(porez_rb == true){
+//         sql_str += " AND OD_EL_VRSTA = 'R'";
+//     }elif(prirez_rb == true){
+//         sql_str += " AND OD_EL_VRSTA = 'T'";
+//     }elif(naknade_rb == true){
+//         sql_str += " AND OD_EL_VRSTA IN ('X', 'I')";
+//     }elif(obustave_rb == true){
+//         sql_str += " AND OD_EL_VRSTA = 'V'";
+//     }
+//     sql_str += " ) > 0 THEN 1 ELSE null END is not null";
+
+
+
+//     radniStatus_str = "";
+//     if(redoviti_cb == true){
+//         radniStatus_str += " OR od_ms_status = 'R'";
+//     }
+//     if(poduzetnik_cb == true){
+//         radniStatus_str += " OR od_ms_status = 'F'";
+//     }
+//     if(beneficirani_cb == true){
+//         radniStatus_str += " OR od_ms_status = 'B'";
+//     }
+//     if(volonter_cb == true){
+//         radniStatus_str += " OR od_ms_status = 'V'";
+//     }
+//     if(pripravnik_cb == true){
+//         radniStatus_str += " OR od_ms_status = 'P'";
+//     }
+//     if(obrtnik_cb == true){
+//         radniStatus_str += " OR od_ms_status = 'O'";
+//     }
+//     if(nijeZaposlen_cb == true){
+//         radniStatus_str += " OR od_ms_status = 'N'";
+//     }
+//     if(porodiljskiDopust_cb == true){
+//         radniStatus_str += " OR od_ms_status = 'L'";
+//     }
+//     if(ugovorODjelu_cb == true){
+//         radniStatus_str += " OR od_ms_status = 'U'";
+//     }
+//     if(obracunNaknada_cb == true){
+//         radniStatus_str += " OR od_ms_status = 'A'";
+//     }
+
+//     if(radniStatus_str == ""){
+//         radniStatus_str = "1 <> 1";
+//     }else{
+//         radniStatus_str = radniStatus_str.substring(4, radniStatus_str.length - 4);
+//     }   
+//     sql_str += " AND (" + radniStatus_str + ")";
+
+
+//     if (ZAPOSLENIK_str != "")
+//     {
+//         sql_str += " AND od_ms_br_rad IN (" + ZAPOSLENIK_str + ")";
+//     }
+//     if (BROJEVI_OBRACUNA_str != "")
+//     {
+//         // sql_str += " AND OD_MS_BR_RAD IN (SELECT distinct ODOB_LN_OSOBA from " + trenutnaGodinaBaza + ".dbo.nkodobln WHERE ODOB_LN_NUM IN (" + BROJEVI_OBRACUNA_str + ") )";
+//         sql_str += " AND OD_MS_BR_RAD IN (SELECT distinct ODOB_LN_OSOBA from " + trenutnaGodinaBaza + ".dbo.nkodobln";
+//         sql_str += " left join " + trenutnaGodinaBaza + ".dbo.nkodobgl on ODOB_GL_NUM = ODOB_LN_NUM";
+//         sql_str += " WHERE ODOB_LN_NUM IN (" + BROJEVI_OBRACUNA_str + ")";
+//         if(comboBoxMjesec1selected == "Obračun za mjesec"){
+//             sql_str += " AND convert(int, odob_gl_mjesec) BETWEEN " + mjesec1od + " AND " + mjesec1do + " AND convert(int, odob_gl_god) = " + godina1;
+//         }elif(comboBoxMjesec1selected == "Mjesec isplate plaće"){
+//             sql_str += " AND month(odob_gl_dat_isp) BETWEEN " + mjesec1od + " AND " + mjesec1do + " AND year(odob_gl_dat_isp) = " + godina1;
+//         }elif(comboBoxMjesec1selected == "Mjesec obračuna plaće"){
+//             sql_str += " AND month(odob_gl_datum) BETWEEN " + mjesec1od + " AND " + mjesec1do + " AND year(odob_gl_datum) = " + godina1;
+//         }
+//         sql_str += " )";
+//     }
+//     if (STRUCNA_SPREMA_str != "")
+//     {
+//         sql_str += " AND OD_MS_SIF_ST_SP IN (" + STRUCNA_SPREMA_str  + ")";
+//     }
+//     if (MJESTO_STANOVANJA_str != "")
+//     {
+//         sql_str += " AND OD_MS_ISPLAT_MJ IN (" + MJESTO_STANOVANJA_str + ")";
+//     }
+//     if (MJESTO_ZAPOSLENJA_str != "")
+//     {
+//         sql_str += " AND OD_MS_POSL_JED IN (" + MJESTO_ZAPOSLENJA_str + ")";
+//     }
+//     if (NAZIV_RADNOG_MJESTA_str != "")
+//     {
+//         sql_str += " AND OD_MS_SIF_RADMJ IN (" + NAZIV_RADNOG_MJESTA_str + ")";
+//     }
+//     if (ORGANIZACIJSKE_JEDINICE_str != "")
+//     {
+//         sql_str += " AND od_ms_objed IN (" + ORGANIZACIJSKE_JEDINICE_str + ")";
+//     }
+//     if (ELEMENTI_OBRACUNA_str != "")
+//     {
+//         //sql_str += " AND odob_ln_sifra IN (" + ELEMENTI_OBRACUNA_str + ")";
+
+//         sql_str += " AND CASE WHEN (SELECT count(distinct odob_ln_num)";
+//         sql_str += " from " + trenutnaGodinaBaza + ".dbo.nkodobln";
+//         sql_str += " left join " + trenutnaGodinaBaza + ".dbo.nkodobgl on odob_ln_num = ODOB_GL_NUM";
+//         sql_str += " where ODOB_LN_OSOBA = OD_MS_BR_RAD";
+//         if(comboBoxMjesec1selected == "Obračun za mjesec"){
+//             sql_str += " and convert(int, ODOB_GL_MJESEC) >= " + mjesec1od + " ";
+//             sql_str += " and convert(int, ODOB_GL_MJESEC) <= " + mjesec1do + " ";
+//             sql_str += " AND convert(int, ODOB_GL_GOD) = " + godina1 + " ";
+//         }elif(comboBoxMjesec1selected == "Mjesec isplate plaće"){
+//             sql_str += " and month(odob_gl_dat_isp) >= " + mjesec1od + " ";
+//             sql_str += " and month(odob_gl_dat_isp) <= " + mjesec1do + " ";
+//             sql_str += " AND year(odob_gl_dat_isp) = " + godina1 + " ";
+//         }elif(comboBoxMjesec1selected == "Mjesec obračuna plaće"){
+//             sql_str += " and month(odob_gl_datum) >= " + mjesec1od + " ";
+//             sql_str += " and month(odob_gl_datum) <= " + mjesec1do + " ";
+//             sql_str += " AND year(odob_gl_datum) = " + godina1 + " ";
+//         }
+//         sql_str += " AND odob_ln_sifra IN (" + ELEMENTI_OBRACUNA_str + ")";
+//         sql_str += " ) > 0 THEN 1 ELSE null END is not null";        
+//     }
+    
+//     // if (spolSve_rb)
+//     // {
+//     //     sql_str += " AND od_ms_spol IN (" +  + ")";
+//     // }
+//     if (spolMusko_rb)
+//     {
+//         sql_str += " AND od_ms_spol = 'M'";
+//     }
+//     if (spolZensko_rb)
+//     {
+//         sql_str += " AND od_ms_spol = 'Z'";
+//     }
+//     if (spolNijeUneseno_rb)
+//     {
+//         sql_str += " AND od_ms_spol = ''";
+//     }
+
+
+//     sql_str += " AND (select count(*) from";
+//     sql_str += " (select monthNumber, ODOB_GL_NUM, godina, mjesec, isnull(ODOB_GL_FONDST, 32767) as fondSati, isnull(ukupnoSati, 0) as ukupnoSati from"; 
+//     sql_str += " (SELECT DISTINCT * FROM"; 
+//     sql_str += " (VALUES (1), (2), (3), (4), (5), (6), (7), (8), (9), (10), (11), (12))"; 
+//     sql_str += " AS aaa1(monthNumber)) months"; 
+//     sql_str += " left join ("; 
+//     sql_str += " select distinct"; 
+//     sql_str += " ODOB_GL_NUM, ";
+//     if(comboBoxMjesec1selected == "Obračun za mjesec"){
+//         sql_str += " convert(int, ODOB_GL_GOD) as godina, convert(int, ODOB_GL_MJESEC) as mjesec, ";
+//     }elif(comboBoxMjesec1selected == "Mjesec isplate plaće"){
+//         sql_str += " year(odob_gl_dat_isp) as godina, month(odob_gl_dat_isp) as mjesec, ";
+//     }elif(comboBoxMjesec1selected == "Mjesec obračuna plaće"){
+//         sql_str += " year(odob_gl_datum) as godina, month(odob_gl_datum) as mjesec, ";
+//     }
+//     sql_str += " ODOB_GL_FONDST,";
+//     sql_str += " sum(convert(float, replace(ODOB_LN_KOL, ',','.'))) as ukupnoSati"; 
+//     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkodobgl"; 
+//     sql_str += " left join " + trenutnaGodinaBaza + ".dbo.NKODOBLN on ODOB_GL_NUM = ODOB_LN_NUM"; 
+//     sql_str += " left join " + trenutnaGodinaBaza + ".dbo.nkodelem on OD_EL_CODE = ODOB_LN_SIFRA"; 
+//     sql_str += " WHERE OD_EL_VRSTA IN ('A', 'G', 'I')"; 
+//     sql_str += " AND ODOB_GL_TIP != 'K'"; 
+//     sql_str += " AND ODOB_LN_OSOBA = od_ms_br_rad"; 
+//     if(comboBoxMjesec1selected == "Obračun za mjesec"){
+//         sql_str += " AND convert(int, ODOB_GL_MJESEC) BETWEEN " + mjesec1od + " AND " + mjesec1do + "";
+//         sql_str += " AND convert(int, ODOB_GL_GOD) = " + godina1 + "";
+//     }elif(comboBoxMjesec1selected == "Mjesec isplate plaće"){
+//         sql_str += " and month(odob_gl_dat_isp) BETWEEN " + mjesec1od + " AND " + mjesec1do + "";
+//         sql_str += " AND year(odob_gl_dat_isp) = " + godina1 + " ";
+//     }elif(comboBoxMjesec1selected == "Mjesec obračuna plaće"){
+//         sql_str += " and month(odob_gl_datum) BETWEEN " + mjesec1od + " AND " + mjesec1do + "";
+//         sql_str += " AND year(odob_gl_datum) = " + godina1 + " ";
+//     }
+//     sql_str += " group by ODOB_GL_NUM, ODOB_GL_FONDST, "; 
+//     if(comboBoxMjesec1selected == "Obračun za mjesec"){
+//         sql_str += " convert(int, ODOB_GL_MJESEC), convert(int, ODOB_GL_GOD)";
+//     }elif(comboBoxMjesec1selected == "Mjesec isplate plaće"){
+//         sql_str += " month(odob_gl_dat_isp), year(odob_gl_dat_isp)";
+//     }elif(comboBoxMjesec1selected == "Mjesec obračuna plaće"){
+//         sql_str += " month(odob_gl_datum), year(odob_gl_datum)";
+//     }
+//     sql_str += " ) aaa2 on MonthNumber = mjesec";
+//     sql_str += " WHERE monthNumber BETWEEN " + mjesec1od + " AND " + mjesec1do + ") aaa3";
+//     // if(zaposleniUCijelomPeriodu_cb)
+//     // {
+//     //     sql_str += " WHERE isnull(fondSati, 32767) - isnull(ukupnoSati, 0) = 0) = (" + mjesec1do + " - " + mjesec1od + " + 1)";
+//     // }
+//     // else{
+//     //     sql_str += " WHERE isnull(ukupnoSati, 0) > 0 ) > 0";  
+//     // }
+//     if(zaposleniUCijelomPeriodu_cb){
+//         if(punoRadnoVrijeme_cb && !nepunoRadnoVrijeme_cb){
+//             sql_str += " WHERE isnull(fondSati, 32767) - isnull(ukupnoSati, 0) = 0  AND isnull(ukupnoSati, 0) > 0) = (" + mjesec1do + " - " + mjesec1od + " + 1)";
+//         }
+//         elif(!punoRadnoVrijeme_cb && nepunoRadnoVrijeme_cb){
+//             sql_str += " WHERE isnull(fondSati, 32767) - isnull(ukupnoSati, 0) > 0 AND isnull(ukupnoSati, 0) > 0) = (" + mjesec1do + " - " + mjesec1od + " + 1)";
+//         }
+//         elif(punoRadnoVrijeme_cb && nepunoRadnoVrijeme_cb){
+//             sql_str += " WHERE isnull(fondSati, 32767) - isnull(ukupnoSati, 0) >= 0 AND isnull(ukupnoSati, 0) > 0) = (" + mjesec1do + " - " + mjesec1od + " + 1)";
+//         }else{
+//             sql_str += " WHERE 1 <> 1) = (1)";
+//         }
+//     }
+//     elif(!zaposleniUCijelomPeriodu_cb){  
+//         if(punoRadnoVrijeme_cb && !nepunoRadnoVrijeme_cb){
+//             sql_str += " WHERE isnull(fondSati, 32767) - isnull(ukupnoSati, 0) = 0  AND isnull(ukupnoSati, 0) > 0 ) > 0";
+//         }
+//         elif(!punoRadnoVrijeme_cb && nepunoRadnoVrijeme_cb){
+//             sql_str += " WHERE isnull(fondSati, 32767) - isnull(ukupnoSati, 0) > 0 AND isnull(ukupnoSati, 0) > 0) > 0";
+//         }
+//         elif(punoRadnoVrijeme_cb && nepunoRadnoVrijeme_cb){
+//             sql_str += " WHERE isnull(fondSati, 32767) - isnull(ukupnoSati, 0) >= 0 AND isnull(ukupnoSati, 0) > 0) > 0";
+//         }else{
+//             sql_str += " WHERE 1 <> 1) = (1)";
+//         }
+//     }
+
+
+
+
+    
+//     // if(!punoRadnoVrijeme_cb && !nepunoRadnoVrijeme_cb)
+//     // {
+//     //     sql_str += " AND 1 <> 1";
+//     // }
+//     // elif(!punoRadnoVrijeme_cb && nepunoRadnoVrijeme_cb)
+//     // {
+//     //     sql_str += " AND OD_MS_DRV11 < " + punoRadnoVrijemeSati;
+//     // }
+//     // elif(punoRadnoVrijeme_cb && !nepunoRadnoVrijeme_cb)
+//     // {
+//     //     sql_str += " AND OD_MS_DRV11 >= " + punoRadnoVrijemeSati;
+//     // }
+    
+    
+    
+//     if(!ugovorNaOdredeno_cb && !ugovorNaNeodredeno_cb)
+//     {
+//         sql_str += " AND 1 <> 1";
+//     }
+//     elif(!ugovorNaOdredeno_cb && ugovorNaNeodredeno_cb)
+//     {
+//         sql_str += " AND OD_MS_GO_DO = '1900-01-01'";
+//     }
+//     elif(ugovorNaOdredeno_cb && !ugovorNaNeodredeno_cb)
+//     {
+//         sql_str += " AND OD_MS_GO_DO <> '1900-01-01'";
+//     }
+// }
+
+
+//-------------------------------------------------------------
+//-------------------------------------------------------------
+//-------------------------------------------------------------
+
+// function filterPartPieCharts(){
+//     if (partner != "")
+//     {
+//         sql_str += " AND kdib_ln_partner = '" + partner + "'";
+//     }
+//     if (BANKA_str != "")
+//     {
+//         sql_str += " AND kdib_gl_banka IN (" + BANKA_str + ")";
+//     }
+//     if (Izvadak != "")
+//     {
+//         sql_str += " AND kdib_gl_num = '" + Izvadak + "'";
+//     }
+//     if (domaca_dn )
+//     {
+//         sql_str += " AND nksc_drzava= '" + kpsy_po_freight + "'";
+//     }
+//     elif (eu_dn )
+//     {
+//         sql_str +=  " AND nksc_drzava IN (" + eucountries + ")";
+//     }
+//     elif (izvoz_dn )
+//     {
+//         sql_str += " AND nksc_drzava <> '" + kpsy_po_freight + "' AND NOT nksc_drzava IN (" + eucountries + ")";
+//     }
+// }

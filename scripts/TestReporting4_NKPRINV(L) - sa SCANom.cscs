@@ -38,17 +38,17 @@ DEFINE report1_hndl, report2_hndl type i;
 
 //start = Now();
 
-report1_hndl = SetupReport("NKPRINVReport.repx"); //
-report2_hndl = SetupReport("NKPRINVLReport.repx", report1_hndl);
+report1_hndl = SetupReport("NKPRINVReportAll.repx"); //
+report2_hndl = SetupReport("NKPRINVLReportAll.repx", report1_hndl);
 brojLinija = 0;
 
-scan(NKPRINV_hndl;"NKPR_GL_NUM";"0";true;"";"n 1000";""){
+scan(NKPRINV_hndl;"NKPR_GL_NUM";"0";true;"";"n 100000000";""){
     //MessageBox("1:" + NKPR_GL_NUM);
     OutputReport(report1_hndl);
     scan(NKPRINVL_hndl;"NKPR_LN_INVNM";NKPR_GL_NUM; NKPR_LN_INVNM == NKPR_GL_NUM;"";"";""){
         //MessageBox("2: " + NKPR_LN_INVNM);
         OutputReport(report2_hndl); 
-      brojLinija++;
+        brojLinija++;
     }
 }
 

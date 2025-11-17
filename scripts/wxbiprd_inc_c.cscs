@@ -174,7 +174,7 @@ function setTop10InvoicesDataGrid()
 */
 function setChartByDaysOfMonthNotSent(){
     //samo trenutna godina
-    sql_str = "WITH rezultati AS(";
+    sql_str = "SET query_governor_cost_limit 0; WITH rezultati AS(";
     sql_str += " SELECT glnr.nkpr_gl_sonum, glnr.nkpr_gl_orddte as datum,";
     if (neto_dn)
     {
@@ -313,7 +313,7 @@ function setChartByDaysOfMonthNotSent1(){
     //Chart("ChartPoDanimaNotSent", "values", "line", arrayAvr, "Prosjek7dana");
     Chart("ChartPoDanimaNotSent", "Color.Series", { "#EA6A47"/*, "#0091D5"*/}); 
     
-    Chart("ChartPoDanimaNotSent", "Margins", {60, 10, 20, 0});
+    // Chart("ChartPoDanimaNotSent", "Margins", {60, 10, 20, 0});
 }
 
 //--------------------------------------------------------
@@ -324,7 +324,7 @@ function setChartByMonthNotSent()
         RunOnMain("setChartByMonthNotSent0");
     }
     else{
-        sql_str = "WITH rezultati AS(";
+        sql_str = "SET query_governor_cost_limit 0; WITH rezultati AS(";
         sql_str += " SELECT glnr.nkpr_gl_sonum, glnr.nkpr_gl_orddte as datum,";
         if (neto_dn)
         {
@@ -446,7 +446,7 @@ function setChartByMonthNotSent()
     }
 
     //sada trenutna godina
-    sql_str = "WITH rezultati AS(";
+    sql_str = "SET query_governor_cost_limit 0; WITH rezultati AS(";
     sql_str += " SELECT glnr.nkpr_gl_sonum, glnr.nkpr_gl_orddte as datum,";
     if (neto_dn)
     {
@@ -579,14 +579,14 @@ function setChartByMonthNotSent0(){
 function setChartByMonthNotSentProsla(){
     for(i = 0; i < 12; i++)
     {
-        arrayNotSent[i] = -1 * queryResult[i + 1][1]; 
+        arrayNotSent[i] = -1 * queryResult[i + 1][1];
     }
 }
 
 function setChartByMonthNotSentTrenutna(){
     for(i = 12; i < 24; i++)
     {
-        arrayNotSent[i] = -1 * queryResult[i + 1 - 12][1]; 
+        arrayNotSent[i] = -1 * queryResult[i + 1 - 12][1];
     }
 }
 
@@ -606,7 +606,7 @@ function setChartByMonthNotSentSetupChart(){
     Chart("ChartPoMjesecimaNotSent", "Color.Series", { "#0091D5"/*, "#EA6A47"*/}); 
     Chart("ChartPoMjesecimaNotSent", "labels", "x", 13, {"1./" + proslaGodina, "2./" + proslaGodina, "3./" + proslaGodina, "4./" + proslaGodina, "5./" + proslaGodina, "6./" + proslaGodina, "7./" + proslaGodina, "8./" + proslaGodina, "9./" + proslaGodina, "10./" + proslaGodina, "11./" + proslaGodina, "12./" + proslaGodina, "1./" + ovagod_h, "2./" + ovagod_h, "3./" + ovagod_h, "4./" + ovagod_h, "5./" + ovagod_h, "6./" + ovagod_h, "7./" + ovagod_h, "8./" + ovagod_h, "9./" + ovagod_h, "10./" + ovagod_h, "11./" + ovagod_h, "12./" + ovagod_h});
 
-    Chart("ChartPoMjesecimaNotSent", "Margins", {60, 10, 20, 10});
+    // Chart("ChartPoMjesecimaNotSent", "Margins", {70, 10, 20, 20});
 }
 
 //--------------------------------------------------------
@@ -614,7 +614,7 @@ function setChartByMonthNotSentSetupChart(){
 
 function setNotSentProductsDataGrid()
 {
-    sql_str = "WITH rezultati AS(";
+    sql_str = "SET query_governor_cost_limit 0; WITH rezultati AS(";
     sql_str += " SELECT nkpr_ln_pcode, arti_naziv,";
     
     if (neto_dn )
@@ -761,7 +761,7 @@ function NotSentProductsDataGrid(){
 
 function setNotSentCustomersDataGrid()
 {
-    sql_str = "WITH rezultati AS(";
+    sql_str = "SET query_governor_cost_limit 0; WITH rezultati AS(";
     sql_str += " SELECT nkpr_gl_cuscod, nksc_partname, ";
     
     if (neto_dn )

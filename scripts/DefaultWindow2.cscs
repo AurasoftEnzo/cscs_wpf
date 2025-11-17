@@ -1,0 +1,28 @@
+
+//MSG(    tpath()   +   "filename.cscs"    );
+DEFINE var12 type a size 100;
+var12 = "AAA";
+
+
+//include("wpfgui.cscs");
+
+function browse@Clicked(sender, load) {
+  InitFile = OpenFile();
+  // MSG(OpenFile());
+  // MSG(InitFile);
+}
+
+function start@Clicked(sender, load) {
+  if (InitFile == "" || !Exists(InitFile)) {
+    MessageBox("Please provide a valid file name", "Error", "OK", "error");
+    return;
+  }
+  
+  CHAIN InitFile;
+  
+}
+function exit@Clicked(sender, load) {
+  exit;
+}
+
+win = CreateWindow("../../scripts/DefaultWindow2.xaml");

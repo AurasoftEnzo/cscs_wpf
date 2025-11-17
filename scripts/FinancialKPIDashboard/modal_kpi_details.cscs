@@ -1,0 +1,28 @@
+#WINFORM modal_kpi_details.xaml;
+
+function ShowKPIDetails(kpiID) {
+    accountMapping = {};
+    accountMapping["A1"] = {"classes": {"6", "4000"}, "descriptions": {"Sales", "COGS"}};
+
+    selected = accountMapping[kpiID];
+    if (!selected) return;
+
+    items = {};
+    foreach (i in Range(selected["classes"].Size)) {
+        classCode = selected["classes"][i];
+        sql = "SELECT gk_pr_date, gk_pr_konto, gk_pr_dp, gk_pr_iznos FROM NKGKPROM WHERE LEFT(gk_pr_konto, " + classCode.Length + ") = '" + classCode + "'";
+        results = SQLQuery(sql);
+
+        foreach (row in results) {
+            item = {};
+            item["Date"] = row[0];
+            item["Account"] = row[1];
+            item["Debit"] = row[2] == "D" ? row[3] : "0";
+            item["Credit"] = row[2] == "P" ? row[3] : "0";
+            Add(items, item);
+        }
+    }
+
+    FillWidget("dgTransactions", items);
+    ModalWindow("modal_kpi_details", kpiID + " Details");
+}

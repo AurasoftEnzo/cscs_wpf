@@ -1,0 +1,30 @@
+win = CreateWindow("../../scripts/setwindowoptions.xaml");
+
+MessageBox("...Testing setwindowoptions...");
+
+//windowName -> STRING (from xaml -> window tag: "name")
+//option -> STRING (property)
+//parameter -> STRING (value)
+
+DEFINE windowName type a size 100;
+DEFINE option type a size 100;
+DEFINE parameter type a size 100;
+
+windowName = "mywindowname";
+
+option = "Title";
+parameter = "XYZ";
+setwindowoptions(windowName, option, parameter);
+
+option = "width";
+parameter = "800";
+setwindowoptions(windowName, option, parameter);
+
+option = "height";
+parameter = "600";
+setwindowoptions(windowName, option, parameter);
+
+
+MSG("OK");
+
+quit;

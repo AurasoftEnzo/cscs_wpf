@@ -1,0 +1,39 @@
+MessageBox("...Testing GetSQLRecord...");
+
+DEFINE database type a size 100;
+
+DEFINE nkpr_gl_num type r size 15;
+DEFINE nkpr_gl_cuscod type a size 20;
+DEFINE nkpr_gl_cusnme type a size 100;
+DEFINE nkpr_gl_invdte type d size 8;
+DEFINE nkpr_gl_timecr type t size 8;
+DEFINE nkpr_gl_total type n size 15 dec 15;
+
+DEFINE nkpr_ln_pcode type a size 100;
+DEFINE nkpr_ln_pdesc type a size 100;
+DEFINE nkpr_ln_pqty type n size 15 dec 15;
+DEFINE nkpr_ln_pprce type n size 15 dec 15;
+DEFINE nkpr_ln_pext type n size 15 dec 15;
+
+DEFINE i type R;
+DEFINE j type R;
+
+database = "V__DATAX_GZ__BGZ";
+
+SqlResultInvoices = SqlQuery("SELECT TOP 3 nkpr_gl_num, nkpr_gl_cuscod, nkpr_gl_cusnme, CONVERT(varchar(8), nkpr_gl_invdte, 3) as nkpr_gl_invdte, CONVERT(varchar(8), nkpr_gl_timecr, 8) as nkpr_gl_timecr, nkpr_gl_total FROM " + database + ".dbo.nkprinv ORDER BY nkpr_gl_num");
+
+for(i = 1; i < Size(SqlResultInvoices); i++)
+{    
+    GetSQLRecord(SqlResultInvoices[0], SqlResultInvoices[i]);
+    MessageBox("INVOICE: " + nkpr_gl_num + " " + nkpr_gl_cuscod + " " + nkpr_gl_total);
+
+    SqlResultInvoiceDetails = SqlQuery("SELECT TOP 2 nkpr_ln_pcode, nkpr_ln_pdesc, nkpr_ln_pqty, nkpr_ln_pprce, nkpr_ln_pext FROM " + database + ".dbo.nkprinvl WHERE nkpr_ln_invnm = " + SqlResultInvoices[i][0] + " ORDER BY nkpr_ln_br_ln");
+    
+    for(j = 1; j < Size(SqlResultInvoiceDetails); j++)
+    {   
+        GetSQLRecord(SqlResultInvoiceDetails[0], SqlResultInvoiceDetails[j]);
+        MessageBox("DETAIL: " + nkpr_ln_pcode + " " + nkpr_ln_pdesc + " " + nkpr_ln_pqty + " " + nkpr_ln_pprce + " " + nkpr_ln_pext);
+    }
+}
+
+quit;

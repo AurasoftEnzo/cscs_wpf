@@ -1,0 +1,17 @@
+MessageBox("...Testing encode...");
+
+DEFINE strIn type a size 100;
+DEFINE password type a size 100;
+DEFINE strEncoded type a size 100;
+DEFINE strDecoded type a size 100;
+
+strIn = "ABC";
+password = "myPassword";
+
+strEncoded = encode(strIn, password);
+MSG(strEncoded);
+
+strDecoded = decode(strEncoded, password);
+MSG(strDecoded);
+
+quit;

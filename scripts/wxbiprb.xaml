@@ -949,7 +949,7 @@
                     Content="Izlaz"
                     Style="{StaticResource FlatButtonStyle}"
                     HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
+                    VerticalAlignment="Top"
                     Width="140"
                     Height="62"
                     Background="#EA6A47"
@@ -958,7 +958,7 @@
                     Foreground="#FFFBFBFB"
                     BorderBrush="{x:Null}"
                     Grid.Row="1"
-                    TabIndex="34" />
+                    TabIndex="34" Margin="0,310,0,0" />
             <Rectangle Fill="#e8f1fc"
                        Grid.Column="1"
                        Height="221"
@@ -1207,7 +1207,7 @@
                       VerticalAlignment="Top"
                       Height="88"
                       Width="150"
-                      Margin="594,2,0,0"
+                      Margin="615,103,0,0"
                       BorderThickness="0.5"
                       BorderBrush="Black"
                       Header="Domaća/strana prodaja?"
@@ -1270,7 +1270,7 @@
                       VerticalAlignment="Top"
                       Height="104"
                       Width="158"
-                      Margin="594,93,0,0"
+                      Margin="535,1,0,0"
                       BorderThickness="0.5"
                       BorderBrush="Black"
                       Header="Prodaja roba ili usluga?"
@@ -1683,7 +1683,7 @@
                       Height="29"
                       Width="93"
                       BorderThickness="0"
-                      Margin="500,174,0,0">
+                      Margin="417,195,0,0" Grid.RowSpan="2">
                 <Grid Margin="-8,0,-12,0"
                       Height="34">
                     <CheckBox HorizontalAlignment="Left"
@@ -1852,6 +1852,112 @@
                       Width="45"
                       Height="22"
                       TabIndex="19" />
+            <Button x:Name="gbPovrati"
+                Content="Povrati"
+                Style="{StaticResource FlatButtonStyle}"
+                Margin="0,162,0,0"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Top"
+                Width="140"
+                Height="63"
+                Background="#117733"
+                FontFamily="Lato"
+                FontSize="20"
+                Foreground="#FFFBFBFB"
+                BorderBrush="{x:Null}"
+                Grid.Row="1"
+                TabIndex="33" 
+                    Visibility="Hidden"/>
+            <GroupBox Grid.Column="1"
+                Padding="0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Height="104"
+                Width="158"
+                Margin="697,1,0,0"
+                BorderThickness="0.5"
+                BorderBrush="Black"
+                Header="Izbor datuma iz računa:"
+                Foreground="Black"
+                x:Name="gb3_Copy">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="2*" />
+                        <RowDefinition Height="5*" />
+                        <RowDefinition Height="58*" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="0*" />
+                        <ColumnDefinition Width="8*" />
+                        <ColumnDefinition Width="102*" />
+                        <ColumnDefinition Width="16*" />
+                        <ColumnDefinition Width="3*" />
+                    </Grid.ColumnDefinitions>
+                    <RadioButton HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Height="16"
+                        Width="113"
+                        Margin="0,2,0,0"
+                        x:Name="Cbutton6"
+                        DataContext="datumDATEM_RB"
+                        Content="Datum knjiženja"
+                        Foreground="Black"
+                        Grid.ColumnSpan="2"
+                        Grid.Column="2"
+                        Grid.RowSpan="3"
+                        TabIndex="25" />
+                    <RadioButton HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Height="16"
+                        Width="113"
+                        Margin="8,10,0,0"
+                        x:Name="Cbutton7"
+                        DataContext="datumINVDTE_RB"
+                        Content="Datum izdavanja"
+                        Foreground="Black"
+                        Grid.ColumnSpan="3"
+                        Grid.Column="1"
+                        Grid.Row="2"
+                        TabIndex="26" />
+                    <RadioButton HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Height="17"
+                        Width="113"
+                        Margin="8,26,0,0"
+                        x:Name="Cbutton8"
+                        DataContext="datumESD_RB"
+                        Content="Datum isporuke"
+                        Foreground="Black"
+                        Grid.ColumnSpan="3"
+                        Grid.Column="1"
+                        Grid.Row="2"
+                        TabIndex="27" />
+                    <RadioButton HorizontalAlignment="Left"
+                        Width="120"
+                        Margin="8,42,0,15"
+                        x:Name="Cbutton9"
+                        DataContext="datumDVO_RB"
+                        Content="Datum DVO"
+                        Foreground="Black"
+                        Grid.ColumnSpan="3"
+                        Grid.Column="1"
+                        Grid.Row="2"
+                        TabIndex="28" />
+                    <RadioButton HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Height="17"
+                        Width="138"
+                        Margin="8,57,0,0"
+                        x:Name="Cbutton10"
+                        DataContext="datumDOSPIJECA_RB"
+                        Content="Datum dospijeća"
+                        Foreground="Black"
+                        Grid.ColumnSpan="4"
+                        Grid.Column="1"
+                        Grid.Row="2"
+                        TabIndex="29" />
+                </Grid>
+            </GroupBox>
             <!-- <wcl:ASNumericBox HorizontalAlignment="Left"
         VerticalAlignment="Top"
         FontWeight="Bold"

@@ -1,0 +1,17 @@
+MessageBox("...Testing namespace... (Example by DEEPSEEK AI) ");
+
+
+// Global variable
+globalVar = "I am global";
+
+namespace("App1"){
+    // Local variable - won't conflict with global scope
+    globalVar = "I am local to App1";
+    counter = 100;
+    MessageBox("Inside namespace: " + globalVar);
+}
+
+MessageBox("Outside namespace: " + globalVar); // Shows global value
+// counter variable is not accessible here
+
+quit;

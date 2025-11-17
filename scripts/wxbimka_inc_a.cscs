@@ -1,0 +1,558 @@
+function wxbimkaa_onStart()
+{
+    cursor("wait");
+    // t10datrac=true;
+  
+    // setChartByDaysOfMonth();
+    // //
+    comboItems = {"3", "6", "12"};
+    AddWidgetData("comboBoxNekurentniBrojDana", comboItems);
+    SetWidgetOptions("comboBoxNekurentniBrojDana", "SelectedIndex", 0);
+    
+    comboItems = {" <= 0", " < 0", " = 0"};
+    AddWidgetData("comboBoxNaNuli", comboItems);
+    SetWidgetOptions("comboBoxNaNuli", "SelectedIndex", 0);
+
+    comboItems = {"najvećim", "najmanjim"};
+    AddWidgetData("comboBoxVrstaObrtaja", comboItems);
+    SetWidgetOptions("comboBoxVrstaObrtaja", "SelectedIndex", 0);
+    //SetDaysOnZero();
+
+    // //
+    // Chart("ChartPoDanima", "init");
+    // //Chart("ChartPoDanima", "seriesType", "lineSeries");
+    // Chart("ChartPoDanima", "title", "Po Danima");
+    // //Chart("ChartPoDanima", "labels","y", 12);
+    // Chart("ChartPoDanima", "labels","x", 12,  {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31"});
+    // //Chart("ChartPoDanima", "labels", arrayDani);
+    // //Chart("ChartPoDanima", "xlabelsRotation", 0);
+    // Chart("ChartPoDanima", "SeparatorStep", 1);
+    // Chart("ChartPoDanima", "values", "line", arrayVrijednosti, "Dnevno");
+    // Chart("ChartPoDanima", "values", "line", arrayAvr, "Prosjek7dana");
+    // Chart("ChartPoDanima", "Color.Series", { "#DBAE58", "#000000"}); 
+    // //Chart("ChartPoDanima", "Margins", {60, 20, 0, 30});
+    // //
+
+    // cntr2= 0;
+
+    // setLast10InvoicesDataGrid();
+    // Format("T10IZNOSZ_AR", "nofd");
+    // Format("T10IZNOSMJ_AR", "nofd");
+    // DisplayArray("dgRacuniLast", "close");
+    // DisplayArraySetup("dgRacuniLast", counterFld: cntr2, activeElements: Size(sqlResult2) - 1, maxElements: 10);
+    // //
+
+	// DisplayArray("dgRacuniMjesec", "close");
+	// //DisplayArraySetup("dgRacuniMjesec", counterFld: "cntr3", activeElements: Size(sqlResult) - 1, maxElements: 10);
+    // setTop10InvoicesDataGrid();
+    // cntr3= 0;
+	// DisplayArraySetup("dgRacuniMjesec", counterFld: cntr3, activeElements: Size(sqlResult) - 1, maxElements: 10);
+    
+    
+    cursor("dflt");
+}
+
+function comboBoxNekurentniBrojDana@SelectionChanged()
+{
+    setTop100NekurentniArtikli();
+}
+
+function comboBoxNaNuli@SelectionChanged()
+{
+  //  SetDaysOnZero();
+}
+
+function comboBoxVrstaObrtaja@SelectionChanged()
+{
+    SetObrtaj();
+}
+
+//------------------------------------------------------------
+
+
+function setTop100NekurentniArtikli()
+{
+	RunOnMain("clearTop100NekurentniArtikli");
+
+	if(int(ovagod_h) < int(now("yyyy"))){
+		datum = ovagod_h + "-12-31";
+	}else{
+		datum = ovagod_h + now("-MM-dd");
+	}
+
+	SQL_str = "DECLARE @datumDo DATE = '" + datum + "';";
+	SQL_str += " DECLARE @brojDana int = (DATEDIFF(DAY, DATEADD(MONTH, -" + NekurentniBrojDana_cb + ", @datumDo), @datumDo) + 1);";
+
+    sql_str += " WITH";
+    sql_str += " artikliDobavljacaIKupca";
+    sql_str += " AS(SELECT";
+    sql_str += " distinct RMPR_ARTIKL as artikl";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    if(dobavljacAsortiman != ""){
+        sql_str += " where RMPR_UL_IZL = 'u' and rmpr_partner = '" + dobavljacAsortiman + "'";
+    }
+    sql_str += " INTERSECT";
+    sql_str += " SELECT distinct RMPR_ARTIKL as artikl";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    if(kupacAsortiman != ""){
+        sql_str += " where RMPR_UL_IZL = 'i' and rmpr_partner = '" + kupacAsortiman + "'";
+    }
+    sql_str += " ),";
+
+    sql_str += " InventorySummary AS (";
+    sql_str += " SELECT rmpr_artikl,";
+    sql_str += " ROUND(SUM(CASE WHEN rmpr_ul_izl = 'U' THEN rmpr_kolicina ELSE 0 END), 4) AS TotalInput,";
+    sql_str += " ROUND(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN rmpr_kolicina ELSE 0 END), 4) AS TotalOutput,";
+    sql_str += " MAX(CASE WHEN rmpr_ul_izl = 'U' THEN rmpr_datum_dok END) AS LastInputDate,";
+    sql_str += " max(ZAMK_DAT_PRIMKE) as zamk_dat_primke";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkmkprom";
+    sql_str += " left join " + trenutnaGodinaBaza + ".dbo.nkmkarti on arti_artikl = rmpr_artikl";
+    sql_str += " left join " + trenutnaGodinaBaza + ".dbo.nkmkartk on zamk_sif_artikl = rmpr_artikl";
+    sql_str += " WHERE arti_tip IN ('R','G','S') AND rmpr_datum_dok <= @datumDo";
+    sql_str += " AND RMPR_ARTIKL IN (SELECT * FROM artikliDobavljacaIKupca)";
+	filterPart();
+    sql_str += " GROUP BY rmpr_artikl";
+    sql_str += " ),";
+
+    sql_str += " CurrentInventory AS (";
+    sql_str += " SELECT rmpr_artikl,";
+    sql_str += " ROUND((TotalInput - TotalOutput), 4) AS CurrentInventory,";
+    sql_str += " LastInputDate = CASE WHEN zamk_dat_primke <> '1900-01-01' AND zamk_dat_primke < LastInputDate THEN zamk_dat_primke ELSE LastInputDate END, TotalInput, totalOutput";
+    sql_str += " FROM InventorySummary";
+    sql_str += " ),";
+    sql_str += " OutputAfterLastInput AS (";
+    sql_str += " SELECT p.rmpr_artikl,";
+    sql_str += " SUM(p.rmpr_kolicina) AS OutputAfterLastInput";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.nkmkprom p";
+    sql_str += " JOIN CurrentInventory ci ON p.rmpr_artikl = ci.rmpr_artikl";
+    sql_str += " WHERE p.rmpr_ul_izl = 'I'";
+    sql_str += " AND p.rmpr_datum_dok > ci.LastInputDate";
+    sql_str += " AND p.rmpr_datum_dok <= @datumDo";
+    sql_str += " AND p.RMPR_ARTIKL IN (SELECT * FROM artikliDobavljacaIKupca)";
+    sql_str += " GROUP BY p.rmpr_artikl";
+    sql_str += " )";
+
+    sql_str += " SELECT TOP 100";
+    sql_str += " ci.rmpr_artikl, arti_naziv, ci.currentInventory,";
+    sql_str += " arti_jed_mjere,";
+    sql_str += " convert(varchar(8), ci.LastInputDate, 3)";
+    sql_str += " FROM CurrentInventory ci";
+    sql_str += " LEFT JOIN OutputAfterLastInput oali ON ci.rmpr_artikl = oali.rmpr_artikl";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkmkarti ON arti_artikl=  ci.rmpr_artikl";
+    sql_str += " WHERE ci.TotalInput > 0";
+    sql_str += " AND ci.currentInventory > 0";
+    sql_str += " AND DATEDIFF(DAY, ci.LastInputDate, @datumDo) > @brojDana";
+    sql_str += " AND (oali.OutputAfterLastInput IS NULL OR oali.OutputAfterLastInput < 0.01 * ci.CurrentInventory)";
+    sql_str += " ORDER BY ci.currentInventory DESC";
+
+	//SaveFile(sql_str)
+	try	{
+		sqlResult = sqlQuery(sql_str);
+	}catch(exc){
+		MessageBox(exc);
+	}
+	
+	RunOnMain("top100NekurentniArtikli");
+}
+
+function clearTop100NekurentniArtikli(){
+	for ( i = 0; i < 100; i++)
+	{
+		top100_nekurentni_Rbr_ar[i] = 0;
+		top100_nekurentni_sifraArtikla_ar[i] = "";
+		top100_nekurentni_nazivArtikla_ar[i] = "";
+		top100_nekurentni_zalihe_ar[i] = 0;
+		top100_nekurentni_jedMjere_ar[i] = "";
+		top100_nekurentni_NemaIzlazaOd_ar[i] = "";
+	}	
+}
+
+function top100NekurentniArtikli(){
+
+	if(Size(sqlResult) > 1)
+	{
+		for ( i = 1; i < Size(sqlResult); i++ )
+		{        
+			top100_nekurentni_Rbr_ar[i - 1] =  i;
+			top100_nekurentni_sifraArtikla_ar[i - 1] =  sqlResult[i][0];
+			top100_nekurentni_nazivArtikla_ar[i - 1] =  sqlResult[i][1];
+			top100_nekurentni_zalihe_ar[i - 1] =  sqlResult[i][2];
+			top100_nekurentni_jedMjere_ar[i - 1] =  sqlResult[i][3];
+			top100_nekurentni_NemaIzlazaOd_ar[i - 1] =  sqlResult[i][4];
+		} 
+	}
+
+	//MessageBox(sqlResult);
+
+	DisplayArray("dgNekurentniArtikli", "close");
+	// Format("SALESART2_AR", "nofd");
+	// Format("SALESART1_AR", "nofd");
+	if(Size(sqlResult) - 1 > 0){
+        DisplayArraySetup("dgNekurentniArtikli", counterFld: cntr2, activeElements: Size(sqlResult) - 1, maxElements: 100);    
+    }
+}
+
+
+//------------------------------------------------------------
+
+function SetDaysOnZero(){
+
+    for(i = 0; i < 100; i++){
+        top100_naNuli_Rbr_ar[i] = 0;
+        top100_naNuli_sifraArtikla_ar[i] = "";
+        top100_naNuli_nazivArtikla_ar[i] = "";
+        top100_naNuli_brojDana_ar[i] = 0;
+    }
+
+    if(mjesecOd.length == 1){
+        mjesecOdMM = "0" + mjesecOd;
+    }
+    else{
+        mjesecOdMM = mjesecOd;
+    }
+    if(mjesecDo.length == 1){
+        mjesecDoMM = "0" + mjesecDo;
+    }else{
+        mjesecDoMM = mjesecDo;
+    }
+
+    
+    // if(int(ovagod_h) = int(now("yyyy")) && int(mjesecDo) >= int(now("MM"))){
+    //     daysInMjesecDodd = now("dd");
+    //     MMdd = now("MM-dd");
+    // }
+
+    daysInMjesecDo = string(DaysInMonth(int(mjesecDo), int(ovagod_h)));
+
+    sql_str = " DECLARE @date_from DATE = '" + ovagod_h + "-" + mjesecOdMM + "-01';";
+	
+    // if(int(ovagod_h) < int(now("yyyy"))){
+    
+    sql_str += " DECLARE @date_to DATE = '" + ovagod_h + "-" + mjesecDoMM + "-" + daysInMjesecDo + "';"; // NE 31
+    
+    // }else{
+    //     sql_str += " DECLARE @date_to DATE = '" + now("yyyy-MM-dd") + "';";
+    // }
+
+    sql_str += " WITH";
+    sql_str += " artikliDobavljacaIKupca";
+    sql_str += " AS(SELECT";
+    sql_str += " distinct RMPR_ARTIKL as artikl";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    if(dobavljacAsortiman != ""){
+        sql_str += " where RMPR_UL_IZL = 'u' and rmpr_partner = '" + dobavljacAsortiman + "'";
+    }
+    sql_str += " INTERSECT";
+    sql_str += " SELECT distinct RMPR_ARTIKL as artikl";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    if(kupacAsortiman != ""){
+        sql_str += " where RMPR_UL_IZL = 'i' and rmpr_partner = '" + kupacAsortiman + "'";
+    }
+    sql_str += " ),";
+
+    sql_str += " InventoryBalance AS (";
+    sql_str += " SELECT rmpr_artikl, rmpr_datum_dok,";
+    sql_str += " SUM(CASE WHEN rmpr_ul_izl = 'U' THEN rmpr_kolicina ELSE -rmpr_kolicina END) AS transaction_amount";
+
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.NKMKARTI ON ARTI_ARTIKL = RMPR_ARTIKL";
+    
+    sql_str += " WHERE rmpr_kolicina <> 0 AND rmpr_datum_dok BETWEEN @date_from AND @date_to";
+    sql_str += " AND arti_tip IN ('R', 'G', 'S')";
+    sql_str += " AND RMPR_ARTIKL IN (SELECT * FROM artikliDobavljacaIKupca)";
+    
+    filterPart();
+
+    sql_str += " GROUP BY rmpr_artikl, rmpr_datum_dok";
+    sql_str += " ),";
+
+    sql_str += " DailyBalance AS (SELECT k.wk_date,";
+    sql_str += " ib.rmpr_artikl,";
+    sql_str += " COALESCE(SUM(ib.transaction_amount) OVER (PARTITION BY ib.rmpr_artikl ORDER BY k.wk_date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), 0) AS cumulative_balance";
+   
+    sql_str += " FROM " + CommonDBGet() + ".dbo.kalendar k";
+    sql_str += " LEFT JOIN InventoryBalance ib ON k.wk_date = ib.rmpr_datum_dok";
+
+    sql_str += " WHERE k.wk_date BETWEEN @date_from AND @date_to";
+
+    sql_str += " ),";
+
+
+    sql_str += " ZeroOrNegativePeriods AS (";
+    sql_str += " SELECT rmpr_artikl,";
+    sql_str += " wk_date as wkdate,";
+    sql_str += " cumulative_balance,";
+
+    switch(NaNuli_cb){
+        case " <= 0":
+            NaNuliOdabranoSign = "<=";
+            break;
+        case " < 0":
+            NaNuliOdabranoSign = "<";
+            break;
+        case " = 0":
+            NaNuliOdabranoSign = "=";
+            break;
+        default:
+            NaNuliOdabranoSign = "";
+            break;
+    }
+
+    sql_str += " CASE WHEN cumulative_balance " + NaNuliOdabranoSign + " 0 AND COALESCE(LAG(cumulative_balance) OVER (PARTITION BY rmpr_artikl ORDER BY wk_date), 1) > 0 THEN 1 ELSE 0 END AS period_start,";
+    sql_str += " CASE WHEN cumulative_balance " + NaNuliOdabranoSign + " 0 AND COALESCE(LEAD(cumulative_balance) OVER (PARTITION BY rmpr_artikl ORDER BY wk_date), 1) > 0 THEN 1 ELSE 0 END AS period_end";
+    sql_str += " FROM DailyBalance";
+    sql_str += " WHERE rmpr_artikl is not null";
+    sql_str += " ),";
+
+    sql_str += " Periods AS (";
+    sql_str += " SELECT rmpr_artikl,";
+    sql_str += " cumulative_balance,";
+    sql_str += " wkdate AS start_date,";
+    sql_str += " period_start,";
+    sql_str += " period_end,";
+    sql_str += " LEAD(wkdate,1, DATEADD(day, 1, @date_to) ) OVER (PARTITION BY rmpr_artikl ORDER BY wkdate asc) AS end_date";
+    sql_str += " FROM ZeroOrNegativePeriods";
+    sql_str += " ),";
+
+    sql_str += " Periods2 AS (";
+    sql_str += " SELECT rmpr_artikl,";
+    sql_str += " cumulative_balance,";
+    sql_str += " start_date,";
+    sql_str += " end_date";
+    sql_str += " FROM Periods";
+    sql_str += " WHERE start_date is not null AND end_date is not null AND cumulative_balance " + NaNuliOdabranoSign + " 0";
+    sql_str += " ),";
+
+    sql_str += " GroupedPeriods AS (";
+    sql_str += " SELECT rmpr_artikl,";
+    sql_str += " DATEDIFF(DAY, MIN(start_date), MAX(end_date)) AS zero_or_negative_days";
+    sql_str += " FROM Periods2";
+    sql_str += " GROUP BY rmpr_artikl, start_date";
+    sql_str += " )";
+
+    sql_str += " SELECT TOP 100 rmpr_artikl,";
+    sql_str += " (SELECT arti_naziv FROM nkmkarti WHERE ARTI_ARTIKL = rmpr_artikl) as nazivArtikla,";
+    sql_str += " sum(zero_or_negative_days) as zero_days";
+    sql_str += " FROM GroupedPeriods";
+    sql_str += " GROUP BY rmpr_artikl";
+    sql_str += " ORDER BY sum(zero_or_negative_days) DESC";
+
+    // SaveFile(sql_str);
+    try	{
+		sqlResult = sqlQuery(sql_str);
+	}catch(exc){
+		MessageBox(exc);
+	}
+
+    for ( i = 1; i < Size(sqlResult); i++ )
+    {   
+        top100_naNuli_Rbr_ar[i - 1] =  i;   
+        top100_naNuli_sifraArtikla_ar[i - 1] =  sqlResult[i][0];
+        top100_naNuli_nazivArtikla_ar[i - 1] =  sqlResult[i][1]; 
+        top100_naNuli_brojDana_ar[i - 1] =  sqlResult[i][2]; 
+    }
+
+    // Format("T10IZNOSZ_AR", "nofd");
+    // Format("T10IZNOSMJ_AR", "nofd");
+    DisplayArray("dgNaNuli", "close");
+    if(Size(sqlResult) - 1 > 0){
+        DisplayArraySetup("dgNaNuli", counterFld: cntr2, activeElements: Size(sqlResult) - 1, maxElements: 100);    
+    }
+}
+
+function SetObrtaj(){
+
+    for(i = 0; i < 100; i++){
+        top100_obrtaj_Rbr_ar[i] = 0;
+        top100_obrtaj_sifraArtikla_ar[i] = "";
+        top100_obrtaj_nazivArtikla_ar[i] = "";
+        top100_obrtaj_obrtaj_ar[i] = 0;
+    }
+
+    if(mjesecOd.length == 1){
+        mjesecOdMM = "0" + mjesecOd;
+    }
+    else{
+        mjesecOdMM = mjesecOd;
+    }
+    if(mjesecDo.length == 1){
+        mjesecDoMM = "0" + mjesecDo;
+    }else{
+        mjesecDoMM = mjesecDo;
+    }
+
+    daysInMjesecDo = string(DaysInMonth(int(mjesecDo), int(ovagod_h)));
+
+    sql_str = " DECLARE @date_from DATE = '" + ovagod_h + "-" + mjesecOdMM + "-01';";
+	
+    sql_str += " DECLARE @date_to DATE = '" + ovagod_h + "-" + mjesecDoMM + "-" + daysInMjesecDo + "';"; // NE 31
+    
+    sql_str += " WITH";
+    sql_str += " artikliDobavljacaIKupca";
+    sql_str += " AS(SELECT";
+    sql_str += " distinct RMPR_ARTIKL as artikl";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    if(dobavljacAsortiman != ""){
+        sql_str += " where RMPR_UL_IZL = 'u' and rmpr_partner = '" + dobavljacAsortiman + "'";
+    }
+    sql_str += " INTERSECT";
+    sql_str += " SELECT distinct RMPR_ARTIKL as artikl";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    if(kupacAsortiman != ""){
+        sql_str += " where RMPR_UL_IZL = 'i' and rmpr_partner = '" + kupacAsortiman + "'";
+    }
+    sql_str += " ),";
+
+    sql_str += " InventoryBalance AS (";
+    sql_str += " SELECT rmpr_artikl, rmpr_datum_dok,";
+
+    if (prodajna_dn)
+    {
+        sql_str += " isnull(round(sum(CASE WHEN rmpr_ul_izl = 'U' THEN rmpr_cena_obr ELSE -rmpr_cena_obr END), 2), 0) AS transaction_amount";
+    }
+    elif (nabavna_dn)
+    {
+        sql_str += " ISNULL(round(sum(CASE WHEN rmpr_ul_izl = 'U' THEN rmpr_cena_uk ELSE -rmpr_cena_uk END), 2), 0) AS transaction_amount";
+    }
+    elif (razlikaUCijeni_dn)
+    {
+        sql_str += " ISNULL(round(sum(CASE WHEN rmpr_ul_izl = 'U' THEN rmpr_cena_obr - rmpr_cena_uk ELSE -rmpr_cena_obr - rmpr_cena_uk END), 2), 0) AS transaction_amount";
+    }
+    elif (tezina_dn)
+    {
+        sql_str += " ISNULL(round(sum(CASE WHEN rmpr_ul_izl = 'U' THEN rmpr_tezina ELSE -rmpr_tezina END), 2), 0) AS transaction_amount";
+    }
+    elif (mx3_dn)
+    {
+        sql_str += " ISNULL(round(sum(CASE WHEN rmpr_ul_izl = 'U' THEN rmpr_metx3 ELSE -rmpr_metx3 END), 2), 0) AS transaction_amount";
+    }
+    elif (mx2_dn)
+    {
+        sql_str += " ISNULL(round(sum(CASE WHEN rmpr_ul_izl = 'U' THEN rmpr_metx2 ELSE -rmpr_metx2 END), 2), 0) AS transaction_amount";
+    }
+    elif (met_dn)
+    {
+        sql_str += " ISNULL(round(sum(CASE WHEN rmpr_ul_izl = 'U' THEN rmpr_met ELSE -rmpr_met END), 2), 0) AS transaction_amount";
+    }
+    elif (kom_dn)
+    {
+        sql_str += " ISNULL(round(sum(CASE WHEN rmpr_ul_izl = 'U' THEN rmpr_komada ELSE -rmpr_komada END), 2), 0) AS transaction_amount";
+    }
+
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.NKMKARTI ON ARTI_ARTIKL = RMPR_ARTIKL";
+    
+    sql_str += " WHERE rmpr_datum_dok BETWEEN @date_from AND @date_to";
+    sql_str += " AND RMPR_ARTIKL IN (SELECT * FROM artikliDobavljacaIKupca)";
+        
+    filterPart();
+
+    sql_str += " group by rmpr_artikl, rmpr_datum_dok";
+
+
+    sql_str += " ),";
+
+    sql_str += " DailyBalance AS (SELECT rmpr_artikl, rmpr_datum_dok,";
+    sql_str += " SUM(transaction_amount) OVER (PARTITION BY rmpr_artikl ORDER BY rmpr_datum_dok ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS cumulative_balance";
+   
+    sql_str += " FROM InventoryBalance";
+    sql_str += " ),";
+
+
+    sql_str += " DailyAverage AS (SELECT rmpr_artikl,";
+    sql_str += " AVG(cumulative_balance) OVER (PARTITION BY rmpr_artikl ORDER BY rmpr_datum_dok ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS daily_avg_balance";
+    sql_str += " FROM DailyBalance";
+    sql_str += " ),";
+
+    sql_str += " COGS AS (SELECT rmpr_artikl,";
+    if (prodajna_dn)
+    {
+        sql_str += " round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN rmpr_cena_obr ELSE 0 END),2) AS cogs";
+    }
+    elif (nabavna_dn)
+    {
+        sql_str += " round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN rmpr_cena_uk ELSE 0 END),2) AS cogs";
+    }
+    elif (razlikaUCijeni_dn)
+    {
+        sql_str += " round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN rmpr_cena_obr - rmpr_cena_uk ELSE 0 END),2) AS cogs";
+    }
+    elif (tezina_dn)
+    {
+        sql_str += " round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN rmpr_tezina ELSE 0 END),2) AS cogs";
+    }
+    elif (mx3_dn)
+    {
+        sql_str += " round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN rmpr_metx3 ELSE 0 END),2) AS cogs";
+    }
+    elif (mx2_dn)
+    {
+        sql_str += " round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN rmpr_metx2 ELSE 0 END),2) AS cogs";
+    }
+    elif (met_dn)
+    {
+        sql_str += " round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN rmpr_met ELSE 0 END),2) AS cogs";
+    }
+    elif (kom_dn)
+    {
+        sql_str += " round(SUM(CASE WHEN rmpr_ul_izl = 'I' THEN rmpr_komada ELSE 0 END),2) AS cogs";
+    }
+    
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKPROM";
+    sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.NKMKARTI ON ARTI_ARTIKL = RMPR_ARTIKL";
+    
+    sql_str += " WHERE rmpr_datum_dok BETWEEN @date_from AND @date_to";
+    sql_str += " AND RMPR_ARTIKL IN (SELECT * FROM artikliDobavljacaIKupca)";
+        
+    filterPart();
+
+    sql_str += " GROUP BY rmpr_artikl";
+    sql_str += " ),";
+
+    sql_str += " AverageInventory AS (SELECT rmpr_artikl,";
+    sql_str += " avg(daily_avg_balance) as daily_avg_balance";
+    sql_str += " FROM DailyAverage";
+    sql_str += " GROUP BY rmpr_artikl";
+    sql_str += " )";
+
+    sql_str += " SELECT TOP 100";
+    sql_str += " c.rmpr_artikl,";
+    sql_str += " ARTI_NAZIV,";
+    sql_str += " isnull(ROUND(CASE WHEN a.daily_avg_balance <> 0 THEN c.cogs / a.daily_avg_balance ELSE NULL END, 2), 0) AS turnover_ratio";
+    sql_str += " FROM COGS c";
+    sql_str += " JOIN AverageInventory a ON c.rmpr_artikl = a.rmpr_artikl";
+    sql_str += " LEFT JOIN NKMKARTI ON c.RMPR_ARTIKL = ARTI_ARTIKL";
+    sql_str += " WHERE (isnull(ROUND(CASE WHEN a.daily_avg_balance <> 0 THEN c.cogs / a.daily_avg_balance ELSE NULL END, 2), 0)) > 0";
+    sql_str += " ORDER BY turnover_ratio";
+    if(vrstaObrtaja_cb == "najvećim"){
+        sql_str += " desc";
+    }
+    elif(vrstaObrtaja_cb == "najmanjim"){
+        sql_str += " asc";
+    }
+    
+    //SaveFile(sql_str);
+    try	{
+		sqlResult = sqlQuery(sql_str);
+	}catch(exc){
+		MessageBox(exc);
+	}
+
+    for ( i = 1; i < Size(sqlResult); i++ )
+    {   
+        top100_obrtaj_Rbr_ar[i - 1] = i;
+        top100_obrtaj_sifraArtikla_ar[i - 1] = sqlResult[i][0];
+        top100_obrtaj_nazivArtikla_ar[i - 1] = sqlResult[i][1];
+        top100_obrtaj_obrtaj_ar[i - 1] = sqlResult[i][2];
+    }
+
+    // Format("T10IZNOSZ_AR", "nofd");
+    // Format("T10IZNOSMJ_AR", "nofd");
+    DisplayArray("dgObrtaj", "close");
+    if(Size(sqlResult) - 1 > 0){
+        DisplayArraySetup("dgObrtaj", counterFld: cntr2, activeElements: Size(sqlResult) - 1, maxElements: 100);    
+    }
+}
+
+
+

@@ -1,0 +1,20 @@
+MessageBox("...Testing resetallinterpreters...");
+
+a = 10;
+b = "Hello";
+
+MessageBox("Before reset: a = " + a + ", b = " + b);
+
+resetallinterpreters();
+
+try 
+{
+    MessageBox("After reset: a = " + a);
+    MessageBox("After reset: b = " + b);
+} 
+catch (ex) 
+{
+    MessageBox("variable no longer exists. " + ex);
+}
+
+quit;

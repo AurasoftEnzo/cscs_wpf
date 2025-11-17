@@ -11,6 +11,7 @@ using SkiaSharp;
 using SplitAndMerge;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
@@ -73,6 +74,8 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.WEB_REQUEST_MPFD, new WebRequestMPFDFunction());
             //interpreter.RegisterFunction(Constants.MATH_RANDOM2, CSCS.Math. ???  GetRandomFunction(false));
 
+            interpreter.RegisterFunction(Constants.SQLNonQuery, new SQLNonQueryFunction());
+
 
             interpreter.RegisterFunction(Constants.File2Base64, new File2Base64Function());
             interpreter.RegisterFunction(Constants.Base642File, new Base642FileFunction());
@@ -108,6 +111,8 @@ namespace WpfCSCS
 
             public const string WEB_REQUEST_MPFD = "WebRequestMPFD";
             //public const string MATH_RANDOM2 = "Math.Random2";
+            
+            public const string SQLNonQuery = "SQLNonQuery";
 
             public const string File2Base64 = "File2Base64";
             public const string Base642File = "Base642File";
@@ -1158,6 +1163,36 @@ namespace WpfCSCS
                                               new Variable(responseCode), res);
             }
             return res;
+        }
+    }
+
+    class SQLNonQueryFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+            CSCS_SQL.CheckConnectionString(script, m_name);
+
+            var queryStatement = Utils.GetSafeString(args, 0);
+            var spArgs = Utils.GetSafeVariable(args, 1);
+            var sp = SQLQueryFunction.GetParameters(spArgs);
+
+            int result = 0;
+            using (SqlConnection con = new SqlConnection(CSCS_SQL.ConnectionString))
+            {
+                using (SqlCommand cmd = new SqlCommand(queryStatement, con))
+                {
+                    if (sp != null)
+                    {
+                        cmd.Parameters.AddRange(sp.ToArray());
+                    }
+                    con.Open();
+                    cmd.CommandTimeout = 60 * 5;
+                    result = cmd.ExecuteNonQuery();
+                }
+            }
+            return new Variable(result);
         }
     }
 

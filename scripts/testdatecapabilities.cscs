@@ -1,0 +1,158 @@
+MessageBox("...Testing date capabilities...");
+
+//**************************************************************
+MessageBox("COPYING datetime (declared with define)");
+
+DEFINE date1 type D size 10;
+date1 = "15/05/2025";
+
+DEFINE date2 type D size 10;
+date2 = "18/05/2025";
+
+date2 = date1;
+MessageBox(date1);	//EXPECTED: 15/05/2025		ACTUAL: 15/05/2025		//OK
+MessageBox(date2);	//EXPECTED: 15/05/2025		ACTUAL: 15/05/2025		//OK
+date1.Add("3M");
+MessageBox(date1);	//EXPECTED: 15/08/2025		ACTUAL: 15/08/2025		//OK
+MessageBox(date2);	//EXPECTED: 15/05/2025		ACTUAL: 15/05/2025		//OK
+
+
+//**************************************************************
+MessageBox("COPYING datetime (declared without define)");
+
+date3 = DateTime("25/04/2020" , "dd/MM/yyyy");
+date4 = DateTime("30/04/2020" , "dd/MM/yyyy");
+
+date4 = date3;
+MessageBox(date3);	//EXPECTED: 25/04/2020		ACTUAL: 25/04/2020		//OK
+MessageBox(date4);	//EXPECTED: 25/04/2020		ACTUAL: 25/04/2020		//OK
+date3.Add("3M");
+MessageBox(date3);	//EXPECTED: 25/07/2020		ACTUAL: 25/07/2020		//OK
+MessageBox(date4);	//EXPECTED: 25/04/2020		ACTUAL: 25/07/2020		//BUG
+
+
+//**************************************************************
+MessageBox("COMPARISON of dates (declared with define)");
+
+//BUG
+//EXPECTED OUTPUT: "date6 is bigger"
+//ACTUAL OUTPUT: "Not a valid action [>] on a date"   
+
+DEFINE date5 type D size 10;
+date5 = "15/05/2025";
+
+DEFINE date6 type D size 10;
+date6 = "18/05/2025";
+
+try
+{
+	if (date5 > date6)					
+	{
+		MessageBox("date5 is bigger");
+	}
+	elif (date6 > date5)
+	{
+		MessageBox("date6 is bigger");
+	}
+	else
+	{
+		MessageBox("date5 is equal to date6");
+	}
+}
+catch (ex)
+{	
+	MessageBox("COMPARISON of date5, date6 FAILED " + "\n" + ex);
+}
+
+//**************************************************************
+MessageBox("COMPARISON of dates (declared without define)");
+
+//BUG
+//EXPECTED OUTPUT: "date7 is equal to date8"
+//ACTUAL OUTPUT: "Not a valid action [>] on a date"   
+
+date7 = DateTime("15/04/2020" , "dd/MM/yyyy");
+date8 = DateTime("15/04/2020" , "dd/MM/yyyy");
+
+try
+{
+	if (date7 > date8)					
+	{
+		MessageBox("date7 is bigger");
+	}
+	elif (date8 > date7)
+	{
+		MessageBox("date8 is bigger");
+	}
+	else
+	{
+		MessageBox("date7 is equal to date8");
+	}
+}
+catch (ex)
+{	
+	MessageBox("COMPARISON of date7, date8 FAILED " + "\n" + ex);
+}
+
+//**************************************************************
+MessageBox("function returns date");
+
+date9 = DateTime("22/04/2025" , "dd/MM/yyyy");
+
+function fja(datex)
+{
+	datey = datex;
+	datey.Add("3M");
+	return datey;
+}
+
+MessageBox(fja(date9));		//EXPECTED: 22/07/2025		ACTUAL: 22/07/2025		//OK
+MessageBox(date9);			//EXPECTED: 22/04/2025		ACTUAL: 22/07/2025		//BUG
+
+//**************************************************************
+MessageBox("DATE Difference (declared with define)");
+
+DEFINE date10 type D size 10;
+DEFINE date11 type D size 10;
+
+date10 = DateTime("11/04/2025" , "dd/MM/yyyy");
+date11 = DateTime("15/04/2025" , "dd/MM/yyyy");
+
+MessageBox(date11 - date10);	//EXPECTED: 4		ACTUAL: 4		//OK
+
+//**************************************************************
+MessageBox("DATE Difference (declared without define)");
+
+date12 = DateTime("11/04/2025" , "dd/MM/yyyy");
+date13 = DateTime("19/04/2025" , "dd/MM/yyyy");
+
+MessageBox(date13 - date12);	//EXPECTED: 8		ACTUAL: 8		//OK
+
+//**************************************************************
+MessageBox("Date mathematics (declared with define)");
+
+DEFINE date14 type D size 10;
+
+date14 = "18/05/2025";
+
+date14.Add("1y");
+date14.Add("2M");
+date14.Add("3d");
+
+MessageBox(date14);			//EXPECTED: 21/07/2026		ACTUAL: 21/07/2026		//OK
+
+//**************************************************************
+MessageBox("Date mathematics (declared without define)");
+
+date15 = DateTime("20/05/2025" , "dd/MM/yyyy");
+
+date15.Add("1y");
+date15.Add("2M");
+date15.Add("3d");
+
+MessageBox(date15);			//EXPECTED: 23/07/2026		ACTUAL: 23/07/2026		//OK
+
+//**************************************************************
+
+
+quit;

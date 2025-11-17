@@ -1,10 +1,16 @@
 MessageBox("...Testing variable.ToString...");
 
+
+//WITH DEFINE
+Messagebox("WITH DEFINE");
+
 DEFINE s type A size 100;
+DEFINE s2 type A size 1000;
 DEFINE x type B;
 DEFINE y type I;
 DEFINE z type R;
 DEFINE u type N size 14 dec 5;
+DEFINE e type R;
 DEFINE v type L;
 DEFINE date1 type D size 10;
 DEFINE time1 type T size 8;
@@ -16,6 +22,7 @@ x = 50;
 y = 10000;
 z = 1000000000;
 u = 10000000.1234;
+e = -10000;
 v = true;
 date1 = "15/05/2025";
 time1 = "20:11:22";
@@ -34,6 +41,8 @@ MessageBox("u is " + u.ToString("N2"));				//10000000.12
 MessageBox("u is " + u.ToString("N2", ","));		//10000000,12
 MessageBox("u is " + u.ToString("N2", ",", "."));	//10.000.000,12
 MessageBox("u is " + u.ToString("N2", ".", ","));	//10,000,000.12
+
+MessageBox("e is " + e.ToString());					//-10000
 
 MessageBox("v is " + v.ToString());		//1
 
@@ -63,7 +72,40 @@ arrStr[3] = "D103";
 arrStr[4] = "E104";
 MessageBox("arrStr is " + arrStr.ToString());	//["A100", "B101", "C102", "D103", "E104", "", "", "", "", ""]
 
-arr2 = [50, 60, 70, 80];
+s2 = x.ToString() + "*" + y.ToString() + "*" + z.ToString() + "*" + u.ToString() + "*" + v.ToString() + "***";
+MessageBox("s2 is " + s2);						//50*10000*1000000000*10000000.1234*1***
+
+//*************************************************************************************
+
+//WITHOUT DEFINE
+Messagebox("WITHOUT DEFINE");
+
+ss = "Some Text";
+xx = 50;
+yy = 10000;
+zz = 1000000000;
+uu = 10000000.1234;
+ee = -10000.1234;
+vv = true;
+
+datetime1 = DateTime(); //current date and time
+
+MessageBox("ss is " + ss.ToString());					//Some text
+MessageBox("xx is " + xx.ToString());					//50
+MessageBox("yy is " + yy.ToString());					//10000
+MessageBox("yy is " + yy.ToString("000000000"));		//000010000
+MessageBox("zz is " + zz.ToString());					//1000000000
+MessageBox("uu is " + uu.ToString());					//10000000.1234
+MessageBox("uu is " + uu.ToString("N2"));				//10000000.12
+MessageBox("ee is " + ee.ToString("N2", ",", "."));		//-10.000,12
+
+MessageBox("vv is " + vv.ToString());					//1
+
+MessageBox("datetime1 is " + datetime1.ToString());					//14/11/25 8:25:06
+MessageBox("datetime1 is " + datetime1.ToString("dd.MM.yyyy"));		//14.11.2025 
+MessageBox("datetime1 is " + datetime1.ToString("HH:mm"));			//08:25 
+
+arr2 = {50, 60, 70, 80};
 MessageBox("arr2 is " + arr2.ToString());		//[50, 60, 70, 80]
 
 list1 = {};
@@ -74,27 +116,10 @@ list1.Add(400);
 list1.Add(500);
 MessageBox("list1 is " + list1.ToString());		//[100, 200, 300, 400, 500]
 
-
 dict1["Marko"]="D1";
 dict1["Ivan"]="D2";
 dict1["Ana"]="D3";
 MessageBox("dict1 is " + dict1.ToString());		//["Marko":"D1", "Ivan":"D2", "Ana":"D3"]
-
-
-//*************************************************************************************
-
-ss = x.ToString() + "*" + y.ToString() + "*" + z.ToString() + "*" + u.ToString() + "*" + v.ToString() + "***";
-MessageBox("ss is " + ss);
-
-function fja(strX)
-{
-	yy = "ABC" + strX.ToString("N2", ",", ".") + "DEF";
-	return yy;
-
-}
-MessageBox(fja(10000+5));				//ABC10.005,00DEF
-
-MessageBox((20000+22).ToString());		//20022
 
 lista2 = {};
 lista2.Add(11);
@@ -106,9 +131,19 @@ lista2.Add(lista3);
 lista2.Add(22);
 MessageBox("lista2 = " + lista2.ToString());	//[11, ["A", "B", "C"], 22]
 
+//*************************************************************************************
 
-e = -10000.1234;
-MessageBox(e.ToString("N2", ",", "."));			//-10.000,12
+MessageBox("FUNCTIONS");
+
+function fja(paramX)
+{
+	s3 = "ABC" + paramX.ToString("N2", ",", ".") + "DEF";
+	return s3;
+
+}
+MessageBox(fja(10000+5));				//ABC10.005,00DEF
+
+MessageBox((20000+22).ToString());		//20022
 
 function fja2(k)
 {
@@ -117,10 +152,8 @@ function fja2(k)
 MessageBox(fja2(5).ToString("N2", ","));		//12,50
 MessageBox(fja2(3).ToString("N0"));				//8 (because 7.5 is rounded to 8)
 
-date2 = CTOD("15/05/2025");
-date2 += 1;
-MessageBox(date2.ToString("dd.MM.yyyy"));		//16.05.2025
+MessageBox(CTOD("15/05/2025").ToString("dd.MM.yyyy"));		//15.05.2025
 
-MessageBox(CTOD("15/05/2025").ToString("dd.MM.yyyy"));		//15.05.2025.
+//*****************************************************************************
 
 quit;

@@ -648,7 +648,6 @@ namespace SplitAndMerge
                         cmd.Parameters.AddRange(sp.ToArray());
                     }
                     con.Open();
-                    cmd.CommandTimeout = 60 * 5;
                     result = cmd.ExecuteNonQuery();
                 }
             }

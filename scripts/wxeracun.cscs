@@ -107,6 +107,7 @@ function GenerateUBLXml(invNum /* number */) {
                 NKPR_GL_POZIV, NKPR_GL_RZRVA1, NKPR_GL_TOTAL, NKPR_GL_CUSORD, NKPR_GL_CUSST,
                 NKPR_GL_ENTBY, NKPR_GL_BROPIS, NKPR_GL_BROPIS1,
                 CONVERT(varchar(10), DATEADD(DAY, NKPR_GL_NOKAM + NKPR_GL_ROKPL, NKPR_GL_DVO), 23) as NKPR_GL_DUE_DATE,
+                NKPR_GL_SCONTO,NKPR_GL_DANSC,NKPR_GL_REZ3
                 NKSC_SOP
                 FROM " + databaseName + ".dbo.NKPRINV LEFT JOIN " + databaseName + ".dbo.NKSCPART ON NKPR_GL_CUSCOD = NKSC_PARTCODE WHERE NKPR_GL_NUM = @p1;";
     sqlParams = {};
@@ -218,7 +219,10 @@ function GenerateUBLXml(invNum /* number */) {
     NKPR_GL_BROPIS = hdrRes[1][28].trim();
     NKPR_GL_BROPIS1 = hdrRes[1][29].trim();
     NKPR_GL_DUE_DATE = hdrRes[1][30].trim();
-    NKSC_SOP = hdrRes[1][31].trim(); // Customer GLN
+    NKPR_GL_SCONTO = hdrRes[1][31].trim();
+    NKPR_GL_DANSC = hdrRes[1][32].trim();
+    NKPR_GL_REZ3 = hdrRes[1][33].trim();
+    NKSC_SOP = hdrRes[1][34].trim(); // Customer GLN
 
 
     
@@ -261,7 +265,10 @@ function GenerateUBLXml(invNum /* number */) {
                 NKPR_LN_MA_US,
                 NKPR_LN_BR_LN,
                 NKPR_LN_BROPI,
-                NKPR_LN_BROPI1
+                NKPR_LN_BROPI1,
+                NKPR_LN_PSTOPA,
+                NKPR_LN_POPU,
+                NKPR_LN_POPL
                 FROM " + databaseName + ".dbo.NKPRINVL WHERE NKPR_LN_INVNM = @p1 ORDER BY NKPR_LN_INVNM, NKPR_LN_BR_LN;";
     sqlParams = {};
     sqlParams.Add({"@p1", invNum});
@@ -317,7 +324,7 @@ function GenerateUBLXml(invNum /* number */) {
             invType = "Djelomični i konačni račun";
         }
     } elif (NKPR_GL_OZNAKA == "P") {
-        //za ovaj tip računa ne treba unositit KPD!!!
+        //za ovaj tip računa - PREDUJAM - ne treba unositit KPD!!!
         if (NKPR_GL_CUSORD == ""){
             profileID = "P4";
         } else {
@@ -327,7 +334,7 @@ function GenerateUBLXml(invNum /* number */) {
         typeCode = "386";
         invType = "Avansno plaćanje (plaćanje unaprijed)";
     } elif (NKPR_GL_OZNAKA == "R") {
-        //sa ovim tipom se isto može napraviti storno računa
+        //Reklamacija ili povrat sa ovim tipom se isto može napraviti storno računa
         profileID = "P9";
         typeCode = "381";
         invType = "Reklamacija ili povrat robe (CreditNote)";
@@ -337,6 +344,7 @@ function GenerateUBLXml(invNum /* number */) {
         typeCode = "383";
         invType = "Terećenje (DebitNote)";
     } elif (NKPR_GL_OZNAKA == "O") {
+        //Odobrenje
         if (NKPR_GL_REZ3 != 0) {
             profileID = "P9";
             typeCode = "381";
@@ -699,14 +707,17 @@ function GenerateUBLXml(invNum /* number */) {
     if (profileID == "P9") {
         xml += "<cbc:CreditNoteTypeCode>381</cbc:CreditNoteTypeCode>\n"; // BT-3; 1..1
         xml += "<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>\n"; // BT-5; 1..1 
+        /*
+        // BillingReference for CreditNote (always required for P9)
         xml += "<cac:BillingReference>\n";
         xml += "  <cac:InvoiceDocumentReference>\n"; // BG-3; 0..n
         refStr = String(NKPR_GL_REZ3);
         refID = Substring(refStr, 3, 5) + "-" + Substring(refStr, 0, 2) + "-" + Substring(refStr, 2, 1);
         xml += "    <cbc:ID>" + refID + "</cbc:ID>\n"; // BT-25; 1..1
-        xml += "    <cbc:IssueDate>" + NKPR_GL_INVDTE + "</cbc:IssueDate>\n"; // BT-26; 1..1
+        //xml += "    <cbc:IssueDate>" + NKPR_GL_INVDTE + "</cbc:IssueDate>\n"; // BT-26; 1..1
         xml += "  </cac:InvoiceDocumentReference>\n";
         xml += "</cac:BillingReference>\n";
+        */
     } else {
         // dueDate = NKPR_GL_DUE_DATE;
         if (NKPR_GL_DUE_DATE != '1900-01-01') {
@@ -715,7 +726,7 @@ function GenerateUBLXml(invNum /* number */) {
         xml += "<cbc:InvoiceTypeCode>" + typeCode + "</cbc:InvoiceTypeCode>\n";
         // xml += "<cbc:InvoiceType>" + invType + "</cbc:InvoiceType>\n";
 
-        note = "";
+        note = "\n";
         if (NKPR_GL_BROPIS != "") {
             sql_note = "SELECT kppr_op_text FROM " + databaseName + ".dbo.KPPROPIS WHERE KPPR_OP_BROJ = @p1 ORDER BY KPPR_OP_BROJ, kppr_op_lin;";
             sqlParams = {};
@@ -727,7 +738,7 @@ function GenerateUBLXml(invNum /* number */) {
                 }
             }    
         }
-        note += "  ";
+        note += "\n";
         if (nkpr_gl_bropis1 != "") {
             sql_note = "SELECT kppr_op_text FROM " + databaseName + ".dbo.KPPROPIS WHERE KPPR_OP_BROJ = @p1 ORDER BY KPPR_OP_BROJ, kppr_op_lin;";
             sqlParams = {};
@@ -750,6 +761,63 @@ function GenerateUBLXml(invNum /* number */) {
         xml += "<cbc:TaxPointDate>" + NKPR_GL_ESD + "</cbc:TaxPointDate>\n";
         
         xml += "<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>\n";
+        
+        // BillingReference for all document types (except standard invoices with NKPR_GL_OZNAKA = 'S')
+        // Required when referencing another document (Credit Note, Corrective Invoice, Debit Note, etc.)
+        if (NKPR_GL_OZNAKA != 'S') {
+            // Parse multiple invoice references from Note field using #REF() format
+            referencedInvoices = {};
+            
+            // First, add primary reference from NKPR_GL_REZ3 if exists
+            if (NKPR_GL_REZ3 != "" && NKPR_GL_REZ3 != "0") {
+                referencedInvoices.Add(NKPR_GL_REZ3);
+            }
+            
+            // Parse additional references from Note field using #REF() format
+            if (note != "") {
+                // Look for #REF( pattern
+                refStartPos = IndexOf(note, "#REF(");
+                if (refStartPos >= 0) {
+                    // Find the closing parenthesis
+                    refEndPos = IndexOf(note, ")", refStartPos);
+                    if (refEndPos >= 0) {
+                        // Extract the content between #REF( and )
+                        refContent = Substring(note, refStartPos + 5, refEndPos - refStartPos - 5);
+                        
+                        // Split by comma and process each reference
+                        refNumbers = Split(refContent, ",");
+                        for (refIdx = 0; refIdx < Size(refNumbers); refIdx++) {
+                            refNum = refNumbers[refIdx].trim();
+                            if (refNum != "" && refNum != "0") {
+                                // Add to references list if not already present
+                                found = false;
+                                for (existIdx = 0; existIdx < Size(referencedInvoices); existIdx++) {
+                                    if (referencedInvoices[existIdx] == refNum) {
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                                if (!found) {
+                                    referencedInvoices.Add(refNum);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Generate BillingReference elements for each referenced invoice
+            for (refIdx = 0; refIdx < Size(referencedInvoices); refIdx++) {
+                xml += "<cac:BillingReference>\n";
+                xml += "  <cac:InvoiceDocumentReference>\n"; // BG-3; 0..n
+                refStr = String(referencedInvoices[refIdx]);
+                refID = Substring(refStr, 3, 5) + "-" + Substring(refStr, 0, 2) + "-" + Substring(refStr, 2, 1);
+                xml += "    <cbc:ID>" + refID + "</cbc:ID>\n"; // BT-25; 1..1
+                //xml += "    <cbc:IssueDate>" + NKPR_GL_INVDTE + "</cbc:IssueDate>\n"; // BT-26; 1..1
+                xml += "  </cac:InvoiceDocumentReference>\n";
+                xml += "</cac:BillingReference>\n";
+            }
+        }
         xml += "<cbc:TaxCurrencyCode>EUR</cbc:TaxCurrencyCode>\n";
 
 
@@ -1083,6 +1151,19 @@ function GenerateUBLXml(invNum /* number */) {
 
         grossAmount = NKPR_LN_PQTY * NKPR_LN_PPRCE;
         netAmount = NKPR_LN_AMT;
+        
+        // Calculate different discount components
+        // a. Invoice level discount (NKPR_GL_SCONTO) - only if NKPR_GL_DANSC = 0
+        invoiceLevelDiscountAmount = 0;
+        if (NKPR_GL_DANSC == "0" && NKPR_LN_POPU != 0) {
+            invoiceLevelDiscountAmount = NKPR_LN_POPU; // Amount from invoice discount distributed to this line
+        }
+        
+        // b. Line level discounts - NKPR_LN_POPL contains total discount including invoice discount
+        // So line discount amount = NKPR_LN_POPL - NKPR_LN_POPU
+        lineLevelDiscountAmount = NKPR_LN_POPL - NKPR_LN_POPU;
+        
+        // Current discountTotal calculation for verification
         discountTotal = grossAmount - netAmount;
 
         if (profileID == "P9") {
@@ -1134,15 +1215,65 @@ function GenerateUBLXml(invNum /* number */) {
         //znači ako je discounttotal<> 0 i ako nije 'D' u nksysyco onda se prikazuje ovdje oba popusta
         //iznos popusta u linijama je u polju nkpr_ln_popl i to je ukupan popust koji uključuje polja nlpr_ln_disc, nkpr_ln_pstop i popust iz zaglavlja (na cijeli račun)
         //u plju nkpr_ln_popu je samo popust iz zaglavlja nkpr_gl_sconto koji je tu prenešen na linije, a računa se samo ako je u polju NKPR_GL_DANSC= 0
-        if (discountTotal > 0) {
-            //discountTotal je sveukupni popust za tu liniju!
+        
+        // Generate AllowanceCharge elements for different discount types
+        
+        // 1. Invoice level discount (if NKPR_GL_DANSC = 0 and NKPR_LN_POPU > 0)
+        if (invoiceLevelDiscountAmount > 0) {
             xml += "  <cac:AllowanceCharge>\n";
             xml += "    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>\n";
-            xml += "    <cbc:AllowanceChargeReason>Popust na stavku</cbc:AllowanceChargeReason>\n";
-            xml += "    <cbc:MultiplierFactorNumeric>" + FormatNum((discountTotal / grossAmount) * 100, 2, ".") + "</cbc:MultiplierFactorNumeric>\n";
-            xml += "    <cbc:Amount currencyID=\"EUR\">" + FormatNum(discountTotal, 2, ".") + "</cbc:Amount>\n";
+            xml += "    <cbc:AllowanceChargeReason>Popust na osnovu računa (" + NKPR_GL_SCONTO + "%)</cbc:AllowanceChargeReason>\n";
+            xml += "    <cbc:MultiplierFactorNumeric>" + FormatNum((invoiceLevelDiscountAmount / grossAmount) * 100, 2, ".") + "</cbc:MultiplierFactorNumeric>\n";
+            xml += "    <cbc:Amount currencyID=\"EUR\">" + FormatNum(invoiceLevelDiscountAmount, 2, ".") + "</cbc:Amount>\n";
             xml += "    <cbc:BaseAmount currencyID=\"EUR\">" + FormatNum(grossAmount, 2, ".") + "</cbc:BaseAmount>\n";
             xml += "  </cac:AllowanceCharge>\n";
+        }
+        
+        // 2. Line level discounts (NKPR_LN_PDISC and NKPR_LN_PSTOPA combined)
+        if (lineLevelDiscountAmount > 0) {
+            xml += "  <cac:AllowanceCharge>\n";
+            xml += "    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>\n";
+            reasonText = "Popust na stavku";
+            if (NKPR_LN_PDISC != 0 && NKPR_LN_PSTOPA != 0) {
+                reasonText += " (" + FormatNum(NKPR_LN_PDISC, 2, ".") + "% + " + FormatNum(NKPR_LN_PSTOPA, 2, ".") + "%)";
+            } elif (NKPR_LN_PDISC != 0) {
+                reasonText += " (" + FormatNum(NKPR_LN_PDISC, 2, ".") + "%)";
+            } elif (NKPR_LN_PSTOPA != 0) {
+                reasonText += " (" + FormatNum(NKPR_LN_PSTOPA, 2, ".") + "%)";
+            }
+            xml += "    <cbc:AllowanceChargeReason>" + reasonText + "</cbc:AllowanceChargeReason>\n";
+            xml += "    <cbc:MultiplierFactorNumeric>" + FormatNum((lineLevelDiscountAmount / grossAmount) * 100, 2, ".") + "</cbc:MultiplierFactorNumeric>\n";
+            xml += "    <cbc:Amount currencyID=\"EUR\">" + FormatNum(lineLevelDiscountAmount, 2, ".") + "</cbc:Amount>\n";
+            xml += "    <cbc:BaseAmount currencyID=\"EUR\">" + FormatNum(grossAmount, 2, ".") + "</cbc:BaseAmount>\n";
+            xml += "  </cac:AllowanceCharge>\n";
+        } elif (lineLevelDiscountAmount < 0) {
+            // Negative line discount = charge
+            xml += "  <cac:AllowanceCharge>\n";
+            xml += "    <cbc:ChargeIndicator>true</cbc:ChargeIndicator>\n";
+            xml += "    <cbc:AllowanceChargeReason>Naplata na stavku</cbc:AllowanceChargeReason>\n";
+            xml += "    <cbc:MultiplierFactorNumeric>" + FormatNum((Math.abs(lineLevelDiscountAmount) / grossAmount) * 100, 2, ".") + "</cbc:MultiplierFactorNumeric>\n";
+            xml += "    <cbc:Amount currencyID=\"EUR\">" + FormatNum(Math.abs(lineLevelDiscountAmount), 2, ".") + "</cbc:Amount>\n";
+            xml += "    <cbc:BaseAmount currencyID=\"EUR\">" + FormatNum(grossAmount, 2, ".") + "</cbc:BaseAmount>\n";
+            xml += "  </cac:AllowanceCharge>\n";
+        }
+        
+        // 3. If no discounts, add a zero allowance for completeness (optional)
+        if (invoiceLevelDiscountAmount == 0 && lineLevelDiscountAmount == 0) {
+            xml += "  <cac:AllowanceCharge>\n";
+            xml += "    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>\n";
+            xml += "    <cbc:AllowanceChargeReason>Bez popusta</cbc:AllowanceChargeReason>\n";
+            xml += "    <cbc:MultiplierFactorNumeric>0.00</cbc:MultiplierFactorNumeric>\n";
+            xml += "    <cbc:Amount currencyID=\"EUR\">0.00</cbc:Amount>\n";
+            xml += "    <cbc:BaseAmount currencyID=\"EUR\">" + FormatNum(grossAmount, 2, ".") + "</cbc:BaseAmount>\n";
+            xml += "  </cac:AllowanceCharge>\n";
+        }
+        
+        // Verification: Check if our calculation matches the current discountTotal
+        calculatedDiscountTotal = invoiceLevelDiscountAmount + lineLevelDiscountAmount;
+        if (Math.abs(calculatedDiscountTotal - discountTotal) > 0.01) {
+            // Add comment for debugging if there's a discrepancy
+            xml += "  <!-- DISCOUNT VERIFICATION: Calculated=" + FormatNum(calculatedDiscountTotal, 2, ".") + 
+                   " vs Current=" + FormatNum(discountTotal, 2, ".") + " -->\n";
         }
 
         // Line attachment
@@ -1407,7 +1538,9 @@ function fillInvoiceLine(lineNum){
     NKPR_LN_BR_LN = linRes[lineNum][18];
     NKPR_LN_BROPI = linRes[lineNum][19];
     NKPR_LN_BROPI1 = linRes[lineNum][20];
-
+    NKPR_LN_PSTOPA = linRes[lineNum][21];
+    NKPR_LN_POPU = linRes[lineNum][22];
+    NKPR_LN_POPL = linRes[lineNum][23];
     return;
 }
 
@@ -1522,8 +1655,11 @@ function GetUNUnitCode(jedmj) {
 function GetMimeType(file) {
     ext = ParseFile(file, "pfExt").Lower(); // StrLower(string)
     if (ext == "pdf")  { return "application/pdf"; }
+    if (ext == "doc")  { return "application/msword"; }
     if (ext == "docx") { return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"; }
+    if (ext == "xls")  { return "application/vnd.ms-excel"; }
     if (ext == "xlsx") { return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"; }
+    if (ext == "odt")  { return "application/vnd.oasis.opendocument.text"; }
     if (ext == "jpg" || ext == "jpeg") { return "image/jpeg"; }
     if (ext == "png")  { return "image/png"; }
     return "application/octet-stream";

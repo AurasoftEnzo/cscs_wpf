@@ -107,9 +107,12 @@ function GenerateUBLXml(invNum /* number */) {
                 NKPR_GL_POZIV, NKPR_GL_RZRVA1, NKPR_GL_TOTAL, NKPR_GL_CUSORD, NKPR_GL_CUSST,
                 NKPR_GL_ENTBY, NKPR_GL_BROPIS, NKPR_GL_BROPIS1,
                 CONVERT(varchar(10), DATEADD(DAY, NKPR_GL_NOKAM + NKPR_GL_ROKPL, NKPR_GL_DVO), 23) as NKPR_GL_DUE_DATE,
-                NKPR_GL_SCONTO,NKPR_GL_DANSC,NKPR_GL_REZ3
+                NKPR_GL_SCONTO,NKPR_GL_DANSC,NKPR_GL_REZ3,NKPR_GL_SHPCOD, NKPR_GL_SHPNME, NKPR_GL_SHPRO, NKPR_GL_ADD1, 
+                NKPR_GL_SHPZIP, NKPR_GL_SHPCTY,NKPR_GL_SHPST, SUBSTRING(NKSP_AD_REZ,37,13) as NKSP_AD_GLN,
                 NKSC_SOP
-                FROM " + databaseName + ".dbo.NKPRINV LEFT JOIN " + databaseName + ".dbo.NKSCPART ON NKPR_GL_CUSCOD = NKSC_PARTCODE WHERE NKPR_GL_NUM = @p1;";
+                FROM " + databaseName + ".dbo.NKPRINV LEFT JOIN " + databaseName + ".dbo.NKSCPART ON NKPR_GL_CUSCOD = NKSC_PARTCODE
+                    LEFT JOIN " + databaseName + ".dbo.NKSPADRS ON nkpr_gl_cuscod= nksp_ad_code AND nkpr_gl_shpcod= nksp_ad_codeint
+                WHERE NKPR_GL_NUM = @p1;";
     sqlParams = {};
     sqlParams.Add({"@p1", invNum});
     hdrRes = sqlQuery(sql_hdr, sqlParams);
@@ -222,7 +225,15 @@ function GenerateUBLXml(invNum /* number */) {
     NKPR_GL_SCONTO = hdrRes[1][31].trim();
     NKPR_GL_DANSC = hdrRes[1][32].trim();
     NKPR_GL_REZ3 = hdrRes[1][33].trim();
-    NKSC_SOP = hdrRes[1][34].trim(); // Customer GLN
+    NKPR_GL_SHPCOD = hdrRes[1][34].trim();
+    NKPR_GL_SHPNME = hdrRes[1][35].trim();
+    NKPR_GL_SHPRO = hdrRes[1][36].trim();
+    NKPR_GL_SHPADD1 = hdrRes[1][37].trim();
+    NKPR_GL_SHPZIP = hdrRes[1][38].trim();
+    NKPR_GL_SHPCTY = hdrRes[1][39].trim();
+    NKPR_GL_SHPST = hdrRes[1][40].trim();
+    NKPR_AD_GLN = hdrRes[1][41].trim();
+    NKSC_SOP = hdrRes[1][42].trim(); // Customer GLN
 
 
     
@@ -1032,6 +1043,86 @@ function GenerateUBLXml(invNum /* number */) {
     
     xml += "  </cac:Party>\n";
     xml += "</cac:AccountingCustomerParty>\n";
+
+    // -----------------------------------------------------------
+    // Delivery Location (if specified)
+    // -----------------------------------------------------------
+    // Check if any delivery location information is present
+    if (NKPR_GL_SHPCOD != "" || NKPR_GL_SHPNME != "" || NKPR_GL_SHPRO != "") {
+        xml += "<cac:Delivery>\n";
+        xml += "  <cac:DeliveryLocation>\n";
+        
+        // Determine delivery location ID - preference: NKPR_AD_GLN (13 chars) > NKPR_GL_SHPCOD > 'ZZZZ'
+        deliveryLocationID = "";
+        deliverySchemeID = "";
+        
+        if (NKPR_AD_GLN != "" && Length(NKPR_AD_GLN) == 13) {
+            // GLN number has preference (13 characters)
+            deliveryLocationID = NKPR_AD_GLN;
+            deliverySchemeID = "0088"; // GLN scheme
+        } elif (NKPR_GL_SHPCOD != "") {
+            // Internal delivery location code
+            deliveryLocationID = NKPR_GL_SHPCOD;
+            deliverySchemeID = "9934"; // Internal code scheme (Croatia)
+        } else {
+            // Ad hoc code when no specific ID available
+            deliveryLocationID = "ZZZZ";
+            deliverySchemeID = "9934";
+        }
+        
+        xml += "    <cbc:ID schemeID=\"" + deliverySchemeID + "\">" + deliveryLocationID + "</cbc:ID>\n";
+        
+        // Add delivery address if any address components are present
+        if (NKPR_GL_SHPADD1 != "" || NKPR_GL_SHPCTY != "" || NKPR_GL_SHPZIP != "" || NKPR_GL_SHPST != "") {
+            xml += "    <cac:Address>\n";
+            
+            if (NKPR_GL_SHPADD1 != "") {
+                xml += "      <cbc:StreetName>" + NKPR_GL_SHPADD1 + "</cbc:StreetName>\n";
+            }
+            
+            if (NKPR_GL_SHPCTY != "") {
+                xml += "      <cbc:CityName>" + NKPR_GL_SHPCTY + "</cbc:CityName>\n";
+            }
+            
+            if (NKPR_GL_SHPZIP != "") {
+                xml += "      <cbc:PostalZone>" + NKPR_GL_SHPZIP + "</cbc:PostalZone>\n";
+            }
+            
+            if (NKPR_GL_SHPST != "") {
+                xml += "      <cac:Country>\n";
+                xml += "        <cbc:IdentificationCode>" + NKPR_GL_SHPST + "</cbc:IdentificationCode>\n";
+                xml += "      </cac:Country>\n";
+            }
+            
+            xml += "    </cac:Address>\n";
+        }
+        
+        xml += "  </cac:DeliveryLocation>\n";
+        
+        // Add delivery party information if name or province is available
+        if (NKPR_GL_SHPNME != "" || NKPR_GL_SHPRO != "") {
+            xml += "  <cac:DeliveryParty>\n";
+            
+            if (NKPR_GL_SHPNME != "") {
+                xml += "    <cac:PartyName>\n";
+                xml += "      <cbc:Name>" + NKPR_GL_SHPNME + "</cbc:Name>\n";
+                xml += "    </cac:PartyName>\n";
+            }
+            
+            // If province is different from delivery address, add it as party location
+            if (NKPR_GL_SHPRO != "" && NKPR_GL_SHPRO != NKPR_GL_SHPST) {
+                xml += "    <cac:PhysicalLocation>\n";
+                xml += "      <cac:Address>\n";
+                xml += "        <cbc:CountrySubentity>" + NKPR_GL_SHPRO + "</cbc:CountrySubentity>\n";
+                xml += "      </cac:Address>\n";
+                xml += "    </cac:PhysicalLocation>\n";
+            }
+            
+            xml += "  </cac:DeliveryParty>\n";
+        }
+        
+        xml += "</cac:Delivery>\n";
+    }
 
     // -----------------------------------------------------------
     // Payment Means

@@ -82,6 +82,7 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.SignXml, new SignXmlFunction());
             interpreter.RegisterFunction(Constants.ValidateXsd, new ValidateXsdFunction());
             interpreter.RegisterFunction(Constants.ValidateSch, new ValidateSchFunction());
+            interpreter.RegisterFunction(Constants.EscapeQuotesInXml, new EscapeQuotesInXmlFunction());
         }
         public partial class Constants
         {
@@ -119,6 +120,7 @@ namespace WpfCSCS
             public const string SignXml = "SignXml";
             public const string ValidateXsd = "ValidateXsd";
             public const string ValidateSch = "ValidateSch";
+            public const string EscapeQuotesInXml = "EscapeQuotesInXml";
         }
     }
 
@@ -1547,6 +1549,19 @@ namespace WpfCSCS
                 System.IO.File.WriteAllText(logFilePath, "ex.Message: " + ex.Message);
                 return new Variable(false);
             }
+        }
+    }
+    
+    class EscapeQuotesInXmlFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+
+            var xmlContent = Utils.GetSafeString(args, 0);
+            
+            return new Variable(xmlContent.Replace("\"", "\\\""));
         }
     }
 }

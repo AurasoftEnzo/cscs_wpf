@@ -86,9 +86,51 @@ if(!GenerateUBLXml(invNum)){
     MessageBox("Greška pri generiranju UBL XML-a za račun " + invNum + "!");    
 }else{
     MessageBox("UBL XML je uspješno generiran za račun " + invNum + ".");    
+    
+/*
+    {\"Username\":\"" + korisnickoIme + "\",
+    \"Password\":\"" + Password + "\",
+    \"CompanyId\":\"" + CompanyId + "\",
+        \"SoftwareId\":\"" + SoftwareId + "\",
+        \"File\":\"" + aaaa + "\"
+*/
+
+    escapedXml = StrReplace(xml, "\n", " ");
+    escapedXml = EscapeQuotesInXml(xml);
+    
+
+    jsonLoad = '{"Username": "11684", "Password": "UgCpAR72", "CompanyId": "26389058739", "SoftwareId": "Test-002", "File": "' + escapedXml + '"}';
+
+    loadFilename = SavePath + parsefile(attachmentPdfPath, "pfName") + ".load.json";
+    SaveFile(jsonLoad, loadFilename);
+
+    isSuccess = WebRequest("POST", "https://demo.moj-eracun.hr/apis/v2/send", jsonLoad, invNum,
+                        "SendingSuccess", "SendingFailure", "application/json", null, 1000 * 20, false);
 }
 
 exit;
+
+function SendingSuccess(_invNum, responseCode, res) {
+    //MSG("Uspješno slanje." + "\nBroj računa: " + brRac + "\nresponseCode: " + responseCode + "\nres: " + res);    
+
+    // statusCode = responseCode;
+
+    //res je poruka od servera prema klijentu
+    // resFromAPI = res;
+
+    MSG("Slanje računa broj " + _invNum + " uspješno.\n\nresponseCode = " + responseCode + "\nres = " + res);
+}
+
+function SendingFailure(_invNum, responseCode, res) {
+    //MSG("Uspješno slanje." + "\nBroj računa: " + brRac + "\nresponseCode: " + responseCode + "\nres: " + res);    
+
+    // statusCode = responseCode;
+
+    //res je poruka od servera prema klijentu
+    // resFromAPI = res;
+
+    MSG("Slanje računa broj " + _invNum + " NEUSPJEŠNO!\n\nresponseCode = " + responseCode + "\nres = " + res);
+}
 
 
 function GenerateUBLXml(invNum /* number */) {
@@ -944,7 +986,7 @@ function GenerateUBLXml(invNum /* number */) {
         supPartyID = "0088:" + KPSY_REZERVAX;
     }
     
-    xml += "    <cbc:EndpointID schemeID=\"" + supSchemeID + "\">" + supEndpointID + "</cbc:EndpointID>\n";
+    xml += "    <cbc:EndpointID schemeID=\"" + supSchemeID + "\">" + supEndpointID + "</cbc:EndpointID>\n"; // !!! // ???
     xml += "    <cac:PartyIdentification><cbc:ID>" + supPartyID + "</cbc:ID></cac:PartyIdentification>\n";
     xml += "    <cac:PartyName><cbc:Name>" + supName + "</cbc:Name></cac:PartyName>\n";
     
@@ -996,6 +1038,13 @@ function GenerateUBLXml(invNum /* number */) {
     xml += "<cac:AccountingCustomerParty>\n";
     xml += "  <cac:Party>\n";
     
+
+
+    // !!!
+    NKPR_GL_JMBG = "26389058739";
+
+
+
     // Use GLN (0088 scheme) if available and valid (13 characters), otherwise use OIB (9934 scheme)
     cusSchemeID = "9934";
     cusEndpointID = NKPR_GL_JMBG;
@@ -1046,85 +1095,88 @@ function GenerateUBLXml(invNum /* number */) {
     xml += "  </cac:Party>\n";
     xml += "</cac:AccountingCustomerParty>\n";
 
-    // -----------------------------------------------------------
-    // Delivery Location (if specified)
-    // -----------------------------------------------------------
-    // Check if any delivery location information is present
-    if (NKPR_GL_SHPCOD != "" || NKPR_GL_SHPNME != "" || NKPR_GL_SHPRO != "") {
-        xml += "<cac:Delivery>\n";
-        xml += "  <cac:DeliveryLocation>\n";
+    // // -----------------------------------------------------------
+    // // Delivery Location (if specified)
+    // // -----------------------------------------------------------
+    // // Check if any delivery location information is present
+    // if (NKPR_GL_SHPCOD != "" || NKPR_GL_SHPNME != "" || NKPR_GL_SHPRO != "") {
+    //     xml += "<cac:Delivery>\n";
+    //     xml += "  <cac:DeliveryLocation>\n";
         
-        // Determine delivery location ID - preference: NKPR_AD_GLN (13 chars) > NKPR_GL_SHPCOD > 'ZZZZ'
-        deliveryLocationID = "";
-        deliverySchemeID = "";
+    //     // Determine delivery location ID - preference: NKPR_AD_GLN (13 chars) > NKPR_GL_SHPCOD > 'ZZZZ'
+    //     deliveryLocationID = "";
+    //     deliverySchemeID = "";
         
-        if (NKPR_AD_GLN != "" && Length(NKPR_AD_GLN) == 13) {
-            // GLN number has preference (13 characters)
-            deliveryLocationID = NKPR_AD_GLN;
-            deliverySchemeID = "0088"; // GLN scheme
-        } elif (NKPR_GL_SHPCOD != "") {
-            // Internal delivery location code
-            deliveryLocationID = NKPR_GL_SHPCOD;
-            deliverySchemeID = "9934"; // Internal code scheme (Croatia)
-        } else {
-            // Ad hoc code when no specific ID available
-            deliveryLocationID = "ZZZZ";
-            deliverySchemeID = "9934";
-        }
+    //     if (NKPR_AD_GLN != "" && Length(NKPR_AD_GLN) == 13) {
+    //         // GLN number has preference (13 characters)
+    //         deliveryLocationID = NKPR_AD_GLN;
+    //         deliverySchemeID = "0088"; // GLN scheme
+    //     } elif (NKPR_GL_SHPCOD != "") {
+    //         // Internal delivery location code
+    //         deliveryLocationID = NKPR_GL_SHPCOD;
+    //         deliverySchemeID = "9934"; // Internal code scheme (Croatia)
+    //     } else {
+    //         // Ad hoc code when no specific ID available
+    //         deliveryLocationID = "ZZZZ";
+    //         deliverySchemeID = "9934";
+    //     }
         
-        xml += "    <cbc:ID schemeID=\"" + deliverySchemeID + "\">" + deliveryLocationID + "</cbc:ID>\n";
+    //     xml += "    <cbc:ID schemeID=\"" + deliverySchemeID + "\">" + deliveryLocationID + "</cbc:ID>\n";
         
-        // Add delivery address if any address components are present
-        if (NKPR_GL_SHPA1 != "" || NKPR_GL_SHPCTY != "" || NKPR_GL_SHPZIP != "" || NKPR_GL_SHPST != "") {
-            xml += "    <cac:Address>\n";
+    //     // Add delivery address if any address components are present
+    //     if (NKPR_GL_SHPA1 != "" || NKPR_GL_SHPCTY != "" || NKPR_GL_SHPZIP != "" || NKPR_GL_SHPST != "") {
+    //         xml += "    <cac:Address>\n";
             
-            if (NKPR_GL_SHPA1 != "") {
-                xml += "      <cbc:StreetName>" + NKPR_GL_SHPA1 + "</cbc:StreetName>\n";
-            }
+    //         if (NKPR_GL_SHPA1 != "") {
+    //             xml += "      <cbc:StreetName>" + NKPR_GL_SHPA1 + "</cbc:StreetName>\n";
+    //         }
             
-            if (NKPR_GL_SHPCTY != "") {
-                xml += "      <cbc:CityName>" + NKPR_GL_SHPCTY + "</cbc:CityName>\n";
-            }
+    //         if (NKPR_GL_SHPCTY != "") {
+    //             xml += "      <cbc:CityName>" + NKPR_GL_SHPCTY + "</cbc:CityName>\n";
+    //         }
             
-            if (NKPR_GL_SHPZIP != "") {
-                xml += "      <cbc:PostalZone>" + NKPR_GL_SHPZIP + "</cbc:PostalZone>\n";
-            }
+    //         if (NKPR_GL_SHPZIP != "") {
+    //             xml += "      <cbc:PostalZone>" + NKPR_GL_SHPZIP + "</cbc:PostalZone>\n";
+    //         }
             
-            if (NKPR_GL_SHPST != "") {
-                xml += "      <cac:Country>\n";
-                xml += "        <cbc:IdentificationCode>" + NKPR_GL_SHPST + "</cbc:IdentificationCode>\n";
-                xml += "      </cac:Country>\n";
-            }
+    //         if (NKPR_GL_SHPST != "") {
+    //             xml += "      <cac:Country>\n";
+    //             xml += "        <cbc:IdentificationCode>" + NKPR_GL_SHPST + "</cbc:IdentificationCode>\n";
+    //             xml += "      </cac:Country>\n";
+    //         }
             
-            xml += "    </cac:Address>\n";
-        }
+    //         xml += "    </cac:Address>\n";
+    //     }
         
-        xml += "  </cac:DeliveryLocation>\n";
+    //     xml += "  </cac:DeliveryLocation>\n";
         
-        // Add delivery party information if name or province is available
-        if (NKPR_GL_SHPNME != "" || NKPR_GL_SHPRO != "") {
-            xml += "  <cac:DeliveryParty>\n";
+    //     // Add delivery party information if name or province is available
+    //     if (NKPR_GL_SHPNME != "" || NKPR_GL_SHPRO != "") {
+    //         xml += "  <cac:DeliveryParty>\n";
             
-            if (NKPR_GL_SHPNME != "") {
-                xml += "    <cac:PartyName>\n";
-                xml += "      <cbc:Name>" + NKPR_GL_SHPNME + "</cbc:Name>\n";
-                xml += "    </cac:PartyName>\n";
-            }
+    //         if (NKPR_GL_SHPNME != "") {
+    //             xml += "    <cac:PartyName>\n";
+    //             xml += "      <cbc:Name>" + NKPR_GL_SHPNME + "</cbc:Name>\n";
+    //             xml += "    </cac:PartyName>\n";
+    //         }
             
-            // If province is different from delivery address, add it as party location
-            if (NKPR_GL_SHPRO != "" && NKPR_GL_SHPRO != NKPR_GL_SHPST) {
-                xml += "    <cac:PhysicalLocation>\n";
-                xml += "      <cac:Address>\n";
-                xml += "        <cbc:CountrySubentity>" + NKPR_GL_SHPRO + "</cbc:CountrySubentity>\n";
-                xml += "      </cac:Address>\n";
-                xml += "    </cac:PhysicalLocation>\n";
-            }
+    //         // If province is different from delivery address, add it as party location
+    //         if (NKPR_GL_SHPRO != "" && NKPR_GL_SHPRO != NKPR_GL_SHPST) {
+    //             xml += "    <cac:PhysicalLocation>\n";
+    //             xml += "      <cac:Address>\n";
+    //             xml += "        <cbc:CountrySubentity>" + NKPR_GL_SHPRO + "</cbc:CountrySubentity>\n";
+    //             xml += "      </cac:Address>\n";
+    //             xml += "    </cac:PhysicalLocation>\n";
+    //         }
             
-            xml += "  </cac:DeliveryParty>\n";
-        }
+    //         xml += "  </cac:DeliveryParty>\n";
+    //     }
         
-        xml += "</cac:Delivery>\n";
-    }
+    //     xml += "</cac:Delivery>\n";
+    // }
+
+
+
 
     // -----------------------------------------------------------
     // Payment Means
@@ -1550,7 +1602,20 @@ function GenerateUBLXml(invNum /* number */) {
     }
 
 
-    MSG(SignXml(xmlFileName, "C:\\Users\\User\\Documents\\__ERACUN_FISKALIZACIJA_2.0\\cert\\p12_aurasoft_demo.p12", "Aurasoft1", xmlFileName + ".sig.xml"));
+
+
+
+
+    /// POTPISIVANJE XML-A
+    /// POTPISIVANJE XML-A
+    /// POTPISIVANJE XML-A
+    // MSG(SignXml(xmlFileName, "C:\\Users\\User\\Documents\\__ERACUN_FISKALIZACIJA_2.0\\cert\\p12_aurasoft_demo.p12", "Aurasoft1", xmlFileName + ".sig.xml"));
+
+
+
+
+
+
 
 
     // schFiles = {};
@@ -1642,83 +1707,83 @@ function fillInvoiceLine(lineNum){
 
 
 
+/* invalid VALIDATION code ...
+    // function ValidateUBLXml(xmlContent, out validationErrors) {
+    //     validationErrors = "";
+    //     schemaFolder = "Schemas\\";
 
-// function ValidateUBLXml(xmlContent, out validationErrors) {
-//     validationErrors = "";
-//     schemaFolder = "Schemas\\";
+    //     xsdFiles = {};
+    //     xsdFiles.Add(schemaFolder + "UBL-Invoice-2.1.xsd");
+    //     xsdFiles.Add(schemaFolder + "EN16931-CIUS-HR-2025-1.0.xsd");
+    //     xsdFiles.Add(schemaFolder + "PEPPOL-BIS-3.0-Validation.xsd");
+    //     xsdFiles.Add(schemaFolder + "HR-UBL-Extension-1.0.xsd");
+    //     xsdFiles.Add(schemaFolder + "HR-Fiscal-Validation-1.0.xsd");
 
-//     xsdFiles = {};
-//     xsdFiles.Add(schemaFolder + "UBL-Invoice-2.1.xsd");
-//     xsdFiles.Add(schemaFolder + "EN16931-CIUS-HR-2025-1.0.xsd");
-//     xsdFiles.Add(schemaFolder + "PEPPOL-BIS-3.0-Validation.xsd");
-//     xsdFiles.Add(schemaFolder + "HR-UBL-Extension-1.0.xsd");
-//     xsdFiles.Add(schemaFolder + "HR-Fiscal-Validation-1.0.xsd");
+    //     Import("System.Xml.dll");
+    //     Import("System.Xml.Schema.dll");
 
-//     Import("System.Xml.dll");
-//     Import("System.Xml.Schema.dll");
+    //     csharpCode = @"
+    // using System;
+    // using System.Xml;
+    // using System.Xml.Schema;
+    // using System.IO;
+    // using System.Text;
 
-//     csharpCode = @"
-// using System;
-// using System.Xml;
-// using System.Xml.Schema;
-// using System.IO;
-// using System.Text;
+    // public class UblValidator {
+    //     public static string Validate(string xml, string[] xsds) {
+    //         try {
+    //             XmlReaderSettings settings = new XmlReaderSettings();
+    //             settings.ValidationType = ValidationType.Schema;
+    //             settings.ValidationFlags |= XmlSchemaValidationFlags.ProcessInlineSchema;
+    //             settings.ValidationFlags |= XmlSchemaValidationFlags.ProcessSchemaLocation;
+    //             settings.ValidationFlags |= XmlSchemaValidationFlags.ReportValidationWarnings;
 
-// public class UblValidator {
-//     public static string Validate(string xml, string[] xsds) {
-//         try {
-//             XmlReaderSettings settings = new XmlReaderSettings();
-//             settings.ValidationType = ValidationType.Schema;
-//             settings.ValidationFlags |= XmlSchemaValidationFlags.ProcessInlineSchema;
-//             settings.ValidationFlags |= XmlSchemaValidationFlags.ProcessSchemaLocation;
-//             settings.ValidationFlags |= XmlSchemaValidationFlags.ReportValidationWarnings;
+    //             XmlSchemaSet schemaSet = new XmlSchemaSet();
+    //             foreach (string xsd in xsds) {
+    //                 if (!File.Exists(xsd)) {
+    //                     return \"XSD NOT FOUND: \" + xsd;
+    //                 }
+    //                 schemaSet.Add(null, XmlReader.Create(xsd));
+    //             }
+    //             settings.Schemas = schemaSet;
 
-//             XmlSchemaSet schemaSet = new XmlSchemaSet();
-//             foreach (string xsd in xsds) {
-//                 if (!File.Exists(xsd)) {
-//                     return \"XSD NOT FOUND: \" + xsd;
-//                 }
-//                 schemaSet.Add(null, XmlReader.Create(xsd));
-//             }
-//             settings.Schemas = schemaSet;
+    //             StringBuilder errors = new StringBuilder();
+    //             settings.ValidationEventHandler += (sender, e) => {
+    //                 errors.AppendLine($\"[{e.Severity}] Line {e.Exception.LineNumber}:{e.Exception.LinePosition} - {e.Message}\");
+    //             };
 
-//             StringBuilder errors = new StringBuilder();
-//             settings.ValidationEventHandler += (sender, e) => {
-//                 errors.AppendLine($\"[{e.Severity}] Line {e.Exception.LineNumber}:{e.Exception.LinePosition} - {e.Message}\");
-//             };
+    //             using (StringReader sr = new StringReader(xml))
+    //             using (XmlReader reader = XmlReader.Create(sr, settings)) {
+    //                 while (reader.Read()) { }
+    //             }
 
-//             using (StringReader sr = new StringReader(xml))
-//             using (XmlReader reader = XmlReader.Create(sr, settings)) {
-//                 while (reader.Read()) { }
-//             }
+    //             return errors.Length == 0 ? \"VALID\" : errors.ToString();
+    //         } catch (Exception ex) {
+    //             return \"EXCEPTION: \" + ex.Message + \"\\n\" + ex.StackTrace;
+    //         }
+    //     }
+    // }
+    // ";
 
-//             return errors.Length == 0 ? \"VALID\" : errors.ToString();
-//         } catch (Exception ex) {
-//             return \"EXCEPTION: \" + ex.Message + \"\\n\" + ex.StackTrace;
-//         }
-//     }
-// }
-// ";
+    //     EVAL("C#", csharpCode);
 
-//     EVAL("C#", csharpCode);
+    //     xsdArray = "[";
+    //     for (i = 0; i < Size(xsdFiles); i++) {
+    //         xsdArray += "\"" + xsdFiles[i] + "\"";
+    //         if (i < Size(xsdFiles) - 1) { xsdArray += ","; }
+    //     }
+    //     xsdArray += "]";
 
-//     xsdArray = "[";
-//     for (i = 0; i < Size(xsdFiles); i++) {
-//         xsdArray += "\"" + xsdFiles[i] + "\"";
-//         if (i < Size(xsdFiles) - 1) { xsdArray += ","; }
-//     }
-//     xsdArray += "]";
+    //     result = EVAL("C#", "UblValidator.Validate(@p1, " + xsdArray + ")", xmlContent);
 
-//     result = EVAL("C#", "UblValidator.Validate(@p1, " + xsdArray + ")", xmlContent);
-
-//     if (StartsWith(result, "VALID")) {
-//         return true;
-//     } else {
-//         validationErrors = result;
-//         return false;
-//     }
-// }
-
+    //     if (StartsWith(result, "VALID")) {
+    //         return true;
+    //     } else {
+    //         validationErrors = result;
+    //         return false;
+    //     }
+    // }
+*/
 
 
 

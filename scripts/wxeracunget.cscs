@@ -1,0 +1,567 @@
+// -----------------------------------------------------------
+// WxEracunGet.cscs - UBL XML Invoice Import Program
+// -----------------------------------------------------------
+// Purpose: Import UBL XML invoices into database tables
+// Main Function: importUBLXml(xmlFilePath)
+// Created: November 19, 2025
+// Compatible with: wxeracun.cscs export format
+// -----------------------------------------------------------
+ 
+// Global variables for database connection
+databaseName = "your_database_name"; // Update with actual database name
+ 
+start();
+
+exit;
+
+
+function start(){
+    // result = importUBLXml("C:\\UBL_90100002.xml");
+
+    // !!!
+    jsonResponse = WebRequest("https://MOJERACUN/receive1racun/" + brRac, "POST", "U", "P");
+    
+    objektRacuna = DeserializeJson(jsonResponse);
+
+    xml = StrReplace(objektRacuna["File"], "\\\"", "\"");
+
+    invoiceDict = XmlToDict(xml);
+    //primjeri:
+    // msg(invoiceDict["AccountingSupplierParty"]["Party"]["PartyIdentification"]["ID"]);
+    // msg(invoiceDict["InvoiceLine"][3]["InvoicedQuantity"]);
+    NKPR_GL_NUM = invoiceDict["ID"];
+    NKPR_GL_SAT = invoiceDict["IssueTime"];
+
+    // primjer za linije
+    for(i = 0; i < Size(invoiceDict["InvoiceLine"]); i++) {
+        currentLine = invoiceDict["InvoiceLine"][i];
+
+        NKPR_LN_BR_LN = currentLine["ID"];
+        NKPR_LN_AMOUNT = currentLine["InvoicedQuantity"];
+        // ...
+    }
+}
+
+// Main import function
+function importUBLXml(xmlFilePath) {
+    try {
+        // Check if file exists
+        if (!Exists(xmlFilePath)) {
+            MessageBox("XML datoteka ne postoji: " + xmlFilePath);
+            return false;
+        }
+       
+        // Load and parse XML content
+        xmlContent = LoadFile(xmlFilePath);
+        if (xmlContent == "") {
+            MessageBox("XML datoteka je prazna ili se ne može učitati: " + xmlFilePath);
+            return false;
+        }
+       
+        // Parse XML document
+        xmlDoc = ParseXML(xmlContent);
+        if (xmlDoc == null) {
+            MessageBox("Greška prilikom parsiranja XML datoteke: " + xmlFilePath);
+            return false;
+        }
+       
+        // Determine document type (Invoice, CreditNote, DebitNote)
+        docType = GetDocumentType(xmlDoc);
+        if (docType == "") {
+            MessageBox("Nepoznat tip dokumenta u XML datoteci");
+            return false;
+        }
+       
+        // Extract header information
+        headerData = ExtractHeaderData(xmlDoc, docType);
+        if (headerData == null) {
+            MessageBox("Greška prilikom izvlačenja podataka zaglavlja");
+            return false;
+        }
+       
+        // Extract line items
+        lineItems = ExtractLineItems(xmlDoc, docType);
+        if (lineItems == null) {
+            MessageBox("Greška prilikom izvlačenja stavki računa");
+            return false;
+        }
+       
+        // Begin database transaction
+        BeginTransaction();
+       
+        try {
+            // Import header data to NKPRINV table
+            invNum = ImportHeaderData(headerData, docType);
+            if (invNum == 0) {
+                throw "Greška prilikom unosa zaglavlja računa";
+            }
+           
+            // Import line items to NKPRINVL table
+            if (!ImportLineItems(invNum, lineItems)) {
+                throw "Greška prilikom unosa stavki računa";
+            }
+           
+            // Import tax data (if needed)
+            if (!ImportTaxData(invNum, headerData, lineItems)) {
+                throw "Greška prilikom unosa podataka o porezu";
+            }
+           
+            // Commit transaction
+            CommitTransaction();
+           
+            MessageBox("UBL XML račun je uspješno uvezen!\nBroj računa: " + invNum);
+            return invNum;
+           
+        } catch (error) {
+            // Rollback transaction on error
+            RollbackTransaction();
+            MessageBox("Greška prilikom unosa u bazu podataka: " + error);
+            return false;
+        }
+       
+    } catch (error) {
+        MessageBox("Greška prilikom uvoza XML datoteke: " + error);
+        return false;
+    }
+}
+ 
+// Determine document type from XML root element
+function GetDocumentType(xmlDoc) {
+    root = GetXMLRoot(xmlDoc);
+    rootName = GetXMLNodeName(root);
+   
+    if (rootName == "Invoice") return "S";
+    if (rootName == "CreditNote") return "R";
+    if (rootName == "DebitNote") return "T";
+   
+    return "";
+}
+ 
+// Extract header data from XML
+function ExtractHeaderData(xmlDoc, docType) {
+    try {
+        headerData = {};
+       
+        // Basic invoice information
+        headerData["NKPR_GL_NUM"] = ParseInvoiceNumber(GetXMLValue(xmlDoc, "//cbc:ID"));
+        headerData["NKPR_GL_OZNAKA"] = docType;
+        headerData["NKPR_GL_INVDTE"] = GetXMLValue(xmlDoc, "//cbc:IssueDate");
+        headerData["NKPR_GL_TIMECR"] = GetXMLValue(xmlDoc, "//cbc:IssueTime");
+        headerData["NKPR_GL_DUE_DATE"] = GetXMLValue(xmlDoc, "//cbc:DueDate");
+        headerData["NKPR_GL_ESD"] = GetXMLValue(xmlDoc, "//cbc:TaxPointDate");
+       
+        // Document type and profile
+        if (docType == "R") {
+            headerData["NKPR_GL_TYPECODE"] = GetXMLValue(xmlDoc, "//cbc:CreditNoteTypeCode");
+        } else {
+            headerData["NKPR_GL_TYPECODE"] = GetXMLValue(xmlDoc, "//cbc:InvoiceTypeCode");
+        }
+       
+        // Currency
+        currency = GetXMLValue(xmlDoc, "//cbc:DocumentCurrencyCode");
+        headerData["NKPR_GL_CURRENCY"] = currency;
+       
+        // Customer information
+        custOIB = GetXMLValue(xmlDoc, "//cac:AccountingCustomerParty//cbc:CompanyID[@schemeID='9934']");
+        if (custOIB == "") {
+            custOIB = GetXMLValue(xmlDoc, "//cac:AccountingCustomerParty//cbc:CompanyID[@schemeID='0088']");
+        }
+        headerData["NKPR_GL_CUSTOIB"] = custOIB;
+        headerData["NKPR_GL_CUSTNME"] = GetXMLValue(xmlDoc, "//cac:AccountingCustomerParty//cbc:Name");
+        headerData["NKPR_GL_CUSTADD"] = GetXMLValue(xmlDoc, "//cac:AccountingCustomerParty//cbc:StreetName");
+        headerData["NKPR_GL_CUSTCTY"] = GetXMLValue(xmlDoc, "//cac:AccountingCustomerParty//cbc:CityName");
+        headerData["NKPR_GL_CUSTZIP"] = GetXMLValue(xmlDoc, "//cac:AccountingCustomerParty//cbc:PostalZone");
+        headerData["NKPR_GL_CUSTST"] = GetXMLValue(xmlDoc, "//cac:AccountingCustomerParty//cbc:IdentificationCode");
+       
+        // Supplier information
+        suppOIB = GetXMLValue(xmlDoc, "//cac:AccountingSupplierParty//cbc:CompanyID[@schemeID='9934']");
+        if (suppOIB == "") {
+            suppOIB = GetXMLValue(xmlDoc, "//cac:AccountingSupplierParty//cbc:CompanyID[@schemeID='0088']");
+        }
+        headerData["NKPR_GL_SUPPOIB"] = suppOIB;
+       
+        // Delivery information (if present)
+        deliveryID = GetXMLValue(xmlDoc, "//cac:Delivery//cbc:ID");
+        if (deliveryID != "") {
+            deliveryScheme = GetXMLAttribute(xmlDoc, "//cac:Delivery//cbc:ID", "schemeID");
+            if (deliveryScheme == "0088") {
+                headerData["NKPR_AD_GLN"] = deliveryID;
+            } else {
+                headerData["NKPR_GL_SHPCOD"] = deliveryID;
+            }
+            headerData["NKPR_GL_SHPNME"] = GetXMLValue(xmlDoc, "//cac:DeliveryParty//cbc:Name");
+            headerData["NKPR_GL_SHPADD1"] = GetXMLValue(xmlDoc, "//cac:Delivery//cbc:StreetName");
+            headerData["NKPR_GL_SHPCTY"] = GetXMLValue(xmlDoc, "//cac:Delivery//cbc:CityName");
+            headerData["NKPR_GL_SHPZIP"] = GetXMLValue(xmlDoc, "//cac:Delivery//cbc:PostalZone");
+            headerData["NKPR_GL_SHPST"] = GetXMLValue(xmlDoc, "//cac:Delivery//cbc:IdentificationCode");
+        }
+       
+        // Payment information
+        headerData["NKPR_GL_PAYMNT"] = GetXMLValue(xmlDoc, "//cac:PaymentMeans//cbc:PaymentMeansCode");
+        paymentID = GetXMLValue(xmlDoc, "//cac:PaymentMeans//cbc:PaymentID");
+        if (Contains(paymentID, " ")) {
+            paymentParts = Split(paymentID, " ");
+            headerData["NKPR_GL_MODEL"] = paymentParts[0];
+            if (Size(paymentParts) > 1) {
+                headerData["NKPR_GL_POZIV"] = paymentParts[1];
+            }
+        }
+       
+        // Monetary totals
+        headerData["NKPR_GL_LINETOTAL"] = ParseDecimal(GetXMLValue(xmlDoc, "//cac:LegalMonetaryTotal//cbc:LineExtensionAmount"));
+        headerData["NKPR_GL_TAXTOTAL"] = ParseDecimal(GetXMLValue(xmlDoc, "//cac:LegalMonetaryTotal//cbc:TaxExclusiveAmount"));
+        headerData["NKPR_GL_TOTAL"] = ParseDecimal(GetXMLValue(xmlDoc, "//cac:LegalMonetaryTotal//cbc:TaxInclusiveAmount"));
+        headerData["NKPR_GL_PAYABLE"] = ParseDecimal(GetXMLValue(xmlDoc, "//cac:LegalMonetaryTotal//cbc:PayableAmount"));
+       
+        // Notes
+        note = GetXMLValue(xmlDoc, "//cbc:Note");
+        if (note != "") {
+            headerData["NKPR_GL_NOTE"] = note;
+           
+            // Parse referenced invoices from note
+            refStartPos = IndexOf(note, "#REF(");
+            if (refStartPos >= 0) {
+                refEndPos = IndexOf(note, ")", refStartPos);
+                if (refEndPos >= 0) {
+                    refContent = Substring(note, refStartPos + 5, refEndPos - refStartPos - 5);
+                    refNumbers = Split(refContent, ",");
+                    if (Size(refNumbers) > 0) {
+                        headerData["NKPR_GL_REZ3"] = refNumbers[0].trim();
+                    }
+                }
+            }
+        }
+       
+        // Billing references
+        billingRef = GetXMLValue(xmlDoc, "//cac:BillingReference//cbc:ID");
+        if (billingRef != "" && headerData["NKPR_GL_REZ3"] == "") {
+            headerData["NKPR_GL_REZ3"] = ParseInvoiceNumber(billingRef);
+        }
+       
+        return headerData;
+       
+    } catch (error) {
+        MessageBox("Greška prilikom izvlačenja podataka zaglavlja: " + error);
+        return null;
+    }
+}
+ 
+// Extract line items from XML
+function ExtractLineItems(xmlDoc, docType) {
+    try {
+        lineItems = {};
+       
+        // Determine line item XPath based on document type
+        lineXPath = "";
+        if (docType == "S") {
+            lineXPath = "//cac:InvoiceLine";
+        } elif (docType == "R") {
+            lineXPath = "//cac:CreditNoteLine";
+        } elif (docType == "T") {
+            lineXPath = "//cac:DebitNoteLine";
+        }
+       
+        // Get all line item nodes
+        lineNodes = GetXMLNodes(xmlDoc, lineXPath);
+       
+        for (i = 0; i < Size(lineNodes); i++) {
+            lineData = {};
+            lineNode = lineNodes[i];
+           
+            // Basic line information
+            lineData["NKPR_LN_BR_LN"] = GetXMLValue(lineNode, ".//cbc:ID");
+           
+            // Quantity and unit
+            if (docType == "S") {
+                lineData["NKPR_LN_PQTY"] = ParseDecimal(GetXMLValue(lineNode, ".//cbc:InvoicedQuantity"));
+                lineData["NKPR_LN_JEDMJ"] = GetUnitCodeFromUN(GetXMLAttribute(lineNode, ".//cbc:InvoicedQuantity", "unitCode"));
+            } elif (docType == "R") {
+                lineData["NKPR_LN_PQTY"] = ParseDecimal(GetXMLValue(lineNode, ".//cbc:CreditedQuantity"));
+                lineData["NKPR_LN_JEDMJ"] = GetUnitCodeFromUN(GetXMLAttribute(lineNode, ".//cbc:CreditedQuantity", "unitCode"));
+            } elif (docType == "T") {
+                lineData["NKPR_LN_PQTY"] = ParseDecimal(GetXMLValue(lineNode, ".//cbc:DebitedQuantity"));
+                lineData["NKPR_LN_JEDMJ"] = GetUnitCodeFromUN(GetXMLAttribute(lineNode, ".//cbc:DebitedQuantity", "unitCode"));
+            }
+           
+            // Line amounts
+            lineData["NKPR_LN_AMT"] = ParseDecimal(GetXMLValue(lineNode, ".//cbc:LineExtensionAmount"));
+           
+            // Item information
+            lineData["NKPR_LN_PDESC"] = GetXMLValue(lineNode, ".//cac:Item//cbc:Name");
+            lineData["NKPR_LN_PCODE"] = GetXMLValue(lineNode, ".//cac:Item//cbc:SellersItemIdentification//cbc:ID");
+           
+            // Price information
+            lineData["NKPR_LN_PPRCE"] = ParseDecimal(GetXMLValue(lineNode, ".//cac:Price//cbc:PriceAmount"));
+           
+            // Tax information
+            taxCategory = GetXMLValue(lineNode, ".//cac:Item//cac:ClassifiedTaxCategory//cbc:ID");
+            taxPercent = ParseDecimal(GetXMLValue(lineNode, ".//cac:Item//cac:ClassifiedTaxCategory//cbc:Percent"));
+            lineData["NKPR_LN_PRNPR"] = taxPercent;
+            lineData["NKPR_LN_TXBLE"] = (taxPercent > 0) ? "Y" : "N";
+           
+            // Allowances and charges
+            allowanceAmount = ParseDecimal(GetXMLValue(lineNode, ".//cac:AllowanceCharge[cbc:ChargeIndicator='false']//cbc:Amount"));
+            chargeAmount = ParseDecimal(GetXMLValue(lineNode, ".//cac:AllowanceCharge[cbc:ChargeIndicator='true']//cbc:Amount"));
+           
+            if (allowanceAmount > 0) {
+                lineData["NKPR_LN_POPL"] = allowanceAmount;
+                // Calculate discount percentage
+                grossAmount = lineData["NKPR_LN_PQTY"] * lineData["NKPR_LN_PPRCE"];
+                if (grossAmount > 0) {
+                    lineData["NKPR_LN_PDISC"] = (allowanceAmount / grossAmount) * 100;
+                }
+            }
+           
+            // Notes
+            lineNote = GetXMLValue(lineNode, ".//cbc:Note");
+            if (lineNote != "") {
+                lineData["NKPR_LN_NOTE"] = lineNote;
+            }
+           
+            lineItems.Add(lineData);
+        }
+       
+        return lineItems;
+       
+    } catch (error) {
+        MessageBox("Greška prilikom izvlačenja stavki: " + error);
+        return null;
+    }
+}
+ 
+// Import header data into NKPRINV table
+function ImportHeaderData(headerData, docType) {
+    try {
+        // Generate new invoice number
+        newInvNum = GetNextInvoiceNumber(docType);
+       
+        // Prepare SQL insert statement
+        sql_insert = "INSERT INTO " + databaseName + ".dbo.NKPRINV (";
+        sql_insert += "NKPR_GL_NUM, NKPR_GL_OZNAKA, NKPR_GL_INVDTE, NKPR_GL_TIMECR, ";
+        sql_insert += "NKPR_GL_DUE_DATE, NKPR_GL_ESD, NKPR_GL_TYPECODE, NKPR_GL_CURRENCY, ";
+        sql_insert += "NKPR_GL_CUSTOIB, NKPR_GL_CUSTNME, NKPR_GL_CUSTADD, NKPR_GL_CUSTCTY, ";
+        sql_insert += "NKPR_GL_CUSTZIP, NKPR_GL_CUSTST, NKPR_GL_SUPPOIB, ";
+        sql_insert += "NKPR_GL_SHPCOD, NKPR_GL_SHPNME, NKPR_GL_SHPADD1, NKPR_GL_SHPCTY, ";
+        sql_insert += "NKPR_GL_SHPZIP, NKPR_GL_SHPST, NKPR_AD_GLN, ";
+        sql_insert += "NKPR_GL_PAYMNT, NKPR_GL_MODEL, NKPR_GL_POZIV, ";
+        sql_insert += "NKPR_GL_LINETOTAL, NKPR_GL_TAXTOTAL, NKPR_GL_TOTAL, NKPR_GL_PAYABLE, ";
+        sql_insert += "NKPR_GL_NOTE, NKPR_GL_REZ3, NKPR_GL_CREATED";
+        sql_insert += ") VALUES (";
+        sql_insert += "@newInvNum, @docType, @invDate, @timeCreated, ";
+        sql_insert += "@dueDate, @taxPointDate, @typeCode, @currency, ";
+        sql_insert += "@custOIB, @custName, @custAddress, @custCity, ";
+        sql_insert += "@custZip, @custState, @suppOIB, ";
+        sql_insert += "@shpCode, @shpName, @shpAddress, @shpCity, ";
+        sql_insert += "@shpZip, @shpState, @shpGLN, ";
+        sql_insert += "@payment, @model, @poziv, ";
+        sql_insert += "@lineTotal, @taxTotal, @total, @payable, ";
+        sql_insert += "@note, @rez3, @created";
+        sql_insert += ");";
+       
+        // Prepare parameters
+        sqlParams = {};
+        sqlParams.Add({"@newInvNum", newInvNum});
+        sqlParams.Add({"@docType", docType});
+        sqlParams.Add({"@invDate", headerData["NKPR_GL_INVDTE"]});
+        sqlParams.Add({"@timeCreated", headerData["NKPR_GL_TIMECR"]});
+        sqlParams.Add({"@dueDate", headerData["NKPR_GL_DUE_DATE"]});
+        sqlParams.Add({"@taxPointDate", headerData["NKPR_GL_ESD"]});
+        sqlParams.Add({"@typeCode", headerData["NKPR_GL_TYPECODE"]});
+        sqlParams.Add({"@currency", headerData["NKPR_GL_CURRENCY"]});
+        sqlParams.Add({"@custOIB", headerData["NKPR_GL_CUSTOIB"]});
+        sqlParams.Add({"@custName", headerData["NKPR_GL_CUSTNME"]});
+        sqlParams.Add({"@custAddress", headerData["NKPR_GL_CUSTADD"]});
+        sqlParams.Add({"@custCity", headerData["NKPR_GL_CUSTCTY"]});
+        sqlParams.Add({"@custZip", headerData["NKPR_GL_CUSTZIP"]});
+        sqlParams.Add({"@custState", headerData["NKPR_GL_CUSTST"]});
+        sqlParams.Add({"@suppOIB", headerData["NKPR_GL_SUPPOIB"]});
+        sqlParams.Add({"@shpCode", headerData["NKPR_GL_SHPCOD"]});
+        sqlParams.Add({"@shpName", headerData["NKPR_GL_SHPNME"]});
+        sqlParams.Add({"@shpAddress", headerData["NKPR_GL_SHPADD1"]});
+        sqlParams.Add({"@shpCity", headerData["NKPR_GL_SHPCTY"]});
+        sqlParams.Add({"@shpZip", headerData["NKPR_GL_SHPZIP"]});
+        sqlParams.Add({"@shpState", headerData["NKPR_GL_SHPST"]});
+        sqlParams.Add({"@shpGLN", headerData["NKPR_AD_GLN"]});
+        sqlParams.Add({"@payment", headerData["NKPR_GL_PAYMNT"]});
+        sqlParams.Add({"@model", headerData["NKPR_GL_MODEL"]});
+        sqlParams.Add({"@poziv", headerData["NKPR_GL_POZIV"]});
+        sqlParams.Add({"@lineTotal", headerData["NKPR_GL_LINETOTAL"]});
+        sqlParams.Add({"@taxTotal", headerData["NKPR_GL_TAXTOTAL"]});
+        sqlParams.Add({"@total", headerData["NKPR_GL_TOTAL"]});
+        sqlParams.Add({"@payable", headerData["NKPR_GL_PAYABLE"]});
+        sqlParams.Add({"@note", headerData["NKPR_GL_NOTE"]});
+        sqlParams.Add({"@rez3", headerData["NKPR_GL_REZ3"]});
+        sqlParams.Add({"@created", FormatDate(Now(), "yyyy-MM-dd HH:mm:ss")});
+       
+        // Execute insert
+        result = sqlExec(sql_insert, sqlParams);
+       
+        if (result > 0) {
+            return newInvNum;
+        } else {
+            throw "SQL insert neuspješan";
+        }
+       
+    } catch (error) {
+        throw "Greška prilikom unosa zaglavlja: " + error;
+    }
+}
+ 
+// Import line items into NKPRINVL table
+function ImportLineItems(invNum, lineItems) {
+    try {
+        for (i = 0; i < Size(lineItems); i++) {
+            lineData = lineItems[i];
+           
+            sql_insert = "INSERT INTO " + databaseName + ".dbo.NKPRINVL (";
+            sql_insert += "NKPR_LN_INVNM, NKPR_LN_BR_LN, NKPR_LN_PQTY, NKPR_LN_AMT, ";
+            sql_insert += "NKPR_LN_PCODE, NKPR_LN_PDESC, NKPR_LN_JEDMJ, ";
+            sql_insert += "NKPR_LN_PPRCE, NKPR_LN_PRNPR, NKPR_LN_TXBLE, ";
+            sql_insert += "NKPR_LN_POPL, NKPR_LN_PDISC, NKPR_LN_NOTE";
+            sql_insert += ") VALUES (";
+            sql_insert += "@invNum, @lineNum, @qty, @amount, ";
+            sql_insert += "@productCode, @description, @unit, ";
+            sql_insert += "@price, @taxPercent, @taxable, ";
+            sql_insert += "@discount, @discountPercent, @note";
+            sql_insert += ");";
+           
+            sqlParams = {};
+            sqlParams.Add({"@invNum", invNum});
+            sqlParams.Add({"@lineNum", lineData["NKPR_LN_BR_LN"]});
+            sqlParams.Add({"@qty", lineData["NKPR_LN_PQTY"]});
+            sqlParams.Add({"@amount", lineData["NKPR_LN_AMT"]});
+            sqlParams.Add({"@productCode", lineData["NKPR_LN_PCODE"]});
+            sqlParams.Add({"@description", lineData["NKPR_LN_PDESC"]});
+            sqlParams.Add({"@unit", lineData["NKPR_LN_JEDMJ"]});
+            sqlParams.Add({"@price", lineData["NKPR_LN_PPRCE"]});
+            sqlParams.Add({"@taxPercent", lineData["NKPR_LN_PRNPR"]});
+            sqlParams.Add({"@taxable", lineData["NKPR_LN_TXBLE"]});
+            sqlParams.Add({"@discount", lineData["NKPR_LN_POPL"]});
+            sqlParams.Add({"@discountPercent", lineData["NKPR_LN_PDISC"]});
+            sqlParams.Add({"@note", lineData["NKPR_LN_NOTE"]});
+           
+            result = sqlExec(sql_insert, sqlParams);
+            if (result == 0) {
+                throw "Greška prilikom unosa stavke " + (i + 1);
+            }
+        }
+       
+        return true;
+       
+    } catch (error) {
+        throw "Greška prilikom unosa stavki: " + error;
+    }
+}
+ 
+// Import tax data (placeholder)
+function ImportTaxData(invNum, headerData, lineItems) {
+    // Tax data import logic would go here
+    // This depends on your specific tax table structure
+    return true;
+}
+ 
+// Helper function to get next invoice number
+function GetNextInvoiceNumber(docType) {
+    sql_max = "SELECT MAX(NKPR_GL_NUM) FROM " + databaseName + ".dbo.NKPRINV WHERE NKPR_GL_OZNAKA = @docType";
+    sqlParams = {};
+    sqlParams.Add({"@docType", docType});
+   
+    result = sqlQuery(sql_max, sqlParams);
+    if (Size(result) >= 2 && result[1][0] != null) {
+        return result[1][0] + 1;
+    } else {
+        return 90100001; // Starting number
+    }
+}
+ 
+// Helper function to parse invoice number from UBL format
+function ParseInvoiceNumber(ublInvNum) {
+    // Convert from format "00002-90-1" to "90100002"
+    if (Contains(ublInvNum, "-")) {
+        parts = Split(ublInvNum, "-");
+        if (Size(parts) == 3) {
+            return int(parts[1] + parts[2] + parts[0]);
+        }
+    }
+    return int(ublInvNum);
+}
+ 
+// Helper function to convert UN unit codes back to internal codes
+function GetUnitCodeFromUN(unCode) {
+    if (unCode == "H87") { return "KOM"; }
+    if (unCode == "KGM") { return "KG"; }
+    if (unCode == "LTR") { return "LIT"; }
+    if (unCode == "MTK") { return "MX2"; }
+    if (unCode == "MTQ") { return "MX3"; }
+    if (unCode == "TNE") { return "TON"; }
+    if (unCode == "GRM") { return "GR"; }
+    if (unCode == "HUR") { return "SAT"; }
+    if (unCode == "DAY") { return "DAN"; }
+    if (unCode == "MTR") { return "MET"; }
+    return "KOM"; // Default
+}
+ 
+// Helper function to parse decimal values
+function ParseDecimal(value) {
+    if (value == "" || value == null) {
+        return 0;
+    }
+    return Double(value);
+}
+ 
+// Placeholder XML helper functions (implement based on your XML library)
+function ParseXML(content) {
+    // Implement XML parsing based on available XML library
+    // Return parsed XML document object
+    return null; // Placeholder
+}
+ 
+function GetXMLRoot(xmlDoc) {
+    // Return root element of XML document
+    return null; // Placeholder
+}
+ 
+function GetXMLNodeName(node) {
+    // Return node name
+    return ""; // Placeholder
+}
+ 
+function GetXMLValue(xmlDoc, xpath) {
+    // Return text value of first matching element
+    return ""; // Placeholder
+}
+ 
+function GetXMLNodes(xmlDoc, xpath) {
+    // Return array of matching nodes
+    return {}; // Placeholder
+}
+ 
+function GetXMLAttribute(xmlDoc, xpath, attributeName) {
+    // Return attribute value
+    return ""; // Placeholder
+}
+ 
+
+
+
+
+
+/*
+Usage Examples:
+ 
+1. Import UBL XML invoice:
+   result = importUBLXml("C:\\UBL_90100002.xml");
+ 
+2. Import with error checking:
+   if (importUBLXml("invoice.xml")) {
+       MessageBox("Import successful!");
+   } else {
+       MessageBox("Import failed!");
+   }
+ 
+3. Import multiple files:
+   files = ["invoice1.xml", "invoice2.xml", "invoice3.xml"];
+   for (i = 0; i < Size(files); i++) {
+       importUBLXml(files[i]);
+   }
+*/

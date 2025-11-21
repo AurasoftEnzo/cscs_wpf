@@ -30,6 +30,7 @@ using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Threading;
 using System.Xml;
+using System.Xml.Linq;
 using System.Xml.Schema;
 using System.Xml.Xsl;
 using static System.Net.WebRequestMethods;
@@ -82,6 +83,10 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.SignXml, new SignXmlFunction());
             interpreter.RegisterFunction(Constants.ValidateXsd, new ValidateXsdFunction());
             interpreter.RegisterFunction(Constants.ValidateSch, new ValidateSchFunction());
+            interpreter.RegisterFunction(Constants.EscapeQuotesInXml, new EscapeQuotesInXmlFunction());
+            //...
+            interpreter.RegisterFunction(Constants.XmlToDict, new XmlToDictFunction());
+            interpreter.RegisterFunction(Constants.DeserializeJson, new DeserializeJsonFunction());
         }
         public partial class Constants
         {
@@ -119,6 +124,10 @@ namespace WpfCSCS
             public const string SignXml = "SignXml";
             public const string ValidateXsd = "ValidateXsd";
             public const string ValidateSch = "ValidateSch";
+            public const string EscapeQuotesInXml = "EscapeQuotesInXml";
+            //...
+            public const string XmlToDict = "XmlToDict";
+            public const string DeserializeJson = "DeserializeJson";
         }
     }
 
@@ -1547,6 +1556,401 @@ namespace WpfCSCS
                 System.IO.File.WriteAllText(logFilePath, "ex.Message: " + ex.Message);
                 return new Variable(false);
             }
+        }
+    }
+    
+    class EscapeQuotesInXmlFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+
+            var xmlContent = Utils.GetSafeString(args, 0);
+            
+            return new Variable(xmlContent.Replace("\"", "\\\""));
+        }
+    }
+
+    public class XmlToDictFunction : ParserFunction
+    {
+        // Glavni namespace-i za UBL 2.1 (HR standard)
+        private static readonly Dictionary<string, XNamespace> UblNamespaces = new Dictionary<string, XNamespace>
+    {
+        { "cbc", "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" },
+        { "cac", "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" },
+        { "ubl", "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2" },
+        { "cr",  "urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2" },
+        { "db",  "urn:oasis:names:specification:ubl:schema:xsd:DebitNote-2" }
+    };
+
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, "XmlToJson");
+
+            string xmlText = args[0].AsString();
+
+            try
+            {
+                XDocument doc = XDocument.Parse(xmlText);
+                XElement root = doc.Root;
+
+                if (root == null)
+                    return new Variable("ERROR: Empty XML");
+
+                // Detektiraj root element i postavi odgovarajući namespace
+                XNamespace defaultNs = root.GetDefaultNamespace();
+                if (defaultNs == XNamespace.None || string.IsNullOrEmpty(defaultNs.NamespaceName))
+                {
+                    // Ako nema default namespace, probaj pronaći po poznatim UBL urn-ovima
+                    string rootName = root.Name.LocalName;
+                    if (rootName == "Invoice") defaultNs = UblNamespaces["ubl"];
+                    else if (rootName == "CreditNote") defaultNs = UblNamespaces["cr"];
+                    else if (rootName == "DebitNote") defaultNs = UblNamespaces["db"];
+                    else defaultNs = UblNamespaces["ubl"]; // fallback
+                }
+
+                // Dodaj standardne namespace-ove
+                var nsMap = new Dictionary<string, XNamespace>(UblNamespaces);
+                nsMap[""] = defaultNs; // default namespace
+
+                // Parsiraj sa namespace podrškom
+                Variable result = ParseElement(root, nsMap);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return new Variable("XML_PARSE_ERROR: " + ex.Message);
+            }
+        }
+
+        private Variable ParseElement(XElement el, Dictionary<string, XNamespace> nsMap)
+        {
+            var dict = new Variable(Variable.VarType.ARRAY);
+
+            // Ako element ima samo tekst (npr. <cbc:ID>12345</cbc:ID>)
+            string textValue = el.Value.Trim();
+            if (!el.HasElements && !string.IsNullOrWhiteSpace(textValue))
+            {
+                //if (double.TryParse(textValue, NumberStyles.Any, CultureInfo.InvariantCulture, out double num))
+                //    return new Variable(num);
+                if (textValue == "true" || textValue == "false") // boolean
+                    return new Variable(textValue == "true");
+                return new Variable(textValue);
+            }
+
+            // Dodaj atribute (npr. unitCode, currencyID)
+            foreach (var attr in el.Attributes())
+            {
+                string key = "@" + attr.Name.LocalName;
+                dict.SetHashVariable(key, new Variable(attr.Value));
+            }
+
+            // Grupe po LocalName (jer više elemenata može imati isti tag, npr. InvoiceLine)
+            var grouped = el.Elements()
+                            .GroupBy(child => child.Name.LocalName)
+                            .ToList();
+
+            foreach (var group in grouped)
+            {
+                string key = group.Key;
+
+                if (group.Count() == 1)
+                {
+                    // Jedan element → direktno
+                    Variable value = ParseElement(group.First(), nsMap);
+                    dict.SetHashVariable(key, value);
+                }
+                else
+                {
+                    // Više elemenata (npr. InvoiceLine, TaxCategory...) → array
+                    var array = new Variable(Variable.VarType.ARRAY);
+                    foreach (var child in group)
+                    {
+                        array.AddVariable(ParseElement(child, nsMap));
+                    }
+                    dict.SetHashVariable(key, array);
+                }
+            }
+
+            return dict;
+        }
+    }
+
+    class DeserializeJsonFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+
+            string jsonString = Utils.GetSafeString(args, 0).Trim();
+
+            // Deserialize the JSON string into a variable
+            Variable deserializedVariable = ParseJSON(jsonString.Trim());
+
+            // Return the deserialized variable
+            return deserializedVariable;
+        }
+
+        private Variable ParseJSON(string json)
+        {
+            json = json.Trim();
+
+            if (string.IsNullOrEmpty(json))
+            {
+                return new Variable(Variable.VarType.UNDEFINED);
+            }
+
+            // Handle null
+            if (json == "null")
+            {
+                return new Variable(Variable.VarType.UNDEFINED);
+            }
+
+            // Handle boolean
+            if (json == "true")
+            {
+                return new Variable(true);
+            }
+            if (json == "false")
+            {
+                return new Variable(false);
+            }
+
+            // Handle string
+            if (json.StartsWith("\"") && json.EndsWith("\""))
+            {
+                string stringValue = json.Substring(1, json.Length - 2);
+                // Unescape JSON string
+                stringValue = stringValue.Replace("\\\"", "\"")
+                                        .Replace("\\\\", "\\")
+                                        .Replace("\\n", "\n")
+                                        .Replace("\\r", "\r")
+                                        .Replace("\\t", "\t");
+                return new Variable(stringValue);
+            }
+
+            // Handle number
+            // decimal point must be "."
+            if (double.TryParse(json /*.Replace(".", ",")*/, NumberStyles.Any, CultureInfo.InvariantCulture, out double numValue))
+            {
+                return new Variable(numValue);
+            }
+
+            // Handle array
+            if (json.StartsWith("[") && json.EndsWith("]"))
+            {
+                return ParseJSONArray(json);
+            }
+
+            // Handle object
+            if (json.StartsWith("{") && json.EndsWith("}"))
+            {
+                return ParseJSONObject(json);
+            }
+
+            // If we can't parse it, return as string
+            return new Variable(json);
+        }
+
+        private Variable ParseJSONArray(string json)
+        {
+            Variable arrayVar = new Variable(Variable.VarType.ARRAY);
+
+            // Remove brackets
+            string content = json.Substring(1, json.Length - 2).Trim();
+
+            if (string.IsNullOrEmpty(content))
+            {
+                return arrayVar;
+            }
+
+            List<string> elements = SplitJSONArray(content);
+
+            foreach (string element in elements)
+            {
+                Variable elementVar = ParseJSON(element.Trim());
+                arrayVar.AddVariable(elementVar);
+            }
+
+            return arrayVar;
+        }
+
+        private Variable ParseJSONObject(string json)
+        {
+            Variable objectVar = new Variable(Variable.VarType.ARRAY);
+
+            // Remove braces
+            string content = json.Substring(1, json.Length - 2).Trim();
+
+            if (string.IsNullOrEmpty(content))
+            {
+                return objectVar;
+            }
+
+            List<string> pairs = SplitJSONObject(content);
+
+            foreach (string pair in pairs)
+            {
+                int colonIndex = FindColonIndex(pair);
+                if (colonIndex > 0)
+                {
+                    string key = pair.Substring(0, colonIndex).Trim();
+                    string value = pair.Substring(colonIndex + 1).Trim();
+
+                    // Remove quotes from key
+                    if (key.StartsWith("\"") && key.EndsWith("\""))
+                    {
+                        key = key.Substring(1, key.Length - 2);
+                    }
+
+                    Variable valueVar = ParseJSON(value);
+                    objectVar.SetHashVariable(key, valueVar);
+                }
+            }
+
+            return objectVar;
+        }
+
+        private List<string> SplitJSONArray(string content)
+        {
+            List<string> elements = new List<string>();
+            int bracketCount = 0;
+            int braceCount = 0;
+            int startIndex = 0;
+            bool inString = false;
+            bool escaped = false;
+
+            for (int i = 0; i < content.Length; i++)
+            {
+                char c = content[i];
+
+                if (escaped)
+                {
+                    escaped = false;
+                    continue;
+                }
+
+                if (c == '\\' && inString)
+                {
+                    escaped = true;
+                    continue;
+                }
+
+                if (c == '"')
+                {
+                    inString = !inString;
+                }
+
+                if (!inString)
+                {
+                    if (c == '[') bracketCount++;
+                    else if (c == ']') bracketCount--;
+                    else if (c == '{') braceCount++;
+                    else if (c == '}') braceCount--;
+                    else if (c == ',' && bracketCount == 0 && braceCount == 0)
+                    {
+                        elements.Add(content.Substring(startIndex, i - startIndex));
+                        startIndex = i + 1;
+                    }
+                }
+            }
+
+            if (startIndex < content.Length)
+            {
+                elements.Add(content.Substring(startIndex));
+            }
+
+            return elements;
+        }
+
+        private List<string> SplitJSONObject(string content)
+        {
+            List<string> pairs = new List<string>();
+            int bracketCount = 0;
+            int braceCount = 0;
+            int startIndex = 0;
+            bool inString = false;
+            bool escaped = false;
+
+            for (int i = 0; i < content.Length; i++)
+            {
+                char c = content[i];
+
+                if (escaped)
+                {
+                    escaped = false;
+                    continue;
+                }
+
+                if (c == '\\' && inString)
+                {
+                    escaped = true;
+                    continue;
+                }
+
+                if (c == '"')
+                {
+                    inString = !inString;
+                }
+
+                if (!inString)
+                {
+                    if (c == '[') bracketCount++;
+                    else if (c == ']') bracketCount--;
+                    else if (c == '{') braceCount++;
+                    else if (c == '}') braceCount--;
+                    else if (c == ',' && bracketCount == 0 && braceCount == 0)
+                    {
+                        pairs.Add(content.Substring(startIndex, i - startIndex));
+                        startIndex = i + 1;
+                    }
+                }
+            }
+
+            if (startIndex < content.Length)
+            {
+                pairs.Add(content.Substring(startIndex));
+            }
+
+            return pairs;
+        }
+
+        private int FindColonIndex(string pair)
+        {
+            bool inString = false;
+            bool escaped = false;
+
+            for (int i = 0; i < pair.Length; i++)
+            {
+                char c = pair[i];
+
+                if (escaped)
+                {
+                    escaped = false;
+                    continue;
+                }
+
+                if (c == '\\' && inString)
+                {
+                    escaped = true;
+                    continue;
+                }
+
+                if (c == '"')
+                {
+                    inString = !inString;
+                }
+
+                if (!inString && c == ':')
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
     }
 }

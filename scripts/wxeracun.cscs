@@ -85,40 +85,64 @@ if (size(sqlResult) > 1)
 if(!GenerateUBLXml(invNum)){
     MessageBox("Greška pri generiranju UBL XML-a za račun " + invNum + "!");    
 }else{
-    MessageBox("UBL XML je uspješno generiran za račun " + invNum + ".");    
-    
-/*
-    {\"Username\":\"" + korisnickoIme + "\",
-    \"Password\":\"" + Password + "\",
-    \"CompanyId\":\"" + CompanyId + "\",
-        \"SoftwareId\":\"" + SoftwareId + "\",
-        \"File\":\"" + aaaa + "\"
-*/
-
-    escapedXml = StrReplace(xml, "\n", " ");
-    escapedXml = EscapeQuotesInXml(xml);
-    
-
-    jsonLoad = '{"Username": "11684", "Password": "UgCpAR72", "CompanyId": "26389058739", "SoftwareId": "Test-002", "File": "' + escapedXml + '"}';
-
-    loadFilename = SavePath + parsefile(attachmentPdfPath, "pfName") + ".load.json";
-    SaveFile(jsonLoad, loadFilename);
-
-    isSuccess = WebRequest("POST", "https://demo.moj-eracun.hr/apis/v2/send", jsonLoad, invNum,
-                        "SendingSuccess", "SendingFailure", "application/json", null, 1000 * 20, false);
+    SendERacun();
 }
 
 exit;
 
+
+function SendERacun(){
+
+    sql_erac = "SELECT
+                ERAC_REZ1, ERAC_SERVER, ERAC_SERVERT, ERAC_USER, ERAC_PASS, ERAC_USERT, ERAC_PASST, ERAC_DESC 
+                FROM " + databaseName + ".dbo.NKSYERAC WHERE ERAC_CODE = @p1;";
+    sqlParams = {};
+    sqlParams.Add({"@p1", NKSC_POSREDNIK});
+    eracRes = sqlQuery(sql_erac, sqlParams);
+    if (Size(eracRes) < 2) {
+        MessageBox("Nema podataka o posredniku " + NKSC_POSREDNIK + "!");
+        return false;
+    }
+
+    ERAC_REZ1 = eracRes[1][0].trim();
+    ERAC_SERVER = eracRes[1][1].trim();
+    ERAC_SERVERT = eracRes[1][2].trim();
+    ERAC_USER = eracRes[1][3].trim();
+    ERAC_PASS = eracRes[1][4].trim();
+    ERAC_USERT = eracRes[1][5].trim();
+    ERAC_PASST = eracRes[1][6].trim();
+    ERAC_DESC = eracRes[1][7].trim();
+
+    return false;
+
+    if(ERAC_REZ1 == "M"){
+        //koristimo M.E.R.
+        escapedXml = StrReplace(xml, "\n", " ");
+        escapedXml = EscapeQuotesInXml(xml);
+        
+        jsonLoad = '{"Username": "' + ERAC_USER + '", "Password": "' + ERAC_PASS + '", "CompanyId": "' +  + '"'/*uzet iz KPSYMSTR*/+', "SoftwareId": "' + ERAC_DESC + '", "File": "' + escapedXml + '"}';
+
+        loadFilename = SavePath + parsefile(attachmentPdfPath, "pfName") + ".load.json";
+        SaveFile(jsonLoad, loadFilename);
+
+        isSuccess = WebRequest("POST", ERAC_SERVER, jsonLoad, invNum,
+                            "SendingSuccess", "SendingFailure", "application/json", null, 1000 * 20, false);
+    }elif("F"){
+        //koristimo FINA-u
+        MessageBox("Slanje putem FINA-e još nije implementirano.");
+    }
+    else{
+        MessageBox("Nepoznat tip posrednika " + ERAC_REZ1 + " za slanje na eRačun: " + tip);
+    }    
+}
+
+
 function SendingSuccess(_invNum, responseCode, res) {
-    //MSG("Uspješno slanje." + "\nBroj računa: " + brRac + "\nresponseCode: " + responseCode + "\nres: " + res);    
-
-    // statusCode = responseCode;
-
-    //res je poruka od servera prema klijentu
-    // resFromAPI = res;
-
     MSG("Slanje računa broj " + _invNum + " uspješno.\n\nresponseCode = " + responseCode + "\nres = " + res);
+
+    resObject = DeserializeJson(res);
+
+    MSG(resObject);
 }
 
 function SendingFailure(_invNum, responseCode, res) {
@@ -153,7 +177,7 @@ function GenerateUBLXml(invNum /* number */) {
                 CONVERT(varchar(10), DATEADD(DAY, NKPR_GL_NOKAM + NKPR_GL_ROKPL, NKPR_GL_DVO), 23) as NKPR_GL_DUE_DATE,
                 NKPR_GL_SCONTO,NKPR_GL_DANSC,NKPR_GL_REZ3,NKPR_GL_SHPCOD, NKPR_GL_SHPNME, NKPR_GL_SHPRO, NKPR_GL_SHPA1, 
                 NKPR_GL_SHPZIP, NKPR_GL_SHPCTY,NKPR_GL_SHPST, SUBSTRING(NKSP_AD_REZ,37,13) as NKSP_AD_GLN,
-                NKSC_SOP
+                NKSC_SOP, NKSC_POSREDNIK
                 FROM " + databaseName + ".dbo.NKPRINV LEFT JOIN " + databaseName + ".dbo.NKSCPART ON NKPR_GL_CUSCOD = NKSC_PARTCODE
                     LEFT JOIN " + databaseName + ".dbo.NKSPADRS ON nkpr_gl_cuscod= nksp_ad_code AND nkpr_gl_shpcod= nksp_ad_codeint
                 WHERE NKPR_GL_NUM = @p1;";
@@ -278,6 +302,7 @@ function GenerateUBLXml(invNum /* number */) {
     NKPR_GL_SHPST = hdrRes[1][40].trim();
     NKPR_AD_GLN = hdrRes[1][41].trim();
     NKSC_SOP = hdrRes[1][42].trim(); // Customer GLN
+    NKSC_POSREDNIK = hdrRes[1][43].trim(); // Intermediary GLN
 
 
     
@@ -1530,11 +1555,11 @@ function GenerateUBLXml(invNum /* number */) {
         xml += "</Invoice>\n";
     }
 
-
     // -----------------------------------------------------------
     // ...Save xml BEFORE validation
     // -----------------------------------------------------------
     xmlFileName = SavePath + parsefile(attachmentPdfPath, "pfName") + ".xml";
+    msg(xmlFileName);
     SaveFile(xml, xmlFileName);
 
 

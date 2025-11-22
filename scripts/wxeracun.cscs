@@ -38,7 +38,8 @@ try
 }
 catch(exc)
 {
-    MessageBox(exc);
+    MessageBox("NKSYCCYR reading error: " + exc);
+    exit;
 }
 if (size(sqlResult) > 1)
 {
@@ -48,6 +49,8 @@ if (size(sqlResult) > 1)
     databaseName = sqlResult[1][1].trim(); // ime baze
 }    
   
+
+
 // KPSYMSTR
 sqlQueryString = " SELECT TOP 1 KPSY_REZERVA, KPSY_COMP_NAME, KPSY_COMP_ADD1, KPSY_GL_RETEARN, KPSY_COMP_CSZ, KPSY_COMP_ZIP,
                 KPSY_COMP_JMBFI, KPSY_COMP_PHONE, KPSY_COMP_EMAIL, KPSY_PO_FREIGHT, KPSY_REZERVAX
@@ -58,7 +61,8 @@ try
 }
 catch(exc)
 {
-    MessageBox(exc);
+    MessageBox("KPSYMSTR reading error: " + exc);
+    exit;
 }
 if (size(sqlResult) > 1)
 {
@@ -79,85 +83,65 @@ if (size(sqlResult) > 1)
     KPSY_COMP_EMAIL = sqlResult[1][8].trim();
     KPSY_PO_FREIGHT = substring(sqlResult[1][9], 0, 2).trim();
     KPSY_REZERVAX = sqlResult[1][10].trim(); // Supplier GLN
+
+    supOIB = Substring(KPSY_REZERVA, 0, 13); // ??? a ča ne 11(OIB) znakova ?? ili 13(JMBG) + trim() ??
+    supOIBParts = supOIB.split(" ");
+    supOIB = supOIBParts[0];
 } 
 
 
-if(!GenerateUBLXml(invNum)){
+
+// NKSYSYCO
+sqlQueryString = " SELECT NKSYS_FIELD, NKSYS_VALUE 
+    FROM " + databaseName + ".dbo.NKSYSYCO 
+    WHERE NKSYS_MODUL = 'WKSY'
+    AND NKSYS_GRUP = 'ERACUN'";
+try
+{
+    sqlResult = sqlQuery(sqlQueryString);
+}
+catch(exc)
+{
+    MessageBox("NKSYSYCO reading error: " + exc);
+    exit;
+}
+if (size(sqlResult) > 1)
+{
+    for(i = 1; i < Size(sqlResult); i++){
+        if(sqlResult[i][0].trim() == "FILESPATH"){
+            FILESPATH = sqlResult[i][1].trim();
+        }
+        elif(sqlResult[i][0].trim() == "PROVIDER")
+        {
+            PROVIDER = sqlResult[i][1].trim();
+        }elif(sqlResult[i][0].trim() == "SCHEMASPATH")
+        {
+            SCHEMASPATH = sqlResult[i][1].trim();
+        }
+    }
+} 
+
+
+
+// generate xml
+if(!GenerateUBLXml()){
     MessageBox("Greška pri generiranju UBL XML-a za račun " + invNum + "!");    
+    exit;
 }else{
-    SendERacun();
+    LogNKSYELOG("A");
 }
 
+//send xml
+SendERacun();  
 exit;
 
 
-function SendERacun(){
 
-    sql_erac = "SELECT
-                ERAC_REZ1, ERAC_SERVER, ERAC_SERVERT, ERAC_USER, ERAC_PASS, ERAC_USERT, ERAC_PASST, ERAC_DESC 
-                FROM " + databaseName + ".dbo.NKSYERAC WHERE ERAC_CODE = @p1;";
-    sqlParams = {};
-    sqlParams.Add({"@p1", NKSC_POSREDNIK});
-    eracRes = sqlQuery(sql_erac, sqlParams);
-    if (Size(eracRes) < 2) {
-        MessageBox("Nema podataka o posredniku " + NKSC_POSREDNIK + "!");
-        return false;
-    }
+//-----------------------------------------------------------
+// XML GENERATION 
+//-----------------------------------------------------------
 
-    ERAC_REZ1 = eracRes[1][0].trim();
-    ERAC_SERVER = eracRes[1][1].trim();
-    ERAC_SERVERT = eracRes[1][2].trim();
-    ERAC_USER = eracRes[1][3].trim();
-    ERAC_PASS = eracRes[1][4].trim();
-    ERAC_USERT = eracRes[1][5].trim();
-    ERAC_PASST = eracRes[1][6].trim();
-    ERAC_DESC = eracRes[1][7].trim();
-
-    return false;
-
-    if(ERAC_REZ1 == "M"){
-        //koristimo M.E.R.
-        escapedXml = StrReplace(xml, "\n", " ");
-        escapedXml = EscapeQuotesInXml(xml);
-        
-        jsonLoad = '{"Username": "' + ERAC_USER + '", "Password": "' + ERAC_PASS + '", "CompanyId": "' +  + '"'/*uzet iz KPSYMSTR*/+', "SoftwareId": "' + ERAC_DESC + '", "File": "' + escapedXml + '"}';
-
-        loadFilename = SavePath + parsefile(attachmentPdfPath, "pfName") + ".load.json";
-        SaveFile(jsonLoad, loadFilename);
-
-        isSuccess = WebRequest("POST", ERAC_SERVER, jsonLoad, invNum,
-                            "SendingSuccess", "SendingFailure", "application/json", null, 1000 * 20, false);
-    }elif("F"){
-        //koristimo FINA-u
-        MessageBox("Slanje putem FINA-e još nije implementirano.");
-    }
-    else{
-        MessageBox("Nepoznat tip posrednika " + ERAC_REZ1 + " za slanje na eRačun: " + tip);
-    }    
-}
-
-
-function SendingSuccess(_invNum, responseCode, res) {
-    MSG("Slanje računa broj " + _invNum + " uspješno.\n\nresponseCode = " + responseCode + "\nres = " + res);
-
-    resObject = DeserializeJson(res);
-
-    MSG(resObject);
-}
-
-function SendingFailure(_invNum, responseCode, res) {
-    //MSG("Uspješno slanje." + "\nBroj računa: " + brRac + "\nresponseCode: " + responseCode + "\nres: " + res);    
-
-    // statusCode = responseCode;
-
-    //res je poruka od servera prema klijentu
-    // resFromAPI = res;
-
-    MSG("Slanje računa broj " + _invNum + " NEUSPJEŠNO!\n\nresponseCode = " + responseCode + "\nres = " + res);
-}
-
-
-function GenerateUBLXml(invNum /* number */) {
+function GenerateUBLXml() {
     
     // -----------------------------------------------------------
     // 1. Load Header
@@ -971,9 +955,6 @@ function GenerateUBLXml(invNum /* number */) {
     // -----------------------------------------------------------
     // Supplier
     // -----------------------------------------------------------
-    supOIB = Substring(KPSY_REZERVA, 0, 13); // ??? a ča ne 11(OIB) znakova ?? ili 13(JMBG) + trim() ??
-    supOIBParts = supOIB.split(" ");
-    supOIB = supOIBParts[0];
     supName = KPSY_COMP_NAME;
     supAddr = KPSY_COMP_ADD1 + (KPSY_GL_RETEARN != "" ? " " + KPSY_GL_RETEARN : "");
     supCity = KPSY_COMP_CSZ;
@@ -994,7 +975,7 @@ function GenerateUBLXml(invNum /* number */) {
         return false;
     }
     NazivFirme = regedit("regReadStr", 'COMPANY', 'NazivFirme');
-    SavePath = regedit("regReadStr", 'EMAIL', 'EmailFilePath');
+    // SavePath = regedit("regReadStr", 'EMAIL', 'EmailFilePath');
     regedit("regClose");
 
     xml += "<cac:AccountingSupplierParty>\n";
@@ -1067,6 +1048,7 @@ function GenerateUBLXml(invNum /* number */) {
 
     // !!!
     NKPR_GL_JMBG = "26389058739";
+    // NKPR_GL_JMBG = "2631289058739";
 
 
 
@@ -1558,8 +1540,8 @@ function GenerateUBLXml(invNum /* number */) {
     // -----------------------------------------------------------
     // ...Save xml BEFORE validation
     // -----------------------------------------------------------
-    xmlFileName = SavePath + parsefile(attachmentPdfPath, "pfName") + ".xml";
-    msg(xmlFileName);
+    xmlFileName = FILESPATH + parsefile(attachmentPdfPath, "pfName") + ".xml";
+    // msg(xmlFileName);
     SaveFile(xml, xmlFileName);
 
 
@@ -1567,17 +1549,17 @@ function GenerateUBLXml(invNum /* number */) {
     // 8.0. VALIDATION 
     // -----------------------------------------------------------
 
-    IniPath = strtrim(wpath()) + "winx.ini";
-    if(!regedit("regOpen", IniPath, "rtFile")){
-        MessageBox("Datoteka " + IniPath + " nije dostupna.");
-        return false;
-    }
-    SchemasPath = regedit("regReadStr", 'ERACUN', 'SchemasPath');
-    regedit("regClose");
+    // IniPath = strtrim(wpath()) + "winx.ini";
+    // if(!regedit("regOpen", IniPath, "rtFile")){
+    //     MessageBox("Datoteka " + IniPath + " nije dostupna.");
+    //     return false;
+    // }
+    // SchemasPath = regedit("regReadStr", 'ERACUN', 'SchemasPath');
+    // regedit("regClose");
     
 
-    xsdValidationResultOutputFile = SavePath + parsefile(attachmentPdfPath, "pfName") + "_XSD.err";
-    schValidationResultOutputFile = SavePath + parsefile(attachmentPdfPath, "pfName") + "_SCH.err";
+    xsdValidationResultOutputFile = FILESPATH + parsefile(attachmentPdfPath, "pfName") + "_XSD.err";
+    schValidationResultOutputFile = FILESPATH + parsefile(attachmentPdfPath, "pfName") + "_SCH.err";
     
 
     // -----------------------------------------------------------
@@ -1596,7 +1578,7 @@ function GenerateUBLXml(invNum /* number */) {
     // 8.2. XSD VALIDATION 
     // -----------------------------------------------------------
     xsdFiles = {};
-    xsdFiles.Add(SchemasPath + "xsd\\maindoc\\UBL-Invoice-2.1.xsd");
+    xsdFiles.Add(SCHEMASPATH + "xsd\\maindoc\\UBL-Invoice-2.1.xsd");
     if (!ValidateXsd(xml, xsdFiles, xsdValidationResultOutputFile)) {
         // LogError("XSD_FAIL", "Validation failed for " + invNum, validationErrors);
         MessageBox("xml FAILED XSD validation\n\nSee _XSD.err file for details.");
@@ -1619,9 +1601,9 @@ function GenerateUBLXml(invNum /* number */) {
     // 8.3. SCH VALIDATION 
     // -----------------------------------------------------------
     schFiles = {};
-    schFiles.Add(SchemasPath + "schematron\\HR-CIUS-EXT-EN16931-UBL.sch");
-    // schFiles.Add(SchemasPath + "schematron\\preprocessed\\EN16931-UBL-validation-preprocessed.sch");
-    if(!ValidateSch(xml, schFiles, SchemasPath + "schematron\\transpile.xsl", schValidationResultOutputFile)){
+    schFiles.Add(SCHEMASPATH + "schematron\\HR-CIUS-EXT-EN16931-UBL.sch");
+    // schFiles.Add(SCHEMASPATH + "schematron\\preprocessed\\EN16931-UBL-validation-preprocessed.sch");
+    if(!ValidateSch(xml, schFiles, SCHEMASPATH + "schematron\\transpile.xsl", schValidationResultOutputFile)){
         MessageBox("xml FAILED SCH validation\n\nSee _SCH.err file for details.");
         return false;
     }
@@ -1728,95 +1710,6 @@ function fillInvoiceLine(lineNum){
 }
 
 
-
-
-
-
-/* invalid VALIDATION code ...
-    // function ValidateUBLXml(xmlContent, out validationErrors) {
-    //     validationErrors = "";
-    //     schemaFolder = "Schemas\\";
-
-    //     xsdFiles = {};
-    //     xsdFiles.Add(schemaFolder + "UBL-Invoice-2.1.xsd");
-    //     xsdFiles.Add(schemaFolder + "EN16931-CIUS-HR-2025-1.0.xsd");
-    //     xsdFiles.Add(schemaFolder + "PEPPOL-BIS-3.0-Validation.xsd");
-    //     xsdFiles.Add(schemaFolder + "HR-UBL-Extension-1.0.xsd");
-    //     xsdFiles.Add(schemaFolder + "HR-Fiscal-Validation-1.0.xsd");
-
-    //     Import("System.Xml.dll");
-    //     Import("System.Xml.Schema.dll");
-
-    //     csharpCode = @"
-    // using System;
-    // using System.Xml;
-    // using System.Xml.Schema;
-    // using System.IO;
-    // using System.Text;
-
-    // public class UblValidator {
-    //     public static string Validate(string xml, string[] xsds) {
-    //         try {
-    //             XmlReaderSettings settings = new XmlReaderSettings();
-    //             settings.ValidationType = ValidationType.Schema;
-    //             settings.ValidationFlags |= XmlSchemaValidationFlags.ProcessInlineSchema;
-    //             settings.ValidationFlags |= XmlSchemaValidationFlags.ProcessSchemaLocation;
-    //             settings.ValidationFlags |= XmlSchemaValidationFlags.ReportValidationWarnings;
-
-    //             XmlSchemaSet schemaSet = new XmlSchemaSet();
-    //             foreach (string xsd in xsds) {
-    //                 if (!File.Exists(xsd)) {
-    //                     return \"XSD NOT FOUND: \" + xsd;
-    //                 }
-    //                 schemaSet.Add(null, XmlReader.Create(xsd));
-    //             }
-    //             settings.Schemas = schemaSet;
-
-    //             StringBuilder errors = new StringBuilder();
-    //             settings.ValidationEventHandler += (sender, e) => {
-    //                 errors.AppendLine($\"[{e.Severity}] Line {e.Exception.LineNumber}:{e.Exception.LinePosition} - {e.Message}\");
-    //             };
-
-    //             using (StringReader sr = new StringReader(xml))
-    //             using (XmlReader reader = XmlReader.Create(sr, settings)) {
-    //                 while (reader.Read()) { }
-    //             }
-
-    //             return errors.Length == 0 ? \"VALID\" : errors.ToString();
-    //         } catch (Exception ex) {
-    //             return \"EXCEPTION: \" + ex.Message + \"\\n\" + ex.StackTrace;
-    //         }
-    //     }
-    // }
-    // ";
-
-    //     EVAL("C#", csharpCode);
-
-    //     xsdArray = "[";
-    //     for (i = 0; i < Size(xsdFiles); i++) {
-    //         xsdArray += "\"" + xsdFiles[i] + "\"";
-    //         if (i < Size(xsdFiles) - 1) { xsdArray += ","; }
-    //     }
-    //     xsdArray += "]";
-
-    //     result = EVAL("C#", "UblValidator.Validate(@p1, " + xsdArray + ")", xmlContent);
-
-    //     if (StartsWith(result, "VALID")) {
-    //         return true;
-    //     } else {
-    //         validationErrors = result;
-    //         return false;
-    //     }
-    // }
-*/
-
-
-
-
-
-
-
-
 function GetUNUnitCode(jedmj) {
     if (jedmj == "KOM") { return "H87"; }
     if (jedmj == "KG")  { return "KGM"; }
@@ -1830,9 +1723,6 @@ function GetUNUnitCode(jedmj) {
     if (jedmj == "MET" || jedmj == "M") { return "MTR"; }
     return "C62";
 }
-
-
-
 
 
 function GetMimeType(file) {
@@ -1849,7 +1739,176 @@ function GetMimeType(file) {
 }
 
 
+// -----------------------------------------------------------
+// SLANJE ERACUNA
+// -----------------------------------------------------------
 
+function SendERacun(){
+
+    sql_erac = "SELECT
+                ERAC_REZ1, ERAC_SERVER, ERAC_SERVERT, ERAC_USER, ERAC_PASS, ERAC_USERT, ERAC_PASST, ERAC_DESC 
+                FROM " + databaseName + ".dbo.NKSYERAC WHERE ERAC_CODE = @p1;";
+    sqlParams = {};
+    if(NKSC_POSREDNIK != ""){
+        sqlParams.Add({"@p1", NKSC_POSREDNIK});
+    }else{
+        sqlParams.Add({"@p1", PROVIDER});
+    }
+    
+    eracRes = sqlQuery(sql_erac, sqlParams);
+    if (Size(eracRes) < 2) {
+        MessageBox("Nema podataka o posredniku " + NKSC_POSREDNIK + "!");
+        return false;
+    }
+
+    ERAC_REZ1 = eracRes[1][0].trim();
+    ERAC_SERVER = eracRes[1][1].trim();
+    ERAC_SERVERT = eracRes[1][2].trim();
+    ERAC_USER = eracRes[1][3].trim();
+    ERAC_PASS = eracRes[1][4].trim();
+    ERAC_USERT = eracRes[1][5].trim();
+    ERAC_PASST = eracRes[1][6].trim();
+    ERAC_DESC = eracRes[1][7].trim();
+
+
+
+    if(ERAC_REZ1 == "M"){
+        //koristimo M.E.R. način slanja
+        escapedXml = StrReplace(xml, "\n", " ");
+        escapedXml = EscapeQuotesInXml(xml);
+        
+        jsonLoad = '{"Username": "' + ERAC_USER + '", "Password": "' + ERAC_PASS + '", "CompanyId": "' + supOIB + '"'/*uzet iz KPSYMSTR*/+', "SoftwareId": "' + ERAC_DESC + '", "File": "' + escapedXml + '"}';
+
+        webRequestResult = WebRequest("POST", ERAC_SERVER, jsonLoad, invNum,
+                    "SendingSuccess", "SendingFailure", "application/json", null, 1000 * 20, false);
+
+        MSG("webRequestResult = " + webRequestResult); // !!!
+
+        if(webRequestResult){
+            // ???
+        }
+
+    }elif(ERAC_REZ1 == "F"){
+        //koristimo FINA način slanja
+        // za test koristimo račun "90100003"
+        MessageBox("Slanje putem FINA-e još nije implementirano.");
+        // ...
+        return false;
+    }
+    else{
+        MessageBox("Nepoznat tip posrednika " + ERAC_REZ1 + " za slanje na eRačun: " + tip);
+        return false;
+    }    
+}
+
+function SendingSuccess(_invNum, responseCode, res) {
+    try{
+        LogResponse(responseCode, res);
+
+        // MessageBox("ResponseCode = " + responseCode);
+
+        resObject = DeserializeJson(res);    
+        if(Contains(resObject, "StatusId") && resObject["StatusId"] == 20){
+            MessageBox('resObject["StatusId"] == 20');
+            LogNKSYELOG("C");
+        }
+        else{
+            LogNKSYELOG("B", 'Debug: NEPOZNATA GREŠKA');
+        }
+
+        // if(Contains(resObject, "File")){
+        //     MessageBox("File = " + resObject["File"]);
+        // }
+
+        // MessageBox("ElectronicId = " + resObject["ElectronicId"]);
+        // MessageBox("DocumentNr = " + resObject["DocumentNr"]);
+        // MessageBox("DocumentTypeId = " + resObject["DocumentTypeId"]);
+        // MessageBox("DocumentTypeName = " + resObject["DocumentTypeName"]);
+        // MessageBox("StatusId = " + resObject["StatusId"]); // 20
+        // MessageBox("StatusName = " + resObject["StatusName"]); // Odrađeno
+        // MessageBox("RecipientBusinessNumber = " + resObject["RecipientBusinessNumber"]);
+        // MessageBox("RecipientBusinessUnit = " + resObject["RecipientBusinessUnit"]);
+        // MessageBox("RecipientBusinessName = " + resObject["RecipientBusinessName"]);
+        // MessageBox("Created = " + resObject["Created"]);
+        // MessageBox("Sent = " + resObject["Sent"]);
+        // MessageBox("Modified = " + resObject["Modified"]);
+        // MessageBox("Delivered = " + resObject["Delivered"]);
+    }
+    catch(ex){
+        MessageBox("SendingSuccess - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        // LogNKSYELOG();
+    }
+    
+}
+
+function SendingFailure(_invNum, responseCode, res) {
+    try{
+        LogResponse(responseCode, res);
+
+        MSG("Slanje računa broj " + _invNum + " NEUSPJEŠNO!");
+
+        // MessageBox("SendingFailure.ResponseCode = " + responseCode);
+
+        resObject = DeserializeJson(res);
+        MSG(resObject);
+
+        // MessageBox("ElectronicId = " + resObject["ElectronicId"]);
+        // MessageBox("DocumentNr = " + resObject["DocumentNr"]);
+        // MessageBox("DocumentTypeId = " + resObject["DocumentTypeId"]);
+        // MessageBox("DocumentTypeName = " + resObject["DocumentTypeName"]);
+        // MessageBox("StatusId = " + resObject["StatusId"]);
+        // MessageBox("StatusName = " + resObject["StatusName"]);
+        // MessageBox("RecipientBusinessNumber = " + resObject["RecipientBusinessNumber"]);
+        // MessageBox("RecipientBusinessUnit = " + resObject["RecipientBusinessUnit"]);
+        // MessageBox("RecipientBusinessName = " + resObject["RecipientBusinessName"]);
+        // MessageBox("Created = " + resObject["Created"]);
+        // MessageBox("Sent = " + resObject["Sent"]);
+        // MessageBox("Modified = " + resObject["Modified"]);
+        // MessageBox("Delivered = " + resObject["Delivered"]);        
+    }
+    catch(ex){
+        MessageBox("SendingFailure - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+    }
+}
+
+function LogResponse(responseCode, response) {
+    if(!DIR_EXISTS(FILESPATH + "responses\\")){
+        MAKE_DIR(FILESPATH + "responses\\");
+    }
+
+    logFilePath = FILESPATH + "responses\\" + parsefile(attachmentPdfPath, "pfName") + "_response.json";
+    appendText = Now("yyyy-MM-dd HH:mm:ss") + " -----------------------------------\n\n" + "StatusCode = " + responseCode + "\n\n" + "JSON:\n" + response + "\n\n";
+    try {
+        SaveFile(appendText, logFilePath, "a");        
+    } catch (ex) {
+        MessageBox("CRITICAL: Cannot write to log file: " + logPath + "\nError: " + ex);
+    }
+}
+
+
+
+// -----------------------------------------------------------
+// ERROR LOGGING
+// -----------------------------------------------------------
+
+function LogNKSYELOG(elogStatusCode, description = ""){
+    sqlQueryString = "INSERT INTO " + databaseName + ".dbo.NKSYELOG 
+    (sy_elog_num, sy_elog_date, sy_elog_status, sy_elog_person, sy_elog_estring, sy_elog_type, sy_elog_time, sy_elog_desc, sy_elog_rez3)
+    VALUES (@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);";
+
+    sqlParams = {};
+    sqlParams.Add({"@p1", NKPR_GL_NUM});
+    sqlParams.Add({"@p2", NKPR_GL_INVDTE});
+    sqlParams.Add({"@p3", elogStatusCode.Upper()});
+    sqlParams.Add({"@p4", userCode});
+    sqlParams.Add({"@p5", "" });
+    sqlParams.Add({"@p6", "IR"});
+    sqlParams.Add({"@p7", Now("HH:mm:ss")});
+    sqlParams.Add({"@p8", description});
+    sqlParams.Add({"@p9", Now("yyyy-MM-dd")});
+    sqlQuery(sqlQueryString, sqlParams);
+    return;
+}
 
 /*
 
@@ -1887,151 +1946,4 @@ function GetMimeType(file) {
 */
 
 
-// -----------------------------------------------------------
-// FINA E-Invoice Submission Functions
-// -----------------------------------------------------------
 
-// Submit generated UBL XML to FINA for testing/approval
-function SubmitToFINA(xmlFilePath, invoiceNumber, apiKey) {
-    // FINA API endpoint for e-invoice submission (update with actual URL)
-    finaApiUrl = "https://api.fina.hr/einvoice/submit"; // Replace with actual FINA endpoint
-    
-    // Prepare headers with API authentication
-    headers = {
-        "Authorization": "Bearer " + apiKey,
-        "Content-Type": "multipart/form-data",
-        "Accept": "application/json"
-    };
-    
-    // Prepare multipart form data
-    body = {
-        ["invoice_number", invoiceNumber, "text"],
-        ["invoice_type", "UBL", "text"],
-        ["submission_date", FormatDate(Now(), "yyyy-MM-dd"), "text"],
-        ["xml_file", xmlFilePath, "file"]
-    };
-    
-    // Submit to FINA with 30 second timeout
-    WebRequestMPFD(
-        "POST",                    // method
-        finaApiUrl,               // uri
-        body,                     // body array
-        "FINA_" + invoiceNumber,  // tracking ID
-        "finaSubmissionSuccess",  // onSuccess function
-        "finaSubmissionFailure",  // onFailure function
-        "FinaBoundary2025",       // boundary
-        headers,                  // headers
-        30000,                    // timeout (30 seconds)
-        true                      // justFire (async)
-    );
-    
-    MessageBox("XML račun " + invoiceNumber + " je poslan FINA-i za testiranje...\nProvjerite odgovor u roku od 30 sekundi.");
-}
-
-// Success callback for FINA submission
-function finaSubmissionSuccess(tracking, responseCode, response) {
-    invoiceNum = Substring(tracking, 5); // Remove "FINA_" prefix
-    
-    logMessage = "FINA - USPJEŠNO POSLANO - Račun: " + invoiceNum + 
-                "\nResponse Code: " + responseCode + 
-                "\nOdgovor: " + response;
-    
-    MessageBox(logMessage);
-    
-    // Log success to file (optional)
-    timestamp = FormatDate(Now(), "yyyy-MM-dd HH:mm:ss");
-    logEntry = timestamp + " | FINA_SUCCESS | " + invoiceNum + " | " + responseCode + " | " + response + "\r\n";
-    AppendFile("fina_submission.log", logEntry);
-}
-
-// Failure callback for FINA submission
-function finaSubmissionFailure(tracking, responseCode, response) {
-    invoiceNum = Substring(tracking, 5); // Remove "FINA_" prefix
-    
-    errorMessage = "FINA GREŠKA - Račun: " + invoiceNum + 
-                  "\nResponse Code: " + responseCode + 
-                  "\nGreška: " + response + 
-                  "\n\nPokušajte ponovo ili provjerite XML datoteku.";
-    
-    MessageBox(errorMessage);
-    
-    // Log failure to file
-    timestamp = FormatDate(Now(), "yyyy-MM-dd HH:mm:ss");
-    logEntry = timestamp + " | FINA_FAILURE | " + invoiceNum + " | " + responseCode + " | " + response + "\r\n";
-    AppendFile("fina_submission.log", logEntry);
-}
-
-// Enhanced GenerateUBLXml function with FINA submission option
-function GenerateAndSubmitUBL(invNum, submitToFina = false, apiKey = "") {
-    // Generate the UBL XML
-    xmlContent = GenerateUBLXml(invNum);
-    
-    if (xmlContent == false) {
-        MessageBox("Greška prilikom generiranja UBL XML-a za račun " + invNum);
-        return false;
-    }
-    
-    // Save XML to file
-    xmlFileName = "UBL_" + invNum + ".xml";
-    xmlFilePath = GetCurrentDirectory() + "\\" + xmlFileName;
-    SaveFile(xmlFilePath, xmlContent);
-    
-    MessageBox("UBL XML datoteka je generirana: " + xmlFileName);
-    
-    // Optionally submit to FINA
-    if (submitToFina && apiKey != "") {
-        SubmitToFINA(xmlFilePath, String(invNum), apiKey);
-    } elif (submitToFina && apiKey == "") {
-        MessageBox("UPOZORENJE: API ključ nije naveden. XML je generiran ali nije poslan FINA-i.");
-    }
-    
-    return xmlFilePath;
-}
-
-// Configuration function to set FINA API details
-function SetFinaConfig(apiUrl, apiKey) {
-    // Save FINA configuration to settings file
-    configContent = "FINA_API_URL=" + apiUrl + "\r\n";
-    configContent += "FINA_API_KEY=" + apiKey + "\r\n";
-    configContent += "LAST_UPDATED=" + FormatDate(Now(), "yyyy-MM-dd HH:mm:ss") + "\r\n";
-    
-    SaveFile("fina_config.txt", configContent);
-    MessageBox("FINA konfiguracija je spremljena u fina_config.txt");
-}
-
-// Load FINA configuration from file
-function LoadFinaConfig() {
-    config = {};
-    
-    if (Exists("fina_config.txt")) {
-        configText = LoadFile("fina_config.txt");
-        lines = Split(configText, "\r\n");
-        
-        for (i = 0; i < Size(lines); i++) {
-            if (Contains(lines[i], "=")) {
-                parts = Split(lines[i], "=");
-                if (Size(parts) == 2) {
-                    config[parts[0]] = parts[1];
-                }
-            }
-        }
-    }
-    
-    return config;
-}
-
-/* 
-Usage Examples:
-
-1. Generate UBL XML only:
-   GenerateAndSubmitUBL(90100002, false);
-
-2. Generate and submit to FINA:
-   GenerateAndSubmitUBL(90100002, true, "your-api-key-here");
-
-3. Setup FINA configuration:
-   SetFinaConfig("https://api.fina.hr/einvoice/submit", "your-api-key");
-
-4. Direct submission (after XML is generated):
-   SubmitToFINA("C:\\path\\to\\UBL_90100002.xml", "90100002", "your-api-key");
-*/

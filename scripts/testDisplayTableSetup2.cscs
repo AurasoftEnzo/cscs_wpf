@@ -8,18 +8,12 @@ if(flerr() != 0){
     quit;
 }
 
-
 function func1(){
     return 1;
 }
 
+//Format("price"); //formatting column price as numeric with 2 decimals and it adds currency string on the end
 
-
-Format("price");
-//// switch commented and uncommented for checkbox filter
-//DisplayTableSetup("grid1", table_hndl, "InvoiceLine_invoiceLineNumber", "1|1", "invoiceNumber < 40", "bitcolumn = 0");
-
-// DisplayTableSetup("grid1", fnum: table_hndl, key: "InvoiceLine_invoiceLineNumber", start: "1|1", whileString: "invoiceNumber<13", forString: "");
 DisplayTableSetup("grid1", fnum: table_hndl, key: "InvoiceLine_invoiceLineNumber", start: {1, func1()}, whileString: "invoiceNumber<13", forString: "");
 
 i = 2;
@@ -40,22 +34,11 @@ function btnAdd@clicked(){
 }
 
 function btnDel@clicked(){
-    // SetWidgetOptions("grid1", "EditMode");
-    // DataGrid("grid1", "AddRow");
-    MessageBox("btnDel@clicked");
+    Messagebox("Delete row");
     DataGrid("grid1", "DeleteRow");
 }
 
-// function grid1@Move(s, l){
-//     MessageBox("move-d");
-// }
-
-function btnSave@clicked(){
-    //MessageBox("price = " + price);
+function btnSave@clicked(){    
     Save(table_hndl, true, true);
     DisplayTable("grid1", "RedisplayActive");
-}
-
-function priceName@clicked(){
-    MessageBox("priceName clicked");
 }

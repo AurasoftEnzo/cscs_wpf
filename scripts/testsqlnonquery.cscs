@@ -3,8 +3,18 @@ MessageBox("...Testing sqlnonquery...");
 
 sqlconnectionstring("Server=localhost;Database=testdb;User Id=sa;Password=aura;");
 
-rowsAffected = sqlnonquery("INSERT INTO tbl_students VALUES (20, 'John', 'male')";
+rowsAffected = sqlnonquery("INSERT INTO tbl_students VALUES (21, 'John', 'male')");
+MessageBox("rowsAffected = " + rowsAffected);
 
+
+//Example with command parameters (DICTIONARY)
+params = { {"@id", 22}, {"@name", "John"}, {"@gender", "male"} };
+rowsAffected = sqlnonquery("INSERT INTO tbl_students VALUES (@id, @name, @gender)", params);
+MessageBox("rowsAffected = " + rowsAffected);
+
+
+//Example with timeout parameter
+rowsAffected = sqlnonquery("INSERT INTO tbl_students VALUES (23, 'John', 'male')", null, 60 * 5);
 MessageBox("rowsAffected = " + rowsAffected);
 
 

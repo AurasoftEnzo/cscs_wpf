@@ -1,0 +1,30 @@
+CreateWindow("../../scripts/testdatagridbindsql.xaml");
+
+SQLConnectionString("Data Source=localhost,1433;Initial Catalog=ADICTIONARY;Database=testdb;User Id=sa;Password=aura");
+
+DEFINE rowCount type R; //this is: rowcount + 1 (header row)
+
+function testdatagridbindsql_onDisplay()
+{    
+	rowCount = BindSql("Grid1", "tbl_students2"); 
+	MessageBox(rowCount);
+}
+
+//*********************************************************************
+//HOW TO RETRIEVE VALUES FROM THE SELECTED ROW
+
+function Grid1@Move()
+{
+    datarow = GetSelectedGridRow("Grid1");
+	//MessageBox("datarow = " + datarow);	
+
+	if (Size(datarow)>0)
+	{
+	  SetText("labelid", datarow[0]);
+	  SetText("labelname", datarow[1]);
+	  SetText("labelgender", datarow[2]);
+	  SetText("labelamount", datarow[3]);
+	  SetText("labelbitcolumn", datarow[4]);
+	  SetText("labeldate", datarow[5]);	  
+	}
+}

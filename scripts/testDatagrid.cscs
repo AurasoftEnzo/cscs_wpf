@@ -1,3 +1,5 @@
+MessageBox("...Testing datagrid with arrays...");
+
 sqlconnectionstring("Server=localhost;Database=testdb;User Id=sa;Password=aura;");
 
 define studentid_ar type R array 10;
@@ -12,9 +14,9 @@ define cntr type R;
 
 //DATAGRID ROW SINGLE-CLICK
 function dgStudents@move()
-{
+{	
 	datarow = GetSelectedGridRow("dgStudents");
-
+	
 	if (Size(datarow)>0)
 	{
 	  SetText("labelID", datarow[0]);

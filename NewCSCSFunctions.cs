@@ -84,6 +84,8 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.ValidateXsd, new ValidateXsdFunction());
             interpreter.RegisterFunction(Constants.ValidateSch, new ValidateSchFunction());
             interpreter.RegisterFunction(Constants.EscapeQuotesInXml, new EscapeQuotesInXmlFunction());
+
+            //interpreter.RegisterFunction(Constants.FinaTest, new FinaTestFunction());
             //...
             interpreter.RegisterFunction(Constants.XmlToDict, new XmlToDictFunction());
             interpreter.RegisterFunction(Constants.DeserializeJson, new DeserializeJsonFunction());

@@ -49,7 +49,7 @@ if (size(sqlResult) > 1)
   
 // KPSYMSTR
 sqlQueryString = " SELECT TOP 1 KPSY_REZERVA, KPSY_COMP_NAME, KPSY_COMP_ADD1, KPSY_GL_RETEARN, KPSY_COMP_CSZ, KPSY_COMP_ZIP,
-                KPSY_COMP_JMBFI, KPSY_COMP_PHONE, KPSY_COMP_EMAIL, KPSY_PO_FREIGHT, KPSY_REZERVAX
+                KPSY_COMP_JMBFI, KPSY_COMP_PHONE, KPSY_COMP_EMAIL, KPSY_PO_FREIGHT, KPSY_REZERVAX,KPSY_FISCAL_YR
                     FROM " + databaseName + ".dbo.KPSYMSTR";
 try
 {
@@ -78,15 +78,22 @@ if (size(sqlResult) > 1)
     KPSY_COMP_EMAIL = sqlResult[1][8].trim();
     KPSY_PO_FREIGHT = substring(sqlResult[1][9], 0, 2).trim();
     KPSY_REZERVAX = sqlResult[1][10].trim(); // Supplier GLN
+    KPSY_FISCAL_YR = sqlResult[1][11].trim();
 } 
+
+// MojEracun API Configuration
+MER_API_BASE_URL = "https://api.moj-eracun.hr/v2";
+MER_API_KEY = "YOUR_API_KEY_HERE"; // TODO: Replace with actual API key
+MER_COMPANY_ID = KPSY_COMP_JMBFI; // Use company OIB as company ID
 
 //
 //Batun: dohvati sve nove račune sa servera sa ovim programom
 //to može potrajat pa neki cursor da se vrti
 //sve treba preuzeti na lokalni disk 
-//i onda sa diska importirati u bazu podataka u table NKPRERGL i NKPRERLN jednog po jednog (funkcija ffile() ??), 
-//i to sve koji se nalaze u folderu novih xml e-računa a to su svi preuzeti i plus more bit neki xml dodan sa strane ako dođe sa e-mailom
-// i nakon preuzimanja u ove dvije table, trebaju se spremiti u folder 'Likvidirani XML računi' 
+//i onda sa diska importirati u bazu podataka u table NKNAERGL i NKNAERLN jednog po jednog (funkcija ffile() ??), 
+//i to sve koji se nalaze u folderu novih xml e-računa a to su svi preuzeti i plus može bit neki xml dodan sa strane ako dođe sa e-mailom
+// i nakon preuzimanja u ove dvije table, trebaju se spremiti u folder 'Likvidirani XML računi'
+// VAŽNO: Mogu se importirati samo računi čiji datum ESD pripada istoj fiskalnoj godini kao KPSY_FISCAL_YR 
 //svaki koji se preuzme, spremiti record u NKSYELOG
 //koristiti transakcije kao tu ispod
 //i to je sve, nakon toga stvar preuzima program u Knjigama
@@ -97,208 +104,548 @@ exit;
 
 
 function start(){
-    jsonResponse = WebRequest("https://MOJERACUN/receive1racun/" + brRac, "POST", "U", "P");
-    //treba spremit XML fajl na disk i da zapamti di je spremljen jer ga treba otvorit malo ispod
-    //
-
+    // Phase 1: Download all NEW invoices from MojEracun (MeR) to folder
+    downloadedCount = DownloadNewInvoicesFromMeR();
     
-    objektRacuna = DeserializeJson(jsonResponse);
+    // Phase 2: Import all XML files found in the folder (including manually added files)
+    importedCount = ImportAllXMLFilesInFolder();
+    
+    // Summary report
+    MessageBox("Proces završen!\nPreuzeto sa servera: " + downloadedCount + "\nUkupno importirano: " + importedCount);
+}
 
-    xml = StrReplace(objektRacuna["File"], "\\\"", "\"");
-
-    invoiceDict = XmlToDict(xml);
-    //primjeri:
-    // msg(invoiceDict["AccountingSupplierParty"]["Party"]["PartyIdentification"]["ID"]);
-    // msg(invoiceDict["InvoiceLine"][3]["InvoicedQuantity"]);
-    NKPR_GL_NUM = invoiceDict["ID"];
-    NKPR_GL_SAT = invoiceDict["IssueTime"];
-
-    // primjer za linije
-    for(i = 0; i < Size(invoiceDict["InvoiceLine"]); i++) {
-        currentLine = invoiceDict["InvoiceLine"][i];
-
-        NKPR_LN_BR_LN = currentLine["ID"];
-        NKPR_LN_AMOUNT = currentLine["InvoicedQuantity"];
-        // ...
+// Phase 1: Download all new invoices from Croatian provider MojEracun (MeR)
+function DownloadNewInvoicesFromMeR() {
+    try {
+        downloadCount = 0;
+        
+        // Create incoming folder if it doesn't exist
+        incomingFolder = GetCurrentDirectory() + "\\Novi XML e-računi\\";
+        if (!Exists(incomingFolder)) {
+            MkDir(incomingFolder);
+        }
+        
+        MessageBox("Počinje preuzimanje novih računa sa MojEracun servera...");
+        
+        // Prepare date range for request (last 30 days)
+        endDate = FormatDate(Now(), "yyyy-MM-dd");
+        startDate = FormatDate(Now() - 30, "yyyy-MM-dd"); // Last 30 days
+        
+        // Prepare JSON request payload
+        requestPayload = {};
+        requestPayload["companyId"] = MER_COMPANY_ID;
+        requestPayload["status"] = "UNPROCESSED"; // or "RECEIVED", "NEW"
+        requestPayload["fromDate"] = startDate;
+        requestPayload["toDate"] = endDate;
+        
+        jsonPayload = SerializeJson(requestPayload);
+        
+        // Prepare headers for API request
+        headers = {};
+        headers["Content-Type"] = "application/json";
+        headers["Authorization"] = "Bearer " + MER_API_KEY;
+        
+        try {
+            // Make API request to MojEracun
+            apiUrl = MER_API_BASE_URL + "/documents/receive";
+            jsonResponse = WebRequestMPFD(apiUrl, "POST", jsonPayload, headers);
+            
+            if (jsonResponse == "" || jsonResponse == null) {
+                MessageBox("Nema odgovora sa MojEracun servera");
+                return 0;
+            }
+            
+            // Parse response
+            responseObj = DeserializeJson(jsonResponse);
+            
+            if (responseObj == null) {
+                MessageBox("Greška prilikom parsiranja odgovora sa servera");
+                return 0;
+            }
+            
+            // Check if request was successful
+            if (!responseObj.ContainsKey("status") || responseObj["status"] != "success") {
+                errorMsg = "API greška";
+                if (responseObj.ContainsKey("message")) {
+                    errorMsg += ": " + responseObj["message"];
+                }
+                MessageBox(errorMsg);
+                return 0;
+            }
+            
+            // Get documents array
+            documents = responseObj["documents"];
+            if (!IsArray(documents) || Size(documents) == 0) {
+                MessageBox("Nema novih dokumenata za preuzimanje");
+                return 0;
+            }
+            
+            MessageBox("Pronađeno " + Size(documents) + " dokumenata za preuzimanje...");
+            
+            // Process each document
+            for (i = 0; i < Size(documents); i++) {
+                document = documents[i];
+                
+                documentId = document["documentId"];
+                docType = document["type"];
+                sender = document["sender"];
+                dateReceived = document["dateReceived"];
+                
+                MessageBox("Preuzimam dokument " + (i + 1) + "/" + Size(documents) + ": " + documentId);
+                
+                // Download XML attachment for each document
+                if (document.ContainsKey("attachments") && IsArray(document["attachments"])) {
+                    attachments = document["attachments"];
+                    
+                    for (j = 0; j < Size(attachments); j++) {
+                        attachment = attachments[j];
+                        attachmentName = attachment["name"];
+                        attachmentUrl = attachment["url"];
+                        
+                        // Only download XML files
+                        if (Contains(ToLower(attachmentName), ".xml")) {
+                            xmlContent = DownloadAttachmentFromMeR(attachmentUrl);
+                            
+                            if (xmlContent != "") {
+                                // Generate filename with timestamp
+                                timestamp = FormatDate(Now(), "yyyyMMdd_HHmmss_fff");
+                                xmlFileName = "MeR_" + documentId + "_" + timestamp + ".xml";
+                                xmlFilePath = incomingFolder + xmlFileName;
+                                
+                                // Save XML file to disk
+                                SaveFile(xmlFilePath, xmlContent);
+                                downloadCount++;
+                                
+                                // Log successful download
+                                logEntry = FormatDate(Now(), "yyyy-MM-dd HH:mm:ss") + " | DOWNLOAD_SUCCESS | " + documentId + " | " + xmlFileName + "\r\n";
+                                SaveFile("download_log.txt", logEntry, "A");
+                                
+                            } else {
+                                MessageBox("Greška prilikom preuzimanja XML-a za dokument: " + documentId);
+                                // Log failed download
+                                logEntry = FormatDate(Now(), "yyyy-MM-dd HH:mm:ss") + " | DOWNLOAD_FAILURE | " + documentId + " | " + attachmentName + "\r\n";
+                                SaveFile("download_log.txt", logEntry, "A");
+                            }
+                            break; // Only download first XML attachment
+                        }
+                    }
+                }
+            }
+            
+        } catch (apiError) {
+            MessageBox("Greška prilikom API poziva: " + apiError);
+            return 0;
+        }
+        
+        MessageBox("Preuzimanje završeno. Ukupno preuzeto: " + downloadCount + " XML računa.");
+        return downloadCount;
+        
+    } catch (error) {
+        MessageBox("Greška u procesu preuzimanja: " + error);
+        return 0;
     }
 }
 
-// Main import function
-function importUBLXml(xmlFilePath) {
+// Phase 2: Import all XML files found in the folder
+function ImportAllXMLFilesInFolder() {
     try {
-        // Check if file exists
-        if (!Exists(xmlFilePath)) {
-            MessageBox("XML datoteka ne postoji: " + xmlFilePath);
+        importCount = 0;
+        errorCount = 0;
+        
+        // Set working directory to incoming folder
+        incomingFolder = GetCurrentDirectory() + "\\Novi XML e-računi\\";
+        if (!Exists(incomingFolder)) {
+            MessageBox("Folder 'Novi XML e-računi' ne postoji!");
+            return 0;
+        }
+        
+        // Change to the incoming folder to use findfiles
+        originalDir = GetCurrentDirectory();
+        cd(incomingFolder);
+        
+        // Find all XML files in the folder using findfiles()
+        xmlFiles = findfiles("*.xml");
+        
+        // Return to original directory
+        cd(originalDir);
+        
+        if (Size(xmlFiles) == 0) {
+            MessageBox("Nema XML datoteka za import u folderu: " + incomingFolder);
+            return 0;
+        }
+        
+        MessageBox("Pronađeno " + Size(xmlFiles) + " XML datoteka za import...");
+        
+        // Create necessary folders
+        archiveFolder = GetCurrentDirectory() + "\\Likvidirani XML računi\\";
+        if (!Exists(archiveFolder)) {
+            MkDir(archiveFolder);
+        }
+        
+        errorFolder = GetCurrentDirectory() + "\\XML Greške\\";
+        if (!Exists(errorFolder)) {
+            MkDir(errorFolder);
+        }
+        
+        // Process each XML file
+        for (i = 0; i < Size(xmlFiles); i++) {
+            xmlFilePath = xmlFiles[i];
+            xmlFileName = ParseFile(xmlFilePath, "pfFileNoExt") + ParseFile(xmlFilePath, "pfExt");
+            
+            MessageBox("Importiram datoteku " + (i + 1) + "/" + Size(xmlFiles) + ": " + xmlFileName);
+            
+            try {
+                // Import the XML file
+                result = importUBLXml(xmlFilePath);
+                
+                if (result != false && result != "FISCAL_YEAR_MISMATCH") {
+                    importCount++;
+                    
+                    // Move processed file to archive folder
+                    archiveFile = archiveFolder + xmlFileName;
+                    Move(xmlFilePath, archiveFile);
+                    
+                    // Log successful import
+                    logEntry = FormatDate(Now(), "yyyy-MM-dd HH:mm:ss") + " | IMPORT_SUCCESS | " + result + " | " + xmlFileName + "\r\n";
+                    SaveFile("import_log.txt", logEntry, "A");
+                    
+                    // Log to NKSYELOG
+                    LogToNKSYELOG(result, xmlFilePath, "XML_IMPORT_SUCCESS");
+                    
+                } elif (result == "FISCAL_YEAR_MISMATCH") {
+                    // Move file to archive folder but don't count as import
+                    archiveFile = archiveFolder + "FISCAL_YEAR_" + xmlFileName;
+                    Move(xmlFilePath, archiveFile);
+                    
+                    // Log fiscal year mismatch
+                    logEntry = FormatDate(Now(), "yyyy-MM-dd HH:mm:ss") + " | FISCAL_YEAR_MISMATCH | " + xmlFileName + "\r\n";
+                    SaveFile("import_log.txt", logEntry, "A");
+                    
+                } else {
+                    errorCount++;
+                    
+                    // Move failed file to error folder
+                    errorFile = errorFolder + "ERROR_" + xmlFileName;
+                    Move(xmlFilePath, errorFile);
+                    
+                    // Log failed import
+                    logEntry = FormatDate(Now(), "yyyy-MM-dd HH:mm:ss") + " | IMPORT_FAILURE | " + xmlFileName + "\r\n";
+                    SaveFile("import_log.txt", logEntry, "A");
+                    
+                    // Log to NKSYELOG
+                    LogToNKSYELOG(0, xmlFilePath, "XML_IMPORT_FAILURE");
+                }
+                
+            } catch (importError) {
+                errorCount++;
+                MessageBox("Greška prilikom importa datoteke " + xmlFileName + ": " + importError);
+                
+                // Move to error folder
+                errorFile = errorFolder + "ERROR_" + xmlFileName;
+                try {
+                    Move(xmlFilePath, errorFile);
+                } catch (moveError) {
+                    MessageBox("Ne mogu premjestiti datoteku u error folder: " + moveError);
+                }
+            }
+        }
+        
+        // Final summary
+        MessageBox("Import završen!\nUspješno importirano: " + importCount + "\nGreške: " + errorCount);
+        return importCount;
+        
+    } catch (error) {
+        MessageBox("Greška u procesu importa: " + error);
+        return 0;
+    }
+}
+
+// Download individual attachment from MojEracun API
+function DownloadAttachmentFromMeR(attachmentUrl) {
+    try {
+        // Prepare headers for attachment download
+        headers = {};
+        headers["Authorization"] = "Bearer " + MER_API_KEY;
+        headers["Accept"] = "application/xml,text/xml,*/*";
+        
+        // Download attachment content
+        attachmentContent = WebRequestMPFD(attachmentUrl, "GET", "", headers);
+        
+        if (attachmentContent != "" && attachmentContent != null) {
+            return attachmentContent;
+        } else {
+            return "";
+        }
+        
+    } catch (error) {
+        MessageBox("Greška prilikom preuzimanja datoteke: " + error);
+        return "";
+    }
+}
+
+// Enhanced function to process single invoice from server download (legacy support)
+function ProcessSingleInvoiceFromServer(invoiceData) {
+    try {
+        // Extract XML content
+        xml = StrReplace(invoiceData["File"], "\\\"", "\"");
+        invoiceId = invoiceData["ID"];
+        
+        // Generate unique filename
+        timestamp = FormatDate(Now(), "yyyyMMdd_HHmmss_fff");
+        xmlFileName = "MeR_" + invoiceId + "_" + timestamp + ".xml";
+        
+        // Save to incoming folder
+        incomingFolder = GetCurrentDirectory() + "\\Novi XML e-računi\\";
+        if (!Exists(incomingFolder)) {
+            MkDir(incomingFolder);
+        }
+        
+        xmlFilePath = incomingFolder + xmlFileName;
+        SaveFile(xmlFilePath, xml);
+        
+        return xmlFilePath;
+        
+    } catch (error) {
+        MessageBox("Greška prilikom procesiranja računa " + invoiceId + ": " + error);
+        return "";
+    }
+}
+
+// New main import function using XmlToDict
+function importUBLXmlFromDict(xmlContent, xmlFilePath = "") {
+    try {
+        // Convert XML to Dictionary
+        invoiceDict = XmlToDict(xmlContent);
+        
+        if (invoiceDict == null || Size(invoiceDict) == 0) {
+            MessageBox("Greška prilikom parsiranja XML-a u Dictionary");
             return false;
         }
-       
-        // Load and parse XML content
-        xmlContent = LoadFile(xmlFilePath);
-        if (xmlContent == "") {
-            MessageBox("XML datoteka je prazna ili se ne može učitati: " + xmlFilePath);
-            return false;
-        }
-       
-        // Parse XML document
-        xmlDoc = ParseXML(xmlContent);
-        if (xmlDoc == null) {
-            MessageBox("Greška prilikom parsiranja XML datoteke: " + xmlFilePath);
-            return false;
-        }
-       
-        // Determine document type (Invoice, CreditNote, DebitNote)
-        docType = GetDocumentType(xmlDoc);
+        
+        // Determine document type from dictionary structure
+        docType = GetDocumentTypeFromDict(invoiceDict);
         if (docType == "") {
             MessageBox("Nepoznat tip dokumenta u XML datoteci");
             return false;
         }
-       
-        // Extract header information
-        headerData = ExtractHeaderData(xmlDoc, docType);
+        
+        // Extract header information from dictionary
+        headerData = ExtractHeaderDataFromDict(invoiceDict, docType);
         if (headerData == null) {
             MessageBox("Greška prilikom izvlačenja podataka zaglavlja");
             return false;
         }
-       
-        // Extract line items
-        lineItems = ExtractLineItems(xmlDoc, docType);
+        
+        // Validate fiscal year before proceeding
+        if (!ValidateFiscalYear(headerData["NKPR_GL_ESD"])) {
+            MessageBox("Račun se ne može importirati jer datum ESD (" + headerData["NKPR_GL_ESD"] + ") ne pripada fiskalnoj godini " + KPSY_FISCAL_YR + ". Račun će biti premješten u arhivu.");
+            return "FISCAL_YEAR_MISMATCH";
+        }
+        
+        // Extract line items from dictionary
+        lineItems = ExtractLineItemsFromDict(invoiceDict, docType);
         if (lineItems == null) {
             MessageBox("Greška prilikom izvlačenja stavki računa");
             return false;
         }
-       
+        
         // Begin database transaction
         BeginTransaction();
-       
+        
         try {
-            // Import header data to NKPRINV table
-            invNum = ImportHeaderData(headerData, docType);
+            // Import header data to NKNAERGL table
+            invNum = ImportHeaderDataToERGL(headerData, docType);
             if (invNum == 0) {
                 throw "Greška prilikom unosa zaglavlja računa";
             }
-           
-            // Import line items to NKPRINVL table
-            if (!ImportLineItems(invNum, lineItems)) {
+            
+            // Import line items to NKNAERLN table
+            if (!ImportLineItemsToERLN(invNum, lineItems)) {
                 throw "Greška prilikom unosa stavki računa";
             }
-           
-            // Import tax data (if needed)
-            if (!ImportTaxData(invNum, headerData, lineItems)) {
-                throw "Greška prilikom unosa podataka o porezu";
-            }
-           
+            
+            // Log to NKSYELOG
+            LogToNKSYELOG(invNum, xmlFilePath, "IMPORT_SUCCESS");
+            
             // Commit transaction
             CommitTransaction();
-           
+            
             MessageBox("UBL XML račun je uspješno uvezen!\nBroj računa: " + invNum);
             return invNum;
-           
+            
         } catch (error) {
             // Rollback transaction on error
             RollbackTransaction();
+            LogToNKSYELOG(0, xmlFilePath, "IMPORT_FAILURE: " + error);
             MessageBox("Greška prilikom unosa u bazu podataka: " + error);
             return false;
         }
-       
+        
     } catch (error) {
         MessageBox("Greška prilikom uvoza XML datoteke: " + error);
         return false;
     }
 }
- 
-// Determine document type from XML root element
-function GetDocumentType(xmlDoc) {
-    root = GetXMLRoot(xmlDoc);
-    rootName = GetXMLNodeName(root);
-   
-    if (rootName == "Invoice") return "S";
-    if (rootName == "CreditNote") return "R";
-    if (rootName == "DebitNote") return "T";
-   
+
+// Determine document type from Dictionary structure
+function GetDocumentTypeFromDict(invoiceDict) {
+    // Check which root element exists in dictionary
+    if (invoiceDict.ContainsKey("Invoice")) return "S";
+    if (invoiceDict.ContainsKey("CreditNote")) return "R";  
+    if (invoiceDict.ContainsKey("DebitNote")) return "T";
+    
+    // Check if we have direct access to elements (flat structure)
+    if (invoiceDict.ContainsKey("ID") && invoiceDict.ContainsKey("InvoiceTypeCode")) return "S";
+    if (invoiceDict.ContainsKey("ID") && invoiceDict.ContainsKey("CreditNoteTypeCode")) return "R";
+    if (invoiceDict.ContainsKey("ID") && invoiceDict.ContainsKey("DebitNoteTypeCode")) return "T";
+    
     return "";
 }
- 
-// Extract header data from XML
-function ExtractHeaderData(xmlDoc, docType) {
+
+// Extract header data from Dictionary
+function ExtractHeaderDataFromDict(invoiceDict, docType) {
     try {
         headerData = {};
-       
+        
+        // Get the root document data (handle nested or flat structure)
+        docData = invoiceDict;
+        if (docType == "S" && invoiceDict.ContainsKey("Invoice")) {
+            docData = invoiceDict["Invoice"];
+        } elif (docType == "R" && invoiceDict.ContainsKey("CreditNote")) {
+            docData = invoiceDict["CreditNote"];
+        } elif (docType == "T" && invoiceDict.ContainsKey("DebitNote")) {
+            docData = invoiceDict["DebitNote"];
+        }
+        
         // Basic invoice information
-        headerData["NKPR_GL_NUM"] = ParseInvoiceNumber(GetXMLValue(xmlDoc, "//cbc:ID"));
+        headerData["NKPR_GL_NUM"] = ParseInvoiceNumber(GetDictValue(docData, "ID"));
         headerData["NKPR_GL_OZNAKA"] = docType;
-        headerData["NKPR_GL_INVDTE"] = GetXMLValue(xmlDoc, "//cbc:IssueDate");
-        headerData["NKPR_GL_TIMECR"] = GetXMLValue(xmlDoc, "//cbc:IssueTime");
-        headerData["NKPR_GL_DUE_DATE"] = GetXMLValue(xmlDoc, "//cbc:DueDate");
-        headerData["NKPR_GL_ESD"] = GetXMLValue(xmlDoc, "//cbc:TaxPointDate");
-       
-        // Document type and profile
+        headerData["NKPR_GL_INVDTE"] = GetDictValue(docData, "IssueDate");
+        headerData["NKPR_GL_TIMECR"] = GetDictValue(docData, "IssueTime");
+        headerData["NKPR_GL_DUE_DATE"] = GetDictValue(docData, "DueDate");
+        headerData["NKPR_GL_ESD"] = GetDictValue(docData, "TaxPointDate");
+        
+        // Document type code
         if (docType == "R") {
-            headerData["NKPR_GL_TYPECODE"] = GetXMLValue(xmlDoc, "//cbc:CreditNoteTypeCode");
+            headerData["NKPR_GL_TYPECODE"] = GetDictValue(docData, "CreditNoteTypeCode");
+        } elif (docType == "T") {
+            headerData["NKPR_GL_TYPECODE"] = GetDictValue(docData, "DebitNoteTypeCode");
         } else {
-            headerData["NKPR_GL_TYPECODE"] = GetXMLValue(xmlDoc, "//cbc:InvoiceTypeCode");
+            headerData["NKPR_GL_TYPECODE"] = GetDictValue(docData, "InvoiceTypeCode");
         }
-       
+        
         // Currency
-        currency = GetXMLValue(xmlDoc, "//cbc:DocumentCurrencyCode");
-        headerData["NKPR_GL_CURRENCY"] = currency;
-       
-        // Customer information
-        custOIB = GetXMLValue(xmlDoc, "//cac:AccountingCustomerParty//cbc:CompanyID[@schemeID='9934']");
-        if (custOIB == "") {
-            custOIB = GetXMLValue(xmlDoc, "//cac:AccountingCustomerParty//cbc:CompanyID[@schemeID='0088']");
-        }
-        headerData["NKPR_GL_CUSTOIB"] = custOIB;
-        headerData["NKPR_GL_CUSTNME"] = GetXMLValue(xmlDoc, "//cac:AccountingCustomerParty//cbc:Name");
-        headerData["NKPR_GL_CUSTADD"] = GetXMLValue(xmlDoc, "//cac:AccountingCustomerParty//cbc:StreetName");
-        headerData["NKPR_GL_CUSTCTY"] = GetXMLValue(xmlDoc, "//cac:AccountingCustomerParty//cbc:CityName");
-        headerData["NKPR_GL_CUSTZIP"] = GetXMLValue(xmlDoc, "//cac:AccountingCustomerParty//cbc:PostalZone");
-        headerData["NKPR_GL_CUSTST"] = GetXMLValue(xmlDoc, "//cac:AccountingCustomerParty//cbc:IdentificationCode");
-       
-        // Supplier information
-        suppOIB = GetXMLValue(xmlDoc, "//cac:AccountingSupplierParty//cbc:CompanyID[@schemeID='9934']");
-        if (suppOIB == "") {
-            suppOIB = GetXMLValue(xmlDoc, "//cac:AccountingSupplierParty//cbc:CompanyID[@schemeID='0088']");
-        }
-        headerData["NKPR_GL_SUPPOIB"] = suppOIB;
-       
-        // Delivery information (if present)
-        deliveryID = GetXMLValue(xmlDoc, "//cac:Delivery//cbc:ID");
-        if (deliveryID != "") {
-            deliveryScheme = GetXMLAttribute(xmlDoc, "//cac:Delivery//cbc:ID", "schemeID");
-            if (deliveryScheme == "0088") {
-                headerData["NKPR_AD_GLN"] = deliveryID;
-            } else {
-                headerData["NKPR_GL_SHPCOD"] = deliveryID;
+        headerData["NKPR_GL_CURRENCY"] = GetDictValue(docData, "DocumentCurrencyCode");
+        
+        // Customer information from AccountingCustomerParty
+        custParty = GetDictValue(docData, "AccountingCustomerParty");
+        if (custParty != null && custParty != "") {
+            custPartyData = custParty;
+            if (IsString(custParty) == false && custParty.ContainsKey("Party")) {
+                custPartyData = custParty["Party"];
             }
-            headerData["NKPR_GL_SHPNME"] = GetXMLValue(xmlDoc, "//cac:DeliveryParty//cbc:Name");
-            headerData["NKPR_GL_SHPADD1"] = GetXMLValue(xmlDoc, "//cac:Delivery//cbc:StreetName");
-            headerData["NKPR_GL_SHPCTY"] = GetXMLValue(xmlDoc, "//cac:Delivery//cbc:CityName");
-            headerData["NKPR_GL_SHPZIP"] = GetXMLValue(xmlDoc, "//cac:Delivery//cbc:PostalZone");
-            headerData["NKPR_GL_SHPST"] = GetXMLValue(xmlDoc, "//cac:Delivery//cbc:IdentificationCode");
+            
+            // Customer OIB/GLN
+            companyID = GetDictValue(custPartyData, "PartyIdentification.ID");
+            if (companyID == "") {
+                companyID = GetDictValue(custPartyData, "PartyLegalEntity.CompanyID");
+            }
+            headerData["NKPR_GL_CUSTOIB"] = companyID;
+            
+            // Customer name
+            custName = GetDictValue(custPartyData, "PartyName.Name");
+            if (custName == "") {
+                custName = GetDictValue(custPartyData, "PartyLegalEntity.RegistrationName");
+            }
+            headerData["NKPR_GL_CUSTNME"] = custName;
+            
+            // Customer address
+            custAddress = GetDictValue(custPartyData, "PostalAddress");
+            if (custAddress != null && custAddress != "") {
+                headerData["NKPR_GL_CUSTADD"] = GetDictValue(custAddress, "StreetName");
+                headerData["NKPR_GL_CUSTCTY"] = GetDictValue(custAddress, "CityName");
+                headerData["NKPR_GL_CUSTZIP"] = GetDictValue(custAddress, "PostalZone");
+                headerData["NKPR_GL_CUSTST"] = GetDictValue(custAddress, "Country.IdentificationCode");
+            }
         }
-       
+        
+        // Supplier information from AccountingSupplierParty
+        suppParty = GetDictValue(docData, "AccountingSupplierParty");
+        if (suppParty != null && suppParty != "") {
+            suppPartyData = suppParty;
+            if (IsString(suppParty) == false && suppParty.ContainsKey("Party")) {
+                suppPartyData = suppParty["Party"];
+            }
+            
+            // Supplier OIB/GLN
+            suppCompanyID = GetDictValue(suppPartyData, "PartyIdentification.ID");
+            if (suppCompanyID == "") {
+                suppCompanyID = GetDictValue(suppPartyData, "PartyLegalEntity.CompanyID");
+            }
+            headerData["NKPR_GL_SUPPOIB"] = suppCompanyID;
+        }
+        
+        // Delivery information
+        delivery = GetDictValue(docData, "Delivery");
+        if (delivery != null && delivery != "") {
+            deliveryLocation = GetDictValue(delivery, "DeliveryLocation");
+            if (deliveryLocation != null && deliveryLocation != "") {
+                deliveryID = GetDictValue(deliveryLocation, "ID");
+                if (deliveryID != "") {
+                    // Check if it's GLN (13 characters) or internal code
+                    if (Length(deliveryID) == 13) {
+                        headerData["NKPR_AD_GLN"] = deliveryID;
+                    } else {
+                        headerData["NKPR_GL_SHPCOD"] = deliveryID;
+                    }
+                }
+                
+                // Delivery address
+                deliveryAddr = GetDictValue(deliveryLocation, "Address");
+                if (deliveryAddr != null && deliveryAddr != "") {
+                    headerData["NKPR_GL_SHPADD1"] = GetDictValue(deliveryAddr, "StreetName");
+                    headerData["NKPR_GL_SHPCTY"] = GetDictValue(deliveryAddr, "CityName");
+                    headerData["NKPR_GL_SHPZIP"] = GetDictValue(deliveryAddr, "PostalZone");
+                    headerData["NKPR_GL_SHPST"] = GetDictValue(deliveryAddr, "Country.IdentificationCode");
+                }
+            }
+            
+            // Delivery party
+            deliveryParty = GetDictValue(delivery, "DeliveryParty");
+            if (deliveryParty != null && deliveryParty != "") {
+                headerData["NKPR_GL_SHPNME"] = GetDictValue(deliveryParty, "PartyName.Name");
+            }
+        }
+        
         // Payment information
-        headerData["NKPR_GL_PAYMNT"] = GetXMLValue(xmlDoc, "//cac:PaymentMeans//cbc:PaymentMeansCode");
-        paymentID = GetXMLValue(xmlDoc, "//cac:PaymentMeans//cbc:PaymentID");
-        if (Contains(paymentID, " ")) {
-            paymentParts = Split(paymentID, " ");
-            headerData["NKPR_GL_MODEL"] = paymentParts[0];
-            if (Size(paymentParts) > 1) {
-                headerData["NKPR_GL_POZIV"] = paymentParts[1];
+        paymentMeans = GetDictValue(docData, "PaymentMeans");
+        if (paymentMeans != null && paymentMeans != "") {
+            headerData["NKPR_GL_PAYMNT"] = GetDictValue(paymentMeans, "PaymentMeansCode");
+            
+            paymentID = GetDictValue(paymentMeans, "PaymentID");
+            if (Contains(paymentID, " ")) {
+                paymentParts = Split(paymentID, " ");
+                headerData["NKPR_GL_MODEL"] = paymentParts[0];
+                if (Size(paymentParts) > 1) {
+                    headerData["NKPR_GL_POZIV"] = paymentParts[1];
+                }
             }
         }
-       
+        
         // Monetary totals
-        headerData["NKPR_GL_LINETOTAL"] = ParseDecimal(GetXMLValue(xmlDoc, "//cac:LegalMonetaryTotal//cbc:LineExtensionAmount"));
-        headerData["NKPR_GL_TAXTOTAL"] = ParseDecimal(GetXMLValue(xmlDoc, "//cac:LegalMonetaryTotal//cbc:TaxExclusiveAmount"));
-        headerData["NKPR_GL_TOTAL"] = ParseDecimal(GetXMLValue(xmlDoc, "//cac:LegalMonetaryTotal//cbc:TaxInclusiveAmount"));
-        headerData["NKPR_GL_PAYABLE"] = ParseDecimal(GetXMLValue(xmlDoc, "//cac:LegalMonetaryTotal//cbc:PayableAmount"));
-       
+        legalMonTotal = GetDictValue(docData, "LegalMonetaryTotal");
+        if (legalMonTotal != null && legalMonTotal != "") {
+            headerData["NKPR_GL_LINETOTAL"] = ParseDecimal(GetDictValue(legalMonTotal, "LineExtensionAmount"));
+            headerData["NKPR_GL_TAXTOTAL"] = ParseDecimal(GetDictValue(legalMonTotal, "TaxExclusiveAmount"));
+            headerData["NKPR_GL_TOTAL"] = ParseDecimal(GetDictValue(legalMonTotal, "TaxInclusiveAmount"));
+            headerData["NKPR_GL_PAYABLE"] = ParseDecimal(GetDictValue(legalMonTotal, "PayableAmount"));
+        }
+        
         // Notes
-        note = GetXMLValue(xmlDoc, "//cbc:Note");
+        note = GetDictValue(docData, "Note");
         if (note != "") {
             headerData["NKPR_GL_NOTE"] = note;
-           
+            
             // Parse referenced invoices from note
             refStartPos = IndexOf(note, "#REF(");
             if (refStartPos >= 0) {
@@ -312,123 +659,299 @@ function ExtractHeaderData(xmlDoc, docType) {
                 }
             }
         }
-       
+        
         // Billing references
-        billingRef = GetXMLValue(xmlDoc, "//cac:BillingReference//cbc:ID");
-        if (billingRef != "" && headerData["NKPR_GL_REZ3"] == "") {
-            headerData["NKPR_GL_REZ3"] = ParseInvoiceNumber(billingRef);
+        billingRef = GetDictValue(docData, "BillingReference");
+        if (billingRef != null && billingRef != "") {
+            billingRefID = GetDictValue(billingRef, "InvoiceDocumentReference.ID");
+            if (billingRefID != "" && headerData["NKPR_GL_REZ3"] == "") {
+                headerData["NKPR_GL_REZ3"] = ParseInvoiceNumber(billingRefID);
+            }
         }
-       
+        
         return headerData;
-       
+        
     } catch (error) {
         MessageBox("Greška prilikom izvlačenja podataka zaglavlja: " + error);
         return null;
     }
 }
+
+// Legacy import function (kept for compatibility, but uses new dictionary approach)
+function importUBLXml(xmlFilePath) {
+    try {
+        // Check if file exists
+        if (!Exists(xmlFilePath)) {
+            MessageBox("XML datoteka ne postoji: " + xmlFilePath);
+            return false;
+        }
+        
+        // Load XML content
+        xmlContent = LoadFile(xmlFilePath);
+        if (xmlContent == "") {
+            MessageBox("XML datoteka je prazna ili se ne može učitati: " + xmlFilePath);
+            return false;
+        }
+        
+        // Use new dictionary-based import
+        return importUBLXmlFromDict(xmlContent, xmlFilePath);
+        
+    } catch (error) {
+        MessageBox("Greška prilikom uvoza XML datoteke: " + error);
+        return false;
+    }
+}
+
+// Helper function to check if value is an array
+function IsArray(value) {
+    return (value != null && typeof(value) == "object" && value.Length != undefined);
+}
+
+// Helper function to check if value is a string
+function IsString(value) {
+    return (typeof(value) == "string");
+}
+
+// Helper function to parse decimal values (enhanced)
+function ParseDecimal(value) {
+    if (value == "" || value == null) {
+        return 0;
+    }
+    
+    // Handle dictionary/object values
+    if (!IsString(value)) {
+        if (value.ContainsKey("#text")) {
+            value = value["#text"];
+        } else {
+            value = String(value);
+        }
+    }
+    
+    return Double(value);
+}
  
-// Extract line items from XML
-function ExtractLineItems(xmlDoc, docType) {
+// Extract line items from Dictionary
+function ExtractLineItemsFromDict(invoiceDict, docType) {
     try {
         lineItems = {};
-       
-        // Determine line item XPath based on document type
-        lineXPath = "";
-        if (docType == "S") {
-            lineXPath = "//cac:InvoiceLine";
-        } elif (docType == "R") {
-            lineXPath = "//cac:CreditNoteLine";
-        } elif (docType == "T") {
-            lineXPath = "//cac:DebitNoteLine";
+        
+        // Get the root document data
+        docData = invoiceDict;
+        if (docType == "S" && invoiceDict.ContainsKey("Invoice")) {
+            docData = invoiceDict["Invoice"];
+        } elif (docType == "R" && invoiceDict.ContainsKey("CreditNote")) {
+            docData = invoiceDict["CreditNote"];
+        } elif (docType == "T" && invoiceDict.ContainsKey("DebitNote")) {
+            docData = invoiceDict["DebitNote"];
         }
-       
-        // Get all line item nodes
-        lineNodes = GetXMLNodes(xmlDoc, lineXPath);
-       
-        for (i = 0; i < Size(lineNodes); i++) {
-            lineData = {};
-            lineNode = lineNodes[i];
-           
-            // Basic line information
-            lineData["NKPR_LN_BR_LN"] = GetXMLValue(lineNode, ".//cbc:ID");
-           
-            // Quantity and unit
-            if (docType == "S") {
-                lineData["NKPR_LN_PQTY"] = ParseDecimal(GetXMLValue(lineNode, ".//cbc:InvoicedQuantity"));
-                lineData["NKPR_LN_JEDMJ"] = GetUnitCodeFromUN(GetXMLAttribute(lineNode, ".//cbc:InvoicedQuantity", "unitCode"));
-            } elif (docType == "R") {
-                lineData["NKPR_LN_PQTY"] = ParseDecimal(GetXMLValue(lineNode, ".//cbc:CreditedQuantity"));
-                lineData["NKPR_LN_JEDMJ"] = GetUnitCodeFromUN(GetXMLAttribute(lineNode, ".//cbc:CreditedQuantity", "unitCode"));
-            } elif (docType == "T") {
-                lineData["NKPR_LN_PQTY"] = ParseDecimal(GetXMLValue(lineNode, ".//cbc:DebitedQuantity"));
-                lineData["NKPR_LN_JEDMJ"] = GetUnitCodeFromUN(GetXMLAttribute(lineNode, ".//cbc:DebitedQuantity", "unitCode"));
-            }
-           
-            // Line amounts
-            lineData["NKPR_LN_AMT"] = ParseDecimal(GetXMLValue(lineNode, ".//cbc:LineExtensionAmount"));
-           
-            // Item information
-            lineData["NKPR_LN_PDESC"] = GetXMLValue(lineNode, ".//cac:Item//cbc:Name");
-            lineData["NKPR_LN_PCODE"] = GetXMLValue(lineNode, ".//cac:Item//cbc:SellersItemIdentification//cbc:ID");
-           
-            // Price information
-            lineData["NKPR_LN_PPRCE"] = ParseDecimal(GetXMLValue(lineNode, ".//cac:Price//cbc:PriceAmount"));
-           
-            // Tax information
-            taxCategory = GetXMLValue(lineNode, ".//cac:Item//cac:ClassifiedTaxCategory//cbc:ID");
-            taxPercent = ParseDecimal(GetXMLValue(lineNode, ".//cac:Item//cac:ClassifiedTaxCategory//cbc:Percent"));
-            lineData["NKPR_LN_PRNPR"] = taxPercent;
-            lineData["NKPR_LN_TXBLE"] = (taxPercent > 0) ? "Y" : "N";
-           
-            // Allowances and charges
-            allowanceAmount = ParseDecimal(GetXMLValue(lineNode, ".//cac:AllowanceCharge[cbc:ChargeIndicator='false']//cbc:Amount"));
-            chargeAmount = ParseDecimal(GetXMLValue(lineNode, ".//cac:AllowanceCharge[cbc:ChargeIndicator='true']//cbc:Amount"));
-           
-            if (allowanceAmount > 0) {
-                lineData["NKPR_LN_POPL"] = allowanceAmount;
-                // Calculate discount percentage
-                grossAmount = lineData["NKPR_LN_PQTY"] * lineData["NKPR_LN_PPRCE"];
-                if (grossAmount > 0) {
-                    lineData["NKPR_LN_PDISC"] = (allowanceAmount / grossAmount) * 100;
+        
+        // Determine line element name based on document type
+        lineElementName = "";
+        quantityElementName = "";
+        if (docType == "S") {
+            lineElementName = "InvoiceLine";
+            quantityElementName = "InvoicedQuantity";
+        } elif (docType == "R") {
+            lineElementName = "CreditNoteLine";
+            quantityElementName = "CreditedQuantity";
+        } elif (docType == "T") {
+            lineElementName = "DebitNoteLine";
+            quantityElementName = "DebitedQuantity";
+        }
+        
+        // Get line items array
+        linesArray = GetDictValue(docData, lineElementName);
+        if (linesArray == null || linesArray == "") {
+            return {}; // Return empty array if no lines found
+        }
+        
+        // Handle both single line (object) and multiple lines (array)
+        if (IsArray(linesArray)) {
+            // Multiple lines
+            for (i = 0; i < Size(linesArray); i++) {
+                lineData = ExtractSingleLineFromDict(linesArray[i], quantityElementName);
+                if (lineData != null) {
+                    lineItems.Add(lineData);
                 }
             }
-           
-            // Notes
-            lineNote = GetXMLValue(lineNode, ".//cbc:Note");
-            if (lineNote != "") {
-                lineData["NKPR_LN_NOTE"] = lineNote;
+        } else {
+            // Single line
+            lineData = ExtractSingleLineFromDict(linesArray, quantityElementName);
+            if (lineData != null) {
+                lineItems.Add(lineData);
             }
-           
-            lineItems.Add(lineData);
         }
-       
+        
         return lineItems;
-       
+        
     } catch (error) {
         MessageBox("Greška prilikom izvlačenja stavki: " + error);
         return null;
     }
 }
- 
-// Import header data into NKPRINV table
-function ImportHeaderData(headerData, docType) {
+
+// Extract single line item data from Dictionary
+function ExtractSingleLineFromDict(lineDict, quantityElementName) {
     try {
-        // Generate new invoice number
-        newInvNum = GetNextInvoiceNumber(docType);
-       
-        // Prepare SQL insert statement
-        sql_insert = "INSERT INTO " + databaseName + ".dbo.NKPRINV (";
-        sql_insert += "NKPR_GL_NUM, NKPR_GL_OZNAKA, NKPR_GL_INVDTE, NKPR_GL_TIMECR, ";
-        sql_insert += "NKPR_GL_DUE_DATE, NKPR_GL_ESD, NKPR_GL_TYPECODE, NKPR_GL_CURRENCY, ";
-        sql_insert += "NKPR_GL_CUSTOIB, NKPR_GL_CUSTNME, NKPR_GL_CUSTADD, NKPR_GL_CUSTCTY, ";
-        sql_insert += "NKPR_GL_CUSTZIP, NKPR_GL_CUSTST, NKPR_GL_SUPPOIB, ";
-        sql_insert += "NKPR_GL_SHPCOD, NKPR_GL_SHPNME, NKPR_GL_SHPADD1, NKPR_GL_SHPCTY, ";
-        sql_insert += "NKPR_GL_SHPZIP, NKPR_GL_SHPST, NKPR_AD_GLN, ";
-        sql_insert += "NKPR_GL_PAYMNT, NKPR_GL_MODEL, NKPR_GL_POZIV, ";
-        sql_insert += "NKPR_GL_LINETOTAL, NKPR_GL_TAXTOTAL, NKPR_GL_TOTAL, NKPR_GL_PAYABLE, ";
-        sql_insert += "NKPR_GL_NOTE, NKPR_GL_REZ3, NKPR_GL_CREATED";
+        lineData = {};
+        
+        // Basic line information
+        lineData["NKPR_LN_BR_LN"] = GetDictValue(lineDict, "ID");
+        
+        // Quantity and unit
+        quantity = GetDictValue(lineDict, quantityElementName);
+        if (quantity != "") {
+            lineData["NKPR_LN_PQTY"] = ParseDecimal(quantity);
+            
+            // Unit code (might be in attributes - handle as needed)
+            unitCode = GetDictValue(lineDict, quantityElementName + ".unitCode");
+            if (unitCode == "") {
+                // Try alternative structure
+                unitCode = GetDictValue(lineDict, quantityElementName + ".@unitCode");
+            }
+            lineData["NKPR_LN_JEDMJ"] = GetUnitCodeFromUN(unitCode);
+        }
+        
+        // Line amount
+        lineData["NKPR_LN_AMT"] = ParseDecimal(GetDictValue(lineDict, "LineExtensionAmount"));
+        
+        // Item information
+        item = GetDictValue(lineDict, "Item");
+        if (item != null && item != "") {
+            lineData["NKPR_LN_PDESC"] = GetDictValue(item, "Name");
+            
+            // Product code - try different locations
+            productCode = GetDictValue(item, "SellersItemIdentification.ID");
+            if (productCode == "") {
+                productCode = GetDictValue(item, "StandardItemIdentification.ID");
+            }
+            if (productCode == "") {
+                productCode = GetDictValue(item, "BuyersItemIdentification.ID");
+            }
+            lineData["NKPR_LN_PCODE"] = productCode;
+            
+            // Tax information
+            taxCategory = GetDictValue(item, "ClassifiedTaxCategory");
+            if (taxCategory != null && taxCategory != "") {
+                taxPercent = ParseDecimal(GetDictValue(taxCategory, "Percent"));
+                lineData["NKPR_LN_PRNPR"] = taxPercent;
+                lineData["NKPR_LN_TXBLE"] = (taxPercent > 0) ? "Y" : "N";
+            }
+        }
+        
+        // Price information
+        price = GetDictValue(lineDict, "Price");
+        if (price != null && price != "") {
+            lineData["NKPR_LN_PPRCE"] = ParseDecimal(GetDictValue(price, "PriceAmount"));
+        }
+        
+        // Allowances and charges
+        allowanceCharge = GetDictValue(lineDict, "AllowanceCharge");
+        if (allowanceCharge != null && allowanceCharge != "") {
+            // Handle both single and multiple allowance/charge entries
+            if (IsArray(allowanceCharge)) {
+                for (i = 0; i < Size(allowanceCharge); i++) {
+                    ProcessAllowanceCharge(allowanceCharge[i], lineData);
+                }
+            } else {
+                ProcessAllowanceCharge(allowanceCharge, lineData);
+            }
+        }
+        
+        // Notes
+        lineNote = GetDictValue(lineDict, "Note");
+        if (lineNote != "") {
+            lineData["NKPR_LN_NOTE"] = lineNote;
+        }
+        
+        return lineData;
+        
+    } catch (error) {
+        MessageBox("Greška prilikom izvlačenja stavke: " + error);
+        return null;
+    }
+}
+
+// Process allowance/charge for line item
+function ProcessAllowanceCharge(allowanceChargeDict, lineData) {
+    chargeIndicator = GetDictValue(allowanceChargeDict, "ChargeIndicator");
+    amount = ParseDecimal(GetDictValue(allowanceChargeDict, "Amount"));
+    
+    if (chargeIndicator == "false" && amount > 0) {
+        // This is an allowance (discount)
+        lineData["NKPR_LN_POPL"] = amount;
+        
+        // Calculate discount percentage
+        grossAmount = lineData["NKPR_LN_PQTY"] * lineData["NKPR_LN_PPRCE"];
+        if (grossAmount > 0) {
+            lineData["NKPR_LN_PDISC"] = (amount / grossAmount) * 100;
+        }
+    } elif (chargeIndicator == "true" && amount > 0) {
+        // This is a charge - handle as negative discount
+        lineData["NKPR_LN_POPL"] = -amount;
+        
+        grossAmount = lineData["NKPR_LN_PQTY"] * lineData["NKPR_LN_PPRCE"];
+        if (grossAmount > 0) {
+            lineData["NKPR_LN_PDISC"] = -(amount / grossAmount) * 100;
+        }
+    }
+}
+
+// Helper function to safely get value from dictionary with dot notation support
+function GetDictValue(dict, key) {
+    if (dict == null || IsString(dict)) {
+        return dict; // Return the string value directly if it's already a string
+    }
+    
+    if (!Contains(key, ".")) {
+        // Simple key
+        if (dict.ContainsKey(key)) {
+            return dict[key];
+        } else {
+            return "";
+        }
+    } else {
+        // Nested key with dot notation (e.g., "Item.Name")
+        keys = Split(key, ".");
+        currentDict = dict;
+        
+        for (i = 0; i < Size(keys); i++) {
+            currentKey = keys[i];
+            
+            if (currentDict == null || IsString(currentDict)) {
+                return "";
+            }
+            
+            if (currentDict.ContainsKey(currentKey)) {
+                currentDict = currentDict[currentKey];
+            } else {
+                return "";
+            }
+        }
+        
+        return currentDict;
+    }
+}
+
+// Import header data into NKNAERGL table
+function ImportHeaderDataToERGL(headerData, docType) {
+    try {
+        // Generate new record ID
+        newRecordId = GetNextRecordId("NKNAERGL");
+        
+        // Prepare SQL insert statement for NKNAERGL table
+        sql_insert = "INSERT INTO " + databaseName + ".dbo.NKNAERGL (";
+        sql_insert += "NKNA_ER_ID, NKNA_ER_INVNUM, NKNA_ER_OZNAKA, NKNA_ER_INVDTE, NKNA_ER_TIMECR, ";
+        sql_insert += "NKNA_ER_DUE_DATE, NKNA_ER_ESD, NKNA_ER_TYPECODE, NKNA_ER_CURRENCY, ";
+        sql_insert += "NKNA_ER_CUSTOIB, NKNA_ER_CUSTNME, NKNA_ER_CUSTADD, NKNA_ER_CUSTCTY, ";
+        sql_insert += "NKNA_ER_CUSTZIP, NKNA_ER_CUSTST, NKNA_ER_SUPPOIB, ";
+        sql_insert += "NKNA_ER_SHPCOD, NKNA_ER_SHPNME, NKNA_ER_SHPADD1, NKNA_ER_SHPCTY, ";
+        sql_insert += "NKNA_ER_SHPZIP, NKNA_ER_SHPST, NKNA_ER_GLN, ";
+        sql_insert += "NKNA_ER_PAYMNT, NKNA_ER_MODEL, NKNA_ER_POZIV, ";
+        sql_insert += "NKNA_ER_LINETOTAL, NKNA_ER_TAXTOTAL, NKNA_ER_TOTAL, NKNA_ER_PAYABLE, ";
+        sql_insert += "NKNA_ER_NOTE, NKNA_ER_REZ3, NKNA_ER_CREATED, NKNA_ER_STATUS";
         sql_insert += ") VALUES (";
-        sql_insert += "@newInvNum, @docType, @invDate, @timeCreated, ";
+        sql_insert += "@recordId, @invNum, @docType, @invDate, @timeCreated, ";
         sql_insert += "@dueDate, @taxPointDate, @typeCode, @currency, ";
         sql_insert += "@custOIB, @custName, @custAddress, @custCity, ";
         sql_insert += "@custZip, @custState, @suppOIB, ";
@@ -436,12 +959,13 @@ function ImportHeaderData(headerData, docType) {
         sql_insert += "@shpZip, @shpState, @shpGLN, ";
         sql_insert += "@payment, @model, @poziv, ";
         sql_insert += "@lineTotal, @taxTotal, @total, @payable, ";
-        sql_insert += "@note, @rez3, @created";
+        sql_insert += "@note, @rez3, @created, @status";
         sql_insert += ");";
-       
+        
         // Prepare parameters
         sqlParams = {};
-        sqlParams.Add({"@newInvNum", newInvNum});
+        sqlParams.Add({"@recordId", newRecordId});
+        sqlParams.Add({"@invNum", headerData["NKPR_GL_NUM"]});
         sqlParams.Add({"@docType", docType});
         sqlParams.Add({"@invDate", headerData["NKPR_GL_INVDTE"]});
         sqlParams.Add({"@timeCreated", headerData["NKPR_GL_TIMECR"]});
@@ -473,41 +997,42 @@ function ImportHeaderData(headerData, docType) {
         sqlParams.Add({"@note", headerData["NKPR_GL_NOTE"]});
         sqlParams.Add({"@rez3", headerData["NKPR_GL_REZ3"]});
         sqlParams.Add({"@created", FormatDate(Now(), "yyyy-MM-dd HH:mm:ss")});
-       
+        sqlParams.Add({"@status", "IMPORTED"});
+        
         // Execute insert
         result = sqlExec(sql_insert, sqlParams);
-       
+        
         if (result > 0) {
-            return newInvNum;
+            return newRecordId;
         } else {
             throw "SQL insert neuspješan";
         }
-       
+        
     } catch (error) {
         throw "Greška prilikom unosa zaglavlja: " + error;
     }
 }
- 
-// Import line items into NKPRINVL table
-function ImportLineItems(invNum, lineItems) {
+
+// Import line items into NKNAERLN table
+function ImportLineItemsToERLN(recordId, lineItems) {
     try {
         for (i = 0; i < Size(lineItems); i++) {
             lineData = lineItems[i];
-           
-            sql_insert = "INSERT INTO " + databaseName + ".dbo.NKPRINVL (";
-            sql_insert += "NKPR_LN_INVNM, NKPR_LN_BR_LN, NKPR_LN_PQTY, NKPR_LN_AMT, ";
-            sql_insert += "NKPR_LN_PCODE, NKPR_LN_PDESC, NKPR_LN_JEDMJ, ";
-            sql_insert += "NKPR_LN_PPRCE, NKPR_LN_PRNPR, NKPR_LN_TXBLE, ";
-            sql_insert += "NKPR_LN_POPL, NKPR_LN_PDISC, NKPR_LN_NOTE";
+            
+            sql_insert = "INSERT INTO " + databaseName + ".dbo.NKNAERLN (";
+            sql_insert += "NKNA_LN_ERID, NKNA_LN_BR_LN, NKNA_LN_PQTY, NKNA_LN_AMT, ";
+            sql_insert += "NKNA_LN_PCODE, NKNA_LN_PDESC, NKNA_LN_JEDMJ, ";
+            sql_insert += "NKNA_LN_PPRCE, NKNA_LN_PRNPR, NKNA_LN_TXBLE, ";
+            sql_insert += "NKNA_LN_POPL, NKNA_LN_PDISC, NKNA_LN_NOTE";
             sql_insert += ") VALUES (";
-            sql_insert += "@invNum, @lineNum, @qty, @amount, ";
+            sql_insert += "@recordId, @lineNum, @qty, @amount, ";
             sql_insert += "@productCode, @description, @unit, ";
             sql_insert += "@price, @taxPercent, @taxable, ";
             sql_insert += "@discount, @discountPercent, @note";
             sql_insert += ");";
-           
+            
             sqlParams = {};
-            sqlParams.Add({"@invNum", invNum});
+            sqlParams.Add({"@recordId", recordId});
             sqlParams.Add({"@lineNum", lineData["NKPR_LN_BR_LN"]});
             sqlParams.Add({"@qty", lineData["NKPR_LN_PQTY"]});
             sqlParams.Add({"@amount", lineData["NKPR_LN_AMT"]});
@@ -520,51 +1045,56 @@ function ImportLineItems(invNum, lineItems) {
             sqlParams.Add({"@discount", lineData["NKPR_LN_POPL"]});
             sqlParams.Add({"@discountPercent", lineData["NKPR_LN_PDISC"]});
             sqlParams.Add({"@note", lineData["NKPR_LN_NOTE"]});
-           
+            
             result = sqlExec(sql_insert, sqlParams);
             if (result == 0) {
                 throw "Greška prilikom unosa stavke " + (i + 1);
             }
         }
-       
+        
         return true;
-       
+        
     } catch (error) {
         throw "Greška prilikom unosa stavki: " + error;
     }
 }
- 
-// Import tax data (placeholder)
-function ImportTaxData(invNum, headerData, lineItems) {
-    // Tax data import logic would go here
-    // This depends on your specific tax table structure
-    return true;
+
+// Log to NKSYELOG table
+function LogToNKSYELOG(recordId, xmlFilePath, status) {
+    try {
+        sql_log = "INSERT INTO " + databaseName + ".dbo.NKSYELOG (";
+        sql_log += "NKSY_LOG_DATE, NKSY_LOG_USER, NKSY_LOG_PROGRAM, NKSY_LOG_MESSAGE, ";
+        sql_log += "NKSY_LOG_RECORDID, NKSY_LOG_STATUS";
+        sql_log += ") VALUES (";
+        sql_log += "@logDate, @logUser, @logProgram, @logMessage, @recordId, @status";
+        sql_log += ");";
+        
+        sqlParams = {};
+        sqlParams.Add({"@logDate", FormatDate(Now(), "yyyy-MM-dd HH:mm:ss")});
+        sqlParams.Add({"@logUser", userCode});
+        sqlParams.Add({"@logProgram", "WxEracunGet"});
+        sqlParams.Add({"@logMessage", "XML Invoice Import: " + xmlFilePath});
+        sqlParams.Add({"@recordId", recordId});
+        sqlParams.Add({"@status", status});
+        
+        sqlExec(sql_log, sqlParams);
+        
+    } catch (error) {
+        // Don't throw error for logging issues
+        MessageBox("Warning: Could not log to NKSYELOG: " + error);
+    }
 }
- 
-// Helper function to get next invoice number
-function GetNextInvoiceNumber(docType) {
-    sql_max = "SELECT MAX(NKPR_GL_NUM) FROM " + databaseName + ".dbo.NKPRINV WHERE NKPR_GL_OZNAKA = @docType";
-    sqlParams = {};
-    sqlParams.Add({"@docType", docType});
-   
-    result = sqlQuery(sql_max, sqlParams);
+
+// Helper function to get next record ID
+function GetNextRecordId(tableName) {
+    sql_max = "SELECT MAX(NKNA_ER_ID) FROM " + databaseName + ".dbo." + tableName;
+    
+    result = sqlQuery(sql_max);
     if (Size(result) >= 2 && result[1][0] != null) {
         return result[1][0] + 1;
     } else {
-        return 90100001; // Starting number
+        return 1; // Starting ID
     }
-}
- 
-// Helper function to parse invoice number from UBL format
-function ParseInvoiceNumber(ublInvNum) {
-    // Convert from format "00002-90-1" to "90100002"
-    if (Contains(ublInvNum, "-")) {
-        parts = Split(ublInvNum, "-");
-        if (Size(parts) == 3) {
-            return int(parts[1] + parts[2] + parts[0]);
-        }
-    }
-    return int(ublInvNum);
 }
  
 // Helper function to convert UN unit codes back to internal codes
@@ -581,68 +1111,134 @@ function GetUnitCodeFromUN(unCode) {
     if (unCode == "MTR") { return "MET"; }
     return "KOM"; // Default
 }
- 
-// Helper function to parse decimal values
-function ParseDecimal(value) {
-    if (value == "" || value == null) {
-        return 0;
+
+// Helper function to parse invoice number from UBL format
+function ParseInvoiceNumber(ublInvNum) {
+    // Convert from format "00002-90-1" to "90100002"
+    if (Contains(ublInvNum, "-")) {
+        parts = Split(ublInvNum, "-");
+        if (Size(parts) == 3) {
+            return int(parts[1] + parts[2] + parts[0]);
+        }
     }
-    return Double(value);
+    return int(ublInvNum);
 }
- 
-// Placeholder XML helper functions (implement based on your XML library)
-function ParseXML(content) {
-    // Implement XML parsing based on available XML library
-    // Return parsed XML document object
-    return null; // Placeholder
-}
- 
-function GetXMLRoot(xmlDoc) {
-    // Return root element of XML document
-    return null; // Placeholder
-}
- 
-function GetXMLNodeName(node) {
-    // Return node name
-    return ""; // Placeholder
-}
- 
-function GetXMLValue(xmlDoc, xpath) {
-    // Return text value of first matching element
-    return ""; // Placeholder
-}
- 
-function GetXMLNodes(xmlDoc, xpath) {
-    // Return array of matching nodes
-    return {}; // Placeholder
-}
- 
-function GetXMLAttribute(xmlDoc, xpath, attributeName) {
-    // Return attribute value
-    return ""; // Placeholder
-}
- 
 
+// Validate if invoice ESD date belongs to current fiscal year
+function ValidateFiscalYear(esdDate) {
+    try {
+        if (esdDate == "" || esdDate == null) {
+            return false; // No ESD date provided
+        }
+        
+        // Parse fiscal year from KPSY_FISCAL_YR (format: YYYY-MM-DD or similar)
+        fiscalYear = "";
+        if (KPSY_FISCAL_YR != "" && KPSY_FISCAL_YR != null) {
+            if (Contains(KPSY_FISCAL_YR, "-")) {
+                fiscalYear = Substring(KPSY_FISCAL_YR, 0, 4); // Extract year part
+            } else {
+                fiscalYear = KPSY_FISCAL_YR; // Assume it's already a year
+            }
+        } else {
+            fiscalYear = FormatDate(Now(), "yyyy"); // Use current year as fallback
+        }
+        
+        // Parse year from ESD date (format: YYYY-MM-DD)
+        esdYear = "";
+        if (Contains(esdDate, "-")) {
+            esdYear = Substring(esdDate, 0, 4); // Extract year part
+        } else {
+            esdYear = esdDate; // Assume it's already a year
+        }
+        
+        // Compare years
+        return (esdYear == fiscalYear);
+        
+    } catch (error) {
+        MessageBox("Greška prilikom validacije fiskalne godine: " + error);
+        return false;
+    }
+}
 
+// Enhanced batch import function for processing multiple XML files
+function BatchImportXMLFiles(folderPath) {
+    try {
+        if (!Exists(folderPath)) {
+            MessageBox("Folder ne postoji: " + folderPath);
+            return false;
+        }
+        
+        // Get all XML files in folder
+        xmlFiles = FindFiles(folderPath, "*.xml");
+        if (Size(xmlFiles) == 0) {
+            MessageBox("Nema XML datoteka u folderu: " + folderPath);
+            return true;
+        }
+        
+        successCount = 0;
+        errorCount = 0;
+        
+        for (i = 0; i < Size(xmlFiles); i++) {
+            xmlFilePath = folderPath + "\\" + xmlFiles[i];
+            
+            result = importUBLXml(xmlFilePath);
+            if (result != false) {
+                successCount++;
+                
+                // Move to processed folder
+                processedFolder = folderPath + "\\Processed\\";
+                if (!Exists(processedFolder)) {
+                    MkDir(processedFolder);
+                }
+                Move(xmlFilePath, processedFolder + xmlFiles[i]);
+                
+            } else {
+                errorCount++;
+                
+                // Move to error folder  
+                errorFolder = folderPath + "\\Errors\\";
+                if (!Exists(errorFolder)) {
+                    MkDir(errorFolder);
+                }
+                Move(xmlFilePath, errorFolder + "ERROR_" + xmlFiles[i]);
+            }
+        }
+        
+        MessageBox("Batch import završen!\nUspješno: " + successCount + "\nGreške: " + errorCount);
+        return true;
+        
+    } catch (error) {
+        MessageBox("Greška prilikom batch importa: " + error);
+        return false;
+    }
+}
 
-
-
-/*
+/* 
 Usage Examples:
- 
-1. Import UBL XML invoice:
+
+1. Import single UBL XML invoice:
    result = importUBLXml("C:\\UBL_90100002.xml");
- 
-2. Import with error checking:
+
+2. Import using new dictionary approach:
+   xmlContent = LoadFile("invoice.xml");
+   result = importUBLXmlFromDict(xmlContent, "invoice.xml");
+
+3. Batch import all XML files in folder:
+   BatchImportXMLFiles("C:\\IncomingInvoices");
+
+4. Import with error checking:
    if (importUBLXml("invoice.xml")) {
        MessageBox("Import successful!");
    } else {
        MessageBox("Import failed!");
    }
- 
-3. Import multiple files:
-   files = ["invoice1.xml", "invoice2.xml", "invoice3.xml"];
-   for (i = 0; i < Size(files); i++) {
-       importUBLXml(files[i]);
-   }
+
+Database Tables Used:
+- NKNAERGL: Header table for imported e-invoices
+- NKNAERLN: Line items table for imported e-invoices  
+- NKSYELOG: System log for import tracking
+
+Fiscal Year Validation:
+- Only invoices with ESD date matching KPSY_FISCAL_YR are imported
+- Mismatched invoices are moved to archive without import
 */

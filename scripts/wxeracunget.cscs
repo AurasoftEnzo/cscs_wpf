@@ -81,10 +81,52 @@ if (size(sqlResult) > 1)
     KPSY_FISCAL_YR = sqlResult[1][11].trim();
 } 
 
+// NKSYSYCO Configuration
+sqlQueryString = " SELECT NKSYS_FIELD, NKSYS_VALUE 
+    FROM " + databaseName + ".dbo.NKSYSYCO 
+    WHERE NKSYS_MODUL = 'WKSY'
+    AND NKSYS_GRUP = 'ERACUN'";
+try
+{
+    sqlResult = sqlQuery(sqlQueryString);
+}
+catch(exc)
+{
+    MessageBox("NKSYSYCO reading error: " + exc);
+    exit;
+}
+if (size(sqlResult) > 1)
+{
+    for(i = 1; i < Size(sqlResult); i++){
+        if(sqlResult[i][0].trim() == "FILESPATH"){
+            FILESPATH = sqlResult[i][1].trim();
+        }
+        elif(sqlResult[i][0].trim() == "PROVIDER")
+        {
+            PROVIDER = sqlResult[i][1].trim();
+        }elif(sqlResult[i][0].trim() == "SCHEMASPATH")
+        {
+            SCHEMASPATH = sqlResult[i][1].trim();
+        }
+    }
+} 
+
+// Provider Configuration
+if (PROVIDER == null || PROVIDER == "") {
+    PROVIDER = "MER"; // Default to MojEracun
+    MessageBox("PROVIDER nije konfiguriran u NKSYSYCO, koristim default: MER");
+}
+
 // MojEracun API Configuration
 MER_API_BASE_URL = "https://api.moj-eracun.hr/v2";
 MER_API_KEY = "YOUR_API_KEY_HERE"; // TODO: Replace with actual API key
 MER_COMPANY_ID = KPSY_COMP_JMBFI; // Use company OIB as company ID
+
+// FINA API Configuration  
+FINA_API_BASE_URL = "https://ws.fina.hr/eRacun";
+FINA_CERT_PATH = "YOUR_FINA_CERTIFICATE.p12"; // TODO: Replace with actual certificate path
+FINA_CERT_PASSWORD = "YOUR_CERT_PASSWORD"; // TODO: Replace with actual certificate password
+FINA_COMPANY_ID = KPSY_COMP_JMBFI; // Use company OIB as company ID
 
 //
 //Batun: dohvati sve nove račune sa servera sa ovim programom
@@ -104,8 +146,9 @@ exit;
 
 
 function start(){
-    // Phase 1: Download all NEW invoices from MojEracun (MeR) to folder
-    downloadedCount = DownloadNewInvoicesFromMeR();
+    // Phase 1: Download all NEW invoices from configured provider to folder
+    MessageBox("Koristim provider: " + PROVIDER);
+    downloadedCount = DownloadNewInvoicesFromProvider();
     
     // Phase 2: Import all XML files found in the folder (including manually added files)
     importedCount = ImportAllXMLFilesInFolder();
@@ -114,7 +157,24 @@ function start(){
     MessageBox("Proces završen!\nPreuzeto sa servera: " + downloadedCount + "\nUkupno importirano: " + importedCount);
 }
 
-// Phase 1: Download all new invoices from Croatian provider MojEracun (MeR)
+// Phase 1: Download all new invoices from configured provider (MER or FINA)
+function DownloadNewInvoicesFromProvider() {
+    try {
+        if (PROVIDER == "MER") {
+            return DownloadNewInvoicesFromMeR();
+        } elif (PROVIDER == "FINA") {
+            return DownloadNewInvoicesFromFINA();
+        } else {
+            MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA");
+            return 0;
+        }
+    } catch (error) {
+        MessageBox("Greška u preuzimanju sa provider-a " + PROVIDER + ": " + error);
+        return 0;
+    }
+}
+
+// MojEracun (MER) specific download function
 function DownloadNewInvoicesFromMeR() {
     try {
         downloadCount = 0;
@@ -243,6 +303,231 @@ function DownloadNewInvoicesFromMeR() {
     } catch (error) {
         MessageBox("Greška u procesu preuzimanja: " + error);
         return 0;
+    }
+}
+
+// FINA specific download function using SOAP/Web Services
+function DownloadNewInvoicesFromFINA() {
+    try {
+        downloadCount = 0;
+        
+        // Create incoming folder if it doesn't exist
+        incomingFolder = GetCurrentDirectory() + "\\Novi XML e-računi\\";
+        if (!Exists(incomingFolder)) {
+            MkDir(incomingFolder);
+        }
+        
+        MessageBox("Počinje preuzimanje novih računa sa FINA servera...");
+        
+        // Prepare date range for request (last 30 days)
+        endDate = FormatDate(Now(), "yyyy-MM-dd");
+        startDate = FormatDate(Now() - 30, "yyyy-MM-dd"); // Last 30 days
+        
+        try {
+            // FINA uses SOAP Web Service with certificate authentication
+            // Prepare SOAP envelope for GetIncomingInvoices request
+            soapEnvelope = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                + "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" "
+                + "xmlns:ws=\"http://ws.fina.hr/eRacun\">";
+            soapEnvelope += "<soap:Header/>";
+            soapEnvelope += "<soap:Body>";
+            soapEnvelope += "<ws:GetIncomingInvoicesRequest>";
+            soapEnvelope += "<ws:CompanyOIB>" + FINA_COMPANY_ID + "</ws:CompanyOIB>";
+            soapEnvelope += "<ws:FromDate>" + startDate + "</ws:FromDate>";
+            soapEnvelope += "<ws:ToDate>" + endDate + "</ws:ToDate>";
+            soapEnvelope += "<ws:Status>UNPROCESSED</ws:Status>"; // or NEW, RECEIVED
+            soapEnvelope += "</ws:GetIncomingInvoicesRequest>";
+            soapEnvelope += "</soap:Body>";
+            soapEnvelope += "</soap:Envelope>";
+            
+            // Prepare headers for SOAP request
+            headers = {};
+            headers["Content-Type"] = "text/xml; charset=utf-8";
+            headers["SOAPAction"] = "\"GetIncomingInvoices\"";
+            
+            // Load certificate for authentication (FINA requires certificate-based auth)
+            // Note: This is a simplified approach - actual implementation might need 
+            // proper certificate loading and SSL client authentication
+            if (Exists(FINA_CERT_PATH)) {
+                // Certificate authentication would be handled by the HTTP client
+                // For now, we'll simulate the request structure
+                MessageBox("Koristim FINA certifikat: " + FINA_CERT_PATH);
+            } else {
+                MessageBox("FINA certifikat nije pronađen: " + FINA_CERT_PATH);
+                return 0;
+            }
+            
+            // Make SOAP request to FINA Web Service
+            apiUrl = FINA_API_BASE_URL + "/InvoiceService";
+            
+            // Note: WebRequestMPFD might need to be enhanced to support certificate authentication
+            // This is a conceptual implementation - actual SOAP client implementation may vary
+            soapResponse = WebRequestMPFD(apiUrl, "POST", soapEnvelope, headers);
+            
+            if (soapResponse == "" || soapResponse == null) {
+                MessageBox("Nema odgovora sa FINA servera");
+                return 0;
+            }
+            
+            MessageBox("Primljen SOAP odgovor sa FINA servera, parsiranje...");
+            
+            // Parse SOAP response using XmlToDict
+            responseDict = XmlToDict(soapResponse);
+            
+            if (responseDict == null) {
+                MessageBox("Greška prilikom parsiranja SOAP odgovora");
+                return 0;
+            }
+            
+            // Extract invoice list from SOAP response
+            // FINA SOAP response structure (estimated):
+            // Envelope -> Body -> GetIncomingInvoicesResponse -> InvoiceList -> Invoice[]
+            soapBody = GetDictValue(responseDict, "soap:Envelope.soap:Body");
+            if (soapBody == null || soapBody == "") {
+                soapBody = GetDictValue(responseDict, "Envelope.Body"); // Try without namespace
+            }
+            
+            invoicesResponse = GetDictValue(soapBody, "GetIncomingInvoicesResponse");
+            if (invoicesResponse == null || invoicesResponse == "") {
+                MessageBox("Neočekivana struktura SOAP odgovora");
+                return 0;
+            }
+            
+            invoiceList = GetDictValue(invoicesResponse, "InvoiceList");
+            if (invoiceList == null || invoiceList == "") {
+                MessageBox("Nema novih dokumenata za preuzimanje sa FINA servera");
+                return 0;
+            }
+            
+            invoices = GetDictValue(invoiceList, "Invoice");
+            if (invoices == null || invoices == "") {
+                MessageBox("Nema računa u listi");
+                return 0;
+            }
+            
+            // Handle both single invoice (object) and multiple invoices (array)
+            invoicesArray = {};
+            if (IsArray(invoices)) {
+                invoicesArray = invoices;
+            } else {
+                invoicesArray.Add(invoices); // Single invoice
+            }
+            
+            MessageBox("Pronađeno " + Size(invoicesArray) + " dokumenata za preuzimanje sa FINA servera...");
+            
+            // Process each invoice
+            for (i = 0; i < Size(invoicesArray); i++) {
+                invoice = invoicesArray[i];
+                
+                invoiceId = GetDictValue(invoice, "InvoiceId");
+                invoiceNumber = GetDictValue(invoice, "InvoiceNumber");
+                senderOIB = GetDictValue(invoice, "SenderOIB");
+                dateReceived = GetDictValue(invoice, "DateReceived");
+                
+                MessageBox("Preuzimam dokument " + (i + 1) + "/" + Size(invoicesArray) + ": " + invoiceNumber);
+                
+                // Download XML content for each invoice
+                xmlContent = DownloadInvoiceXMLFromFINA(invoiceId);
+                
+                if (xmlContent != "") {
+                    // Generate filename with timestamp
+                    timestamp = FormatDate(Now(), "yyyyMMdd_HHmmss_fff");
+                    xmlFileName = "FINA_" + invoiceNumber + "_" + timestamp + ".xml";
+                    xmlFilePath = incomingFolder + xmlFileName;
+                    
+                    // Save XML file to disk
+                    SaveFile(xmlFilePath, xmlContent);
+                    downloadCount++;
+                    
+                    // Log successful download
+                    logEntry = FormatDate(Now(), "yyyy-MM-dd HH:mm:ss") + " | DOWNLOAD_SUCCESS | " + invoiceId + " | " + xmlFileName + "\r\n";
+                    SaveFile("download_log.txt", logEntry, "A");
+                    
+                } else {
+                    MessageBox("Greška prilikom preuzimanja XML-a za dokument: " + invoiceNumber);
+                    // Log failed download
+                    logEntry = FormatDate(Now(), "yyyy-MM-dd HH:mm:ss") + " | DOWNLOAD_FAILURE | " + invoiceId + " | " + invoiceNumber + "\r\n";
+                    SaveFile("download_log.txt", logEntry, "A");
+                }
+            }
+            
+        } catch (apiError) {
+            MessageBox("Greška prilikom SOAP poziva na FINA: " + apiError);
+            return 0;
+        }
+        
+        MessageBox("Preuzimanje sa FINA završeno. Ukupno preuzeto: " + downloadCount + " XML računa.");
+        return downloadCount;
+        
+    } catch (error) {
+        MessageBox("Greška u procesu preuzimanja sa FINA: " + error);
+        return 0;
+    }
+}
+
+// Download individual invoice XML from FINA using separate SOAP call
+function DownloadInvoiceXMLFromFINA(invoiceId) {
+    try {
+        // Prepare SOAP envelope for GetInvoiceXML request
+        soapEnvelope = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+            + "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" "
+            + "xmlns:ws=\"http://ws.fina.hr/eRacun\">";
+        soapEnvelope += "<soap:Header/>";
+        soapEnvelope += "<soap:Body>";
+        soapEnvelope += "<ws:GetInvoiceXMLRequest>";
+        soapEnvelope += "<ws:InvoiceId>" + invoiceId + "</ws:InvoiceId>";
+        soapEnvelope += "<ws:CompanyOIB>" + FINA_COMPANY_ID + "</ws:CompanyOIB>";
+        soapEnvelope += "</ws:GetInvoiceXMLRequest>";
+        soapEnvelope += "</soap:Body>";
+        soapEnvelope += "</soap:Envelope>";
+        
+        // Prepare headers
+        headers = {};
+        headers["Content-Type"] = "text/xml; charset=utf-8";
+        headers["SOAPAction"] = "\"GetInvoiceXML\"";
+        
+        // Make SOAP request
+        apiUrl = FINA_API_BASE_URL + "/InvoiceService";
+        soapResponse = WebRequestMPFD(apiUrl, "POST", soapEnvelope, headers);
+        
+        if (soapResponse != "" && soapResponse != null) {
+            // Parse SOAP response to extract XML content
+            responseDict = XmlToDict(soapResponse);
+            
+            if (responseDict != null) {
+                soapBody = GetDictValue(responseDict, "soap:Envelope.soap:Body");
+                if (soapBody == null || soapBody == "") {
+                    soapBody = GetDictValue(responseDict, "Envelope.Body");
+                }
+                
+                xmlResponse = GetDictValue(soapBody, "GetInvoiceXMLResponse");
+                if (xmlResponse != null && xmlResponse != "") {
+                    xmlContent = GetDictValue(xmlResponse, "InvoiceXML");
+                    
+                    // XML content might be base64 encoded or CDATA wrapped
+                    if (xmlContent != "" && Contains(xmlContent, "<Invoice")) {
+                        return xmlContent;
+                    } elif (xmlContent != "") {
+                        // Try base64 decode if it looks encoded
+                        try {
+                            decodedXML = Base64Decode(xmlContent);
+                            if (Contains(decodedXML, "<Invoice")) {
+                                return decodedXML;
+                            }
+                        } catch (decodeError) {
+                            // Not base64, return as is
+                            return xmlContent;
+                        }
+                    }
+                }
+            }
+        }
+        
+        return "";
+        
+    } catch (error) {
+        MessageBox("Greška prilikom preuzimanja XML-a sa FINA: " + error);
+        return "";
     }
 }
 

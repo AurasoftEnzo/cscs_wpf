@@ -89,6 +89,8 @@ namespace WpfCSCS
             //...
             interpreter.RegisterFunction(Constants.XmlToDict, new XmlToDictFunction());
             interpreter.RegisterFunction(Constants.DeserializeJson, new DeserializeJsonFunction());
+
+            interpreter.RegisterFunction(Constants.SignSoapWithCert, new SignSoapWithCertFunction());
         }
         public partial class Constants
         {
@@ -130,6 +132,8 @@ namespace WpfCSCS
             //...
             public const string XmlToDict = "XmlToDict";
             public const string DeserializeJson = "DeserializeJson";
+
+            public const string SignSoapWithCert = "SignSoapWithCert";
         }
     }
 
@@ -1953,6 +1957,172 @@ namespace WpfCSCS
             }
 
             return -1;
+        }
+    }
+
+    public class SignSoapWithCertFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 3, "SignSoapWithCert");
+
+            string soapBody = Utils.GetSafeString(args, 0);
+            string certPath = Utils.GetSafeString(args, 1);
+            string certPass = Utils.GetSafeString(args, 2);
+
+            string signedSoap = SignSoap(soapBody, certPath, certPass);
+            if (signedSoap.StartsWith("ERROR:"))
+                throw new ArgumentException(signedSoap);
+
+            return new Variable(signedSoap);
+        }
+
+        protected override async Task<Variable> EvaluateAsync(ParsingScript script)
+        {
+            List<Variable> args = await script.GetFunctionArgsAsync();
+            Utils.CheckArgs(args.Count, 3, "SignSoapWithCert");
+
+            string soapBody = Utils.GetSafeString(args, 0);
+            string certPath = Utils.GetSafeString(args, 1);
+            string certPass = Utils.GetSafeString(args, 2);
+
+            string signedSoap = await SignSoapAsync(soapBody, certPath, certPass);
+            if (signedSoap.StartsWith("ERROR:"))
+                throw new ArgumentException(signedSoap);
+
+            return new Variable(signedSoap);
+        }
+
+        // Synchronous version (for legacy calls)
+        public static string SignSoap(string soap, string certPath, string certPass)
+        {
+            var task = SignSoapAsync(soap, certPath, certPass);
+            return task.GetAwaiter().GetResult();
+        }
+
+        // Async version - fully non-blocking
+        public static async Task<string> SignSoapAsync(string soap, string certPath, string certPass)
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    if (!System.IO.File.Exists(certPath))
+                        return "ERROR: Certificate file not found: " + certPath;
+
+                    // Load certificate with private key
+                    X509Certificate2 cert = new X509Certificate2(certPath, certPass,
+                        X509KeyStorageFlags.Exportable | X509KeyStorageFlags.MachineKeySet);
+
+                    XmlDocument doc = new XmlDocument();
+                    doc.PreserveWhitespace = true;
+                    doc.LoadXml(soap);
+
+                    // Ensure namespaces
+                    const string wsseNs = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd";
+                    const string wsuNs = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd";
+
+                    // 1) find SOAP Body and assign a wsu:Id so signature can reference it
+                    XmlElement body = null;
+                    foreach (XmlNode n in doc.DocumentElement.ChildNodes)
+                    {
+                        if (n.NodeType == XmlNodeType.Element && n.LocalName == "Body")
+                        {
+                            body = (XmlElement)n;
+                            break;
+                        }
+                    }
+                    if (body == null)
+                        return "ERROR: SOAP Body element not found.";
+
+                    string bodyId = "id-" + Guid.NewGuid().ToString("N");
+                    XmlAttribute idAttr = doc.CreateAttribute("wsu", "Id", wsuNs);
+                    idAttr.Value = bodyId;
+                    body.Attributes.Append(idAttr);
+
+                    // 2) build BinarySecurityToken (will be placed into wsse:Security header later)
+                    string bstId = "X509-" + Guid.NewGuid().ToString("N");
+                    XmlElement binaryToken = doc.CreateElement("wsse", "BinarySecurityToken", wsseNs);
+                    binaryToken.SetAttribute("ValueType", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3");
+                    binaryToken.SetAttribute("EncodingType", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary");
+                    XmlAttribute bstIdAttr = doc.CreateAttribute("wsu", "Id", wsuNs);
+                    bstIdAttr.Value = bstId;
+                    binaryToken.Attributes.Append(bstIdAttr);
+                    binaryToken.InnerText = Convert.ToBase64String(cert.RawData);
+
+                    // 3) create the SecurityTokenReference element that will point to the BST
+                    XmlElement str = doc.CreateElement("wsse", "SecurityTokenReference", wsseNs);
+                    XmlElement strRef = doc.CreateElement("wsse", "Reference", wsseNs);
+                    strRef.SetAttribute("URI", "#" + bstId);
+                    strRef.SetAttribute("ValueType", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3");
+                    str.AppendChild(strRef);
+
+                    // 4) prepare SignedXml to sign the Body using RSA-SHA256
+                    SignedXml signedXml = new SignedXml(doc);
+                    var rsa = cert.GetRSAPrivateKey();
+                    if (rsa == null) return "ERROR: RSA private key not available in certificate.";
+                    signedXml.SigningKey = rsa;
+                    signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
+
+                    // Reference the body by wsu:Id and use SHA256
+                    Reference reference = new Reference("#" + bodyId);
+                    reference.DigestMethod = SignedXml.XmlDsigSHA256Url;
+                    // Use exclusive c14n transform for the referenced node
+                    reference.AddTransform(new XmlDsigExcC14NTransform());
+                    signedXml.AddReference(reference);
+
+                    // Use RSA-SHA256 for signature method
+                    signedXml.SignedInfo.SignatureMethod = SignedXml.XmlDsigRSASHA256Url;
+
+                    // 5) Build KeyInfo with X509Data and SecurityTokenReference BEFORE computing signature
+                    KeyInfo keyInfo = new KeyInfo();
+                    keyInfo.AddClause(new KeyInfoX509Data(cert));
+
+                    // import STR element into doc context and wrap as KeyInfoNode
+                    XmlElement importedStr = (XmlElement)doc.ImportNode(str, true);
+                    KeyInfoNode kin = new KeyInfoNode(importedStr);
+                    keyInfo.AddClause(kin);
+
+                    signedXml.KeyInfo = keyInfo;
+
+                    // 6) Compute signature (STR is already present inside KeyInfo and will be serialized into Signature)
+                    signedXml.ComputeSignature();
+                    XmlElement signatureElement = signedXml.GetXml();
+
+                    // 7) build wsse:Security header and insert BinarySecurityToken and Signature
+                    XmlElement security = doc.CreateElement("wsse", "Security", wsseNs);
+                    security.SetAttribute("xmlns:wsu", wsuNs);
+
+                    // append BST and Signature (signature already contains KeyInfo with STR)
+                    security.AppendChild(binaryToken);
+                    security.AppendChild(doc.ImportNode(signatureElement, true));
+
+                    // Insert Security header into SOAP Header (create Header if missing)
+                    XmlElement envelope = doc.DocumentElement;
+                    XmlElement header = null;
+                    foreach (XmlNode n in envelope.ChildNodes)
+                    {
+                        if (n.NodeType == XmlNodeType.Element && n.LocalName == "Header")
+                        {
+                            header = (XmlElement)n;
+                            break;
+                        }
+                    }
+                    if (header == null)
+                    {
+                        header = doc.CreateElement(envelope.Prefix, "Header", envelope.NamespaceURI);
+                        envelope.PrependChild(header);
+                    }
+                    header.PrependChild(security);
+
+                    return doc.OuterXml;
+                }
+                catch (Exception ex)
+                {
+                    return "ERROR: " + ex.Message + "\n" + ex.StackTrace;
+                }
+            });
         }
     }
 }

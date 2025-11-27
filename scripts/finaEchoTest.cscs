@@ -1,0 +1,18 @@
+// scripts/testFinaConnection.cscs
+
+function TestFina() {
+    certPath = "D:\\path\\to\\your_cert.p12";
+    certPass = "YourCertificatePassword";
+    
+    // The URL is optional and defaults to FINA's test endpoint
+    // url = "https://prezdigitalneusluge.fina.hr/EchoPKIWebService/services/EchoPKIWebService";
+    
+    // Asynchronously call the function and wait for the result
+    response = await TestEchoFina(certPath, certPass);
+    
+    // Display the result from the FINA server
+    MessageBox(response);
+}
+
+// Run the test
+TestFina();

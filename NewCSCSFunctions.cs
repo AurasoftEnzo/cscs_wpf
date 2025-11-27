@@ -17,6 +17,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
 using System.Text;
@@ -91,6 +92,11 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.DeserializeJson, new DeserializeJsonFunction());
 
             interpreter.RegisterFunction(Constants.SignSoapWithCert, new SignSoapWithCertFunction());
+            interpreter.RegisterFunction(Constants.CreateSOAP, new CreateSOAPFunction());
+            interpreter.RegisterFunction(Constants.UUID, new UUIDFunction());
+
+
+            interpreter.RegisterFunction("TestEchoFina", new TestEchoFinaFunction());
         }
         public partial class Constants
         {
@@ -134,6 +140,8 @@ namespace WpfCSCS
             public const string DeserializeJson = "DeserializeJson";
 
             public const string SignSoapWithCert = "SignSoapWithCert";
+            public const string CreateSOAP = "CreateSOAP";
+            public const string UUID = "UUID";
         }
     }
 
@@ -2123,6 +2131,297 @@ namespace WpfCSCS
                     return "ERROR: " + ex.Message + "\n" + ex.StackTrace;
                 }
             });
+        }
+    }
+    
+    public class CreateSOAPFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 5, m_name);
+
+            string xmlBody = Utils.GetSafeString(args, 0);
+            string action = Utils.GetSafeString(args, 1);
+            string endpoint = Utils.GetSafeString(args, 2);
+            string certThumbprint = Utils.GetSafeString(args, 3);
+            string requestId = Utils.GetSafeString(args, 4);
+
+            string soap = CreateSOAP(xmlBody, action, endpoint, certThumbprint, requestId);
+            if (soap.StartsWith("ERROR:"))
+                throw new ArgumentException(soap);
+
+            return new Variable(soap);
+        }
+
+        private static X509Certificate2 LoadCertificate(string thumbprint)
+        {
+            X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+            store.Open(OpenFlags.ReadOnly);
+            var certs = store.Certificates.Find(X509FindType.FindByThumbprint, thumbprint, false);
+            store.Close();
+            return certs.Count > 0 ? certs[0] : null;
+        }
+
+        private static void SignXml(XmlDocument doc, X509Certificate2 cert, string referenceId)
+        {
+            SignedXml signedXml = new SignedXml(doc);
+            signedXml.SigningKey = cert.PrivateKey;
+            signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
+
+            Reference reference = new Reference();
+            reference.Uri = "#" + referenceId;
+            reference.AddTransform(new XmlDsigEnvelopedSignatureTransform());
+            reference.AddTransform(new XmlDsigExcC14NTransform());
+            signedXml.AddReference(reference);
+
+            KeyInfo keyInfo = new KeyInfo();
+            keyInfo.AddClause(new KeyInfoX509Data(cert));
+            signedXml.KeyInfo = keyInfo;
+
+            signedXml.ComputeSignature();
+
+            XmlElement signature = signedXml.GetXml();
+            doc.DocumentElement.AppendChild(doc.ImportNode(signature, true));
+        }
+
+        public static string CreateSOAP(string xmlBody, string action, string endpoint, string certThumbprint, string requestId)
+        {
+            try
+            {
+                X509Certificate2 cert = LoadCertificate(certThumbprint);
+                if (cert == null) return "ERROR: Certificate not found: " + certThumbprint;
+
+                string soap = $@"<?xml version=""1.0"" encoding=""UTF-8""?>
+<soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"" xmlns:eiz=""http://www.porezna-uprava.gov.hr/fin/2024/types/eIzvjestavanje"" xmlns:xd=""http://www.w3.org/2000/09/xmldsig#"">
+   <soapenv:Header/>
+   <soapenv:Body>
+     {xmlBody}
+   </soapenv:Body>
+</soapenv:Envelope>";
+
+                XmlDocument doc = new XmlDocument();
+                doc.PreserveWhitespace = true;
+                doc.LoadXml(soap);
+
+                // Add eiz:id attribute to root element
+                XmlElement root = doc.DocumentElement.GetElementsByTagName("EvidentirajIsporukuZaKojuNijeIzdanERacunZahtjev")[0] as XmlElement;
+                if (root != null) root.SetAttribute("eiz:id", "http://www.porezna-uprava.gov.hr/fin/2024/types/eIzvjestavanje", requestId);
+
+                // Sign the request
+                SignXml(doc, cert, requestId);
+
+                // Send via HTTPS
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(endpoint);
+                request.Method = "POST";
+                request.ContentType = "text/xml; charset=utf-8";
+                request.Headers["SOAPAction"] = action;
+                request.ClientCertificates.Add(cert);
+                request.Timeout = 30000;
+
+                byte[] bytes = Encoding.UTF8.GetBytes(doc.OuterXml);
+                request.ContentLength = bytes.Length;
+                using (Stream stream = request.GetRequestStream())
+                {
+                    stream.Write(bytes, 0, bytes.Length);
+                }
+
+                using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+                using (StreamReader reader = new StreamReader(response.GetResponseStream()))
+                {
+                    return reader.ReadToEnd();
+                }
+            }
+            catch (WebException wex)
+            {
+                using (StreamReader r = new StreamReader(wex.Response?.GetResponseStream()))
+                {
+                    return "HTTP_ERROR: " + wex.Message + " | " + r.ReadToEnd();
+                }
+            }
+            catch (Exception ex)
+            {
+                return "EXCEPTION: " + ex.Message + " | " + ex.StackTrace;
+            }
+        }
+    }
+    
+    public class UUIDFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 5, m_name);
+
+            return new Variable(Guid.NewGuid().ToString());
+        }
+    }
+
+    public class TestEchoFinaFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            // 1. Load client certificate (for mutual TLS)
+            var cert = new X509Certificate2(
+                @"D:\WinX\ERAC\certifikati\p12_aurasoft_demo.p12",
+                "Aurasoft1",
+                X509KeyStorageFlags.MachineKeySet |
+                X509KeyStorageFlags.PersistKeySet |
+                X509KeyStorageFlags.Exportable
+            );
+
+            // 2. Setup HttpClient with handler + certificate
+            var handler = new HttpClientHandler();
+            handler.ClientCertificates.Add(cert);
+            handler.ServerCertificateCustomValidationCallback =
+                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+            // ↑ For development only. Remove in production.
+
+            var client = new HttpClient(handler);
+
+            // 3. FINA echo endpoint (example — replace with real one)
+            string url = "https://prezdigitalneusluge.fina.hr/EchoPKIWebService/services/EchoPKIWebService";
+
+            // 4. Create SOAP envelope
+            string soapEnvelope =
+    @"<?xml version=""1.0"" encoding=""utf-8""?>
+<soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"" 
+                  xmlns:fin=""http://fina.hr/soap"">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <fin:EchoMsg>
+         <fin:Message>Hello from client!</fin:Message>
+      </fin:EchoMsg>
+   </soapenv:Body>
+</soapenv:Envelope>";
+
+            var content = new StringContent(soapEnvelope, Encoding.UTF8, "text/xml");
+
+            // 5. SOAPAction header (FINA usually expects empty or specific action)
+            content.Headers.Add("SOAPAction", "EchoMsg");
+
+            // 6. Send request
+            HttpResponseMessage response = Task.Factory.StartNew(() => { return client.PostAsync(url, content); }).Unwrap().Result;
+
+            // 7. Read response
+            string result = Task.Factory.StartNew(() => {
+                return response.Content.ReadAsStringAsync();
+            }).Unwrap().Result;
+            //Console.WriteLine("Response:");
+            //Console.WriteLine(result);
+
+
+            return Variable.EmptyInstance;
+
+
+
+
+
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 5, m_name);
+
+            string xmlBody = Utils.GetSafeString(args, 0);
+            string action = Utils.GetSafeString(args, 1);
+            string endpoint = Utils.GetSafeString(args, 2);
+            string certThumbprint = Utils.GetSafeString(args, 3);
+            string requestId = Utils.GetSafeString(args, 4);
+
+            string soap = CreateSOAP(xmlBody, action, endpoint, certThumbprint, requestId);
+            if (soap.StartsWith("ERROR:"))
+                throw new ArgumentException(soap);
+
+            return new Variable(soap);
+        }
+
+        private static X509Certificate2 LoadCertificate(string thumbprint)
+        {
+            X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+            store.Open(OpenFlags.ReadOnly);
+            var certs = store.Certificates.Find(X509FindType.FindByThumbprint, thumbprint, false);
+            store.Close();
+            return certs.Count > 0 ? certs[0] : null;
+        }
+
+        private static void SignXml(XmlDocument doc, X509Certificate2 cert, string referenceId)
+        {
+            SignedXml signedXml = new SignedXml(doc);
+            signedXml.SigningKey = cert.PrivateKey;
+            signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
+
+            Reference reference = new Reference();
+            reference.Uri = "#" + referenceId;
+            reference.AddTransform(new XmlDsigEnvelopedSignatureTransform());
+            reference.AddTransform(new XmlDsigExcC14NTransform());
+            signedXml.AddReference(reference);
+
+            KeyInfo keyInfo = new KeyInfo();
+            keyInfo.AddClause(new KeyInfoX509Data(cert));
+            signedXml.KeyInfo = keyInfo;
+
+            signedXml.ComputeSignature();
+
+            XmlElement signature = signedXml.GetXml();
+            doc.DocumentElement.AppendChild(doc.ImportNode(signature, true));
+        }
+
+        public static string CreateSOAP(string xmlBody, string action, string endpoint, string certThumbprint, string requestId)
+        {
+            try
+            {
+                X509Certificate2 cert = LoadCertificate(certThumbprint);
+                if (cert == null) return "ERROR: Certificate not found: " + certThumbprint;
+
+                string soap = $@"<?xml version=""1.0"" encoding=""UTF-8""?>
+<soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"" xmlns:eiz=""http://www.porezna-uprava.gov.hr/fin/2024/types/eIzvjestavanje"" xmlns:xd=""http://www.w3.org/2000/09/xmldsig#"">
+   <soapenv:Header/>
+   <soapenv:Body>
+     {xmlBody}
+   </soapenv:Body>
+</soapenv:Envelope>";
+
+                XmlDocument doc = new XmlDocument();
+                doc.PreserveWhitespace = true;
+                doc.LoadXml(soap);
+
+                // Add eiz:id attribute to root element
+                XmlElement root = doc.DocumentElement.GetElementsByTagName("EvidentirajIsporukuZaKojuNijeIzdanERacunZahtjev")[0] as XmlElement;
+                if (root != null) root.SetAttribute("eiz:id", "http://www.porezna-uprava.gov.hr/fin/2024/types/eIzvjestavanje", requestId);
+
+                // Sign the request
+                SignXml(doc, cert, requestId);
+
+                // Send via HTTPS
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(endpoint);
+                request.Method = "POST";
+                request.ContentType = "text/xml; charset=utf-8";
+                request.Headers["SOAPAction"] = action;
+                request.ClientCertificates.Add(cert);
+                request.Timeout = 30000;
+
+                byte[] bytes = Encoding.UTF8.GetBytes(doc.OuterXml);
+                request.ContentLength = bytes.Length;
+                using (Stream stream = request.GetRequestStream())
+                {
+                    stream.Write(bytes, 0, bytes.Length);
+                }
+
+                using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+                using (StreamReader reader = new StreamReader(response.GetResponseStream()))
+                {
+                    return reader.ReadToEnd();
+                }
+            }
+            catch (WebException wex)
+            {
+                using (StreamReader r = new StreamReader(wex.Response?.GetResponseStream()))
+                {
+                    return "HTTP_ERROR: " + wex.Message + " | " + r.ReadToEnd();
+                }
+            }
+            catch (Exception ex)
+            {
+                return "EXCEPTION: " + ex.Message + " | " + ex.StackTrace;
+            }
         }
     }
 }

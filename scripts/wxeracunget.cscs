@@ -1,3 +1,7 @@
+TestEchoFina();
+
+exit;
+
 // -----------------------------------------------------------
 // WxEracunGet.cscs - UBL XML Invoice Import Program
 // -----------------------------------------------------------
@@ -346,7 +350,7 @@ function MERSuccess(trackingId, responseCode, res) {
 
         resObject = DeserializeJson(res);  
         for(i = 0; i < Size(resObject); i++){
-            MSG(resObject[i]);
+            MSG(resObject);
             ElectronicId = resObject[i]["ElectronicId"];
             DocumentNr = resObject[i]["DocumentNr"];
             SenderBusinessNumber = resObject[i]["SenderBusinessNumber"];

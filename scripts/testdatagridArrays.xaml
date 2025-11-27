@@ -7,7 +7,7 @@
     xmlns:wcl="clr-namespace:WpfControlsLibrary;assembly=WpfControlsLibrary"
 	xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"        
     mc:Ignorable="d"
-    Title="testDatagrid" Height="640" Width="1100">
+    Title="testdatagridArrays" Height="700" Width="1100">
 
 
     <Grid Margin="0,0,3.8,14.2">
@@ -17,10 +17,11 @@
         </Grid.ColumnDefinitions>
 	    <Grid.RowDefinitions>
     	    <RowDefinition Height="100"/>
-		    <RowDefinition Height="100"/>
+		    <RowDefinition Height="200"/>
     	    <RowDefinition Height="40"/>
 		    <RowDefinition Height="40"/>
 		    <RowDefinition Height="40"/>
+			<RowDefinition Height="40"/>
 			<RowDefinition Height="40"/>
 			<RowDefinition Height="40"/>
 			<RowDefinition Height="40"/>
@@ -34,7 +35,7 @@
                   Margin="5,5,5,5"
                   IsReadOnly="true"
                   x:Name="dgStudents"
-                  Height="245"
+                  Height="345"
                   Width="800"
                   RowHeight="22"
                   FontSize="15"
@@ -136,17 +137,27 @@
 						</DataTemplate>
 					</DataGridTemplateColumn.CellTemplate>
 				</DataGridTemplateColumn>
+
+				<DataGridTemplateColumn Header="City" Width="200">
+					<DataGridTemplateColumn.CellTemplate>
+						<DataTemplate>
+							<wcl:ASGridCell FieldName="STUDENTCITY_AR"
+                                             />
+						</DataTemplate>
+					</DataGridTemplateColumn.CellTemplate>
+				</DataGridTemplateColumn>
 				
             </DataGrid.Columns>
         </DataGrid>
 
-		<Label Name="labelID" Content="ID" HorizontalAlignment="Left" Margin="10,22,0,0" VerticalAlignment="Top" Width="75" Height="35" Grid.Column="0" Grid.Row="2"/>
-		<Label Name="labelname" Content="Name" HorizontalAlignment="Left" Margin="10,22,0,0" VerticalAlignment="Top" Width="75" Height="35" Grid.Column="0" Grid.Row="3"/>
-		<Label Name="labelgender" Content="Gender" HorizontalAlignment="Left" Margin="10,22,0,0" VerticalAlignment="Top" Width="75" Height="35" Grid.Column="0" Grid.Row="4"/>
-		<Label Name="labelamount" Content="Amount" HorizontalAlignment="Left" Margin="10,22,0,0" VerticalAlignment="Top" Width="75" Height="35" Grid.Column="0" Grid.Row="5"/>
-		<Label Name="labelfinished" Content="Finished" HorizontalAlignment="Left" Margin="10,22,0,0" VerticalAlignment="Top" Width="75" Height="35" Grid.Column="0" Grid.Row="6"/>
-		<Label Name="labeldate" Content="Date" HorizontalAlignment="Left" Margin="10,22,0,0" VerticalAlignment="Top" Width="75" Height="35" Grid.Column="0" Grid.Row="7"/>
-		<Label Name="labeltime" Content="Time" HorizontalAlignment="Left" Margin="10,22,0,0" VerticalAlignment="Top" Width="75" Height="35" Grid.Column="0" Grid.Row="8"/>
+		<Label Name="labelID" Content="ID" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Width="75" Height="35" Grid.Column="0" Grid.Row="2"/>
+		<Label Name="labelname" Content="Name" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Width="75" Height="35" Grid.Column="0" Grid.Row="3"/>
+		<Label Name="labelgender" Content="Gender" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Width="75" Height="35" Grid.Column="0" Grid.Row="4"/>
+		<Label Name="labelamount" Content="Amount" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Width="75" Height="35" Grid.Column="0" Grid.Row="5"/>
+		<Label Name="labelfinished" Content="Finished" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Width="75" Height="35" Grid.Column="0" Grid.Row="6"/>
+		<Label Name="labeldate" Content="Date" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Width="75" Height="35" Grid.Column="0" Grid.Row="7"/>
+		<Label Name="labeltime" Content="Time" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Width="75" Height="35" Grid.Column="0" Grid.Row="8"/>
+		<Label Name="labelcity" Content="City" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Width="75" Height="60" Grid.Column="0" Grid.Row="9"/>
 		
 
         

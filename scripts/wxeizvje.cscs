@@ -1,0 +1,358 @@
+﻿// e-Izvješćivanje – Mjesečni izvještaj za neposlane račune
+include(strTrim(tpath()) + "wxsy_lib.cscs");
+
+//conn_str = "DRIVER={SQL Server};SERVER=YOUR_SERVER;DATABASE=YOUR_DB;Trusted_Connection=yes;";
+//databaseName = "YOUR_DB";
+sqlconnectionstring("Server=localhost;Database=C__DATAX_Y4__BY4;User Id=sa;Password=aura;");
+databaseName = "C__DATAX_Y4__BY4";
+
+// Create window
+//CreateWindow(strTrim(tpath()) + "eizvjestavanje.xaml");
+CreateWindow(strTrim(tpath()) + "wxeizvje.xaml");
+
+define KPSY_COMP_NAME type A size 40;
+define KPSY_REZERVA type A size 152;//OIB
+
+define racunodaberi_ar type L array 500;
+define racunbrojracuna_ar type R array 500;
+define racundatum_ar type A size 10 array 500;
+define racunkupac_ar type A size 50 array 500;
+define racuniznos_ar type N size 14 dec 2 array 500;
+
+define rowCountInvoices type R;
+
+define cntr type R;
+
+//DEFINE time1 type T size 8;
+
+// Fill month combo
+//function eizvjestavanje_OnDisplay() {
+function wxeizvje_OnDisplay() {
+    //for (m = 1; m <= 12; m++) {
+        //DisplayArrayAdd("cmbMonth", FormatNum(m, 2, "") + "|" + MonthName(m));
+    //}
+    comboItems = {"01|Siječanj", "02|Veljača", "03|Ožujak", "04|Travanj", "05|Svibanj", "06|Lipanj", "07|Srpanj", "08|Kolovoz", "09|Rujan", "10|Listopad", "11|Studeni", "12|Prosinac"};
+    AddWidgetData("cmbMonth", comboItems);
+
+    //SetCell("cmbMonth", "selectedIndex", Val(FormatDate(Now(), "MM")) - 1);
+    strCurrentDate = DTOS(DateTime());
+    strMonth = Substring(strCurrentDate, 4, 2);
+    intMonth = Int(strMonth);
+    SetWidgetOptions("cmbMonth", "SelectedIndex", intMonth - 1);
+
+    //SetCell("txtYear", "text", FormatDate(Now(), "yyyy"));
+    strYear = Substring(strCurrentDate, 0, 4);
+    SetWidgetOptions("txtYear", "Text", strYear);
+
+//*******************************************************************************
+    Get_KPSY_COMP_NAME();
+    Get_KPSY_REZERVA();//OIB
+
+    //MessageBox("KPSY_COMP_NAME is " + KPSY_COMP_NAME + "*");    //ok je -> NE TREBA TRIMAT
+    //MessageBox("KPSY_REZERVA is " + KPSY_REZERVA  + "*");//OIB  //ok je -> NE TREBA TRIMAT
+}
+
+// Prepare List
+function btnPrepare@Clicked() {
+    //MessageBox("btnPrepare");
+    cursor("wait");
+    //month = Val(GetCell("cmbMonth", "selectedValue").Substring(0, 2));
+    //year = Val(GetCell("txtYear", "text"));    
+    strMonthLong = GetWidgetOptions("cmbMonth", "SelectedValue");
+    strMonthShort = Substring(strMonthLong, 0, 2);
+    month = Int(strMonthShort);
+    strYear = GetWidgetOptions("txtYear", "Text");
+    year = Int(strYear);    
+
+    sql = "SELECT NKPR_GL_NUM, CONVERT(VARCHAR(10), NKPR_GL_INVDTE, 23), NKPR_GL_CUSNME, NKPR_GL_TOTAL " +
+          "FROM " + databaseName + ".dbo.NKPRINV " +
+          "WHERE NKPR_GL_RTS <> 'E' AND NKPR_GL_DATPRI = '1900-01-01' " +
+          "AND MONTH(NKPR_GL_INVDTE) = @m AND YEAR(NKPR_GL_INVDTE) = @y " +
+          "ORDER BY NKPR_GL_NUM DESC;";
+    sqlParams = {};
+    sqlParams.Add({"@m", month});
+    sqlParams.Add({"@y", year});
+    sqlResult = sqlQuery(sql, sqlParams);
+
+    rowCountInvoices = Size(sqlResult) - 1;
+    MessageBox("Query returned " + rowCountInvoices + " rows");
+
+    //FILL THE ARRAYS WITH DATA
+	for ( i = 1; i < Size(sqlResult); i++ )
+    {
+		racunodaberi_ar[i - 1] = false;			        
+		racunbrojracuna_ar[i - 1] = sqlResult[i][0];	//broj računa
+		racundatum_ar[i - 1] = sqlResult[i][1];		    //datum
+		racunkupac_ar[i - 1] = sqlResult[i][2];		    //kupac
+		racuniznos_ar[i - 1] = sqlResult[i][3];	        //iznos	
+	}
+
+    //DisplayArray("dgInvoices", "close");
+    //for (i = 1; i < Size(result); i++) {
+    //    row = "false," + result[i][0] + "," + result[i][1] + "," + result[i][2] + "," + result[i][3];
+        //DisplayArrayAdd("dgInvoices", row);
+    //}
+    //DisplayArraySetup("dgInvoices", activeElements: Size(result)-1, maxElements: 500);
+    //cursor("dflt");
+    //MessageBox("Učitano " + (Size(result)-1) + " računa za " + MonthName(month) + " " + year);
+
+    cntr = 0;
+
+    //INITIALIZE DATAGRID dgInvoices
+	Format("racuniznos_ar", "nofd"); //"no fixed decimals" (suppress trailing zero decimals) and enable thousands-separators when the value is rendered
+    DisplayArray("dgInvoices", "close");
+    DisplayArraySetup("dgInvoices", counterFld: cntr, activeElements: Size(sqlResult) - 1, maxElements: 10);
+
+    cursor("dflt");
+}
+
+
+
+function btnTest@clicked() 
+{
+    //MessageBox("Test button clicked");
+
+    /*
+    countOdabranih = 0;
+    for (i = 0; i < Size(racunodaberi_ar); i++) {
+        if (racunodaberi_ar[i] == true) {
+            countOdabranih++;
+        }
+    }
+    MessageBox("Broj odabranih računa: " + countOdabranih);
+    */
+    //MessageBox("UUID=" + UUID());
+
+    //DateNow("yyyy-MM-dd'T'HH:mm:ss.0000")    
+    //MessageBox("DatumVrijeme() = " + DatumVrijeme());
+    //MessageBox("DateNow() = " + DateNow("yyyy-MM-dd'T'HH:mm:ss.0000") + "*");
+
+    /*
+    for (i = 0; i < 3; i++) {
+        MessageBox(i);
+        continue;//nastavlja sa slijedećom iteracijom for petlje
+        MessageBox("This will never be shown " + i);
+    }
+    */
+}
+
+
+
+// Send XML to Porezna Uprava
+function btnSend@clicked() {
+    cursor("wait");
+    selectedCount = 0;
+    /*
+    for (row = 1; row <= GetRowCount("dgInvoices"); row++) {
+        if (GetCell("dgInvoices", row, 0) == "true") {
+            selectedCount++;
+        }
+    }
+    */
+    for (i = 0; i < rowCountInvoices; i++) {
+        if (racunodaberi_ar[i] == true) {
+            selectedCount++;
+        }
+    }
+    if (selectedCount == 0) {
+        MessageBox("Nema odabranih računa!");
+        cursor("dflt");
+        return;
+    }
+
+    xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+    requestId = UUID();
+    xml += "<eiz:EvidentirajIsporukuZaKojuNijeIzdanERacunZahtjev " +
+           "xmlns:eiz=\"http://www.porezna-uprava.gov.hr/fin/2024/types/eIzvjestavanje\" " +
+           "xmlns:xd=\"http://www.w3.org/2000/09/xmldsig#\" eiz:id=\"" + requestId + "\">\n";
+    xml += "  <eiz:Zaglavlje>\n";
+    xml += "    <eiz:datumVrijemeSlanja>" + DateNow("yyyy-MM-dd'T'HH:mm:ss.0000") + "</eiz:datumVrijemeSlanja>\n";
+    xml += "    <eiz:vrstaRacuna>IR</eiz:vrstaRacuna>\n";
+    xml += "  </eiz:Zaglavlje>\n";
+
+    //*******************************************************************************
+    //MessageBox(xml);
+    //*******************************************************************************
+
+    updatedCount = 0;
+    //for (row = 1; row <= GetRowCount("dgInvoices"); row++) {
+    for (row = 0; row < rowCountInvoices; row++) {
+        if (racunodaberi_ar[row] != "true") { continue; }
+
+        invNum = racunbrojracuna_ar[row];
+
+        // Load header again for details
+        sql_hdr = "SELECT NKPR_GL_NUM, CONVERT(VARCHAR(10), NKPR_GL_INVDTE, 23), NKPR_GL_CUSNME, NKPR_GL_JMBG, " +
+                  "NKPR_GL_TOTAL, NKPR_GL_TOTAL - ISNULL(NKPR_GL_TAXAMT,0) AS NETO, ISNULL(NKPR_GL_TAXAMT,0) AS PDV " +
+                  "FROM " + databaseName + ".dbo.NKPRINV WHERE NKPR_GL_NUM = @p1;";
+        sqlParams = {};
+        sqlParams.Add({"@p1", invNum});
+        hdr = sqlQuery(sql_hdr, sqlParams);
+        if (Size(hdr) < 2) { continue; }
+        //*******************************************************************************
+        //DO OVDJE JE RJEŠENO
+        //*******************************************************************************
+        inv = hdr[1];
+        xml += "  <eiz:Racun>\n";
+        xml += "    <eiz:brojDokumenta>" + inv[0] + "</eiz:brojDokumenta>\n";
+        xml += "    <eiz:datumIzdavanja>" + inv[1] + "</eiz:datumIzdavanja>\n";
+        xml += "    <eiz:vrstaDokumenta>380</eiz:vrstaDokumenta>\n";
+        xml += "    <eiz:valutaRacuna>EUR</eiz:valutaRacuna>\n";
+        xml += "    <eiz:vrstaPoslovnogProcesa>P1</eiz:vrstaPoslovnogProcesa>\n";
+
+        xml += "    <eiz:Izdavatelj>\n";
+        xml += "      <eiz:ime>" + KPSY_COMP_NAME + "</eiz:ime>\n";
+        xml += "      <eiz:oibPorezniBroj>" + Substring(KPSY_REZERVA, 0, 11) + "</eiz:oibPorezniBroj>\n";
+        xml += "    </eiz:Izdavatelj>\n";
+
+        xml += "    <eiz:Primatelj>\n";
+        xml += "      <eiz:ime>" + inv[2] + "</eiz:ime>\n";
+        xml += "      <eiz:oibPorezniBroj>" + inv[3] + "</eiz:oibPorezniBroj>\n";
+        xml += "    </eiz:Primatelj>\n";
+
+        xml += "    <eiz:DokumentUkupanIznos>\n";
+        xml += "      <eiz:neto>" + FormatNum(inv[5], 2, ".") + "</eiz:neto>\n";
+        xml += "      <eiz:iznosBezPdv>" + FormatNum(inv[5], 2, ".") + "</eiz:iznosBezPdv>\n";
+        xml += "      <eiz:pdv>" + FormatNum(inv[6], 2, ".") + "</eiz:pdv>\n";
+        xml += "      <eiz:iznosSPdv>" + FormatNum(inv[4], 2, ".") + "</eiz:iznosSPdv>\n";
+        xml += "      <eiz:iznosKojiDospijevaZaPlacanje>" + FormatNum(inv[4], 2, ".") + "</eiz:iznosKojiDospijevaZaPlacanje>\n";
+        xml += "    </eiz:DokumentUkupanIznos>\n";
+
+        // Simplified VAT breakdown (25%)
+        xml += "    <eiz:RaspodjelaPdv>\n";
+        xml += "      <eiz:kategorijaPdv>S</eiz:kategorijaPdv>\n";
+        xml += "      <eiz:oporeziviIznos>" + FormatNum(inv[5], 2, ".") + "</eiz:oporeziviIznos>\n";
+        xml += "      <eiz:iznosPoreza>" + FormatNum(inv[6], 2, ".") + "</eiz:iznosPoreza>\n";
+        xml += "      <eiz:stopa>25</eiz:stopa>\n";
+        xml += "    </eiz:RaspodjelaPdv>\n";
+
+        // One dummy line
+        xml += "    <eiz:StavkaRacuna>\n";
+        xml += "      <eiz:kolicina>1</eiz:kolicina>\n";
+        xml += "      <eiz:jedinicaMjere>H87</eiz:jedinicaMjere>\n";
+        xml += "      <eiz:artiklNetoCijena>" + FormatNum(inv[5], 2, ".") + "</eiz:artiklNetoCijena>\n";
+        xml += "      <eiz:artiklKategorijaPdv>S</eiz:artiklKategorijaPdv>\n";
+        xml += "      <eiz:artiklStopaPdv>25</eiz:artiklStopaPdv>\n";
+        xml += "      <eiz:artiklNaziv>Roba/usluga</eiz:artiklNaziv>\n";
+        xml += "      <eiz:ArtiklIdentifikatorKlasifikacija>\n";
+        xml += "        <eiz:identifikatorKlasifikacije>11.07.01</eiz:identifikatorKlasifikacije>\n";
+        xml += "        <eiz:identifikatorSheme>CG</eiz:identifikatorSheme>\n";
+        xml += "      </eiz:ArtiklIdentifikatorKlasifikacija>\n";
+        xml += "    </eiz:StavkaRacuna>\n";
+
+        xml += "    <eiz:indikatorKopije>false</eiz:indikatorKopije>\n";
+        xml += "  </eiz:Racun>\n";
+
+        updatedCount++;
+    }
+
+    // Signature placeholder (must be added via C# XAdES)
+    xml += "  <xd:Signature><xd:SignedInfo>...</xd:SignedInfo><xd:SignatureValue>...</xd:SignatureValue></xd:Signature>\n";
+    xml += "</eiz:EvidentirajIsporukuZaKojuNijeIzdanERacunZahtjev>";
+
+    fileName = "eIzvjestavanje_" + FormatDate(Now(), "yyyyMM") + ".xml";
+    SaveFile(fileName, xml);
+    MessageBox("XML generiran: " + fileName + "\nBroj računa: " + updatedCount);
+
+    // TODO: Add real SOAP send + signing
+    // SendSoap(xml, "https://cis.porezna-uprava.hr:8509/eIzvjestavanjeService");
+
+    cursor("dflt");
+}
+
+// Exit
+function btnExit@clicked() {
+    CloseWindow();
+}
+
+
+/*
+**Features**:
+- Loads **unsent invoices** (`NKPR_GL_RTS <> 'E'` and `NKPR_GL_DATPRI = 1900-01-01`)
+- Generates **exact XML** from your sample
+- Checkboxes to select invoices
+- Month/year filter
+- Ready for **XAdES signing** and **SOAP send**
+*/
+
+
+
+
+//DALIBOR DODAO FUNKCIJU UUID()  -> To je za izbrisati kasnije
+function UUID() 
+{
+    return "771566f6-6305-4ff1-8836-a041ba6a7f7a";
+/*    
+    return "eddb1be9-7980-4020-957e-4384d00bc5b2";
+    return "a3f1c9e2-5d6b-4c3e-9f2a-1b2c3d4e5f60";
+    return "123e4567-e89b-12d3-a456-426614174000";
+    return "550e8400-e29b-41d4-a716-446655440000";
+    return "f47ac10b-58cc-4372-a567-0e02b2c3d479";
+    return "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
+    return "16fd2706-8baf-433b-82eb-8c7fada847da";
+    return "458f1cf4-cd53-4158-a9dc-4ed5be26fa47";
+    return "3010db1b-af79-4217-ba3b-5196b923688b";
+*/
+}
+
+//DALIBOR DODAO FUNKCIJU DateNow()  
+//RETURNS CURRENT DATE-TIME IN FORMAT "yyyy-MM-ddTHH:mm:ss.0000"
+function DateNow(format)
+{
+    datetime1 = DateTime();//current date-time
+    strDateTime = datetime1.ToString(format);
+    return strDateTime;
+
+    //************************************************************************
+    //2. NAČIN:
+    //datetime1 = DateTime();//current date-time
+    //strDateTime = datetime1.ToString("yyyy-MM-dd'T'HH:mm:ss.0000");
+    //MessageBox("strDateTime is " + strDateTime);	//2024-06-14T15:30:45.0000
+    //return strDateTime;
+    
+    /*
+    strDate = DTOSQL(datetime1);
+    //MessageBox("strDate is " + strDate);	//2024-06-14
+
+    time1 = datetime1;
+    strTime = time1.String();
+    //MessageBox("strTime is " + strTime);	//09:17:48
+
+    strDateTime2 = strDate + "T" + strTime + ".0000";
+    //MessageBox("strDateTime2 is " + strDateTime2);	//2024-06-14T09:17:48.0000
+    return strDateTime2;
+    */
+    //************************************************************************
+}
+
+
+//DALIBOR DODAO FUNKCIJU Get_KPSY_COMP_NAME()  -----Za promijeniti SQL UPIT KASNIJE
+function Get_KPSY_COMP_NAME()
+{
+    /*
+    sql = "SELECT KPSY_COMP_NAME FROM KPSY_PARAMETRI;";
+    result = sqlQuery(sql);
+    if (Size(result) >= 2) {
+        KPSY_COMP_NAME = result[1][0];
+    } else {
+        KPSY_COMP_NAME = "Unknown Company";
+    } 
+    */
+    KPSY_COMP_NAME = "Unknown Company";   
+}
+
+//DALIBOR DODAO FUNKCIJU Get_KPSY_REZERVA() //OIB  -----Za promijeniti SQL UPIT KASNIJE
+function Get_KPSY_REZERVA()
+{
+    /*
+    sql = "SELECT KPSY_REZERVA FROM KPSY_PARAMETRI;";
+    result = sqlQuery(sql);
+    if (Size(result) >= 2) {
+        KPSY_REZERVA = result[1][0];
+    } else {
+        KPSY_REZERVA = "00000000000";
+    }
+    */
+    KPSY_REZERVA = "00000000000";
+}
+    

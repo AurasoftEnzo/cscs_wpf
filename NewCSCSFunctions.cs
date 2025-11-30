@@ -2136,43 +2136,138 @@ namespace WpfCSCS
     
     public class CreateSOAPFunction : ParserFunction
     {
-        protected override Variable Evaluate(ParsingScript script)
+        // Use async override for network operations
+        protected override async Task<Variable> EvaluateAsync(ParsingScript script)
         {
-            List<Variable> args = script.GetFunctionArgs();
-            Utils.CheckArgs(args.Count, 5, m_name);
+            List<Variable> args = await script.GetFunctionArgsAsync();
+            Utils.CheckArgs(args.Count, 4, m_name);
 
             string xmlBody = Utils.GetSafeString(args, 0);
-            string action = Utils.GetSafeString(args, 1);
+            string soapAction = Utils.GetSafeString(args, 1);
             string endpoint = Utils.GetSafeString(args, 2);
-            string certThumbprint = Utils.GetSafeString(args, 3);
-            string requestId = Utils.GetSafeString(args, 4);
+            string certIdentifier = Utils.GetSafeString(args, 3); // Can be thumbprint or file path
+            string certPassword = Utils.GetSafeString(args, 4); // Password for file-based cert
+            int timeoutSeconds = Utils.GetSafeInt(args, 5, 30);
 
-            string soap = CreateSOAP(xmlBody, action, endpoint, certThumbprint, requestId);
-            if (soap.StartsWith("ERROR:"))
-                throw new ArgumentException(soap);
-
-            return new Variable(soap);
+            try
+            {
+                string soapResponse = await CreateAndSendSignedSOAPAsync(xmlBody, soapAction, endpoint, certIdentifier, certPassword, timeoutSeconds);
+                return new Variable(soapResponse);
+            }
+            catch (Exception ex)
+            {
+                // Return a detailed error message to the script
+                return new Variable("ERROR: " + ex.Message + (ex.InnerException != null ? " | Inner: " + ex.InnerException.Message : ""));
+            }
         }
 
-        private static X509Certificate2 LoadCertificate(string thumbprint)
+        // Fallback for synchronous calls - not recommended
+        protected override Variable Evaluate(ParsingScript script)
         {
-            X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
-            store.Open(OpenFlags.ReadOnly);
-            var certs = store.Certificates.Find(X509FindType.FindByThumbprint, thumbprint, false);
-            store.Close();
-            return certs.Count > 0 ? certs[0] : null;
+            try
+            {
+                return EvaluateAsync(script).GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                return new Variable("ERROR: " + ex.Message);
+            }
+        }
+
+        public static async Task<string> CreateAndSendSignedSOAPAsync(string xmlBody, string soapAction, string endpoint, string certIdentifier, string certPassword, int timeoutSeconds)
+        {
+            // 1. Load Certificate
+            X509Certificate2 cert = LoadCertificate(certIdentifier, certPassword);
+            if (cert == null)
+            {
+                throw new ArgumentException("Certificate could not be loaded. Identifier: " + certIdentifier);
+            }
+
+            // 2. Create SOAP Envelope and add the body
+            string soapEnvelope = $@"<soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"">
+   <soapenv:Header/>
+   <soapenv:Body>
+     {xmlBody}
+   </soapenv:Body>
+</soapenv:Envelope>";
+
+            XmlDocument doc = new XmlDocument();
+            doc.PreserveWhitespace = true;
+            doc.LoadXml(soapEnvelope);
+
+            // 3. Find the first element in the Body to be the signing reference
+            XmlElement bodyContentElement = doc.DocumentElement.GetElementsByTagName("Body", "http://schemas.xmlsoap.org/soap/envelope/")[0]?.FirstChild as XmlElement;
+            if (bodyContentElement == null)
+            {
+                throw new InvalidOperationException("SOAP Body does not contain a valid XML element to sign.");
+            }
+
+            // 4. Add an ID to the element for signing
+            string referenceId = "id-" + Guid.NewGuid().ToString("N");
+            bodyContentElement.SetAttribute("Id", referenceId);
+
+            // 5. Sign the XML document
+            SignXml(doc, cert, referenceId);
+
+            // 6. Send the request using HttpClient
+            var handler = new HttpClientHandler();
+            handler.ClientCertificates.Add(cert);
+            // For development: bypass server certificate validation. Remove in production.
+            handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+
+            using (var client = new HttpClient(handler))
+            {
+                client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
+                var content = new StringContent(doc.OuterXml, Encoding.UTF8, "text/xml");
+                if (!string.IsNullOrEmpty(soapAction))
+                {
+                    content.Headers.Add("SOAPAction", soapAction);
+                }
+
+                HttpResponseMessage response = await client.PostAsync(endpoint, content);
+                string responseString = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new WebException($"HTTP Error {(int)response.StatusCode} {response.ReasonPhrase}: {responseString}");
+                }
+
+                return responseString;
+            }
+        }
+
+        private static X509Certificate2 LoadCertificate(string identifier, string password)
+        {
+            // Try loading from file path first
+            if (System.IO.File.Exists(identifier))
+            {
+                return new X509Certificate2(identifier, password, X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable);
+            }
+
+            // Otherwise, try loading from certificate store by thumbprint
+            using (X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
+            {
+                store.Open(OpenFlags.ReadOnly);
+                var certs = store.Certificates.Find(X509FindType.FindByThumbprint, identifier, false);
+                return certs.Count > 0 ? certs[0] : null;
+            }
         }
 
         private static void SignXml(XmlDocument doc, X509Certificate2 cert, string referenceId)
         {
+            if (cert.PrivateKey == null)
+            {
+                throw new InvalidOperationException("Certificate does not contain a private key.");
+            }
+
             SignedXml signedXml = new SignedXml(doc);
             signedXml.SigningKey = cert.PrivateKey;
             signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
+            signedXml.SignedInfo.SignatureMethod = SignedXml.XmlDsigRSASHA256Url; // Explicitly set to SHA256
 
-            Reference reference = new Reference();
-            reference.Uri = "#" + referenceId;
-            reference.AddTransform(new XmlDsigEnvelopedSignatureTransform());
+            Reference reference = new Reference("#" + referenceId);
             reference.AddTransform(new XmlDsigExcC14NTransform());
+            reference.DigestMethod = SignedXml.XmlDsigSHA256Url; // Use SHA256 for digest
             signedXml.AddReference(reference);
 
             KeyInfo keyInfo = new KeyInfo();
@@ -2181,68 +2276,19 @@ namespace WpfCSCS
 
             signedXml.ComputeSignature();
 
-            XmlElement signature = signedXml.GetXml();
-            doc.DocumentElement.AppendChild(doc.ImportNode(signature, true));
-        }
-
-        public static string CreateSOAP(string xmlBody, string action, string endpoint, string certThumbprint, string requestId)
-        {
-            try
+            // The signature needs to be inserted into the SOAP Header inside a wsse:Security element
+            XmlElement signatureElement = signedXml.GetXml();
+            
+            XmlElement header = doc.DocumentElement.GetElementsByTagName("Header", "http://schemas.xmlsoap.org/soap/envelope/")[0] as XmlElement;
+            if (header == null)
             {
-                X509Certificate2 cert = LoadCertificate(certThumbprint);
-                if (cert == null) return "ERROR: Certificate not found: " + certThumbprint;
-
-                string soap = $@"<?xml version=""1.0"" encoding=""UTF-8""?>
-<soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"" xmlns:eiz=""http://www.porezna-uprava.gov.hr/fin/2024/types/eIzvjestavanje"" xmlns:xd=""http://www.w3.org/2000/09/xmldsig#"">
-   <soapenv:Header/>
-   <soapenv:Body>
-     {xmlBody}
-   </soapenv:Body>
-</soapenv:Envelope>";
-
-                XmlDocument doc = new XmlDocument();
-                doc.PreserveWhitespace = true;
-                doc.LoadXml(soap);
-
-                // Add eiz:id attribute to root element
-                XmlElement root = doc.DocumentElement.GetElementsByTagName("EvidentirajIsporukuZaKojuNijeIzdanERacunZahtjev")[0] as XmlElement;
-                if (root != null) root.SetAttribute("eiz:id", "http://www.porezna-uprava.gov.hr/fin/2024/types/eIzvjestavanje", requestId);
-
-                // Sign the request
-                SignXml(doc, cert, requestId);
-
-                // Send via HTTPS
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(endpoint);
-                request.Method = "POST";
-                request.ContentType = "text/xml; charset=utf-8";
-                request.Headers["SOAPAction"] = action;
-                request.ClientCertificates.Add(cert);
-                request.Timeout = 30000;
-
-                byte[] bytes = Encoding.UTF8.GetBytes(doc.OuterXml);
-                request.ContentLength = bytes.Length;
-                using (Stream stream = request.GetRequestStream())
-                {
-                    stream.Write(bytes, 0, bytes.Length);
-                }
-
-                using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
-                using (StreamReader reader = new StreamReader(response.GetResponseStream()))
-                {
-                    return reader.ReadToEnd();
-                }
+                header = doc.CreateElement("soapenv", "Header", "http://schemas.xmlsoap.org/soap/envelope/");
+                doc.DocumentElement.PrependChild(header);
             }
-            catch (WebException wex)
-            {
-                using (StreamReader r = new StreamReader(wex.Response?.GetResponseStream()))
-                {
-                    return "HTTP_ERROR: " + wex.Message + " | " + r.ReadToEnd();
-                }
-            }
-            catch (Exception ex)
-            {
-                return "EXCEPTION: " + ex.Message + " | " + ex.StackTrace;
-            }
+
+            XmlElement securityElement = doc.CreateElement("wsse", "Security", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd");
+            securityElement.AppendChild(signatureElement);
+            header.AppendChild(securityElement);
         }
     }
     

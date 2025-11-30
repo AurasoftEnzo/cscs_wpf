@@ -1782,6 +1782,12 @@ function SendERacun(){
 
         // MSG("webRequestResult = " + webRequestResult); // !!! cijeli Json
     }
+    elif(PROVIDER == "EPOS" || PROVIDER == "EPOSDEMO")
+    {
+        //koristimo ePoslovanje.hr način slanja
+        SendToEPOS();
+        return;
+    }
     elif(PROVIDER == "FINA" || PROVIDER == "FINADEMO")
     {
         //koristimo FINA način slanja
@@ -1887,7 +1893,7 @@ function LogResponse(responseCode, response) {
 }
 
 
-
+/*
 function SendToFINA() {
 
     endpoint = "https://prezdigitalneusluge.fina.hr/SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService";        // production
@@ -1965,54 +1971,222 @@ function SendToFINA() {
     }
 }
 
-function SendToFINA() {
-    // endpoint = "https://e-racun.fina.hr/api/v1/invoices";  // REST production
-    endpoint = "https://test.e-racun.fina.hr/api/v1/invoices"; // REST test
+*/
+function SendToEPOS() {
+    // Determine endpoint based on provider configuration
+    endpoint = ERAC_SERVER;
+    if (PROVIDER == "EPOSDEMO") {
+        endpoint = ERAC_SERVERT;
+    }
 
-    base64Ubl = File2Base64(xmlFileName);
+    if (endpoint == "") {
+        MessageBox("Endpoint za ePoslovanje provider nije definiran u NKSYERAC.");
+        return;
+    }
 
-    // JSON payload for REST
-    jsonPayload = "{";
-    jsonPayload += "\"invoiceNumber\": \"" + invNum + "\",";
-    jsonPayload += "\"issueDate\": \"" + NKPR_GL_INVDTE + "\",";
-    jsonPayload += "\"buyerOib\": \"" + NKPR_GL_JMBG + "\",";
-    jsonPayload += "\"ublXml\": \"" + base64Ubl + "\",";
-    jsonPayload += "\"profile\": \"" + profileID + "\"";
-    jsonPayload += "}";
+    // Read the XML file content
+    xmlContent = ReadFile(xmlFileName);
+    if (xmlContent == "") {
+        MessageBox("Greška pri čitanju XML datoteke za ePoslovanje.");
+        return;
+    }
 
+    // Prepare JSON payload for ePoslovanje API v2
+    // Using DocumentSendRequest schema from API documentation
+    jsonPayload = {
+        "document": xmlContent,
+        "softwareId": ERAC_DESC
+    };
+
+    jsonLoad = SerializeJson(jsonPayload);
+
+    // Prepare headers with API key authentication
     headers = {};
+    headers["Authorization"] = ERAC_USER; // API Key stored in ERAC_USER field
     headers["Content-Type"] = "application/json";
-    headers["Authorization"] = "Bearer YOUR_FINA_API_KEY";  // Get from FINA portal
-
-    certPath = "D:\\WinX\\ERAC\\certifikati\\p12_aurasoft_demo.p12";  // .pfx with private key
-    certPass = "Aurasoft1";
 
     try {
-        response = WebRequest("POST", endpoint, jsonPayload, "trackingId",
-            "FINASuccess", "FINAFailure", "application/json", null, 1000 * 20, false);
-        // SaveResponseLog(response, "FINA_REST");
-
-        // status = ExtractJSON(response, "status");
-        // zki = ExtractJSON(response, "zki");
-        // jir = ExtractJSON(response, "jir");
-
-        // if (status == "success") {
-        //     // LogNKSYELOG("FINA_OK", "Račun poslan via REST API. ZKI: " + zki);
-        //     MessageBox("FINA REST: Uspješno! ZKI: " + zki);
-        //     return true;
-        // } else {
-        //     // msg = ExtractJSON(response, "message");
-        //     // LogNKSYELOG("FINA_FAIL", "REST API greška: " + msg);
-        //     MessageBox("FINA REST greška: " + msg);
-        //     return false;
-        // }
-    } catch (e) {
-        // LogNKSYELOG("FINA_EXCEPTION", "REST API connection failed", e);
-        MessageBox("FINA REST veza neuspješna: " + e);
-        return false;
+        // Send to ePoslovanje API v2 document send endpoint
+        webRequestResult = WebRequest(
+            "POST",                         // method
+            endpoint + "/api/v2/document/send",  // URL with API v2 endpoint
+            jsonLoad,                       // JSON payload
+            invNum,                         // tracking ID
+            "EPOSSuccess",                  // success callback
+            "EPOSFailure",                  // failure callback
+            "application/json",             // content type
+            headers,                        // headers with API key
+            1000 * 30,                      // 30 second timeout
+            false                           // not fire-and-forget
+        );
+    } catch (ex) {
+        MessageBox("Greška pri slanju na ePoslovanje: " + ex);
+        LogNKSYELOG("B", "EPOS WebRequest exception: " + ex);
     }
 }
 
+function SendToFINA() {
+    // Determine endpoint based on provider configuration
+    endpoint = ERAC_SERVER;
+    if (PROVIDER == "FINADEMO") {
+        endpoint = ERAC_SERVERT;
+    }
+
+    if (endpoint == "") {
+        MessageBox("Endpoint za FINA provider nije definiran u NKSYERAC.");
+        return;
+    }
+
+    // 1. Prepare the XML body for the SOAP request
+    base64Ubl = File2Base64(xmlFileName);
+
+    xmlBody = "<fin:SendB2BOutgoingInvoiceMsg xmlns:fin=\"http://www.fina.hr/e-racun/services\">\n";
+    xmlBody += "  <HeaderSupplier>\n";
+    xmlBody += "    <MessageID>" + UUID() + "</MessageID>\n";
+    xmlBody += "    <SupplierID>9934:HR" + supOIB + "</SupplierID>\n";
+    xmlBody += "    <AdditionalSupplierID>0088:" + KPSY_REZERVAX + "</AdditionalSupplierID>\n";
+    xmlBody += "    <MessageType>9001</MessageType>\n";
+    xmlBody += "  </HeaderSupplier>\n";
+    xmlBody += "  <Data>\n";
+    xmlBody += "    <B2BOutgoingInvoiceEnvelope>\n";
+    xmlBody += "      <XMLStandard>UBL</XMLStandard>\n";
+    xmlBody += "      <SpecificationIdentifier>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0</SpecificationIdentifier>\n";
+    xmlBody += "      <SupplierInvoiceID>" + invNum + "</SupplierInvoiceID>\n";
+    xmlBody += "      <BuyerID>9934:HR" + NKPR_GL_JMBG + "</BuyerID>\n";
+    xmlBody += "      <InvoiceEnvelope>" + base64Ubl + "</InvoiceEnvelope>\n";
+    xmlBody += "    </B2BOutgoingInvoiceEnvelope>\n";
+    xmlBody += "  </Data>\n";
+    xmlBody += "</fin:SendB2BOutgoingInvoiceMsg>";
+
+    // 2. Define the SOAPAction (often empty for FINA services)
+    soapAction = "";
+
+    // 3. Call the unified CreateSOAP function
+    try {
+        // CreateSOAP handles signing and sending the request, and returns the response.
+        // It expects: xmlBody, soapAction, endpoint, certIdentifier, certPassword
+        response = await CreateSOAP(
+            xmlBody,
+            soapAction,
+            endpoint,
+            ERAC_PASST, // Certificate path from NKSYERAC
+            ERAC_PASS   // Certificate password from NKSYERAC
+        );
+
+        // 4. Process the response
+        if (response.StartsWith("ERROR:") || response.StartsWith("HTTP_ERROR:") || response.StartsWith("EXCEPTION:")) {
+            FINAFailure(invNum, 0, response);
+        } else {
+            FINASuccess(invNum, 200, response);
+        }
+    } catch (ex) {
+        FINAFailure(invNum, 0, "Greška pri pozivu CreateSOAP funkcije: " + ex);
+    }
+}
+
+function EPOSSuccess(_invNum, responseCode, res) {
+    MSG("EPOSSuccess");
+
+    try {
+        LogResponse(responseCode, res);
+
+        resObject = DeserializeJson(res);
+        
+        // ePoslovanje API v2 returns DocumentSendResponse
+        if (Contains(resObject, "id") && Contains(resObject, "insertedOn")) {
+            documentId = resObject["id"];
+            insertedOn = resObject["insertedOn"];
+            message = Contains(resObject, "message") ? resObject["message"] : "Dokument uspješno poslan";
+            
+            MSG("ePoslovanje Document ID: " + documentId);
+            MSG("Inserted On: " + insertedOn);
+            MSG("Message: " + message);
+            
+            // Log successful sending
+            LogNKSYELOG("C", "EPOS Success - Doc ID: " + documentId);
+            
+            // Optional: Store document ID for future reference
+            StoreEPOSDocumentId(_invNum, documentId, insertedOn);
+        }
+        else {
+            MSG("ePoslovanje response structure unexpected");
+            LogNKSYELOG("B", "EPOS Success but unexpected response structure");
+        }
+    }
+    catch (ex) {
+        MessageBox("EPOSSuccess - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        LogNKSYELOG("B", "EPOS Success parsing error: " + ex);
+    }
+}
+
+function EPOSFailure(_invNum, responseCode, res) {
+    MSG("EPOSFailure");
+
+    try {
+        LogResponse(responseCode, res);
+
+        MSG("Slanje računa broj " + _invNum + " na ePoslovanje NEUSPJEŠNO!");
+        MSG("Response Code: " + responseCode);
+
+        // Try to parse error response
+        if (res != "") {
+            try {
+                resObject = DeserializeJson(res);
+                
+                // ePoslovanje API v2 ErrorResponse structure
+                if (Contains(resObject, "error")) {
+                    errorMsg = resObject["error"];
+                    details = Contains(resObject, "details") ? resObject["details"] : "";
+                    
+                    MSG("ePoslovanje Error: " + errorMsg);
+                    if (details != "") {
+                        MSG("Error Details: " + details);
+                    }
+                    
+                    LogNKSYELOG("B", "EPOS Error: " + errorMsg + (details != "" ? " - " + details : ""));
+                    MessageBox("Greška ePoslovanje:\n" + errorMsg + (details != "" ? "\n\nDetalji: " + details : ""));
+                }
+                else {
+                    MSG("ePoslovanje error response format unknown");
+                    LogNKSYELOG("B", "EPOS unknown error format: " + res);
+                    MessageBox("Nepoznata greška ePoslovanje:\n" + res);
+                }
+            }
+            catch (parseEx) {
+                MSG("Cannot parse ePoslovanje error response: " + parseEx);
+                LogNKSYELOG("B", "EPOS error parsing failed: " + parseEx);
+                MessageBox("Greška ePoslovanje (unparseable):\n" + res);
+            }
+        }
+        else {
+            MSG("ePoslovanje error with empty response");
+            LogNKSYELOG("B", "EPOS error with empty response, code: " + responseCode);
+            MessageBox("ePoslovanje greška bez odgovora. Status kod: " + responseCode);
+        }
+    }
+    catch (ex) {
+        MessageBox("EPOSFailure - Greška pri obradi neuspjeha:\n" + ex);
+        LogNKSYELOG("B", "EPOS Failure processing error: " + ex);
+    }
+}
+
+// Helper function to store ePoslovanje document ID for future reference
+function StoreEPOSDocumentId(invoiceNum, documentId, insertedOn) {
+    try {
+        sqlQueryString = "UPDATE " + databaseName + ".dbo.NKPRINV SET NKPR_EPOS_ID = @p1, NKPR_EPOS_DATE = @p2 WHERE NKPR_GL_NUM = @p3";
+        sqlParams = {};
+        sqlParams.Add({"@p1", documentId});
+        sqlParams.Add({"@p2", insertedOn});
+        sqlParams.Add({"@p3", invoiceNum});
+        
+        sqlQuery(sqlQueryString, sqlParams);
+        MSG("ePoslovanje document ID stored in database");
+    }
+    catch (ex) {
+        MSG("Warning: Could not store ePoslovanje document ID: " + ex);
+        // Non-critical error, continue processing
+    }
+}
 
 function FINASuccess(_invNum, responseCode, res) {
     MSG("FINASuccess");
@@ -2086,6 +2260,66 @@ function LogNKSYELOG(elogStatusCode, description = ""){
 2025-11-06 23:05:12 | DB_HEADER_RETRY | Attempt 1 failed | Connection timeout
 2025-11-06 23:05:13 | LINE_PROCESS | Failed line 3 | Null reference
 2025-11-06 23:05:14 | SUCCESS | UBL generated | UBL_90100002.xml
+
+*/
+
+/*
+
+// ===============================================================
+// ePOSLOVANJE PROVIDER CONFIGURATION SETUP GUIDE
+// ===============================================================
+//
+// To set up ePoslovanje.hr as a provider, you need to configure:
+//
+// 1. NKSYSYCO table - Set provider type:
+//    INSERT INTO NKSYSYCO (NKSYS_MODUL, NKSYS_GRUP, NKSYS_FIELD, NKSYS_VALUE)
+//    VALUES ('WKSY', 'ERACUN', 'PROVIDER', 'EPOS');
+//    -- For test environment use 'EPOSDEMO'
+//
+// 2. NKSYERAC table - Set endpoint and API key:
+//    INSERT INTO NKSYERAC (
+//        ERAC_CODE, ERAC_SERVER, ERAC_SERVERT, ERAC_USER, ERAC_PASS, ERAC_DESC
+//    ) VALUES (
+//        'EPOS',                                    -- Provider code
+//        'https://eracun.eposlovanje.hr',          -- Production endpoint
+//        'https://test.eposlovanje.hr',             -- Test endpoint
+//        'your-api-key-here',                       -- API Key (získať z ePoslovanje.hr)
+//        '',                                        -- Password not needed for API key auth
+//        'YOUR-SOFTWARE-ID'                         -- Software identifier
+//    );
+//
+// ePoslovanje API v2 Endpoints:
+// - Production: https://eracun.eposlovanje.hr/api/v2/document/send
+// - Test: https://test.eposlovanje.hr/api/v2/document/send
+//
+// API Key Authentication:
+// - Register at: https://eracun.eposlovanje.hr/client/register (production)
+//                https://test.eposlovanje.hr/client/register (test)
+// - Get API key from account settings or via API
+// - Store API key in ERAC_USER field
+//
+// Pricing (as of 2025):
+// - 0.08 EUR + VAT per invoice
+// - Prepaid: minimum 4.00 EUR + VAT (valid for 6 months)
+// - Postpaid: 4.00 EUR + VAT monthly (includes 50 invoices)
+//
+// Features included:
+// - Automatic fiscalization 2.0 for outgoing documents
+// - eReporting to tax authorities
+// - Archive of sent/received invoices (free)
+// - Interconnection with other providers (FINA, Hrvatski Telekom, etc.)
+//
+// Database Schema Extensions (optional):
+// ALTER TABLE NKPRINV ADD NKPR_EPOS_ID VARCHAR(50);    -- ePoslovanje document ID
+// ALTER TABLE NKPRINV ADD NKPR_EPOS_DATE VARCHAR(50);  -- Insertion timestamp
+//
+// Testing:
+// 1. Set PROVIDER to 'EPOSDEMO' in NKSYSYCO
+// 2. Register test account at https://test.eposlovanje.hr/client/register
+// 3. Configure NKSYERAC with test endpoint and API key
+// 4. Send test invoices to Test d.o.o. (OIB: 50930104221)
+//
+// ===============================================================
 
 */
 

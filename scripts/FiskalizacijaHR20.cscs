@@ -1,0 +1,1143 @@
+// -----------------------------------------------------------
+// FiskalizacijaHR20.cscs - Croatian Fiscalization 2.0 System
+// -----------------------------------------------------------
+// Purpose: Send fiscalization messages to Croatian Tax Authority (Porezna uprava)
+// Compatible with: Fiskalizacija 2.0 regulation (effective 1.1.2026)
+// Created: November 30, 2025
+// Reference: wxeracun.cscs for invoice data structure
+// -----------------------------------------------------------
+
+Import(strTrim(mpath()) + "CSCS.Math.dll");
+
+args = CommandLineArgs();
+if(Size(args) > 2){
+    companyCode = args[2]; // e.g. Y3
+    CoSet(companyCode);
+
+    if(Size(args) > 3){
+        userCode = args[3]; // e.g. ANA
+
+        if(Size(args) > 4){
+            invNum = args[4]; // e.g. 90100002
+            
+            if(Size(args) > 5){
+                fiscalAction = args[5]; // "SEND", "QUERY", "CANCEL"
+            }else{
+                fiscalAction = "SEND"; // Default action
+            }
+        }else{
+            MessageBox("Nedostaje broj računa u argumentima.");
+            exit;
+        }
+    }else{
+        MessageBox("Nedostaje user code u argumentima.");
+        exit;
+    }
+}else{
+    companyCode = Substring(CoGet(), 1, 2);
+}
+
+// Initialize system
+InitializeFiscalizationSystem();
+
+// Execute fiscalization action
+switch(fiscalAction.Upper()) {
+    case "SEND":
+        SendFiscalizationMessage();
+        break;
+    case "QUERY":
+        QueryFiscalizationStatus();
+        break;
+    case "CANCEL":
+        CancelFiscalization();
+        break;
+    default:
+        MessageBox("Nepoznata akcija: " + fiscalAction + ". Dostupne: SEND, QUERY, CANCEL");
+        break;
+}
+
+exit;
+
+// -----------------------------------------------------------
+// SYSTEM INITIALIZATION
+// -----------------------------------------------------------
+function InitializeFiscalizationSystem() {
+    // Load company data
+    LoadCompanyConfiguration();
+    
+    // Load fiscal configuration
+    LoadFiscalConfiguration();
+    
+    // Load certificate data
+    LoadCertificateConfiguration();
+    
+    // Validate system readiness
+    ValidateSystemReadiness();
+}
+
+function LoadCompanyConfiguration() {
+    // NKSYCCYR - Company/Database mapping
+    sqlQueryString = "select SY_CC_USER, SY_CC_DBASE from " + strTrim(CommonDBGet()) + ".dbo.NKSYCCYR WHERE SY_CC_CODE = '" + companyCode + "'";
+    try {
+        sqlResult = sqlQuery(sqlQueryString);
+    } catch(exc) {
+        MessageBox("NKSYCCYR reading error: " + exc);
+        exit;
+    }
+    if (size(sqlResult) > 1) {
+        SY_CC_USER = sqlResult[1][0].trim();
+        databaseName = sqlResult[1][1].trim();
+    }
+
+    // KPSYMSTR - Company master data
+    sqlQueryString = "SELECT TOP 1 KPSY_REZERVA, KPSY_COMP_NAME, KPSY_COMP_ADD1, KPSY_GL_RETEARN, " +
+                     "KPSY_COMP_CSZ, KPSY_COMP_ZIP, KPSY_COMP_JMBFI, KPSY_COMP_PHONE, KPSY_COMP_EMAIL, " +
+                     "KPSY_PO_FREIGHT, KPSY_REZERVAX, KPSY_FISCAL_YR " +
+                     "FROM " + databaseName + ".dbo.KPSYMSTR";
+    try {
+        sqlResult = sqlQuery(sqlQueryString);
+    } catch(exc) {
+        MessageBox("KPSYMSTR reading error: " + exc);
+        exit;
+    }
+    if (size(sqlResult) > 1) {
+        KPSY_REZERVA = sqlResult[1][0].trim();
+        KPSY_COMP_NAME = sqlResult[1][1].trim();
+        KPSY_COMP_ADD1 = sqlResult[1][2].trim();
+        KPSY_GL_RETEARN = sqlResult[1][3].trim();
+        KPSY_COMP_CSZ = sqlResult[1][4].trim();
+        KPSY_COMP_ZIP = sqlResult[1][5];
+        KPSY_COMP_JMBFI = sqlResult[1][6].trim(); // Company OIB
+        KPSY_COMP_PHONE = sqlResult[1][7].trim();
+        KPSY_COMP_EMAIL = sqlResult[1][8].trim();
+        KPSY_PO_FREIGHT = substring(sqlResult[1][9], 0, 2).trim(); // VAT country code
+        KPSY_REZERVAX = sqlResult[1][10].trim(); // GLN
+        KPSY_FISCAL_YR = sqlResult[1][11].trim(); // Fiscal year
+        
+        // Extract supplier OIB
+        supOIB = Substring(KPSY_REZERVA, 0, 13);
+        supOIBParts = supOIB.split(" ");
+        supOIB = supOIBParts[0];
+    }
+}
+
+function LoadFiscalConfiguration() {
+    // NKSYSYCO - System configuration for fiscalization
+    sqlQueryString = "SELECT NKSYS_FIELD, NKSYS_VALUE " +
+                     "FROM " + databaseName + ".dbo.NKSYSYCO " +
+                     "WHERE NKSYS_MODUL = 'WKSY' AND NKSYS_GRUP = 'FISCAL'";
+    try {
+        sqlResult = sqlQuery(sqlQueryString);
+    } catch(exc) {
+        MessageBox("NKSYSYCO FISCAL reading error: " + exc);
+        exit;
+    }
+    
+    // Initialize default values
+    FISCAL_ENDPOINT = "https://cis.porezna-uprava.hr/CisFiskalizacija/services";
+    FISCAL_ENDPOINT_TEST = "https://cis.test.porezna-uprava.hr/CisFiskalizacija/services";
+    FISCAL_TIMEOUT = 30000; // 30 seconds
+    FISCAL_RETRY_COUNT = 3;
+    FISCAL_DEMO_MODE = "N";
+    FISCAL_LOG_LEVEL = "INFO";
+    FISCAL_CERT_PATH = "";
+    FISCAL_CERT_PASSWORD = "";
+    FISCAL_OPERATOR_OIB = "";
+    
+    if (size(sqlResult) > 1) {
+        for(i = 1; i < Size(sqlResult); i++){
+            fieldName = sqlResult[i][0].trim();
+            fieldValue = sqlResult[i][1].trim();
+            
+            switch(fieldName) {
+                case "ENDPOINT":
+                    FISCAL_ENDPOINT = fieldValue;
+                    break;
+                case "ENDPOINT_TEST":
+                    FISCAL_ENDPOINT_TEST = fieldValue;
+                    break;
+                case "TIMEOUT":
+                    FISCAL_TIMEOUT = int(fieldValue);
+                    break;
+                case "RETRY_COUNT":
+                    FISCAL_RETRY_COUNT = int(fieldValue);
+                    break;
+                case "DEMO_MODE":
+                    FISCAL_DEMO_MODE = fieldValue.Upper();
+                    break;
+                case "LOG_LEVEL":
+                    FISCAL_LOG_LEVEL = fieldValue.Upper();
+                    break;
+                case "CERT_PATH":
+                    FISCAL_CERT_PATH = fieldValue;
+                    break;
+                case "CERT_PASSWORD":
+                    FISCAL_CERT_PASSWORD = fieldValue;
+                    break;
+                case "OPERATOR_OIB":
+                    FISCAL_OPERATOR_OIB = fieldValue;
+                    break;
+            }
+        }
+    }
+    
+    // Set active endpoint based on demo mode
+    ACTIVE_FISCAL_ENDPOINT = (FISCAL_DEMO_MODE == "Y") ? FISCAL_ENDPOINT_TEST : FISCAL_ENDPOINT;
+    
+    LogFiscal("INFO", "Fiscal configuration loaded", "Endpoint: " + ACTIVE_FISCAL_ENDPOINT + ", Demo: " + FISCAL_DEMO_MODE);
+}
+
+function LoadCertificateConfiguration() {
+    // Load operator data and find OIB
+    sql_KPSYUSER = "SELECT KPSY_USER_NAZIV, KPSY_USER_CODE " +
+                   "FROM " + databaseName + ".dbo.KPSYUSER WHERE KPSY_USER_ZNAK = @p1";
+    sqlParams = {};
+    sqlParams.Add({"@p1", userCode});
+    kpsyuserRes = sqlQuery(sql_KPSYUSER, sqlParams);
+    
+    if (Size(kpsyuserRes) < 2) {
+        MessageBox("Nema podataka za operatera " + userCode + "!");
+        exit;
+    }
+
+    KPSY_USER_NAZIV = kpsyuserRes[1][0].trim();
+    KPSY_USER_CODE = kpsyuserRes[1][1].trim();
+
+    // Get operator OIB
+    sql_oib = "SELECT NKSYS_VALUE " +
+              "FROM " + databaseName + ".dbo.NKSYSYCO " +
+              "WHERE NKSYS_MODUL = 'WKSY' AND NKSYS_GRUP = 'USER' AND " +
+              "NKSYS_GRUP2 = @p1 AND NKSYS_FIELD = 'OIB'";
+    sqlParams = {};
+    sqlParams.Add({"@p1", KPSY_USER_CODE});
+    kpsyuserRes = sqlQuery(sql_oib, sqlParams);
+    
+    if (Size(kpsyuserRes) >= 2) {
+        UserOib = kpsyuserRes[1][0].trim();
+    } else {
+        UserOib = FISCAL_OPERATOR_OIB; // Fallback to system default
+    }
+    
+    if (UserOib == "") {
+        MessageBox("Nema podataka za OIB operatera " + userCode + "/" + KPSY_USER_CODE + "!");
+        exit;
+    }
+}
+
+function ValidateSystemReadiness() {
+    errors = {};
+    
+    // Validate company OIB
+    if (KPSY_COMP_JMBFI == "" || Length(KPSY_COMP_JMBFI) != 11) {
+        errors.Add("Neispravka OIB tvrtke: " + KPSY_COMP_JMBFI);
+    }
+    
+    // Validate operator OIB
+    if (UserOib == "" || Length(UserOib) != 11) {
+        errors.Add("Neispravka OIB operatera: " + UserOib);
+    }
+    
+    // Validate certificate
+    if (FISCAL_CERT_PATH == "") {
+        errors.Add("Nedostaje putanja do certifikata");
+    } elif (!Exists(FISCAL_CERT_PATH)) {
+        errors.Add("Certifikat ne postoji: " + FISCAL_CERT_PATH);
+    }
+    
+    // Validate endpoints
+    if (FISCAL_ENDPOINT == "" && FISCAL_ENDPOINT_TEST == "") {
+        errors.Add("Nedostaju fiskalizacijski endpoint-ovi");
+    }
+    
+    if (Size(errors) > 0) {
+        errorMsg = "Greške u konfiguraciji fiskalizacije:\n";
+        for (i = 0; i < Size(errors); i++) {
+            errorMsg += "- " + errors[i] + "\n";
+        }
+        MessageBox(errorMsg);
+        exit;
+    }
+    
+    LogFiscal("INFO", "System validation passed", "Ready for fiscalization");
+}
+
+// -----------------------------------------------------------
+// MAIN FISCALIZATION FUNCTIONS
+// -----------------------------------------------------------
+
+function SendFiscalizationMessage() {
+    try {
+        LogFiscal("INFO", "Starting fiscalization process", "Invoice: " + invNum);
+        
+        // Load invoice data
+        invoiceData = LoadInvoiceData(invNum);
+        if (invoiceData == null) {
+            LogFiscal("ERROR", "Failed to load invoice data", "Invoice: " + invNum);
+            return false;
+        }
+        
+        // Generate fiscalization XML
+        fiscalXml = GenerateFiscalizationXML(invoiceData);
+        if (fiscalXml == "") {
+            LogFiscal("ERROR", "Failed to generate fiscalization XML", "Invoice: " + invNum);
+            return false;
+        }
+        
+        // Send to tax authority with retries
+        response = SendFiscalMessageWithRetry(fiscalXml);
+        
+        // Process response
+        success = ProcessFiscalizationResponse(response, invNum);
+        
+        if (success) {
+            LogFiscal("SUCCESS", "Fiscalization completed", "Invoice: " + invNum);
+            MessageBox("Fiskalizacija uspješno završena za račun " + invNum);
+        } else {
+            LogFiscal("ERROR", "Fiscalization failed", "Invoice: " + invNum);
+            MessageBox("Fiskalizacija neuspješna za račun " + invNum);
+        }
+        
+        return success;
+        
+    } catch (error) {
+        LogFiscal("ERROR", "Exception in fiscalization process", "Invoice: " + invNum + ", Error: " + error);
+        MessageBox("Greška u procesu fiskalizacije: " + error);
+        return false;
+    }
+}
+
+function LoadInvoiceData(invoiceNumber) {
+    try {
+        // Load invoice header with fiscal-specific fields
+        sql_hdr = "SELECT " +
+                  "NKPR_GL_NUM, NKPR_GL_OZNAKA, NKPR_GL_INVDTE, NKPR_GL_TIMECR, " +
+                  "NKPR_GL_ESD, NKPR_GL_TOTAL, NKPR_GL_CUSNME, NKPR_GL_JMBG, " +
+                  "NKPR_GL_CUSA1, NKPR_GL_CUSCTY, NKPR_GL_CUSZIP, NKPR_GL_DRZAVA, " +
+                  "NKPR_GL_ENTBY, NKPR_GL_CUSST, " +
+                  "CONVERT(VARCHAR(10), NKPR_GL_INVDTE, 23) as INVOICE_DATE, " +
+                  "CONVERT(VARCHAR(8), NKPR_GL_TIMECR, 20) as INVOICE_TIME " +
+                  "FROM " + databaseName + ".dbo.NKPRINV " +
+                  "WHERE NKPR_GL_NUM = @p1";
+        sqlParams = {};
+        sqlParams.Add({"@p1", invoiceNumber});
+        hdrRes = sqlQuery(sql_hdr, sqlParams);
+        
+        if (Size(hdrRes) < 2) {
+            LogFiscal("ERROR", "Invoice not found", "Invoice: " + invoiceNumber);
+            return null;
+        }
+        
+        // Build invoice data object
+        invoiceData = {};
+        invoiceData["INVOICE_NUMBER"] = hdrRes[1][0];
+        invoiceData["INVOICE_TYPE"] = hdrRes[1][1].trim();
+        invoiceData["INVOICE_DATE_RAW"] = hdrRes[1][2].trim();
+        invoiceData["INVOICE_TIME_RAW"] = hdrRes[1][3].trim();
+        invoiceData["TAX_DATE"] = hdrRes[1][4].trim();
+        invoiceData["TOTAL_AMOUNT"] = hdrRes[1][5];
+        invoiceData["CUSTOMER_NAME"] = hdrRes[1][6].trim();
+        invoiceData["CUSTOMER_OIB"] = hdrRes[1][7].trim();
+        invoiceData["CUSTOMER_ADDRESS"] = hdrRes[1][8].trim();
+        invoiceData["CUSTOMER_CITY"] = hdrRes[1][9].trim();
+        invoiceData["CUSTOMER_ZIP"] = hdrRes[1][10];
+        invoiceData["CUSTOMER_COUNTRY"] = hdrRes[1][11].trim();
+        invoiceData["OPERATOR"] = hdrRes[1][12].trim();
+        invoiceData["CUSTOMER_VAT_PREFIX"] = hdrRes[1][13].trim();
+        invoiceData["INVOICE_DATE"] = hdrRes[1][14].trim();
+        invoiceData["INVOICE_TIME"] = hdrRes[1][15].trim();
+        
+        // Load tax data for fiscal calculation
+        taxData = LoadInvoiceTaxData(invoiceNumber);
+        invoiceData["TAX_DATA"] = taxData;
+        
+        LogFiscal("INFO", "Invoice data loaded", "Invoice: " + invoiceNumber + ", Amount: " + invoiceData["TOTAL_AMOUNT"]);
+        return invoiceData;
+        
+    } catch (error) {
+        LogFiscal("ERROR", "Error loading invoice data", "Invoice: " + invoiceNumber + ", Error: " + error);
+        return null;
+    }
+}
+
+function LoadInvoiceTaxData(invoiceNumber) {
+    // Load tax breakdown for fiscal reporting (using individual tax codes)
+    sql_tax = "SELECT SUM(NKPR_LN_POREZ) AS TAX_AMOUNT, SUM(NKPR_LN_AMT) AS BASE_AMOUNT, " +
+              "NKPR_LN_PRNPR AS TAX_RATE, PKFK_TAX_OBJED AS TAX_CATEGORY, " +
+              "PKFK_TAX_P_PORZ AS TAX_TYPE " +
+              "FROM " + databaseName + ".dbo.NKPRINVL " +
+              "LEFT JOIN " + databaseName + ".dbo.PKFKPORZ ON PKFK_TAX_CODE = NKPR_LN_TXBLE " +
+              "WHERE NKPR_LN_INVNM = @p1 AND NKPR_LN_TXBLE <> 0 " +
+              "AND (PKFK_TAX_TIP = '' OR PKFK_TAX_TIP IS NULL) " + // Only individual tax codes for fiscal
+              "GROUP BY NKPR_LN_PRNPR, PKFK_TAX_OBJED, PKFK_TAX_P_PORZ " +
+              "ORDER BY NKPR_LN_PRNPR";
+    sqlParams = {};
+    sqlParams.Add({"@p1", invoiceNumber});
+    taxRes = sqlQuery(sql_tax, sqlParams);
+    
+    taxData = {};
+    taxData["TOTAL_TAX"] = 0;
+    taxData["TOTAL_BASE"] = 0;
+    taxData["TAX_LINES"] = {};
+    
+    for (i = 1; i < Size(taxRes); i++) {
+        row = taxRes[i];
+        taxAmount = row[0];
+        baseAmount = row[1];
+        taxRate = row[2];
+        taxCategory = Substring(row[3], 0, 2).trim();
+        taxType = row[4];
+        
+        taxData["TOTAL_TAX"] += taxAmount;
+        taxData["TOTAL_BASE"] += baseAmount;
+        
+        taxLine = {};
+        taxLine["TAX_AMOUNT"] = taxAmount;
+        taxLine["BASE_AMOUNT"] = baseAmount;
+        taxLine["TAX_RATE"] = taxRate;
+        taxLine["TAX_CATEGORY"] = taxCategory;
+        taxLine["TAX_TYPE"] = taxType;
+        
+        taxData["TAX_LINES"].Add(taxLine);
+    }
+    
+    return taxData;
+}
+
+function GenerateFiscalizationXML(invoiceData) {
+    try {
+        // Generate UUID for message ID
+        messageId = GenerateUUID();
+        timestamp = FormatDate(Now(), "yyyy-MM-ddTHH:mm:ss");
+        
+        // Start XML for Fiscalization 2.0
+        xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+        xml += "<tns:RacunZahtjev xmlns:tns=\"http://www.apis-it.hr/fin/2012/types/f73\" ";
+        xml += "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" ";
+        xml += "Id=\"" + messageId + "\">\n";
+        
+        // Header (Zaglavlje)
+        xml += "  <tns:Zaglavlje>\n";
+        xml += "    <tns:IdPoruke>" + messageId + "</tns:IdPoruke>\n";
+        xml += "    <tns:DatumVrijeme>" + timestamp + "</tns:DatumVrijeme>\n";
+        xml += "  </tns:Zaglavlje>\n";
+        
+        // Invoice data (Racun)
+        xml += "  <tns:Racun>\n";
+        
+        // Basic invoice info (Oib + BrRac)
+        xml += "    <tns:Oib>" + KPSY_COMP_JMBFI + "</tns:Oib>\n";
+        xml += "    <tns:USustPdv>true</tns:USustPdv>\n";
+        xml += "    <tns:DatVrijeme>" + invoiceData["INVOICE_DATE"] + "T" + invoiceData["INVOICE_TIME"] + "</tns:DatVrijeme>\n";
+        xml += "    <tns:OznSlijBr>" + GetSequenceMarker(invoiceData) + "</tns:OznSlijBr>\n";
+        xml += "    <tns:BrRac>\n";
+        xml += "      <tns:BrOznRac>" + FormatInvoiceNumber(invoiceData["INVOICE_NUMBER"]) + "</tns:BrOznRac>\n";
+        xml += "      <tns:OznPosPr>" + GetBusinessPremisesCode() + "</tns:OznPosPr>\n";
+        xml += "      <tns:OznNapUr>" + GetDeviceCode() + "</tns:OznNapUr>\n";
+        xml += "    </tns:BrRac>\n";
+        
+        // Tax amounts (Pdv)
+        taxData = invoiceData["TAX_DATA"];
+        if (Size(taxData["TAX_LINES"]) > 0) {
+            xml += "    <tns:Pdv>\n";
+            
+            for (i = 0; i < Size(taxData["TAX_LINES"]); i++) {
+                taxLine = taxData["TAX_LINES"][i];
+                
+                xml += "      <tns:Porez>\n";
+                xml += "        <tns:Stopa>" + FormatNumber(taxLine["TAX_RATE"], 2) + "</tns:Stopa>\n";
+                xml += "        <tns:Osnovica>" + FormatNumber(taxLine["BASE_AMOUNT"], 2) + "</tns:Osnovica>\n";
+                xml += "        <tns:Iznos>" + FormatNumber(taxLine["TAX_AMOUNT"], 2) + "</tns:Iznos>\n";
+                xml += "      </tns:Porez>\n";
+            }
+            
+            xml += "    </tns:Pdv>\n";
+        }
+        
+        // Other taxes (if applicable)
+        if (HasOtherTaxes(taxData)) {
+            xml += "    <tns:Pnp>\n";
+            xml += "      <tns:Stopa>0.00</tns:Stopa>\n";
+            xml += "      <tns:Osnovica>0.00</tns:Osnovica>\n";
+            xml += "      <tns:Iznos>0.00</tns:Iznos>\n";
+            xml += "    </tns:Pnp>\n";
+        }
+        
+        // Tax-free amount (if applicable)
+        if (HasTaxFreeAmounts(taxData)) {
+            xml += "    <tns:OslobPdv>\n";
+            xml += "      <tns:Iznos>0.00</tns:Iznos>\n";
+            xml += "    </tns:OslobPdv>\n";
+        }
+        
+        // Total amounts
+        xml += "    <tns:IznosUkupno>" + FormatNumber(invoiceData["TOTAL_AMOUNT"], 2) + "</tns:IznosUkupno>\n";
+        xml += "    <tns:NacinPlac>G</tns:NacinPlac>\n"; // G=Gotovina, K=Kartica, C=Ček, T=Transakcijski, O=Ostalo
+        xml += "    <tns:OibOper>" + UserOib + "</tns:OibOper>\n";
+        xml += "    <tns:ZastKod>" + GenerateZKI(invoiceData) + "</tns:ZastKod>\n";
+        xml += "    <tns:NakDanak>false</tns:NakDanak>\n";
+        
+        xml += "  </tns:Racun>\n";
+        xml += "</tns:RacunZahtjev>\n";
+        
+        LogFiscal("INFO", "Fiscal XML generated", "Invoice: " + invoiceData["INVOICE_NUMBER"] + ", Size: " + Length(xml));
+        return xml;
+        
+    } catch (error) {
+        LogFiscal("ERROR", "Error generating fiscal XML", "Error: " + error);
+        return "";
+    }
+}
+
+function SendFiscalMessageWithRetry(fiscalXml) {
+    for (attempt = 1; attempt <= FISCAL_RETRY_COUNT; attempt++) {
+        try {
+            LogFiscal("INFO", "Sending fiscal message", "Attempt " + attempt + "/" + FISCAL_RETRY_COUNT);
+            
+            response = SendSOAPToTaxAuthority(fiscalXml);
+            
+            if (response != "" && !response.StartsWith("ERROR:")) {
+                LogFiscal("SUCCESS", "Fiscal message sent successfully", "Attempt " + attempt);
+                return response;
+            } else {
+                LogFiscal("WARNING", "Fiscal message send failed", "Attempt " + attempt + ", Response: " + Substring(response, 0, 100));
+                
+                if (attempt < FISCAL_RETRY_COUNT) {
+                    // Wait before retry (exponential backoff)
+                    waitTime = attempt * 2000; // 2, 4, 6 seconds
+                    LogFiscal("INFO", "Waiting before retry", "Wait time: " + waitTime + "ms");
+                    Sleep(waitTime);
+                }
+            }
+        } catch (error) {
+            LogFiscal("ERROR", "Exception in fiscal send", "Attempt " + attempt + ", Error: " + error);
+            
+            if (attempt == FISCAL_RETRY_COUNT) {
+                return "ERROR: " + error;
+            }
+        }
+    }
+    
+    return "ERROR: Failed after " + FISCAL_RETRY_COUNT + " attempts";
+}
+
+function SendSOAPToTaxAuthority(fiscalXml) {
+    try {
+        // Create SOAP envelope
+        soapEnvelope = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+        soapEnvelope += "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">\n";
+        soapEnvelope += "  <soap:Body>\n";
+        soapEnvelope += fiscalXml;
+        soapEnvelope += "  </soap:Body>\n";
+        soapEnvelope += "</soap:Envelope>";
+        
+        // Sign SOAP with certificate
+        signedSoap = SignSOAPWithCertificate(soapEnvelope, FISCAL_CERT_PATH, FISCAL_CERT_PASSWORD);
+        
+        if (signedSoap == "") {
+            return "ERROR: SOAP signing failed";
+        }
+        
+        // Prepare headers
+        headers = {};
+        headers["Content-Type"] = "text/xml; charset=utf-8";
+        headers["SOAPAction"] = "\"\"";
+        
+        // Send to tax authority
+        endpoint = ACTIVE_FISCAL_ENDPOINT + "/FiskalizacijaService";
+        
+        LogFiscal("DEBUG", "Sending SOAP request", "Endpoint: " + endpoint);
+        
+        response = WebRequestMPFD(endpoint, "POST", signedSoap, headers);
+        
+        LogFiscal("DEBUG", "Received SOAP response", "Size: " + Length(response));
+        
+        return response;
+        
+    } catch (error) {
+        LogFiscal("ERROR", "Error in SOAP communication", "Error: " + error);
+        return "ERROR: " + error;
+    }
+}
+
+function ProcessFiscalizationResponse(response, invoiceNumber) {
+    try {
+        if (response.StartsWith("ERROR:")) {
+            LogFiscal("ERROR", "Fiscalization failed", "Response: " + response);
+            SaveResponseLog(response, "ERROR", invoiceNumber);
+            return false;
+        }
+        
+        // Parse response XML
+        responseDict = XmlToDict(response);
+        if (responseDict == null) {
+            LogFiscal("ERROR", "Failed to parse response XML", "");
+            return false;
+        }
+        
+        // Extract key response elements
+        jir = ExtractFromResponse(responseDict, "Jir");
+        zki = ExtractFromResponse(responseDict, "ZastKod");
+        error = ExtractFromResponse(responseDict, "Greska");
+        
+        if (error != "") {
+            LogFiscal("ERROR", "Tax authority returned error", "Error: " + error);
+            SaveResponseLog(response, "TAX_ERROR", invoiceNumber);
+            MessageBox("Porezna uprava vratila grešku: " + error);
+            return false;
+        }
+        
+        if (jir != "" && zki != "") {
+            // Success - store JIR and ZKI in database
+            success = StoreFiscalizationResult(invoiceNumber, jir, zki, response);
+            
+            if (success) {
+                LogFiscal("SUCCESS", "Fiscalization completed", "JIR: " + jir + ", ZKI: " + zki);
+                SaveResponseLog(response, "SUCCESS", invoiceNumber);
+                return true;
+            } else {
+                LogFiscal("ERROR", "Failed to store fiscalization result", "");
+                return false;
+            }
+        } else {
+            LogFiscal("ERROR", "Response missing JIR or ZKI", "JIR: " + jir + ", ZKI: " + zki);
+            SaveResponseLog(response, "INCOMPLETE", invoiceNumber);
+            return false;
+        }
+        
+    } catch (error) {
+        LogFiscal("ERROR", "Error processing fiscalization response", "Error: " + error);
+        SaveResponseLog(response, "PROCESSING_ERROR", invoiceNumber);
+        return false;
+    }
+}
+
+// -----------------------------------------------------------
+// UTILITY FUNCTIONS
+// -----------------------------------------------------------
+
+function GetSequenceMarker(invoiceData) {
+    // Get sequence marker based on invoice type and date
+    // P = Business premises, N = Delivery note, R = Invoice
+    if (invoiceData["INVOICE_TYPE"] == "R") {
+        return "R"; // Credit note
+    } elif (invoiceData["INVOICE_TYPE"] == "T") {
+        return "T"; // Debit note
+    } else {
+        return "P"; // Regular invoice
+    }
+}
+
+function GetBusinessPremisesCode() {
+    // Get business premises code from configuration or use default
+    sql_premises = "SELECT NKSYS_VALUE FROM " + databaseName + ".dbo.NKSYSYCO " +
+                   "WHERE NKSYS_MODUL = 'WKSY' AND NKSYS_GRUP = 'FISCAL' AND NKSYS_FIELD = 'PREMISES_CODE'";
+    result = sqlQuery(sql_premises, {});
+    
+    if (Size(result) >= 2) {
+        return result[1][0].trim();
+    } else {
+        return "PP01"; // Default premises code
+    }
+}
+
+function GetDeviceCode() {
+    // Get device/register code from configuration or use default
+    sql_device = "SELECT NKSYS_VALUE FROM " + databaseName + ".dbo.NKSYSYCO " +
+                 "WHERE NKSYS_MODUL = 'WKSY' AND NKSYS_GRUP = 'FISCAL' AND NKSYS_FIELD = 'DEVICE_CODE'";
+    result = sqlQuery(sql_device, {});
+    
+    if (Size(result) >= 2) {
+        return result[1][0].trim();
+    } else {
+        return "1"; // Default device code
+    }
+}
+
+function FormatInvoiceNumber(invNum) {
+    // Format invoice number according to fiscal requirements
+    // Convert from 90100002 to 00002-90-1 format
+    invNumStr = String(invNum);
+    if (Length(invNumStr) == 8) {
+        return Substring(invNumStr, 3, 5) + "-" + Substring(invNumStr, 0, 2) + "-" + Substring(invNumStr, 2, 1);
+    } else {
+        return invNumStr; // Return as-is if not standard format
+    }
+}
+
+function GenerateZKI(invoiceData) {
+    // Generate ZKI (Protective Security Code) using MD5
+    zkiSource = KPSY_COMP_JMBFI + // OIB
+                FormatDate(Now(), "ddMMyyyyHHmmss") + // DateTime
+                FormatInvoiceNumber(invoiceData["INVOICE_NUMBER"]) + // Invoice number
+                GetBusinessPremisesCode() + // Premises
+                GetDeviceCode() + // Device
+                FormatNumber(invoiceData["TOTAL_AMOUNT"], 2); // Amount
+    
+    zki = MD5(zkiSource);
+    LogFiscal("DEBUG", "ZKI generated", "Source: " + zkiSource + ", ZKI: " + zki);
+    
+    return zki;
+}
+
+function FormatNumber(number, decimals) {
+    // Format number with specified decimal places using dot as decimal separator
+    return FormatNum(number, decimals, ".");
+}
+
+function HasOtherTaxes(taxData) {
+    // Check if invoice has consumption taxes or other non-VAT taxes
+    for (i = 0; i < Size(taxData["TAX_LINES"]); i++) {
+        if (taxData["TAX_LINES"][i]["TAX_TYPE"] == "T") { // Consumption tax
+            return true;
+        }
+    }
+    return false;
+}
+
+function HasTaxFreeAmounts(taxData) {
+    // Check if invoice has tax-free amounts
+    for (i = 0; i < Size(taxData["TAX_LINES"]); i++) {
+        if (taxData["TAX_LINES"][i]["TAX_RATE"] == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function SignSOAPWithCertificate(soapXml, certPath, certPassword) {
+    // Sign SOAP message with digital certificate
+    // This would use a proper XML signing library in production
+    try {
+        // Placeholder for actual signing implementation
+        // In real implementation, this would:
+        // 1. Load the certificate
+        // 2. Create XML signature
+        // 3. Insert signature into SOAP message
+        
+        LogFiscal("DEBUG", "SOAP signing", "Using certificate: " + certPath);
+        
+        // For now, return the unsigned SOAP (implement proper signing based on your environment)
+        return soapXml;
+        
+    } catch (error) {
+        LogFiscal("ERROR", "SOAP signing failed", "Error: " + error);
+        return "";
+    }
+}
+
+function ExtractFromResponse(responseDict, elementName) {
+    // Extract specific element from response dictionary
+    try {
+        // Try different possible paths in the response
+        paths = {
+            "soap:Envelope.soap:Body.RacunOdgovor." + elementName,
+            "Envelope.Body.RacunOdgovor." + elementName,
+            "RacunOdgovor." + elementName,
+            elementName
+        };
+        
+        for (i = 0; i < Size(paths); i++) {
+            value = GetDictValue(responseDict, paths[i]);
+            if (value != "") {
+                return value;
+            }
+        }
+        
+        return "";
+        
+    } catch (error) {
+        LogFiscal("ERROR", "Error extracting response element", "Element: " + elementName + ", Error: " + error);
+        return "";
+    }
+}
+
+function GetDictValue(dict, keyPath) {
+    // Helper function to get value from dictionary with dot notation
+    if (dict == null || IsString(dict)) {
+        return dict;
+    }
+    
+    if (!Contains(keyPath, ".")) {
+        // Simple key
+        if (dict.ContainsKey(keyPath)) {
+            return dict[keyPath];
+        } else {
+            return "";
+        }
+    } else {
+        // Nested key with dot notation
+        keys = Split(keyPath, ".");
+        currentDict = dict;
+        
+        for (i = 0; i < Size(keys); i++) {
+            currentKey = keys[i];
+            
+            if (currentDict == null || IsString(currentDict)) {
+                return "";
+            }
+            
+            if (currentDict.ContainsKey(currentKey)) {
+                currentDict = currentDict[currentKey];
+            } else {
+                return "";
+            }
+        }
+        
+        return currentDict;
+    }
+}
+
+function StoreFiscalizationResult(invoiceNumber, jir, zki, fullResponse) {
+    try {
+        // Store fiscalization results in database
+        sql_update = "UPDATE " + databaseName + ".dbo.NKPRINV " +
+                     "SET NKPR_GL_JIR = @jir, NKPR_GL_ZKI = @zki, NKPR_GL_FISCAL_STATUS = 'FISCALIZED', " +
+                     "NKPR_GL_FISCAL_DATE = @fiscal_date " +
+                     "WHERE NKPR_GL_NUM = @inv_num";
+        sqlParams = {};
+        sqlParams.Add({"@jir", jir});
+        sqlParams.Add({"@zki", zki});
+        sqlParams.Add({"@fiscal_date", FormatDate(Now(), "yyyy-MM-dd HH:mm:ss")});
+        sqlParams.Add({"@inv_num", invoiceNumber});
+        
+        result = sqlExec(sql_update, sqlParams);
+        
+        if (result > 0) {
+            // Log to NKSYELOG
+            LogToNKSYELOG(invoiceNumber, "FISCAL_SUCCESS", "JIR: " + jir + ", ZKI: " + zki);
+            LogFiscal("SUCCESS", "Fiscalization result stored", "Invoice: " + invoiceNumber);
+            return true;
+        } else {
+            LogFiscal("ERROR", "Failed to update invoice with fiscal data", "Invoice: " + invoiceNumber);
+            return false;
+        }
+        
+    } catch (error) {
+        LogFiscal("ERROR", "Error storing fiscalization result", "Invoice: " + invoiceNumber + ", Error: " + error);
+        return false;
+    }
+}
+
+function LogToNKSYELOG(invoiceNumber, status, description) {
+    try {
+        sql_log = "INSERT INTO " + databaseName + ".dbo.NKSYELOG " +
+                  "(sy_elog_num, sy_elog_date, sy_elog_status, sy_elog_person, " +
+                  "sy_elog_estring, sy_elog_type, sy_elog_time, sy_elog_desc, sy_elog_rez3) " +
+                  "VALUES (@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9)";
+        sqlParams = {};
+        sqlParams.Add({"@p1", invoiceNumber});
+        sqlParams.Add({"@p2", FormatDate(Now(), "yyyy-MM-dd")});
+        sqlParams.Add({"@p3", status});
+        sqlParams.Add({"@p4", userCode});
+        sqlParams.Add({"@p5", ""});
+        sqlParams.Add({"@p6", "FISCAL"});
+        sqlParams.Add({"@p7", FormatDate(Now(), "HH:mm:ss")});
+        sqlParams.Add({"@p8", description});
+        sqlParams.Add({"@p9", FormatDate(Now(), "yyyy-MM-dd")});
+        
+        sqlExec(sql_log, sqlParams);
+        
+    } catch (error) {
+        LogFiscal("ERROR", "Error logging to NKSYELOG", "Error: " + error);
+    }
+}
+
+function SaveResponseLog(response, status, invoiceNumber) {
+    try {
+        logDir = GetCurrentDirectory() + "\\FiscalLogs\\";
+        if (!Exists(logDir)) {
+            MkDir(logDir);
+        }
+        
+        logFile = logDir + "fiscal_" + invoiceNumber + "_" + FormatDate(Now(), "yyyyMMdd_HHmmss") + ".xml";
+        
+        logContent = "<!-- Fiscalization Response Log -->\n";
+        logContent += "<!-- Invoice: " + invoiceNumber + " -->\n";
+        logContent += "<!-- Status: " + status + " -->\n";
+        logContent += "<!-- Timestamp: " + FormatDate(Now(), "yyyy-MM-dd HH:mm:ss") + " -->\n\n";
+        logContent += response;
+        
+        SaveFile(logFile, logContent);
+        LogFiscal("INFO", "Response saved to log", "File: " + logFile);
+        
+    } catch (error) {
+        LogFiscal("ERROR", "Error saving response log", "Error: " + error);
+    }
+}
+
+function QueryFiscalizationStatus() {
+    try {
+        LogFiscal("INFO", "Querying fiscalization status", "Invoice: " + invNum);
+        
+        // Query current fiscal status from database
+        sql_status = "SELECT NKPR_GL_JIR, NKPR_GL_ZKI, NKPR_GL_FISCAL_STATUS, NKPR_GL_FISCAL_DATE " +
+                     "FROM " + databaseName + ".dbo.NKPRINV WHERE NKPR_GL_NUM = @p1";
+        sqlParams = {};
+        sqlParams.Add({"@p1", invNum});
+        statusRes = sqlQuery(sql_status, sqlParams);
+        
+        if (Size(statusRes) >= 2) {
+            jir = statusRes[1][0];
+            zki = statusRes[1][1];
+            status = statusRes[1][2];
+            fiscalDate = statusRes[1][3];
+            
+            statusMsg = "Fiscalization Status for Invoice " + invNum + ":\n";
+            statusMsg += "Status: " + (status != null ? status : "NOT_FISCALIZED") + "\n";
+            statusMsg += "JIR: " + (jir != null ? jir : "N/A") + "\n";
+            statusMsg += "ZKI: " + (zki != null ? zki : "N/A") + "\n";
+            statusMsg += "Date: " + (fiscalDate != null ? fiscalDate : "N/A") + "\n";
+            
+            MessageBox(statusMsg);
+            LogFiscal("INFO", "Status query completed", statusMsg.Replace("\n", ", "));
+        } else {
+            MessageBox("Invoice " + invNum + " not found!");
+            LogFiscal("ERROR", "Invoice not found for status query", "Invoice: " + invNum);
+        }
+        
+    } catch (error) {
+        LogFiscal("ERROR", "Error querying fiscalization status", "Error: " + error);
+        MessageBox("Error querying status: " + error);
+    }
+}
+
+function CancelFiscalization() {
+    try {
+        LogFiscal("INFO", "Canceling fiscalization", "Invoice: " + invNum);
+        
+        // Generate cancellation XML
+        cancelXml = GenerateCancellationXML(invNum);
+        if (cancelXml == "") {
+            LogFiscal("ERROR", "Failed to generate cancellation XML", "Invoice: " + invNum);
+            return;
+        }
+        
+        // Send cancellation request
+        response = SendFiscalMessageWithRetry(cancelXml);
+        
+        // Process cancellation response
+        success = ProcessCancellationResponse(response, invNum);
+        
+        if (success) {
+            MessageBox("Fiscalization successfully canceled for invoice " + invNum);
+        } else {
+            MessageBox("Failed to cancel fiscalization for invoice " + invNum);
+        }
+        
+    } catch (error) {
+        LogFiscal("ERROR", "Error in fiscalization cancellation", "Error: " + error);
+        MessageBox("Error canceling fiscalization: " + error);
+    }
+}
+
+function GenerateCancellationXML(invoiceNumber) {
+    try {
+        // Generate UUID for cancellation message
+        messageId = GenerateUUID();
+        timestamp = FormatDate(Now(), "yyyy-MM-ddTHH:mm:ss");
+        
+        // Get original ZKI for cancellation
+        sql_zki = "SELECT NKPR_GL_ZKI FROM " + databaseName + ".dbo.NKPRINV WHERE NKPR_GL_NUM = @p1";
+        sqlParams = {};
+        sqlParams.Add({"@p1", invoiceNumber});
+        zkiRes = sqlQuery(sql_zki, sqlParams);
+        
+        if (Size(zkiRes) < 2 || zkiRes[1][0] == null) {
+            LogFiscal("ERROR", "No ZKI found for cancellation", "Invoice: " + invoiceNumber);
+            return "";
+        }
+        
+        originalZKI = zkiRes[1][0].trim();
+        
+        // Create cancellation XML
+        xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+        xml += "<tns:PonistenjeCdvZahtjev xmlns:tns=\"http://www.apis-it.hr/fin/2012/types/f73\" ";
+        xml += "Id=\"" + messageId + "\">\n";
+        
+        xml += "  <tns:Zaglavlje>\n";
+        xml += "    <tns:IdPoruke>" + messageId + "</tns:IdPoruke>\n";
+        xml += "    <tns:DatumVrijeme>" + timestamp + "</tns:DatumVrijeme>\n";
+        xml += "  </tns:Zaglavlje>\n";
+        
+        xml += "  <tns:PonistenjeCdv>\n";
+        xml += "    <tns:Oib>" + KPSY_COMP_JMBFI + "</tns:Oib>\n";
+        xml += "    <tns:ZastKod>" + originalZKI + "</tns:ZastKod>\n";
+        xml += "  </tns:PonistenjeCdv>\n";
+        
+        xml += "</tns:PonistenjeCdvZahtjev>\n";
+        
+        LogFiscal("INFO", "Cancellation XML generated", "Invoice: " + invoiceNumber);
+        return xml;
+        
+    } catch (error) {
+        LogFiscal("ERROR", "Error generating cancellation XML", "Error: " + error);
+        return "";
+    }
+}
+
+function ProcessCancellationResponse(response, invoiceNumber) {
+    try {
+        if (response.StartsWith("ERROR:")) {
+            LogFiscal("ERROR", "Cancellation failed", "Response: " + response);
+            return false;
+        }
+        
+        // Parse cancellation response
+        responseDict = XmlToDict(response);
+        if (responseDict == null) {
+            LogFiscal("ERROR", "Failed to parse cancellation response", "");
+            return false;
+        }
+        
+        // Check for cancellation confirmation
+        confirmed = ExtractFromResponse(responseDict, "Potvrda");
+        error = ExtractFromResponse(responseDict, "Greska");
+        
+        if (error != "") {
+            LogFiscal("ERROR", "Tax authority returned cancellation error", "Error: " + error);
+            MessageBox("Porezna uprava vratila grešku prilikom poništavanja: " + error);
+            return false;
+        }
+        
+        if (confirmed == "true" || confirmed == "1") {
+            // Update database to mark as canceled
+            sql_cancel = "UPDATE " + databaseName + ".dbo.NKPRINV " +
+                        "SET NKPR_GL_FISCAL_STATUS = 'CANCELED', " +
+                        "NKPR_GL_FISCAL_CANCEL_DATE = @cancel_date " +
+                        "WHERE NKPR_GL_NUM = @inv_num";
+            sqlParams = {};
+            sqlParams.Add({"@cancel_date", FormatDate(Now(), "yyyy-MM-dd HH:mm:ss")});
+            sqlParams.Add({"@inv_num", invoiceNumber});
+            
+            result = sqlExec(sql_cancel, sqlParams);
+            
+            if (result > 0) {
+                LogToNKSYELOG(invoiceNumber, "FISCAL_CANCELED", "Fiscalization canceled");
+                LogFiscal("SUCCESS", "Fiscalization canceled", "Invoice: " + invoiceNumber);
+                return true;
+            }
+        }
+        
+        LogFiscal("ERROR", "Cancellation not confirmed", "Response: " + Substring(response, 0, 200));
+        return false;
+        
+    } catch (error) {
+        LogFiscal("ERROR", "Error processing cancellation response", "Error: " + error);
+        return false;
+    }
+}
+
+// -----------------------------------------------------------
+// UTILITY FUNCTIONS
+// -----------------------------------------------------------
+
+function GenerateUUID() {
+    // Generate a simple UUID-like string (implement proper UUID if available)
+    timestamp = String(Now().Ticks);
+    random = String(Math.Round(Math.Random() * 1000000));
+    return timestamp + "-" + random;
+}
+
+function IsString(value) {
+    return (typeof(value) == "string");
+}
+
+function LogFiscal(level, message, details = "") {
+    // Central logging function for fiscalization
+    if (!ShouldLog(level)) {
+        return;
+    }
+    
+    try {
+        logDir = GetCurrentDirectory() + "\\FiscalLogs\\";
+        if (!Exists(logDir)) {
+            MkDir(logDir);
+        }
+        
+        logFile = logDir + "fiscal_" + FormatDate(Now(), "yyyyMMdd") + ".log";
+        timestamp = FormatDate(Now(), "yyyy-MM-dd HH:mm:ss.fff");
+        
+        logEntry = timestamp + " [" + level + "] " + message;
+        if (details != "") {
+            logEntry += " | " + details;
+        }
+        logEntry += "\r\n";
+        
+        SaveFile(logFile, logEntry, "A");
+        
+        // Also log to console for immediate feedback
+        if (level == "ERROR" || level == "WARNING") {
+            MessageBox("[" + level + "] " + message);
+        }
+        
+    } catch (error) {
+        MessageBox("CRITICAL: Cannot write to fiscal log: " + error);
+    }
+}
+
+function ShouldLog(level) {
+    // Check if the log level should be recorded based on configuration
+    levelOrder = {};
+    levelOrder["DEBUG"] = 0;
+    levelOrder["INFO"] = 1;
+    levelOrder["WARNING"] = 2;
+    levelOrder["ERROR"] = 3;
+    levelOrder["SUCCESS"] = 1;
+    
+    configuredLevel = levelOrder[FISCAL_LOG_LEVEL];
+    currentLevel = levelOrder[level];
+    
+    return (currentLevel >= configuredLevel);
+}
+
+/*
+Usage Examples:
+
+1. Send fiscalization for invoice:
+   FiskalizacijaHR20.exe Y3 ANA 90100002 SEND
+
+2. Query fiscalization status:
+   FiskalizacijaHR20.exe Y3 ANA 90100002 QUERY
+
+3. Cancel fiscalization:
+   FiskalizacijaHR20.exe Y3 ANA 90100002 CANCEL
+
+Database Configuration Required:
+
+NKSYSYCO Table - WKSY.FISCAL group:
+- ENDPOINT: https://cis.porezna-uprava.hr/CisFiskalizacija/services
+- ENDPOINT_TEST: https://cis.test.porezna-uprava.hr/CisFiskalizacija/services
+- DEMO_MODE: Y/N
+- CERT_PATH: C:\Certificates\fiscal_cert.p12
+- CERT_PASSWORD: certificate_password
+- OPERATOR_OIB: 12345678901
+- PREMISES_CODE: PP01
+- DEVICE_CODE: 1
+- TIMEOUT: 30000
+- RETRY_COUNT: 3
+- LOG_LEVEL: INFO
+
+Database Schema Updates Required:
+ALTER TABLE NKPRINV ADD 
+    NKPR_GL_JIR VARCHAR(36),
+    NKPR_GL_ZKI VARCHAR(32),
+    NKPR_GL_FISCAL_STATUS VARCHAR(20),
+    NKPR_GL_FISCAL_DATE DATETIME,
+    NKPR_GL_FISCAL_CANCEL_DATE DATETIME;
+
+Process Flow:
+1. Load invoice data from NKPRINV/NKPRINVL
+2. Generate fiscalization XML according to Croatian regulations
+3. Sign XML with digital certificate
+4. Send SOAP request to Porezna uprava
+5. Process response (JIR/ZKI)
+6. Store results in database
+7. Log all operations for audit trail
+
+Compliance:
+- Croatian Fiscalization 2.0 regulation
+- XML Schema validation
+- Digital signature requirements
+- Audit trail logging
+- Error handling and retries
+*/

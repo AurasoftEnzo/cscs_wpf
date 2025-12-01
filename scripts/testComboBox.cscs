@@ -8,3 +8,45 @@ CreateWindow("../../scripts/testComboBox.xaml");
 function btn1@clicked(){
     MessageBox(variable);
 }
+
+function testComboBox_OnDisplay() 
+{    
+    //*******************************************************
+    //How to add items into comboBox
+    comboItems = {"01|January", "02|February", "03|March", "04|April", "05|May", "06|June", "07|July", "08|August", "09|September", "10|October", "11|November", "12|December"};
+    AddWidgetData("comboBoxMonth", comboItems);
+
+    AddWidgetData("comboBoxMonth", "13|NewMonth");
+    
+    //*******************************************************
+    //Retrieve current month from the current date
+    ss = DTOS(DateTime());
+    ssMonth = Substring(ss, 4, 2);
+    monthCurrent = Int(ssMonth);
+    //MessageBox(monthCurrent);
+
+    //*******************************************************
+    //How to set SelectedIndex in comboBox
+    //SetWidgetOptions("comboBoxMonth", "SelectedIndex", 10);    
+    SetWidgetOptions("comboBoxMonth", "SelectedIndex", monthCurrent - 1);    
+
+}
+
+function comboBoxMonth@SelectionChanged(){
+	ReloadData();
+}
+
+function ReloadData()
+{
+    //*********************************************************
+    //SelectedValue 
+    value = GetWidgetOptions("comboBoxMonth", "SelectedValue");
+    MessageBox("value = " + value);
+
+    //*********************************************************
+    //SelectedIndex (zero based)
+    index = GetWidgetOptions("comboBoxMonth", "SelectedIndex");
+    MessageBox("index = " + index);
+}
+
+

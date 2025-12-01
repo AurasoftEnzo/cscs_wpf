@@ -134,6 +134,14 @@ function btnTest@clicked()
         MessageBox("This will never be shown " + i);
     }
     */
+    /*
+    sss = FormatDate(DateTime(), "yyyyMM");
+    MessageBox("Formatted date is " + sss);
+
+    strnum = FormatNum(100.1234, 2, ".")
+    MessageBox("Formated number = " + strnum);
+    */
+
 }
 
 
@@ -170,14 +178,11 @@ function btnSend@clicked() {
     xml += "    <eiz:vrstaRacuna>IR</eiz:vrstaRacuna>\n";
     xml += "  </eiz:Zaglavlje>\n";
 
-    //*******************************************************************************
-    //MessageBox(xml);
-    //*******************************************************************************
-
     updatedCount = 0;
     //for (row = 1; row <= GetRowCount("dgInvoices"); row++) {
     for (row = 0; row < rowCountInvoices; row++) {
-        if (racunodaberi_ar[row] != "true") { continue; }
+        //if (racunodaberi_ar[row] != "true") { continue; }
+        if (racunodaberi_ar[row] != true) { continue; }
 
         invNum = racunbrojracuna_ar[row];
 
@@ -189,25 +194,26 @@ function btnSend@clicked() {
         sqlParams.Add({"@p1", invNum});
         hdr = sqlQuery(sql_hdr, sqlParams);
         if (Size(hdr) < 2) { continue; }
+        //*******************************************************************************      
+        //msg(hdr[1]);
         //*******************************************************************************
-        //DO OVDJE JE RJEŠENO
-        //*******************************************************************************
+
         inv = hdr[1];
         xml += "  <eiz:Racun>\n";
-        xml += "    <eiz:brojDokumenta>" + inv[0] + "</eiz:brojDokumenta>\n";
-        xml += "    <eiz:datumIzdavanja>" + inv[1] + "</eiz:datumIzdavanja>\n";
+        xml += "    <eiz:brojDokumenta>" + StrTrim(inv[0]) + "</eiz:brojDokumenta>\n";
+        xml += "    <eiz:datumIzdavanja>" + StrTrim(inv[1]) + "</eiz:datumIzdavanja>\n";
         xml += "    <eiz:vrstaDokumenta>380</eiz:vrstaDokumenta>\n";
         xml += "    <eiz:valutaRacuna>EUR</eiz:valutaRacuna>\n";
         xml += "    <eiz:vrstaPoslovnogProcesa>P1</eiz:vrstaPoslovnogProcesa>\n";
 
-        xml += "    <eiz:Izdavatelj>\n";
-        xml += "      <eiz:ime>" + KPSY_COMP_NAME + "</eiz:ime>\n";
-        xml += "      <eiz:oibPorezniBroj>" + Substring(KPSY_REZERVA, 0, 11) + "</eiz:oibPorezniBroj>\n";
+        xml += "    <eiz:Izdavatelj>\n";        
+        xml += "      <eiz:ime>" + StrTrim(KPSY_COMP_NAME) + "</eiz:ime>\n";
+        xml += "      <eiz:oibPorezniBroj>" + StrTrim(Substring(KPSY_REZERVA, 0, 11)) + "</eiz:oibPorezniBroj>\n";
         xml += "    </eiz:Izdavatelj>\n";
 
         xml += "    <eiz:Primatelj>\n";
-        xml += "      <eiz:ime>" + inv[2] + "</eiz:ime>\n";
-        xml += "      <eiz:oibPorezniBroj>" + inv[3] + "</eiz:oibPorezniBroj>\n";
+        xml += "      <eiz:ime>" + StrTrim(inv[2]) + "</eiz:ime>\n";
+        xml += "      <eiz:oibPorezniBroj>" + StrTrim(inv[3]) + "</eiz:oibPorezniBroj>\n";
         xml += "    </eiz:Primatelj>\n";
 
         xml += "    <eiz:DokumentUkupanIznos>\n";
@@ -250,8 +256,11 @@ function btnSend@clicked() {
     xml += "  <xd:Signature><xd:SignedInfo>...</xd:SignedInfo><xd:SignatureValue>...</xd:SignatureValue></xd:Signature>\n";
     xml += "</eiz:EvidentirajIsporukuZaKojuNijeIzdanERacunZahtjev>";
 
-    fileName = "eIzvjestavanje_" + FormatDate(Now(), "yyyyMM") + ".xml";
-    SaveFile(fileName, xml);
+    //fileName = "eIzvjestavanje_" + FormatDate(Now(), "yyyyMM") + ".xml";
+    fileName = "eIzvjestavanje_" + FormatDate(DateTime(), "yyyyMM") + ".xml";
+    //SaveFile(fileName, xml);
+    SaveFile(xml, XMLpath() + fileName, "");
+    
     MessageBox("XML generiran: " + fileName + "\nBroj računa: " + updatedCount);
 
     // TODO: Add real SOAP send + signing
@@ -294,8 +303,7 @@ function UUID()
     return "3010db1b-af79-4217-ba3b-5196b923688b";
 */
 }
-
-//DALIBOR DODAO FUNKCIJU DateNow()  
+  
 //RETURNS CURRENT DATE-TIME IN FORMAT "yyyy-MM-ddTHH:mm:ss.0000"
 function DateNow(format)
 {
@@ -326,33 +334,71 @@ function DateNow(format)
 }
 
 
-//DALIBOR DODAO FUNKCIJU Get_KPSY_COMP_NAME()  -----Za promijeniti SQL UPIT KASNIJE
 function Get_KPSY_COMP_NAME()
 {
-    /*
-    sql = "SELECT KPSY_COMP_NAME FROM KPSY_PARAMETRI;";
-    result = sqlQuery(sql);
-    if (Size(result) >= 2) {
-        KPSY_COMP_NAME = result[1][0];
-    } else {
-        KPSY_COMP_NAME = "Unknown Company";
+    trenutnaGodinaBaza = databaseName; //npr. C__DATAX_2024__BY4
+
+    sqlQueryString = " SELECT TOP 1 kpsy_comp_name FROM " + trenutnaGodinaBaza + ".[dbo].[KPSYMSTR]";
+	try	
+    {
+		sqlResult = sqlQuery(sqlQueryString);
+	}
+    catch(exc)
+    {
+		MessageBox(exc);
+	}
+
+    if (Size(sqlResult) >= 2) 
+    {
+        KPSY_COMP_NAME = sqlResult[1][0].trim();
     } 
-    */
-    KPSY_COMP_NAME = "Unknown Company";   
+    else 
+    {
+        KPSY_COMP_NAME = "Unknown Company";
+    }    
 }
 
-//DALIBOR DODAO FUNKCIJU Get_KPSY_REZERVA() //OIB  -----Za promijeniti SQL UPIT KASNIJE
+
 function Get_KPSY_REZERVA()
 {
-    /*
-    sql = "SELECT KPSY_REZERVA FROM KPSY_PARAMETRI;";
-    result = sqlQuery(sql);
-    if (Size(result) >= 2) {
-        KPSY_REZERVA = result[1][0];
-    } else {
-        KPSY_REZERVA = "00000000000";
+    trenutnaGodinaBaza = databaseName; //npr. C__DATAX_2024__BY4
+
+    sqlQueryString = " SELECT TOP 1 kpsy_rezerva FROM " + trenutnaGodinaBaza + ".[dbo].[KPSYMSTR]";
+	try	
+    {
+		sqlResult = sqlQuery(sqlQueryString);
+	}
+    catch(exc)
+    {
+		MessageBox(exc);
+	}
+
+    if (Size(sqlResult) >= 2) 
+    {
+        KPSY_REZERVA = sqlResult[1][0].trim();
+    } 
+    else 
+    {
+        KPSY_REZERVA = "00000000000"; //OIB
     }
-    */
-    KPSY_REZERVA = "00000000000";
 }
-    
+
+
+function FormatNum(value, decimals, decimalSeparator)
+{
+    strValue = value.ToString("N" + decimals.ToString(), decimalSeparator);
+    return strValue;
+}
+
+
+function FormatDate(dateValue, formatString)
+{
+    strFormattedDate = dateValue.ToString(formatString);
+    return strFormattedDate;
+}
+
+
+function XMLpath()
+{
+    return "D:\\XML\\";
+}

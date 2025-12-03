@@ -33,6 +33,7 @@ define ERAC_PASS type A size 100;
 define ERAC_USERT type A size 200;
 define ERAC_PASST type A size 200;
 define ERAC_DESC type A size 100;
+define SCHEMASPATH type A size 200;
 
 //DEFINE time1 type T size 8;
 
@@ -323,7 +324,15 @@ function btnSend@clicked() {
     //SaveFile(fileName, xml);
     SaveFile(xml, xmlFilePath, "");
     
-    MessageBox("XML generiran: " + fileName + "\nBroj računa: " + updatedCount + "\n\nPošalji izvještaj preko " + PROVIDER + "?");
+    // -----------------------------------------------------------
+    // XML VALIDATION
+    // -----------------------------------------------------------
+    if (!ValidateEReportingXML(xml, fileName)) {
+        cursor("dflt");
+        return;
+    }
+    
+    MessageBox("XML generiran i validiran: " + fileName + "\nBroj računa: " + updatedCount + "\n\nPošalji izvještaj preko " + PROVIDER + "?");
 
     // Send eReporting XML via configured provider
     SendEReporting(xml, xmlFilePath, fileName);
@@ -465,20 +474,89 @@ function XMLpath()
     return "D:\\XML\\";
 }
 
+// -----------------------------------------------------------
+// XML VALIDATION FUNCTIONS
+// -----------------------------------------------------------
+
+function ValidateEReportingXML(xmlContent, fileName) {
+    try {
+        // Setup validation result files
+        xsdValidationResultOutputFile = XMLpath() + "validation\\" + fileName + "_XSD.err";
+        schValidationResultOutputFile = XMLpath() + "validation\\" + fileName + "_SCH.err";
+        
+        // Create validation directory if not exists
+        if (!DIR_EXISTS(XMLpath() + "validation\\")) {
+            MAKE_DIR(XMLpath() + "validation\\");
+        }
+        
+        // Delete older validation output files if they exist
+        if (Exists(xsdValidationResultOutputFile)) {
+            Delete(xsdValidationResultOutputFile);
+        }
+        if (Exists(schValidationResultOutputFile)) {
+            Delete(schValidationResultOutputFile);
+        }
+
+        // -----------------------------------------------------------
+        // XSD VALIDATION
+        // -----------------------------------------------------------
+        xsdFiles = {};
+        // eIzvještavanje uses specific Croatian schema
+        xsdFiles.Add(SCHEMASPATH + "xsd\\eIzvjestavanje\\EvidentirajIsporukuZaKojuNijeIzdanERacunZahtjev.xsd");
+        
+        if (!ValidateXsd(xmlContent, xsdFiles, xsdValidationResultOutputFile)) {
+            MessageBox("eIzvještavanje XML FAILED XSD validation\n\nSee " + xsdValidationResultOutputFile + " file for details.");
+            return false;
+        }
+
+        // -----------------------------------------------------------
+        // SCH VALIDATION (Schematron)
+        // -----------------------------------------------------------
+        schFiles = {};
+        // Croatian eReporting schematron validation
+        schFiles.Add(SCHEMASPATH + "schematron\\HR-eIzvjestavanje.sch");
+        
+        if (!ValidateSch(xmlContent, schFiles, SCHEMASPATH + "schematron\\transpile.xsl", schValidationResultOutputFile)) {
+            MessageBox("eIzvještavanje XML FAILED SCH validation\n\nSee " + schValidationResultOutputFile + " file for details.");
+            return false;
+        }
+
+        // If we get here, validation passed
+        return true;
+        
+    } catch (ex) {
+        MessageBox("XML validation error: " + ex);
+        return false;
+    }
+}
+
 // Load provider configuration from NKSYSYCO and NKSYERAC tables
 function LoadProviderConfiguration() {
-    // Read provider from NKSYSYCO
-    sqlQueryString = "SELECT NKSYS_FIELD, NKSYS_VALUE FROM " + databaseName + ".dbo.NKSYSYCO WHERE NKSYS_MODUL = 'WKSY' AND NKSYS_GRUP = 'ERACUN' AND NKSYS_FIELD = 'PROVIDER';";
+    // Read provider and schemas path from NKSYSYCO
+    sqlQueryString = "SELECT NKSYS_FIELD, NKSYS_VALUE FROM " + databaseName + ".dbo.NKSYSYCO WHERE NKSYS_MODUL = 'WKSY' AND NKSYS_GRUP = 'ERACUN' AND (NKSYS_FIELD = 'PROVIDER' OR NKSYS_FIELD = 'SCHEMASPATH');";
     try {
         sqlResult = sqlQuery(sqlQueryString);
         if (Size(sqlResult) > 1) {
-            PROVIDER = sqlResult[1][1].trim().Upper();
-        } else {
+            for(i = 1; i < Size(sqlResult); i++) {
+                if(sqlResult[i][0].trim() == "PROVIDER") {
+                    PROVIDER = sqlResult[i][1].trim().Upper();
+                } elif(sqlResult[i][0].trim() == "SCHEMASPATH") {
+                    SCHEMASPATH = sqlResult[i][1].trim();
+                }
+            }
+        }
+        
+        // Set defaults if not found
+        if (PROVIDER == "") {
             PROVIDER = "FINA"; // Default to FINA
+        }
+        if (SCHEMASPATH == "") {
+            SCHEMASPATH = "C:\\Schemas\\"; // Default schemas path
         }
     } catch(exc) {
         MessageBox("NKSYSYCO provider reading error: " + exc);
         PROVIDER = "FINA"; // Default fallback
+        SCHEMASPATH = "C:\\Schemas\\";
     }
 
     // Read provider configuration from NKSYERAC

@@ -17,7 +17,7 @@ PROVIDER CONFIGURATION
 
 Use the same NKSYSYCO and NKSYERAC configuration as for e-invoicing:
 
-1. SET PROVIDER IN NKSYSYCO:
+1. SET PROVIDER AND SCHEMAS PATH IN NKSYSYCO:
 
 -- For FINA (default):
 INSERT INTO NKSYSYCO (NKSYS_MODUL, NKSYS_GRUP, NKSYS_FIELD, NKSYS_VALUE)
@@ -30,6 +30,10 @@ WHERE NKSYS_MODUL = 'WKSY' AND NKSYS_GRUP = 'ERACUN' AND NKSYS_FIELD = 'PROVIDER
 -- For ePoslovanje:
 UPDATE NKSYSYCO SET NKSYS_VALUE = 'EPOS' 
 WHERE NKSYS_MODUL = 'WKSY' AND NKSYS_GRUP = 'ERACUN' AND NKSYS_FIELD = 'PROVIDER';
+
+-- Set schemas path for validation:
+INSERT INTO NKSYSYCO (NKSYS_MODUL, NKSYS_GRUP, NKSYS_FIELD, NKSYS_VALUE)
+VALUES ('WKSY', 'ERACUN', 'SCHEMASPATH', 'C:\Schemas\');
 
 2. CONFIGURE ENDPOINTS IN NKSYERAC:
 
@@ -104,20 +108,27 @@ NEW FEATURES ADDED:
    - LoadProviderConfiguration() function
    - Reads from same NKSYSYCO/NKSYERAC tables as e-invoicing
    - Automatic provider detection
+   - SCHEMASPATH configuration for validation
 
-2. Multi-Provider Sending:
+2. XML Validation:
+   - ValidateEReportingXML() function
+   - XSD validation against Croatian eReporting schemas
+   - Schematron (SCH) validation for business rules
+   - Validation error files saved to XMLpath()/validation/
+
+3. Multi-Provider Sending:
    - SendEReporting() - Main dispatcher function
    - SendEReportingToFINA() - SOAP with certificate signing
    - SendEReportingToMER() - REST API with JSON payload
    - SendEReportingToEPOS() - REST API v2 with API key
 
-3. Response Handling:
+4. Response Handling:
    - Provider-specific success/failure callbacks
    - JSON response parsing for REST APIs
    - SOAP response parsing for FINA
    - Comprehensive error logging
 
-4. Logging System:
+5. Logging System:
    - LogEReportingResponse() function
    - Saves responses to XMLpath()/responses/
    - Separate log files per provider
@@ -130,17 +141,31 @@ USAGE WORKFLOW
 1. CONFIGURE PROVIDER:
    Set PROVIDER value in NKSYSYCO table (FINA/MER/EPOS)
 
-2. SET PROVIDER DETAILS:
+2. SET SCHEMAS PATH:
+   Configure SCHEMASPATH in NKSYSYCO for XML validation
+
+3. SET PROVIDER DETAILS:
    Configure endpoints, credentials in NKSYERAC table
 
-3. RUN WXEIZVJE.CSCS:
+4. PREPARE VALIDATION SCHEMAS:
+   - Create schemas directory structure at SCHEMASPATH location
+   - Copy Croatian eReporting XSD files to xsd/eIzvjestavanje/
+   - Copy schematron files to schematron/ directory
+   - Ensure transpile.xsl is available for schematron validation
+
+5. RUN WXEIZVJE.CSCS:
    - Select month/year
    - Click "Pripremi" to load unsent invoices
    - Select invoices to report
-   - Click "Pošalji" - XML is generated and sent via configured provider
+   - Click "Pošalji":
+     a) XML is generated
+     b) XML is validated (XSD + Schematron)
+     c) If validation passes, sent via configured provider
+     d) If validation fails, error details shown
 
-4. CHECK RESULTS:
+6. CHECK RESULTS:
    - Success/failure messages displayed
+   - Validation error files in XMLpath()/validation/
    - Response logs saved in XMLpath()/responses/
    - Provider-specific confirmation IDs returned
 
@@ -174,13 +199,32 @@ COMMON ERRORS:
 2. "[Provider] endpoint nije konfiguriran"
    → Check NKSYERAC ERAC_SERVER/ERAC_SERVERT values
 
-3. Authentication errors:
+3. "eIzvještavanje XML FAILED XSD validation"
+   → Check XML structure against Croatian eReporting schema
+   → Verify SCHEMASPATH configuration and XSD files
+   → Review validation error file for specific issues
+
+4. "eIzvještavanje XML FAILED SCH validation"
+   → Check business rule violations in schematron validation
+   → Review validation error file for specific rule failures
+   → Ensure required fields are properly populated
+
+5. Authentication errors:
    - FINA: Check certificate paths and passwords
    - MER: Verify username/password in ERAC_USER/ERAC_PASS
    - ePoslovanje: Verify API key in ERAC_USER
 
-4. "Cannot write to log file"
+6. "Cannot write to log file"
    → Check XMLpath() directory permissions and existence
+
+VALIDATION FILES:
+- XSD errors: {XMLpath()}/validation/{filename}_XSD.err
+- SCH errors: {XMLpath()}/validation/{filename}_SCH.err
+
+SCHEMA REQUIREMENTS:
+- XSD files: {SCHEMASPATH}/xsd/eIzvjestavanje/
+- Schematron files: {SCHEMASPATH}/schematron/
+- Transpile stylesheet: {SCHEMASPATH}/schematron/transpile.xsl
 
 RESPONSE CODES:
 - 200: Success
@@ -189,6 +233,7 @@ RESPONSE CODES:
 - 500: Server Error
 
 LOG LOCATIONS:
+- Validation logs: {XMLpath()}/validation/{filename}_{XSD|SCH}.err
 - Response logs: {XMLpath()}/responses/{PROVIDER}_{filename}.response
 - Error details in MessageBox and log files
 

@@ -200,39 +200,40 @@ function btnSend@clicked() {
 
         inv = hdr[1];
         xml += "  <eiz:Racun>\n";
-        xml += "    <eiz:brojDokumenta>" + StrTrim(inv[0]) + "</eiz:brojDokumenta>\n";
-        xml += "    <eiz:datumIzdavanja>" + StrTrim(inv[1]) + "</eiz:datumIzdavanja>\n";
+        xml += "    <eiz:brojDokumenta>" + AntiXMLSpecialChars(StrTrim(inv[0])) + "</eiz:brojDokumenta>\n";
+        xml += "    <eiz:datumIzdavanja>" + AntiXMLSpecialChars(StrTrim(inv[1])) + "</eiz:datumIzdavanja>\n";
         xml += "    <eiz:vrstaDokumenta>380</eiz:vrstaDokumenta>\n";
         xml += "    <eiz:valutaRacuna>EUR</eiz:valutaRacuna>\n";
         xml += "    <eiz:vrstaPoslovnogProcesa>P1</eiz:vrstaPoslovnogProcesa>\n";
 
         xml += "    <eiz:Izdavatelj>\n";        
-        xml += "      <eiz:ime>" + StrTrim(KPSY_COMP_NAME) + "</eiz:ime>\n";
-        xml += "      <eiz:oibPorezniBroj>" + StrTrim(Substring(KPSY_REZERVA, 0, 11)) + "</eiz:oibPorezniBroj>\n";
+        xml += "      <eiz:ime>" + AntiXMLSpecialChars(StrTrim(KPSY_COMP_NAME)) + "</eiz:ime>\n";
+        xml += "      <eiz:oibPorezniBroj>" + AntiXMLSpecialChars(StrTrim(Substring(KPSY_REZERVA, 0, 11))) + "</eiz:oibPorezniBroj>\n";
         xml += "    </eiz:Izdavatelj>\n";
 
         xml += "    <eiz:Primatelj>\n";
-        xml += "      <eiz:ime>" + StrTrim(inv[2]) + "</eiz:ime>\n";
-        xml += "      <eiz:oibPorezniBroj>" + StrTrim(inv[3]) + "</eiz:oibPorezniBroj>\n";
+        xml += "      <eiz:ime>" + AntiXMLSpecialChars(StrTrim(inv[2])) + "</eiz:ime>\n";
+        xml += "      <eiz:oibPorezniBroj>" + AntiXMLSpecialChars(StrTrim(inv[3])) + "</eiz:oibPorezniBroj>\n";
         xml += "    </eiz:Primatelj>\n";
 
         xml += "    <eiz:DokumentUkupanIznos>\n";
-        xml += "      <eiz:neto>" + FormatNum(inv[5], 2, ".") + "</eiz:neto>\n";
-        xml += "      <eiz:iznosBezPdv>" + FormatNum(inv[5], 2, ".") + "</eiz:iznosBezPdv>\n";
-        xml += "      <eiz:pdv>" + FormatNum(inv[6], 2, ".") + "</eiz:pdv>\n";
-        xml += "      <eiz:iznosSPdv>" + FormatNum(inv[4], 2, ".") + "</eiz:iznosSPdv>\n";
-        xml += "      <eiz:iznosKojiDospijevaZaPlacanje>" + FormatNum(inv[4], 2, ".") + "</eiz:iznosKojiDospijevaZaPlacanje>\n";
+        xml += "      <eiz:neto>" + AntiXMLSpecialChars(FormatNum(inv[5], 2, ".")) + "</eiz:neto>\n";
+        xml += "      <eiz:iznosBezPdv>" + AntiXMLSpecialChars(FormatNum(inv[5], 2, ".")) + "</eiz:iznosBezPdv>\n";
+        xml += "      <eiz:pdv>" + AntiXMLSpecialChars(FormatNum(inv[6], 2, ".")) + "</eiz:pdv>\n";
+        xml += "      <eiz:iznosSPdv>" + AntiXMLSpecialChars(FormatNum(inv[4], 2, ".")) + "</eiz:iznosSPdv>\n";
+        xml += "      <eiz:iznosKojiDospijevaZaPlacanje>" + AntiXMLSpecialChars(FormatNum(inv[4], 2, ".")) + "</eiz:iznosKojiDospijevaZaPlacanje>\n";
         xml += "    </eiz:DokumentUkupanIznos>\n";
 
         // Simplified VAT breakdown (25%)
         xml += "    <eiz:RaspodjelaPdv>\n";
         xml += "      <eiz:kategorijaPdv>S</eiz:kategorijaPdv>\n";
-        xml += "      <eiz:oporeziviIznos>" + FormatNum(inv[5], 2, ".") + "</eiz:oporeziviIznos>\n";
-        xml += "      <eiz:iznosPoreza>" + FormatNum(inv[6], 2, ".") + "</eiz:iznosPoreza>\n";
+        xml += "      <eiz:oporeziviIznos>" + AntiXMLSpecialChars(FormatNum(inv[5], 2, ".")) + "</eiz:oporeziviIznos>\n";
+        xml += "      <eiz:iznosPoreza>" + AntiXMLSpecialChars(FormatNum(inv[6], 2, ".")) + "</eiz:iznosPoreza>\n";
         xml += "      <eiz:stopa>25</eiz:stopa>\n";
         xml += "    </eiz:RaspodjelaPdv>\n";
 
         // One dummy line
+        /*
         xml += "    <eiz:StavkaRacuna>\n";
         xml += "      <eiz:kolicina>1</eiz:kolicina>\n";
         xml += "      <eiz:jedinicaMjere>H87</eiz:jedinicaMjere>\n";
@@ -245,6 +246,52 @@ function btnSend@clicked() {
         xml += "        <eiz:identifikatorSheme>CG</eiz:identifikatorSheme>\n";
         xml += "      </eiz:ArtiklIdentifikatorKlasifikacija>\n";
         xml += "    </eiz:StavkaRacuna>\n";
+        */
+
+        try
+        {
+            // Load lines
+            sql_lines = "SELECT " +                         
+                        "NKPR_LN_INVNM, " +         //broj računa       //0
+                        "NKPR_LN_PQTY, " +          //količina          //1
+                        "NKPR_LN_JMJD, " +          //jedinica mjere    //2
+                        "NKPR_LN_AMT, " +           //neto cijena       //3
+                        "'S' AS KategorijaPDV, " +  //kategorija PDV    //4                        
+                        "25 AS StopaPDV, " +        //stopa PDV         //5
+                        "NKPR_LN_PDESC, " +         //naziv artikla     //6
+                        "'11.07.01' AS IdentifikatorKlasifikacije, " + //identifikator klasifikacije    //7
+                        "'CG' AS IdentifikatorSheme " +                //identifikator sheme            //8
+                        "FROM " + databaseName + ".dbo.NKPRINVL " + 
+                        "WHERE NKPR_LN_INVNM = @p1 " + 
+                        "ORDER BY NKPR_LN_BR_LN;";
+            sqlParamsLines = {};
+            sqlParamsLines.Add({"@p1", invNum});
+            sqlResultLines = sqlQuery(sql_lines, sqlParamsLines);
+            //if (Size(sqlResultLines) < 2) { continue; }
+
+            for (j = 1; j < Size(sqlResultLines); j++) 
+            {
+                line = sqlResultLines[j];
+                //MessageBox("Line " + j + ": " + line);
+                
+                xml += "    <eiz:StavkaRacuna>\n";
+                xml += "      <eiz:kolicina>" + AntiXMLSpecialChars(FormatNum(line[1], 2, ".")) + "</eiz:kolicina>\n";
+                xml += "      <eiz:jedinicaMjere>" + AntiXMLSpecialChars(StrTrim(line[2])) + "</eiz:jedinicaMjere>\n";
+                xml += "      <eiz:artiklNetoCijena>" + AntiXMLSpecialChars(FormatNum(line[3], 2, ".")) + "</eiz:artiklNetoCijena>\n";
+                xml += "      <eiz:artiklKategorijaPdv>" + AntiXMLSpecialChars(StrTrim(line[4])) + "</eiz:artiklKategorijaPdv>\n";
+                xml += "      <eiz:artiklStopaPdv>" + AntiXMLSpecialChars(FormatNum(line[5], 2, ".")) + "</eiz:artiklStopaPdv>\n";
+                xml += "      <eiz:artiklNaziv>" + AntiXMLSpecialChars(StrTrim(line[6])) + "</eiz:artiklNaziv>\n";
+                xml += "      <eiz:ArtiklIdentifikatorKlasifikacija>\n";
+                xml += "        <eiz:identifikatorKlasifikacije>" + AntiXMLSpecialChars(StrTrim(line[7])) + "</eiz:identifikatorKlasifikacije>\n";
+                xml += "        <eiz:identifikatorSheme>" + AntiXMLSpecialChars(StrTrim(line[8])) + "</eiz:identifikatorSheme>\n";
+                xml += "      </eiz:ArtiklIdentifikatorKlasifikacija>\n";
+                xml += "    </eiz:StavkaRacuna>\n";                
+            }
+        }
+        catch(exc)
+        {
+            MessageBox(exc);
+        }
 
         xml += "    <eiz:indikatorKopije>false</eiz:indikatorKopije>\n";
         xml += "  </eiz:Racun>\n";
@@ -401,4 +448,17 @@ function FormatDate(dateValue, formatString)
 function XMLpath()
 {
     return "D:\\XML\\";
+}
+
+
+function AntiXMLSpecialChars(xmlValueIn)
+{
+    xmlValueOut = StrReplace(xmlValueIn, "&", " ");
+    xmlValueOut = StrReplace(xmlValueOut, "<", " ");
+    xmlValueOut = StrReplace(xmlValueOut, ">", " ");
+    xmlValueOut = StrReplace(xmlValueOut, "/", " ");
+    xmlValueOut = StrReplace(xmlValueOut, "\"", " ");
+    xmlValueOut = StrReplace(xmlValueOut, "'", " ");
+
+    return xmlValueOut;
 }

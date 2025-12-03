@@ -664,27 +664,55 @@ function GenerateUBLXml() {
         PKFK_TAX_P_PORZ = row[6]; // Get tax type (P=PDV, T=Consumption tax, etc.)
 
         xml += "                <hrextac:HRTaxSubtotal>\n";
-        xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
-        xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
-        xml += "                    <hrextac:HRTaxCategory>\n";
-        xml += "                        <cbc:ID>" + PKFK_TAX_OBJED + "</cbc:ID>\n";
         
-        // Set tax name and scheme based on tax type
-        taxName = "HR:PDV" + FormatNum(NKPR_LN_PRNPR, 0, ".");
-        taxSchemeID = "VAT";
         if (PKFK_TAX_P_PORZ == "T") {
             taxName = "HR:PP" + FormatNum(NKPR_LN_PRNPR, 0, ".");
             taxSchemeID = "LOC";
+            xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
+            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + 0 + "</cbc:TaxAmount>\n";
+            xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
+            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
+            xml += "                    <hrextac:HRTaxCategory>\n";
+            xml += "                        <cbc:ID>" + PKFK_TAX_OBJED + "</cbc:ID>\n";
+            xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
+            xml += "                        <cbc:TaxExemptionReason>" + "Find in PKFKPORZ napomena" + "</cbc:TaxExemptionReason>\n";
+            xml += "                        <cbc:Percent>" + 0.00 + "</cbc:Percent>\n";
+            xml += "                        <hrextac:HRTaxScheme>\n";
+            xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
+            xml += "                        </hrextac:HRTaxScheme>\n";
+            xml += "                    </hrextac:HRTaxCategory>\n";
         } elif (PKFK_TAX_P_PORZ == "O") {
             taxName = "HR:OTH" + FormatNum(NKPR_LN_PRNPR, 0, ".");
             taxSchemeID = "LOC";
+            xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
+            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + 0 + "</cbc:TaxAmount>\n";
+            xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
+            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
+            xml += "                    <hrextac:HRTaxCategory>\n";
+            xml += "                        <cbc:ID>" + PKFK_TAX_OBJED + "</cbc:ID>\n";
+            xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
+            xml += "                        <cbc:TaxExemptionReason>" + "Find in PKFKPORZ napomena" + "</cbc:TaxExemptionReason>\n";
+            xml += "                        <cbc:Percent>" + 0.00 + "</cbc:Percent>\n";
+            xml += "                        <hrextac:HRTaxScheme>\n";
+            xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
+            xml += "                        </hrextac:HRTaxScheme>\n";
+            xml += "                    </hrextac:HRTaxCategory>\n";
         }
-        xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
-        xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
-        xml += "                        <hrextac:HRTaxScheme>\n";
-        xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
-        xml += "                        </hrextac:HRTaxScheme>\n";
-        xml += "                    </hrextac:HRTaxCategory>\n";
+        else{
+            //default je PDV
+            taxName = "HR:PDV" + FormatNum(NKPR_LN_PRNPR, 0, ".");
+            taxSchemeID = "VAT";
+            xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
+            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
+            xml += "                    <hrextac:HRTaxCategory>\n";
+            xml += "                        <cbc:ID>" + PKFK_TAX_OBJED + "</cbc:ID>\n";
+            xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
+            xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
+            xml += "                        <hrextac:HRTaxScheme>\n";
+            xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
+            xml += "                        </hrextac:HRTaxScheme>\n";
+            xml += "                    </hrextac:HRTaxCategory>\n";
+        }
         xml += "                </hrextac:HRTaxSubtotal>\n";
     }
 

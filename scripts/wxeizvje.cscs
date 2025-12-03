@@ -23,6 +23,17 @@ define rowCountInvoices type R;
 
 define cntr type R;
 
+// Provider configuration variables
+define PROVIDER type A size 20;
+define ERAC_REZ1 type A size 50;
+define ERAC_SERVER type A size 200;
+define ERAC_SERVERT type A size 200;
+define ERAC_USER type A size 100;
+define ERAC_PASS type A size 100;
+define ERAC_USERT type A size 200;
+define ERAC_PASST type A size 200;
+define ERAC_DESC type A size 100;
+
 //DEFINE time1 type T size 8;
 
 // Fill month combo
@@ -47,6 +58,9 @@ function wxeizvje_OnDisplay() {
 //*******************************************************************************
     Get_KPSY_COMP_NAME();
     Get_KPSY_REZERVA();//OIB
+
+    // Load provider configuration
+    LoadProviderConfiguration();
 
     //MessageBox("KPSY_COMP_NAME is " + KPSY_COMP_NAME + "*");    //ok je -> NE TREBA TRIMAT
     //MessageBox("KPSY_REZERVA is " + KPSY_REZERVA  + "*");//OIB  //ok je -> NE TREBA TRIMAT
@@ -305,13 +319,14 @@ function btnSend@clicked() {
 
     //fileName = "eIzvjestavanje_" + FormatDate(Now(), "yyyyMM") + ".xml";
     fileName = "eIzvjestavanje_" + FormatDate(DateTime(), "yyyyMM") + ".xml";
+    xmlFilePath = XMLpath() + fileName;
     //SaveFile(fileName, xml);
-    SaveFile(xml, XMLpath() + fileName, "");
+    SaveFile(xml, xmlFilePath, "");
     
-    MessageBox("XML generiran: " + fileName + "\nBroj računa: " + updatedCount);
+    MessageBox("XML generiran: " + fileName + "\nBroj računa: " + updatedCount + "\n\nPošalji izvještaj preko " + PROVIDER + "?");
 
-    // TODO: Add real SOAP send + signing
-    // SendSoap(xml, "https://cis.porezna-uprava.hr:8509/eIzvjestavanjeService");
+    // Send eReporting XML via configured provider
+    SendEReporting(xml, xmlFilePath, fileName);
 
     cursor("dflt");
 }
@@ -450,6 +465,46 @@ function XMLpath()
     return "D:\\XML\\";
 }
 
+// Load provider configuration from NKSYSYCO and NKSYERAC tables
+function LoadProviderConfiguration() {
+    // Read provider from NKSYSYCO
+    sqlQueryString = "SELECT NKSYS_FIELD, NKSYS_VALUE FROM " + databaseName + ".dbo.NKSYSYCO WHERE NKSYS_MODUL = 'WKSY' AND NKSYS_GRUP = 'ERACUN' AND NKSYS_FIELD = 'PROVIDER';";
+    try {
+        sqlResult = sqlQuery(sqlQueryString);
+        if (Size(sqlResult) > 1) {
+            PROVIDER = sqlResult[1][1].trim().Upper();
+        } else {
+            PROVIDER = "FINA"; // Default to FINA
+        }
+    } catch(exc) {
+        MessageBox("NKSYSYCO provider reading error: " + exc);
+        PROVIDER = "FINA"; // Default fallback
+    }
+
+    // Read provider configuration from NKSYERAC
+    sql_erac = "SELECT ERAC_REZ1, ERAC_SERVER, ERAC_SERVERT, ERAC_USER, ERAC_PASS, ERAC_USERT, ERAC_PASST, ERAC_DESC FROM " + databaseName + ".dbo.NKSYERAC WHERE ERAC_CODE = @p1;";
+    sqlParams = {};
+    sqlParams.Add({"@p1", PROVIDER});
+    
+    try {
+        eracRes = sqlQuery(sql_erac, sqlParams);
+        if (Size(eracRes) > 1) {
+            ERAC_REZ1 = eracRes[1][0].trim();
+            ERAC_SERVER = eracRes[1][1].trim();
+            ERAC_SERVERT = eracRes[1][2].trim();
+            ERAC_USER = eracRes[1][3].trim();
+            ERAC_PASS = eracRes[1][4].trim();
+            ERAC_USERT = eracRes[1][5].trim();
+            ERAC_PASST = eracRes[1][6].trim();
+            ERAC_DESC = eracRes[1][7].trim();
+        } else {
+            MessageBox("Nema konfiguracije za provider: " + PROVIDER);
+        }
+    } catch(exc) {
+        MessageBox("NKSYERAC reading error: " + exc);
+    }
+}
+
 
 function AntiXMLSpecialChars(xmlValueIn)
 {
@@ -461,4 +516,266 @@ function AntiXMLSpecialChars(xmlValueIn)
     xmlValueOut = StrReplace(xmlValueOut, "'", " ");
 
     return xmlValueOut;
+}
+
+// -----------------------------------------------------------
+// MULTI-PROVIDER eREPORTING SENDER
+// -----------------------------------------------------------
+
+function SendEReporting(xmlContent, xmlFilePath, fileName) {
+    if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
+        SendEReportingToMER(xmlContent, fileName);
+    } elif (PROVIDER == "EPOS" || PROVIDER == "EPOSDEMO") {
+        SendEReportingToEPOS(xmlContent, fileName);
+    } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
+        SendEReportingToFINA(xmlContent, fileName);
+    } else {
+        MessageBox("Nepoznat provider za eIzvještavanje: " + PROVIDER);
+    }
+}
+
+// -----------------------------------------------------------
+// MER eREPORTING SENDER
+// -----------------------------------------------------------
+
+function SendEReportingToMER(xmlContent, fileName) {
+    try {
+        endpoint = (PROVIDER == "MERDEMO") ? ERAC_SERVERT : ERAC_SERVER;
+        if (endpoint == "") {
+            MessageBox("MER endpoint nije konfiguriran u NKSYERAC.");
+            return;
+        }
+
+        // Escape XML for JSON
+        escapedXml = StrReplace(xmlContent, "\n", " ");
+        escapedXml = EscapeQuotesInXml(xmlContent);
+        
+        // Prepare JSON payload for MER API
+        jsonLoad = '{"Username": "' + ERAC_USER + '", "Password": "' + ERAC_PASS + '", "CompanyId": "' + Substring(KPSY_REZERVA, 0, 11) + '", "SoftwareId": "' + ERAC_DESC + '", "File": "' + escapedXml + '", "ReportType": "eIzvjestavanje"}';
+
+        webRequestResult = WebRequest(
+            "POST", 
+            endpoint + "ereporting", 
+            jsonLoad, 
+            fileName,
+            "MERReportingSuccess", 
+            "MERReportingFailure", 
+            "application/json", 
+            null, 
+            1000 * 30, 
+            false
+        );
+    } catch (ex) {
+        MessageBox("Greška pri slanju na MER eIzvještavanje: " + ex);
+    }
+}
+
+function MERReportingSuccess(fileName, responseCode, res) {
+    try {
+        MessageBox("MER eIzvještavanje uspješno poslano!\nOdgovor: " + res);
+        
+        // Log response
+        LogEReportingResponse("MER", responseCode, res, fileName);
+        
+        // Parse response if JSON
+        resObject = DeserializeJson(res);
+        if (Contains(resObject, "StatusId")) {
+            MessageBox("Status ID: " + resObject["StatusId"]);
+        }
+    } catch (ex) {
+        MessageBox("MER eIzvještavanje Success - greška pri parsiranju: " + ex);
+    }
+}
+
+function MERReportingFailure(fileName, responseCode, res) {
+    try {
+        MessageBox("MER eIzvještavanje neuspješno!\nStatus: " + responseCode + "\nOdgovor: " + res);
+        
+        // Log response
+        LogEReportingResponse("MER", responseCode, res, fileName);
+        
+        // Try to parse error response
+        if (res != "") {
+            resObject = DeserializeJson(res);
+            if (Contains(resObject, "ErrorMessage")) {
+                MessageBox("MER Greška: " + resObject["ErrorMessage"]);
+            }
+        }
+    } catch (ex) {
+        MessageBox("MER eIzvještavanje Failure - greška: " + ex);
+    }
+}
+
+// -----------------------------------------------------------
+// ePOSLOVANJE eREPORTING SENDER
+// -----------------------------------------------------------
+
+function SendEReportingToEPOS(xmlContent, fileName) {
+    try {
+        endpoint = (PROVIDER == "EPOSDEMO") ? ERAC_SERVERT : ERAC_SERVER;
+        if (endpoint == "") {
+            MessageBox("ePoslovanje endpoint nije konfiguriran u NKSYERAC.");
+            return;
+        }
+
+        // Prepare JSON payload for ePoslovanje API v2 eReporting
+        jsonPayload = {
+            "document": xmlContent,
+            "type": "IR"  // Račun za kojeg nije moguće izdati eRačun
+        };
+
+        jsonLoad = SerializeJson(jsonPayload);
+
+        // Prepare headers with API key
+        headers = {};
+        headers["Authorization"] = ERAC_USER; // API Key
+        headers["Content-Type"] = "application/json";
+
+        webRequestResult = WebRequest(
+            "POST",
+            endpoint + "/api/v2/ereporting/reportdocument",
+            jsonLoad,
+            fileName,
+            "EPOSReportingSuccess",
+            "EPOSReportingFailure",
+            "application/json",
+            headers,
+            1000 * 30,
+            false
+        );
+    } catch (ex) {
+        MessageBox("Greška pri slanju na ePoslovanje eIzvještavanje: " + ex);
+    }
+}
+
+function EPOSReportingSuccess(fileName, responseCode, res) {
+    try {
+        MessageBox("ePoslovanje eIzvještavanje uspješno poslano!\nOdgovor: " + res);
+        
+        // Log response
+        LogEReportingResponse("EPOS", responseCode, res, fileName);
+        
+        // Parse ePoslovanje response
+        resObject = DeserializeJson(res);
+        if (Contains(resObject, "responseId")) {
+            MessageBox("ePoslovanje Response ID: " + resObject["responseId"]);
+        }
+        if (Contains(resObject, "message")) {
+            MessageBox("Poruka: " + resObject["message"]);
+        }
+    } catch (ex) {
+        MessageBox("ePoslovanje eIzvještavanje Success - greška pri parsiranju: " + ex);
+    }
+}
+
+function EPOSReportingFailure(fileName, responseCode, res) {
+    try {
+        MessageBox("ePoslovanje eIzvještavanje neuspješno!\nStatus: " + responseCode + "\nOdgovor: " + res);
+        
+        // Log response
+        LogEReportingResponse("EPOS", responseCode, res, fileName);
+        
+        // Try to parse ePoslovanje error response
+        if (res != "") {
+            resObject = DeserializeJson(res);
+            if (Contains(resObject, "error")) {
+                errorMsg = resObject["error"];
+                details = Contains(resObject, "details") ? resObject["details"] : "";
+                MessageBox("ePoslovanje Greška: " + errorMsg + (details != "" ? "\nDetalji: " + details : ""));
+            }
+        }
+    } catch (ex) {
+        MessageBox("ePoslovanje eIzvještavanje Failure - greška: " + ex);
+    }
+}
+
+// -----------------------------------------------------------
+// FINA eREPORTING SENDER
+// -----------------------------------------------------------
+
+function SendEReportingToFINA(xmlContent, fileName) {
+    try {
+        endpoint = (PROVIDER == "FINADEMO") ? ERAC_SERVERT : ERAC_SERVER;
+        if (endpoint == "") {
+            MessageBox("FINA endpoint nije konfiguriran u NKSYERAC.");
+            return;
+        }
+
+        // Create SOAP envelope for FINA eIzvještavanje
+        requestId = UUID();
+        
+        xmlBody = "<fin:EvidentirajIsporukuZaKojuNijeIzdanERacun xmlns:fin=\"http://www.fina.hr/e-racun/services\">\n";
+        xmlBody += "  <HeaderSupplier>\n";
+        xmlBody += "    <MessageID>" + requestId + "</MessageID>\n";
+        xmlBody += "    <SupplierID>9934:HR" + Substring(KPSY_REZERVA, 0, 11) + "</SupplierID>\n";
+        xmlBody += "    <MessageType>9002</MessageType>\n";  // eReporting message type
+        xmlBody += "  </HeaderSupplier>\n";
+        xmlBody += "  <Data>\n";
+        xmlBody += "    <EReportingEnvelope>\n";
+        xmlBody += "      <XMLStandard>HR-EIZV</XMLStandard>\n";
+        xmlBody += "      <ReportEnvelope>" + File2Base64(xmlContent) + "</ReportEnvelope>\n";
+        xmlBody += "    </EReportingEnvelope>\n";
+        xmlBody += "  </Data>\n";
+        xmlBody += "</fin:EvidentirajIsporukuZaKojuNijeIzdanERacun>";
+
+        soapAction = "";
+
+        // Call unified SOAP creation and sending
+        response = await CreateSOAP(
+            xmlBody,
+            soapAction,
+            endpoint,
+            ERAC_PASST,  // Certificate path
+            ERAC_PASS    // Certificate password
+        );
+
+        // Process response
+        if (response.StartsWith("ERROR:") || response.StartsWith("HTTP_ERROR:") || response.StartsWith("EXCEPTION:")) {
+            FINAReportingFailure(fileName, 0, response);
+        } else {
+            FINAReportingSuccess(fileName, 200, response);
+        }
+    } catch (ex) {
+        MessageBox("Greška pri slanju na FINA eIzvještavanje: " + ex);
+    }
+}
+
+function FINAReportingSuccess(fileName, responseCode, res) {
+    MessageBox("FINA eIzvještavanje uspješno poslano!\nOdgovor: " + res);
+    LogEReportingResponse("FINA", responseCode, res, fileName);
+}
+
+function FINAReportingFailure(fileName, responseCode, res) {
+    MessageBox("FINA eIzvještavanje neuspješno!\nStatus: " + responseCode + "\nOdgovor: " + res);
+    LogEReportingResponse("FINA", responseCode, res, fileName);
+}
+
+// -----------------------------------------------------------
+// LOGGING HELPER
+// -----------------------------------------------------------
+
+function LogEReportingResponse(provider, responseCode, response, fileName) {
+    if (!DIR_EXISTS(XMLpath() + "responses\\")) {
+        MAKE_DIR(XMLpath() + "responses\\");
+    }
+
+    logFilePath = XMLpath() + "responses\\" + provider + "_" + fileName + ".response";
+    appendText = Now("yyyy-MM-dd HH:mm:ss") + " [" + provider + "] -----------------------------------\n\n" + 
+                "StatusCode = " + responseCode + "\n\n" + 
+                "Response:\n" + response + "\n\n";
+    try {
+        SaveFile(appendText, logFilePath, "a");
+    } catch (ex) {
+        MessageBox("CRITICAL: Cannot write to log file: " + logFilePath + "\nError: " + ex);
+    }
+}
+
+// Helper function for XML escaping in JSON
+function EscapeQuotesInXml(xmlContent) {
+    escaped = StrReplace(xmlContent, "\\", "\\\\");
+    escaped = StrReplace(escaped, "\"", "\\\"");
+    escaped = StrReplace(escaped, "\r", " ");
+    escaped = StrReplace(escaped, "\n", " ");
+    escaped = StrReplace(escaped, "\t", " ");
+    return escaped;
 }

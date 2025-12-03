@@ -2056,9 +2056,6 @@ function SendToEPOS() {
 function SendToFINA() {
     // Determine endpoint based on provider configuration
     endpoint = ERAC_SERVER;
-    if (PROVIDER == "FINADEMO") {
-        endpoint = ERAC_SERVERT;
-    }
 
     if (endpoint == "") {
         MessageBox("Endpoint za FINA provider nije definiran u NKSYERAC.");
@@ -2071,16 +2068,17 @@ function SendToFINA() {
     xmlBody = "<fin:SendB2BOutgoingInvoiceMsg xmlns:fin=\"http://www.fina.hr/e-racun/services\">\n";
     xmlBody += "  <HeaderSupplier>\n";
     xmlBody += "    <MessageID>" + UUID() + "</MessageID>\n";
-    xmlBody += "    <SupplierID>9934:HR" + supOIB + "</SupplierID>\n";
-    xmlBody += "    <AdditionalSupplierID>0088:" + KPSY_REZERVAX + "</AdditionalSupplierID>\n";
+    xmlBody += "    <SupplierID>9934:" + supOIB + "</SupplierID>\n";
+    // xmlBody += "    <AdditionalSupplierID>0088:" + KPSY_REZERVAX + "</AdditionalSupplierID>\n";
     xmlBody += "    <MessageType>9001</MessageType>\n";
     xmlBody += "  </HeaderSupplier>\n";
     xmlBody += "  <Data>\n";
     xmlBody += "    <B2BOutgoingInvoiceEnvelope>\n";
     xmlBody += "      <XMLStandard>UBL</XMLStandard>\n";
-    xmlBody += "      <SpecificationIdentifier>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0</SpecificationIdentifier>\n";
+    xmlBody += "      <SpecificationIdentifier>urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0</SpecificationIdentifier>\n";
+    // xmlBody += "      <SpecificationIdentifier>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0</SpecificationIdentifier>\n";
     xmlBody += "      <SupplierInvoiceID>" + invNum + "</SupplierInvoiceID>\n";
-    xmlBody += "      <BuyerID>9934:HR" + NKPR_GL_JMBG + "</BuyerID>\n";
+    xmlBody += "      <BuyerID>9934:" + NKPR_GL_JMBG + "</BuyerID>\n";
     xmlBody += "      <InvoiceEnvelope>" + base64Ubl + "</InvoiceEnvelope>\n";
     xmlBody += "    </B2BOutgoingInvoiceEnvelope>\n";
     xmlBody += "  </Data>\n";
@@ -2093,7 +2091,7 @@ function SendToFINA() {
     try {
         // CreateSOAP handles signing and sending the request, and returns the response.
         // It expects: xmlBody, soapAction, endpoint, certIdentifier, certPassword
-        response = await CreateSOAP(
+        response = CreateSOAP(
             xmlBody,
             soapAction,
             endpoint,
@@ -2101,12 +2099,14 @@ function SendToFINA() {
             ERAC_PASS   // Certificate password from NKSYERAC
         );
 
-        // 4. Process the response
-        if (response.StartsWith("ERROR:") || response.StartsWith("HTTP_ERROR:") || response.StartsWith("EXCEPTION:")) {
-            FINAFailure(invNum, 0, response);
-        } else {
-            FINASuccess(invNum, 200, response);
-        }
+        MSG(response);
+
+        // // 4. Process the response
+        // if (response.StartsWith("ERROR:") || response.StartsWith("HTTP_ERROR:") || response.StartsWith("EXCEPTION:")) {
+        //     FINAFailure(invNum, 0, response);
+        // } else {
+        //     FINASuccess(invNum, 200, response);
+        // }
     } catch (ex) {
         FINAFailure(invNum, 0, "Greška pri pozivu CreateSOAP funkcije: " + ex);
     }

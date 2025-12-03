@@ -1,7 +1,9 @@
 ﻿using DevExpress.Xpf.Core.Native;
+using DevExpress.XtraReports.Templates;
 using DevExpress.XtraRichEdit.Import.Doc;
 using LiveChartsCore.SkiaSharpView.Painting;
 using MapControl;
+using NixxonERacun.Signing;
 using org.apache.xerces.xni;
 using Org.BouncyCastle.Tls;
 using Renci.SshNet;
@@ -18,6 +20,8 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.ConstrainedExecution;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
 using System.Text;
@@ -96,7 +100,10 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.UUID, new UUIDFunction());
 
 
-            interpreter.RegisterFunction("TestEchoFina", new TestEchoFinaFunction());
+            interpreter.RegisterFunction(Constants.TestEchoFina, new TestEchoFinaFunction());
+            interpreter.RegisterFunction(Constants.CreateSOAP2, new CreateSOAP2Function());
+
+            interpreter.RegisterFunction(Constants.TEST1, new TEST1Function());
         }
         public partial class Constants
         {
@@ -142,6 +149,11 @@ namespace WpfCSCS
             public const string SignSoapWithCert = "SignSoapWithCert";
             public const string CreateSOAP = "CreateSOAP";
             public const string UUID = "UUID";
+
+            public const string TestEchoFina = "TestEchoFina";
+            public const string CreateSOAP2 = "CreateSOAP2";
+
+            public const string TEST1 = "TEST1";
         }
     }
 
@@ -2195,11 +2207,43 @@ namespace WpfCSCS
             doc.PreserveWhitespace = true;
             doc.LoadXml(soapEnvelope);
 
-            // 3. Find the first element in the Body to be the signing reference
-            XmlElement bodyContentElement = doc.DocumentElement.GetElementsByTagName("Body", "http://schemas.xmlsoap.org/soap/envelope/")[0]?.FirstChild as XmlElement;
+            //// 3. Find the first element in the Body to be the signing reference
+            //XmlElement bodyContentElement = doc.DocumentElement.GetElementsByTagName("Body", "http://schemas.xmlsoap.org/soap/envelope/")[0]?.FirstChild as XmlElement;
+            //if (bodyContentElement == null)
+            //{
+            //    throw new InvalidOperationException("SOAP Body does not contain a valid XML element to sign.");
+            //}
+
+            // robust lookup of element child inside SOAP Body (replace the existing single-line FirstChild lookup)
+            XmlNodeList bodyNodes = doc.DocumentElement.GetElementsByTagName("Body", "http://schemas.xmlsoap.org/soap/envelope/");
+            if (bodyNodes == null || bodyNodes.Count == 0)
+            {
+                throw new InvalidOperationException("SOAP Envelope Body element not found (namespace mismatch or envelope malformed).");
+            }
+
+            XmlElement bodyElem = bodyNodes[0] as XmlElement;
+            if (bodyElem == null)
+            {
+                throw new InvalidOperationException("SOAP Body node is not an element.");
+            }
+
+            // find first element child (skip text/comments/processing instructions)
+            XmlElement bodyContentElement = null;
+            foreach (XmlNode node in bodyElem.ChildNodes)
+            {
+                if (node.NodeType == XmlNodeType.Element)
+                {
+                    bodyContentElement = (XmlElement)node;
+                    break;
+                }
+            }
+
             if (bodyContentElement == null)
             {
-                throw new InvalidOperationException("SOAP Body does not contain a valid XML element to sign.");
+                // Provide useful diagnostic: show a short snippet of Body contents
+                string snippet = bodyElem.InnerXml ?? string.Empty;
+                if (snippet.Length > 200) snippet = snippet.Substring(0, 200) + "...";
+                throw new InvalidOperationException("SOAP Body does not contain a valid XML element to sign. Body contents (truncated): " + snippet);
             }
 
             // 4. Add an ID to the element for signing
@@ -2297,7 +2341,7 @@ namespace WpfCSCS
         protected override Variable Evaluate(ParsingScript script)
         {
             List<Variable> args = script.GetFunctionArgs();
-            Utils.CheckArgs(args.Count, 5, m_name);
+            Utils.CheckArgs(args.Count, 0, m_name);
 
             return new Variable(Guid.NewGuid().ToString());
         }
@@ -2532,6 +2576,29 @@ namespace WpfCSCS
             // Data/Echo
             var data = xmlDoc.CreateElement("ech", "Data", NS_ECH);
             var echo = xmlDoc.CreateElement("ech", "Echo", NS_ECH);
+
+            xmlDoc.LoadXml(@"<?xml version=""1.0"" encoding=""UTF-8""?>
+<soapenv:Envelope
+    xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/""
+    xmlns:ech=""http://fina.hr/eracun/b2b/pki/Echo/v0.1""
+    xmlns:iwsc=""http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1"">
+    <soapenv:Header/>
+    <soapenv:Body>
+        <EchoBuyerMsg>
+            <HeaderBuyer xmlns=""http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1"">
+                <MessageID>b96d8194-ff6a-4165-8d8e-39fb303ba2e1</MessageID>
+                <BuyerID>9934:26389058739</BuyerID>
+                <MessageType>9999</MessageType>
+            </HeaderBuyer>
+            <Data xmlns=""http://fina.hr/eracun/b2b/EchoBuyer/v0.1"">
+                <EchoData>
+                    <Echo>Hello world</Echo>
+                </EchoData>
+            </Data>
+        </EchoBuyerMsg>
+    </soapenv:Body>
+</soapenv:Envelope>");
+
             echo.InnerText = echoText;
             data.AppendChild(echo);
             echoMsg.AppendChild(data);
@@ -2604,7 +2671,7 @@ namespace WpfCSCS
             string p12Path = "D:\\WinX\\ERAC\\certifikati\\p12_aurasoft_demo.p12";      // <-- your file
             string p12Password = "Aurasoft1";               // <-- your p12 password
             //string serviceUrl = "http://prezdigitalneusluge.fina.hr/SendB2BOutgoingInvoicePKIWebService"; // <-- replace with real endpoint
-            string serviceUrl = "https://prezdigitalneusluge.fina.hr/SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService"; // <-- replace with real endpoint
+            string serviceUrl = "https://prezdigitalneusluge.fina.hr/SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService";
 
             // Load signing cert (P12)
             var signingCert = new X509Certificate2(
@@ -2646,220 +2713,779 @@ namespace WpfCSCS
                 // Optionally validate response signature using e-invoice.cer (server's public cert)
             }
         }
+    }
 
-        /// <summary>
-        /// Build and sign the EchoMsg SOAP envelope using the provided certificate.
-        /// </summary>
-        //public static string CreateSignedEchoSoap(
-        //    X509Certificate2 cert,
-        //    string messageId,
-        //    string supplierId,
-        //    string erpId,
-        //    int messageType,
-        //    string echoText)
-        //{
-        //    if (cert == null) throw new ArgumentNullException(nameof(cert));
-        //    if (!cert.HasPrivateKey) throw new ArgumentException("Certificate must contain a private key for signing.");
+    public class CreateSOAP2Function : ParserFunction
+    {
+        protected override async Task<Variable> EvaluateAsync(ParsingScript script)
+        {
+            List<Variable> args = await script.GetFunctionArgsAsync();
+            Utils.CheckArgs(args.Count, 4, m_name);
 
-        //    var xmlDoc = new XmlDocument { PreserveWhitespace = true };
-        //    // Create SOAP Envelope root
-        //    var envelope = xmlDoc.CreateElement("soapenv", "Envelope", NS_SOAPENV);
-        //    xmlDoc.AppendChild(envelope);
+            string xmlBody = Utils.GetSafeString(args, 0);
+            string soapAction = Utils.GetSafeString(args, 1);
+            string endpoint = Utils.GetSafeString(args, 2);
+            string certIdentifier = Utils.GetSafeString(args, 3);
+            string certPassword = Utils.GetSafeString(args, 4);
+            string erpId = Utils.GetSafeString(args, 5, ""); // New ERPID parameter
+            int timeoutSeconds = Utils.GetSafeInt(args, 6, 60);
 
-        //    // Add namespace attributes
-        //    envelope.SetAttribute("xmlns:ech", NS_ECH);
-        //    envelope.SetAttribute("xmlns:iwsc", NS_IWSC);
-        //    envelope.SetAttribute("xmlns:wsse", NS_WSSE);
-        //    envelope.SetAttribute("xmlns:wsu", NS_WSU);
-        //    envelope.SetAttribute("xmlns:ds", NS_DS);
+            try
+            {
+                X509Certificate2 cert = LoadCertificate(certIdentifier, certPassword);
+                if (cert == null)
+                {
+                    return new Variable("ERROR: Certificate could not be loaded. Identifier: " + certIdentifier);
+                }
 
-        //    // Header
-        //    var header = xmlDoc.CreateElement("soapenv", "Header", NS_SOAPENV);
-        //    envelope.AppendChild(header);
+                string soapResponse = await CreateAndSendFINACompliantSOAPAsync(xmlBody, soapAction, endpoint, cert, erpId, timeoutSeconds);
+                return new Variable(soapResponse);
+            }
+            catch (Exception ex)
+            {
+                return new Variable("ERROR: " + ex.Message + (ex.InnerException != null ? " | Inner: " + ex.InnerException.Message : ""));
+            }
+        }
 
-        //    // wsse:Security
-        //    var security = xmlDoc.CreateElement("wsse", "Security", NS_WSSE);
-        //    var mustUnderstandAttr = xmlDoc.CreateAttribute("soapenv", "mustUnderstand", NS_SOAPENV);
-        //    mustUnderstandAttr.Value = "1";
-        //    security.Attributes.Append(mustUnderstandAttr);
-        //    header.AppendChild(security);
+        public static async Task<string> CreateAndSendFINACompliantSOAPAsync(string xmlBody, string soapAction, string endpoint,
+            X509Certificate2 cert, string erpId, int timeoutSeconds)
+        {
+            // Generate unique IDs for WS-Security elements
+            string timestampId = "TS-" + Guid.NewGuid().ToString("N");
+            string securityTokenId = "X509-" + Guid.NewGuid().ToString("N");
+            string bodyId = "Body-" + Guid.NewGuid().ToString("N");
 
-        //    // Timestamp (wsu:Id="TS-1")
-        //    var timestamp = xmlDoc.CreateElement("wsu", "Timestamp", NS_WSU);
-        //    var tsIdAttr = xmlDoc.CreateAttribute("wsu", "Id", NS_WSU);
-        //    tsIdAttr.Value = "TS-1";
-        //    timestamp.Attributes.Append(tsIdAttr);
+            // Create FINA-compliant SOAP envelope
+            string soapEnvelope = CreateFINACompliantSoapEnvelope(xmlBody, securityTokenId, timestampId, bodyId, cert, erpId);
+            soapEnvelope = @"<?xml version=""1.0"" encoding=""UTF-8""?>
+<soapenv:Envelope
+    xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/""
+    xmlns:ech=""http://fina.hr/eracun/b2b/pki/Echo/v0.1""
+    xmlns:iwsc=""http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1"">
+    <soapenv:Header/>
+    <soapenv:Body>
+        <EchoBuyerMsg>
+            <HeaderBuyer xmlns=""http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1"">
+                <MessageID>b96d8194-ff6a-4165-8d8e-39fb303ba2e1</MessageID>
+                <BuyerID>9934:26389058739</BuyerID>
+                <MessageType>9999</MessageType>
+            </HeaderBuyer>
+            <Data xmlns=""http://fina.hr/eracun/b2b/EchoBuyer/v0.1"">
+                <EchoData>
+                    <Echo>Hello world</Echo>
+                </EchoData>
+            </Data>
+        </EchoBuyerMsg>
+    </soapenv:Body>
+</soapenv:Envelope>";
 
-        //    var created = xmlDoc.CreateElement("wsu", "Created", NS_WSU);
-        //    created.InnerText = XmlConvert.ToString(DateTime.UtcNow, XmlDateTimeSerializationMode.Utc);
-        //    timestamp.AppendChild(created);
+            XmlDocument doc = new XmlDocument();
+            doc.PreserveWhitespace = true;
+            doc.LoadXml(soapEnvelope);
 
-        //    var expires = xmlDoc.CreateElement("wsu", "Expires", NS_WSU);
-        //    expires.InnerText = XmlConvert.ToString(DateTime.UtcNow.AddMinutes(5), XmlDateTimeSerializationMode.Utc);
-        //    timestamp.AppendChild(expires);
+            // Add ID to Body element
+            XmlElement bodyElement = doc.SelectSingleNode("//*[local-name()='Body']") as XmlElement;
+            if (bodyElement != null)
+            {
+                bodyElement.SetAttribute("Id", bodyId);
+            }
 
-        //    security.AppendChild(timestamp);
+            // Sign the SOAP document
+            SignFINACompliantSoap(doc, cert, securityTokenId, timestampId, bodyId);
 
-        //    // BinarySecurityToken (X.509)
-        //    var bst = xmlDoc.CreateElement("wsse", "BinarySecurityToken", NS_WSSE);
-        //    var bstId = xmlDoc.CreateAttribute("wsu", "Id", NS_WSU);
-        //    bstId.Value = "X509-1";
-        //    bst.Attributes.Append(bstId);
+            // Send the request
+            using (var handler = new HttpClientHandler())
+            {
+                handler.ClientCertificates.Add(cert);
+                handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
 
-        //    bst.SetAttribute("EncodingType", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary");
-        //    bst.SetAttribute("ValueType", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3");
+                using (var client = new HttpClient(handler))
+                {
+                    client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
 
-        //    bst.InnerText = Convert.ToBase64String(cert.RawData);
-        //    security.AppendChild(bst);
+                    var content = new StringContent(doc.OuterXml, Encoding.UTF8, "text/xml");
 
-        //    // Body (soapenv:Body wsu:Id="Body-1")
-        //    var body = xmlDoc.CreateElement("soapenv", "Body", NS_SOAPENV);
-        //    var bodyIdAttr = xmlDoc.CreateAttribute("wsu", "Id", NS_WSU);
-        //    bodyIdAttr.Value = "Body-1";
-        //    body.Attributes.Append(bodyIdAttr);
-        //    envelope.AppendChild(body);
+                    // FINA requires empty SOAPAction for their services
+                    content.Headers.Add("SOAPAction", string.IsNullOrEmpty(soapAction) ? "" : soapAction);
+                    content.Headers.ContentType.CharSet = "utf-8";
 
-        //    // Build EchoMsg content inside Body
-        //    var echoMsg = xmlDoc.CreateElement("ech", "EchoMsg", NS_ECH);
-        //    body.AppendChild(echoMsg);
+                    // Add custom headers if needed
+                    // content.Headers.Add("X-ERP-ID", erpId);
 
-        //    // HeaderSupplier (iwsc)
-        //    var headerSupplier = xmlDoc.CreateElement("iwsc", "HeaderSupplier", NS_IWSC);
-        //    echoMsg.AppendChild(headerSupplier);
+                    try
+                    {
+                        HttpResponseMessage response = await client.PostAsync(endpoint, content);
+                        string responseString = await response.Content.ReadAsStringAsync();
 
-        //    var elMessageID = xmlDoc.CreateElement("iwsc", "MessageID", NS_IWSC);
-        //    elMessageID.InnerText = messageId;
-        //    headerSupplier.AppendChild(elMessageID);
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            // Try to extract error details
+                            string errorDetails = ExtractFINAErrorMessage(responseString);
+                            throw new WebException($"HTTP Error {(int)response.StatusCode} {response.ReasonPhrase}. {errorDetails}");
+                        }
 
-        //    var elSupplierID = xmlDoc.CreateElement("iwsc", "SupplierID", NS_IWSC);
-        //    elSupplierID.InnerText = supplierId;
-        //    headerSupplier.AppendChild(elSupplierID);
+                        return responseString;
+                    }
+                    catch (TaskCanceledException ex)
+                    {
+                        throw new WebException($"Request timeout after {timeoutSeconds} seconds: {ex.Message}");
+                    }
+                }
+            }
+        }
 
-        //    var elERPID = xmlDoc.CreateElement("iwsc", "ERPID", NS_IWSC);
-        //    elERPID.InnerText = erpId;
-        //    headerSupplier.AppendChild(elERPID);
+        private static string CreateFINACompliantSoapEnvelope(string xmlBody, string securityTokenId, string timestampId,
+            string bodyId, X509Certificate2 cert, string erpId)
+        {
+            string certBase64 = Convert.ToBase64String(cert.RawData);
+            string created = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
+            string expires = DateTime.UtcNow.AddMinutes(5).ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
 
-        //    var elMessageType = xmlDoc.CreateElement("iwsc", "MessageType", NS_IWSC);
-        //    elMessageType.InnerText = messageType.ToString();
-        //    headerSupplier.AppendChild(elMessageType);
+            // Build FINA-compliant SOAP envelope with ERPID in custom header if provided
+            string envelope = $@"<soapenv:Envelope 
+    xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/""
+    xmlns:wsse=""http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd""
+    xmlns:wsu=""http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"">
+    <soapenv:Header>";
 
-        //    // Data/Echo
-        //    var data = xmlDoc.CreateElement("ech", "Data", NS_ECH);
-        //    var echo = xmlDoc.CreateElement("ech", "Echo", NS_ECH);
-        //    echo.InnerText = echoText;
-        //    data.AppendChild(echo);
-        //    echoMsg.AppendChild(data);
+            // Add ERPID as a custom header if provided
+            if (!string.IsNullOrEmpty(erpId))
+            {
+                envelope += $@"
+        <ERPID xmlns=""http://www.fina.hr/e-racun/services"">{erpId}</ERPID>";
+            }
 
-        //    // --- SIGNATURE SECTION ---
-        //    // We'll sign Body (Body-1) and Timestamp (TS-1)
-        //    // Create SignedXml with the private key
-        //    var signedXml = new SignedXml(xmlDoc)
-        //    {
-        //        // Set signing key (RSA)
-        //        SigningKey = cert.GetRSAPrivateKey()
-        //    };
+            envelope += $@"
+        <wsse:Security soapenv:mustUnderstand=""1"">
+            <wsse:BinarySecurityToken 
+                EncodingType=""http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary""
+                ValueType=""http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3""
+                wsu:Id=""{securityTokenId}"">
+                {certBase64}
+            </wsse:BinarySecurityToken>
+            <wsu:Timestamp wsu:Id=""{timestampId}"">
+                <wsu:Created>{created}</wsu:Created>
+                <wsu:Expires>{expires}</wsu:Expires>
+            </wsu:Timestamp>
+        </wsse:Security>
+    </soapenv:Header>
+    <soapenv:Body wsu:Id=""{bodyId}"">
+        {xmlBody}
+    </soapenv:Body>
+ </soapenv:Envelope>";
 
-        //    // Use RSA-SHA256
-        //    signedXml.SignedInfo.SignatureMethod = SignedXml.XmlDsigRSASHA256Url;
+            return envelope;
+        }
 
-        //    // Reference: Timestamp (URI="#TS-1")
-        //    var refTimestamp = new Reference("#TS-1")
-        //    {
-        //        DigestMethod = SignedXml.XmlDsigSHA256Url
-        //    };
-        //    // Exclusive C14N transform
-        //    var excTransform1 = new XmlDsigExcC14NTransform();
-        //    refTimestamp.AddTransform(excTransform1);
-        //    signedXml.AddReference(refTimestamp);
+        private static void SignFINACompliantSoap(XmlDocument doc, X509Certificate2 cert, string securityTokenId,
+            string timestampId, string bodyId)
+        {
+            if (cert.PrivateKey == null)
+            {
+                throw new InvalidOperationException("Certificate does not contain a private key.");
+            }
 
-        //    // Reference: Body (URI="#Body-1")
-        //    var refBody = new Reference("#Body-1")
-        //    {
-        //        DigestMethod = SignedXml.XmlDsigSHA256Url
-        //    };
-        //    var excTransform2 = new XmlDsigExcC14NTransform();
-        //    refBody.AddTransform(excTransform2);
-        //    signedXml.AddReference(refBody);
+            SignedXml signedXml = new SignedXml(doc);
+            signedXml.SigningKey = cert.PrivateKey;
 
-        //    // Create KeyInfo but we will replace its content to reference the BinarySecurityToken
-        //    var keyInfo = new KeyInfo();
-        //    // Add a dummy X509Data (optional) - not used, we will craft wsse:SecurityTokenReference later
-        //    var x509Data = new KeyInfoX509Data(cert);
-        //    keyInfo.AddClause(x509Data);
-        //    signedXml.KeyInfo = keyInfo;
+            signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
+            signedXml.SignedInfo.SignatureMethod = SignedXml.XmlDsigRSASHA256Url;
 
-        //    // Compute signature
-        //    signedXml.ComputeSignature();
+            // Reference to Body
+            Reference bodyRef = new Reference("#" + bodyId);
+            bodyRef.AddTransform(new XmlDsigExcC14NTransform());
+            bodyRef.DigestMethod = SignedXml.XmlDsigSHA256Url;
+            signedXml.AddReference(bodyRef);
 
-        //    // Get the XML representation of the signature and modify KeyInfo to include wsse:SecurityTokenReference
-        //    var signatureXml = signedXml.GetXml();
+            // Reference to Timestamp
+            Reference timestampRef = new Reference("#" + timestampId);
+            timestampRef.AddTransform(new XmlDsigExcC14NTransform());
+            timestampRef.DigestMethod = SignedXml.XmlDsigSHA256Url;
+            signedXml.AddReference(timestampRef);
 
-        //    // Replace KeyInfo content with:
-        //    // <ds:KeyInfo>
-        //    //   <wsse:SecurityTokenReference>
-        //    //     <wsse:Reference URI="#X509-1" ValueType="...#X509v3"/>
-        //    //   </wsse:SecurityTokenReference>
-        //    // </ds:KeyInfo>
-        //    // Build the new KeyInfo node
-        //    var newKeyInfo = xmlDoc.CreateElement("ds", "KeyInfo", NS_DS);
-        //    var str = xmlDoc.CreateElement("wsse", "SecurityTokenReference", NS_WSSE);
-        //    var refNode = xmlDoc.CreateElement("wsse", "Reference", NS_WSSE);
-        //    var uriAttr = xmlDoc.CreateAttribute("URI");
-        //    uriAttr.Value = "#X509-1";
-        //    refNode.Attributes.Append(uriAttr);
-        //    var valTypeAttr = xmlDoc.CreateAttribute("ValueType");
-        //    valTypeAttr.Value = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3";
-        //    refNode.Attributes.Append(valTypeAttr);
+            // Reference to BinarySecurityToken
+            Reference tokenRef = new Reference("#" + securityTokenId);
+            tokenRef.AddTransform(new XmlDsigExcC14NTransform());
+            tokenRef.DigestMethod = SignedXml.XmlDsigSHA256Url;
+            signedXml.AddReference(tokenRef);
 
-        //    str.AppendChild(refNode);
-        //    newKeyInfo.AppendChild(str);
+            // Add KeyInfo with SecurityTokenReference
+            KeyInfo keyInfo = new KeyInfo();
+            KeyInfoX509Data x509Data = new KeyInfoX509Data(cert);
+            keyInfo.AddClause(x509Data);
 
-        //    // Replace old KeyInfo
-        //    var oldKeyInfo = signatureXml.GetElementsByTagName("KeyInfo", NS_DS)[0];
-        //    if (oldKeyInfo != null)
-        //    {
-        //        signatureXml.ReplaceChild(newKeyInfo, oldKeyInfo);
-        //    }
+            XmlElement keyInfoElement = keyInfo.GetXml();
+            XmlElement securityTokenRef = doc.CreateElement("wsse", "SecurityTokenReference",
+                "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd");
+            XmlElement referenceElement = doc.CreateElement("wsse", "Reference",
+                "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd");
+            referenceElement.SetAttribute("URI", "#" + securityTokenId);
+            referenceElement.SetAttribute("ValueType", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3");
+            securityTokenRef.AppendChild(referenceElement);
 
-        //    // Append the signature element inside wsse:Security (as a child)
-        //    XmlNode importedSig = xmlDoc.ImportNode(signatureXml, true);
-        //    security.AppendChild(importedSig);
+            keyInfoElement.InsertBefore(securityTokenRef, keyInfoElement.FirstChild);
+            signedXml.KeyInfo = keyInfo;
 
-        //    // DONE - Return the XML string
-        //    return xmlDoc.OuterXml;
-        //}
+            // Compute signature
+            signedXml.ComputeSignature();
 
-        //// Helper to load certificate from PFX (example)
-        //public static X509Certificate2 LoadCertificateFromPfx(string pfxPath, string password)
-        //{
-        //    return new X509Certificate2(pfxPath, password, X509KeyStorageFlags.Exportable | X509KeyStorageFlags.MachineKeySet);
-        //}
+            // Add signature to Security header
+            XmlNamespaceManager nsManager = new XmlNamespaceManager(doc.NameTable);
+            nsManager.AddNamespace("wsse", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd");
+            nsManager.AddNamespace("soapenv", "http://schemas.xmlsoap.org/soap/envelope/");
 
-        //// Example usage
-        //public static void Example()
-        //{
-        //    // === Replace these with your real values ===
-        //    string certPath = "D:\\WinX\\ERAC\\certifikati\\p12_aurasoft_demo.p12";
-        //    string certPassword = "Aurasoft1";
-        //    string messageId = "MSG-0009";
-        //    string supplierId = "9934:26389058739";
-        //    string erpId = "e-racun-winx";
-        //    int messageType = 9999;
-        //    string echoText = "Hello world!";
+            XmlElement securityElement = doc.SelectSingleNode("//soapenv:Header/wsse:Security", nsManager) as XmlElement;
+            if (securityElement != null)
+            {
+                securityElement.AppendChild(doc.ImportNode(signedXml.GetXml(), true));
+            }
+            else
+            {
+                throw new InvalidOperationException("Security element not found in SOAP header.");
+            }
+        }
 
-        //    var cert = LoadCertificateFromPfx(certPath, certPassword);
+        private static string ExtractFINAErrorMessage(string response)
+        {
+            try
+            {
+                XmlDocument doc = new XmlDocument();
+                doc.LoadXml(response);
 
-        //    // Alternatively, load from Windows Certificate Store (commented):
-        //    /*
-        //    var store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
-        //    store.Open(OpenFlags.ReadOnly);
-        //    var certs = store.Certificates.Find(X509FindType.FindByThumbprint, "THUMBPRINT_HERE", false);
-        //    if (certs.Count == 0) throw new Exception("Certificate not found in store.");
-        //    var cert = certs[0];
-        //    */
+                XmlNamespaceManager nsManager = new XmlNamespaceManager(doc.NameTable);
+                nsManager.AddNamespace("soap", "http://schemas.xmlsoap.org/soap/envelope/");
+                nsManager.AddNamespace("fin", "http://www.fina.hr/e-racun/services");
 
-        //    string signedSoap = CreateSignedEchoSoap(cert, messageId, supplierId, erpId, messageType, echoText);
-        //    Console.WriteLine(signedSoap);
-        //}
+                // Try to find error message in various locations
+                XmlNode errorNode = doc.SelectSingleNode("//faultstring", nsManager) ??
+                                   doc.SelectSingleNode("//ErrorMessage", nsManager) ??
+                                   doc.SelectSingleNode("//*[contains(local-name(), 'Error')]", nsManager);
+
+                return errorNode?.InnerText ?? "No error details available";
+            }
+            catch
+            {
+                // If XML parsing fails, return raw response or truncated version
+                return response.Length > 500 ? response.Substring(0, 500) + "..." : response;
+            }
+        }
+
+        private static X509Certificate2 LoadCertificate(string identifier, string password)
+        {
+            // Try loading from file path first
+            if (System.IO.File.Exists(identifier))
+            {
+                return new X509Certificate2(identifier, password, X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable);
+            }
+
+            // Otherwise, try loading from certificate store by thumbprint
+            using (X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
+            {
+                store.Open(OpenFlags.ReadOnly);
+                var certs = store.Certificates.Find(X509FindType.FindByThumbprint, identifier, false);
+                return certs.Count > 0 ? certs[0] : null;
+            }
+        }
+    }
+
+    public class TEST1Function : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 0, m_name);
+
+            string unsignedXml = @"<?xml version=""1.0"" encoding=""utf-8""?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV=""http://schemas.xmlsoap.org/soap/envelope/""
+                   xmlns:xsd=""http://www.w3.org/2001/XMLSchema""
+                   xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"">
+    <SOAP-ENV:Header />
+    <SOAP-ENV:Body
+                   xmlns:wsu=""http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"">
+        <EchoMsg xmlns=""http://fina.hr/eracun/b2b/pki/Echo/v0.1"">
+            <HeaderSupplier xmlns=""http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1"">
+                <MessageID>" + Guid.NewGuid() + @"</MessageID>
+                <SupplierID>9934:26389058739</SupplierID>" + 
+                //"<ERPID>e-racun-winx</ERPID> " + 
+                //@"<MessageType>9999</MessageType>" +
+                @"<MessageAttributes>echo poruka</MessageAttributes>
+            </HeaderSupplier>
+            <Data>
+                <EchoData>
+                    <Echo>hello from Aurasoft</Echo>
+                </EchoData>
+            </Data>
+        </EchoMsg>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>";
+
+            unsignedXml = @"<?xml version=""1.0"" encoding=""UTF-8""?>
+<Invoice xmlns=""urn:oasis:names:specification:ubl:schema:xsd:Invoice-2""
+    xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
+    xmlns:xsd=""http://www.w3.org/2001/XMLSchema""
+    xmlns:cac=""urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2""
+    xmlns:cbc=""urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2""
+    xmlns:ext=""urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2""
+    xmlns:hrextac=""urn:mfin.gov.hr:schema:xsd:HRExtensionAggregateComponents-1"">
+<ext:UBLExtensions>
+  <ext:UBLExtension>
+    <ext:ExtensionContent>
+        <hrextac:HRFISK20Data>
+            <hrextac:HRTaxTotal>
+                <cbc:TaxAmount currencyID=""EUR"">209.54</cbc:TaxAmount>
+                <hrextac:HRTaxSubtotal>
+                    <cbc:TaxableAmount currencyID=""EUR"">838.15</cbc:TaxableAmount>
+                    <cbc:TaxAmount currencyID=""EUR"">209.54</cbc:TaxAmount>
+                    <hrextac:HRTaxCategory>
+                        <cbc:ID>S</cbc:ID>
+                        <cbc:Name>HR:PDV25</cbc:Name>
+                        <cbc:Percent>25</cbc:Percent>
+                        <hrextac:HRTaxScheme>
+                            <cbc:ID>VAT</cbc:ID>
+                        </hrextac:HRTaxScheme>
+                    </hrextac:HRTaxCategory>
+                </hrextac:HRTaxSubtotal>
+            </hrextac:HRTaxTotal>
+            <hrextac:HRLegalMonetaryTotal>
+              <cbc:TaxExclusiveAmount currencyID=""EUR"">0.00</cbc:TaxExclusiveAmount>
+              <hrextac:OutOfScopeOfVATAmount currencyID=""EUR"">0.00</hrextac:OutOfScopeOfVATAmount>
+            </hrextac:HRLegalMonetaryTotal>
+        </hrextac:HRFISK20Data>
+    </ext:ExtensionContent>
+  </ext:UBLExtension>
+</ext:UBLExtensions>
+<cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0#conformant#urn:mfin.gov.hr:ext-2025:1.0</cbc:CustomizationID>
+<cbc:ProfileID>P7</cbc:ProfileID>
+<cbc:ID>00003-90-1</cbc:ID>
+<cbc:CopyIndicator>false</cbc:CopyIndicator>
+<cbc:IssueDate>2024-01-12</cbc:IssueDate>
+<cbc:IssueTime>11:52:07</cbc:IssueTime>
+<cbc:DueDate>2024-01-12</cbc:DueDate>
+<cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>
+<cbc:Note>
+
+  TK: TARA T#AAI#</cbc:Note>
+<cbc:TaxPointDate>2024-01-05</cbc:TaxPointDate>
+<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>
+<cbc:TaxCurrencyCode>EUR</cbc:TaxCurrencyCode>
+<cac:AccountingSupplierParty>
+  <cac:Party>
+    <cbc:EndpointID schemeID=""9934"">26389058739</cbc:EndpointID>
+    <cac:PartyIdentification><cbc:ID>9934:26389058739</cbc:ID></cac:PartyIdentification>
+    <cac:PartyName><cbc:Name>Proba d.o.o.</cbc:Name></cac:PartyName>
+    <cac:PostalAddress>
+      <cbc:StreetName>Kapetana Lazarića 1D</cbc:StreetName>
+      <cbc:CityName>Pazin</cbc:CityName>
+      <cbc:PostalZone>52000</cbc:PostalZone>
+      <cac:Country><cbc:IdentificationCode>HR</cbc:IdentificationCode></cac:Country>
+    </cac:PostalAddress>
+    <cac:PartyTaxScheme><cbc:CompanyID>HR26389058739</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>
+    <cac:PartyLegalEntity>
+      <cbc:RegistrationName>AURA SOFT d.o.o. Primjer dugog teksta</cbc:RegistrationName>
+    </cac:PartyLegalEntity>
+    <cac:Contact>
+      <cbc:Telephone>052-621-929</cbc:Telephone>
+    </cac:Contact>
+  </cac:Party>
+  <cac:SellerContact>    <cbc:ID>12345678903</cbc:ID>    <cbc:Name>TARA T</cbc:Name>  </cac:SellerContact></cac:AccountingSupplierParty>
+<cac:AccountingCustomerParty>
+  <cac:Party>
+    <cbc:EndpointID schemeID=""9934"">85821130368</cbc:EndpointID>
+    <cac:PartyIdentification><cbc:ID>9934:85821130368</cbc:ID></cac:PartyIdentification>
+    <cac:PartyName><cbc:Name>Partner 3413</cbc:Name></cac:PartyName>
+    <cac:PostalAddress>
+      <cbc:StreetName>BAŠTIJANOVA 13</cbc:StreetName>
+      <cbc:CityName>RIJEKA</cbc:CityName>
+      <cbc:PostalZone>51000</cbc:PostalZone>
+      <cac:Country><cbc:IdentificationCode>HR</cbc:IdentificationCode></cac:Country>
+    </cac:PostalAddress>
+    <cac:PartyTaxScheme><cbc:CompanyID>HR26389058739</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>
+    <cac:PartyLegalEntity>
+      <cbc:RegistrationName>Partner 3413</cbc:RegistrationName>
+    </cac:PartyLegalEntity>
+  </cac:Party>
+</cac:AccountingCustomerParty>
+<cac:PaymentMeans>
+  <cbc:PaymentMeansCode>30</cbc:PaymentMeansCode>
+  <cbc:InstructionNote>Transakcijski račun</cbc:InstructionNote>
+  <cbc:PaymentID>00 103201-90100003-1</cbc:PaymentID>
+  <cac:PayeeFinancialAccount>
+    <cbc:ID>2380006-1147002371</cbc:ID>
+    <cbc:Name>Privredna banka d.d.</cbc:Name>
+  </cac:PayeeFinancialAccount>
+</cac:PaymentMeans>
+<cac:TaxTotal>
+  <cbc:TaxAmount currencyID=""EUR"">209.54</cbc:TaxAmount>
+  <cac:TaxSubtotal>
+    <cbc:TaxableAmount currencyID=""EUR"">838.15</cbc:TaxableAmount>
+    <cbc:TaxAmount currencyID=""EUR"">209.54</cbc:TaxAmount>
+    <cac:TaxCategory>
+      <cbc:ID>S</cbc:ID>
+      <cbc:Percent>25</cbc:Percent>
+      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+    </cac:TaxCategory>
+  </cac:TaxSubtotal>
+</cac:TaxTotal>
+<cac:LegalMonetaryTotal>
+  <cbc:LineExtensionAmount currencyID=""EUR"">838.15</cbc:LineExtensionAmount>
+  <cbc:TaxExclusiveAmount currencyID=""EUR"">838.15</cbc:TaxExclusiveAmount>
+  <cbc:TaxInclusiveAmount currencyID=""EUR"">1047.69</cbc:TaxInclusiveAmount>
+  <cbc:PayableAmount currencyID=""EUR"">1047.69</cbc:PayableAmount>
+</cac:LegalMonetaryTotal>
+<cac:InvoiceLine>
+  <cbc:ID>1</cbc:ID>
+  <cbc:InvoicedQuantity unitCode=""H87"">72.0000</cbc:InvoicedQuantity>
+  <cbc:LineExtensionAmount currencyID=""EUR"">583.26</cbc:LineExtensionAmount>
+  <cac:AllowanceCharge>
+    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+    <cbc:AllowanceChargeReason>Popust na stavku (17.00%)</cbc:AllowanceChargeReason>
+    <cbc:MultiplierFactorNumeric>17.00</cbc:MultiplierFactorNumeric>
+    <cbc:Amount currencyID=""EUR"">119.46</cbc:Amount>
+    <cbc:BaseAmount currencyID=""EUR"">702.72</cbc:BaseAmount>
+  </cac:AllowanceCharge>
+  <cac:Item>
+    <cbc:Name>BK SIPROFIX 160 SUPERFLEX C2TE LJEP. 25/1 (48#)</cbc:Name>
+    <cac:SellersItemIdentification><cbc:ID>000164</cbc:ID></cac:SellersItemIdentification>
+    <cac:StandardItemIdentification><cbc:ID schemeID=""0160"">1000000000028</cbc:ID></cac:StandardItemIdentification>
+    <cac:CommodityClassification>
+      <cbc:ItemClassificationCode listID=""CG"">46.89.00</cbc:ItemClassificationCode>
+    </cac:CommodityClassification>
+    <cac:ClassifiedTaxCategory>
+      <cbc:ID>S</cbc:ID>
+      <cbc:Percent>25</cbc:Percent>
+      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+    </cac:ClassifiedTaxCategory>
+  </cac:Item>
+  <cac:Price>
+    <cbc:PriceAmount currencyID=""EUR"">9.7600</cbc:PriceAmount>
+    <cbc:BaseQuantity unitCode=""H87"">1</cbc:BaseQuantity>
+  </cac:Price>
+</cac:InvoiceLine>
+<cac:InvoiceLine>
+  <cbc:ID>2</cbc:ID>
+  <cbc:InvoicedQuantity unitCode=""H87"">6.0000</cbc:InvoicedQuantity>
+  <cbc:LineExtensionAmount currencyID=""EUR"">168.52</cbc:LineExtensionAmount>
+  <cac:AllowanceCharge>
+    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+    <cbc:AllowanceChargeReason>Popust na stavku (17.00%)</cbc:AllowanceChargeReason>
+    <cbc:MultiplierFactorNumeric>17.00</cbc:MultiplierFactorNumeric>
+    <cbc:Amount currencyID=""EUR"">34.52</cbc:Amount>
+    <cbc:BaseAmount currencyID=""EUR"">203.04</cbc:BaseAmount>
+  </cac:AllowanceCharge>
+  <cac:Item>
+    <cbc:Name>BK HIDROSTOP 2 (16,6+5) 16,6/1</cbc:Name>
+    <cac:SellersItemIdentification><cbc:ID>000080</cbc:ID></cac:SellersItemIdentification>
+    <cac:StandardItemIdentification><cbc:ID schemeID=""0160"">8606103352033</cbc:ID></cac:StandardItemIdentification>
+    <cac:CommodityClassification>
+      <cbc:ItemClassificationCode listID=""CG"">46.89.00</cbc:ItemClassificationCode>
+    </cac:CommodityClassification>
+    <cac:ClassifiedTaxCategory>
+      <cbc:ID>S</cbc:ID>
+      <cbc:Percent>25</cbc:Percent>
+      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+    </cac:ClassifiedTaxCategory>
+  </cac:Item>
+  <cac:Price>
+    <cbc:PriceAmount currencyID=""EUR"">33.8400</cbc:PriceAmount>
+    <cbc:BaseQuantity unitCode=""H87"">1</cbc:BaseQuantity>
+  </cac:Price>
+</cac:InvoiceLine>
+<cac:InvoiceLine>
+  <cbc:ID>3</cbc:ID>
+  <cbc:InvoicedQuantity unitCode=""H87"">6.0000</cbc:InvoicedQuantity>
+  <cbc:LineExtensionAmount currencyID=""EUR"">50.60</cbc:LineExtensionAmount>
+  <cac:AllowanceCharge>
+    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+    <cbc:AllowanceChargeReason>Popust na stavku (17.00%)</cbc:AllowanceChargeReason>
+    <cbc:MultiplierFactorNumeric>16.99</cbc:MultiplierFactorNumeric>
+    <cbc:Amount currencyID=""EUR"">10.36</cbc:Amount>
+    <cbc:BaseAmount currencyID=""EUR"">60.96</cbc:BaseAmount>
+  </cac:AllowanceCharge>
+  <cac:Item>
+    <cbc:Name>BK EMULZIJA HIDROSTOP 2 (20+5) 5/1</cbc:Name>
+    <cac:SellersItemIdentification><cbc:ID>000324</cbc:ID></cac:SellersItemIdentification>
+    <cac:StandardItemIdentification><cbc:ID schemeID=""0160"">8606103352040</cbc:ID></cac:StandardItemIdentification>
+    <cac:CommodityClassification>
+      <cbc:ItemClassificationCode listID=""CG"">46.89.00</cbc:ItemClassificationCode>
+    </cac:CommodityClassification>
+    <cac:ClassifiedTaxCategory>
+      <cbc:ID>S</cbc:ID>
+      <cbc:Percent>25</cbc:Percent>
+      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+    </cac:ClassifiedTaxCategory>
+  </cac:Item>
+  <cac:Price>
+    <cbc:PriceAmount currencyID=""EUR"">10.1600</cbc:PriceAmount>
+    <cbc:BaseQuantity unitCode=""H87"">1</cbc:BaseQuantity>
+  </cac:Price>
+</cac:InvoiceLine>
+<cac:InvoiceLine>
+  <cbc:ID>4</cbc:ID>
+  <cbc:InvoicedQuantity unitCode=""H87"">2.0000</cbc:InvoicedQuantity>
+  <cbc:LineExtensionAmount currencyID=""EUR"">35.77</cbc:LineExtensionAmount>
+  <cac:AllowanceCharge>
+    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+    <cbc:AllowanceChargeReason>Popust na stavku (15.00%)</cbc:AllowanceChargeReason>
+    <cbc:MultiplierFactorNumeric>15.00</cbc:MultiplierFactorNumeric>
+    <cbc:Amount currencyID=""EUR"">6.31</cbc:Amount>
+    <cbc:BaseAmount currencyID=""EUR"">42.08</cbc:BaseAmount>
+  </cac:AllowanceCharge>
+  <cac:Item>
+    <cbc:Name>BK PODLOGA  5L</cbc:Name>
+    <cac:SellersItemIdentification><cbc:ID>000264</cbc:ID></cac:SellersItemIdentification>
+    <cac:StandardItemIdentification><cbc:ID schemeID=""0160"">8606102367779</cbc:ID></cac:StandardItemIdentification>
+    <cac:CommodityClassification>
+      <cbc:ItemClassificationCode listID=""CG"">46.89.00</cbc:ItemClassificationCode>
+    </cac:CommodityClassification>
+    <cac:ClassifiedTaxCategory>
+      <cbc:ID>S</cbc:ID>
+      <cbc:Percent>25</cbc:Percent>
+      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+    </cac:ClassifiedTaxCategory>
+  </cac:Item>
+  <cac:Price>
+    <cbc:PriceAmount currencyID=""EUR"">21.0400</cbc:PriceAmount>
+    <cbc:BaseQuantity unitCode=""H87"">1</cbc:BaseQuantity>
+  </cac:Price>
+</cac:InvoiceLine>
+</Invoice>
+";
+
+
+            // potpisi e_racun:
+            DigitalSignature dsig = new DigitalSignature();
+            var cert = new X509Certificate2(@"D:\WinX\ERAC\certifikati\p12_aurasoft_demo.p12", "Aurasoft1",
+                    X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable);
+            dsig.Certificate = cert;
+            byte[] nepotpisaniRacun = Encoding.ASCII.GetBytes(unsignedXml);
+            byte[] bajtoviPotpisanogRacuna = dsig.SignInvoiceOrCreditNote(nepotpisaniRacun);
+            //System.IO.File.WriteAllBytes(@"C:\potpisani_eracun.xml", bajtoviPotpisanogRacuna);
+
+            string signedXml = System.Text.Encoding.UTF8.GetString(bajtoviPotpisanogRacuna);
+
+            return new Variable(signedXml);
+
+            //string signedXml = FinaSoapSigner.SignSoap(
+            //    unsignedXml,
+            //    "D:\\WinX\\ERAC\\certifikati\\p12_aurasoft_demo.p12",
+            //    "Aurasoft1"
+            //);
+
+            ////File.WriteAllText("signed.xml", signedXml);
+
+            //return new Variable(signedXml);
+
+
+        }
+
+        public class FinaSoapSigner
+        {
+            public static string SignSoap(string unsignedSoapXml, string pfxPath, string pfxPassword)
+            {
+                // Load cert
+                var cert = new X509Certificate2(pfxPath, pfxPassword,
+                    X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable);
+
+                // Load XML
+                var doc = new XmlDocument();
+                doc.PreserveWhitespace = true;
+                doc.LoadXml(unsignedSoapXml);
+
+                // Namespace manager
+                var ns = new XmlNamespaceManager(doc.NameTable);
+                ns.AddNamespace("soap", "http://schemas.xmlsoap.org/soap/envelope/");
+
+                // Find Body
+                var body = (XmlElement)doc.SelectSingleNode("//soap:Body", ns);
+                if (body == null) throw new Exception("SOAP Body nije pronađen.");
+
+                // Ensure both Id (for SignedXml) and wsu:Id (for WSS) are present
+                // 1) add plain Id (SignedXml prepoznaje atribut "Id")
+                body.SetAttribute("Id", "Body");
+
+                // 2) add wsu:Id as well (WS-Security expects wsu:Id)
+                // ensure wsu namespace is declared at envelope level
+                var env = (XmlElement)doc.DocumentElement;
+                if (env != null && env.GetAttribute("xmlns:wsu") == string.Empty)
+                {
+                    env.SetAttribute("xmlns:wsu", "http://schemas.xmlsoap.org/ws/2002/12/utility");
+                }
+                //body.SetAttribute("wsu:Id", "Body", "http://schemas.xmlsoap.org/ws/2002/12/utility");
+                var wsuId = doc.CreateAttribute("wsu", "Id", "http://schemas.xmlsoap.org/ws/2002/12/utility");
+                wsuId.Value = "Body";
+                body.Attributes.Append(wsuId);
+
+                // Find Header, create Security element
+                var header = (XmlElement)doc.SelectSingleNode("//soap:Header", ns);
+                if (header == null) throw new Exception("SOAP Header nije pronađen.");
+
+                var security = doc.CreateElement("wsse", "Security", "http://schemas.xmlsoap.org/ws/2002/12/secext");
+                // opcionalno: add mustUnderstand if needed
+                header.AppendChild(security);
+
+                // BinarySecurityToken
+                var bst = doc.CreateElement("wsse", "BinarySecurityToken", "http://schemas.xmlsoap.org/ws/2002/12/secext");
+                bst.SetAttribute("EncodingType", "http://schemas.xmlsoap.org/ws/2002/12/secext#Base64Binary");
+                bst.SetAttribute("ValueType", "http://schemas.xmlsoap.org/ws/2002/12/secext#X509v3");
+                // ensure wsu:Id attribute exists and has correct prefix
+                var bstIdAttr = doc.CreateAttribute("wsu", "Id", "http://schemas.xmlsoap.org/ws/2002/12/utility");
+                bstIdAttr.Value = "X509Token";
+                bst.Attributes.Append(bstIdAttr);
+                bst.InnerText = Convert.ToBase64String(cert.RawData);
+                security.AppendChild(bst);
+
+                // Prepare SignedXml
+                var signedXml = new SignedXml(doc);
+
+                // Use RSA (we already saw cert.GetRSAPrivateKey() is OK)
+                RSA rsa = cert.GetRSAPrivateKey();
+                if (rsa == null) throw new Exception("Nije pronađen RSA privatni ključ u certifikatu.");
+                signedXml.SigningKey = rsa;
+
+                // Ensure signature uses SHA256
+                signedXml.SignedInfo.SignatureMethod = SignedXml.XmlDsigRSASHA256Url;
+
+                // Create Reference to "#Body"
+                var reference = new Reference();
+                reference.Uri = "#Body";
+                reference.DigestMethod = SignedXml.XmlDsigSHA256Url;
+                reference.AddTransform(new XmlDsigExcC14NTransform()); // exclusive canonicalization
+                signedXml.AddReference(reference);
+
+                // IMPORTANT: register Id attribute so SignedXml can resolve "#Body"
+                // SignedXml looks for attribute named "Id" by default. We already set "Id".
+                // But to be robust, explicitly add id attribute mapping for the body element:
+                // (AddIdElement available as protected in some implementations; this approach is safe:)
+                //signedXml.AddReference(reference); // already added above — no harm repeating
+
+                // Build KeyInfo using SecurityTokenReference pointing to BinarySecurityToken
+                var keyInfo = new KeyInfo();
+                // create <wsse:SecurityTokenReference><wsse:Reference URI="#X509Token" ValueType="..."/></wsse:SecurityTokenReference>
+                var strXml = @"<wsse:SecurityTokenReference xmlns:wsse=""http://schemas.xmlsoap.org/ws/2002/12/secext"">" +
+                             @"<wsse:Reference URI=""#X509Token"" ValueType=""http://schemas.xmlsoap.org/ws/2002/12/secext#X509v3""/>" +
+                             @"</wsse:SecurityTokenReference>";
+
+                var strDoc = new XmlDocument();
+                strDoc.LoadXml(strXml);
+                keyInfo.AddClause(new KeyInfoNode(strDoc.DocumentElement));
+                signedXml.KeyInfo = keyInfo;
+
+                // Compute signature
+                signedXml.ComputeSignature();
+
+                // Get XML for signature and append into wsse:Security
+                var xmlDigitalSignature = signedXml.GetXml();
+                // The signature element uses ds: namespace by default; append as-is
+                security.AppendChild(doc.ImportNode(xmlDigitalSignature, true));
+
+                // Return signed SOAP
+                return doc.OuterXml;
+            }
+
+            private static XmlElement CreateSecurityTokenReference(XmlDocument doc)
+            {
+                XmlElement str = doc.CreateElement("wsse", "SecurityTokenReference",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext");
+
+                XmlElement reference = doc.CreateElement("wsse", "Reference",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext");
+                reference.SetAttribute("URI", "#X509Token");
+                reference.SetAttribute("ValueType",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext#X509v3");
+
+                str.AppendChild(reference);
+                return str;
+            }
+        }
+
+        public static class SoapSigner
+        {
+            public static string SignSoapEnvelope(string xmlString, string pfxPath, string pfxPassword)
+            {
+                // Load certificate
+                X509Certificate2 cert = new X509Certificate2(pfxPath, pfxPassword,
+                    X509KeyStorageFlags.MachineKeySet |
+                    X509KeyStorageFlags.Exportable);
+
+                // Load SOAP XML
+                XmlDocument doc = new XmlDocument();
+                doc.PreserveWhitespace = true;       // VERY IMPORTANT
+                doc.LoadXml(xmlString);
+
+                // Find Body node
+                XmlNamespaceManager nsm = new XmlNamespaceManager(doc.NameTable);
+                nsm.AddNamespace("soap", "http://schemas.xmlsoap.org/soap/envelope/");
+
+                XmlElement body = (XmlElement)doc.SelectSingleNode("//soap:Body", nsm);
+                if (body == null)
+                    throw new Exception("SOAP Body not found.");
+
+                // Add wsu:Id="Body"
+                body.SetAttribute("xmlns:wsu", "http://schemas.xmlsoap.org/ws/2002/12/utility");
+                body.SetAttribute("wsu:Id", "Body");
+
+                // Create wsse:Security header
+                XmlElement header = (XmlElement)doc.SelectSingleNode("//soap:Header", nsm);
+                if (header == null)
+                    throw new Exception("SOAP Header missing.");
+
+                XmlElement security = doc.CreateElement("wsse", "Security",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext");
+                header.AppendChild(security);
+
+                // Create BinarySecurityToken
+                XmlElement bst = doc.CreateElement("wsse", "BinarySecurityToken",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext");
+                bst.SetAttribute("EncodingType",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext#Base64Binary");
+                bst.SetAttribute("ValueType",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext#X509v3");
+                bst.SetAttribute("wsu:Id", "MyCert");
+                bst.InnerText = Convert.ToBase64String(cert.GetRawCertData());
+                security.AppendChild(bst);
+
+                // Create SignedXml object
+                SignedXml signedXml = new SignedXml(doc);
+                signedXml.SigningKey = cert.PrivateKey;
+
+                // Reference to Body
+                Reference reference = new Reference();
+                reference.Uri = "#Body";
+                reference.AddTransform(new XmlDsigExcC14NTransform());
+                signedXml.AddReference(reference);
+
+                // Add KeyInfo pointing to BinarySecurityToken
+                KeyInfo keyInfo = new KeyInfo();
+                KeyInfoNode refNode = new KeyInfoNode(
+                    CreateSecurityTokenReference(doc));
+                keyInfo.AddClause(refNode);
+                signedXml.KeyInfo = keyInfo;
+
+                // Compute signature
+                signedXml.ComputeSignature();
+
+                // Append <Signature> under <wsse:Security>
+                XmlElement xmlDigitalSignature = signedXml.GetXml();
+                security.AppendChild(xmlDigitalSignature);
+
+                return doc.OuterXml;
+            }
+
+            private static XmlElement CreateSecurityTokenReference(XmlDocument doc)
+            {
+                XmlElement str = doc.CreateElement("wsse", "SecurityTokenReference",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext");
+
+                XmlElement refElem = doc.CreateElement("wsse", "Reference",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext");
+
+                refElem.SetAttribute("URI", "#MyCert");
+                refElem.SetAttribute("ValueType",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext#X509v3");
+
+                str.AppendChild(refElem);
+                return str;
+            }
+        }
     }
 }

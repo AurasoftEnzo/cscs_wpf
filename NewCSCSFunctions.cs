@@ -3008,272 +3008,275 @@ namespace WpfCSCS
                 <SupplierID>9934:26389058739</SupplierID>" + 
                 //"<ERPID>e-racun-winx</ERPID> " + 
                 //@"<MessageType>9999</MessageType>" +
-                @"<MessageAttributes>echo poruka</MessageAttributes>
-            </HeaderSupplier>
+                //@"<MessageAttributes>echo poruka</MessageAttributes>" +
+            @"</HeaderSupplier>
             <Data>
                 <EchoData>
-                    <Echo>hello from Aurasoft</Echo>
+                    <Echo>hello from Aurasoft!</Echo>
                 </EchoData>
             </Data>
         </EchoMsg>
     </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>";
 
-            unsignedXml = @"<?xml version=""1.0"" encoding=""UTF-8""?>
-<Invoice xmlns=""urn:oasis:names:specification:ubl:schema:xsd:Invoice-2""
-    xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
-    xmlns:xsd=""http://www.w3.org/2001/XMLSchema""
-    xmlns:cac=""urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2""
-    xmlns:cbc=""urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2""
-    xmlns:ext=""urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2""
-    xmlns:hrextac=""urn:mfin.gov.hr:schema:xsd:HRExtensionAggregateComponents-1"">
-<ext:UBLExtensions>
-  <ext:UBLExtension>
-    <ext:ExtensionContent>
-        <hrextac:HRFISK20Data>
-            <hrextac:HRTaxTotal>
-                <cbc:TaxAmount currencyID=""EUR"">209.54</cbc:TaxAmount>
-                <hrextac:HRTaxSubtotal>
-                    <cbc:TaxableAmount currencyID=""EUR"">838.15</cbc:TaxableAmount>
-                    <cbc:TaxAmount currencyID=""EUR"">209.54</cbc:TaxAmount>
-                    <hrextac:HRTaxCategory>
-                        <cbc:ID>S</cbc:ID>
-                        <cbc:Name>HR:PDV25</cbc:Name>
-                        <cbc:Percent>25</cbc:Percent>
-                        <hrextac:HRTaxScheme>
-                            <cbc:ID>VAT</cbc:ID>
-                        </hrextac:HRTaxScheme>
-                    </hrextac:HRTaxCategory>
-                </hrextac:HRTaxSubtotal>
-            </hrextac:HRTaxTotal>
-            <hrextac:HRLegalMonetaryTotal>
-              <cbc:TaxExclusiveAmount currencyID=""EUR"">0.00</cbc:TaxExclusiveAmount>
-              <hrextac:OutOfScopeOfVATAmount currencyID=""EUR"">0.00</hrextac:OutOfScopeOfVATAmount>
-            </hrextac:HRLegalMonetaryTotal>
-        </hrextac:HRFISK20Data>
-    </ext:ExtensionContent>
-  </ext:UBLExtension>
-</ext:UBLExtensions>
-<cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0#conformant#urn:mfin.gov.hr:ext-2025:1.0</cbc:CustomizationID>
-<cbc:ProfileID>P7</cbc:ProfileID>
-<cbc:ID>00003-90-1</cbc:ID>
-<cbc:CopyIndicator>false</cbc:CopyIndicator>
-<cbc:IssueDate>2024-01-12</cbc:IssueDate>
-<cbc:IssueTime>11:52:07</cbc:IssueTime>
-<cbc:DueDate>2024-01-12</cbc:DueDate>
-<cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>
-<cbc:Note>
+            //            unsignedXml = @"<?xml version=""1.0"" encoding=""UTF-8""?>
+            //<Invoice xmlns=""urn:oasis:names:specification:ubl:schema:xsd:Invoice-2""
+            //    xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
+            //    xmlns:xsd=""http://www.w3.org/2001/XMLSchema""
+            //    xmlns:cac=""urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2""
+            //    xmlns:cbc=""urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2""
+            //    xmlns:ext=""urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2""
+            //    xmlns:hrextac=""urn:mfin.gov.hr:schema:xsd:HRExtensionAggregateComponents-1"">
+            //<ext:UBLExtensions>
+            //  <ext:UBLExtension>
+            //    <ext:ExtensionContent>
+            //        <hrextac:HRFISK20Data>
+            //            <hrextac:HRTaxTotal>
+            //                <cbc:TaxAmount currencyID=""EUR"">209.54</cbc:TaxAmount>
+            //                <hrextac:HRTaxSubtotal>
+            //                    <cbc:TaxableAmount currencyID=""EUR"">838.15</cbc:TaxableAmount>
+            //                    <cbc:TaxAmount currencyID=""EUR"">209.54</cbc:TaxAmount>
+            //                    <hrextac:HRTaxCategory>
+            //                        <cbc:ID>S</cbc:ID>
+            //                        <cbc:Name>HR:PDV25</cbc:Name>
+            //                        <cbc:Percent>25</cbc:Percent>
+            //                        <hrextac:HRTaxScheme>
+            //                            <cbc:ID>VAT</cbc:ID>
+            //                        </hrextac:HRTaxScheme>
+            //                    </hrextac:HRTaxCategory>
+            //                </hrextac:HRTaxSubtotal>
+            //            </hrextac:HRTaxTotal>
+            //            <hrextac:HRLegalMonetaryTotal>
+            //              <cbc:TaxExclusiveAmount currencyID=""EUR"">0.00</cbc:TaxExclusiveAmount>
+            //              <hrextac:OutOfScopeOfVATAmount currencyID=""EUR"">0.00</hrextac:OutOfScopeOfVATAmount>
+            //            </hrextac:HRLegalMonetaryTotal>
+            //        </hrextac:HRFISK20Data>
+            //    </ext:ExtensionContent>
+            //  </ext:UBLExtension>
+            //</ext:UBLExtensions>
+            //<cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0#conformant#urn:mfin.gov.hr:ext-2025:1.0</cbc:CustomizationID>
+            //<cbc:ProfileID>P7</cbc:ProfileID>
+            //<cbc:ID>00003-90-1</cbc:ID>
+            //<cbc:CopyIndicator>false</cbc:CopyIndicator>
+            //<cbc:IssueDate>2024-01-12</cbc:IssueDate>
+            //<cbc:IssueTime>11:52:07</cbc:IssueTime>
+            //<cbc:DueDate>2024-01-12</cbc:DueDate>
+            //<cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>
+            //<cbc:Note>
 
-  TK: TARA T#AAI#</cbc:Note>
-<cbc:TaxPointDate>2024-01-05</cbc:TaxPointDate>
-<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>
-<cbc:TaxCurrencyCode>EUR</cbc:TaxCurrencyCode>
-<cac:AccountingSupplierParty>
-  <cac:Party>
-    <cbc:EndpointID schemeID=""9934"">26389058739</cbc:EndpointID>
-    <cac:PartyIdentification><cbc:ID>9934:26389058739</cbc:ID></cac:PartyIdentification>
-    <cac:PartyName><cbc:Name>Proba d.o.o.</cbc:Name></cac:PartyName>
-    <cac:PostalAddress>
-      <cbc:StreetName>Kapetana Lazarića 1D</cbc:StreetName>
-      <cbc:CityName>Pazin</cbc:CityName>
-      <cbc:PostalZone>52000</cbc:PostalZone>
-      <cac:Country><cbc:IdentificationCode>HR</cbc:IdentificationCode></cac:Country>
-    </cac:PostalAddress>
-    <cac:PartyTaxScheme><cbc:CompanyID>HR26389058739</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>
-    <cac:PartyLegalEntity>
-      <cbc:RegistrationName>AURA SOFT d.o.o. Primjer dugog teksta</cbc:RegistrationName>
-    </cac:PartyLegalEntity>
-    <cac:Contact>
-      <cbc:Telephone>052-621-929</cbc:Telephone>
-    </cac:Contact>
-  </cac:Party>
-  <cac:SellerContact>    <cbc:ID>12345678903</cbc:ID>    <cbc:Name>TARA T</cbc:Name>  </cac:SellerContact></cac:AccountingSupplierParty>
-<cac:AccountingCustomerParty>
-  <cac:Party>
-    <cbc:EndpointID schemeID=""9934"">85821130368</cbc:EndpointID>
-    <cac:PartyIdentification><cbc:ID>9934:85821130368</cbc:ID></cac:PartyIdentification>
-    <cac:PartyName><cbc:Name>Partner 3413</cbc:Name></cac:PartyName>
-    <cac:PostalAddress>
-      <cbc:StreetName>BAŠTIJANOVA 13</cbc:StreetName>
-      <cbc:CityName>RIJEKA</cbc:CityName>
-      <cbc:PostalZone>51000</cbc:PostalZone>
-      <cac:Country><cbc:IdentificationCode>HR</cbc:IdentificationCode></cac:Country>
-    </cac:PostalAddress>
-    <cac:PartyTaxScheme><cbc:CompanyID>HR26389058739</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>
-    <cac:PartyLegalEntity>
-      <cbc:RegistrationName>Partner 3413</cbc:RegistrationName>
-    </cac:PartyLegalEntity>
-  </cac:Party>
-</cac:AccountingCustomerParty>
-<cac:PaymentMeans>
-  <cbc:PaymentMeansCode>30</cbc:PaymentMeansCode>
-  <cbc:InstructionNote>Transakcijski račun</cbc:InstructionNote>
-  <cbc:PaymentID>00 103201-90100003-1</cbc:PaymentID>
-  <cac:PayeeFinancialAccount>
-    <cbc:ID>2380006-1147002371</cbc:ID>
-    <cbc:Name>Privredna banka d.d.</cbc:Name>
-  </cac:PayeeFinancialAccount>
-</cac:PaymentMeans>
-<cac:TaxTotal>
-  <cbc:TaxAmount currencyID=""EUR"">209.54</cbc:TaxAmount>
-  <cac:TaxSubtotal>
-    <cbc:TaxableAmount currencyID=""EUR"">838.15</cbc:TaxableAmount>
-    <cbc:TaxAmount currencyID=""EUR"">209.54</cbc:TaxAmount>
-    <cac:TaxCategory>
-      <cbc:ID>S</cbc:ID>
-      <cbc:Percent>25</cbc:Percent>
-      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
-    </cac:TaxCategory>
-  </cac:TaxSubtotal>
-</cac:TaxTotal>
-<cac:LegalMonetaryTotal>
-  <cbc:LineExtensionAmount currencyID=""EUR"">838.15</cbc:LineExtensionAmount>
-  <cbc:TaxExclusiveAmount currencyID=""EUR"">838.15</cbc:TaxExclusiveAmount>
-  <cbc:TaxInclusiveAmount currencyID=""EUR"">1047.69</cbc:TaxInclusiveAmount>
-  <cbc:PayableAmount currencyID=""EUR"">1047.69</cbc:PayableAmount>
-</cac:LegalMonetaryTotal>
-<cac:InvoiceLine>
-  <cbc:ID>1</cbc:ID>
-  <cbc:InvoicedQuantity unitCode=""H87"">72.0000</cbc:InvoicedQuantity>
-  <cbc:LineExtensionAmount currencyID=""EUR"">583.26</cbc:LineExtensionAmount>
-  <cac:AllowanceCharge>
-    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
-    <cbc:AllowanceChargeReason>Popust na stavku (17.00%)</cbc:AllowanceChargeReason>
-    <cbc:MultiplierFactorNumeric>17.00</cbc:MultiplierFactorNumeric>
-    <cbc:Amount currencyID=""EUR"">119.46</cbc:Amount>
-    <cbc:BaseAmount currencyID=""EUR"">702.72</cbc:BaseAmount>
-  </cac:AllowanceCharge>
-  <cac:Item>
-    <cbc:Name>BK SIPROFIX 160 SUPERFLEX C2TE LJEP. 25/1 (48#)</cbc:Name>
-    <cac:SellersItemIdentification><cbc:ID>000164</cbc:ID></cac:SellersItemIdentification>
-    <cac:StandardItemIdentification><cbc:ID schemeID=""0160"">1000000000028</cbc:ID></cac:StandardItemIdentification>
-    <cac:CommodityClassification>
-      <cbc:ItemClassificationCode listID=""CG"">46.89.00</cbc:ItemClassificationCode>
-    </cac:CommodityClassification>
-    <cac:ClassifiedTaxCategory>
-      <cbc:ID>S</cbc:ID>
-      <cbc:Percent>25</cbc:Percent>
-      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
-    </cac:ClassifiedTaxCategory>
-  </cac:Item>
-  <cac:Price>
-    <cbc:PriceAmount currencyID=""EUR"">9.7600</cbc:PriceAmount>
-    <cbc:BaseQuantity unitCode=""H87"">1</cbc:BaseQuantity>
-  </cac:Price>
-</cac:InvoiceLine>
-<cac:InvoiceLine>
-  <cbc:ID>2</cbc:ID>
-  <cbc:InvoicedQuantity unitCode=""H87"">6.0000</cbc:InvoicedQuantity>
-  <cbc:LineExtensionAmount currencyID=""EUR"">168.52</cbc:LineExtensionAmount>
-  <cac:AllowanceCharge>
-    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
-    <cbc:AllowanceChargeReason>Popust na stavku (17.00%)</cbc:AllowanceChargeReason>
-    <cbc:MultiplierFactorNumeric>17.00</cbc:MultiplierFactorNumeric>
-    <cbc:Amount currencyID=""EUR"">34.52</cbc:Amount>
-    <cbc:BaseAmount currencyID=""EUR"">203.04</cbc:BaseAmount>
-  </cac:AllowanceCharge>
-  <cac:Item>
-    <cbc:Name>BK HIDROSTOP 2 (16,6+5) 16,6/1</cbc:Name>
-    <cac:SellersItemIdentification><cbc:ID>000080</cbc:ID></cac:SellersItemIdentification>
-    <cac:StandardItemIdentification><cbc:ID schemeID=""0160"">8606103352033</cbc:ID></cac:StandardItemIdentification>
-    <cac:CommodityClassification>
-      <cbc:ItemClassificationCode listID=""CG"">46.89.00</cbc:ItemClassificationCode>
-    </cac:CommodityClassification>
-    <cac:ClassifiedTaxCategory>
-      <cbc:ID>S</cbc:ID>
-      <cbc:Percent>25</cbc:Percent>
-      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
-    </cac:ClassifiedTaxCategory>
-  </cac:Item>
-  <cac:Price>
-    <cbc:PriceAmount currencyID=""EUR"">33.8400</cbc:PriceAmount>
-    <cbc:BaseQuantity unitCode=""H87"">1</cbc:BaseQuantity>
-  </cac:Price>
-</cac:InvoiceLine>
-<cac:InvoiceLine>
-  <cbc:ID>3</cbc:ID>
-  <cbc:InvoicedQuantity unitCode=""H87"">6.0000</cbc:InvoicedQuantity>
-  <cbc:LineExtensionAmount currencyID=""EUR"">50.60</cbc:LineExtensionAmount>
-  <cac:AllowanceCharge>
-    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
-    <cbc:AllowanceChargeReason>Popust na stavku (17.00%)</cbc:AllowanceChargeReason>
-    <cbc:MultiplierFactorNumeric>16.99</cbc:MultiplierFactorNumeric>
-    <cbc:Amount currencyID=""EUR"">10.36</cbc:Amount>
-    <cbc:BaseAmount currencyID=""EUR"">60.96</cbc:BaseAmount>
-  </cac:AllowanceCharge>
-  <cac:Item>
-    <cbc:Name>BK EMULZIJA HIDROSTOP 2 (20+5) 5/1</cbc:Name>
-    <cac:SellersItemIdentification><cbc:ID>000324</cbc:ID></cac:SellersItemIdentification>
-    <cac:StandardItemIdentification><cbc:ID schemeID=""0160"">8606103352040</cbc:ID></cac:StandardItemIdentification>
-    <cac:CommodityClassification>
-      <cbc:ItemClassificationCode listID=""CG"">46.89.00</cbc:ItemClassificationCode>
-    </cac:CommodityClassification>
-    <cac:ClassifiedTaxCategory>
-      <cbc:ID>S</cbc:ID>
-      <cbc:Percent>25</cbc:Percent>
-      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
-    </cac:ClassifiedTaxCategory>
-  </cac:Item>
-  <cac:Price>
-    <cbc:PriceAmount currencyID=""EUR"">10.1600</cbc:PriceAmount>
-    <cbc:BaseQuantity unitCode=""H87"">1</cbc:BaseQuantity>
-  </cac:Price>
-</cac:InvoiceLine>
-<cac:InvoiceLine>
-  <cbc:ID>4</cbc:ID>
-  <cbc:InvoicedQuantity unitCode=""H87"">2.0000</cbc:InvoicedQuantity>
-  <cbc:LineExtensionAmount currencyID=""EUR"">35.77</cbc:LineExtensionAmount>
-  <cac:AllowanceCharge>
-    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
-    <cbc:AllowanceChargeReason>Popust na stavku (15.00%)</cbc:AllowanceChargeReason>
-    <cbc:MultiplierFactorNumeric>15.00</cbc:MultiplierFactorNumeric>
-    <cbc:Amount currencyID=""EUR"">6.31</cbc:Amount>
-    <cbc:BaseAmount currencyID=""EUR"">42.08</cbc:BaseAmount>
-  </cac:AllowanceCharge>
-  <cac:Item>
-    <cbc:Name>BK PODLOGA  5L</cbc:Name>
-    <cac:SellersItemIdentification><cbc:ID>000264</cbc:ID></cac:SellersItemIdentification>
-    <cac:StandardItemIdentification><cbc:ID schemeID=""0160"">8606102367779</cbc:ID></cac:StandardItemIdentification>
-    <cac:CommodityClassification>
-      <cbc:ItemClassificationCode listID=""CG"">46.89.00</cbc:ItemClassificationCode>
-    </cac:CommodityClassification>
-    <cac:ClassifiedTaxCategory>
-      <cbc:ID>S</cbc:ID>
-      <cbc:Percent>25</cbc:Percent>
-      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
-    </cac:ClassifiedTaxCategory>
-  </cac:Item>
-  <cac:Price>
-    <cbc:PriceAmount currencyID=""EUR"">21.0400</cbc:PriceAmount>
-    <cbc:BaseQuantity unitCode=""H87"">1</cbc:BaseQuantity>
-  </cac:Price>
-</cac:InvoiceLine>
-</Invoice>
-";
+            //  TK: TARA T#AAI#</cbc:Note>
+            //<cbc:TaxPointDate>2024-01-05</cbc:TaxPointDate>
+            //<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>
+            //<cbc:TaxCurrencyCode>EUR</cbc:TaxCurrencyCode>
+            //<cac:AccountingSupplierParty>
+            //  <cac:Party>
+            //    <cbc:EndpointID schemeID=""9934"">26389058739</cbc:EndpointID>
+            //    <cac:PartyIdentification><cbc:ID>9934:26389058739</cbc:ID></cac:PartyIdentification>
+            //    <cac:PartyName><cbc:Name>Proba d.o.o.</cbc:Name></cac:PartyName>
+            //    <cac:PostalAddress>
+            //      <cbc:StreetName>Kapetana Lazarića 1D</cbc:StreetName>
+            //      <cbc:CityName>Pazin</cbc:CityName>
+            //      <cbc:PostalZone>52000</cbc:PostalZone>
+            //      <cac:Country><cbc:IdentificationCode>HR</cbc:IdentificationCode></cac:Country>
+            //    </cac:PostalAddress>
+            //    <cac:PartyTaxScheme><cbc:CompanyID>HR26389058739</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>
+            //    <cac:PartyLegalEntity>
+            //      <cbc:RegistrationName>AURA SOFT d.o.o. Primjer dugog teksta</cbc:RegistrationName>
+            //    </cac:PartyLegalEntity>
+            //    <cac:Contact>
+            //      <cbc:Telephone>052-621-929</cbc:Telephone>
+            //    </cac:Contact>
+            //  </cac:Party>
+            //  <cac:SellerContact>    <cbc:ID>12345678903</cbc:ID>    <cbc:Name>TARA T</cbc:Name>  </cac:SellerContact></cac:AccountingSupplierParty>
+            //<cac:AccountingCustomerParty>
+            //  <cac:Party>
+            //    <cbc:EndpointID schemeID=""9934"">85821130368</cbc:EndpointID>
+            //    <cac:PartyIdentification><cbc:ID>9934:85821130368</cbc:ID></cac:PartyIdentification>
+            //    <cac:PartyName><cbc:Name>Partner 3413</cbc:Name></cac:PartyName>
+            //    <cac:PostalAddress>
+            //      <cbc:StreetName>BAŠTIJANOVA 13</cbc:StreetName>
+            //      <cbc:CityName>RIJEKA</cbc:CityName>
+            //      <cbc:PostalZone>51000</cbc:PostalZone>
+            //      <cac:Country><cbc:IdentificationCode>HR</cbc:IdentificationCode></cac:Country>
+            //    </cac:PostalAddress>
+            //    <cac:PartyTaxScheme><cbc:CompanyID>HR26389058739</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>
+            //    <cac:PartyLegalEntity>
+            //      <cbc:RegistrationName>Partner 3413</cbc:RegistrationName>
+            //    </cac:PartyLegalEntity>
+            //  </cac:Party>
+            //</cac:AccountingCustomerParty>
+            //<cac:PaymentMeans>
+            //  <cbc:PaymentMeansCode>30</cbc:PaymentMeansCode>
+            //  <cbc:InstructionNote>Transakcijski račun</cbc:InstructionNote>
+            //  <cbc:PaymentID>00 103201-90100003-1</cbc:PaymentID>
+            //  <cac:PayeeFinancialAccount>
+            //    <cbc:ID>2380006-1147002371</cbc:ID>
+            //    <cbc:Name>Privredna banka d.d.</cbc:Name>
+            //  </cac:PayeeFinancialAccount>
+            //</cac:PaymentMeans>
+            //<cac:TaxTotal>
+            //  <cbc:TaxAmount currencyID=""EUR"">209.54</cbc:TaxAmount>
+            //  <cac:TaxSubtotal>
+            //    <cbc:TaxableAmount currencyID=""EUR"">838.15</cbc:TaxableAmount>
+            //    <cbc:TaxAmount currencyID=""EUR"">209.54</cbc:TaxAmount>
+            //    <cac:TaxCategory>
+            //      <cbc:ID>S</cbc:ID>
+            //      <cbc:Percent>25</cbc:Percent>
+            //      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+            //    </cac:TaxCategory>
+            //  </cac:TaxSubtotal>
+            //</cac:TaxTotal>
+            //<cac:LegalMonetaryTotal>
+            //  <cbc:LineExtensionAmount currencyID=""EUR"">838.15</cbc:LineExtensionAmount>
+            //  <cbc:TaxExclusiveAmount currencyID=""EUR"">838.15</cbc:TaxExclusiveAmount>
+            //  <cbc:TaxInclusiveAmount currencyID=""EUR"">1047.69</cbc:TaxInclusiveAmount>
+            //  <cbc:PayableAmount currencyID=""EUR"">1047.69</cbc:PayableAmount>
+            //</cac:LegalMonetaryTotal>
+            //<cac:InvoiceLine>
+            //  <cbc:ID>1</cbc:ID>
+            //  <cbc:InvoicedQuantity unitCode=""H87"">72.0000</cbc:InvoicedQuantity>
+            //  <cbc:LineExtensionAmount currencyID=""EUR"">583.26</cbc:LineExtensionAmount>
+            //  <cac:AllowanceCharge>
+            //    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+            //    <cbc:AllowanceChargeReason>Popust na stavku (17.00%)</cbc:AllowanceChargeReason>
+            //    <cbc:MultiplierFactorNumeric>17.00</cbc:MultiplierFactorNumeric>
+            //    <cbc:Amount currencyID=""EUR"">119.46</cbc:Amount>
+            //    <cbc:BaseAmount currencyID=""EUR"">702.72</cbc:BaseAmount>
+            //  </cac:AllowanceCharge>
+            //  <cac:Item>
+            //    <cbc:Name>BK SIPROFIX 160 SUPERFLEX C2TE LJEP. 25/1 (48#)</cbc:Name>
+            //    <cac:SellersItemIdentification><cbc:ID>000164</cbc:ID></cac:SellersItemIdentification>
+            //    <cac:StandardItemIdentification><cbc:ID schemeID=""0160"">1000000000028</cbc:ID></cac:StandardItemIdentification>
+            //    <cac:CommodityClassification>
+            //      <cbc:ItemClassificationCode listID=""CG"">46.89.00</cbc:ItemClassificationCode>
+            //    </cac:CommodityClassification>
+            //    <cac:ClassifiedTaxCategory>
+            //      <cbc:ID>S</cbc:ID>
+            //      <cbc:Percent>25</cbc:Percent>
+            //      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+            //    </cac:ClassifiedTaxCategory>
+            //  </cac:Item>
+            //  <cac:Price>
+            //    <cbc:PriceAmount currencyID=""EUR"">9.7600</cbc:PriceAmount>
+            //    <cbc:BaseQuantity unitCode=""H87"">1</cbc:BaseQuantity>
+            //  </cac:Price>
+            //</cac:InvoiceLine>
+            //<cac:InvoiceLine>
+            //  <cbc:ID>2</cbc:ID>
+            //  <cbc:InvoicedQuantity unitCode=""H87"">6.0000</cbc:InvoicedQuantity>
+            //  <cbc:LineExtensionAmount currencyID=""EUR"">168.52</cbc:LineExtensionAmount>
+            //  <cac:AllowanceCharge>
+            //    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+            //    <cbc:AllowanceChargeReason>Popust na stavku (17.00%)</cbc:AllowanceChargeReason>
+            //    <cbc:MultiplierFactorNumeric>17.00</cbc:MultiplierFactorNumeric>
+            //    <cbc:Amount currencyID=""EUR"">34.52</cbc:Amount>
+            //    <cbc:BaseAmount currencyID=""EUR"">203.04</cbc:BaseAmount>
+            //  </cac:AllowanceCharge>
+            //  <cac:Item>
+            //    <cbc:Name>BK HIDROSTOP 2 (16,6+5) 16,6/1</cbc:Name>
+            //    <cac:SellersItemIdentification><cbc:ID>000080</cbc:ID></cac:SellersItemIdentification>
+            //    <cac:StandardItemIdentification><cbc:ID schemeID=""0160"">8606103352033</cbc:ID></cac:StandardItemIdentification>
+            //    <cac:CommodityClassification>
+            //      <cbc:ItemClassificationCode listID=""CG"">46.89.00</cbc:ItemClassificationCode>
+            //    </cac:CommodityClassification>
+            //    <cac:ClassifiedTaxCategory>
+            //      <cbc:ID>S</cbc:ID>
+            //      <cbc:Percent>25</cbc:Percent>
+            //      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+            //    </cac:ClassifiedTaxCategory>
+            //  </cac:Item>
+            //  <cac:Price>
+            //    <cbc:PriceAmount currencyID=""EUR"">33.8400</cbc:PriceAmount>
+            //    <cbc:BaseQuantity unitCode=""H87"">1</cbc:BaseQuantity>
+            //  </cac:Price>
+            //</cac:InvoiceLine>
+            //<cac:InvoiceLine>
+            //  <cbc:ID>3</cbc:ID>
+            //  <cbc:InvoicedQuantity unitCode=""H87"">6.0000</cbc:InvoicedQuantity>
+            //  <cbc:LineExtensionAmount currencyID=""EUR"">50.60</cbc:LineExtensionAmount>
+            //  <cac:AllowanceCharge>
+            //    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+            //    <cbc:AllowanceChargeReason>Popust na stavku (17.00%)</cbc:AllowanceChargeReason>
+            //    <cbc:MultiplierFactorNumeric>16.99</cbc:MultiplierFactorNumeric>
+            //    <cbc:Amount currencyID=""EUR"">10.36</cbc:Amount>
+            //    <cbc:BaseAmount currencyID=""EUR"">60.96</cbc:BaseAmount>
+            //  </cac:AllowanceCharge>
+            //  <cac:Item>
+            //    <cbc:Name>BK EMULZIJA HIDROSTOP 2 (20+5) 5/1</cbc:Name>
+            //    <cac:SellersItemIdentification><cbc:ID>000324</cbc:ID></cac:SellersItemIdentification>
+            //    <cac:StandardItemIdentification><cbc:ID schemeID=""0160"">8606103352040</cbc:ID></cac:StandardItemIdentification>
+            //    <cac:CommodityClassification>
+            //      <cbc:ItemClassificationCode listID=""CG"">46.89.00</cbc:ItemClassificationCode>
+            //    </cac:CommodityClassification>
+            //    <cac:ClassifiedTaxCategory>
+            //      <cbc:ID>S</cbc:ID>
+            //      <cbc:Percent>25</cbc:Percent>
+            //      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+            //    </cac:ClassifiedTaxCategory>
+            //  </cac:Item>
+            //  <cac:Price>
+            //    <cbc:PriceAmount currencyID=""EUR"">10.1600</cbc:PriceAmount>
+            //    <cbc:BaseQuantity unitCode=""H87"">1</cbc:BaseQuantity>
+            //  </cac:Price>
+            //</cac:InvoiceLine>
+            //<cac:InvoiceLine>
+            //  <cbc:ID>4</cbc:ID>
+            //  <cbc:InvoicedQuantity unitCode=""H87"">2.0000</cbc:InvoicedQuantity>
+            //  <cbc:LineExtensionAmount currencyID=""EUR"">35.77</cbc:LineExtensionAmount>
+            //  <cac:AllowanceCharge>
+            //    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+            //    <cbc:AllowanceChargeReason>Popust na stavku (15.00%)</cbc:AllowanceChargeReason>
+            //    <cbc:MultiplierFactorNumeric>15.00</cbc:MultiplierFactorNumeric>
+            //    <cbc:Amount currencyID=""EUR"">6.31</cbc:Amount>
+            //    <cbc:BaseAmount currencyID=""EUR"">42.08</cbc:BaseAmount>
+            //  </cac:AllowanceCharge>
+            //  <cac:Item>
+            //    <cbc:Name>BK PODLOGA  5L</cbc:Name>
+            //    <cac:SellersItemIdentification><cbc:ID>000264</cbc:ID></cac:SellersItemIdentification>
+            //    <cac:StandardItemIdentification><cbc:ID schemeID=""0160"">8606102367779</cbc:ID></cac:StandardItemIdentification>
+            //    <cac:CommodityClassification>
+            //      <cbc:ItemClassificationCode listID=""CG"">46.89.00</cbc:ItemClassificationCode>
+            //    </cac:CommodityClassification>
+            //    <cac:ClassifiedTaxCategory>
+            //      <cbc:ID>S</cbc:ID>
+            //      <cbc:Percent>25</cbc:Percent>
+            //      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+            //    </cac:ClassifiedTaxCategory>
+            //  </cac:Item>
+            //  <cac:Price>
+            //    <cbc:PriceAmount currencyID=""EUR"">21.0400</cbc:PriceAmount>
+            //    <cbc:BaseQuantity unitCode=""H87"">1</cbc:BaseQuantity>
+            //  </cac:Price>
+            //</cac:InvoiceLine>
+            //</Invoice>
+            //";
 
+            //--- od čovika --------------------------------
 
-            // potpisi e_racun:
-            DigitalSignature dsig = new DigitalSignature();
-            var cert = new X509Certificate2(@"D:\WinX\ERAC\certifikati\p12_aurasoft_demo.p12", "Aurasoft1",
-                    X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable);
-            dsig.Certificate = cert;
-            byte[] nepotpisaniRacun = Encoding.ASCII.GetBytes(unsignedXml);
-            byte[] bajtoviPotpisanogRacuna = dsig.SignInvoiceOrCreditNote(nepotpisaniRacun);
-            //System.IO.File.WriteAllBytes(@"C:\potpisani_eracun.xml", bajtoviPotpisanogRacuna);
+            //// potpisi e_racun:
+            //DigitalSignature dsig = new DigitalSignature();
+            //var cert = new X509Certificate2(@"D:\WinX\ERAC\certifikati\p12_aurasoft_demo.p12", "Aurasoft1",
+            //        X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable);
+            //dsig.Certificate = cert;
+            //byte[] nepotpisaniRacun = Encoding.ASCII.GetBytes(unsignedXml);
+            //byte[] bajtoviPotpisanogRacuna = dsig.SignInvoiceOrCreditNote(nepotpisaniRacun);
+            ////System.IO.File.WriteAllBytes(@"C:\potpisani_eracun.xml", bajtoviPotpisanogRacuna);
 
-            string signedXml = System.Text.Encoding.UTF8.GetString(bajtoviPotpisanogRacuna);
-
-            return new Variable(signedXml);
-
-            //string signedXml = FinaSoapSigner.SignSoap(
-            //    unsignedXml,
-            //    "D:\\WinX\\ERAC\\certifikati\\p12_aurasoft_demo.p12",
-            //    "Aurasoft1"
-            //);
-
-            ////File.WriteAllText("signed.xml", signedXml);
+            //string signedXml = System.Text.Encoding.UTF8.GetString(bajtoviPotpisanogRacuna);
 
             //return new Variable(signedXml);
+
+            //-----------------------------------
+
+            string signedXml = FinaSoapSigner.SignSoap(
+                unsignedXml,
+                "D:\\WinX\\ERAC\\certifikati\\p12_aurasoft_demo.p12",
+                "Aurasoft1"
+            );
+
+            //File.WriteAllText("signed.xml", signedXml);
+
+            return new Variable(signedXml);
 
 
         }

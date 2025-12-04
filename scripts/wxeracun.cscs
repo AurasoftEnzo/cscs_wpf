@@ -1868,7 +1868,7 @@ function MERSuccess(_invNum, responseCode, res) {
         // MessageBox("Delivered = " + resObject["Delivered"]);        
     }
     catch(ex){
-        MessageBox("MERSuccess - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        MessageBox("MERSuccessException - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
         // LogNKSYELOG();
     }
     
@@ -1884,8 +1884,10 @@ function MERFailure(_invNum, responseCode, res) {
 
         // MessageBox("SendingFailure.ResponseCode = " + responseCode);
 
-        resObject = DeserializeJson(res);
-        MSG(resObject);
+
+        // resObject = DeserializeJson(res);
+        // MSG(resObject);
+
 
         // MessageBox("ElectronicId = " + resObject["ElectronicId"]);
         // MessageBox("DocumentNr = " + resObject["DocumentNr"]);
@@ -1902,7 +1904,7 @@ function MERFailure(_invNum, responseCode, res) {
         // MessageBox("Delivered = " + resObject["Delivered"]);        
     }
     catch(ex){
-        MessageBox("SendingFailure - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        MessageBox("MERFailureException - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
     }
 }
 

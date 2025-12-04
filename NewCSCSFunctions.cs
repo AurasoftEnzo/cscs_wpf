@@ -85,7 +85,6 @@ namespace WpfCSCS
 
             interpreter.RegisterFunction(Constants.File2Base64, new File2Base64Function());
             interpreter.RegisterFunction(Constants.Base642File, new Base642FileFunction());
-            interpreter.RegisterFunction(Constants.SignXml, new SignXmlFunction());
             interpreter.RegisterFunction(Constants.ValidateXsd, new ValidateXsdFunction());
             interpreter.RegisterFunction(Constants.ValidateSch, new ValidateSchFunction());
             interpreter.RegisterFunction(Constants.EscapeQuotesInXml, new EscapeQuotesInXmlFunction());
@@ -104,6 +103,8 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.CreateSOAP2, new CreateSOAP2Function());
 
             interpreter.RegisterFunction(Constants.TEST1, new TEST1Function());
+
+            interpreter.RegisterFunction(Constants.SignXml, new SignXmlFunction());
         }
         public partial class Constants
         {
@@ -138,7 +139,6 @@ namespace WpfCSCS
 
             public const string File2Base64 = "File2Base64";
             public const string Base642File = "Base642File";
-            public const string SignXml = "SignXml";
             public const string ValidateXsd = "ValidateXsd";
             public const string ValidateSch = "ValidateSch";
             public const string EscapeQuotesInXml = "EscapeQuotesInXml";
@@ -154,6 +154,8 @@ namespace WpfCSCS
             public const string CreateSOAP2 = "CreateSOAP2";
 
             public const string TEST1 = "TEST1";
+
+            public const string SignXml = "SignXml";
         }
     }
 
@@ -1276,74 +1278,6 @@ namespace WpfCSCS
     }
     
     
-    class SignXmlFunction : ParserFunction
-    {
-        protected override Variable Evaluate(ParsingScript script)
-        {
-            List<Variable> args = script.GetFunctionArgs();
-            Utils.CheckArgs(args.Count, 4, m_name);
-
-            var xmlPath = Utils.GetSafeString(args, 0);
-            var certificatePath = Utils.GetSafeString(args, 1);
-            var certificatePassword = Utils.GetSafeString(args, 2);
-            var signedXmlPath = Utils.GetSafeString(args, 3);
-
-            if (!System.IO.File.Exists(xmlPath))
-                return new Variable(false);
-            if (!System.IO.File.Exists(certificatePath))
-                return new Variable(false);
-
-            var xmlDoc = new XmlDocument();
-            xmlDoc.Load(xmlPath);
-
-            var cert = new X509Certificate2(certificatePath, certificatePassword);
-
-            return new Variable(SignAndSaveUblInvoice(xmlDoc, cert, signedXmlPath));
-        }
-
-        public bool SignAndSaveUblInvoice(XmlDocument xmlDoc, X509Certificate2 cert, string outputFilePath)
-        {
-            try
-            {
-                // Perform the signing (as demonstrated earlier)
-                SignedXml signedXml = new SignedXml(xmlDoc);
-                signedXml.SigningKey = cert.GetRSAPrivateKey();
-
-                Reference reference = new Reference();
-                reference.Uri = "";
-                reference.AddTransform(new XmlDsigEnvelopedSignatureTransform());
-                signedXml.AddReference(reference);
-
-                KeyInfo keyInfo = new KeyInfo();
-                keyInfo.AddClause(new KeyInfoX509Data(cert));
-                signedXml.KeyInfo = keyInfo;
-
-                signedXml.ComputeSignature();
-                XmlElement xmlDigitalSignature = signedXml.GetXml();
-
-                XmlNamespaceManager nsMgr = new XmlNamespaceManager(xmlDoc.NameTable);
-                nsMgr.AddNamespace("ext", "urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2");
-
-                XmlNode ublExtensionsNode = xmlDoc.SelectSingleNode("//ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent", nsMgr);
-                if (ublExtensionsNode == null)
-                {
-                    throw new Exception("UBLExtension ExtensionContent node not found for inserting signature.");
-                }
-
-                ublExtensionsNode.AppendChild(xmlDoc.ImportNode(xmlDigitalSignature, true));
-
-                // Save the signed XML invoice to the specified file path
-                xmlDoc.Save(outputFilePath);
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                return false;
-            }
-        }
-    }
-
     class ValidateXsdFunction : ParserFunction
     {
         private List<string> verificationMessages;
@@ -3489,6 +3423,28 @@ namespace WpfCSCS
                 str.AppendChild(refElem);
                 return str;
             }
+        }
+    }
+
+    class SignXmlFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 3, m_name);
+
+            var unsignedXml = Utils.GetSafeString(args, 0);
+            var certificatePath = Utils.GetSafeString(args, 1);
+            var certificatePassword = Utils.GetSafeString(args, 2);
+
+            //string signedXml = SignXml(unsignedXml, certificatePath, certificatePassword);
+
+            return new Variable(unsignedXml);
+        }
+
+        public string SignXml(string unsignedXml, string certificatePath, string certificatePassword)
+        {
+            throw new Exception("Not implemented");
         }
     }
 }

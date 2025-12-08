@@ -79,6 +79,10 @@ namespace SplitAndMerge
 
         public string CurrentAssign { get; set; }
 
+        public string Item { get; set; }
+        public string Namespace { get; set; }
+        public bool Compiled { get; set; }
+
         public Debugger Debugger
         {
             get;
@@ -105,7 +109,7 @@ namespace SplitAndMerge
         string m_functionName = "";
         public string FunctionName
         {
-            get { return m_functionName;  }
+            get { return m_functionName; }
             set { m_functionName = value.ToLower(); }
         }
 
@@ -139,6 +143,12 @@ namespace SplitAndMerge
             m_data = data;
             m_from = from;
             m_char2Line = char2Line;
+        }
+        public ParsingScript(Interpreter interpreter, string data, bool compiled)
+        {
+            InterpreterInstance = interpreter;
+            m_data = data;
+            Compiled = compiled;
         }
 
         public ParsingScript(ParsingScript other)
@@ -348,6 +358,10 @@ namespace SplitAndMerge
         {
             return m_from < m_data.Length ? m_data[m_from] : Constants.EMPTY;
         }
+        public char TryCurrentAndForward()
+        {
+            return m_from < m_data.Length ? m_data[m_from++] : Constants.EMPTY;
+        }
         public char TryNext()
         {
             return m_from + 1 < m_data.Length ? m_data[m_from + 1] : Constants.EMPTY;
@@ -448,7 +462,7 @@ namespace SplitAndMerge
         {
             bool isList;
             List<Variable> args = Utils.GetArgs(this,
-                                                start, end, (outList) => { isList = outList; } );
+                                                start, end, (outList) => { isList = outList; });
             return args;
         }
         public async Task<List<Variable>> GetFunctionArgsAsync(char start = Constants.START_ARG,
@@ -631,17 +645,17 @@ namespace SplitAndMerge
 
         public ParsingScript GetTempScript(string str, int startIndex = 0)
         {
-            ParsingScript tempScript  = new ParsingScript(InterpreterInstance, str, startIndex);
-            tempScript.Filename       = this.Filename;
-            tempScript.InTryBlock     = this.InTryBlock;
-            tempScript.ParentScript   = this;
-            tempScript.Char2Line      = this.Char2Line;
+            ParsingScript tempScript = new ParsingScript(InterpreterInstance, str, startIndex);
+            tempScript.Filename = this.Filename;
+            tempScript.InTryBlock = this.InTryBlock;
+            tempScript.ParentScript = this;
+            tempScript.Char2Line = this.Char2Line;
             tempScript.OriginalScript = this.OriginalScript;
-            tempScript.InTryBlock     = this.InTryBlock;
-            tempScript.StackLevel     = this.StackLevel;
-            tempScript.AllLabels      = this.AllLabels;
-            tempScript.LabelToFile    = this.LabelToFile;
-            tempScript.FunctionName   = this.FunctionName;            
+            tempScript.InTryBlock = this.InTryBlock;
+            tempScript.StackLevel = this.StackLevel;
+            tempScript.AllLabels = this.AllLabels;
+            tempScript.LabelToFile = this.LabelToFile;
+            tempScript.FunctionName = this.FunctionName;
 
             //tempScript.Debugger       = this.Debugger;
 
@@ -663,6 +677,56 @@ namespace SplitAndMerge
             tempScript.InTryBlock = InTryBlock;
 
             return tempScript;
+        }
+
+        public List<Variable> DryRun()
+        {
+            var script = this;
+            char[] to = Constants.END_PARSE_ARRAY;
+            List<Variable> listToMerge = new List<Variable>(16);
+
+            if (!script.StillValid() || to.Contains(script.Current))
+            {
+                listToMerge.Add(Variable.EmptyInstance);
+                script.Forward();
+                return listToMerge;
+            }
+
+            int arrayIndexDepth = 0;
+            bool inQuotes = false;
+            int negated = 0;
+            char ch;
+            string action;
+
+            do
+            { // Main processing cycle of the first part.
+                string token = Parser.ExtractNextToken(script, to, ref inQuotes, ref arrayIndexDepth, ref negated, out ch, out action);
+
+                bool ternary = Parser.UpdateIfTernary(script, token, ch, listToMerge, (List<Variable> newList) => { listToMerge = newList; });
+                if (ternary)
+                {
+                    return listToMerge;
+                }
+
+                bool negSign = Parser.CheckConsistencyAndSign(script, listToMerge, action, ref token);
+
+                // We are done getting the next token. The GetValue() call below may
+                // recursively call SplitAndMerge(). This will happen if extracted
+                // item is a function or if the next item is starting with a START_ARG '('.
+                ParserFunction func = new ParserFunction(script, token, ch, ref action);
+                Variable current = func.GetValue(script); //Variable.EmptyInstance;
+
+                //if (Parser.UpdateResult(script, to, listToMerge, token, negSign, ref current, ref negated, ref action))
+                {
+                    //  return listToMerge;
+                }
+            } while (script.StillValid() &&
+                    (inQuotes || arrayIndexDepth > 0 || !to.Contains(script.Current)));
+
+            // This happens when called recursively inside of the math expression:
+            script.MoveForwardIf(Constants.END_ARG);
+
+            return listToMerge;
         }
     }
 

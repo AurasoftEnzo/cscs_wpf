@@ -3682,12 +3682,12 @@ namespace WpfCSCS
 			//preprocess this file
 			var tokenSet = GetPreprocessTokens();
 			var scriptsDirStr = App.GetConfiguration("ScriptsPath", "");
-			var split2 = Utils.PreprocessScriptFile(fileName, tokenSet, scriptsDirStr, this);
+			Utils.PreprocessScriptFile(fileName, tokenSet, scriptsDirStr, this);
 
 			Variable result = null;
 			try
 			{
-				result = Interpreter.Process(split2, fileName, false, this);
+				result = Interpreter.Process(Utils.GetFileContents(fileName), fileName, false, this);
 			}
 			catch (Exception exc)
 			{
@@ -5624,12 +5624,12 @@ namespace WpfCSCS
 			string fileName = script.GetFilePath(chainName);
 			if (tokenSet.Count > 0)
 			{
-				Utils.SplitScriptFile(chainName, tokenSet, out split1, out split2, script.PWD, script.Context);
+				Utils.PreprocessScriptFile(chainName, tokenSet, script.PWD, script.Context);
 			}
 			else
 			{
-				string data = Utils.File2String(chainName, out fileName, script.PWD);
-				split2 = Utils.ConvertToScript(Gui.Interpreter, data, out _, fileName);
+				// to be deleted // string data = Utils.File2String(chainName, out fileName, script.PWD);
+				split2 = Utils.ConvertToScript(Gui.Interpreter, Utils.GetFileContents(chainName), out _, fileName);
 			}
 
 			CheckScriptIsMain(chainName);
@@ -7589,7 +7589,7 @@ namespace WpfCSCS
 			{
 				if (Local)
 				{
-					gui.Interpreter.AddLocalVariable(new GetVarFunction(this), Name);
+					gui.Interpreter.AddLocalVariable(new GetVarFunction(this), script, Name);
 				}
 				else
 				{

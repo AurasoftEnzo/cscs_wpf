@@ -1,0 +1,1682 @@
+﻿
+
+// array = {};
+// dict1 = {};
+// dict2 = {};
+
+// dict1["Name"] = "Invoice1.xml";
+// dict1["Content"] = "<Invoice>...</Invoice>";
+
+// dict2["Name"] = "Invoice2.xml";
+// dict2["Content"] = "<Invoice>...</Invoice>";
+
+// array.Add(dict1);
+// array.Add(dict2);
+
+// msg(array);
+
+// exit;
+
+
+
+resObject = {};
+
+// -----------------------------------------------------------
+// WxEracunGet.cscs - UBL XML Invoice Import Program
+// -----------------------------------------------------------
+// Purpose: Import UBL XML invoices into database tables
+// Main Function: importUBLXml(xmlFilePath)
+// Created: November 19, 2025
+// Compatible with: wxeracun.cscs export format
+// -----------------------------------------------------------
+ 
+// Global variables for database connection
+//databaseName = "your_database_name"; // Update with actual database name
+Import(strTrim(mpath()) + "CSCS.Math.dll");
+
+args = CommandLineArgs(); 
+if(Size(args) > 2){
+    companyCode = args[2]; // e.g. Y3
+    CoSet(companyCode);
+
+    if(Size(args) > 3){
+        userCode = args[3]; // e.g. ANA
+
+    }else{
+        MessageBox("Nedostaje user code u argumentima.");
+        exit;
+    }
+}else{
+    companyCode = Substring(CoGet(), 1, 2);
+}
+
+// SY_CC_USER = "";
+// databaseName = "";
+
+ERAC_REZ1 = "";
+ERAC_SERVER = "";
+ERAC_SERVERT = "";
+ERAC_USER = "";
+ERAC_PASS = "";
+ERAC_USERT = "";
+ERAC_PASST = "";
+ERAC_DESC = "";
+
+
+
+// NKSYCCYR
+sqlQueryString = "select SY_CC_USER, SY_CC_DBASE from " + strtrim(CommonDBGet()) + ".dbo.NKSYCCYR WHERE SY_CC_CODE = '" + companyCode + "'";
+try
+{
+    sqlResult = sqlQuery(sqlQueryString);
+}
+catch(exc)
+{
+    MessageBox(exc);
+}
+if (size(sqlResult) > 1)
+{
+    // imeFirme = sqlResult[1][0].trim(); // KAMEND
+    // ovagod_h = sqlResult[1][1].trim(); // 2022
+    SY_CC_USER = sqlResult[1][0].trim(); // KAMEND
+    databaseName = sqlResult[1][1].trim(); // ime baze
+}    
+  
+// KPSYMSTR
+sqlQueryString = " SELECT TOP 1 KPSY_REZERVA, KPSY_COMP_NAME, KPSY_COMP_ADD1, KPSY_GL_RETEARN, KPSY_COMP_CSZ, KPSY_COMP_ZIP,
+                KPSY_COMP_JMBFI, KPSY_COMP_PHONE, KPSY_COMP_EMAIL, KPSY_PO_FREIGHT, KPSY_REZERVAX,KPSY_FISCAL_YR
+                    FROM " + databaseName + ".dbo.KPSYMSTR";
+try
+{
+    sqlResult = sqlQuery(sqlQueryString);
+}
+catch(exc)
+{
+    MessageBox(exc);
+}
+if (size(sqlResult) > 1)
+{
+    // proslaGodina = (int(ovagod_h) - 1);
+    // nazivFirme = sqlResult[1][0].trim();
+    // kpsy_po_freight= sqlResult[1][1].trim();
+    // fiscal_yr = sqlResult[1][2];
+    // local = sqlResult[1][3];
+
+    KPSY_REZERVA = sqlResult[1][0].trim();
+    KPSY_COMP_NAME = sqlResult[1][1].trim();
+    KPSY_COMP_ADD1 = sqlResult[1][2].trim();
+    KPSY_GL_RETEARN = sqlResult[1][3].trim();
+    KPSY_COMP_CSZ = sqlResult[1][4].trim();
+    KPSY_COMP_ZIP = sqlResult[1][5];
+    KPSY_COMP_JMBFI = sqlResult[1][6].trim();
+    KPSY_COMP_PHONE = sqlResult[1][7].trim();
+    KPSY_COMP_EMAIL = sqlResult[1][8].trim();
+    KPSY_PO_FREIGHT = substring(sqlResult[1][9], 0, 2).trim();
+    KPSY_REZERVAX = sqlResult[1][10].trim(); // Supplier GLN
+    KPSY_FISCAL_YR = sqlResult[1][11].trim();
+} 
+
+// NKSYSYCO Configuration
+sqlQueryString = " SELECT NKSYS_FIELD, NKSYS_VALUE 
+    FROM " + databaseName + ".dbo.NKSYSYCO 
+    WHERE NKSYS_MODUL = 'WKSY'
+    AND NKSYS_GRUP = 'ERACUN'";
+try
+{
+    sqlResult = sqlQuery(sqlQueryString);
+}
+catch(exc)
+{
+    MessageBox("NKSYSYCO reading error: " + exc);
+    exit;
+}
+if (size(sqlResult) > 1)
+{
+    for(i = 1; i < Size(sqlResult); i++){
+        if(sqlResult[i][0].trim() == "FILESPATH"){
+            FILESPATH = sqlResult[i][1].trim();
+        }
+        elif(sqlResult[i][0].trim() == "PROVIDER")
+        {
+            PROVIDER = sqlResult[i][1].trim();
+        }elif(sqlResult[i][0].trim() == "SCHEMASPATH")
+        {
+            SCHEMASPATH = sqlResult[i][1].trim();
+        }
+    }
+} 
+
+// // Provider Configuration
+// if (PROVIDER == null || PROVIDER == "") {
+//     PROVIDER = "MER"; // Default to MojEracun
+//     MessageBox("PROVIDER nije konfiguriran u NKSYSYCO, koristim default: MER");
+// }
+
+// // MojEracun API Configuration
+// MER_API_BASE_URL = "https://api.moj-eracun.hr/v2";
+// MER_API_KEY = "YOUR_API_KEY_HERE"; // TODO: Replace with actual API key
+// MER_COMPANY_ID = KPSY_COMP_JMBFI; // Use company OIB as company ID
+
+// // FINA API Configuration  
+// FINA_API_BASE_URL = "https://ws.fina.hr/eRacun";
+// FINA_CERT_PATH = "YOUR_FINA_CERTIFICATE.p12"; // TODO: Replace with actual certificate path
+// FINA_CERT_PASSWORD = "YOUR_CERT_PASSWORD"; // TODO: Replace with actual certificate password
+// FINA_COMPANY_ID = KPSY_COMP_JMBFI; // Use company OIB as company ID
+
+//
+//Batun: dohvati sve nove račune sa servera sa ovim programom
+//to može potrajat pa neki cursor da se vrti
+//sve treba preuzeti na lokalni disk 
+//i onda sa diska importirati u bazu podataka u table NKNAERGL i NKNAERLN jednog po jednog (funkcija ffile() ??), 
+//i to sve koji se nalaze u folderu novih xml e-računa a to su svi preuzeti i plus može bit neki xml dodan sa strane ako dođe sa e-mailom
+// i nakon preuzimanja u ove dvije table, trebaju se spremiti u folder 'Likvidirani XML računi'
+// VAŽNO: Mogu se importirati samo računi čiji datum ESD pripada istoj fiskalnoj godini kao KPSY_FISCAL_YR 
+//svaki koji se preuzme, spremiti record u NKSYELOG
+//koristiti transakcije kao tu ispod
+//i to je sve, nakon toga stvar preuzima program u Knjigama
+//
+start();
+
+exit;
+
+
+function start(){
+    // Phase 1: Download all NEW invoices from configured provider to folder
+    MessageBox("Koristim provider: " + PROVIDER);
+    downloadedCount = DownloadNewInvoicesFromProvider();
+    
+    // // Phase 2: Import all XML files found in the folder (including manually added files)
+    // importedCount = ImportAllXMLFilesInFolder();
+    
+    // Summary report
+    // MessageBox("Proces završen!\nPreuzeto sa servera: " + downloadedCount + "\nUkupno importirano: " + importedCount);
+}
+
+// Phase 1: Download all new invoices from configured provider (MER or FINA)
+function DownloadNewInvoicesFromProvider() {
+    try {
+        sql_erac = "SELECT
+                ERAC_REZ1, ERAC_SERVER, ERAC_SERVERT, ERAC_USER, ERAC_PASS, ERAC_USERT, ERAC_PASST, ERAC_DESC 
+                FROM " + databaseName + ".dbo.NKSYERAC WHERE ERAC_CODE = @p1;";
+        sqlParams = {};
+        // if(NKSC_POSREDNIK != ""){
+        //     sqlParams.Add({"@p1", NKSC_POSREDNIK});
+        //     PROVIDER = NKSC_POSREDNIK;
+        // }else{
+            sqlParams.Add({"@p1", PROVIDER});
+        // }
+        
+        eracRes = sqlQuery(sql_erac, sqlParams);
+        if (Size(eracRes) < 2) {
+            MessageBox("Nema podataka o posredniku " + NKSC_POSREDNIK + "!");
+            return false;
+        }
+
+        ERAC_REZ1 = StrTrim(eracRes[1][0]);
+        ERAC_SERVER = StrTrim(eracRes[1][1]);
+        ERAC_SERVERT = StrTrim(eracRes[1][2]);
+        ERAC_USER = StrTrim(eracRes[1][3]);
+        ERAC_PASS = StrTrim(eracRes[1][4]);
+        ERAC_USERT = StrTrim(eracRes[1][5]); // cer certificate
+        ERAC_PASST = StrTrim(eracRes[1][6]); // p12 certificate
+        ERAC_DESC = StrTrim(eracRes[1][7]);
+        
+        if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
+            return DownloadNewInvoicesFromMeR();
+        } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
+            return DownloadNewInvoicesFromFINA();
+        } else {
+            MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA");
+            return 0;
+        }
+    } catch (error) {
+        MessageBox("Greška u preuzimanju sa provider-a " + PROVIDER + ": " + error);
+        return 0;
+    }
+}
+
+// MojEracun (MER) specific download function
+function DownloadNewInvoicesFromMeR() {
+    try {
+        downloadCount = 0;
+        
+        // Create incoming folder if it doesn't exist
+        incomingFolder = FILESPATH + "ul\\";
+        if (!Exists(incomingFolder)) {
+            MkDir(incomingFolder);
+        }
+        
+        MessageBox("Počinje preuzimanje novih računa sa MojEracun servera...");
+        
+        // // Prepare date range for request (last 30 days)
+        // endDate = Now("yyyy-MM-dd");
+        // startDate = "2025-01-01"; // Last 30 days
+        
+        // // Prepare JSON request payload
+        // requestPayload = {};
+        // requestPayload["Username"] = ERAC_USER;
+        // requestPayload["Password"] = ERAC_PASS;
+        // requestPayload["Password"] = ERAC_PASS;
+        // requestPayload["fromDate"] = startDate;
+        // requestPayload["toDate"] = endDate;
+        
+        companyOIB = substring(KPSY_REZERVA, 0, 11).trim();
+
+        // jsonPayload = SerializeJson(requestPayload);
+        statusId = 40; // sent(not received)
+        jsonPayload = '{"Username": "' + ERAC_USER + '", "Password": "' + ERAC_PASS + '", "CompanyId": "' + companyOIB + '", "SoftwareId": "' + ERAC_DESC + '", "StatusId": "' + statusId + '"}';
+        
+        // // Prepare headers for API request
+        // headers = {};
+        // headers["Content-Type"] = "application/json";
+        // headers["Authorization"] = "Bearer " + MER_API_KEY;
+        
+        try {
+            // Make API request to MojEracun
+            apiUrl = ERAC_SERVER + "queryinbox";
+            jsonResponse = WebRequest("POST", apiUrl, jsonPayload, "", "MERSuccess", "MERFailure", "application/json", null, 1000 * 20, false);
+            
+            // if (jsonResponse == "" || jsonResponse == null) {
+            //     MessageBox("Nema odgovora sa MojEracun servera");
+            //     return 0;
+            // }
+            
+            // Parse response
+            // responseObj = DeserializeJson(jsonResponse);
+            
+            // if (responseObj == null) {
+            //     MessageBox("Greška prilikom parsiranja odgovora sa servera");
+            //     return 0;
+            // }
+            
+            // // Check if request was successful
+            // if (!responseObj.ContainsKey("status") || responseObj["status"] != "success") {
+            //     errorMsg = "API greška";
+            //     if (responseObj.ContainsKey("message")) {
+            //         errorMsg += ": " + responseObj["message"];
+            //     }
+            //     MessageBox(errorMsg);
+            //     return 0;
+            // }
+            
+            // // Get documents array
+            // documents = responseObj["documents"];
+            // if (!IsArray(documents) || Size(documents) == 0) {
+            //     MessageBox("Nema novih dokumenata za preuzimanje");
+            //     return 0;
+            // }
+            
+            // MessageBox("Pronađeno " + Size(documents) + " dokumenata za preuzimanje...");
+            
+            // // Process each document
+            // for (i = 0; i < Size(documents); i++) {
+            //     document = documents[i];
+                
+            //     documentId = document["documentId"];
+            //     docType = document["type"];
+            //     sender = document["sender"];
+            //     dateReceived = document["dateReceived"];
+                
+            //     MessageBox("Preuzimam dokument " + (i + 1) + "/" + Size(documents) + ": " + documentId);
+                
+            //     // Download XML attachment for each document
+            //     if (document.ContainsKey("attachments") && IsArray(document["attachments"])) {
+            //         attachments = document["attachments"];
+                    
+            //         for (j = 0; j < Size(attachments); j++) {
+            //             attachment = attachments[j];
+            //             attachmentName = attachment["name"];
+            //             attachmentUrl = attachment["url"];
+                        
+            //             // Only download XML files
+            //             if (Contains(ToLower(attachmentName), ".xml")) {
+            //                 xmlContent = DownloadAttachmentFromMeR(attachmentUrl);
+                            
+            //                 if (xmlContent != "") {
+            //                     // Generate filename with timestamp
+            //                     timestamp = FormatDate(Now(), "yyyyMMdd_HHmmss_fff");
+            //                     xmlFileName = "MeR_" + documentId + "_" + timestamp + ".xml";
+            //                     xmlFilePath = incomingFolder + xmlFileName;
+                                
+            //                     // Save XML file to disk
+            //                     SaveFile(xmlFilePath, xmlContent);
+            //                     downloadCount++;
+                                
+            //                     // Log successful download
+            //                     logEntry = FormatDate(Now(), "yyyy-MM-dd HH:mm:ss") + " | DOWNLOAD_SUCCESS | " + documentId + " | " + xmlFileName + "\r\n";
+            //                     SaveFile("download_log.txt", logEntry, "A");
+                                
+            //                 } else {
+            //                     MessageBox("Greška prilikom preuzimanja XML-a za dokument: " + documentId);
+            //                     // Log failed download
+            //                     logEntry = FormatDate(Now(), "yyyy-MM-dd HH:mm:ss") + " | DOWNLOAD_FAILURE | " + documentId + " | " + attachmentName + "\r\n";
+            //                     SaveFile("download_log.txt", logEntry, "A");
+            //                 }
+            //                 break; // Only download first XML attachment
+            //             }
+            //         }
+            //     }
+            // }
+            
+        } catch (apiError) {
+            MessageBox("Greška prilikom API poziva: " + apiError);
+            return 0;
+        }
+        
+        MessageBox("Preuzimanje završeno. Ukupno preuzeto: " + downloadCount + " XML računa.");
+        return downloadCount;
+        
+    } catch (error) {
+        MessageBox("Greška u procesu preuzimanja: " + error);
+        return 0;
+    }
+}
+
+
+function MERSuccess(trackingId, responseCode, res) {
+    MSG("MERSuccess");
+
+    try{
+        LogResponse(responseCode, res);     
+
+        
+        resObject = DeserializeJson(res);  
+
+        MSG(resObject); // 3109112, 3109112, 3109112, 3109112
+        MSG(resObject[i]); // 3109112
+        exit;
+
+        for(i = 0; i < Size(resObject); i++){
+            ElectronicId = resObject[i]["ElectronicId"];
+            DocumentNr = resObject[i]["DocumentNr"];
+            SenderBusinessNumber = resObject[i]["SenderBusinessNumber"];
+            SenderBusinessName = StrReplace(resObject[i]["SenderBusinessName"], " ", "_");
+            if(SenderBusinessName.length >= 15){
+                SenderBusinessName = Substring(SenderBusinessName, 0, 15);
+            }
+
+            trackingId = "MER_ul_" + DocumentNr + "_" + SenderBusinessNumber + "_" + SenderBusinessName;
+
+            jsonPayload = '{"Username": "' + ERAC_USER + '", "Password": "' + ERAC_PASS + '", "CompanyId": "' + companyOIB + '", "SoftwareId": "' + ERAC_DESC + '", "ElectronicId": "' + ElectronicId + '"}';
+            
+            WebRequest("POST", ERAC_SERVER + "receive", jsonPayload, trackingId, "MERReceiveSuccess", "MERReceiveFailure", "application/json", null, 1000 * 20, false);           
+        }
+    }
+    catch(ex){
+        MessageBox("MERSuccess - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        // LogNKSYELOG();
+    }
+}
+
+function MERFailure(trackingId, responseCode, res) {
+    MSG("MERFailure");
+
+    try{
+        LogResponse(responseCode, res);  
+    }
+    catch(ex){
+        MessageBox("SendingFailure - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+    }
+}
+
+function LogResponse(responseCode, response) {
+    if(!DIR_EXISTS(FILESPATH + "ul\\" + "responses\\")){
+        MAKE_DIR(FILESPATH + "ul\\" + "responses\\");
+    }
+
+    logFilePath = FILESPATH + "ul\\" + "responses\\" + "queryinbox" + ".response";
+    appendText = Now("yyyy-MM-dd HH:mm:ss") + " -----------------------------------\n\n" + "StatusCode = " + responseCode + "\n\n" + "Response:\n" + response + "\n\n";
+    try {
+        SaveFile(appendText, logFilePath, "a");        
+    } catch (ex) {
+        MessageBox("CRITICAL: Cannot write to log file: " + logPath + "\nError: " + ex);
+    }
+}
+
+
+
+function MERReceiveSuccess(trackingId, responseCode, res) {
+    MSG("MERReceiveSuccess");
+    try{
+        LogResponse(responseCode, res);
+        SaveFile(res, FILESPATH + "ul\\" + trackingId + ".xml");
+    }catch(ex){
+        MessageBox("MERReceiveSuccess - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+    }
+    
+}
+
+function MERReceiveFailure(trackingId, responseCode, res) {
+    MSG("MERReceiveFailure");
+    try{
+        LogResponse(responseCode, res);  
+    }
+    catch(ex){
+        MessageBox("MERReceiveFailure - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+    }
+}
+
+
+
+
+// // FINA specific download function using SOAP/Web Services
+// function DownloadNewInvoicesFromFINA() {
+//     try {
+//         downloadCount = 0;
+        
+//         // Create incoming folder if it doesn't exist
+//         incomingFolder = GetCurrentDirectory() + "\\Novi XML e-računi\\";
+//         if (!Exists(incomingFolder)) {
+//             MkDir(incomingFolder);
+//         }
+        
+//         MessageBox("Počinje preuzimanje novih računa sa FINA servera...");
+        
+//         // Prepare date range for request (last 30 days)
+//         endDate = FormatDate(Now(), "yyyy-MM-dd");
+//         startDate = FormatDate(Now() - 30, "yyyy-MM-dd"); // Last 30 days
+        
+//         try {
+//             // FINA uses SOAP Web Service with certificate authentication
+//             // Prepare SOAP envelope for GetIncomingInvoices request
+//             soapEnvelope = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+//                 + "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" "
+//                 + "xmlns:ws=\"http://ws.fina.hr/eRacun\">";
+//             soapEnvelope += "<soap:Header/>";
+//             soapEnvelope += "<soap:Body>";
+//             soapEnvelope += "<ws:GetIncomingInvoicesRequest>";
+//             soapEnvelope += "<ws:CompanyOIB>" + FINA_COMPANY_ID + "</ws:CompanyOIB>";
+//             soapEnvelope += "<ws:FromDate>" + startDate + "</ws:FromDate>";
+//             soapEnvelope += "<ws:ToDate>" + endDate + "</ws:ToDate>";
+//             soapEnvelope += "<ws:Status>UNPROCESSED</ws:Status>"; // or NEW, RECEIVED
+//             soapEnvelope += "</ws:GetIncomingInvoicesRequest>";
+//             soapEnvelope += "</soap:Body>";
+//             soapEnvelope += "</soap:Envelope>";
+            
+//             // Prepare headers for SOAP request
+//             headers = {};
+//             headers["Content-Type"] = "text/xml; charset=utf-8";
+//             headers["SOAPAction"] = "\"GetIncomingInvoices\"";
+            
+//             // Load certificate for authentication (FINA requires certificate-based auth)
+//             // Note: This is a simplified approach - actual implementation might need 
+//             // proper certificate loading and SSL client authentication
+//             if (Exists(FINA_CERT_PATH)) {
+//                 // Certificate authentication would be handled by the HTTP client
+//                 // For now, we'll simulate the request structure
+//                 MessageBox("Koristim FINA certifikat: " + FINA_CERT_PATH);
+//             } else {
+//                 MessageBox("FINA certifikat nije pronađen: " + FINA_CERT_PATH);
+//                 return 0;
+//             }
+            
+//             // Make SOAP request to FINA Web Service
+//             apiUrl = FINA_API_BASE_URL + "/InvoiceService";
+            
+//             // Note: WebRequestMPFD might need to be enhanced to support certificate authentication
+//             // This is a conceptual implementation - actual SOAP client implementation may vary
+//             soapResponse = WebRequestMPFD(apiUrl, "POST", soapEnvelope, headers);
+            
+//             if (soapResponse == "" || soapResponse == null) {
+//                 MessageBox("Nema odgovora sa FINA servera");
+//                 return 0;
+//             }
+            
+//             MessageBox("Primljen SOAP odgovor sa FINA servera, parsiranje...");
+            
+//             // Parse SOAP response using XmlToDict
+//             responseDict = XmlToDict(soapResponse);
+            
+//             if (responseDict == null) {
+//                 MessageBox("Greška prilikom parsiranja SOAP odgovora");
+//                 return 0;
+//             }
+            
+//             // Extract invoice list from SOAP response
+//             // FINA SOAP response structure (estimated):
+//             // Envelope -> Body -> GetIncomingInvoicesResponse -> InvoiceList -> Invoice[]
+//             soapBody = GetDictValue(responseDict, "soap:Envelope.soap:Body");
+//             if (soapBody == null || soapBody == "") {
+//                 soapBody = GetDictValue(responseDict, "Envelope.Body"); // Try without namespace
+//             }
+            
+//             invoicesResponse = GetDictValue(soapBody, "GetIncomingInvoicesResponse");
+//             if (invoicesResponse == null || invoicesResponse == "") {
+//                 MessageBox("Neočekivana struktura SOAP odgovora");
+//                 return 0;
+//             }
+            
+//             invoiceList = GetDictValue(invoicesResponse, "InvoiceList");
+//             if (invoiceList == null || invoiceList == "") {
+//                 MessageBox("Nema novih dokumenata za preuzimanje sa FINA servera");
+//                 return 0;
+//             }
+            
+//             invoices = GetDictValue(invoiceList, "Invoice");
+//             if (invoices == null || invoices == "") {
+//                 MessageBox("Nema računa u listi");
+//                 return 0;
+//             }
+            
+//             // Handle both single invoice (object) and multiple invoices (array)
+//             invoicesArray = {};
+//             if (IsArray(invoices)) {
+//                 invoicesArray = invoices;
+//             } else {
+//                 invoicesArray.Add(invoices); // Single invoice
+//             }
+            
+//             MessageBox("Pronađeno " + Size(invoicesArray) + " dokumenata za preuzimanje sa FINA servera...");
+            
+//             // Process each invoice
+//             for (i = 0; i < Size(invoicesArray); i++) {
+//                 invoice = invoicesArray[i];
+                
+//                 invoiceId = GetDictValue(invoice, "InvoiceId");
+//                 invoiceNumber = GetDictValue(invoice, "InvoiceNumber");
+//                 senderOIB = GetDictValue(invoice, "SenderOIB");
+//                 dateReceived = GetDictValue(invoice, "DateReceived");
+                
+//                 MessageBox("Preuzimam dokument " + (i + 1) + "/" + Size(invoicesArray) + ": " + invoiceNumber);
+                
+//                 // Download XML content for each invoice
+//                 xmlContent = DownloadInvoiceXMLFromFINA(invoiceId);
+                
+//                 if (xmlContent != "") {
+//                     // Generate filename with timestamp
+//                     timestamp = FormatDate(Now(), "yyyyMMdd_HHmmss_fff");
+//                     xmlFileName = "FINA_" + invoiceNumber + "_" + timestamp + ".xml";
+//                     xmlFilePath = incomingFolder + xmlFileName;
+                    
+//                     // Save XML file to disk
+//                     SaveFile(xmlFilePath, xmlContent);
+//                     downloadCount++;
+                    
+//                     // Log successful download
+//                     logEntry = FormatDate(Now(), "yyyy-MM-dd HH:mm:ss") + " | DOWNLOAD_SUCCESS | " + invoiceId + " | " + xmlFileName + "\r\n";
+//                     SaveFile("download_log.txt", logEntry, "A");
+                    
+//                 } else {
+//                     MessageBox("Greška prilikom preuzimanja XML-a za dokument: " + invoiceNumber);
+//                     // Log failed download
+//                     logEntry = FormatDate(Now(), "yyyy-MM-dd HH:mm:ss") + " | DOWNLOAD_FAILURE | " + invoiceId + " | " + invoiceNumber + "\r\n";
+//                     SaveFile("download_log.txt", logEntry, "A");
+//                 }
+//             }
+            
+//         } catch (apiError) {
+//             MessageBox("Greška prilikom SOAP poziva na FINA: " + apiError);
+//             return 0;
+//         }
+        
+//         MessageBox("Preuzimanje sa FINA završeno. Ukupno preuzeto: " + downloadCount + " XML računa.");
+//         return downloadCount;
+        
+//     } catch (error) {
+//         MessageBox("Greška u procesu preuzimanja sa FINA: " + error);
+//         return 0;
+//     }
+// }
+
+// // Download individual invoice XML from FINA using separate SOAP call
+// function DownloadInvoiceXMLFromFINA(invoiceId) {
+//     try {
+//         // Prepare SOAP envelope for GetInvoiceXML request
+//         soapEnvelope = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+//             + "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" "
+//             + "xmlns:ws=\"http://ws.fina.hr/eRacun\">";
+//         soapEnvelope += "<soap:Header/>";
+//         soapEnvelope += "<soap:Body>";
+//         soapEnvelope += "<ws:GetInvoiceXMLRequest>";
+//         soapEnvelope += "<ws:InvoiceId>" + invoiceId + "</ws:InvoiceId>";
+//         soapEnvelope += "<ws:CompanyOIB>" + FINA_COMPANY_ID + "</ws:CompanyOIB>";
+//         soapEnvelope += "</ws:GetInvoiceXMLRequest>";
+//         soapEnvelope += "</soap:Body>";
+//         soapEnvelope += "</soap:Envelope>";
+        
+//         // Prepare headers
+//         headers = {};
+//         headers["Content-Type"] = "text/xml; charset=utf-8";
+//         headers["SOAPAction"] = "\"GetInvoiceXML\"";
+        
+//         // Make SOAP request
+//         apiUrl = FINA_API_BASE_URL + "/InvoiceService";
+//         soapResponse = WebRequestMPFD(apiUrl, "POST", soapEnvelope, headers);
+        
+//         if (soapResponse != "" && soapResponse != null) {
+//             // Parse SOAP response to extract XML content
+//             responseDict = XmlToDict(soapResponse);
+            
+//             if (responseDict != null) {
+//                 soapBody = GetDictValue(responseDict, "soap:Envelope.soap:Body");
+//                 if (soapBody == null || soapBody == "") {
+//                     soapBody = GetDictValue(responseDict, "Envelope.Body");
+//                 }
+                
+//                 xmlResponse = GetDictValue(soapBody, "GetInvoiceXMLResponse");
+//                 if (xmlResponse != null && xmlResponse != "") {
+//                     xmlContent = GetDictValue(xmlResponse, "InvoiceXML");
+                    
+//                     // XML content might be base64 encoded or CDATA wrapped
+//                     if (xmlContent != "" && Contains(xmlContent, "<Invoice")) {
+//                         return xmlContent;
+//                     } elif (xmlContent != "") {
+//                         // Try base64 decode if it looks encoded
+//                         try {
+//                             decodedXML = Base64Decode(xmlContent);
+//                             if (Contains(decodedXML, "<Invoice")) {
+//                                 return decodedXML;
+//                             }
+//                         } catch (decodeError) {
+//                             // Not base64, return as is
+//                             return xmlContent;
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+        
+//         return "";
+        
+//     } catch (error) {
+//         MessageBox("Greška prilikom preuzimanja XML-a sa FINA: " + error);
+//         return "";
+//     }
+// }
+
+// // Phase 2: Import all XML files found in the folder
+// function ImportAllXMLFilesInFolder() {
+//     try {
+//         importCount = 0;
+//         errorCount = 0;
+        
+//         // Set working directory to incoming folder
+//         incomingFolder = GetCurrentDirectory() + "\\Novi XML e-računi\\";
+//         if (!Exists(incomingFolder)) {
+//             MessageBox("Folder 'Novi XML e-računi' ne postoji!");
+//             return 0;
+//         }
+        
+//         // Change to the incoming folder to use findfiles
+//         originalDir = GetCurrentDirectory();
+//         cd(incomingFolder);
+        
+//         // Find all XML files in the folder using findfiles()
+//         xmlFiles = findfiles("*.xml");
+        
+//         // Return to original directory
+//         cd(originalDir);
+        
+//         if (Size(xmlFiles) == 0) {
+//             MessageBox("Nema XML datoteka za import u folderu: " + incomingFolder);
+//             return 0;
+//         }
+        
+//         MessageBox("Pronađeno " + Size(xmlFiles) + " XML datoteka za import...");
+        
+//         // Create necessary folders
+//         archiveFolder = GetCurrentDirectory() + "\\Likvidirani XML računi\\";
+//         if (!Exists(archiveFolder)) {
+//             MkDir(archiveFolder);
+//         }
+        
+//         errorFolder = GetCurrentDirectory() + "\\XML Greške\\";
+//         if (!Exists(errorFolder)) {
+//             MkDir(errorFolder);
+//         }
+        
+//         // Process each XML file
+//         for (i = 0; i < Size(xmlFiles); i++) {
+//             xmlFilePath = xmlFiles[i];
+//             xmlFileName = ParseFile(xmlFilePath, "pfFileNoExt") + ParseFile(xmlFilePath, "pfExt");
+            
+//             MessageBox("Importiram datoteku " + (i + 1) + "/" + Size(xmlFiles) + ": " + xmlFileName);
+            
+//             try {
+//                 // Import the XML file
+//                 result = importUBLXml(xmlFilePath);
+                
+//                 if (result != false && result != "FISCAL_YEAR_MISMATCH") {
+//                     importCount++;
+                    
+//                     // Move processed file to archive folder
+//                     archiveFile = archiveFolder + xmlFileName;
+//                     Move(xmlFilePath, archiveFile);
+                    
+//                     // Log successful import
+//                     logEntry = FormatDate(Now(), "yyyy-MM-dd HH:mm:ss") + " | IMPORT_SUCCESS | " + result + " | " + xmlFileName + "\r\n";
+//                     SaveFile("import_log.txt", logEntry, "A");
+                    
+//                     // Log to NKSYELOG
+//                     LogToNKSYELOG(result, xmlFilePath, "XML_IMPORT_SUCCESS");
+                    
+//                 } elif (result == "FISCAL_YEAR_MISMATCH") {
+//                     // Move file to archive folder but don't count as import
+//                     archiveFile = archiveFolder + "FISCAL_YEAR_" + xmlFileName;
+//                     Move(xmlFilePath, archiveFile);
+                    
+//                     // Log fiscal year mismatch
+//                     logEntry = FormatDate(Now(), "yyyy-MM-dd HH:mm:ss") + " | FISCAL_YEAR_MISMATCH | " + xmlFileName + "\r\n";
+//                     SaveFile("import_log.txt", logEntry, "A");
+                    
+//                 } else {
+//                     errorCount++;
+                    
+//                     // Move failed file to error folder
+//                     errorFile = errorFolder + "ERROR_" + xmlFileName;
+//                     Move(xmlFilePath, errorFile);
+                    
+//                     // Log failed import
+//                     logEntry = FormatDate(Now(), "yyyy-MM-dd HH:mm:ss") + " | IMPORT_FAILURE | " + xmlFileName + "\r\n";
+//                     SaveFile("import_log.txt", logEntry, "A");
+                    
+//                     // Log to NKSYELOG
+//                     LogToNKSYELOG(0, xmlFilePath, "XML_IMPORT_FAILURE");
+//                 }
+                
+//             } catch (importError) {
+//                 errorCount++;
+//                 MessageBox("Greška prilikom importa datoteke " + xmlFileName + ": " + importError);
+                
+//                 // Move to error folder
+//                 errorFile = errorFolder + "ERROR_" + xmlFileName;
+//                 try {
+//                     Move(xmlFilePath, errorFile);
+//                 } catch (moveError) {
+//                     MessageBox("Ne mogu premjestiti datoteku u error folder: " + moveError);
+//                 }
+//             }
+//         }
+        
+//         // Final summary
+//         MessageBox("Import završen!\nUspješno importirano: " + importCount + "\nGreške: " + errorCount);
+//         return importCount;
+        
+//     } catch (error) {
+//         MessageBox("Greška u procesu importa: " + error);
+//         return 0;
+//     }
+// }
+
+// // Download individual attachment from MojEracun API
+// function DownloadAttachmentFromMeR(attachmentUrl) {
+//     try {
+//         // Prepare headers for attachment download
+//         headers = {};
+//         headers["Authorization"] = "Bearer " + MER_API_KEY;
+//         headers["Accept"] = "application/xml,text/xml,*/*";
+        
+//         // Download attachment content
+//         attachmentContent = WebRequestMPFD(attachmentUrl, "GET", "", headers);
+        
+//         if (attachmentContent != "" && attachmentContent != null) {
+//             return attachmentContent;
+//         } else {
+//             return "";
+//         }
+        
+//     } catch (error) {
+//         MessageBox("Greška prilikom preuzimanja datoteke: " + error);
+//         return "";
+//     }
+// }
+
+// // Enhanced function to process single invoice from server download (legacy support)
+// function ProcessSingleInvoiceFromServer(invoiceData) {
+//     try {
+//         // Extract XML content
+//         xml = StrReplace(invoiceData["File"], "\\\"", "\"");
+//         invoiceId = invoiceData["ID"];
+        
+//         // Generate unique filename
+//         timestamp = FormatDate(Now(), "yyyyMMdd_HHmmss_fff");
+//         xmlFileName = "MeR_" + invoiceId + "_" + timestamp + ".xml";
+        
+//         // Save to incoming folder
+//         incomingFolder = GetCurrentDirectory() + "\\Novi XML e-računi\\";
+//         if (!Exists(incomingFolder)) {
+//             MkDir(incomingFolder);
+//         }
+        
+//         xmlFilePath = incomingFolder + xmlFileName;
+//         SaveFile(xmlFilePath, xml);
+        
+//         return xmlFilePath;
+        
+//     } catch (error) {
+//         MessageBox("Greška prilikom procesiranja računa " + invoiceId + ": " + error);
+//         return "";
+//     }
+// }
+
+// // New main import function using XmlToDict
+// function importUBLXmlFromDict(xmlContent, xmlFilePath = "") {
+//     try {
+//         // Convert XML to Dictionary
+//         invoiceDict = XmlToDict(xmlContent);
+        
+//         if (invoiceDict == null || Size(invoiceDict) == 0) {
+//             MessageBox("Greška prilikom parsiranja XML-a u Dictionary");
+//             return false;
+//         }
+        
+//         // Determine document type from dictionary structure
+//         docType = GetDocumentTypeFromDict(invoiceDict);
+//         if (docType == "") {
+//             MessageBox("Nepoznat tip dokumenta u XML datoteci");
+//             return false;
+//         }
+        
+//         // Extract header information from dictionary
+//         headerData = ExtractHeaderDataFromDict(invoiceDict, docType);
+//         if (headerData == null) {
+//             MessageBox("Greška prilikom izvlačenja podataka zaglavlja");
+//             return false;
+//         }
+        
+//         // Validate fiscal year before proceeding
+//         if (!ValidateFiscalYear(headerData["NKPR_GL_ESD"])) {
+//             MessageBox("Račun se ne može importirati jer datum ESD (" + headerData["NKPR_GL_ESD"] + ") ne pripada fiskalnoj godini " + KPSY_FISCAL_YR + ". Račun će biti premješten u arhivu.");
+//             return "FISCAL_YEAR_MISMATCH";
+//         }
+        
+//         // Extract line items from dictionary
+//         lineItems = ExtractLineItemsFromDict(invoiceDict, docType);
+//         if (lineItems == null) {
+//             MessageBox("Greška prilikom izvlačenja stavki računa");
+//             return false;
+//         }
+        
+//         // Begin database transaction
+//         BeginTransaction();
+        
+//         try {
+//             // Import header data to NKNAERGL table
+//             invNum = ImportHeaderDataToERGL(headerData, docType);
+//             if (invNum == 0) {
+//                 throw "Greška prilikom unosa zaglavlja računa";
+//             }
+            
+//             // Import line items to NKNAERLN table
+//             if (!ImportLineItemsToERLN(invNum, lineItems)) {
+//                 throw "Greška prilikom unosa stavki računa";
+//             }
+            
+//             // Log to NKSYELOG
+//             LogToNKSYELOG(invNum, xmlFilePath, "IMPORT_SUCCESS");
+            
+//             // Commit transaction
+//             CommitTransaction();
+            
+//             MessageBox("UBL XML račun je uspješno uvezen!\nBroj računa: " + invNum);
+//             return invNum;
+            
+//         } catch (error) {
+//             // Rollback transaction on error
+//             RollbackTransaction();
+//             LogToNKSYELOG(0, xmlFilePath, "IMPORT_FAILURE: " + error);
+//             MessageBox("Greška prilikom unosa u bazu podataka: " + error);
+//             return false;
+//         }
+        
+//     } catch (error) {
+//         MessageBox("Greška prilikom uvoza XML datoteke: " + error);
+//         return false;
+//     }
+// }
+
+// // Determine document type from Dictionary structure
+// function GetDocumentTypeFromDict(invoiceDict) {
+//     // Check which root element exists in dictionary
+//     if (invoiceDict.ContainsKey("Invoice")) return "S";
+//     if (invoiceDict.ContainsKey("CreditNote")) return "R";  
+//     if (invoiceDict.ContainsKey("DebitNote")) return "T";
+    
+//     // Check if we have direct access to elements (flat structure)
+//     if (invoiceDict.ContainsKey("ID") && invoiceDict.ContainsKey("InvoiceTypeCode")) return "S";
+//     if (invoiceDict.ContainsKey("ID") && invoiceDict.ContainsKey("CreditNoteTypeCode")) return "R";
+//     if (invoiceDict.ContainsKey("ID") && invoiceDict.ContainsKey("DebitNoteTypeCode")) return "T";
+    
+//     return "";
+// }
+
+// // Extract header data from Dictionary
+// function ExtractHeaderDataFromDict(invoiceDict, docType) {
+//     try {
+//         headerData = {};
+        
+//         // Get the root document data (handle nested or flat structure)
+//         docData = invoiceDict;
+//         if (docType == "S" && invoiceDict.ContainsKey("Invoice")) {
+//             docData = invoiceDict["Invoice"];
+//         } elif (docType == "R" && invoiceDict.ContainsKey("CreditNote")) {
+//             docData = invoiceDict["CreditNote"];
+//         } elif (docType == "T" && invoiceDict.ContainsKey("DebitNote")) {
+//             docData = invoiceDict["DebitNote"];
+//         }
+        
+//         // Basic invoice information
+//         headerData["NKPR_GL_NUM"] = ParseInvoiceNumber(GetDictValue(docData, "ID"));
+//         headerData["NKPR_GL_OZNAKA"] = docType;
+//         headerData["NKPR_GL_INVDTE"] = GetDictValue(docData, "IssueDate");
+//         headerData["NKPR_GL_TIMECR"] = GetDictValue(docData, "IssueTime");
+//         headerData["NKPR_GL_DUE_DATE"] = GetDictValue(docData, "DueDate");
+//         headerData["NKPR_GL_ESD"] = GetDictValue(docData, "TaxPointDate");
+        
+//         // Document type code
+//         if (docType == "R") {
+//             headerData["NKPR_GL_TYPECODE"] = GetDictValue(docData, "CreditNoteTypeCode");
+//         } elif (docType == "T") {
+//             headerData["NKPR_GL_TYPECODE"] = GetDictValue(docData, "DebitNoteTypeCode");
+//         } else {
+//             headerData["NKPR_GL_TYPECODE"] = GetDictValue(docData, "InvoiceTypeCode");
+//         }
+        
+//         // Currency
+//         headerData["NKPR_GL_CURRENCY"] = GetDictValue(docData, "DocumentCurrencyCode");
+        
+//         // Customer information from AccountingCustomerParty
+//         custParty = GetDictValue(docData, "AccountingCustomerParty");
+//         if (custParty != null && custParty != "") {
+//             custPartyData = custParty;
+//             if (IsString(custParty) == false && custParty.ContainsKey("Party")) {
+//                 custPartyData = custParty["Party"];
+//             }
+            
+//             // Customer OIB/GLN
+//             companyID = GetDictValue(custPartyData, "PartyIdentification.ID");
+//             if (companyID == "") {
+//                 companyID = GetDictValue(custPartyData, "PartyLegalEntity.CompanyID");
+//             }
+//             headerData["NKPR_GL_CUSTOIB"] = companyID;
+            
+//             // Customer name
+//             custName = GetDictValue(custPartyData, "PartyName.Name");
+//             if (custName == "") {
+//                 custName = GetDictValue(custPartyData, "PartyLegalEntity.RegistrationName");
+//             }
+//             headerData["NKPR_GL_CUSTNME"] = custName;
+            
+//             // Customer address
+//             custAddress = GetDictValue(custPartyData, "PostalAddress");
+//             if (custAddress != null && custAddress != "") {
+//                 headerData["NKPR_GL_CUSTADD"] = GetDictValue(custAddress, "StreetName");
+//                 headerData["NKPR_GL_CUSTCTY"] = GetDictValue(custAddress, "CityName");
+//                 headerData["NKPR_GL_CUSTZIP"] = GetDictValue(custAddress, "PostalZone");
+//                 headerData["NKPR_GL_CUSTST"] = GetDictValue(custAddress, "Country.IdentificationCode");
+//             }
+//         }
+        
+//         // Supplier information from AccountingSupplierParty
+//         suppParty = GetDictValue(docData, "AccountingSupplierParty");
+//         if (suppParty != null && suppParty != "") {
+//             suppPartyData = suppParty;
+//             if (IsString(suppParty) == false && suppParty.ContainsKey("Party")) {
+//                 suppPartyData = suppParty["Party"];
+//             }
+            
+//             // Supplier OIB/GLN
+//             suppCompanyID = GetDictValue(suppPartyData, "PartyIdentification.ID");
+//             if (suppCompanyID == "") {
+//                 suppCompanyID = GetDictValue(suppPartyData, "PartyLegalEntity.CompanyID");
+//             }
+//             headerData["NKPR_GL_SUPPOIB"] = suppCompanyID;
+//         }
+        
+//         // Delivery information
+//         delivery = GetDictValue(docData, "Delivery");
+//         if (delivery != null && delivery != "") {
+//             deliveryLocation = GetDictValue(delivery, "DeliveryLocation");
+//             if (deliveryLocation != null && deliveryLocation != "") {
+//                 deliveryID = GetDictValue(deliveryLocation, "ID");
+//                 if (deliveryID != "") {
+//                     // Check if it's GLN (13 characters) or internal code
+//                     if (Length(deliveryID) == 13) {
+//                         headerData["NKPR_AD_GLN"] = deliveryID;
+//                     } else {
+//                         headerData["NKPR_GL_SHPCOD"] = deliveryID;
+//                     }
+//                 }
+                
+//                 // Delivery address
+//                 deliveryAddr = GetDictValue(deliveryLocation, "Address");
+//                 if (deliveryAddr != null && deliveryAddr != "") {
+//                     headerData["NKPR_GL_SHPADD1"] = GetDictValue(deliveryAddr, "StreetName");
+//                     headerData["NKPR_GL_SHPCTY"] = GetDictValue(deliveryAddr, "CityName");
+//                     headerData["NKPR_GL_SHPZIP"] = GetDictValue(deliveryAddr, "PostalZone");
+//                     headerData["NKPR_GL_SHPST"] = GetDictValue(deliveryAddr, "Country.IdentificationCode");
+//                 }
+//             }
+            
+//             // Delivery party
+//             deliveryParty = GetDictValue(delivery, "DeliveryParty");
+//             if (deliveryParty != null && deliveryParty != "") {
+//                 headerData["NKPR_GL_SHPNME"] = GetDictValue(deliveryParty, "PartyName.Name");
+//             }
+//         }
+        
+//         // Payment information
+//         paymentMeans = GetDictValue(docData, "PaymentMeans");
+//         if (paymentMeans != null && paymentMeans != "") {
+//             headerData["NKPR_GL_PAYMNT"] = GetDictValue(paymentMeans, "PaymentMeansCode");
+            
+//             paymentID = GetDictValue(paymentMeans, "PaymentID");
+//             if (Contains(paymentID, " ")) {
+//                 paymentParts = Split(paymentID, " ");
+//                 headerData["NKPR_GL_MODEL"] = paymentParts[0];
+//                 if (Size(paymentParts) > 1) {
+//                     headerData["NKPR_GL_POZIV"] = paymentParts[1];
+//                 }
+//             }
+//         }
+        
+//         // Monetary totals
+//         legalMonTotal = GetDictValue(docData, "LegalMonetaryTotal");
+//         if (legalMonTotal != null && legalMonTotal != "") {
+//             headerData["NKPR_GL_LINETOTAL"] = ParseDecimal(GetDictValue(legalMonTotal, "LineExtensionAmount"));
+//             headerData["NKPR_GL_TAXTOTAL"] = ParseDecimal(GetDictValue(legalMonTotal, "TaxExclusiveAmount"));
+//             headerData["NKPR_GL_TOTAL"] = ParseDecimal(GetDictValue(legalMonTotal, "TaxInclusiveAmount"));
+//             headerData["NKPR_GL_PAYABLE"] = ParseDecimal(GetDictValue(legalMonTotal, "PayableAmount"));
+//         }
+        
+//         // Notes
+//         note = GetDictValue(docData, "Note");
+//         if (note != "") {
+//             headerData["NKPR_GL_NOTE"] = note;
+            
+//             // Parse referenced invoices from note
+//             refStartPos = IndexOf(note, "#REF(");
+//             if (refStartPos >= 0) {
+//                 refEndPos = IndexOf(note, ")", refStartPos);
+//                 if (refEndPos >= 0) {
+//                     refContent = Substring(note, refStartPos + 5, refEndPos - refStartPos - 5);
+//                     refNumbers = Split(refContent, ",");
+//                     if (Size(refNumbers) > 0) {
+//                         headerData["NKPR_GL_REZ3"] = refNumbers[0].trim();
+//                     }
+//                 }
+//             }
+//         }
+        
+//         // Billing references
+//         billingRef = GetDictValue(docData, "BillingReference");
+//         if (billingRef != null && billingRef != "") {
+//             billingRefID = GetDictValue(billingRef, "InvoiceDocumentReference.ID");
+//             if (billingRefID != "" && headerData["NKPR_GL_REZ3"] == "") {
+//                 headerData["NKPR_GL_REZ3"] = ParseInvoiceNumber(billingRefID);
+//             }
+//         }
+        
+//         return headerData;
+        
+//     } catch (error) {
+//         MessageBox("Greška prilikom izvlačenja podataka zaglavlja: " + error);
+//         return null;
+//     }
+// }
+
+// // Legacy import function (kept for compatibility, but uses new dictionary approach)
+// function importUBLXml(xmlFilePath) {
+//     try {
+//         // Check if file exists
+//         if (!Exists(xmlFilePath)) {
+//             MessageBox("XML datoteka ne postoji: " + xmlFilePath);
+//             return false;
+//         }
+        
+//         // Load XML content
+//         xmlContent = LoadFile(xmlFilePath);
+//         if (xmlContent == "") {
+//             MessageBox("XML datoteka je prazna ili se ne može učitati: " + xmlFilePath);
+//             return false;
+//         }
+        
+//         // Use new dictionary-based import
+//         return importUBLXmlFromDict(xmlContent, xmlFilePath);
+        
+//     } catch (error) {
+//         MessageBox("Greška prilikom uvoza XML datoteke: " + error);
+//         return false;
+//     }
+// }
+
+// // Helper function to check if value is an array
+// function IsArray(value) {
+//     return (value != null && typeof(value) == "object" && value.Length != undefined);
+// }
+
+// // Helper function to check if value is a string
+// function IsString(value) {
+//     return (typeof(value) == "string");
+// }
+
+// // Helper function to parse decimal values (enhanced)
+// function ParseDecimal(value) {
+//     if (value == "" || value == null) {
+//         return 0;
+//     }
+    
+//     // Handle dictionary/object values
+//     if (!IsString(value)) {
+//         if (value.ContainsKey("#text")) {
+//             value = value["#text"];
+//         } else {
+//             value = String(value);
+//         }
+//     }
+    
+//     return Double(value);
+// }
+ 
+// // Extract line items from Dictionary
+// function ExtractLineItemsFromDict(invoiceDict, docType) {
+//     try {
+//         lineItems = {};
+        
+//         // Get the root document data
+//         docData = invoiceDict;
+//         if (docType == "S" && invoiceDict.ContainsKey("Invoice")) {
+//             docData = invoiceDict["Invoice"];
+//         } elif (docType == "R" && invoiceDict.ContainsKey("CreditNote")) {
+//             docData = invoiceDict["CreditNote"];
+//         } elif (docType == "T" && invoiceDict.ContainsKey("DebitNote")) {
+//             docData = invoiceDict["DebitNote"];
+//         }
+        
+//         // Determine line element name based on document type
+//         lineElementName = "";
+//         quantityElementName = "";
+//         if (docType == "S") {
+//             lineElementName = "InvoiceLine";
+//             quantityElementName = "InvoicedQuantity";
+//         } elif (docType == "R") {
+//             lineElementName = "CreditNoteLine";
+//             quantityElementName = "CreditedQuantity";
+//         } elif (docType == "T") {
+//             lineElementName = "DebitNoteLine";
+//             quantityElementName = "DebitedQuantity";
+//         }
+        
+//         // Get line items array
+//         linesArray = GetDictValue(docData, lineElementName);
+//         if (linesArray == null || linesArray == "") {
+//             return {}; // Return empty array if no lines found
+//         }
+        
+//         // Handle both single line (object) and multiple lines (array)
+//         if (IsArray(linesArray)) {
+//             // Multiple lines
+//             for (i = 0; i < Size(linesArray); i++) {
+//                 lineData = ExtractSingleLineFromDict(linesArray[i], quantityElementName);
+//                 if (lineData != null) {
+//                     lineItems.Add(lineData);
+//                 }
+//             }
+//         } else {
+//             // Single line
+//             lineData = ExtractSingleLineFromDict(linesArray, quantityElementName);
+//             if (lineData != null) {
+//                 lineItems.Add(lineData);
+//             }
+//         }
+        
+//         return lineItems;
+        
+//     } catch (error) {
+//         MessageBox("Greška prilikom izvlačenja stavki: " + error);
+//         return null;
+//     }
+// }
+
+// // Extract single line item data from Dictionary
+// function ExtractSingleLineFromDict(lineDict, quantityElementName) {
+//     try {
+//         lineData = {};
+        
+//         // Basic line information
+//         lineData["NKPR_LN_BR_LN"] = GetDictValue(lineDict, "ID");
+        
+//         // Quantity and unit
+//         quantity = GetDictValue(lineDict, quantityElementName);
+//         if (quantity != "") {
+//             lineData["NKPR_LN_PQTY"] = ParseDecimal(quantity);
+            
+//             // Unit code (might be in attributes - handle as needed)
+//             unitCode = GetDictValue(lineDict, quantityElementName + ".unitCode");
+//             if (unitCode == "") {
+//                 // Try alternative structure
+//                 unitCode = GetDictValue(lineDict, quantityElementName + ".@unitCode");
+//             }
+//             lineData["NKPR_LN_JEDMJ"] = GetUnitCodeFromUN(unitCode);
+//         }
+        
+//         // Line amount
+//         lineData["NKPR_LN_AMT"] = ParseDecimal(GetDictValue(lineDict, "LineExtensionAmount"));
+        
+//         // Item information
+//         item = GetDictValue(lineDict, "Item");
+//         if (item != null && item != "") {
+//             lineData["NKPR_LN_PDESC"] = GetDictValue(item, "Name");
+            
+//             // Product code - try different locations
+//             productCode = GetDictValue(item, "SellersItemIdentification.ID");
+//             if (productCode == "") {
+//                 productCode = GetDictValue(item, "StandardItemIdentification.ID");
+//             }
+//             if (productCode == "") {
+//                 productCode = GetDictValue(item, "BuyersItemIdentification.ID");
+//             }
+//             lineData["NKPR_LN_PCODE"] = productCode;
+            
+//             // Tax information
+//             taxCategory = GetDictValue(item, "ClassifiedTaxCategory");
+//             if (taxCategory != null && taxCategory != "") {
+//                 taxPercent = ParseDecimal(GetDictValue(taxCategory, "Percent"));
+//                 lineData["NKPR_LN_PRNPR"] = taxPercent;
+//                 lineData["NKPR_LN_TXBLE"] = (taxPercent > 0) ? "Y" : "N";
+//             }
+//         }
+        
+//         // Price information
+//         price = GetDictValue(lineDict, "Price");
+//         if (price != null && price != "") {
+//             lineData["NKPR_LN_PPRCE"] = ParseDecimal(GetDictValue(price, "PriceAmount"));
+//         }
+        
+//         // Allowances and charges
+//         allowanceCharge = GetDictValue(lineDict, "AllowanceCharge");
+//         if (allowanceCharge != null && allowanceCharge != "") {
+//             // Handle both single and multiple allowance/charge entries
+//             if (IsArray(allowanceCharge)) {
+//                 for (i = 0; i < Size(allowanceCharge); i++) {
+//                     ProcessAllowanceCharge(allowanceCharge[i], lineData);
+//                 }
+//             } else {
+//                 ProcessAllowanceCharge(allowanceCharge, lineData);
+//             }
+//         }
+        
+//         // Notes
+//         lineNote = GetDictValue(lineDict, "Note");
+//         if (lineNote != "") {
+//             lineData["NKPR_LN_NOTE"] = lineNote;
+//         }
+        
+//         return lineData;
+        
+//     } catch (error) {
+//         MessageBox("Greška prilikom izvlačenja stavke: " + error);
+//         return null;
+//     }
+// }
+
+// // Process allowance/charge for line item
+// function ProcessAllowanceCharge(allowanceChargeDict, lineData) {
+//     chargeIndicator = GetDictValue(allowanceChargeDict, "ChargeIndicator");
+//     amount = ParseDecimal(GetDictValue(allowanceChargeDict, "Amount"));
+    
+//     if (chargeIndicator == "false" && amount > 0) {
+//         // This is an allowance (discount)
+//         lineData["NKPR_LN_POPL"] = amount;
+        
+//         // Calculate discount percentage
+//         grossAmount = lineData["NKPR_LN_PQTY"] * lineData["NKPR_LN_PPRCE"];
+//         if (grossAmount > 0) {
+//             lineData["NKPR_LN_PDISC"] = (amount / grossAmount) * 100;
+//         }
+//     } elif (chargeIndicator == "true" && amount > 0) {
+//         // This is a charge - handle as negative discount
+//         lineData["NKPR_LN_POPL"] = -amount;
+        
+//         grossAmount = lineData["NKPR_LN_PQTY"] * lineData["NKPR_LN_PPRCE"];
+//         if (grossAmount > 0) {
+//             lineData["NKPR_LN_PDISC"] = -(amount / grossAmount) * 100;
+//         }
+//     }
+// }
+
+// // Helper function to safely get value from dictionary with dot notation support
+// function GetDictValue(dict, key) {
+//     if (dict == null || IsString(dict)) {
+//         return dict; // Return the string value directly if it's already a string
+//     }
+    
+//     if (!Contains(key, ".")) {
+//         // Simple key
+//         if (dict.ContainsKey(key)) {
+//             return dict[key];
+//         } else {
+//             return "";
+//         }
+//     } else {
+//         // Nested key with dot notation (e.g., "Item.Name")
+//         keys = Split(key, ".");
+//         currentDict = dict;
+        
+//         for (i = 0; i < Size(keys); i++) {
+//             currentKey = keys[i];
+            
+//             if (currentDict == null || IsString(currentDict)) {
+//                 return "";
+//             }
+            
+//             if (currentDict.ContainsKey(currentKey)) {
+//                 currentDict = currentDict[currentKey];
+//             } else {
+//                 return "";
+//             }
+//         }
+        
+//         return currentDict;
+//     }
+// }
+
+// // Import header data into NKNAERGL table
+// function ImportHeaderDataToERGL(headerData, docType) {
+//     try {
+//         // Generate new record ID
+//         newRecordId = GetNextRecordId("NKNAERGL");
+        
+//         // Prepare SQL insert statement for NKNAERGL table
+//         sql_insert = "INSERT INTO " + databaseName + ".dbo.NKNAERGL (";
+//         sql_insert += "NKNA_ER_ID, NKNA_ER_INVNUM, NKNA_ER_OZNAKA, NKNA_ER_INVDTE, NKNA_ER_TIMECR, ";
+//         sql_insert += "NKNA_ER_DUE_DATE, NKNA_ER_ESD, NKNA_ER_TYPECODE, NKNA_ER_CURRENCY, ";
+//         sql_insert += "NKNA_ER_CUSTOIB, NKNA_ER_CUSTNME, NKNA_ER_CUSTADD, NKNA_ER_CUSTCTY, ";
+//         sql_insert += "NKNA_ER_CUSTZIP, NKNA_ER_CUSTST, NKNA_ER_SUPPOIB, ";
+//         sql_insert += "NKNA_ER_SHPCOD, NKNA_ER_SHPNME, NKNA_ER_SHPADD1, NKNA_ER_SHPCTY, ";
+//         sql_insert += "NKNA_ER_SHPZIP, NKNA_ER_SHPST, NKNA_ER_GLN, ";
+//         sql_insert += "NKNA_ER_PAYMNT, NKNA_ER_MODEL, NKNA_ER_POZIV, ";
+//         sql_insert += "NKNA_ER_LINETOTAL, NKNA_ER_TAXTOTAL, NKNA_ER_TOTAL, NKNA_ER_PAYABLE, ";
+//         sql_insert += "NKNA_ER_NOTE, NKNA_ER_REZ3, NKNA_ER_CREATED, NKNA_ER_STATUS";
+//         sql_insert += ") VALUES (";
+//         sql_insert += "@recordId, @invNum, @docType, @invDate, @timeCreated, ";
+//         sql_insert += "@dueDate, @taxPointDate, @typeCode, @currency, ";
+//         sql_insert += "@custOIB, @custName, @custAddress, @custCity, ";
+//         sql_insert += "@custZip, @custState, @suppOIB, ";
+//         sql_insert += "@shpCode, @shpName, @shpAddress, @shpCity, ";
+//         sql_insert += "@shpZip, @shpState, @shpGLN, ";
+//         sql_insert += "@payment, @model, @poziv, ";
+//         sql_insert += "@lineTotal, @taxTotal, @total, @payable, ";
+//         sql_insert += "@note, @rez3, @created, @status";
+//         sql_insert += ");";
+        
+//         // Prepare parameters
+//         sqlParams = {};
+//         sqlParams.Add({"@recordId", newRecordId});
+//         sqlParams.Add({"@invNum", headerData["NKPR_GL_NUM"]});
+//         sqlParams.Add({"@docType", docType});
+//         sqlParams.Add({"@invDate", headerData["NKPR_GL_INVDTE"]});
+//         sqlParams.Add({"@timeCreated", headerData["NKPR_GL_TIMECR"]});
+//         sqlParams.Add({"@dueDate", headerData["NKPR_GL_DUE_DATE"]});
+//         sqlParams.Add({"@taxPointDate", headerData["NKPR_GL_ESD"]});
+//         sqlParams.Add({"@typeCode", headerData["NKPR_GL_TYPECODE"]});
+//         sqlParams.Add({"@currency", headerData["NKPR_GL_CURRENCY"]});
+//         sqlParams.Add({"@custOIB", headerData["NKPR_GL_CUSTOIB"]});
+//         sqlParams.Add({"@custName", headerData["NKPR_GL_CUSTNME"]});
+//         sqlParams.Add({"@custAddress", headerData["NKPR_GL_CUSTADD"]});
+//         sqlParams.Add({"@custCity", headerData["NKPR_GL_CUSTCTY"]});
+//         sqlParams.Add({"@custZip", headerData["NKPR_GL_CUSTZIP"]});
+//         sqlParams.Add({"@custState", headerData["NKPR_GL_CUSTST"]});
+//         sqlParams.Add({"@suppOIB", headerData["NKPR_GL_SUPPOIB"]});
+//         sqlParams.Add({"@shpCode", headerData["NKPR_GL_SHPCOD"]});
+//         sqlParams.Add({"@shpName", headerData["NKPR_GL_SHPNME"]});
+//         sqlParams.Add({"@shpAddress", headerData["NKPR_GL_SHPADD1"]});
+//         sqlParams.Add({"@shpCity", headerData["NKPR_GL_SHPCTY"]});
+//         sqlParams.Add({"@shpZip", headerData["NKPR_GL_SHPZIP"]});
+//         sqlParams.Add({"@shpState", headerData["NKPR_GL_SHPST"]});
+//         sqlParams.Add({"@shpGLN", headerData["NKPR_AD_GLN"]});
+//         sqlParams.Add({"@payment", headerData["NKPR_GL_PAYMNT"]});
+//         sqlParams.Add({"@model", headerData["NKPR_GL_MODEL"]});
+//         sqlParams.Add({"@poziv", headerData["NKPR_GL_POZIV"]});
+//         sqlParams.Add({"@lineTotal", headerData["NKPR_GL_LINETOTAL"]});
+//         sqlParams.Add({"@taxTotal", headerData["NKPR_GL_TAXTOTAL"]});
+//         sqlParams.Add({"@total", headerData["NKPR_GL_TOTAL"]});
+//         sqlParams.Add({"@payable", headerData["NKPR_GL_PAYABLE"]});
+//         sqlParams.Add({"@note", headerData["NKPR_GL_NOTE"]});
+//         sqlParams.Add({"@rez3", headerData["NKPR_GL_REZ3"]});
+//         sqlParams.Add({"@created", FormatDate(Now(), "yyyy-MM-dd HH:mm:ss")});
+//         sqlParams.Add({"@status", "IMPORTED"});
+        
+//         // Execute insert
+//         result = sqlExec(sql_insert, sqlParams);
+        
+//         if (result > 0) {
+//             return newRecordId;
+//         } else {
+//             throw "SQL insert neuspješan";
+//         }
+        
+//     } catch (error) {
+//         throw "Greška prilikom unosa zaglavlja: " + error;
+//     }
+// }
+
+// // Import line items into NKNAERLN table
+// function ImportLineItemsToERLN(recordId, lineItems) {
+//     try {
+//         for (i = 0; i < Size(lineItems); i++) {
+//             lineData = lineItems[i];
+            
+//             sql_insert = "INSERT INTO " + databaseName + ".dbo.NKNAERLN (";
+//             sql_insert += "NKNA_LN_ERID, NKNA_LN_BR_LN, NKNA_LN_PQTY, NKNA_LN_AMT, ";
+//             sql_insert += "NKNA_LN_PCODE, NKNA_LN_PDESC, NKNA_LN_JEDMJ, ";
+//             sql_insert += "NKNA_LN_PPRCE, NKNA_LN_PRNPR, NKNA_LN_TXBLE, ";
+//             sql_insert += "NKNA_LN_POPL, NKNA_LN_PDISC, NKNA_LN_NOTE";
+//             sql_insert += ") VALUES (";
+//             sql_insert += "@recordId, @lineNum, @qty, @amount, ";
+//             sql_insert += "@productCode, @description, @unit, ";
+//             sql_insert += "@price, @taxPercent, @taxable, ";
+//             sql_insert += "@discount, @discountPercent, @note";
+//             sql_insert += ");";
+            
+//             sqlParams = {};
+//             sqlParams.Add({"@recordId", recordId});
+//             sqlParams.Add({"@lineNum", lineData["NKPR_LN_BR_LN"]});
+//             sqlParams.Add({"@qty", lineData["NKPR_LN_PQTY"]});
+//             sqlParams.Add({"@amount", lineData["NKPR_LN_AMT"]});
+//             sqlParams.Add({"@productCode", lineData["NKPR_LN_PCODE"]});
+//             sqlParams.Add({"@description", lineData["NKPR_LN_PDESC"]});
+//             sqlParams.Add({"@unit", lineData["NKPR_LN_JEDMJ"]});
+//             sqlParams.Add({"@price", lineData["NKPR_LN_PPRCE"]});
+//             sqlParams.Add({"@taxPercent", lineData["NKPR_LN_PRNPR"]});
+//             sqlParams.Add({"@taxable", lineData["NKPR_LN_TXBLE"]});
+//             sqlParams.Add({"@discount", lineData["NKPR_LN_POPL"]});
+//             sqlParams.Add({"@discountPercent", lineData["NKPR_LN_PDISC"]});
+//             sqlParams.Add({"@note", lineData["NKPR_LN_NOTE"]});
+            
+//             result = sqlExec(sql_insert, sqlParams);
+//             if (result == 0) {
+//                 throw "Greška prilikom unosa stavke " + (i + 1);
+//             }
+//         }
+        
+//         return true;
+        
+//     } catch (error) {
+//         throw "Greška prilikom unosa stavki: " + error;
+//     }
+// }
+
+// // Log to NKSYELOG table
+// function LogToNKSYELOG(recordId, xmlFilePath, status) {
+//     try {
+//         sql_log = "INSERT INTO " + databaseName + ".dbo.NKSYELOG (";
+//         sql_log += "NKSY_LOG_DATE, NKSY_LOG_USER, NKSY_LOG_PROGRAM, NKSY_LOG_MESSAGE, ";
+//         sql_log += "NKSY_LOG_RECORDID, NKSY_LOG_STATUS";
+//         sql_log += ") VALUES (";
+//         sql_log += "@logDate, @logUser, @logProgram, @logMessage, @recordId, @status";
+//         sql_log += ");";
+        
+//         sqlParams = {};
+//         sqlParams.Add({"@logDate", FormatDate(Now(), "yyyy-MM-dd HH:mm:ss")});
+//         sqlParams.Add({"@logUser", userCode});
+//         sqlParams.Add({"@logProgram", "WxEracunGet"});
+//         sqlParams.Add({"@logMessage", "XML Invoice Import: " + xmlFilePath});
+//         sqlParams.Add({"@recordId", recordId});
+//         sqlParams.Add({"@status", status});
+        
+//         sqlExec(sql_log, sqlParams);
+        
+//     } catch (error) {
+//         // Don't throw error for logging issues
+//         MessageBox("Warning: Could not log to NKSYELOG: " + error);
+//     }
+// }
+
+// // Helper function to get next record ID
+// function GetNextRecordId(tableName) {
+//     sql_max = "SELECT MAX(NKNA_ER_ID) FROM " + databaseName + ".dbo." + tableName;
+    
+//     result = sqlQuery(sql_max);
+//     if (Size(result) >= 2 && result[1][0] != null) {
+//         return result[1][0] + 1;
+//     } else {
+//         return 1; // Starting ID
+//     }
+// }
+ 
+// // Helper function to convert UN unit codes back to internal codes
+// function GetUnitCodeFromUN(unCode) {
+//     if (unCode == "H87") { return "KOM"; }
+//     if (unCode == "KGM") { return "KG"; }
+//     if (unCode == "LTR") { return "LIT"; }
+//     if (unCode == "MTK") { return "MX2"; }
+//     if (unCode == "MTQ") { return "MX3"; }
+//     if (unCode == "TNE") { return "TON"; }
+//     if (unCode == "GRM") { return "GR"; }
+//     if (unCode == "HUR") { return "SAT"; }
+//     if (unCode == "DAY") { return "DAN"; }
+//     if (unCode == "MTR") { return "MET"; }
+//     return "KOM"; // Default
+// }
+
+// // Helper function to parse invoice number from UBL format
+// function ParseInvoiceNumber(ublInvNum) {
+//     // Convert from format "00002-90-1" to "90100002"
+//     if (Contains(ublInvNum, "-")) {
+//         parts = Split(ublInvNum, "-");
+//         if (Size(parts) == 3) {
+//             return int(parts[1] + parts[2] + parts[0]);
+//         }
+//     }
+//     return int(ublInvNum);
+// }
+
+// // Validate if invoice ESD date belongs to current fiscal year
+// function ValidateFiscalYear(esdDate) {
+//     try {
+//         if (esdDate == "" || esdDate == null) {
+//             return false; // No ESD date provided
+//         }
+        
+//         // Parse fiscal year from KPSY_FISCAL_YR (format: YYYY-MM-DD or similar)
+//         fiscalYear = "";
+//         if (KPSY_FISCAL_YR != "" && KPSY_FISCAL_YR != null) {
+//             if (Contains(KPSY_FISCAL_YR, "-")) {
+//                 fiscalYear = Substring(KPSY_FISCAL_YR, 0, 4); // Extract year part
+//             } else {
+//                 fiscalYear = KPSY_FISCAL_YR; // Assume it's already a year
+//             }
+//         } else {
+//             fiscalYear = FormatDate(Now(), "yyyy"); // Use current year as fallback
+//         }
+        
+//         // Parse year from ESD date (format: YYYY-MM-DD)
+//         esdYear = "";
+//         if (Contains(esdDate, "-")) {
+//             esdYear = Substring(esdDate, 0, 4); // Extract year part
+//         } else {
+//             esdYear = esdDate; // Assume it's already a year
+//         }
+        
+//         // Compare years
+//         return (esdYear == fiscalYear);
+        
+//     } catch (error) {
+//         MessageBox("Greška prilikom validacije fiskalne godine: " + error);
+//         return false;
+//     }
+// }
+
+// // Enhanced batch import function for processing multiple XML files
+// function BatchImportXMLFiles(folderPath) {
+//     try {
+//         if (!Exists(folderPath)) {
+//             MessageBox("Folder ne postoji: " + folderPath);
+//             return false;
+//         }
+        
+//         // Get all XML files in folder
+//         xmlFiles = FindFiles(folderPath, "*.xml");
+//         if (Size(xmlFiles) == 0) {
+//             MessageBox("Nema XML datoteka u folderu: " + folderPath);
+//             return true;
+//         }
+        
+//         successCount = 0;
+//         errorCount = 0;
+        
+//         for (i = 0; i < Size(xmlFiles); i++) {
+//             xmlFilePath = folderPath + "\\" + xmlFiles[i];
+            
+//             result = importUBLXml(xmlFilePath);
+//             if (result != false) {
+//                 successCount++;
+                
+//                 // Move to processed folder
+//                 processedFolder = folderPath + "\\Processed\\";
+//                 if (!Exists(processedFolder)) {
+//                     MkDir(processedFolder);
+//                 }
+//                 Move(xmlFilePath, processedFolder + xmlFiles[i]);
+                
+//             } else {
+//                 errorCount++;
+                
+//                 // Move to error folder  
+//                 errorFolder = folderPath + "\\Errors\\";
+//                 if (!Exists(errorFolder)) {
+//                     MkDir(errorFolder);
+//                 }
+//                 Move(xmlFilePath, errorFolder + "ERROR_" + xmlFiles[i]);
+//             }
+//         }
+        
+//         MessageBox("Batch import završen!\nUspješno: " + successCount + "\nGreške: " + errorCount);
+//         return true;
+        
+//     } catch (error) {
+//         MessageBox("Greška prilikom batch importa: " + error);
+//         return false;
+//     }
+// }
+
+/* 
+Usage Examples:
+
+1. Import single UBL XML invoice:
+   result = importUBLXml("C:\\UBL_90100002.xml");
+
+2. Import using new dictionary approach:
+   xmlContent = LoadFile("invoice.xml");
+   result = importUBLXmlFromDict(xmlContent, "invoice.xml");
+
+3. Batch import all XML files in folder:
+   BatchImportXMLFiles("C:\\IncomingInvoices");
+
+4. Import with error checking:
+   if (importUBLXml("invoice.xml")) {
+       MessageBox("Import successful!");
+   } else {
+       MessageBox("Import failed!");
+   }
+
+Database Tables Used:
+- NKNAERGL: Header table for imported e-invoices
+- NKNAERLN: Line items table for imported e-invoices  
+- NKSYELOG: System log for import tracking
+
+Fiscal Year Validation:
+- Only invoices with ESD date matching KPSY_FISCAL_YR are imported
+- Mismatched invoices are moved to archive without import
+*/

@@ -43,6 +43,7 @@ namespace SplitAndMerge
                 script.Backward();
             }
             Variable result = Utils.GetItem(script);
+            result.TrySetAsMap();
 
             // If we are in Return, we are done:
             script.SetDone();
@@ -58,6 +59,7 @@ namespace SplitAndMerge
                 script.Backward();
             }
             Variable result = await Utils.GetItemAsync(script);
+            result.TrySetAsMap();
 
             // If we are in Return, we are done:
             script.SetDone();
@@ -236,7 +238,7 @@ namespace SplitAndMerge
             obj.SetProperty(propName, value, script);
 
             InterpreterInstance.AddGlobal(obj.ParamName, new GetVarFunction(obj), false);
-             
+
             return new Variable(obj.ParamName);
         }
         public override string Description()
@@ -294,6 +296,8 @@ namespace SplitAndMerge
                 }
                 var varName = arg.Substring(0, ind);
                 ParsingScript tempScript = NewParsingScript(arg.Substring(ind + 1));
+                tempScript.StackLevel = script.StackLevel;
+                tempScript.ParentScript = script.ParentScript;
                 AssignFunction assign = new AssignFunction(InterpreterInstance);
                 result = assign.Assign(tempScript, varName, true);
             }
@@ -320,11 +324,13 @@ namespace SplitAndMerge
                 }
                 var varName = arg.Substring(0, ind);
                 ParsingScript tempScript = NewParsingScript(arg.Substring(ind + 1));
+                tempScript.StackLevel = script.StackLevel;
+                tempScript.ParentScript = script.ParentScript;
                 AssignFunction assign = new AssignFunction(InterpreterInstance);
                 result = assign.AssignAsync(tempScript, varName, true);
             }
 
-            return result == null ? Variable.EmptyInstance: await result;
+            return result == null ? Variable.EmptyInstance : await result;
         }
     }
 
@@ -373,7 +379,8 @@ namespace SplitAndMerge
             }
 
             script.MoveForwardIf(Constants.START_GROUP, Constants.SPACE);
-            /*string line = */script.GetOriginalLine(out _);
+            /*string line = */
+            script.GetOriginalLine(out _);
 
             int parentOffset = script.Pointer;
 
@@ -546,7 +553,7 @@ namespace SplitAndMerge
                     return sb.ToString();
                 }
 
-                Variable result = customFunction.Run(null, null, this); 
+                Variable result = customFunction.Run(null, null, this);
                 return result.ToString();
             }
 
@@ -610,7 +617,7 @@ namespace SplitAndMerge
                 m_properties[namelower] = value;
                 m_propSet.Add(name);
                 m_propSetLower.Add(namelower);
-                return Task.FromResult( Variable.EmptyInstance );
+                return Task.FromResult(Variable.EmptyInstance);
             }
 
             public async Task<Variable> GetProperty(string name, List<Variable> args = null, ParsingScript script = null)
@@ -760,7 +767,7 @@ namespace SplitAndMerge
             Type enumType = null;
             int index = 0;
             string typeName = "";
-            while(enumType == null && index < tokens.Length)
+            while (enumType == null && index < tokens.Length)
             {
                 if (!string.IsNullOrWhiteSpace(typeName))
                 {
@@ -837,7 +844,7 @@ namespace SplitAndMerge
             return newObject;
         }
 
-       private object CreateReflectedObj(Type t, List<Variable> args)
+        private object CreateReflectedObj(Type t, List<Variable> args)
         {
             var constructors = t.GetConstructors(BindingFlags.Public);
             if (constructors == null)
@@ -914,7 +921,8 @@ namespace SplitAndMerge
 
             newClass.ParentOffset = script.Pointer;
             newClass.ParentScript = script;
-            /*string line = */script.GetOriginalLine(out _);
+            /*string line = */
+            script.GetOriginalLine(out _);
 
             string scriptExpr = Utils.GetBodyBetween(script, Constants.START_GROUP,
                                                      Constants.END_GROUP);
@@ -940,7 +948,7 @@ namespace SplitAndMerge
     {
         protected override Variable Evaluate(ParsingScript script)
         {
-            var data = InterpreterInstance.GetDefinedFunctions();            
+            var data = InterpreterInstance.GetDefinedFunctions();
 
             return new Variable(data);
         }
@@ -967,6 +975,7 @@ namespace SplitAndMerge
 
                 ParsingScript tempScript = script.GetTempScript(body);
                 tempScript.DisableBreakpoints = true;
+                tempScript.Namespace = namespaceName;
                 tempScript.MoveForwardIf(Constants.START_GROUP);
 
                 Debugger debugger = script != null && script.Debugger != null ? script.Debugger : Debugger.MainInstance;
@@ -1125,7 +1134,7 @@ namespace SplitAndMerge
                 m_stackLevel.Variables[args[i].ParamName.ToLower()] = arg;
             }
 
-            if (NamespaceData  != null)
+            if (NamespaceData != null)
             {
                 var vars = NamespaceData.Variables;
                 string prefix = NamespaceData.Name + ".";
@@ -1137,7 +1146,7 @@ namespace SplitAndMerge
                 }
             }
 
-            InterpreterInstance.AddLocalVariables(m_stackLevel);
+            InterpreterInstance.AddLocalVariables(m_stackLevel.Clone());
         }
 
         protected override Variable Evaluate(ParsingScript script)
@@ -1193,6 +1202,7 @@ namespace SplitAndMerge
             ParsingScript tempScript = Utils.GetTempScript(InterpreterInstance,
                                                            m_body, m_stackLevel, m_name, script,
                                                            m_parentScript, m_parentOffset, instance);
+            tempScript.Namespace = script?.Namespace;
 
             Debugger debugger = script != null && script.Debugger != null ? script.Debugger : Debugger.MainInstance;
             if (script != null && debugger != null)
@@ -1201,8 +1211,7 @@ namespace SplitAndMerge
             }
 
             while (tempScript.Pointer < m_body.Length - 1 &&
-                  (result == null || !result.IsReturn) &&
-                  (result == null || result.Type != Variable.VarType.QUIT))
+                  (result == null || !result.IsReturn))
             {
                 result = tempScript.Execute();
                 tempScript.GoToNextStatement();
@@ -1233,6 +1242,7 @@ namespace SplitAndMerge
             ParsingScript tempScript = Utils.GetTempScript(InterpreterInstance,
                                                            m_body, m_stackLevel, m_name, script,
                                                            m_parentScript, m_parentOffset, instance);
+            tempScript.Namespace = script?.Namespace != null ? script.Namespace : (NamespaceData != null ? NamespaceData.Name : null);
 
             Debugger debugger = script != null && script.Debugger != null ? script.Debugger : Debugger.MainInstance;
             if (debugger != null)
@@ -1286,7 +1296,7 @@ namespace SplitAndMerge
             }
 
             Variable result = customFunction.Run(args, script);
-            return Task.FromResult( result );
+            return Task.FromResult(result);
         }
 
         public static Task<Variable> Run(Interpreter interpreter, string functionName,
@@ -1396,20 +1406,19 @@ namespace SplitAndMerge
     {
         protected override Variable Evaluate(ParsingScript script)
         {
+            var item = string.IsNullOrEmpty(script.Item) ? "" : script.Item;
             // First check if the passed expression is a string between quotes.
-            if (Item.Length > 1 &&
-              ((Item[0] == Constants.QUOTE  && Item[Item.Length - 1] == Constants.QUOTE) ||
-               (Item[0] == Constants.QUOTE1 && Item[Item.Length - 1] == Constants.QUOTE1)))
+            if (item.Length > 1 &&
+              ((item[0] == Constants.QUOTE && item[item.Length - 1] == Constants.QUOTE) ||
+               (item[0] == Constants.QUOTE1 && item[item.Length - 1] == Constants.QUOTE1)))
             {
-                return new Variable(Item.Substring(1, Item.Length - 2));
+                return new Variable(item.Substring(1, item.Length - 2));
             }
 
             // Otherwise this should be a number.
-            double num = Utils.ConvertToDouble(Item, script);
+            double num = Utils.ConvertToDouble(item, script);
             return new Variable(num);
         }
-
-        public string Item { private get; set; }
     }
 
     class AddFunction : ParserFunction
@@ -1511,7 +1520,7 @@ namespace SplitAndMerge
             Utils.CheckNotEnd(script, m_name);
 
             // 2. Get the current value of the variable.
-            List<Variable> arrayIndices = Utils.GetArrayIndices(script, varName, (newVarName) => { varName = newVarName; } );
+            List<Variable> arrayIndices = Utils.GetArrayIndices(script, varName, (newVarName) => { varName = newVarName; });
 
             ParserFunction func = InterpreterInstance.GetVariable(varName, script);
             Utils.CheckNotNull(varName, func, script);
@@ -1717,6 +1726,24 @@ namespace SplitAndMerge
         }
     }
 
+    class IffStatement : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            Variable result = InterpreterInstance.ProcessIff(script);
+            return result;
+        }
+        protected override async Task<Variable> EvaluateAsync(ParsingScript script)
+        {
+            Variable result = await InterpreterInstance.ProcessIffAsync(script);
+            return result;
+        }
+        public override string Description()
+        {
+            return "A short-cut of an if-else statement: iff (condition, condition_true, condition_false)";
+        }
+    }
+
     class ForStatement : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -1885,7 +1912,7 @@ namespace SplitAndMerge
         }
     }
 
-        // Get a value of a variable or of an array element
+    // Get a value of a variable or of an array element
     public class GetVarFunction : ParserFunction
     {
         public GetVarFunction(Variable value)
@@ -1911,7 +1938,7 @@ namespace SplitAndMerge
                 if (m_arrayIndices == null)
                 {
                     string startName = script.Substr(script.Pointer - 1);
-                    m_arrayIndices = Utils.GetArrayIndices(script, startName, m_delta, (newStart, newDelta) => { startName = newStart; m_delta = newDelta; } );
+                    m_arrayIndices = Utils.GetArrayIndices(script, startName, m_delta, (newStart, newDelta) => { startName = newStart; m_delta = newDelta; });
                 }
 
                 script.Forward(m_delta);
@@ -1990,7 +2017,7 @@ namespace SplitAndMerge
 
                 script.Forward();
                 m_propName = Utils.GetToken(script, Constants.NEXT_OR_END_ARRAY);
-                Variable propValue = await result.GetPropertyAsync(m_propName, script); 
+                Variable propValue = await result.GetPropertyAsync(m_propName, script);
                 Utils.CheckNotNull(propValue, m_propName, script);
                 return propValue;
             }
@@ -2025,7 +2052,7 @@ namespace SplitAndMerge
             }
             if (!string.IsNullOrWhiteSpace(var.CustomGet))
             {
-                return ParsingScript.RunString(script.InterpreterInstance, var.CustomGet); 
+                return ParsingScript.RunString(script.InterpreterInstance, var.CustomGet);
             }
             return var;
         }
@@ -2185,7 +2212,7 @@ namespace SplitAndMerge
             return left;
         }
 
-        public static void ProcessOperator(Variable left, Variable right, string action, 
+        public static void ProcessOperator(Variable left, Variable right, string action,
             ParsingScript script = null, string name = "")
         {
             if (left.Type == Variable.VarType.NUMBER)
@@ -2209,16 +2236,16 @@ namespace SplitAndMerge
             char ch = action.Length > 0 ? action[0] : '\0';
             switch (ch)
             {
-               case '+':
-                   sign = 1;
-                   break;
-               case '-':
-                   sign = -1;
-                   break;
-               default:
-                   Utils.ThrowErrorMsg("Not a valid action [" + action + "] on a date.",
-                                        script, name);
-                   break;
+                case '+':
+                    sign = 1;
+                    break;
+                case '-':
+                    sign = -1;
+                    break;
+                default:
+                    Utils.ThrowErrorMsg("Not a valid action [" + action + "] on a date.",
+                                         script, name);
+                    break;
             }
             valueA.AddToDate(valueB, sign);
         }
@@ -2302,7 +2329,6 @@ namespace SplitAndMerge
             m_name = Constants.GetRealName(varName);
             script.CurrentAssign = m_name;
             Variable varValue = Utils.GetItem(script);
-
             script.MoveBackIfPrevious(Constants.END_ARG);
             varValue.TrySetAsMap();
 
@@ -2337,7 +2363,7 @@ namespace SplitAndMerge
 
             Variable array;
 
-            ParserFunction pf = InterpreterInstance.GetVariable(m_name, script);
+            ParserFunction pf = InterpreterInstance.GetVariable(m_name, script, true);
             array = pf != null ? (pf.GetValue(script)) : new Variable();
 
             ExtendArray(array, arrayIndices, 0, varValue);
@@ -2391,7 +2417,7 @@ namespace SplitAndMerge
 
             Variable array;
 
-            ParserFunction pf = InterpreterInstance.GetVariable(m_name, script);
+            ParserFunction pf = InterpreterInstance.GetVariable(m_name, script, true);
             array = pf != null ? (await pf.GetValueAsync(script)) : new Variable();
 
             ExtendArray(array, arrayIndices, 0, varValue);
@@ -2841,7 +2867,7 @@ namespace SplitAndMerge
             string varName = Utils.GetToken(script, Constants.END_ARG_ARRAY);
             Utils.CheckNotEnd(script, m_name);
 
-            List<Variable> arrayIndices = Utils.GetArrayIndices(script, varName, (newName) => { varName = newName; } );
+            List<Variable> arrayIndices = Utils.GetArrayIndices(script, varName, (newName) => { varName = newName; });
 
             // 2. Get the current value of the variable.
             ParserFunction func = InterpreterInstance.GetVariable(varName, script);
@@ -2889,7 +2915,7 @@ namespace SplitAndMerge
 
             if (script.StackLevel != null)
             {
-                InterpreterInstance.AddLocalVariable(new GetVarFunction(currentValue), varName);
+                InterpreterInstance.AddLocalVariable(new GetVarFunction(currentValue), script, varName);
             }
             else if (script.CurrentClass != null)
             {
@@ -3186,14 +3212,14 @@ namespace SplitAndMerge
             }
 
             Utils.CheckArgs(args.Count, 2, m_name);
-            int timeout      = args[0].AsInt();
+            int timeout = args[0].AsInt();
             string strAction = args[1].AsString();
-            string arg       = Utils.GetSafeString(args, 2);
-            string timerId   = Utils.GetSafeString(args, 3);
-            bool autoReset   = Utils.GetSafeInt(args, 4, 0) != 0;
+            string arg = Utils.GetSafeString(args, 2);
+            string timerId = Utils.GetSafeString(args, 3);
+            bool autoReset = Utils.GetSafeInt(args, 4, 0) != 0;
 
-            arg              = Utils.ProtectQuotes(arg);
-            timerId          = Utils.ProtectQuotes(timerId);
+            arg = Utils.ProtectQuotes(arg);
+            timerId = Utils.ProtectQuotes(timerId);
 
             System.Timers.Timer pauseTimer = new System.Timers.Timer(timeout);
             pauseTimer.Elapsed += (sender, e) =>

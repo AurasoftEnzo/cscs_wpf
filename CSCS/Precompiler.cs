@@ -1386,7 +1386,7 @@ namespace SplitAndMerge
             }
 
             sb.AppendLine(m_depth + ARGS_TEMP_VAR + " =\"" + argsStr + "\";");
-            sb.AppendLine(m_depth + SCRIPT_TEMP_VAR + " = new ParsingScript(__interpreter, " + ARGS_TEMP_VAR + ");");
+            sb.AppendLine(m_depth + SCRIPT_TEMP_VAR + " = new ParsingScript(__interpreter, " + ARGS_TEMP_VAR + ", true);");
             sb.AppendLine(m_depth + PARSER_TEMP_VAR + " = new ParserFunction(" + SCRIPT_TEMP_VAR + ", \"" + functionName +
                 "\", '" + ch + "', ref " + ACTION_TEMP_VAR + ");");
 
@@ -1768,11 +1768,11 @@ namespace SplitAndMerge
             // Implement not needed:
             for (int i = workDir.Count; i < DLLConst.MaxWorkMethods; i++)
             {
-                sb.Append("  public Variable " + DLLConst.GetWorkerMethod(i+1) + "(Interpreter __interpreter, List<string> __varStr,List<double> __varNum," +
-                    " List<int> __varInt,List<List<string>> __varArrStr,List<List<double>> __varArrNum,List<List<int>> __varArrInt,"+
+                sb.Append("  public Variable " + DLLConst.GetWorkerMethod(i + 1) + "(Interpreter __interpreter, List<string> __varStr,List<double> __varNum," +
+                    " List<int> __varInt,List<List<string>> __varArrStr,List<List<double>> __varArrNum,List<List<int>> __varArrInt," +
                     " List<Dictionary<string, string>> __varMapStr,List<Dictionary<string, double>> __varMapNum,List<Variable> __varVar) {\n" +
                     "    return null;}\n");
-                sb.Append("  public ArgData " + DLLConst.GetArgsMethod(i+1) + "(int id) {\n" +
+                sb.Append("  public ArgData " + DLLConst.GetArgsMethod(i + 1) + "(int id) {\n" +
                     "    return null;}\n");
             }
 
@@ -1891,7 +1891,7 @@ namespace SplitAndMerge
         {
             data.functionMap = new Dictionary<string, ImportDLLFunction.DLLFunctionData>();
             var names = dll.MethodNames();
-            foreach(var name in names)
+            foreach (var name in names)
             {
                 var fd = new ImportDLLFunction.DLLFunctionData();
                 fd.name = name;

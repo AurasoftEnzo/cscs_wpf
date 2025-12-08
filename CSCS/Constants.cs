@@ -59,11 +59,13 @@ namespace SplitAndMerge
         public const string DO = "do";
         public const string ELSE = "else";
         public const string ELSE_IF = "elif";
+        public const string FINALLY = "finally";
         public const string FOR = "for";
         public const string FUNCTION = "function";
         public const string CLASS = "class";
         public const string ENUM = "enum";
         public const string IF = "if";
+        public const string IFF = "iff";
         public const string INCLUDE = "include";
         public const string IMPORT = "import";
         public const string IMPORT_DLL = "importDll";
@@ -111,6 +113,7 @@ namespace SplitAndMerge
         public const string MARSHAL = "marshal";
         public const string NAME_EXISTS = "NameExists";
         public const string NAMESPACE = "Namespace";
+        public const string NEW_THREAD = "NewThread";
         public const string NOW = "Now";
         public const string ON_EXCEPTION = "OnException";
         public const string OBJECT_PROPERTIES = "Properties";
@@ -144,7 +147,8 @@ namespace SplitAndMerge
         public const string STR_TRIM = "StrTrim";
         public const string STR_UPPER = "StrUpper";
         public const string THREAD = "thread";
-        public const string THREAD_ID = "threadid";
+        public const string THREAD_ID = "ThreadId";
+        public const string THREAD_RESULT = "ThreadResult";
         public const string TOKENIZE_LINES = "TokenizeLines";
         public const string TOKEN_COUNTER = "CountTokens";
         public const string TO_BOOL = "bool";
@@ -163,88 +167,88 @@ namespace SplitAndMerge
         public const string JSON = "GetVariableFromJson";
 
         public const string START_DEBUGGER = "StartDebugger";
-        public const string STOP_DEBUGGER  = "StopDebugger";
+        public const string STOP_DEBUGGER = "StopDebugger";
         public const string GET_FILE_FROM_DEBUGGER = "GetFileFromDebugger";
 
-        public const string ADD_DATA     = "AddDataToCollection";
+        public const string ADD_DATA = "AddDataToCollection";
         public const string COLLECT_DATA = "StartCollectingData";
-        public const string GET_DATA     = "GetCollectedData";
+        public const string GET_DATA = "GetCollectedData";
 
         // Properties, returned after the variable dot:
-        public const string AT            = "At";
-        public const string EMPTY_WHITE   = "EmptyOrWhite";
-        public const string ENDS_WITH     = "EndsWith";
-        public const string EQUALS        = "Equals";
-        public const string FIRST         = "First";
-        public const string FOREACH       = "ForEach";
-        public const string INDEX_OF      = "IndexOf";
-        public const string JOIN          = "Join";
-        public const string KEYS          = "Keys";
-        public const string LAST          = "Last";
-        public const string LENGTH        = "Length";
-        public const string LOWER         = "Lower";
-        public const string REMOVE_ITEM   = "Remove";
-        public const string REPLACE       = "Replace";
-        public const string REPLACE_TRIM  = "ReplaceAndTrim";
-        public const string REVERSE       = "Reverse";
-        public const string SORT          = "Sort";
-        public const string SPLIT         = "Split";
-        public const string STRING        = "String";
-        public const string STARTS_WITH   = "StartsWith";
-        public const string SUBSTRING     = "Substring";
-        public const string TOKENIZE      = "Tokenize";
-        public const string TRIM          = "Trim";
-        public const string UPPER         = "Upper";
-        public const string TOSTRING      = "ToString";
+        public const string AT = "At";
+        public const string EMPTY_WHITE = "EmptyOrWhite";
+        public const string ENDS_WITH = "EndsWith";
+        public const string EQUALS = "Equals";
+        public const string FIRST = "First";
+        public const string FOREACH = "ForEach";
+        public const string INDEX_OF = "IndexOf";
+        public const string JOIN = "Join";
+        public const string KEYS = "Keys";
+        public const string LAST = "Last";
+        public const string LENGTH = "Length";
+        public const string LOWER = "Lower";
+        public const string REMOVE_ITEM = "Remove";
+        public const string REPLACE = "Replace";
+        public const string REPLACE_TRIM = "ReplaceAndTrim";
+        public const string REVERSE = "Reverse";
+        public const string SORT = "Sort";
+        public const string SPLIT = "Split";
+        public const string STRING = "String";
+        public const string STARTS_WITH = "StartsWith";
+        public const string SUBSTRING = "Substring";
+        public const string TOKENIZE = "Tokenize";
+        public const string TRIM = "Trim";
+        public const string UPPER = "Upper";
+        public const string TOSTRING = "ToString";
 
         // Math Functions
-        public const string MATH_ABS      = "Math.Abs";
-        public const string MATH_ACOS     = "Math.Acos";
-        public const string MATH_ACOSH    = "Math.Acosh";
-        public const string MATH_ASIN     = "Math.Asin";
-        public const string MATH_ASINH    = "Math.Asinh";
-        public const string MATH_ATAN     = "Math.Atan";
-        public const string MATH_ATAN2    = "Math.Atan2";
-        public const string MATH_ATANH    = "Math.Atanh";
-        public const string MATH_CBRT     = "Math.Cbrt";
-        public const string MATH_CEIL     = "Math.Ceil";
-        public const string MATH_COS      = "Math.Cos";
-        public const string MATH_COSH     = "Math.Cosh";
-        public const string MATH_E        = "Math.E";
-        public const string MATH_EXP      = "Math.Exp";
-        public const string MATH_FLOOR    = "Math.Floor";
+        public const string MATH_ABS = "Math.Abs";
+        public const string MATH_ACOS = "Math.Acos";
+        public const string MATH_ACOSH = "Math.Acosh";
+        public const string MATH_ASIN = "Math.Asin";
+        public const string MATH_ASINH = "Math.Asinh";
+        public const string MATH_ATAN = "Math.Atan";
+        public const string MATH_ATAN2 = "Math.Atan2";
+        public const string MATH_ATANH = "Math.Atanh";
+        public const string MATH_CBRT = "Math.Cbrt";
+        public const string MATH_CEIL = "Math.Ceil";
+        public const string MATH_COS = "Math.Cos";
+        public const string MATH_COSH = "Math.Cosh";
+        public const string MATH_E = "Math.E";
+        public const string MATH_EXP = "Math.Exp";
+        public const string MATH_FLOOR = "Math.Floor";
         public const string MATH_INFINITY = "Math.Infinity";
         public const string MATH_ISFINITE = "Math.IsFinite";
-        public const string MATH_ISNAN    = "Math.IsNaN";
-        public const string MATH_LN2      = "Math.LN2";
-        public const string MATH_LN10     = "Math.LN10";
-        public const string MATH_LOG      = "Math.LOG";
-        public const string MATH_LOG2E    = "Math.LOG2E";
-        public const string MATH_LOG10E   = "Math.LOG10E";
-        public const string MATH_MAX      = "Math.Max";
-        public const string MATH_MIN      = "Math.Min";
-        public const string MATH_NAN      = "Math.NaN";
+        public const string MATH_ISNAN = "Math.IsNaN";
+        public const string MATH_LN2 = "Math.LN2";
+        public const string MATH_LN10 = "Math.LN10";
+        public const string MATH_LOG = "Math.LOG";
+        public const string MATH_LOG2E = "Math.LOG2E";
+        public const string MATH_LOG10E = "Math.LOG10E";
+        public const string MATH_MAX = "Math.Max";
+        public const string MATH_MIN = "Math.Min";
+        public const string MATH_NAN = "Math.NaN";
         public const string MATH_NEG_INFINITY = "Math.-Infinity";
-        public const string MATH_PI       = "Math.PI";
-        public const string MATH_POW      = "Math.Pow";
-        public const string MATH_RANDOM   = "Math.Random";
-        public const string MATH_ROUND    = "Math.Round";
-        public const string MATH_SIGN     = "Math.Sign";
-        public const string MATH_SIN      = "Math.Sin";
-        public const string MATH_SINH     = "Math.Sinh";
-        public const string MATH_SQRT     = "Math.Sqrt";
-        public const string MATH_SQRT1_2  = "Math.Sqrt1_2";
-        public const string MATH_SQRT2    = "Math.Sqrt2";
-        public const string MATH_TAN      = "Math.Tan";
-        public const string MATH_TANH     = "Math.Tanh";
-        public const string MATH_TRUNC    = "Math.Trunc";
+        public const string MATH_PI = "Math.PI";
+        public const string MATH_POW = "Math.Pow";
+        public const string MATH_RANDOM = "Math.Random";
+        public const string MATH_ROUND = "Math.Round";
+        public const string MATH_SIGN = "Math.Sign";
+        public const string MATH_SIN = "Math.Sin";
+        public const string MATH_SINH = "Math.Sinh";
+        public const string MATH_SQRT = "Math.Sqrt";
+        public const string MATH_SQRT1_2 = "Math.Sqrt1_2";
+        public const string MATH_SQRT2 = "Math.Sqrt2";
+        public const string MATH_TAN = "Math.Tan";
+        public const string MATH_TANH = "Math.Tanh";
+        public const string MATH_TRUNC = "Math.Trunc";
 
-        public const string CONSOLE_LOG   = "console.log";
+        public const string CONSOLE_LOG = "console.log";
 
         public const string OBJECT_DEFPROP = "Object.defineProperty";
 
         // Special property for converting an object to a string:
-        public const string PROP_TO_STRING    = "ToString";
+        public const string PROP_TO_STRING = "ToString";
 
         public static string END_ARG_STR = END_ARG.ToString();
         public static string NULL_ACTION = END_ARG.ToString();
@@ -373,15 +377,15 @@ namespace SplitAndMerge
             {
                 case Variable.VarType.INT:
                 case Variable.VarType.NUMBER: return "NUMBER";
-                case Variable.VarType.STRING:   return "STRING";
+                case Variable.VarType.STRING: return "STRING";
                 case Variable.VarType.ARRAY_STR:
                 case Variable.VarType.ARRAY_NUM:
                 case Variable.VarType.ARRAY_INT:
-                case Variable.VarType.ARRAY:    return "ARRAY";
+                case Variable.VarType.ARRAY: return "ARRAY";
                 case Variable.VarType.MAP_STR:
-                case Variable.VarType.MAP_NUM:  return "MAP";
-                case Variable.VarType.OBJECT:   return "OBJECT";
-                case Variable.VarType.BREAK:    return "BREAK";
+                case Variable.VarType.MAP_NUM: return "MAP";
+                case Variable.VarType.OBJECT: return "OBJECT";
+                case Variable.VarType.BREAK: return "BREAK";
                 case Variable.VarType.CONTINUE: return "CONTINUE";
                 case Variable.VarType.UNDEFINED: return "UNDEFINED";
                 default: return "NONE";

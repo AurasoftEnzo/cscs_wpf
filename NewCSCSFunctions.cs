@@ -1345,13 +1345,24 @@ namespace WpfCSCS
                     }
                 }
 
-                // Create XmlReaderSettings and load schema
-                XmlReaderSettings settings = new XmlReaderSettings();
+                var settings = new XmlReaderSettings
+                {
+                    ValidationType = ValidationType.Schema,
+                    DtdProcessing = DtdProcessing.Parse,  // allow DTDs in XSDs
+                    XmlResolver = new XmlUrlResolver()    // required for imports
+                };
+
+                var schemaSet = new XmlSchemaSet
+                {
+                    XmlResolver = new XmlUrlResolver()
+                };
+
                 foreach (string xsdFile in xsdFiles)
                 {
                     if (System.IO.File.Exists(xsdFile))
                     {
-                        settings.Schemas.Add(null, xsdFile); // !!!
+                        //settings.Schemas.Add(null, xsdFile); // !!!
+                        schemaSet.Add(null, xsdFile);
                     }
                     else
                     {
@@ -1360,9 +1371,17 @@ namespace WpfCSCS
                         continue;
                     }
                 }
-                settings.ValidationType = ValidationType.Schema;
-                settings.ValidationEventHandler += new ValidationEventHandler(ValidationHandler);
 
+                settings.Schemas = schemaSet;
+
+                // Create XmlReaderSettings and load schema
+                //XmlReaderSettings settings = new XmlReaderSettings();
+
+                //settings.Schemas.XmlResolver = new XmlUrlResolver();
+                //settings.DtdProcessing = DtdProcessing.Parse;
+                //settings.ValidationType = ValidationType.Schema;
+                settings.ValidationEventHandler += new ValidationEventHandler(ValidationHandler);
+                
                 // Validate the XML string
                 using (StringReader stringReader = new StringReader(xmlContent))
                 using (XmlReader reader = XmlReader.Create(stringReader, settings))

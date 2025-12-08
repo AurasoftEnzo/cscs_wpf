@@ -1,0 +1,24 @@
+﻿
+dict1 = {};
+dict1["Name"] = "Invoice1.xml";
+dict1["Content"] = "<Invoice>...</Invoice>";
+
+dict2 = {};
+dict2["Name"] = "Invoice2.xml";
+dict2["Content"] = "<Invoice>...</Invoice>";
+
+array = {};
+array.Add(dict1);
+array.Add(dict2);
+
+msg(array); // here is ok
+
+//----------
+
+jsonString = '[{"Name":"Invoice1.xml","Content":"<Invoice>...</Invoice>"},{"Name":"Invoice2.xml","Content":"<Invoice>...</Invoice>"}]';
+jsonObject = {};
+jsonObject = DeserializeJson(jsonString);
+msg(jsonObject); // expected: [["Name" : "Invoice1.xml", "Content" : "<Invoice>...</Invoice"], ["Name" : "Invoice2.xml", "Content" : "<Invoice>...</Invoice"]]
+                    // actual: ["Name" : "Invoice2.xml", "Invoice1.xml"]
+
+exit;

@@ -1,7 +1,3 @@
-TestEchoFina();
-
-exit;
-
 // -----------------------------------------------------------
 // WxEracunGet.cscs - UBL XML Invoice Import Program
 // -----------------------------------------------------------
@@ -232,7 +228,7 @@ function DownloadNewInvoicesFromMeR() {
         companyOIB = substring(KPSY_REZERVA, 0, 11).trim();
 
         // jsonPayload = SerializeJson(requestPayload);
-        statusId = 30; // sent(not received)
+        statusId = 40; // sent(not received)
         jsonPayload = '{"Username": "' + ERAC_USER + '", "Password": "' + ERAC_PASS + '", "CompanyId": "' + companyOIB + '", "SoftwareId": "' + ERAC_DESC + '", "StatusId": "' + statusId + '"}';
         
         // // Prepare headers for API request
@@ -351,6 +347,7 @@ function MERSuccess(trackingId, responseCode, res) {
         resObject = DeserializeJson(res);  
         for(i = 0; i < Size(resObject); i++){
             MSG(resObject);
+            // MSG(resObject[i]); // 3109112
             ElectronicId = resObject[i]["ElectronicId"];
             DocumentNr = resObject[i]["DocumentNr"];
             SenderBusinessNumber = resObject[i]["SenderBusinessNumber"];
@@ -361,7 +358,7 @@ function MERSuccess(trackingId, responseCode, res) {
 
             trackingId = "MER_ul_" + DocumentNr + "_" + SenderBusinessNumber + "_" + SenderBusinessName;
 
-            jsonPayload = '{"Username": "' + ERAC_USER + '", "Password": "' + ERAC_PASS + '", "CompanyId": "' + companyOIB + '", "SoftwareId": "' + ERAC_DESC + '", , "ElectronicId": "' + ElectronicId + '"}';
+            jsonPayload = '{"Username": "' + ERAC_USER + '", "Password": "' + ERAC_PASS + '", "CompanyId": "' + companyOIB + '", "SoftwareId": "' + ERAC_DESC + '", "ElectronicId": "' + ElectronicId + '"}';
             
             WebRequest("POST", ERAC_SERVER + "receive", jsonPayload, trackingId, "MERReceiveSuccess", "MERReceiveFailure", "application/json", null, 1000 * 20, false);           
         }

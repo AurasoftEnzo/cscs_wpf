@@ -1,0 +1,35 @@
+CreateWindow("../../scripts/testComboBox2.xaml");
+
+function testComboBox2_OnDisplay() 
+{        
+    //add items into comboBox
+    comboItems = {"white", "green", "red", "yellow", "black", "pink", "violet", "brown", "blue", "cyan"};
+    
+    AddWidgetData("comboBGColors", comboItems);
+    AddWidgetData("comboFGColors", comboItems);
+
+    count = 0;
+}
+
+function comboBGColors@SelectionChanged(sender, arg) 
+{
+    SetBackgroundColor("buttonUpdater", arg);
+}
+
+function comboFGColors@SelectionChanged(sender, arg) 
+{
+    SetForeGroundColor("buttonUpdater", arg);
+}
+
+//now for a textbox
+function buttonUpdater@Clicked(sender, load) 
+{
+    SetText("textArea", "Hello, world " + (++count));
+}
+
+function buttonQuestion@Clicked(sender, load) 
+{
+    result = MessageBox("Do you like my app?", "My Great App", "YesNoCancel", "question");
+
+    SetText("labelAnswer", result);
+}

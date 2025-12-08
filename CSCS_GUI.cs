@@ -2132,25 +2132,32 @@ namespace WpfCSCS
 				{
 					var dg = widget as DataGrid;
 
+					var dgItemsSource = dg.ItemsSource;
+					var dgItems = dg.Items;
+
+                    var row = new List<object>();
+
+                    var selectedItem = dg.Items[dg.SelectedIndex];
 					if (dg.SelectedItem != null)
 					{
-						var row = new List<object>();
-
-						var selectedItem = dg.Items[dg.SelectedIndex];
-
-						if (selectedItem is DataRowView)
+						if (dg.ItemsSource != null) // DisplayArraySetup, ... ?
 						{
-							var sidrv = selectedItem as DataRowView;
-							row = sidrv.Row.ItemArray.ToList();
+							if (selectedItem is DataRowView)
+							{
+								var sidrv = selectedItem as DataRowView;
+								row = sidrv.Row.ItemArray.ToList();
+							}
+						}
+						else // itemsSource == null -> BindSql, NewBindSql ... ?
+						{
+							foreach (KeyValuePair<string, object> kvp in (dg.SelectedItem as ExpandoObject))
+							{
+								row.Add(kvp.Value);
+							}
 						}
 
-						//foreach (KeyValuePair<string, object> kvp in (dg.SelectedItem as ExpandoObject))
-						//{
-						//	row.Add(kvp.Value);
-						//}
-
-						gridsSelectedRow[widget.Name.ToLower()] = row;
-					}
+                        gridsSelectedRow[widget.Name.ToLower()] = row;
+                    }
 				}
 				catch (Exception ex)
 				{

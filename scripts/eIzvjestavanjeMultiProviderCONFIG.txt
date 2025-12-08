@@ -1,0 +1,259 @@
+===============================================================
+eIZVJEŠTAVANJE MULTI-PROVIDER CONFIGURATION GUIDE
+===============================================================
+
+OVERVIEW:
+Enhanced wxeizvje.cscs script now supports sending eReporting (eIzvještavanje) 
+to multiple Croatian e-invoice providers:
+- FINA (SOAP Web Services with digital certificates)
+- MeR (MojEracun REST API) 
+- ePoslovanje.hr (REST API v2)
+
+The same provider configuration system from wxeracun.cscs is used.
+
+===============================================================
+PROVIDER CONFIGURATION 
+===============================================================
+
+Use the same NKSYSYCO and NKSYERAC configuration as for e-invoicing:
+
+1. SET PROVIDER AND SCHEMAS PATH IN NKSYSYCO:
+
+-- For FINA (default):
+INSERT INTO NKSYSYCO (NKSYS_MODUL, NKSYS_GRUP, NKSYS_FIELD, NKSYS_VALUE)
+VALUES ('WKSY', 'ERACUN', 'PROVIDER', 'FINA');
+
+-- For MeR:
+UPDATE NKSYSYCO SET NKSYS_VALUE = 'MER' 
+WHERE NKSYS_MODUL = 'WKSY' AND NKSYS_GRUP = 'ERACUN' AND NKSYS_FIELD = 'PROVIDER';
+
+-- For ePoslovanje:
+UPDATE NKSYSYCO SET NKSYS_VALUE = 'EPOS' 
+WHERE NKSYS_MODUL = 'WKSY' AND NKSYS_GRUP = 'ERACUN' AND NKSYS_FIELD = 'PROVIDER';
+
+-- Set schemas path for validation:
+INSERT INTO NKSYSYCO (NKSYS_MODUL, NKSYS_GRUP, NKSYS_FIELD, NKSYS_VALUE)
+VALUES ('WKSY', 'ERACUN', 'SCHEMASPATH', 'C:\Schemas\');
+
+2. CONFIGURE ENDPOINTS IN NKSYERAC:
+
+Each provider needs its configuration row:
+
+-- FINA Configuration:
+INSERT INTO NKSYERAC (
+    ERAC_CODE, ERAC_SERVER, ERAC_SERVERT, ERAC_USER, ERAC_PASS, ERAC_USERT, ERAC_PASST, ERAC_DESC
+) VALUES (
+    'FINA',
+    'https://prezdigitalneusluge.fina.hr/EReportingService',  -- Production
+    'https://test.fina.hr/EReportingService',                 -- Test
+    'username',                                               -- FINA username
+    'password',                                               -- FINA password
+    'path/to/certificate.cer',                               -- Certificate path
+    'path/to/certificate.p12',                               -- P12 certificate
+    'YOUR-SOFTWARE-ID'                                       -- Software ID
+);
+
+-- MER Configuration:
+INSERT INTO NKSYERAC (
+    ERAC_CODE, ERAC_SERVER, ERAC_SERVERT, ERAC_USER, ERAC_PASS, ERAC_DESC
+) VALUES (
+    'MER',
+    'https://api.mojeracun.hr/',                             -- Production
+    'https://test.mojeracun.hr/',                            -- Test
+    'your-mer-username',                                     -- MER username
+    'your-mer-password',                                     -- MER password
+    'YOUR-SOFTWARE-ID'                                       -- Software ID
+);
+
+-- ePoslovanje Configuration:
+INSERT INTO NKSYERAC (
+    ERAC_CODE, ERAC_SERVER, ERAC_SERVERT, ERAC_USER, ERAC_DESC
+) VALUES (
+    'EPOS',
+    'https://eracun.eposlovanje.hr',                         -- Production
+    'https://test.eposlovanje.hr',                           -- Test
+    'your-api-key-here',                                     -- API Key
+    'YOUR-SOFTWARE-ID'                                       -- Software ID
+);
+
+===============================================================
+API ENDPOINTS
+===============================================================
+
+1. FINA eREPORTING:
+   - Uses SOAP Web Services with digital certificate signing
+   - Endpoint: /EReportingService
+   - Message Type: 9002 (eReporting)
+   - Requires: P12 certificate for signing
+
+2. MER eREPORTING:
+   - Uses REST API with username/password authentication
+   - Endpoint: /ereporting
+   - Content-Type: application/json
+   - Payload includes XML in JSON wrapper
+
+3. ePOSLOVANJE eREPORTING:
+   - Uses REST API v2 with API key authentication
+   - Endpoint: /api/v2/ereporting/reportdocument
+   - Authorization: API Key in header
+   - Supports automatic tax authority submission
+
+===============================================================
+SCRIPT ENHANCEMENTS
+===============================================================
+
+NEW FEATURES ADDED:
+
+1. Provider Configuration Loading:
+   - LoadProviderConfiguration() function
+   - Reads from same NKSYSYCO/NKSYERAC tables as e-invoicing
+   - Automatic provider detection
+   - SCHEMASPATH configuration for validation
+
+2. XML Validation:
+   - ValidateEReportingXML() function
+   - XSD validation against Croatian eReporting schemas
+   - Schematron (SCH) validation for business rules
+   - Validation error files saved to XMLpath()/validation/
+
+3. Multi-Provider Sending:
+   - SendEReporting() - Main dispatcher function
+   - SendEReportingToFINA() - SOAP with certificate signing
+   - SendEReportingToMER() - REST API with JSON payload
+   - SendEReportingToEPOS() - REST API v2 with API key
+
+4. Response Handling:
+   - Provider-specific success/failure callbacks
+   - JSON response parsing for REST APIs
+   - SOAP response parsing for FINA
+   - Comprehensive error logging
+
+5. Logging System:
+   - LogEReportingResponse() function
+   - Saves responses to XMLpath()/responses/
+   - Separate log files per provider
+   - Timestamp and status code tracking
+
+===============================================================
+USAGE WORKFLOW
+===============================================================
+
+1. CONFIGURE PROVIDER:
+   Set PROVIDER value in NKSYSYCO table (FINA/MER/EPOS)
+
+2. SET SCHEMAS PATH:
+   Configure SCHEMASPATH in NKSYSYCO for XML validation
+
+3. SET PROVIDER DETAILS:
+   Configure endpoints, credentials in NKSYERAC table
+
+4. PREPARE VALIDATION SCHEMAS:
+   - Create schemas directory structure at SCHEMASPATH location
+   - Copy Croatian eReporting XSD files to xsd/eIzvjestavanje/
+   - Copy schematron files to schematron/ directory
+   - Ensure transpile.xsl is available for schematron validation
+
+5. RUN WXEIZVJE.CSCS:
+   - Select month/year
+   - Click "Pripremi" to load unsent invoices
+   - Select invoices to report
+   - Click "Pošalji":
+     a) XML is generated
+     b) XML is validated (XSD + Schematron)
+     c) If validation passes, sent via configured provider
+     d) If validation fails, error details shown
+
+6. CHECK RESULTS:
+   - Success/failure messages displayed
+   - Validation error files in XMLpath()/validation/
+   - Response logs saved in XMLpath()/responses/
+   - Provider-specific confirmation IDs returned
+
+===============================================================
+TESTING CONFIGURATION
+===============================================================
+
+For testing, use DEMO variants:
+
+-- Test FINA:
+UPDATE NKSYSYCO SET NKSYS_VALUE = 'FINADEMO' 
+WHERE NKSYS_MODUL = 'WKSY' AND NKSYS_GRUP = 'ERACUN' AND NKSYS_FIELD = 'PROVIDER';
+
+-- Test MER:
+UPDATE NKSYSYCO SET NKSYS_VALUE = 'MERDEMO' 
+WHERE NKSYS_MODUL = 'WKSY' AND NKSYS_GRUP = 'ERACUN' AND NKSYS_FIELD = 'PROVIDER';
+
+-- Test ePoslovanje:
+UPDATE NKSYSYCO SET NKSYS_VALUE = 'EPOSDEMO' 
+WHERE NKSYS_MODUL = 'WKSY' AND NKSYS_GRUP = 'ERACUN' AND NKSYS_FIELD = 'PROVIDER';
+
+===============================================================
+ERROR HANDLING
+===============================================================
+
+COMMON ERRORS:
+
+1. "Nepoznat provider za eIzvještavanje"
+   → Check NKSYSYCO PROVIDER value
+
+2. "[Provider] endpoint nije konfiguriran"
+   → Check NKSYERAC ERAC_SERVER/ERAC_SERVERT values
+
+3. "eIzvještavanje XML FAILED XSD validation"
+   → Check XML structure against Croatian eReporting schema
+   → Verify SCHEMASPATH configuration and XSD files
+   → Review validation error file for specific issues
+
+4. "eIzvještavanje XML FAILED SCH validation"
+   → Check business rule violations in schematron validation
+   → Review validation error file for specific rule failures
+   → Ensure required fields are properly populated
+
+5. Authentication errors:
+   - FINA: Check certificate paths and passwords
+   - MER: Verify username/password in ERAC_USER/ERAC_PASS
+   - ePoslovanje: Verify API key in ERAC_USER
+
+6. "Cannot write to log file"
+   → Check XMLpath() directory permissions and existence
+
+VALIDATION FILES:
+- XSD errors: {XMLpath()}/validation/{filename}_XSD.err
+- SCH errors: {XMLpath()}/validation/{filename}_SCH.err
+
+SCHEMA REQUIREMENTS:
+- XSD files: {SCHEMASPATH}/xsd/eIzvjestavanje/
+- Schematron files: {SCHEMASPATH}/schematron/
+- Transpile stylesheet: {SCHEMASPATH}/schematron/transpile.xsl
+
+RESPONSE CODES:
+- 200: Success
+- 400: Bad Request (invalid XML/parameters)
+- 401: Unauthorized (invalid credentials)
+- 500: Server Error
+
+LOG LOCATIONS:
+- Validation logs: {XMLpath()}/validation/{filename}_{XSD|SCH}.err
+- Response logs: {XMLpath()}/responses/{PROVIDER}_{filename}.response
+- Error details in MessageBox and log files
+
+===============================================================
+PROVIDER COMPARISON
+===============================================================
+
+FEATURE             | FINA          | MER           | ePoslovanje
+--------------------|---------------|---------------|---------------
+Protocol            | SOAP          | REST          | REST API v2
+Authentication      | Certificate   | User/Pass     | API Key
+Automatic Submission| Yes           | Manual        | Yes
+eReporting Support  | Full          | Basic         | Full
+Cost               | Standard      | Competitive   | 0.08 EUR/doc
+Integration        | Complex       | Simple        | Simple
+Certification      | Required      | Optional      | Optional
+
+RECOMMENDATION:
+- FINA: Established, full compliance, requires certificates
+- ePoslovanje: Modern, cost-effective, automatic submission
+- MER: Alternative option with competitive pricing
+
+===============================================================

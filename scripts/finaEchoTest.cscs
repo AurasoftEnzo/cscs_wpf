@@ -1,0 +1,110 @@
+// scripts/testFinaConnection.cscs
+
+function TestFina() {
+    certPath = "D:\\WinX\\ERAC\\certifikati\\p12_aurasoft_demo.p12";
+    certPass = "Aurasoft1";
+    
+    // The URL is optional and defaults to FINA's test endpoint
+    // url = "https://prezdigitalneusluge.fina.hr/EchoPKIWebService/services/EchoPKIWebService";
+    
+    // Asynchronously call the function and wait for the result
+    response = TestEchoFina(certPath, certPass);
+    
+    // Display the result from the FINA server
+    MessageBox(response);
+}
+
+// // Run the test
+// TestFina();
+
+
+function TestFINAConnection() {
+    // // Get endpoint
+    // endpoint = ERAC_SERVER;
+    // if (PROVIDER == "FINADEMO") {
+    //     endpoint = ERAC_SERVERT;
+    // }
+    endpoint = "https://prezdigitalneusluge.fina.hr/SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService";
+
+    // if (endpoint == "") {
+    //     MessageBox("Endpoint nije definiran.");
+    //     return;
+    // }
+
+    // Get ERPID
+    erpId = "e-racun-winx";
+    // sqlQueryString = "SELECT NKSYS_VALUE FROM " + databaseName + ".dbo.NKSYSYCO " +
+    //                  "WHERE NKSYS_MODUL = 'WKSY' AND NKSYS_GRUP = 'ERACUN' AND NKSYS_FIELD = 'ERPID';";
+    // erpRes = sqlQuery(sqlQueryString);
+    // if (Size(erpRes) > 1) {
+    //     erpId = erpRes[1][0].trim();
+    // }
+    
+    // if (erpId == "" && ERAC_DESC != "") {
+    //     erpId = ERAC_DESC;
+    // }
+    
+    // if (erpId == "") {
+    //     erpId = "TEST_ERP_SYSTEM";
+    // }
+
+    // Create Echo message XML body WITH ERPID
+    echoXml = '<fin:EchoMsg xmlns:fin="http://www.fina.hr/e-racun/services">\n';
+    echoXml += '  <HeaderSupplier>\n';
+    echoXml += '    <MessageID>' + UUID() + '</MessageID>\n';
+    echoXml += '    <SupplierID>9934:HR' + "26389058739" + '</SupplierID>\n';
+    
+    // if (KPSY_REZERVAX != "" && KPSY_REZERVAX.length == 13) {
+    //     echoXml += '    <AdditionalSupplierID>0088:' + KPSY_REZERVAX + '</AdditionalSupplierID>\n';
+    // }
+    
+    echoXml += '    <ERPID>' + erpId + '</ERPID>\n';  // Include ERPID in Echo test too
+    echoXml += '    <MessageType>9999</MessageType>\n'; // 0001 for Echo
+    echoXml += '  </HeaderSupplier>\n';
+    echoXml += '  <Data>\n';
+    echoXml += '    <Echo>TEST_CONNECTION tekst</Echo>\n';
+    echoXml += '  </Data>\n';
+    echoXml += '</fin:EchoMsg>';
+
+    soapAction = "";
+
+    try {
+        response = CreateSOAP2(echoXml, soapAction, endpoint, "D:\\WinX\\ERAC\\certifikati\\p12_aurasoft_demo.p12", "Aurasoft1", erpId, 30);
+
+        MSG(response);
+
+        // if (response.StartsWith("ERROR:")) {
+        //     MessageBox("FINA Echo test FAILED:\n" + response);
+        //     return false;
+        // } else {
+        //     // Parse response for success indicators
+        //     if (IndexOf(response, "<EchoResponse>") >= 0 || 
+        //         IndexOf(response, "<AckStatus>10</AckStatus>") >= 0 ||
+        //         IndexOf(response, "uspješno") >= 0) {
+                
+        //         // Extract and display relevant info
+        //         msgIdStart = IndexOf(response, "<MessageID>");
+        //         msgIdEnd = IndexOf(response, "</MessageID>");
+        //         msgId = "";
+        //         if (msgIdStart > 0 && msgIdEnd > 0) {
+        //             msgId = Substring(response, msgIdStart + 11, msgIdEnd - msgIdStart - 11);
+        //         }
+                
+        //         MessageBox("FINA Echo test SUCCESSFUL!\n\n" +
+        //                   "ERPID: " + erpId + "\n" +
+        //                   "MessageID: " + (msgId != "" ? msgId : "N/A") + "\n" +
+        //                   "Response indicates service is operational.");
+        //         return true;
+        //     } else {
+        //         MessageBox("FINA Echo test got unexpected response:\n" + 
+        //                   (response.length > 1000 ? Substring(response, 0, 1000) + "..." : response));
+        //         return false;
+        //     }
+        // }
+    } catch (ex) {
+        MessageBox("FINA Echo test EXCEPTION:\n" + ex);
+        return false;
+    }
+}
+
+TEST1();

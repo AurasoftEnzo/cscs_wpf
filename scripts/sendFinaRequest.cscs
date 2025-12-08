@@ -1,0 +1,24 @@
+// scripts/sendFinaRequest.cscs
+
+async function SendDeliveryNote() {
+    // 1. Prepare the XML body for the specific request
+    xmlBody = `
+<eiz:EvidentirajIsporukuZaKojuNijeIzdanERacunZahtjev xmlns:eiz="http://www.porezna-uprava.gov.hr/fin/2024/types/eIzvjestavanje">
+    <!-- ... your XML content for the delivery note ... -->
+</eiz:EvidentirajIsporukuZaKojuNijeIzdanERacunZahtjev>`;
+
+    // 2. Define request parameters
+    action = "http://www.porezna-uprava.gov.hr/fin/2024/services/eIzvjestavanje/EvidentirajIsporukuZaKojuNijeIzdanERacun";
+    endpoint = "https://cis.porezna-uprava.hr:8509/FiskalizacijaService";
+    certPath = "D:\\path\\to\\your_cert.p12";
+    certPass = "YourCertificatePassword";
+
+    // 3. Call the generic CreateSOAP function
+    response = await CreateSOAP(xmlBody, action, endpoint, certPath, certPass);
+    
+    // 4. Process the response
+    MessageBox(response);
+}
+
+// Execute the function
+SendDeliveryNote();

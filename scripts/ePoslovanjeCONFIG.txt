@@ -1,0 +1,164 @@
+===============================================================
+ePOSLOVANJE PROVIDER CONFIGURATION GUIDE
+===============================================================
+
+OVERVIEW:
+ePoslovanje.hr je hrvatski informacijski posrednik za eRačune koji podržava:
+- B2B i B2G razmjenu eRačuna
+- Automatsku fiskalizaciju 2.0
+- eIzvještavanje prema Poreznoj upravi  
+- Integraciju s više ERP sustava putem REST API v2
+
+PREDNOSTI:
+- Jeftina cijena: 0.08 EUR + PDV po računu
+- Automatska fiskalizacija uključena
+- Besplatna arhiva svih računa
+- Interkonekcija s FINA, Hrvatski Telekom, mStart, itd.
+- Visoka dostupnost servisa (ISO 27001 certificirani)
+
+===============================================================
+KORAK 1: REGISTRACIJA RAČUNA
+===============================================================
+
+PRODUKCIJA:
+1. Idite na: https://eracun.eposlovanje.hr/client/register
+2. Ispunite podatke tvrtke
+3. Odaberite prepaid ili postpaid model naplate
+4. Potipišite i pošaljite ugovore
+
+TEST OKRUŽENJE:
+1. Idite na: https://test.eposlovanje.hr/client/register
+2. Registrirajte test račun za development/testiranje
+3. Koristite test tvrtku Test d.o.o. (OIB: 50930104221) kao primatelja
+
+===============================================================
+KORAK 2: DOBIVANJE API KLJUČA
+===============================================================
+
+Postoje 3 načina dobivanja API ključa:
+
+1. PUTEM WEB SUČELJA:
+   - Prijavite se na https://eracun.eposlovanje.hr/client
+   - Idite na Account Settings / API Settings
+   - Generirajte novi API ključ
+
+2. PUTEM REGISTRACIJE API:
+   POST https://eracun.eposlovanje.hr/api/v2/account/register/{erptag}
+
+3. PUTEM LOGIN API:
+   POST https://eracun.eposlovanje.hr/api/v2/account/apikey
+   Body: {"username": "korisnik", "password": "lozinka", "vatId": "12345678901", "softwareId": "YOUR-SOFTWARE-ID"}
+
+===============================================================
+KORAK 3: KONFIGURACIJA BAZE PODATAKA
+===============================================================
+
+3.1. POSTAVLJANJE PROVIDERA U NKSYSYCO:
+
+-- Za produkciju:
+INSERT INTO NKSYSYCO (NKSYS_MODUL, NKSYS_GRUP, NKSYS_FIELD, NKSYS_VALUE)
+VALUES ('WKSY', 'ERACUN', 'PROVIDER', 'EPOS');
+
+-- Za testiranje:
+INSERT INTO NKSYSYCO (NKSYS_MODUL, NKSYS_GRUP, NKSYS_FIELD, NKSYS_VALUE)
+VALUES ('WKSY', 'ERACUN', 'PROVIDER', 'EPOSDEMO');
+
+3.2. KONFIGURACIJA ENDPOINTA U NKSYERAC:
+
+INSERT INTO NKSYERAC (
+    ERAC_CODE, 
+    ERAC_SERVER, 
+    ERAC_SERVERT, 
+    ERAC_USER, 
+    ERAC_PASS, 
+    ERAC_DESC
+) VALUES (
+    'EPOS',                                    -- Provider code
+    'https://eracun.eposlovanje.hr',          -- Production endpoint
+    'https://test.eposlovanje.hr',             -- Test endpoint  
+    'your-api-key-here',                       -- API Key (zamijeniti stvarnim)
+    '',                                        -- Password not needed
+    'YOUR-SOFTWARE-ID'                         -- Software identifier
+);
+
+3.3. DODATNA POLJA (OPCIONALNO):
+
+-- Za praćenje ePoslovanje dokumenata:
+ALTER TABLE NKPRINV ADD NKPR_EPOS_ID VARCHAR(50);     -- ePoslovanje document ID
+ALTER TABLE NKPRINV ADD NKPR_EPOS_DATE VARCHAR(50);   -- Insertion timestamp
+
+===============================================================
+KORAK 4: TESTIRANJE KONFIGURACIJE  
+===============================================================
+
+4.1. PROVJERA KONFIGURACIJE:
+
+SELECT * FROM NKSYSYCO 
+WHERE NKSYS_MODUL = 'WKSY' AND NKSYS_GRUP = 'ERACUN' AND NKSYS_FIELD = 'PROVIDER';
+
+SELECT * FROM NKSYERAC WHERE ERAC_CODE = 'EPOS';
+
+4.2. TEST SLANJA:
+
+-- Pokrenite wxeracun.cscs s test računom
+-- Provjerite NKSYELOG tablicu za statusne kodove:
+-- 'A' = XML generiran uspješno
+-- 'C' = Račun poslan uspješno  
+-- 'B' = Greška
+
+===============================================================
+API DOKUMENTACIJA
+===============================================================
+
+GLAVNI ENDPOINTI:
+
+1. SLANJE RAČUNA:
+   POST /api/v2/document/send
+   Headers: Authorization: {api-key}
+   Body: {"document": "{xml-content}", "softwareId": "{software-id}"}
+
+2. STATUS RAČUNA:
+   GET /api/v2/document/status/{id}
+   Headers: Authorization: {api-key}
+
+3. LISTA IZLAZNIH RAČUNA:
+   GET /api/v2/document/outgoing?from={date}&to={date}
+   Headers: Authorization: {api-key}
+
+4. FISKALIZACIJA:
+   Automatski uključena za sve račune prema urn:mfin.gov.hr:cius-2025:1.0
+
+PUNA API DOKUMENTACIJA:
+https://doc.eposlovanje.hr/
+
+===============================================================
+TROUBLESHOOTING
+===============================================================
+
+ČESTE GREŠKE:
+
+1. "Nepoznat tip posrednika" 
+   → Provjerite NKSYSYCO PROVIDER vrijednost
+
+2. "Endpoint nije definiran"
+   → Provjerite NKSYERAC ERAC_SERVER vrijednost  
+
+3. "401 Unauthorized"
+   → Provjerite API ključ u NKSYERAC ERAC_USER
+
+4. "400 Bad Request"
+   → Provjerite UBL XML format (mora biti urn:mfin.gov.hr:cius-2025:1.0)
+
+5. "Nedovoljno sredstava"
+   → Dopunite prepaid stanje ili provjerite postpaid limit
+
+LOG DATOTEKE:
+- Odgovori: {FILESPATH}\responses\{invoice}.response
+- Greške: NKSYELOG tablica u bazi
+
+PODRŠKA:
+- Email: podrska@eposlovanje.hr
+- Telefon: +385 21 494 000
+- Radno vrijeme: Ponedjeljak-Petak 08:00-16:00
+
+===============================================================

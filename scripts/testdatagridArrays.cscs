@@ -1,3 +1,5 @@
+MessageBox("...Testing datagrid with arrays...");
+
 sqlconnectionstring("Server=localhost;Database=testdb;User Id=sa;Password=aura;");
 
 define studentid_ar type R array 10;
@@ -7,14 +9,15 @@ define studentamount_ar type N size 14 dec 2 array 10;
 define studentfinished_ar type L array 10;
 define studentdate_ar type a size 8 array 10;
 define studenttime_ar type a size 8 array 10;
+define studentcity_ar type a size 20 array 10;
 
 define cntr type R;
 
 //DATAGRID ROW SINGLE-CLICK
 function dgStudents@move()
-{
+{	
 	datarow = GetSelectedGridRow("dgStudents");
-
+	
 	if (Size(datarow)>0)
 	{
 	  SetText("labelID", datarow[0]);
@@ -24,6 +27,7 @@ function dgStudents@move()
 	  SetText("labelfinished", datarow[4]);
 	  SetText("labeldate", datarow[5]);
 	  SetText("labeltime", datarow[6]);
+	  SetText("labelcity", datarow[7]);
 	}	
 }
 
@@ -33,8 +37,8 @@ function fetchdata@Clicked(sender, load)
 	cntr = 0;
 
 	try	
-	{
-		sqlResult = sqlquery("SELECT TOP 3 id, name, gender, amount, finished, CONVERT(char(8),  datein, 3) AS datein, CONVERT(char(8), timein, 20) as timein  FROM tblstudents");		 
+	{		
+		sqlResult = sqlquery("SELECT TOP 10 tblstudents.id, name, gender, amount, finished, CONVERT(char(8),  datein, 3) AS datein, CONVERT(char(8), timein, 20) as timein, city  FROM tblstudents LEFT JOIN tblcities ON tblstudents.id = tblcities.studentid");		 
 	}
 	catch(exc)
 	{
@@ -56,9 +60,10 @@ function fetchdata@Clicked(sender, load)
 		amount = sqlResult[i][3];
 		finished = sqlResult[i][4];
 		datein = sqlResult[i][5];
-		timein = sqlResult[i][6];		
+		timein = sqlResult[i][6];
+		city = sqlResult[i][7];
 
-		//MessageBox("id = " + id + "\n" + "name = " + name + "\n" + "gender = " + gender + "\n" + "amount = " + amount + "\n" + "finished = " + finished + "\n" + "datein = " + datein + "\n" + "timein = " + timein);
+		//MessageBox("id = " + id + "\n" + "name = " + name + "\n" + "gender = " + gender + "\n" + "amount = " + amount + "\n" + "finished = " + finished + "\n" + "datein = " + datein + "\n" + "timein = " + timein + "\n" + "city = " + city);
 	}
 
 	//******************************
@@ -66,13 +71,14 @@ function fetchdata@Clicked(sender, load)
 	//FILL THE ARRAYS WITH DATA
 	for ( i = 1; i < Size(sqlResult); i++ )
     {
-		studentid_ar[i - 1] = sqlResult[i][0];
-		studentname_ar[i - 1] = sqlResult[i][1];
-		studentgender_ar[i - 1] = sqlResult[i][2];
-		studentamount_ar[i - 1] = sqlResult[i][3]; 
-		studentfinished_ar[i - 1] = sqlResult[i][4]; 
-		studentdate_ar[i - 1] = sqlResult[i][5];
-		studenttime_ar[i - 1] = sqlResult[i][6];
+		studentid_ar[i - 1] = sqlResult[i][0];			//id
+		studentname_ar[i - 1] = sqlResult[i][1];		//name
+		studentgender_ar[i - 1] = sqlResult[i][2];		//gender
+		studentamount_ar[i - 1] = sqlResult[i][3];		//amount
+		studentfinished_ar[i - 1] = sqlResult[i][4];	//finished
+		studentdate_ar[i - 1] = sqlResult[i][5];		//datein
+		studenttime_ar[i - 1] = sqlResult[i][6];		//timein
+		studentcity_ar[i - 1] = sqlResult[i][7];		//city
 	}
 
 	//INITIALIZE DATAGRID dgStudents
@@ -81,4 +87,4 @@ function fetchdata@Clicked(sender, load)
     DisplayArraySetup("dgStudents", counterFld: cntr, activeElements: Size(sqlResult) - 1, maxElements: 10);
 }
 
-win = CreateWindow("../../scripts/testDatagrid.xaml");
+win = CreateWindow("../../scripts/testdatagridArrays.xaml");

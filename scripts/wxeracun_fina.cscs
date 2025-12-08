@@ -1,0 +1,148 @@
+// -----------------------------------------------------------
+// FINA E-Invoice Submission Functions
+// -----------------------------------------------------------
+
+// Submit generated UBL XML to FINA for testing/approval
+function SubmitToFINA(xmlFilePath, invoiceNumber, apiKey) {
+    // FINA API endpoint for e-invoice submission (update with actual URL)
+    finaApiUrl = "https://api.fina.hr/einvoice/submit"; // Replace with actual FINA endpoint
+    
+    // Prepare headers with API authentication
+    headers = {
+        "Authorization": "Bearer " + apiKey,
+        "Content-Type": "multipart/form-data",
+        "Accept": "application/json"
+    };
+    
+    // Prepare multipart form data
+    body = {
+        ["invoice_number", invoiceNumber, "text"],
+        ["invoice_type", "UBL", "text"],
+        ["submission_date", FormatDate(Now(), "yyyy-MM-dd"), "text"],
+        ["xml_file", xmlFilePath, "file"]
+    };
+    
+    // Submit to FINA with 30 second timeout
+    WebRequestMPFD(
+        "POST",                    // method
+        finaApiUrl,               // uri
+        body,                     // body array
+        "FINA_" + invoiceNumber,  // tracking ID
+        "finaSubmissionSuccess",  // onSuccess function
+        "finaSubmissionFailure",  // onFailure function
+        "FinaBoundary2025",       // boundary
+        headers,                  // headers
+        30000,                    // timeout (30 seconds)
+        true                      // justFire (async)
+    );
+    
+    MessageBox("XML račun " + invoiceNumber + " je poslan FINA-i za testiranje...\nProvjerite odgovor u roku od 30 sekundi.");
+}
+
+// Success callback for FINA submission
+function finaSubmissionSuccess(tracking, responseCode, response) {
+    invoiceNum = Substring(tracking, 5); // Remove "FINA_" prefix
+    
+    logMessage = "FINA - USPJEŠNO POSLANO - Račun: " + invoiceNum + 
+                "\nResponse Code: " + responseCode + 
+                "\nOdgovor: " + response;
+    
+    MessageBox(logMessage);
+    
+    // Log success to file (optional)
+    timestamp = FormatDate(Now(), "yyyy-MM-dd HH:mm:ss");
+    logEntry = timestamp + " | FINA_SUCCESS | " + invoiceNum + " | " + responseCode + " | " + response + "\r\n";
+    AppendFile("fina_submission.log", logEntry);
+}
+
+// Failure callback for FINA submission
+function finaSubmissionFailure(tracking, responseCode, response) {
+    invoiceNum = Substring(tracking, 5); // Remove "FINA_" prefix
+    
+    errorMessage = "FINA GREŠKA - Račun: " + invoiceNum + 
+                  "\nResponse Code: " + responseCode + 
+                  "\nGreška: " + response + 
+                  "\n\nPokušajte ponovo ili provjerite XML datoteku.";
+    
+    MessageBox(errorMessage);
+    
+    // Log failure to file
+    timestamp = FormatDate(Now(), "yyyy-MM-dd HH:mm:ss");
+    logEntry = timestamp + " | FINA_FAILURE | " + invoiceNum + " | " + responseCode + " | " + response + "\r\n";
+    AppendFile("fina_submission.log", logEntry);
+}
+
+// Enhanced GenerateUBLXml function with FINA submission option
+function GenerateAndSubmitUBL(invNum, submitToFina = false, apiKey = "") {
+    // Generate the UBL XML
+    xmlContent = GenerateUBLXml(invNum);
+    
+    if (xmlContent == false) {
+        MessageBox("Greška prilikom generiranja UBL XML-a za račun " + invNum);
+        return false;
+    }
+    
+    // Save XML to file
+    xmlFileName = "UBL_" + invNum + ".xml";
+    xmlFilePath = GetCurrentDirectory() + "\\" + xmlFileName;
+    SaveFile(xmlFilePath, xmlContent);
+    
+    MessageBox("UBL XML datoteka je generirana: " + xmlFileName);
+    
+    // Optionally submit to FINA
+    if (submitToFina && apiKey != "") {
+        SubmitToFINA(xmlFilePath, String(invNum), apiKey);
+    } elif (submitToFina && apiKey == "") {
+        MessageBox("UPOZORENJE: API ključ nije naveden. XML je generiran ali nije poslan FINA-i.");
+    }
+    
+    return xmlFilePath;
+}
+
+// Configuration function to set FINA API details
+function SetFinaConfig(apiUrl, apiKey) {
+    // Save FINA configuration to settings file
+    configContent = "FINA_API_URL=" + apiUrl + "\r\n";
+    configContent += "FINA_API_KEY=" + apiKey + "\r\n";
+    configContent += "LAST_UPDATED=" + FormatDate(Now(), "yyyy-MM-dd HH:mm:ss") + "\r\n";
+    
+    SaveFile("fina_config.txt", configContent);
+    MessageBox("FINA konfiguracija je spremljena u fina_config.txt");
+}
+
+// Load FINA configuration from file
+function LoadFinaConfig() {
+    config = {};
+    
+    if (Exists("fina_config.txt")) {
+        configText = LoadFile("fina_config.txt");
+        lines = Split(configText, "\r\n");
+        
+        for (i = 0; i < Size(lines); i++) {
+            if (Contains(lines[i], "=")) {
+                parts = Split(lines[i], "=");
+                if (Size(parts) == 2) {
+                    config[parts[0]] = parts[1];
+                }
+            }
+        }
+    }
+    
+    return config;
+}
+
+/* 
+Usage Examples:
+
+1. Generate UBL XML only:
+   GenerateAndSubmitUBL(90100002, false);
+
+2. Generate and submit to FINA:
+   GenerateAndSubmitUBL(90100002, true, "your-api-key-here");
+
+3. Setup FINA configuration:
+   SetFinaConfig("https://api.fina.hr/einvoice/submit", "your-api-key");
+
+4. Direct submission (after XML is generated):
+   SubmitToFINA("C:\\path\\to\\UBL_90100002.xml", "90100002", "your-api-key");
+*/

@@ -2749,7 +2749,7 @@ d:\temp\aaa.txt, d:\temp\ggg.txt,
                         ((IDictionary<String, Object>)row)[column.ToLower().Replace(' ', '_')] = val;
                     }
                     dg.Items.Add(row);
-                    Console.WriteLine(i);
+                    //Console.WriteLine(i);
                 }
 
                 if (dg != null && dg.HasItems)

@@ -1,0 +1,38 @@
+unsignedXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\"
+                   xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"
+                   xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">
+    <SOAP-ENV:Header />
+    <SOAP-ENV:Body
+                   xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\">
+        <EchoMsg xmlns=\"http://fina.hr/eracun/b2b/pki/Echo/v0.1\">
+            <HeaderSupplier xmlns=\"http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1\">
+                <MessageID>" + UUID() + "</MessageID>
+                <SupplierID>9934:26389058739</SupplierID></HeaderSupplier>
+            <Data>
+                <EchoData>
+                    <Echo>hello from Aurasoft!</Echo>
+                </EchoData>
+            </Data>
+        </EchoMsg>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
+";
+
+// certificatePath = "C:\\path\\to\\your\\certificate.p12"; // CHANGE
+certificatePath = "C:\\path\\to\\your\\certificate.p12"; // CHANGE
+certificatePassword = "Aurasoft1"; // CHANGE
+
+signedXml = SignXml(unsignedXml, certificatePath, certificatePassword);
+
+WebRequest("POST", "https://prezdigitalneusluge.fina.hr/SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService", signedXml, 
+    "trackingId", "SuccessCallback", "FailureCallback", "text/xml; charset=utf-8", null, 1000 * 30, false);
+
+function SuccessCallback(trackingId, responseCode, res) {
+    MSG("SuccessCallback");
+    MSG(res);
+}
+function FailureCallback(trackingId, responseCode, res) {
+    MSG("FailureCallback");
+    MSG(res);
+}

@@ -1,0 +1,131 @@
+
+
+FILESPATH = "D:\\Winx\\ERAC\\D4\\";
+
+//--------------------------------------------
+
+// "StatusId": 30,
+// "StatusName": "Poslan",
+// jsonLoad = '{"Username": "11684", "Password": "UgCpAR72", "CompanyId": "26389058739", "SoftwareId": "Test-002", "StatusId": "30"}';
+
+// "StatusId": 40,
+// "StatusName": "Preuzet",
+// jsonLoad = '{"Username": "11684", "Password": "UgCpAR72", "CompanyId": "26389058739", "SoftwareId": "Test-002", "StatusId": "40"}';
+
+// lista izlaznih - queryoutbox
+// webRequestResult = WebRequest("POST", "https://demo.moj-eracun.hr/apis/v2/queryoutbox", jsonLoad, "trackingId",
+//             "MERSuccess", "MERFailure", "application/json", null, 1000 * 20, false);
+
+//--------------------------------------------
+
+jsonLoad = '{"Username": "11684", "Password": "UgCpAR72", "CompanyId": "26389058739", "SoftwareId": "Test-002", "StatusId": "30"}';
+
+//// lista ulaznih - queryinbox
+webRequestResult = WebRequest("POST", "https://demo.moj-eracun.hr/apis/v2/queryinbox", jsonLoad, "trackingId",
+            "MERSuccess", "MERFailure", "application/json", null, 1000 * 20, false);
+
+//--------------------------------------------
+
+// jsonLoad = '{"Username": "11684", "Password": "UgCpAR72", "CompanyId": "26389058739", "SoftwareId": "Test-002", "ElectronicId": "3104823"}';
+
+// //// 1 ulazni račun - receive
+// webRequestResult = WebRequest("POST", "https://demo.moj-eracun.hr/apis/v2/receive", jsonLoad, "trackingId",
+//             "MERSuccess", "MERFailure", "application/json", null, 1000 * 20, false);
+
+//--------------------------------------------
+
+
+exit;
+
+
+function MERSuccess(trackingId, responseCode, res) {
+    MSG("MERSuccess");
+
+    try{
+        LogResponse(responseCode, res);
+
+        // resObject = DeserializeJson(res);    
+        // if(Contains(resObject, "StatusId") && resObject["StatusId"] == 20){
+        //     MessageBox('resObject["StatusId"] == 20');
+        //     LogNKSYELOG("C");
+        // }
+        // else{
+        //     LogNKSYELOG("B", 'Debug: NEPOZNATA GREŠKA'); // !!!
+        // }
+
+
+
+
+        // if(Contains(resObject, "File")){
+        //     MessageBox("File = " + resObject["File"]);
+        // }
+
+        // MessageBox("ElectronicId = " + resObject["ElectronicId"]);
+        // MessageBox("DocumentNr = " + resObject["DocumentNr"]);
+        // MessageBox("DocumentTypeId = " + resObject["DocumentTypeId"]);
+        // MessageBox("DocumentTypeName = " + resObject["DocumentTypeName"]);
+        // MessageBox("StatusId = " + resObject["StatusId"]); // 20
+        // MessageBox("StatusName = " + resObject["StatusName"]); // Odrađeno
+        // MessageBox("RecipientBusinessNumber = " + resObject["RecipientBusinessNumber"]);
+        // MessageBox("RecipientBusinessUnit = " + resObject["RecipientBusinessUnit"]);
+        // MessageBox("RecipientBusinessName = " + resObject["RecipientBusinessName"]);
+        // MessageBox("Created = " + resObject["Created"]);
+        // MessageBox("Sent = " + resObject["Sent"]);
+        // MessageBox("Modified = " + resObject["Modified"]);
+        // MessageBox("Delivered = " + resObject["Delivered"]);        
+    }
+    catch(ex){
+        MessageBox("MERSuccess - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        // LogNKSYELOG();
+    }
+    
+}
+
+function MERFailure(trackingId, responseCode, res) {
+    MSG("MERFailure");
+
+    try{
+        LogResponse(responseCode, res);
+
+        // MSG("Slanje računa broj " + _invNum + " NEUSPJEŠNO!");
+
+        // // MessageBox("SendingFailure.ResponseCode = " + responseCode);
+
+        // resObject = DeserializeJson(res);
+        // MSG(resObject);
+
+
+
+
+        // MessageBox("ElectronicId = " + resObject["ElectronicId"]);
+        // MessageBox("DocumentNr = " + resObject["DocumentNr"]);
+        // MessageBox("DocumentTypeId = " + resObject["DocumentTypeId"]);
+        // MessageBox("DocumentTypeName = " + resObject["DocumentTypeName"]);
+        // MessageBox("StatusId = " + resObject["StatusId"]);
+        // MessageBox("StatusName = " + resObject["StatusName"]);
+        // MessageBox("RecipientBusinessNumber = " + resObject["RecipientBusinessNumber"]);
+        // MessageBox("RecipientBusinessUnit = " + resObject["RecipientBusinessUnit"]);
+        // MessageBox("RecipientBusinessName = " + resObject["RecipientBusinessName"]);
+        // MessageBox("Created = " + resObject["Created"]);
+        // MessageBox("Sent = " + resObject["Sent"]);
+        // MessageBox("Modified = " + resObject["Modified"]);
+        // MessageBox("Delivered = " + resObject["Delivered"]);        
+    }
+    catch(ex){
+        MessageBox("SendingFailure - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+    }
+}
+
+function LogResponse(responseCode, response) {
+    if(!DIR_EXISTS(FILESPATH + "responses\\")){
+        MAKE_DIR(FILESPATH + "responses\\");
+    }
+
+    logFilePath = FILESPATH + "responses\\" + "test" + ".response";
+    appendText = Now("yyyy-MM-dd HH:mm:ss") + " -----------------------------------\n\n" + "StatusCode = " + responseCode + "\n\n" + "Response:\n" + response + "\n\n";
+    try {
+        SaveFile(appendText, logFilePath, "a");        
+    } catch (ex) {
+        MessageBox("CRITICAL: Cannot write to log file: " + logPath + "\nError: " + ex);
+    }
+}

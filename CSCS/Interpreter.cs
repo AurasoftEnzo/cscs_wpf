@@ -6,6 +6,8 @@ using System.Text;
 using System.Threading.Tasks;
 using static SplitAndMerge.ParserFunction;
 using System.IO;
+using System.Xml.Linq;
+using static System.Collections.Specialized.BitVector32;
 
 
 namespace SplitAndMerge
@@ -146,6 +148,7 @@ namespace SplitAndMerge
         public void RegisterFunctions()
         {
             RegisterFunction(Constants.IF, new IfStatement());
+            RegisterFunction(Constants.IFF, new IffStatement());
             RegisterFunction(Constants.DO, new DoWhileStatement());
             RegisterFunction(Constants.WHILE, new WhileStatement());
             RegisterFunction(Constants.SWITCH, new SwitchStatement());
@@ -204,6 +207,7 @@ namespace SplitAndMerge
             RegisterFunction(Constants.LOCK, new LockFunction());
             RegisterFunction(Constants.NAMESPACE, new NamespaceFunction());
             RegisterFunction(Constants.NAME_EXISTS, new NameExistsFunction());
+            RegisterFunction(Constants.NEW_THREAD, new ThreadFunction(false, false));
             RegisterFunction(Constants.NOW, new DateTimeFunction());
             RegisterFunction(Constants.PRINT, new PrintFunction());
             RegisterFunction(Constants.PSTIME, new ProcessorTimeFunction());
@@ -234,6 +238,7 @@ namespace SplitAndMerge
             RegisterFunction(Constants.STR_UPPER, new StringManipulationFunction(StringManipulationFunction.Mode.UPPER));
             RegisterFunction(Constants.THREAD, new ThreadFunction());
             RegisterFunction(Constants.THREAD_ID, new ThreadIDFunction());
+            RegisterFunction(Constants.THREAD_RESULT, new ThreadFunction(false, true));
             RegisterFunction(Constants.TOKENIZE, new TokenizeFunction());
             RegisterFunction(Constants.TOKENIZE_LINES, new TokenizeLinesFunction());
             RegisterFunction(Constants.TOKEN_COUNTER, new TokenCounterFunction());
@@ -361,40 +366,42 @@ namespace SplitAndMerge
 
         internal Variable ProcessFor(ParsingScript script)
         {
+            Variable result = Variable.EmptyInstance;
             string forString = Utils.GetBodyBetween(script, Constants.START_ARG, Constants.END_ARG);
             script.Forward();
             if (forString.Contains(Constants.END_STATEMENT.ToString()))
             {
                 // Looks like: "for(i = 0; i < 10; i++)".
-                ProcessCanonicalFor(script, forString);
+                result = ProcessCanonicalFor(script, forString);
             }
             else
             {
                 // Otherwise looks like: "for(item : array)"
-                ProcessArrayFor(script, forString);
+                result = ProcessArrayFor(script, forString);
             }
 
-            return Variable.EmptyInstance;
+            return result.IsReturn ? result : Variable.EmptyInstance;
         }
         internal async Task<Variable> ProcessForAsync(ParsingScript script)
         {
+            Variable result = Variable.EmptyInstance;
             string forString = Utils.GetBodyBetween(script, Constants.START_ARG, Constants.END_ARG);
             script.Forward();
             if (forString.Contains(Constants.END_STATEMENT.ToString()))
             {
                 // Looks like: "for(i = 0; i < 10; i++)".
-                await ProcessCanonicalForAsync(script, forString);
+                result = await ProcessCanonicalForAsync(script, forString);
             }
             else
             {
                 // Otherwise looks like: "for(item : array)"
-                await ProcessArrayForAsync(script, forString);
+                result = await ProcessArrayForAsync(script, forString);
             }
 
-            return Variable.EmptyInstance;
+            return result.IsReturn ? result : Variable.EmptyInstance;
         }
 
-        void ProcessArrayFor(ParsingScript script, string forString)
+        Variable ProcessArrayFor(ParsingScript script, string forString)
         {
             var tokens = forString.Split(' ');
             var sep = tokens.Length > 2 ? tokens[1] : "";
@@ -413,7 +420,7 @@ namespace SplitAndMerge
 
             ParsingScript forScript = script.GetTempScript(forString, varName.Length + sep.Length + 1);
             forScript.Debugger = script.Debugger;
-
+            Variable result = Variable.EmptyInstance;
             Variable arrayValue = Utils.GetItem(forScript);
 
             int startForCondition = script.Pointer;
@@ -430,7 +437,7 @@ namespace SplitAndMerge
 
                     script.Pointer = startForCondition;
                     AddGlobalOrLocalVariable(varName, new GetVarFunction(current));
-                    Variable result = ProcessBlock(script);
+                    result = ProcessBlock(script);
                     if (result.IsReturn || result.Type == Variable.VarType.BREAK)
                     {
                         break;
@@ -452,7 +459,7 @@ namespace SplitAndMerge
 
                     script.Pointer = startForCondition;
                     AddGlobalOrLocalVariable(varName, new GetVarFunction(current));
-                    Variable result = ProcessBlock(script);
+                    result = ProcessBlock(script);
                     if (result.IsReturn || result.Type == Variable.VarType.BREAK)
                     {
                         break;
@@ -461,9 +468,10 @@ namespace SplitAndMerge
             }
             script.Pointer = startForCondition;
             SkipBlock(script);
+            return result.IsReturn ? result : Variable.EmptyInstance;
         }
 
-        async Task ProcessArrayForAsync(ParsingScript script, string forString)
+        async Task<Variable> ProcessArrayForAsync(ParsingScript script, string forString)
         {
             var tokens = forString.Split(' ');
             var sep = tokens.Length > 2 ? tokens[1] : "";
@@ -482,7 +490,7 @@ namespace SplitAndMerge
 
             ParsingScript forScript = script.GetTempScript(forString, varName.Length + sep.Length + 1);
             forScript.Debugger = script.Debugger;
-
+            Variable result = Variable.EmptyInstance;
             Variable arrayValue = await Utils.GetItemAsync(forScript);
 
             int startForCondition = script.Pointer;
@@ -497,7 +505,7 @@ namespace SplitAndMerge
                     Variable current = new Variable(item);
                     script.Pointer = startForCondition;
                     AddGlobalOrLocalVariable(varName, new GetVarFunction(current));
-                    Variable result = ProcessBlock(script);
+                    result = ProcessBlock(script);
                     if (result.IsReturn || result.Type == Variable.VarType.BREAK)
                     {
                         break;
@@ -519,7 +527,7 @@ namespace SplitAndMerge
 
                     script.Pointer = startForCondition;
                     AddGlobalOrLocalVariable(varName, new GetVarFunction(current));
-                    Variable result = await ProcessBlockAsync(script);
+                    result = await ProcessBlockAsync(script);
                     if (result.IsReturn || result.Type == Variable.VarType.BREAK)
                     {
                         break;
@@ -528,9 +536,10 @@ namespace SplitAndMerge
             }
             script.Pointer = startForCondition;
             SkipBlock(script);
+            return result.IsReturn ? result : Variable.EmptyInstance;
         }
 
-        void ProcessCanonicalFor(ParsingScript script, string forString)
+        Variable ProcessCanonicalFor(ParsingScript script, string forString)
         {
             string[] forTokens = forString.Split(Constants.END_STATEMENT);
             if (forTokens.Length != 3)
@@ -548,7 +557,7 @@ namespace SplitAndMerge
 
             int cycles = 0;
             bool stillValid = true;
-
+            Variable result = Variable.EmptyInstance;
             while (stillValid)
             {
                 Variable condResult = condScript.Execute(null, 0);
@@ -565,7 +574,7 @@ namespace SplitAndMerge
                 }
 
                 script.Pointer = startForCondition;
-                Variable result = ProcessBlock(script);
+                result = ProcessBlock(script);
                 if (result.IsReturn || result.Type == Variable.VarType.BREAK)
                 {
                     //script.Pointer = startForCondition;
@@ -578,8 +587,9 @@ namespace SplitAndMerge
 
             script.Pointer = startForCondition;
             SkipBlock(script);
+            return result.IsReturn ? result : Variable.EmptyInstance;
         }
-        async Task ProcessCanonicalForAsync(ParsingScript script, string forString)
+        async Task<Variable> ProcessCanonicalForAsync(ParsingScript script, string forString)
         {
             string[] forTokens = forString.Split(Constants.END_STATEMENT);
             if (forTokens.Length != 3)
@@ -594,6 +604,7 @@ namespace SplitAndMerge
             ParsingScript loopScript = script.GetTempScript(forTokens[2] + Constants.END_STATEMENT);
 
             await initScript.ExecuteAsync(null, 0);
+            Variable result = Variable.EmptyInstance;
 
             int cycles = 0;
             bool stillValid = true;
@@ -614,7 +625,7 @@ namespace SplitAndMerge
                 }
 
                 script.Pointer = startForCondition;
-                Variable result = await ProcessBlockAsync(script);
+                result = await ProcessBlockAsync(script);
                 if (result.IsReturn || result.Type == Variable.VarType.BREAK)
                 {
                     //script.Pointer = startForCondition;
@@ -627,6 +638,7 @@ namespace SplitAndMerge
 
             script.Pointer = startForCondition;
             SkipBlock(script);
+            return result.IsReturn ? result : Variable.EmptyInstance;
         }
 
         internal Variable ProcessWhile(ParsingScript script)
@@ -903,6 +915,45 @@ namespace SplitAndMerge
                    result.Type == Variable.VarType.CONTINUE ? result : Variable.EmptyInstance;
         }
 
+        internal Variable ProcessIff(ParsingScript script)
+        {
+            Variable result = script.Execute(Constants.NEXT_ARG_ARRAY);
+            bool isTrue = Convert.ToBoolean(result.Value);
+            script.MoveForwardIf(Constants.NEXT_ARG);
+
+            if (isTrue)
+            {
+                result = script.Execute(Constants.NEXT_ARG_ARRAY);
+                SkipExpression(script);
+            }
+            else
+            {
+                SkipExpression(script);
+                result = script.Execute(Constants.END_ARG_ARRAY);
+            }
+
+            return result;
+        }
+        internal async Task<Variable> ProcessIffAsync(ParsingScript script)
+        {
+            Variable result = await script.ExecuteAsync(Constants.NEXT_ARG_ARRAY);
+            bool isTrue = Convert.ToBoolean(result.Value);
+            script.MoveForwardIf(Constants.NEXT_ARG);
+
+            if (isTrue)
+            {
+                result = await script.ExecuteAsync(Constants.NEXT_ARG_ARRAY);
+                SkipExpression(script);
+            }
+            else
+            {
+                SkipExpression(script);
+                result = await script.ExecuteAsync(Constants.END_ARG_ARRAY);
+            }
+
+            return result;
+        }
+
         internal Variable ProcessTry(ParsingScript script)
         {
             int startTryCondition = script.Pointer - 1;
@@ -967,6 +1018,16 @@ namespace SplitAndMerge
             }
 
             SkipRestBlocks(script);
+            var pos = script.Pointer;
+            var fin = Utils.GetNextToken(script);
+            if (string.Compare(fin, Constants.FINALLY, StringComparison.OrdinalIgnoreCase) == 0)
+            {
+                result = ProcessBlock(script);
+            }
+            else
+            {
+                script.Pointer = pos;
+            }
             return result;
         }
         internal async Task<Variable> ProcessTryAsync(ParsingScript script)
@@ -1033,6 +1094,16 @@ namespace SplitAndMerge
             }
 
             SkipRestBlocks(script);
+            var pos = script.Pointer;
+            var fin = Utils.GetNextToken(script);
+            if (string.Compare(fin, Constants.FINALLY, StringComparison.OrdinalIgnoreCase) == 0)
+            {
+                result = await ProcessBlockAsync(script);
+            }
+            else
+            {
+                script.Pointer = pos;
+            }
             return result;
         }
 
@@ -1203,6 +1274,76 @@ namespace SplitAndMerge
             if (startCount != endCount)
             {
                 throw new ArgumentException("Mismatched parentheses");
+            }
+        }
+
+        // Skips an expression up to a , or a closing ). Does not let {}.
+        internal void SkipExpression(ParsingScript script)
+        {
+            int blockStart = script.Pointer;
+            int startParenthesis = 0;
+            int endParenthesis = 0;
+            bool inQuotes = false;
+            bool inQuotes1 = false;
+            bool inQuotes2 = false;
+            char previous = Constants.EMPTY;
+            char prevprev = Constants.EMPTY;
+            bool done = false;
+            script.MoveForwardIf(Constants.NEXT_ARG);
+
+            while (!done)
+            {
+                if (!script.StillValid())
+                {
+                    throw new ArgumentException("Couldn't skip expression [" +
+                        script.Substr(blockStart, Constants.MAX_CHARS_TO_SHOW) + "]");
+                }
+                char currentChar = script.CurrentAndForward();
+                switch (currentChar)
+                {
+                    case Constants.QUOTE1:
+                        if (!inQuotes2 && (previous != '\\' || prevprev == '\\'))
+                        {
+                            inQuotes = inQuotes1 = !inQuotes1;
+                        }
+                        break;
+                    case Constants.QUOTE:
+                        if (!inQuotes1 && (previous != '\\' || prevprev == '\\'))
+                        {
+                            inQuotes = inQuotes2 = !inQuotes2;
+                        }
+                        break;
+                    case Constants.START_ARG:
+                        if (!inQuotes)
+                        {
+                            startParenthesis++;
+                            done = startParenthesis < endParenthesis;
+                        }
+                        break;
+                    case Constants.END_ARG:
+                        if (!inQuotes)
+                        {
+                            endParenthesis++;
+                            done = startParenthesis < endParenthesis;
+                        }
+                        break;
+                    case Constants.NEXT_ARG:
+                        if (!inQuotes)
+                        {
+                            done = startParenthesis <= endParenthesis;
+                        }
+                        break;
+                    case Constants.START_GROUP:
+                    case Constants.END_GROUP:
+                        if (!inQuotes)
+                        {
+                            throw new ArgumentException("Not sllowed to have curly braces in this block [" +
+                            script.Substr(blockStart, Constants.MAX_CHARS_TO_SHOW) + "]");
+                        }
+                        break;
+                }
+                prevprev = previous;
+                previous = currentChar;
             }
         }
 
@@ -1426,8 +1567,13 @@ namespace SplitAndMerge
             }
             name = Constants.ConvertName(name);
             ParserFunction impl;
-            StackLevel localStack = script != null && script.StackLevel != null ?
-                 script.StackLevel : s_locals.Count > StackLevelDelta ? s_lastExecutionLevel : null;
+            StackLevel localStack = script?.StackLevel != null ? script.StackLevel : script != null && script.Compiled ?
+                s_lastExecutionLevel : null;
+            if (localStack == null && !string.IsNullOrWhiteSpace(script.Namespace) &&
+                s_namespaces.TryGetValue(script.Namespace, out StackLevel level))
+            {
+                localStack = level;
+            }
             if (localStack != null)
             {
                 Dictionary<string, ParserFunction> local = localStack.Variables;
@@ -1448,6 +1594,18 @@ namespace SplitAndMerge
             {
                 return impl.NewInstance();
             }
+            if (!string.IsNullOrWhiteSpace(script.Namespace))
+            {
+                var cand = script.Namespace + "." + name;
+                if (s_variables.TryGetValue(cand, out impl))
+                {
+                    return impl.NewInstance();
+                }
+                if (localStack != null && localStack.Variables.TryGetValue(cand, out impl))
+                {
+                    return impl.NewInstance();
+                }
+            }
 
             return GetFunction(name);
         }
@@ -1456,7 +1614,7 @@ namespace SplitAndMerge
         {
             name = Constants.ConvertName(name);
             ParserFunction impl = null;
-            StackLevel localStack = script != null && script.StackLevel != null ?
+            StackLevel localStack = script?.StackLevel != null ?
                  script.StackLevel : s_locals.Count > StackLevelDelta ? s_lastExecutionLevel : null;
             if (localStack != null && localStack.Variables.TryGetValue(name, out impl) &&
                 impl is GetVarFunction)
@@ -1548,29 +1706,35 @@ namespace SplitAndMerge
             name = Constants.ConvertName(name);
             Utils.CheckLegalName(name, script);
 
-            bool globalOnly = !localIfPossible && !LocalNameExists(name);
+            bool shouldbeLocal = script?.StackLevel != null && script?.ParentScript != null;
+            bool globalOnly = !localIfPossible && !LocalNameExists(name) && !shouldbeLocal;
             Dictionary<string, ParserFunction> lastLevel = GetLastLevel();
             if (!globalOnly && lastLevel != null && s_lastExecutionLevel.IsNamespace && !string.IsNullOrWhiteSpace(s_namespace))
             {
                 name = s_namespacePrefix + name;
             }
+            else if (!string.IsNullOrWhiteSpace(script?.Namespace))
+            {
+                name = script.Namespace + "." + name;
+            }
 
             function.Name = Constants.GetRealName(name);
             function.Value.ParamName = function.Name;
 
-            if (!globalOnly && !localIfPossible && script != null && script.StackLevel != null && !GlobalNameExists(name))
+            if (!globalOnly && !localIfPossible && script?.StackLevel != null && !GlobalNameExists(name))
             {
                 script.StackLevel.Variables[name] = function;
             }
 
-            if (!globalOnly && s_locals.Count > StackLevelDelta &&
+            if (!globalOnly && s_locals.Count > StackLevelDelta && shouldbeLocal &&
                (localIfPossible || LocalNameExists(name) || !GlobalNameExists(name)))
             {
-                AddLocalVariable(function);
+                AddLocalVariable(function, script);
             }
             else
             {
                 AddGlobal(name, function, false /* not native */);
+                var val = function is GetVarFunction ? (function as GetVarFunction).Value.AsInt() : -1;
             }
         }
 
@@ -1791,7 +1955,7 @@ namespace SplitAndMerge
             {
                 AddVariables(vars, lastLevel);
             }
-            if (script != null && script.StackLevel != null)
+            if (script?.StackLevel != null)
             {
                 AddVariables(vars, script.StackLevel.Variables);
             }
@@ -1815,7 +1979,7 @@ namespace SplitAndMerge
 #if UNITY_EDITOR == false && UNITY_STANDALONE == false && __ANDROID__ == false && __IOS__ == false
             if (!isNative)
             {
-                Translation.AddTempKeyword(name);
+                //Translation.AddTempKeyword(name);
             }
 #endif
             if (handle != null && function is GetVarFunction)
@@ -1939,36 +2103,40 @@ namespace SplitAndMerge
             }
         }
 
-        public void AddLocalVariable(ParserFunction local, string varName = "")
+        public void AddLocalVariable(ParserFunction local, ParsingScript script, string varName = "")
         {
             local.InterpreterInstance = this;
 
             NormalizeValue(local);
             local.m_isGlobal = false;
+            var handle = OnVariableChange;
+            bool exists = false;
 
             lock (s_variables)
             {
-
                 if (s_lastExecutionLevel == null)
                 {
                     s_lastExecutionLevel = new StackLevel();
                     s_locals.Push(s_lastExecutionLevel);
                 }
+
+                var name = Constants.ConvertName(string.IsNullOrWhiteSpace(varName) ? local.Name : varName);
+                local.Name = Constants.GetRealName(name);
+                if (local is GetVarFunction getVarFunction)
+                {
+                    getVarFunction.Value.ParamName = local.Name;
+                }
+
+                exists = handle != null && s_lastExecutionLevel.Variables.ContainsKey(name);
+
+                s_lastExecutionLevel.Variables[name] = local;
+                if (script?.StackLevel != null)
+                {
+                    script.StackLevel.Variables[name] = local;
+                }
             }
-
-            var name = Constants.ConvertName(string.IsNullOrWhiteSpace(varName) ? local.Name : varName);
-            local.Name = Constants.GetRealName(name);
-            if (local is GetVarFunction getVarFunction)
-            {
-                getVarFunction.Value.ParamName = local.Name;
-            }
-
-            var handle = OnVariableChange;
-            bool exists = handle != null && s_lastExecutionLevel.Variables.ContainsKey(name);
-
-            s_lastExecutionLevel.Variables[name] = local;
 #if UNITY_EDITOR == false && UNITY_STANDALONE == false && __ANDROID__ == false && __IOS__ == false
-            Translation.AddTempKeyword(name);
+            //Translation.AddTempKeyword(name);
 #endif
             if (handle != null && local is GetVarFunction localFunction)
             {
@@ -1984,7 +2152,7 @@ namespace SplitAndMerge
             {
                 return true;
             }
-            result = s_lastExecutionLevel!= null && s_lastExecutionLevel.Variables.Remove(name);
+            result = s_lastExecutionLevel != null && s_lastExecutionLevel.Variables.Remove(name);
             if (result)
             {
                 return true;
@@ -2158,6 +2326,26 @@ namespace SplitAndMerge
             varFunc.Indices = arrayIndices;
             varFunc.Delta = delta;
             return varFunc;
+        }
+
+        public static Variable TryExtractArray(Variable candidate, string data, ParsingScript script)
+        {
+            if (candidate.Type == Variable.VarType.ARRAY && script.Current == Constants.START_ARRAY)
+            {
+                GetVarFunction varFunc = new GetVarFunction(candidate);
+                var varName = data + script.Rest;
+                var delta = 0;
+                var arrayName = "";
+                var arrayIndices = Utils.GetArrayIndices(script, varName, delta,
+                    (string arr, int del) => { arrayName = arr; delta = del; });
+                delta -= data.Length;
+                script.Forward(1);
+                varFunc.Indices = arrayIndices;
+                varFunc.Delta = delta;
+
+                candidate = varFunc.GetValue(script);
+            }
+            return candidate;
         }
 
         static bool ActionForUndefined(string action)

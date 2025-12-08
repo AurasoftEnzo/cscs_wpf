@@ -77,6 +77,7 @@ namespace SplitAndMerge
                 bool ternary = UpdateIfTernary(script, token, ch, listToMerge, (List<Variable> newList) => { listToMerge = newList; });
                 if (ternary)
                 {
+                    //continue;
                     return listToMerge;
                 }
 
@@ -125,6 +126,7 @@ namespace SplitAndMerge
                 bool ternary = UpdateIfTernary(script, token, ch, listToMerge, (List<Variable> newList) => { listToMerge = newList; });
                 if (ternary)
                 {
+                    //continue;
                     return listToMerge;
                 }
 
@@ -189,7 +191,7 @@ namespace SplitAndMerge
             while (true);
 
             if (to.Contains(Constants.END_ARRAY) && ch == Constants.END_ARRAY &&
-                item[item.Length-1] != Constants.END_ARRAY &&
+                item[item.Length - 1] != Constants.END_ARRAY &&
                 item.ToString().Contains(Constants.START_ARRAY))
             {
                 item.Append(ch);
@@ -215,7 +217,7 @@ namespace SplitAndMerge
             return result;
         }
 
-        static bool UpdateResult(ParsingScript script, char[] to, List<Variable> listToMerge, string token, bool negSign,
+        public static bool UpdateResult(ParsingScript script, char[] to, List<Variable> listToMerge, string token, bool negSign,
                                  ref Variable current, ref int negated, ref string action)
         {
             if (current == null)
@@ -288,7 +290,7 @@ namespace SplitAndMerge
             return false;
         }
 
-        static bool CheckConsistencyAndSign(ParsingScript script, List<Variable> listToMerge, string action, ref string token)
+        public static bool CheckConsistencyAndSign(ParsingScript script, List<Variable> listToMerge, string action, ref string token)
         {
             if (Constants.CONTROL_FLOW.Contains(token) && listToMerge.Count > 0)
             {//&&
@@ -410,7 +412,12 @@ namespace SplitAndMerge
                                    ch == Constants.START_GROUP ||
                                  next == Constants.EMPTY)
             {
-                return false;
+                // Special case: collect all array indices. Except when we explicitly collect them
+                if (!(ch == Constants.END_ARRAY && to.Length > 1 && to.Contains(Constants.END_ARRAY) &&
+                    next == Constants.START_ARRAY))
+                {
+                    return false;
+                }
             }
 
             // Case of a negative number, or a pointer, or starting with the closing bracket:
@@ -446,7 +453,7 @@ namespace SplitAndMerge
             return true;
         }
 
-        static bool UpdateIfTernary(ParsingScript script, string token, char ch, List<Variable> listInput, Action<List<Variable>> listToMerge)
+        public static bool UpdateIfTernary(ParsingScript script, string token, char ch, List<Variable> listInput, Action<List<Variable>> listToMerge)
         {
             if (listInput.Count < 1 || ch != Constants.TERNARY_OPERATOR || token.Length > 0)
             {
@@ -459,15 +466,31 @@ namespace SplitAndMerge
             double condition = arg1.AsDouble();
             if (condition != 0)
             {
-                result = script.Execute(Constants.TERNARY_SEPARATOR);
+                result = Utils.GetItem(script, true, Constants.TERNARY_SEPARATOR);
+                result.TrySetAsMap();
                 script.MoveForwardIf(Constants.TERNARY_SEPARATOR);
                 Utils.SkipRestExpr(script, Constants.END_STATEMENT);
+                script.MoveForwardIf(Constants.END_ARG, Constants.SPACE);
+                if (script.Current == '+')
+                {
+                    script.Forward();
+                    var rest = GetNextItem(script);
+                    if (result.Type == Variable.VarType.NUMBER)
+                    {
+                        result.Value += rest.AsDouble();
+                    }
+                    else
+                    {
+                        result.String += rest.AsString();
+                    }
+                }
             }
             else
             {
                 Utils.SkipRestExpr(script, Constants.TERNARY_SEPARATOR[0]);
                 script.MoveForwardIf(Constants.TERNARY_SEPARATOR);
-                result = script.Execute(Constants.NEXT_OR_END_ARRAY);
+                result = Utils.GetItem(script);
+                result.TrySetAsMap();
             }
 
             listInput.Clear();
@@ -475,6 +498,17 @@ namespace SplitAndMerge
             listToMerge(listInput);
 
             return true;
+        }
+
+        public static Variable GetNextItem(ParsingScript script)
+        {
+            ParsingScript tempScript = script.GetTempScript(script.Rest);
+            tempScript.Namespace = script.Namespace;
+            tempScript.CurrentClass = script.CurrentClass;
+            tempScript.MoveForwardIf(Constants.START_GROUP);
+            tempScript.DisableBreakpoints = true;
+            var result = script.Execute();
+            return result;
         }
 
         static bool UpdateIfBool(ParsingScript script, Variable current, Action<Variable> updateCurrent, List<Variable> listInput, Action<List<Variable>> listToMerge)
@@ -592,7 +626,7 @@ namespace SplitAndMerge
                 // Done!
                 return;
             }
-            if (leftCell.Type  == Variable.VarType.NUMBER &&
+            if (leftCell.Type == Variable.VarType.NUMBER &&
                 rightCell.Type == Variable.VarType.NUMBER)
             {
                 MergeNumbers(leftCell, rightCell, script);
@@ -629,13 +663,13 @@ namespace SplitAndMerge
                         leftCell.Object = Expression.Lambda<Func<T, T, T>>(Expression.Multiply(leftParameter, rightParameter), leftParameter, rightParameter).Compile()((T)leftCell.Object, (T)rightCell.Object);
                         break;
                     case "/":
-                        leftCell.Object = Expression.Lambda<Func<T, T, T>>(Expression.Divide(leftParameter, rightParameter), leftParameter, rightParameter).Compile()((T)leftCell.Object, (T)rightCell.Object); 
+                        leftCell.Object = Expression.Lambda<Func<T, T, T>>(Expression.Divide(leftParameter, rightParameter), leftParameter, rightParameter).Compile()((T)leftCell.Object, (T)rightCell.Object);
                         break;
                     case "+":
-                        leftCell.Object = Expression.Lambda<Func<T, T, T>>(Expression.Add(leftParameter, rightParameter), leftParameter, rightParameter).Compile()((T)leftCell.Object, (T)rightCell.Object); 
+                        leftCell.Object = Expression.Lambda<Func<T, T, T>>(Expression.Add(leftParameter, rightParameter), leftParameter, rightParameter).Compile()((T)leftCell.Object, (T)rightCell.Object);
                         break;
                     case "-":
-                        leftCell.Object = Expression.Lambda<Func<T, T, T>>(Expression.Subtract(leftParameter, rightParameter), leftParameter, rightParameter).Compile()((T)leftCell.Object, (T)rightCell.Object); 
+                        leftCell.Object = Expression.Lambda<Func<T, T, T>>(Expression.Subtract(leftParameter, rightParameter), leftParameter, rightParameter).Compile()((T)leftCell.Object, (T)rightCell.Object);
                         break;
                     case "<":
                         leftCell.Value = Expression.Lambda<Func<T, T, bool>>(Expression.LessThan(leftParameter, rightParameter), leftParameter, rightParameter).Compile()((T)leftCell.Object, (T)rightCell.Object) ? 1 : 0;
@@ -820,7 +854,7 @@ namespace SplitAndMerge
                 default:
                     Utils.ThrowErrorMsg("Can't process operation [" + leftCell.Action + "] on strings.",
                          script, leftCell.Action);
-                    break; 
+                    break;
             }
         }
 
@@ -838,18 +872,18 @@ namespace SplitAndMerge
                 case "--": return 11;
                 case "%":
                 case "*":
-                case "/":  return 10;
+                case "/": return 10;
                 case "+":
-                case "-":  return 9;
+                case "-": return 9;
                 case "<":
                 case ">":
                 case ">=":
                 case "<=": return 8;
                 case "==":
                 case "!=": return 7;
-                case "&":  return 6;
-                case "|":  return 5;
-                case "^":  return 4;
+                case "&": return 6;
+                case "|": return 5;
+                case "^": return 4;
                 case "&&": return 3;
                 case "||": return 2;
                 case "+=":
@@ -857,7 +891,7 @@ namespace SplitAndMerge
                 case "*=":
                 case "/=":
                 case "%=":
-                case "=":  return 1;
+                case "=": return 1;
             }
             return 0; // NULL action has priority 0.
         }

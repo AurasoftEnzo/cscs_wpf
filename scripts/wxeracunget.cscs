@@ -1,3 +1,26 @@
+﻿
+
+// array = {};
+// dict1 = {};
+// dict2 = {};
+
+// dict1["Name"] = "Invoice1.xml";
+// dict1["Content"] = "<Invoice>...</Invoice>";
+
+// dict2["Name"] = "Invoice2.xml";
+// dict2["Content"] = "<Invoice>...</Invoice>";
+
+// array.Add(dict1);
+// array.Add(dict2);
+
+// msg(array);
+
+// exit;
+
+
+
+resObject = {};
+
 // -----------------------------------------------------------
 // WxEracunGet.cscs - UBL XML Invoice Import Program
 // -----------------------------------------------------------
@@ -26,6 +49,18 @@ if(Size(args) > 2){
 }else{
     companyCode = Substring(CoGet(), 1, 2);
 }
+
+// SY_CC_USER = "";
+// databaseName = "";
+
+ERAC_REZ1 = "";
+ERAC_SERVER = "";
+ERAC_SERVERT = "";
+ERAC_USER = "";
+ERAC_PASS = "";
+ERAC_USERT = "";
+ERAC_PASST = "";
+ERAC_DESC = "";
 
 
 
@@ -177,14 +212,14 @@ function DownloadNewInvoicesFromProvider() {
             return false;
         }
 
-        ERAC_REZ1 = eracRes[1][0].trim();
-        ERAC_SERVER = eracRes[1][1].trim();
-        ERAC_SERVERT = eracRes[1][2].trim();
-        ERAC_USER = eracRes[1][3].trim();
-        ERAC_PASS = eracRes[1][4].trim();
-        ERAC_USERT = eracRes[1][5].trim(); // cer certificate
-        ERAC_PASST = eracRes[1][6].trim(); // p12 certificate
-        ERAC_DESC = eracRes[1][7].trim();
+        ERAC_REZ1 = StrTrim(eracRes[1][0]);
+        ERAC_SERVER = StrTrim(eracRes[1][1]);
+        ERAC_SERVERT = StrTrim(eracRes[1][2]);
+        ERAC_USER = StrTrim(eracRes[1][3]);
+        ERAC_PASS = StrTrim(eracRes[1][4]);
+        ERAC_USERT = StrTrim(eracRes[1][5]); // cer certificate
+        ERAC_PASST = StrTrim(eracRes[1][6]); // p12 certificate
+        ERAC_DESC = StrTrim(eracRes[1][7]);
         
         if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
             return DownloadNewInvoicesFromMeR();
@@ -344,10 +379,14 @@ function MERSuccess(trackingId, responseCode, res) {
     try{
         LogResponse(responseCode, res);     
 
+        
         resObject = DeserializeJson(res);  
+
+        MSG(resObject); // 3109112, 3109112, 3109112, 3109112
+        MSG(resObject[i]); // 3109112
+        exit;
+
         for(i = 0; i < Size(resObject); i++){
-            MSG(resObject);
-            // MSG(resObject[i]); // 3109112
             ElectronicId = resObject[i]["ElectronicId"];
             DocumentNr = resObject[i]["DocumentNr"];
             SenderBusinessNumber = resObject[i]["SenderBusinessNumber"];

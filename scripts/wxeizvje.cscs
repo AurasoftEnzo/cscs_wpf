@@ -1,10 +1,70 @@
 ﻿// e-Izvješćivanje – Mjesečni izvještaj za neposlane račune
-include(strTrim(tpath()) + "wxsy_lib.cscs");
+
+//include(strTrim(tpath()) + "wxsy_lib.cscs");
+//Import(strTrim(mpath()) + "CSCS.Math.dll");
+
+
+args = CommandLineArgs(); 
+//MessageBox(args[0]); // e.g. Path + wpfcscs.exe     //EXE
+//MessageBox(args[1]); // e.g. Path + wxeizvje.cscs   //SCRIPT
+//MessageBox(args[2]); // e.g. "Y4"                   //companyCode
+//MessageBox(args[3]); // e.g. "ANA"                  //userCode
+
+if(Size(args) > 2){
+    companyCode = args[2]; // e.g. Y3
+    CoSet(companyCode);
+
+    if(Size(args) > 3){
+        userCode = args[3]; // e.g. ANA
+
+        // if(Size(args) > 4){
+        //     invNum = args[4]; // e.g. 90100002
+
+        //     if(Size(args) > 5){
+        //         attachmentPdfPath = args[5]; // e.g. C:\Temp\90100002.pdf
+        //     }else{
+        //         attachmentPdfPath = "";
+        //     }
+        // }else{
+        //     MessageBox("Nedostaje broj računa u argumentima.");
+        //     exit;
+        // }
+    }else{
+        MessageBox("Nedostaje user code u argumentima.");
+        exit;
+    }
+}else{
+    companyCode = Substring(CoGet(), 1, 2);
+}
+
+
 
 //conn_str = "DRIVER={SQL Server};SERVER=YOUR_SERVER;DATABASE=YOUR_DB;Trusted_Connection=yes;";
 //databaseName = "YOUR_DB";
-sqlconnectionstring("Server=localhost;Database=C__DATAX_Y4__BY4;User Id=sa;Password=aura;");
-databaseName = "C__DATAX_Y4__BY4";
+// sqlconnectionstring("Server=localhost;Database=C__DATAX_Y4__BY4;User Id=sa;Password=aura;");
+// databaseName = "C__DATAX_Y4__BY4";
+
+
+// NKSYCCYR
+sqlQueryString = "select SY_CC_USER, SY_CC_DBASE from " + strtrim(CommonDBGet()) + ".dbo.NKSYCCYR WHERE SY_CC_CODE = '" + companyCode + "'";
+try
+{
+    sqlResult = sqlQuery(sqlQueryString);
+}
+catch(exc)
+{
+    MessageBox("NKSYCCYR reading error: " + exc);
+    exit;
+}
+if (size(sqlResult) > 1)
+{
+    // imeFirme = sqlResult[1][0].trim(); // KAMEND
+    // ovagod_h = sqlResult[1][1].trim(); // 2022
+    SY_CC_USER = sqlResult[1][0].trim(); // KAMEND
+    databaseName = sqlResult[1][1].trim(); // puno ime baze
+}
+
+//MessageBox("SY_CC_USER is " + SY_CC_USER + "\ndatabaseName is " + databaseName);
 
 // Create window
 //CreateWindow(strTrim(tpath()) + "eizvjestavanje.xaml");
@@ -56,15 +116,15 @@ function wxeizvje_OnDisplay() {
     strYear = Substring(strCurrentDate, 0, 4);
     SetWidgetOptions("txtYear", "Text", strYear);
 
-//*******************************************************************************
-    Get_KPSY_COMP_NAME();
+    //*******************************************************************************
+    Get_KPSY_COMP_NAME();//Company name
     Get_KPSY_REZERVA();//OIB
+ 
+    //MessageBox("KPSY_COMP_NAME is " + KPSY_COMP_NAME + "*");    //ok je -> NE TREBA TRIMAT
+    //MessageBox("KPSY_REZERVA is " + KPSY_REZERVA  + "*");//OIB  //ok je -> NE TREBA TRIMAT
 
     // Load provider configuration
     LoadProviderConfiguration();
-
-    //MessageBox("KPSY_COMP_NAME is " + KPSY_COMP_NAME + "*");    //ok je -> NE TREBA TRIMAT
-    //MessageBox("KPSY_REZERVA is " + KPSY_REZERVA  + "*");//OIB  //ok je -> NE TREBA TRIMAT
 }
 
 // Prepare List
@@ -125,38 +185,29 @@ function btnPrepare@Clicked() {
 
 function btnTest@clicked() 
 {
-    //MessageBox("Test button clicked");
+    MessageBox("Test button clicked");
 
     /*
-    countOdabranih = 0;
-    for (i = 0; i < Size(racunodaberi_ar); i++) {
-        if (racunodaberi_ar[i] == true) {
-            countOdabranih++;
-        }
-    }
-    MessageBox("Broj odabranih računa: " + countOdabranih);
-    */
-    //MessageBox("UUID=" + UUID());
+    lines = readfile("D:\\XML\\EvidentirajIsporukuZaKojuNijeIzdanERacun.xml");
+    //lines = readfile("D:\\XML\\eIzvjestavanje_202512.xml");
+    Messagebox(lines);
+    s="";
+    for (i=0; i<size(lines); i++)
+    {
+	    line = lines[i];
+	    s += line + "\n";
+    } 
+    MessageBox(s);
 
-    //DateNow("yyyy-MM-dd'T'HH:mm:ss.0000")    
-    //MessageBox("DatumVrijeme() = " + DatumVrijeme());
-    //MessageBox("DateNow() = " + DateNow("yyyy-MM-dd'T'HH:mm:ss.0000") + "*");
-
-    /*
-    for (i = 0; i < 3; i++) {
-        MessageBox(i);
-        continue;//nastavlja sa slijedećom iteracijom for petlje
-        MessageBox("This will never be shown " + i);
-    }
-    */
-    /*
-    sss = FormatDate(DateTime(), "yyyyMM");
-    MessageBox("Formatted date is " + sss);
-
-    strnum = FormatNum(100.1234, 2, ".")
-    MessageBox("Formated number = " + strnum);
+    testxmlContent = s;
+    testfileName = "EvidentirajIsporukuZaKojuNijeIzdanERacun.xml";
+    //testfileName = "eIzvjestavanje_202512.xml";
+    ValidateEReportingXML(testxmlContent, testfileName) 
     */
 
+
+    
+    MessageBox("Kraj Test button");
 }
 
 
@@ -224,6 +275,7 @@ function btnSend@clicked() {
         xml += "    <eiz:Izdavatelj>\n";        
         xml += "      <eiz:ime>" + AntiXMLSpecialChars(StrTrim(KPSY_COMP_NAME)) + "</eiz:ime>\n";
         xml += "      <eiz:oibPorezniBroj>" + AntiXMLSpecialChars(StrTrim(Substring(KPSY_REZERVA, 0, 11))) + "</eiz:oibPorezniBroj>\n";
+        xml += "      <eiz:oibOperatera>" + AntiXMLSpecialChars(StrTrim('11122233344')) + "</eiz:oibOperatera>\n";
         xml += "    </eiz:Izdavatelj>\n";
 
         xml += "    <eiz:Primatelj>\n";
@@ -292,6 +344,7 @@ function btnSend@clicked() {
                 xml += "    <eiz:StavkaRacuna>\n";
                 xml += "      <eiz:kolicina>" + AntiXMLSpecialChars(FormatNum(line[1], 2, ".")) + "</eiz:kolicina>\n";
                 xml += "      <eiz:jedinicaMjere>" + AntiXMLSpecialChars(StrTrim(line[2])) + "</eiz:jedinicaMjere>\n";
+                xml += "      <eiz:neto>" + AntiXMLSpecialChars(FormatNum(100, 2, ".")) + "</eiz:neto>\n";
                 xml += "      <eiz:artiklNetoCijena>" + AntiXMLSpecialChars(FormatNum(line[3], 2, ".")) + "</eiz:artiklNetoCijena>\n";
                 xml += "      <eiz:artiklKategorijaPdv>" + AntiXMLSpecialChars(StrTrim(line[4])) + "</eiz:artiklKategorijaPdv>\n";
                 xml += "      <eiz:artiklStopaPdv>" + AntiXMLSpecialChars(FormatNum(line[5], 2, ".")) + "</eiz:artiklStopaPdv>\n";
@@ -315,7 +368,30 @@ function btnSend@clicked() {
     }
 
     // Signature placeholder (must be added via C# XAdES)
-    xml += "  <xd:Signature><xd:SignedInfo>...</xd:SignedInfo><xd:SignatureValue>...</xd:SignatureValue></xd:Signature>\n";
+    //xml += "  <xd:Signature><xd:SignedInfo>...</xd:SignedInfo><xd:SignatureValue>...</xd:SignatureValue></xd:Signature>\n";
+    
+    xml += "  <xd:Signature>\n";
+    xml += "    <xd:SignedInfo>\n";
+    xml += "      <xd:CanonicalizationMethod Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\"/>\n";
+    xml += "      <xd:SignatureMethod Algorithm=\"http://www.w3.org/2001/04/xmldsig-more#rsa-sha256\"/>\n";
+    xml += "      <xd:Reference URI=\"#unique-request-id-12345\">\n";
+    xml += "        <xd:Transforms>\n";
+    xml += "          <xd:Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#enveloped-signature\"/>\n";
+    xml += "          <xd:Transform Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\"/>\n";
+    xml += "        </xd:Transforms>\n";    
+    xml += "        <xd:DigestMethod Algorithm=\"http://www.w3.org/2001/04/xmlenc#sha256\"/>\n";
+    xml += "        <xd:DigestValue></xd:DigestValue>\n";
+    xml += "      </xd:Reference>\n";    
+    xml += "    </xd:SignedInfo>\n";
+    xml += "    <xd:SignatureValue></xd:SignatureValue>\n";
+    xml += "    <xd:KeyInfo>\n";
+	xml += "      <xd:X509Data>\n";
+	xml += "        <xd:X509Certificate>\n";
+    xml += "        </xd:X509Certificate>\n";
+	xml += "      </xd:X509Data>\n";
+	xml += "    </xd:KeyInfo>\n";
+    xml += "  </xd:Signature>\n";
+
     xml += "</eiz:EvidentirajIsporukuZaKojuNijeIzdanERacunZahtjev>";
 
     //fileName = "eIzvjestavanje_" + FormatDate(Now(), "yyyyMM") + ".xml";
@@ -334,8 +410,10 @@ function btnSend@clicked() {
     
     MessageBox("XML generiran i validiran: " + fileName + "\nBroj računa: " + updatedCount + "\n\nPošalji izvještaj preko " + PROVIDER + "?");
 
+
+
     // Send eReporting XML via configured provider
-    SendEReporting(xml, xmlFilePath, fileName);
+    //SendEReporting(xml, xmlFilePath, fileName);
 
     cursor("dflt");
 }
@@ -355,25 +433,6 @@ function btnExit@clicked() {
 - Ready for **XAdES signing** and **SOAP send**
 */
 
-
-
-
-//DALIBOR DODAO FUNKCIJU UUID()  -> To je za izbrisati kasnije
-function UUID() 
-{
-    return "771566f6-6305-4ff1-8836-a041ba6a7f7a";
-/*    
-    return "eddb1be9-7980-4020-957e-4384d00bc5b2";
-    return "a3f1c9e2-5d6b-4c3e-9f2a-1b2c3d4e5f60";
-    return "123e4567-e89b-12d3-a456-426614174000";
-    return "550e8400-e29b-41d4-a716-446655440000";
-    return "f47ac10b-58cc-4372-a567-0e02b2c3d479";
-    return "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
-    return "16fd2706-8baf-433b-82eb-8c7fada847da";
-    return "458f1cf4-cd53-4158-a9dc-4ed5be26fa47";
-    return "3010db1b-af79-4217-ba3b-5196b923688b";
-*/
-}
   
 //RETURNS CURRENT DATE-TIME IN FORMAT "yyyy-MM-ddTHH:mm:ss.0000"
 function DateNow(format)
@@ -407,9 +466,9 @@ function DateNow(format)
 
 function Get_KPSY_COMP_NAME()
 {
-    trenutnaGodinaBaza = databaseName; //npr. C__DATAX_2024__BY4
+    //trenutnaGodinaBaza = databaseName; //npr. C__DATAX_2024__BY4
 
-    sqlQueryString = " SELECT TOP 1 kpsy_comp_name FROM " + trenutnaGodinaBaza + ".[dbo].[KPSYMSTR]";
+    sqlQueryString = " SELECT TOP 1 kpsy_comp_name FROM " + databaseName + ".dbo.KPSYMSTR";
 	try	
     {
 		sqlResult = sqlQuery(sqlQueryString);
@@ -432,9 +491,9 @@ function Get_KPSY_COMP_NAME()
 
 function Get_KPSY_REZERVA()
 {
-    trenutnaGodinaBaza = databaseName; //npr. C__DATAX_2024__BY4
+    //trenutnaGodinaBaza = databaseName; //npr. C__DATAX_2024__BY4
 
-    sqlQueryString = " SELECT TOP 1 kpsy_rezerva FROM " + trenutnaGodinaBaza + ".[dbo].[KPSYMSTR]";
+    sqlQueryString = " SELECT TOP 1 kpsy_rezerva FROM " + databaseName + ".dbo.KPSYMSTR";
 	try	
     {
 		sqlResult = sqlQuery(sqlQueryString);
@@ -502,8 +561,13 @@ function ValidateEReportingXML(xmlContent, fileName) {
         // -----------------------------------------------------------
         xsdFiles = {};
         // eIzvještavanje uses specific Croatian schema
-        xsdFiles.Add(SCHEMASPATH + "xsd\\eIzvjestavanje\\EvidentirajIsporukuZaKojuNijeIzdanERacunZahtjev.xsd");
+        //xsdFiles.Add(SCHEMASPATH + "xsd\\eIzvjestavanje\\EvidentirajIsporukuZaKojuNijeIzdanERacunZahtjev.xsd");//ORIGINAL
+        xsdFiles.Add(SCHEMASPATH + "xsd\\eIzvjestavanje\\eIzvjestavanjeSchema.xsd");//JA PREINAČIO NAZIV DATOTEKE
         
+        //DALIBOR DODAO 2 linije
+        // Add W3C XML-Dsig schema so xd:Signature is declared
+        //xsdFiles.Add(SCHEMASPATH + "xsd\\eIzvjestavanje\\xmldsig-core-schema.xsd");
+
         if (!ValidateXsd(xmlContent, xsdFiles, xsdValidationResultOutputFile)) {
             MessageBox("eIzvještavanje XML FAILED XSD validation\n\nSee " + xsdValidationResultOutputFile + " file for details.");
             return false;
@@ -581,6 +645,16 @@ function LoadProviderConfiguration() {
     } catch(exc) {
         MessageBox("NKSYERAC reading error: " + exc);
     }
+    /*
+    MessageBox("ERAC_REZ1: " + ERAC_REZ1 + 
+             "\nERAC_SERVER: " + ERAC_SERVER + 
+             "\nERAC_SERVERT: " + ERAC_SERVERT + 
+             "\nERAC_USER: " + ERAC_USER + 
+             "\nERAC_PASS: " + ERAC_PASS + 
+             "\nERAC_USERT: " + ERAC_USERT +
+             "\nERAC_PASST: " + ERAC_PASST +
+             "\nERAC_DESC: " + ERAC_DESC);
+    */
 }
 
 
@@ -626,7 +700,7 @@ function SendEReportingToMER(xmlContent, fileName) {
 
         // Escape XML for JSON
         escapedXml = StrReplace(xmlContent, "\n", " ");
-        escapedXml = EscapeQuotesInXml(xmlContent);
+        escapedXml = EscapeXml(xmlContent);
         
         // Prepare JSON payload for MER API
         jsonLoad = '{"Username": "' + ERAC_USER + '", "Password": "' + ERAC_PASS + '", "CompanyId": "' + Substring(KPSY_REZERVA, 0, 11) + '", "SoftwareId": "' + ERAC_DESC + '", "File": "' + escapedXml + '", "ReportType": "eIzvjestavanje"}';
@@ -849,9 +923,20 @@ function LogEReportingResponse(provider, responseCode, response, fileName) {
 }
 
 // Helper function for XML escaping in JSON
+/* ORIGINAL
 function EscapeQuotesInXml(xmlContent) {
     escaped = StrReplace(xmlContent, "\\", "\\\\");
     escaped = StrReplace(escaped, "\"", "\\\"");
+    escaped = StrReplace(escaped, "\r", " ");
+    escaped = StrReplace(escaped, "\n", " ");
+    escaped = StrReplace(escaped, "\t", " ");
+    return escaped;
+}
+*/
+
+function EscapeXml(xmlContent) {
+    escaped = StrReplace(xmlContent, "\\", "\\\\");
+    escaped = EscapeQuotesInXml(escaped);
     escaped = StrReplace(escaped, "\r", " ");
     escaped = StrReplace(escaped, "\n", " ");
     escaped = StrReplace(escaped, "\t", " ");

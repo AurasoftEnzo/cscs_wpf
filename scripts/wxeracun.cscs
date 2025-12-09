@@ -454,7 +454,7 @@ function GenerateUBLXml() {
         row = taxRes[i];
         PKFK_TAX_P_PORZ = row[6].trim;
         PKFK_TAX_OBJED = row[3].trim();
-        if (PKFK_TAX_OBJED != "PDV") // stopa poreza je 0
+        if (PKFK_TAX_OBJED == "POVNAK" || PKFK_TAX_OBJED == "PP") // izvan PDV-a, stopa poreza je 0
         {
             TotaltaxOutOfScopeAmt += row[1];
         }else{
@@ -822,6 +822,7 @@ function GenerateUBLXml() {
     xml += "            <hrextac:HRLegalMonetaryTotal>\n";
     xml += "              <cbc:TaxExclusiveAmount currencyID=\"EUR\">" + FormatNum(TotalOSNOVICA, 2, ".") + "</cbc:TaxExclusiveAmount>\n";
     xml += "              <hrextac:OutOfScopeOfVATAmount currencyID=\"EUR\">" + FormatNum(TotaltaxOutOfScopeAmt, 2, ".") + "</hrextac:OutOfScopeOfVATAmount>\n"; //HR-BT-24 1..1
+    //xml += "              <hrextac:OutOfScopeOfVATAmount currencyID=\"EUR\">" + 0.00 + "</hrextac:OutOfScopeOfVATAmount>\n"; //HR-BT-24 1..1
     xml += "            </hrextac:HRLegalMonetaryTotal>\n";
     xml += "        </hrextac:HRFISK20Data>\n";
 

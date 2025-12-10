@@ -119,12 +119,12 @@ function wxeizvje_OnDisplay() {
     //*******************************************************************************
     Get_KPSY_COMP_NAME();//Company name
     Get_KPSY_REZERVA();//OIB
- 
     //MessageBox("KPSY_COMP_NAME is " + KPSY_COMP_NAME + "*");    //ok je -> NE TREBA TRIMAT
     //MessageBox("KPSY_REZERVA is " + KPSY_REZERVA  + "*");//OIB  //ok je -> NE TREBA TRIMAT
 
     // Load provider configuration
     LoadProviderConfiguration();
+    //MessageBox("Provider: " + PROVIDER + "\nSchemas path: " + SCHEMASPATH);
 }
 
 // Prepare List
@@ -205,9 +205,20 @@ function btnTest@clicked()
     ValidateEReportingXML(testxmlContent, testfileName) 
     */
 
+    lines = readfile("D:\\XML\\eIzvjestavanje_202512_kopija.xml");
+    // Messagebox(lines);
+    s="";
+    for (i=0; i<size(lines); i++)
+    {
+	    line = lines[i];
+	    s += line + "\n";
+    } 
+    // MessageBox(s);
 
-    
-    MessageBox("Kraj Test button");
+    // rezultat = NixxonSignXml(s, "C:\\WinX\\ERAC\\certifikati\\p12_aurasoft_demo.p12", "Aurasoft1");
+    SaveFile(rezultat, "D:\\XML\\eIzvjestavanje_202512_kopija_signed.xml");
+
+    // MessageBox("Kraj Test button");
 }
 
 
@@ -370,28 +381,35 @@ function btnSend@clicked() {
     // Signature placeholder (must be added via C# XAdES)
     //xml += "  <xd:Signature><xd:SignedInfo>...</xd:SignedInfo><xd:SignatureValue>...</xd:SignatureValue></xd:Signature>\n";
     
-    xml += "  <xd:Signature>\n";
-    xml += "    <xd:SignedInfo>\n";
-    xml += "      <xd:CanonicalizationMethod Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\"/>\n";
-    xml += "      <xd:SignatureMethod Algorithm=\"http://www.w3.org/2001/04/xmldsig-more#rsa-sha256\"/>\n";
-    xml += "      <xd:Reference URI=\"#unique-request-id-12345\">\n";
-    xml += "        <xd:Transforms>\n";
-    xml += "          <xd:Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#enveloped-signature\"/>\n";
-    xml += "          <xd:Transform Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\"/>\n";
-    xml += "        </xd:Transforms>\n";    
-    xml += "        <xd:DigestMethod Algorithm=\"http://www.w3.org/2001/04/xmlenc#sha256\"/>\n";
-    xml += "        <xd:DigestValue></xd:DigestValue>\n";
-    xml += "      </xd:Reference>\n";    
-    xml += "    </xd:SignedInfo>\n";
-    xml += "    <xd:SignatureValue></xd:SignatureValue>\n";
-    xml += "    <xd:KeyInfo>\n";
-	xml += "      <xd:X509Data>\n";
-	xml += "        <xd:X509Certificate>\n";
-    xml += "        </xd:X509Certificate>\n";
-	xml += "      </xd:X509Data>\n";
-	xml += "    </xd:KeyInfo>\n";
-    xml += "  </xd:Signature>\n";
+    
+/*  if ((PROVIDER == "MERDEMO") || (PROVIDER == "MER"))
+    {
 
+    }
+    else
+    { */
+        xml += "  <xd:Signature>\n";
+        xml += "    <xd:SignedInfo>\n";
+        xml += "      <xd:CanonicalizationMethod Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\"/>\n";
+        xml += "      <xd:SignatureMethod Algorithm=\"http://www.w3.org/2001/04/xmldsig-more#rsa-sha256\"/>\n";
+        //xml += "      <xd:Reference URI=\"#unique-request-id-12345\">\n";
+        xml += "      <xd:Reference URI=\"#" + requestId + "\">\n";        
+        xml += "        <xd:Transforms>\n";
+        xml += "          <xd:Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#enveloped-signature\"/>\n";
+        xml += "          <xd:Transform Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\"/>\n";
+        xml += "        </xd:Transforms>\n";    
+        xml += "        <xd:DigestMethod Algorithm=\"http://www.w3.org/2001/04/xmlenc#sha256\"/>\n";
+        xml += "        <xd:DigestValue></xd:DigestValue>\n";
+        xml += "      </xd:Reference>\n";    
+        xml += "    </xd:SignedInfo>\n";
+        xml += "    <xd:SignatureValue></xd:SignatureValue>\n";
+        xml += "    <xd:KeyInfo>\n";
+	    xml += "      <xd:X509Data>\n";
+	    xml += "        <xd:X509Certificate></xd:X509Certificate>\n";
+	    xml += "      </xd:X509Data>\n";
+	    xml += "    </xd:KeyInfo>\n";
+        xml += "  </xd:Signature>\n";
+    //}
     xml += "</eiz:EvidentirajIsporukuZaKojuNijeIzdanERacunZahtjev>";
 
     //fileName = "eIzvjestavanje_" + FormatDate(Now(), "yyyyMM") + ".xml";
@@ -403,17 +421,19 @@ function btnSend@clicked() {
     // -----------------------------------------------------------
     // XML VALIDATION
     // -----------------------------------------------------------
+    
     if (!ValidateEReportingXML(xml, fileName)) {
         cursor("dflt");
         return;
     }
     
+
     MessageBox("XML generiran i validiran: " + fileName + "\nBroj računa: " + updatedCount + "\n\nPošalji izvještaj preko " + PROVIDER + "?");
 
 
 
     // Send eReporting XML via configured provider
-    //SendEReporting(xml, xmlFilePath, fileName);
+    SendEReporting(xml, xmlFilePath, fileName);
 
     cursor("dflt");
 }
@@ -573,17 +593,19 @@ function ValidateEReportingXML(xmlContent, fileName) {
             return false;
         }
 
+        /*
         // -----------------------------------------------------------
         // SCH VALIDATION (Schematron)
         // -----------------------------------------------------------
         schFiles = {};
         // Croatian eReporting schematron validation
-        schFiles.Add(SCHEMASPATH + "schematron\\HR-eIzvjestavanje.sch");
+        //schFiles.Add(SCHEMASPATH + "schematron\\HR-eIzvjestavanje.sch");        
         
         if (!ValidateSch(xmlContent, schFiles, SCHEMASPATH + "schematron\\transpile.xsl", schValidationResultOutputFile)) {
             MessageBox("eIzvještavanje XML FAILED SCH validation\n\nSee " + schValidationResultOutputFile + " file for details.");
             return false;
         }
+        */
 
         // If we get here, validation passed
         return true;
@@ -693,6 +715,7 @@ function SendEReporting(xmlContent, xmlFilePath, fileName) {
 function SendEReportingToMER(xmlContent, fileName) {
     try {
         endpoint = (PROVIDER == "MERDEMO") ? ERAC_SERVERT : ERAC_SERVER;
+        //MessageBox("MER endpoint: " + endpoint + "*");
         if (endpoint == "") {
             MessageBox("MER endpoint nije konfiguriran u NKSYERAC.");
             return;
@@ -700,23 +723,31 @@ function SendEReportingToMER(xmlContent, fileName) {
 
         // Escape XML for JSON
         escapedXml = StrReplace(xmlContent, "\n", " ");
-        escapedXml = EscapeXml(xmlContent);
+        escapedXml = EscapeQuotesInXml(xmlContent);
         
         // Prepare JSON payload for MER API
-        jsonLoad = '{"Username": "' + ERAC_USER + '", "Password": "' + ERAC_PASS + '", "CompanyId": "' + Substring(KPSY_REZERVA, 0, 11) + '", "SoftwareId": "' + ERAC_DESC + '", "File": "' + escapedXml + '", "ReportType": "eIzvjestavanje"}';
+        //jsonLoad = '{"Username": "' + ERAC_USER + '", "Password": "' + ERAC_PASS + '", "CompanyId": "' + Substring(KPSY_REZERVA, 0, 11) + '", "SoftwareId": "' + ERAC_DESC + '", "File": "' + escapedXml + '"}';
+        jsonLoad = '{"username": "' + ERAC_USER + '", "password": "' + ERAC_PASS + '", "companyId": "' + Substring(KPSY_REZERVA, 0, 11) + '", "softwareId": "' + ERAC_DESC + '", "file": "' + escapedXml + '"}';
+        //MessageBox("MER JSON Payload: " + jsonLoad);
 
-        webRequestResult = WebRequest(
-            "POST", 
-            endpoint + "ereporting", 
-            jsonLoad, 
-            fileName,
-            "MERReportingSuccess", 
-            "MERReportingFailure", 
-            "application/json", 
-            null, 
-            1000 * 30, 
-            false
-        );
+        for(i = 0; i < 10; i++){
+                webRequestResult = WebRequest(
+                "POST", 
+                /* endpoint + "ereporting", */ 
+                //"https://demo.moj-eracun.hr/api/fiscalization/eReporting",
+                endpoint + "/api/fiscalization/eReporting",
+
+                jsonLoad, 
+                fileName,
+                "MERReportingSuccess", 
+                "MERReportingFailure", 
+                "application/json", 
+                null, 
+                1000 * 30, 
+                false
+            );
+            msg("ok");
+        }
     } catch (ex) {
         MessageBox("Greška pri slanju na MER eIzvještavanje: " + ex);
     }

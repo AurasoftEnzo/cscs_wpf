@@ -647,7 +647,7 @@ function GenerateUBLXml() {
             xml += "                        </hrextac:HRTaxScheme>\n";
             xml += "                    </hrextac:HRTaxCategory>\n";
         }
-        elif (SUBSTRING(PKFK_TAX_TARIFA,1,3) == 'PDV'){
+        elif (SUBSTRING(PKFK_TAX_TARIFA,0,3) == 'PDV'){
             taxName = "HR:" + PKFK_TAX_TARIFA; //+ FormatNum(NKPR_LN_PRNPR, 0, ".");
             taxSchemeID = "VAT";
             xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
@@ -1100,7 +1100,7 @@ x        if (Size(picRes) >= 2 && Exists(SY_SL_PATH)) {
      // -----------------------------------------------------------
      // Check if any delivery location information is present
      if (NKPR_GL_SHPCOD != "" || NKPR_GL_SHPNME != "" || NKPR_GL_SHPRO != "") {
-messageBox("Ulazi u delivery");        
+
          xml += "<cac:Delivery>\n";
          xml += "  <cac:DeliveryLocation>\n";
      
@@ -1302,13 +1302,13 @@ messageBox("Ulazi u delivery");
             xml += "                        </cac:TaxScheme>\n";
             xml += "                    </cac:TaxCategory>\n";
         }
-        elif (SUBSTRING(PKFK_TAX_TARIFA,1,3) == 'PDV'){
+        elif (SUBSTRING(PKFK_TAX_TARIFA, 0, 3) == 'PDV'){
             taxName = "HR:" + PKFK_TAX_TARIFA; //+ FormatNum(NKPR_LN_PRNPR, 0, ".");
             taxSchemeID = "VAT";
             xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
             xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
             xml += "                    <cac:TaxCategory>\n";
-            xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
+            xml += "                        <cbc:ID>S</cbc:ID>\n";
             xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
             xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
             xml += "                        <cac:TaxScheme>\n";
@@ -1614,7 +1614,7 @@ messageBox("Ulazi u delivery");
             PKFK_TAX_TARIFA = taxcRes[1][0].trim();
             PKFK_TAX_P_PORZ = Substring(taxcRes[1][1], 0, 2).trim();
         }
-        if(SUBSTRING(PKFK_TAX_TARIFA,1,3) == "PDV") {
+        if(SUBSTRING(PKFK_TAX_TARIFA, 0, 3) == "PDV") {
             PKFK_TAX_TARIFA = "S";
             //taxName = "HR:PDV" + FormatNum(NKPR_LN_PRNPR, 0, ".");
         }
@@ -1896,9 +1896,9 @@ function SendERacun(){
         escapedXml = StrReplace(xml, "\n", " ");
         escapedXml = EscapeQuotesInXml(xml);
         
-        jsonLoad = '{"Username": "' + ERAC_USER + '", "Password": "' + ERAC_PASS + '", "CompanyId": "' + supOIB + '"'/*uzet iz KPSYMSTR*/+', "SoftwareId": "' + ERAC_DESC + '", "File": "' + escapedXml + '"}';
+        jsonLoad = '{"Username": "' + ERAC_USER + '", "Password": "' + ERAC_PASS + '", "CompanyId": "' + supOIB + '"'/*uzet iz KPSYMSTR*/ + ', "SoftwareId": "' + ERAC_DESC + '", "File": "' + escapedXml + '"}';
 
-        webRequestResult = WebRequest("POST", ERAC_SERVER + "send", jsonLoad, invNum,
+        webRequestResult = WebRequest("POST", ERAC_SERVER + "apis/v2/send", jsonLoad, invNum,
                     "MERSuccess", "MERFailure", "application/json", null, 1000 * 20, false);
 
         // MSG("webRequestResult = " + webRequestResult); // !!! cijeli Json

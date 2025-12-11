@@ -1,4 +1,111 @@
-﻿// -----------------------------------------------------------
+﻿//----------------------------------------
+
+jsonString = '[{"Name":"Invoice1.xml","Content":"<Invoice>...</Invoice>"},{"Name":"Invoice2.xml","Content":"<Invoice>...</Invoice>"}]';
+jsonVar = GetVariableFromJSON(jsonString);
+msg("1.:\n" + jsonVar); // expected: [["Name" : "Invoice1.xml", "Content" : "<Invoice>...</Invoice"], ["Name" : "Invoice2.xml", "Content" : "<Invoice>...</Invoice"]]
+                    // actual: ["Name" : "Invoice2.xml", "Invoice1.xml"]
+
+//----------------------------------------
+
+dict1 = {};
+dict1["Name"] = "Invoice1.xml";
+dict1["Content"] = "<Invoice>...</Invoice>";
+
+dict2 = {};
+dict2["Name"] = "Invoice2.xml";
+dict2["Content"] = "<Invoice>...</Invoice>";
+
+array = {};
+array.Add(dict1);
+array.Add(dict2);
+
+msg("2.:\n" + array); // here it's ok
+            // expected and actual: [["Name" : "Invoice1.xml", "Content" : "<Invoice>...</Invoice"], ["Name" : "Invoice2.xml", "Content" : "<Invoice>...</Invoice"]]
+
+//----------------------------------------
+
+dictinaryArray = {{"val" : 1}, {"val" : 2}};
+Msg("3.:\n" + dictinaryArray); // expected: [["val" : 1], ["val" : 2]]
+                    // actual: [[["val" : 1]], [["val" : 2]]]
+
+//----------------------------------------
+
+dict1 = {"val" : 1};
+dict2 = {"val" : 2};
+dictinaryArray = {dict1, dict2};
+Msg("4.:\n" + dictinaryArray); // expected: [["val" : 1], ["val" : 2]]
+                    // actual: ["val" : 2, 1]
+
+//----------------------------------------
+
+jsonString = '[{"Name":"Invoice1.xml","Content":"<Invoice>...</Invoice>"},{"Name":"Invoice2.xml","Content":"<Invoice>...</Invoice>"}]';
+jsonObject = {};
+jsonObject = DeserializeJson(jsonString);
+msg("5.:\n" + jsonObject); // expected: [["Name" : "Invoice1.xml", "Content" : "<Invoice>...</Invoice"], ["Name" : "Invoice2.xml", "Content" : "<Invoice>...</Invoice"]]
+                    // actual: ["Name" : "Invoice2.xml", "Invoice1.xml"]
+
+
+//----------------------------------------
+
+
+dict1 = {};
+dict1["Name"] = "Invoice1.xml";
+dict1["Content"] = "<Invoice>...</Invoice>";
+
+dict2 = {};
+dict2["Name"] = "Invoice2.xml";
+dict2["Content"] = "<Invoice>...</Invoice>";
+
+array = {};
+array.Add(dict1);
+array.Add(dict2);
+
+msg("6.:\n" + array); // here it's ok
+                    // expected and actual: [["Name" : "Invoice1.xml", "Content" : "<Invoice>...</Invoice"], ["Name" : "Invoice2.xml", "Content" : "<Invoice>...</Invoice"]]
+
+
+
+// this here also breaks the array structure
+array = array;
+msg("7.:\n" + array); // expected: [["Name" : "Invoice1.xml", "Content" : "<Invoice>...</Invoice"], ["Name" : "Invoice2.xml", "Content" : "<Invoice>...</Invoice"]]
+                    //actual: ["Name" : "Invoice2.xml", "Invoice1.xml"]
+
+
+// //----------------------------------------
+
+// this works fine because there is no assignment to another variable ( there's no "=" )
+msg("8.:\n" + DeserializeJson('[{"Name":"Invoice1.xml","Content":"<Invoice>...</Invoice>"},{"Name":"Invoice2.xml","Content":"<Invoice>...</Invoice>"}]'));
+
+
+// //----------------------------------------
+
+
+exit;
+
+
+
+
+
+
+
+
+
+
+
+// include(tpath() + "json.cscs");
+
+// jsonObject = String2JSON('[{"Name":"Invoice1.xml","Content":"<Invoice>...</Invoice>"},{"Name":"Invoice2.xml","Content":"<Invoice>...</Invoice>"}]');
+// msg(jsonObject);
+
+// exit;
+
+
+
+
+
+
+
+// -----------------------------------------------------------
 // WxEracunGet.cscs - UBL XML Invoice Import Program
 // -----------------------------------------------------------
 // Purpose: Import UBL XML invoices into database tables

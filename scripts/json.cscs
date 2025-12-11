@@ -1,0 +1,244 @@
+function String2JSON(string){
+    
+    json = StrTrim(string);
+    
+    if (json == "null") {
+        return null;
+    }
+    if (json == "true") {
+        return true;
+    }
+    if (json == "false") {
+        return false;
+    }
+    
+    // Handle string
+    if (StrStartsWith(json, '\"') && StrEndsWith(json, '\"')) {
+        str = Substring(json, 1, Length(json) - 2);
+        str = ReplaceInJSON(str);
+        // str = Replace(str, "\\\"", "\"");
+        // str = Replace(str, "\\\\", "\\");
+        // str = Replace(str, "\\n", "\n");
+        // str = Replace(str, "\\r", "\r");
+        // str = Replace(str, "\\t", "\t");
+        return str;
+    }
+
+
+    // try {
+    //     return IsDouble(json);
+    // } catch () {
+        
+    // }
+
+    // Handle number
+    if (IsDouble(json)) {
+        return double(json);
+    }
+    
+    // Handle array
+    if (StrStartsWith(json, "[") && StrEndsWith(json, "]")) {
+        return ParseJSONArray(json);
+    }
+    
+    // Handle object
+    if (StrStartsWith(json, "{") && StrEndsWith(json, "}")) {
+        return ParseJSONObject(json);
+    }
+    
+    return json;
+}
+
+function JSON2String(){
+
+}
+
+//-------------------------------------------------
+
+function ParseJSONArray(json) {
+    arrayVar = {};
+    
+    // Remove brackets
+    content = Substring(json, 1, json.length - 2);
+    content = Trim(content);
+    
+    if (content.length == 0) {
+        return arrayVar;
+    }
+    
+    elements = SplitJSONArray(content);
+    
+    for (i = 0; i < Size(elements); i++) {
+        element = Trim(elements[i]);
+        elementVar = String2JSON(element);
+        arrayVar[i] = elementVar;
+    }
+    
+    return arrayVar;
+}
+
+function ParseJSONObject(json) {
+    objectVar = {};
+    
+    // Remove braces
+    content = Substring(json, 1, json.length - 2);
+    content = Trim(content);
+    
+    if (content.length == 0) {
+        return objectVar;
+    }
+    
+    pairs = SplitJSONObject(content);
+    
+    for (i = 0; i < Size(pairs); i++) {
+        pair = Trim(pairs[i]);
+        colonIndex = FindColonIndex(pair);
+
+        if (colonIndex > 0) {
+            key = Substring(pair, 0, colonIndex);
+            key = Trim(key);
+            value = Substring(pair, colonIndex + 1);
+            value = Trim(value);
+            
+            // Remove quotes from key
+            if (StrStartsWith(key, "\"") && StrEndsWith(key, "\"")) {
+                key = Substring(key, 1, key.length - 2);
+            }
+            
+            valueVar = String2JSON(value);
+            objectVar[key] = valueVar;
+        }
+    }
+    
+    return objectVar;
+}
+
+function SplitJSONArray(content) {
+    elements = {};
+    elementIndex = 0;
+    bracketCount = 0;
+    braceCount = 0;
+    startIndex = 0;
+    inString = false;
+    escaped = false;
+    
+    for (i = 0; i < content.length; i++) {
+        c = Substring(content, i, 1);
+        
+        if (escaped) {
+            escaped = false;
+            continue;
+        }
+        
+        if (c == "\\" && inString) {
+            escaped = true;
+            continue;
+        }
+        
+        if (c == "\"") {
+            inString = !inString;
+        }
+        
+        if (!inString) {
+            if (c == "[") {
+                bracketCount++;
+            } else if (c == "]") {
+                bracketCount--;
+            } else if (c == "{") {
+                braceCount++;
+            } else if (c == "}") {
+                braceCount--;
+            } else if (c == "," && bracketCount == 0 && braceCount == 0) {
+                elements[elementIndex] = Substring(content, startIndex, i - startIndex);
+                elementIndex++;
+                startIndex = i + 1;
+            }
+        }
+    }
+    
+    if (startIndex < content.length) {
+        elements[elementIndex] = Substring(content, startIndex);
+    }
+    
+    return elements;
+}
+
+function SplitJSONObject(content) {
+    pairs = {};
+    pairIndex = 0;
+    bracketCount = 0;
+    braceCount = 0;
+    startIndex = 0;
+    inString = false;
+    escaped = false;
+    
+    for (i = 0; i < content.length; i++) {
+        c = Substring(content, i, 1);
+        
+        if (escaped) {
+            escaped = false;
+            continue;
+        }
+        
+        if (c == "\\" && inString) {
+            escaped = true;
+            continue;
+        }
+        
+        if (c == "\"") {
+            inString = !inString;
+        }
+        
+        if (!inString) {
+            if (c == "[") {
+                bracketCount++;
+            } else if (c == "]") {
+                bracketCount--;
+            } else if (c == "{") {
+                braceCount++;
+            } else if (c == "}") {
+                braceCount--;
+            } else if (c == "," && bracketCount == 0 && braceCount == 0) {
+                pairs[pairIndex] = Substring(content, startIndex, i - startIndex);
+                pairIndex++;
+                startIndex = i + 1;
+            }
+        }
+    }
+    
+    if (startIndex < content.length) {
+        pairs[pairIndex] = Substring(content, startIndex);
+    }
+    
+    return pairs;
+}
+
+
+// function FindColonIndex(pair) {
+//     inString = false;
+//     escaped = false;
+    
+//     for (i = 0; i < pair.length; i++) {
+//         c = Substring(pair, i, 1);
+        
+//         if (escaped) {
+//             escaped = false;
+//             continue;
+//         }
+        
+//         if (c == "\\" && inString) {
+//             escaped = true;
+//             continue;
+//         }
+        
+//         if (c == "\"") {
+//             inString = !inString;
+//         }
+        
+//         if (!inString && c == ":") {
+//             return i;
+//         }
+//     }
+    
+//     return -1;
+// }

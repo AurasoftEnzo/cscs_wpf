@@ -4,6 +4,7 @@ using DevExpress.XtraRichEdit.Import.Doc;
 using LiveChartsCore.SkiaSharpView.Painting;
 using MapControl;
 using NixxonERacun.Signing;
+using OfficeOpenXml.Drawing.Chart;
 using org.apache.xerces.xni;
 using Org.BouncyCastle.Tls;
 using Renci.SshNet;
@@ -106,6 +107,11 @@ namespace WpfCSCS
 
             interpreter.RegisterFunction(Constants.SignXml, new SignXmlFunction());
             interpreter.RegisterFunction("NixxonSignXml", new NixxonSignXmlFunction());
+
+            interpreter.RegisterFunction("ReplaceInJSON", new ReplaceInJSONFunction());
+            interpreter.RegisterFunction("IsDouble", new IsDoubleFunction());
+            interpreter.RegisterFunction("FindColonIndex", new FindColonIndexFunction());
+            
             
             
             
@@ -3524,6 +3530,83 @@ namespace WpfCSCS
             var signedXml = Encoding.ASCII.GetString(bajtoviPotpisanogRacuna);
 
             return new Variable(signedXml);
+        }
+    }
+    
+    
+    class ReplaceInJSONFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+
+            var json = Utils.GetSafeString(args, 0);
+
+            json = json.Replace("\\\"", "\"");
+            json = json.Replace("\\\\", "\\");
+            json = json.Replace("\\n", "\n");
+            json = json.Replace("\\r", "\r");
+            json = json.Replace("\\t", "\t");
+
+            return new Variable(json);
+        }
+    }
+    
+    
+    class IsDoubleFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+
+            var stringValue = Utils.GetSafeString(args, 0);
+
+            return new Variable(double.TryParse(stringValue, NumberStyles.Number, CultureInfo.InvariantCulture, out double result));
+        }
+    }
+    
+    class FindColonIndexFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+
+            var stringValue = Utils.GetSafeString(args, 0);
+
+            var inString = false;
+            var escaped = false;
+
+            for (int i = 0; i < stringValue.Length; i++)
+            {
+                var c = stringValue.Substring(i, 1);
+
+                if (escaped)
+                {
+                    escaped = false;
+                    continue;
+                }
+
+                if (c == "\\" && inString)
+                {
+                    escaped = true;
+                    continue;
+                }
+
+                if (c == "\"")
+                {
+                    inString = !inString;
+                }
+
+                if (!inString && c == ":")
+                {
+                    return new Variable(i);
+                }
+            }
+
+            return new Variable(-1);
         }
     }
 }

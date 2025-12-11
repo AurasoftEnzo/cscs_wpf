@@ -27,6 +27,11 @@ if(Size(args) > 1){
         MessageBox("Nedostaje putanja PDF privitka u argumentima.");
         exit;
     }
+    CopyInvoice = args[6]; // 'D' - duplicate, '' - original
+    if (CopyInvoice != ""){     
+    }else{
+        CopyInvoice = "";
+    }
 }else{
     MessageBox("Nedostaju argumenti komandne linije.");
     exit;
@@ -600,9 +605,8 @@ function GenerateUBLXml() {
             taxName = "HR:PP"; // + FormatNum(NKPR_LN_PRNPR, 0, ".");
             taxSchemeID = "LOC";
             taxOutOfScopeAmt = FormatNum(POREZ, 2, ".");
-            xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
-            //xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + 0 + "</cbc:TaxAmount>\n";
-            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + taxOutOfScopeAmt + "</cbc:TaxAmount>\n";
+            xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + taxOutOfScopeAmt + "</cbc:TaxableAmount>\n";
+            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + 0 + "</cbc:TaxAmount>\n";
             xml += "                    <hrextac:HRTaxCategory>\n";
             xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
             xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
@@ -756,7 +760,11 @@ function GenerateUBLXml() {
     invNumStr = String(NKPR_GL_NUM); // 
     invID = Substring(invNumStr, 3, 5) + "-" + Substring(invNumStr, 0, 2) + "-" + Substring(invNumStr, 2, 1);
     xml += "<cbc:ID>" + invID + "</cbc:ID>\n";
-    xml += "<cbc:CopyIndicator>false</cbc:CopyIndicator>\n"; // HR-BT-1; 0..1
+    if (<CopyIndicator == "D">) {
+        xml += "<cbc:CopyIndicator>true</cbc:CopyIndicator>\n"; // HR-BT-1; 0..1
+    } else {
+        xml += "<cbc:CopyIndicator>false</cbc:CopyIndicator>\n"; // HR-BT-1; 0..1
+    }
     xml += "<cbc:IssueDate>" + NKPR_GL_INVDTE + "</cbc:IssueDate>\n"; // BT-2; 1..1
     xml += "<cbc:IssueTime>" + NKPR_GL_TIMECR + "</cbc:IssueTime>\n"; // HR-BT-2; 1..1
 

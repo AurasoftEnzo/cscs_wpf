@@ -27,16 +27,15 @@ if(Size(args) > 1){
         MessageBox("Nedostaje putanja PDF privitka u argumentima.");
         exit;
     }
-    CopyInvoice = args[6]; // 'D' - duplicate, '' - original
-    if (CopyInvoice != ""){     
+    CopyIndicator = args[6]; // 'D' - duplicate, '' - original
+    if (CopyIndicator != ""){     
     }else{
-        CopyInvoice = "";
+        CopyIndicator = "";
     }
 }else{
     MessageBox("Nedostaju argumenti komandne linije.");
     exit;
 }   
-
 
 // NKSYCCYR
 sqlQueryString = "select SY_CC_USER, SY_CC_DBASE from " + strtrim(CommonDBGet()) + ".dbo.NKSYCCYR WHERE SY_CC_CODE = '" + companyCode + "'";
@@ -365,7 +364,6 @@ function GenerateUBLXml() {
     sqlParams.Add({"@p1", invNum});
     taxRes = sqlQuery(sql_tax, sqlParams);
 
-    
     totalPorez = 0;
     totalOsnovica = 0;
     TotaltaxOutOfScopeAmt = 0;
@@ -537,7 +535,6 @@ function GenerateUBLXml() {
             taxRes2.Add(row);
         }
     }
-    
     // -----------------------------------------------------------
     // 4. Start XML Builder
     // -----------------------------------------------------------
@@ -754,13 +751,12 @@ function GenerateUBLXml() {
     xml += "</ext:UBLExtensions>\n";
     xml += "<cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0#conformant#urn:mfin.gov.hr:ext-2025:1.0</cbc:CustomizationID>\n"; // BT-24; 1..1
     xml += "<cbc:ProfileID>" + profileID + "</cbc:ProfileID>\n"; // BT-23; 1..1
-
     // BT-1; Invoice number; 1..1
     // Invoice Number (8 digits: 90100002 -->> 00002-90-1)
     invNumStr = String(NKPR_GL_NUM); // 
     invID = Substring(invNumStr, 3, 5) + "-" + Substring(invNumStr, 0, 2) + "-" + Substring(invNumStr, 2, 1);
     xml += "<cbc:ID>" + invID + "</cbc:ID>\n";
-    if (<CopyIndicator == "D">) {
+    if (CopyIndicator == "D") {
         xml += "<cbc:CopyIndicator>true</cbc:CopyIndicator>\n"; // HR-BT-1; 0..1
     } else {
         xml += "<cbc:CopyIndicator>false</cbc:CopyIndicator>\n"; // HR-BT-1; 0..1
@@ -885,8 +881,6 @@ function GenerateUBLXml() {
         }
         xml += "<cbc:TaxCurrencyCode>EUR</cbc:TaxCurrencyCode>\n";
 
-
-
         // if (profileID != "P4") {
         //     ptDesc = "Rok plaćanja je " + NKPR_GL_NOKAM + " dana";
         //     if (NKPR_GL_ROKPL != 0) {
@@ -913,7 +907,7 @@ function GenerateUBLXml() {
         picRes = sqlQuery(sql_pic, sqlParams);
         SY_SL_PATH = picRes[1][0];
         SY_SL_OPIS = picRes[1][1];
-x        if (Size(picRes) >= 2 && Exists(SY_SL_PATH)) {
+        if (Size(picRes) >= 2 && Exists(SY_SL_PATH)) {
             mime = GetMimeType(SY_SL_PATH);
             b64 = File2Base64(SY_SL_PATH);
             xml += "<cac:AdditionalDocumentReference>\n";
@@ -1051,8 +1045,6 @@ x        if (Size(picRes) >= 2 && Exists(SY_SL_PATH)) {
     NKPR_GL_JMBG = "26389058739";
     // NKPR_GL_JMBG = "2631289058739";
 
-
-
     // Use GLN (0088 scheme) if available and valid (13 characters), otherwise use OIB (9934 scheme)
     cusSchemeID = "9934";
     cusEndpointID = NKPR_GL_JMBG;
@@ -1102,7 +1094,6 @@ x        if (Size(picRes) >= 2 && Exists(SY_SL_PATH)) {
     
     xml += "  </cac:Party>\n";
     xml += "</cac:AccountingCustomerParty>\n";
-
      // -----------------------------------------------------------
      // Delivery Location (if specified)
      // -----------------------------------------------------------
@@ -1202,7 +1193,6 @@ x        if (Size(picRes) >= 2 && Exists(SY_SL_PATH)) {
             payCode = string(code3);
         }
     }
-
     xml += "<cac:PaymentMeans>\n";
     xml += "  <cbc:PaymentMeansCode>" + payCode + "</cbc:PaymentMeansCode>\n";
     xml += "  <cbc:InstructionNote>" + KPKS_PL_OPIS + "</cbc:InstructionNote>\n";
@@ -1411,7 +1401,6 @@ x        if (Size(picRes) >= 2 && Exists(SY_SL_PATH)) {
     // if (rounding != 0) { xml += "  <cbc:PayableRoundingAmount currencyID=\"EUR\">" + FormatNum(rounding, 2, ".") + "</cbc:PayableRoundingAmount>\n"; }
     xml += "</cac:LegalMonetaryTotal>\n";
     
-
     // -----------------------------------------------------------
     // Invoice Lines
     // -----------------------------------------------------------
@@ -1656,7 +1645,6 @@ x        if (Size(picRes) >= 2 && Exists(SY_SL_PATH)) {
 
     }
 
-
     // Close root
     if (profileID == "P9") {
         xml += "</CreditNote>\n";
@@ -1713,8 +1701,6 @@ x        if (Size(picRes) >= 2 && Exists(SY_SL_PATH)) {
         MessageBox("xml FAILED XSD validation\n\nSee _XSD.err file for details.");
         return false;
     }
-
-
 
     // // signature
     // MessageBox(SignXml(xmlFileName, "C:\\temp\\cert\\p12_aurasoft_demo.p12", "Aurasoft1", SavePath + parsefile(attachmentPdfPath, "pfName") + "_signed.xml"));
@@ -1897,7 +1883,7 @@ function SendERacun(){
     ERAC_PASST = eracRes[1][6].trim(); // p12 certificate
     ERAC_DESC = eracRes[1][7].trim();
 
-
+MessageBox("Slanje eRačuna putem posrednika: " + PROVIDER + " (" + ERAC_PASST + ")");
 
     if(PROVIDER == "MER" || PROVIDER == "MERDEMO"){
         //koristimo M.E.R. način slanja
@@ -1909,7 +1895,7 @@ function SendERacun(){
         webRequestResult = WebRequest("POST", ERAC_SERVER + "apis/v2/send", jsonLoad, invNum,
                     "MERSuccess", "MERFailure", "application/json", null, 1000 * 20, false);
 
-        // MSG("webRequestResult = " + webRequestResult); // !!! cijeli Json
+         MSG("webRequestResult = " + webRequestResult); // !!! cijeli Json
     }
     elif(PROVIDER == "EPOS" || PROVIDER == "EPOSDEMO")
     {
@@ -2159,7 +2145,6 @@ function SendToEPOS() {
 function SendToFINA() {
     // Determine endpoint based on provider configuration
     endpoint = ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService/";
-
     if (endpoint == "") {
         MessageBox("Endpoint za FINA provider nije definiran u NKSYERAC.");
         return;
@@ -2186,7 +2171,6 @@ function SendToFINA() {
     xmlBody += "    </B2BOutgoingInvoiceEnvelope>\n";
     xmlBody += "  </Data>\n";
     xmlBody += "</fin:SendB2BOutgoingInvoiceMsg>";
-
     // 2. Define the SOAPAction (often empty for FINA services)
     soapAction = "";
 

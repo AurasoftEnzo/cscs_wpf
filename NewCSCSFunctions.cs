@@ -116,6 +116,8 @@ namespace WpfCSCS
             
             
             
+            interpreter.RegisterFunction("ReadAllText", new ReadAllTextFunction());
+
             interpreter.RegisterFunction("TestXmlDict", new TestXmlDictFunction());
         }
         public partial class Constants
@@ -3607,6 +3609,27 @@ namespace WpfCSCS
             }
 
             return new Variable(-1);
+        }
+    }
+    
+    
+    class ReadAllTextFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+
+            var filePath = Utils.GetSafeString(args, 0);
+
+            if (System.IO.File.Exists(filePath))
+            {
+                return new Variable(System.IO.File.ReadAllText(filePath));
+            }
+            else
+            {
+                throw new Exception("File not found: " + filePath);
+            }
         }
     }
 }

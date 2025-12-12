@@ -103,8 +103,12 @@ namespace SplitAndMerge
 
 			interpreter.RegisterFunction("MessageBox", new MessageBoxFunction());
 			interpreter.RegisterFunction("msg", new MessageBoxFunction());
+            //interpreter.RegisterFunction("MBox", new MBoxFunction());
+            //interpreter.RegisterFunction("MBoxTimer", new MBoxTimerFunction());
+            interpreter.RegisterFunction("MBox", new MBoxFunction());
+            
 
-			interpreter.RegisterFunction("SendToPrinter", new PrintFunction());
+            interpreter.RegisterFunction("SendToPrinter", new PrintFunction());
 
 			interpreter.RegisterFunction("AddMenuItem", new AddMenuEntryFunction(false));
 			interpreter.RegisterFunction("AddMenuSeparator", new AddMenuEntryFunction(true));
@@ -4346,7 +4350,508 @@ namespace WpfCSCS
 		}
 	}
 
-	public class YearFunction : ParserFunction
+    //****************************************************************************************************    
+    //****************************************************************************************************
+    //****************************************************************************************************
+    //****************************************************************************************************
+    public class MBoxFunction : ParserFunction
+    {
+        private static readonly Queue<MessageBoxRequest> _messageQueue = new Queue<MessageBoxRequest>();
+        private static bool _isShowingMessage = false;
+
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+
+            var message = Utils.GetSafeString(args, 0);
+            var caption = Utils.GetSafeString(args, 1, "Info");
+            var answerType = Utils.GetSafeString(args, 2, "ok").ToLower();
+            var messageType = Utils.GetSafeString(args, 3, "info").ToLower();
+            var duration = Utils.GetSafeDouble(args, 4, -1);
+            var titleBackgroundColor = Utils.GetSafeString(args, 5, ""); // 6th parameter
+
+            // Create a request and add it to the queue
+            var request = new MessageBoxRequest(message, caption, answerType,
+                                              messageType, duration, titleBackgroundColor);
+
+
+            string result;
+            if (request.Duration > 0)
+            {
+                result = ShowAutoCloseMessageBox(request.Message, request.Caption,
+                                               request.AnswerType, request.MessageType,
+                                               (int)request.Duration, request.TitleBackgroundColor);
+            }
+            else
+            {
+                result = ShowMessageBox(request.Message, request.Caption,
+                                      request.AnswerType, request.MessageType);
+            }
+
+
+            //// Run on UI thread
+            //Application.Current.Dispatcher.Invoke(() =>
+            //{
+            //    _messageQueue.Enqueue(request);
+            //    ProcessMessageQueue();
+            //});
+
+            // For synchronous behavior, we need to wait for the result
+            // This requires a more complex async/await pattern
+            return new Variable("Queued");
+        }
+
+        private static void ProcessMessageQueue()
+        {
+            if (_isShowingMessage || _messageQueue.Count == 0)
+                return;
+
+            _isShowingMessage = true;
+            var request = _messageQueue.Dequeue();
+
+            string result;
+            if (request.Duration > 0)
+            {
+                result = ShowAutoCloseMessageBox(request.Message, request.Caption,
+                                               request.AnswerType, request.MessageType,
+                                               (int)request.Duration, request.TitleBackgroundColor);
+            }
+            else
+            {
+                result = ShowMessageBox(request.Message, request.Caption,
+                                      request.AnswerType, request.MessageType);
+            }
+
+            // When done, process next message
+            _isShowingMessage = false;
+            ProcessMessageQueue();
+        }
+
+        public static string ShowMessageBox(string message, string caption = "Info",
+                                           string answerType = "ok", string messageType = "info")
+        {
+            MessageBoxButton buttons =
+                answerType == "ok" ? MessageBoxButton.OK :
+                answerType == "okcancel" ? MessageBoxButton.OKCancel :
+                answerType == "yesno" ? MessageBoxButton.YesNo :
+                answerType == "yesnocancel" ? MessageBoxButton.YesNoCancel : MessageBoxButton.OK;
+
+            MessageBoxImage icon =
+                messageType == "question" ? MessageBoxImage.Question :
+                messageType == "info" ? MessageBoxImage.Information :
+                messageType == "warning" ? MessageBoxImage.Warning :
+                messageType == "error" ? MessageBoxImage.Error :
+                messageType == "exclamation" ? MessageBoxImage.Exclamation :
+                messageType == "stop" ? MessageBoxImage.Stop :
+                messageType == "hand" ? MessageBoxImage.Hand :
+                messageType == "asterisk" ? MessageBoxImage.Asterisk :
+                            MessageBoxImage.None;
+            var result = MessageBox.Show(message, caption, buttons, icon);
+
+            var ret = result == MessageBoxResult.OK ? "OK" :
+                result == MessageBoxResult.Cancel ? "Cancel" :
+                result == MessageBoxResult.Yes ? "Yes" :
+                result == MessageBoxResult.No ? "No" : "None";
+
+            return ret;
+        }
+
+        public static string ShowAutoCloseMessageBox(string message, string caption = "Info",
+                                                   string answerType = "ok", string messageType = "info",
+                                                   int durationSeconds = 5, string titleBackgroundColor = "")
+        {
+            string result = "Timeout";
+
+
+
+            // Run on UI thread
+            CSCS_GUI.Dispatcher.Invoke(() =>
+			{
+				var dialog = new AutoCloseMessageBoxWindow(message, caption, answerType,
+                                                          messageType, durationSeconds, titleBackgroundColor);
+                dialog.ShowDialog();
+                result = dialog.Result;
+			});
+
+            return result;
+        }
+
+        private class MessageBoxRequest
+        {
+            public string Message { get; }
+            public string Caption { get; }
+            public string AnswerType { get; }
+            public string MessageType { get; }
+            public double Duration { get; }
+            public string TitleBackgroundColor { get; }
+
+            public MessageBoxRequest(string message, string caption,
+                                   string answerType, string messageType,
+                                   double duration, string titleBackgroundColor)
+            {
+                Message = message;
+                Caption = caption;
+                AnswerType = answerType;
+                MessageType = messageType;
+                Duration = duration;
+                TitleBackgroundColor = titleBackgroundColor;
+            }
+        }
+    }
+
+    // Custom window for auto-closing message box with title background color
+    public class AutoCloseMessageBoxWindow : Window
+    {
+        private DispatcherTimer _timer;
+        private int _remainingSeconds;
+        private Label _timerLabel;
+        private Button _okButton, _cancelButton, _yesButton, _noButton;
+        private string _result;
+        private Grid _buttonGrid;
+        private Border _titleBar;
+        private TextBlock _titleText;
+
+        public string Result => _result;
+
+        public AutoCloseMessageBoxWindow(string message, string caption,
+                                        string answerType, string messageType,
+                                        int durationSeconds, string titleBackgroundColor = "")
+        {
+            _remainingSeconds = durationSeconds;
+            _result = "Timeout";
+
+            // Window setup
+            Title = caption;
+            Width = 400;
+            Height = 280; // Increased height to accommodate title bar
+            WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            ResizeMode = ResizeMode.NoResize;            
+            WindowStyle = WindowStyle.None; // Remove default window style for custom title bar
+            AllowsTransparency = false;
+            Topmost = true;
+
+            // Create main grid
+            var mainGrid = new Grid();
+            mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // Title bar
+            mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) }); // Message
+            mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // Timer
+            mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // Buttons
+
+            // Create custom title bar
+            CreateTitleBar(caption, titleBackgroundColor);
+            Grid.SetRow(_titleBar, 0);
+            mainGrid.Children.Add(_titleBar);
+
+            // Message text
+            var textBlock = new TextBlock
+            {
+                Text = message,
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(20),
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                FontSize = 14
+            };
+            Grid.SetRow(textBlock, 1);
+            mainGrid.Children.Add(textBlock);
+
+            // Timer label
+            _timerLabel = new Label
+            {
+                Content = $"Closing in {_remainingSeconds} seconds...",
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(0, 10, 0, 0),
+                Foreground = Brushes.Gray,
+                FontSize = 12
+            };
+            Grid.SetRow(_timerLabel, 2);
+            mainGrid.Children.Add(_timerLabel);
+
+            // Button grid
+            _buttonGrid = new Grid
+            {
+                Margin = new Thickness(10),
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+
+            // Add columns based on answer type
+            SetupButtons(answerType);
+
+            Grid.SetRow(_buttonGrid, 3);
+            mainGrid.Children.Add(_buttonGrid);
+
+            //DALIBOR
+            //Content = mainGrid;
+
+            ////*************************************************
+            ////Set window border
+            //Border border = new Border
+            //{
+            //	BorderBrush = Brushes.Gray,
+            //	BorderThickness = new Thickness(1),
+            //	Child = mainGrid
+            //};
+
+            //Content = border;
+            //*************************************************
+            Content = WrapWithBorder(mainGrid, Brushes.Gray, new Thickness(1));
+
+            //*************************************************
+            // Setup and start timer
+            SetupTimer();
+
+			//Loaded += (s, e) =>
+			//{
+   //             _timer = new DispatcherTimer
+   //             {
+   //                 Interval = TimeSpan.FromSeconds(durationSeconds)
+   //             };
+   //             _timer.Tick += (sender, args) =>
+   //             {
+   //                 //_timer.Stop();
+   //                 //this.Close();  // closes the modal window
+
+   //                 _remainingSeconds--;
+   //                 _timerLabel.Content = $"Closing in {_remainingSeconds} seconds...";
+
+   //                 if (_remainingSeconds <= 0)
+   //                 {
+   //                     _timer.Stop();
+   //                     DialogResult = true;
+   //                     Close();
+   //                 }
+   //             };
+   //             _timer.Start();
+   //         };
+        }
+
+        private void CreateTitleBar(string caption, string backgroundColor)
+        {
+            _titleBar = new Border
+            {
+                Height = 30,
+                Background = ParseColor(backgroundColor),
+                BorderBrush = Brushes.LightGray,
+                BorderThickness = new Thickness(0, 0, 0, 1)
+            };
+
+            var titleGrid = new Grid();
+            titleGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            titleGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            // Title text
+            _titleText = new TextBlock
+            {
+                Text = caption,
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Margin = new Thickness(10, 0, 0, 0),
+                FontWeight = FontWeights.Bold,
+                Foreground = GetContrastColor(_titleBar.Background as SolidColorBrush)
+            };
+            Grid.SetColumn(_titleText, 0);
+            titleGrid.Children.Add(_titleText);
+
+            // Close button
+            var closeButton = new Button
+            {
+                Content = "✕",
+                Width = 30,
+                Height = 30,
+                Background = Brushes.Transparent,
+                BorderBrush = Brushes.Transparent,
+                Foreground = Brushes.Gray,
+                FontWeight = FontWeights.Bold,
+                FontSize = 14,
+                Margin = new Thickness(0),
+                Padding = new Thickness(0)
+            };
+
+            closeButton.Click += (s, e) =>
+            {
+                _result = "Close";
+                DialogResult = false;
+                Close();
+            };
+
+            closeButton.MouseEnter += (s, e) =>
+            {
+                closeButton.Background = Brushes.LightGray;
+            };
+
+            closeButton.MouseLeave += (s, e) =>
+            {
+                closeButton.Background = Brushes.Transparent;
+            };
+
+            Grid.SetColumn(closeButton, 1);
+            titleGrid.Children.Add(closeButton);
+
+            // Make title bar draggable
+            _titleBar.MouseDown += (s, e) =>
+            {
+                if (e.ChangedButton == System.Windows.Input.MouseButton.Left)
+                {
+                    DragMove();
+                }
+            };
+
+            _titleBar.Child = titleGrid;
+        }
+
+        private Brush ParseColor(string colorString)
+        {
+            if (string.IsNullOrWhiteSpace(colorString))
+            {
+                return new SolidColorBrush(Color.FromRgb(240, 240, 240)); // Default light gray
+            }
+
+            try
+            {
+                // Try to parse as a named color
+                var color = (Color)ColorConverter.ConvertFromString(colorString);
+                return new SolidColorBrush(color);
+            }
+            catch
+            {
+                // If parsing fails, try different formats
+
+                // Remove any whitespace
+                colorString = colorString.Trim();
+
+                // Add # if missing
+                if (!colorString.StartsWith("#"))
+                {
+                    colorString = "#" + colorString;
+                }
+
+                try
+                {
+                    var color = (Color)ColorConverter.ConvertFromString(colorString);
+                    return new SolidColorBrush(color);
+                }
+                catch
+                {
+                    // Return default color if parsing fails
+                    return new SolidColorBrush(Color.FromRgb(240, 240, 240));
+                }
+            }
+        }
+
+        private Brush GetContrastColor(SolidColorBrush background)
+        {
+            if (background == null) return Brushes.Black;
+
+            var color = background.Color;
+
+            // Calculate relative luminance (perceived brightness)
+            double luminance = (0.299 * color.R + 0.587 * color.G + 0.114 * color.B) / 255;
+
+            // Use white text on dark backgrounds, black text on light backgrounds
+            return luminance > 0.5 ? Brushes.Black : Brushes.White;
+        }
+
+        private void SetupButtons(string answerType)
+        {
+            _buttonGrid.ColumnDefinitions.Clear();
+            _buttonGrid.Children.Clear();
+
+            switch (answerType.ToLower())
+            {
+                case "ok":
+                    AddButton("OK", 0, "OK");
+                    break;
+
+                case "okcancel":
+                    AddButton("OK", 0, "OK");
+                    AddButton("Cancel", 1, "Cancel");
+                    break;
+
+                case "yesno":
+                    AddButton("Yes", 0, "Yes");
+                    AddButton("No", 1, "No");
+                    break;
+
+                case "yesnocancel":
+                    AddButton("Yes", 0, "Yes");
+                    AddButton("No", 1, "No");
+                    AddButton("Cancel", 2, "Cancel");
+                    break;
+
+                default:
+                    AddButton("OK", 0, "OK");
+                    break;
+            }
+        }
+
+        private void AddButton(string content, int column, string resultValue)
+        {
+            _buttonGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            var button = new Button
+            {
+                Content = content,
+                Width = 80,
+                Height = 30,
+                Margin = new Thickness(5),
+                Tag = resultValue
+            };
+
+            button.Click += (s, e) =>
+            {
+                _result = resultValue;
+                if (_timer != null && _timer.IsEnabled)
+                    _timer.Stop();
+                DialogResult = true;
+                Close();
+            };
+
+            Grid.SetColumn(button, column);
+            _buttonGrid.Children.Add(button);
+        }
+
+        private void SetupTimer()
+        {
+            _timer = new DispatcherTimer();
+            _timer.Interval = TimeSpan.FromSeconds(1);
+            _timer.Tick += Timer_Tick;
+            _timer.Start();
+        }
+
+		//DALIBOR DODAO
+        private static Border WrapWithBorder(UIElement element, Brush borderBrush, Thickness borderThickness)
+        {
+            // detach from current logical parent first (common parent types)
+            var parent = LogicalTreeHelper.GetParent(element);
+            if (parent is ContentControl cc) cc.Content = null;
+            else if (parent is Panel panel) panel.Children.Remove(element);
+            else if (parent is Decorator decorator) decorator.Child = null;
+            else if (parent is ItemsControl items) items.Items.Remove(element);
+
+            var border = new Border { BorderBrush = borderBrush, BorderThickness = borderThickness, Child = element };
+            return border;
+        }
+
+        private void Timer_Tick(object sender, EventArgs e)
+        {
+            _remainingSeconds--;
+            _timerLabel.Content = $"Closing in {_remainingSeconds} seconds...";
+
+            if (_remainingSeconds <= 0)
+            {
+                _timer.Stop();
+                DialogResult = true;
+                Close();
+            }
+        }
+    }
+
+
+	//****************************************************************************************************
+	//****************************************************************************************************
+    //****************************************************************************************************
+    public class YearFunction : ParserFunction
 	{
 		protected override Variable Evaluate(ParsingScript script)
 		{

@@ -1,111 +1,4 @@
-﻿//----------------------------------------
-
-jsonString = '[{"Name":"Invoice1.xml","Content":"<Invoice>...</Invoice>"},{"Name":"Invoice2.xml","Content":"<Invoice>...</Invoice>"}]';
-jsonVar = GetVariableFromJSON(jsonString);
-msg("1.:\n" + jsonVar); // expected: [["Name" : "Invoice1.xml", "Content" : "<Invoice>...</Invoice"], ["Name" : "Invoice2.xml", "Content" : "<Invoice>...</Invoice"]]
-                    // actual: ["Name" : "Invoice2.xml", "Invoice1.xml"]
-
-//----------------------------------------
-
-dict1 = {};
-dict1["Name"] = "Invoice1.xml";
-dict1["Content"] = "<Invoice>...</Invoice>";
-
-dict2 = {};
-dict2["Name"] = "Invoice2.xml";
-dict2["Content"] = "<Invoice>...</Invoice>";
-
-array = {};
-array.Add(dict1);
-array.Add(dict2);
-
-msg("2.:\n" + array); // here it's ok
-            // expected and actual: [["Name" : "Invoice1.xml", "Content" : "<Invoice>...</Invoice"], ["Name" : "Invoice2.xml", "Content" : "<Invoice>...</Invoice"]]
-
-//----------------------------------------
-
-dictinaryArray = {{"val" : 1}, {"val" : 2}};
-Msg("3.:\n" + dictinaryArray); // expected: [["val" : 1], ["val" : 2]]
-                    // actual: [[["val" : 1]], [["val" : 2]]]
-
-//----------------------------------------
-
-dict1 = {"val" : 1};
-dict2 = {"val" : 2};
-dictinaryArray = {dict1, dict2};
-Msg("4.:\n" + dictinaryArray); // expected: [["val" : 1], ["val" : 2]]
-                    // actual: ["val" : 2, 1]
-
-//----------------------------------------
-
-jsonString = '[{"Name":"Invoice1.xml","Content":"<Invoice>...</Invoice>"},{"Name":"Invoice2.xml","Content":"<Invoice>...</Invoice>"}]';
-jsonObject = {};
-jsonObject = DeserializeJson(jsonString);
-msg("5.:\n" + jsonObject); // expected: [["Name" : "Invoice1.xml", "Content" : "<Invoice>...</Invoice"], ["Name" : "Invoice2.xml", "Content" : "<Invoice>...</Invoice"]]
-                    // actual: ["Name" : "Invoice2.xml", "Invoice1.xml"]
-
-
-//----------------------------------------
-
-
-dict1 = {};
-dict1["Name"] = "Invoice1.xml";
-dict1["Content"] = "<Invoice>...</Invoice>";
-
-dict2 = {};
-dict2["Name"] = "Invoice2.xml";
-dict2["Content"] = "<Invoice>...</Invoice>";
-
-array = {};
-array.Add(dict1);
-array.Add(dict2);
-
-msg("6.:\n" + array); // here it's ok
-                    // expected and actual: [["Name" : "Invoice1.xml", "Content" : "<Invoice>...</Invoice"], ["Name" : "Invoice2.xml", "Content" : "<Invoice>...</Invoice"]]
-
-
-
-// this here also breaks the array structure
-array = array;
-msg("7.:\n" + array); // expected: [["Name" : "Invoice1.xml", "Content" : "<Invoice>...</Invoice"], ["Name" : "Invoice2.xml", "Content" : "<Invoice>...</Invoice"]]
-                    //actual: ["Name" : "Invoice2.xml", "Invoice1.xml"]
-
-
-// //----------------------------------------
-
-// this works fine because there is no assignment to another variable ( there's no "=" )
-msg("8.:\n" + DeserializeJson('[{"Name":"Invoice1.xml","Content":"<Invoice>...</Invoice>"},{"Name":"Invoice2.xml","Content":"<Invoice>...</Invoice>"}]'));
-
-
-// //----------------------------------------
-
-
-exit;
-
-
-
-
-
-
-
-
-
-
-
-// include(tpath() + "json.cscs");
-
-// jsonObject = String2JSON('[{"Name":"Invoice1.xml","Content":"<Invoice>...</Invoice>"},{"Name":"Invoice2.xml","Content":"<Invoice>...</Invoice>"}]');
-// msg(jsonObject);
-
-// exit;
-
-
-
-
-
-
-
-// -----------------------------------------------------------
+﻿// -----------------------------------------------------------
 // WxEracunGet.cscs - UBL XML Invoice Import Program
 // -----------------------------------------------------------
 // Purpose: Import UBL XML invoices into database tables
@@ -318,8 +211,9 @@ function DownloadNewInvoicesFromMeR() {
             MkDir(incomingFolder);
         }
         
-        MessageBox("Počinje preuzimanje novih računa sa MojEracun servera...");
+        // MessageBox("Počinje preuzimanje novih računa sa MojEracun servera...");
         
+
         // // Prepare date range for request (last 30 days)
         // endDate = Now("yyyy-MM-dd");
         // startDate = "2025-01-01"; // Last 30 days
@@ -338,15 +232,10 @@ function DownloadNewInvoicesFromMeR() {
         statusId = 40; // sent(and received)
         // statusId = 30; // sent(but not received)
         jsonPayload = '{"Username": "' + ERAC_USER + '", "Password": "' + ERAC_PASS + '", "CompanyId": "' + companyOIB + '", "SoftwareId": "' + ERAC_DESC + '", "StatusId": "' + statusId + '"}';
-        
-        // // Prepare headers for API request
-        // headers = {};
-        // headers["Content-Type"] = "application/json";
-        // headers["Authorization"] = "Bearer " + MER_API_KEY;
-        
+                
         try {
             // Make API request to MojEracun
-            apiUrl = ERAC_SERVER + "queryinbox";
+            apiUrl = ERAC_SERVER + "apis/v2/queryinbox";
             jsonResponse = WebRequest("POST", apiUrl, jsonPayload, "", "MERSuccess", "MERFailure", "application/json", null, 1000 * 20, false);
             
             // if (jsonResponse == "" || jsonResponse == null) {
@@ -452,60 +341,34 @@ function MERSuccess(trackingId, responseCode, res) {
     try{
         LogResponse(responseCode, res);     
 
-        resObject = DeserializeJson(res);  
+        res = res.ReplaceAndTrim("[", "", "]", "");
 
-        // MSG(resObject); //[  "ElectronicId" : 1  , 2, 3, 4, 5, 6  ]
+        resParts = res.Split("},{");
 
-        string1 = resObject.toString();
-        // MSG(string1);
-        parts = StrReplace(string1 ,"\"ElectronicId\" : ", "");
-        parts = StrReplace(parts ,"[", "");
-        parts = StrReplace(parts ,"]", "");
-        parts = parts.split(", ");
+        msg("Size(resParts) = " + Size(resParts));
 
-        // MSG(parts);
+        // for(i = 0; i < Size(resParts); i++){
+        for(i = 0; i < 1; i++){
+            if(i == 0){
+                resParts[i] = resParts[i] + "}";
+            }
+            elif(i == Size(resParts) - 1){
+                resParts[i] = "{" + resParts[i];
+            }else{
+                resParts[i] = "{" + resParts[i] + "}";
+            }
 
-        // exit;
+            racunObject = DeserializeJson(resParts[i]);
+            // msg(racunObject);
 
-        // for(i = 0; i < Size(resObject); i++){
+
+            trackingId = "MER_ul_" + racunObject["ElectronicId"] + "_" + racunObject["DocumentNr"] + "_" + racunObject["SenderBusinessNumber"]; // + "_" + racunObject["SenderBusinessName"];
+            // trackingId = "MER_ul_" + ElectronicId;
+
+            jsonPayload = '{"Username": "' + ERAC_USER + '", "Password": "' + ERAC_PASS + '", "CompanyId": "' + companyOIB + '", "SoftwareId": "' + ERAC_DESC + '", "ElectronicId": "' + racunObject["ElectronicId"] + '"}';
             
-        //     ElectronicId = resObject[i];
-        //     // DocumentNr = resObject[i]["DocumentNr"];
-        //     // SenderBusinessNumber = resObject[i]["SenderBusinessNumber"];
-        //     // SenderBusinessName = StrReplace(resObject[i]["SenderBusinessName"], " ", "_");
-        //     // if(SenderBusinessName.length >= 15){
-        //     //     SenderBusinessName = Substring(SenderBusinessName, 0, 15);
-        //     // }
-
-        //     // trackingId = "MER_ul_" + DocumentNr + "_" + SenderBusinessNumber + "_" + SenderBusinessName;
-        //     trackingId = "MER_ul_" + ElectronicId;
-
-        //     jsonPayload = '{"Username": "' + ERAC_USER + '", "Password": "' + ERAC_PASS + '", "CompanyId": "' + companyOIB + '", "SoftwareId": "' + ERAC_DESC + '", "ElectronicId": "' + ElectronicId + '"}';
-            
-        //     WebRequest("POST", ERAC_SERVER + "receive", jsonPayload, trackingId, "MERReceiveSuccess", "MERReceiveFailure", "application/json", null, 1000 * 20, false);           
-        // }
-        
-        ElectronicId = "3084143";
-        // trackingId = "MER_ul_" + DocumentNr + "_" + SenderBusinessNumber + "_" + SenderBusinessName;
-        trackingId = "MER_ul_" + ElectronicId;
-        jsonPayload = '{"Username": "' + ERAC_USER + '", "Password": "' + ERAC_PASS + '", "CompanyId": "' + companyOIB + '", "SoftwareId": "' + ERAC_DESC + '", "ElectronicId": "' + ElectronicId + '"}';
-        WebRequest("POST", ERAC_SERVER + "receive", jsonPayload, trackingId, "MERReceiveSuccess", "MERReceiveFailure", "application/json", null, 1000 * 20, false);           
-        return;
-
-
-
-        for(i = 0; i < Size(parts); i++){
-            
-            ElectronicId = parts[i];
-
-            // trackingId = "MER_ul_" + DocumentNr + "_" + SenderBusinessNumber + "_" + SenderBusinessName;
-            trackingId = "MER_ul_" + ElectronicId;
-
-            jsonPayload = '{"Username": "' + ERAC_USER + '", "Password": "' + ERAC_PASS + '", "CompanyId": "' + companyOIB + '", "SoftwareId": "' + ERAC_DESC + '", "ElectronicId": "' + ElectronicId + '"}';
-            
-            WebRequest("POST", ERAC_SERVER + "receive", jsonPayload, trackingId, "MERReceiveSuccess", "MERReceiveFailure", "application/json", null, 1000 * 20, false);           
+            WebRequest("POST", ERAC_SERVER + "apis/v2/receive", jsonPayload, trackingId, "MERReceiveSuccess", "MERReceiveFailure", "application/json", null, 1000 * 20, false);           
         }
-
     }
     catch(ex){
         MessageBox("MERSuccess - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
@@ -524,6 +387,8 @@ function MERFailure(trackingId, responseCode, res) {
     }
 }
 
+
+
 function LogResponse(responseCode, response) {
     if(!DIR_EXISTS(FILESPATH + "ul\\" + "responses\\")){
         MAKE_DIR(FILESPATH + "ul\\" + "responses\\");
@@ -540,39 +405,53 @@ function LogResponse(responseCode, response) {
 
 
 
+
+
+
 function MERReceiveSuccess(trackingId, responseCode, res) {
     MSG("MERReceiveSuccess");
     // MSG("MERReceiveSuccess" + "\n" + XmlToDict(res));
     try{
         LogResponse(responseCode, res);
         SaveFile(res, FILESPATH + "ul\\" + trackingId + ".xml");
+
+
+        
         // SaveFile(XmlToDict(res), FILESPATH + "ul\\" + trackingId + ".xml.dict");
 
-        xmlDict = XmlToDict(res);
-        TestXmlDict(xmlDict);
-
-
-        MSG(xmlDict.Keys);
-
-        MSG(xmlDict["InvoiceLine"]);
-
-        MSG(type(xmlDict)); // ARRAY
-        // MSG(Size(xmlDict.Keys)); // error
-        MSG(xmlDict.Keys.Size); // 25
-        MSG(Size(xmlDict)); // 25
-
-
-        MSG(type(xmlDict["InvoiceLine"])); // ARRAY
-        MSG(Size(xmlDict["InvoiceLine"].Keys)); // 4
-        // MSG(xmlDict["InvoiceLine"].Keys);
-        MSG(Size(xmlDict["InvoiceLine"])); // 4
 
 
 
-        if(xmlDict["InvoiceLine"] != null){ // !!! IS Array
-            MSG(xmlDict["InvoiceLine"][0].Keys);
-            MSG(xmlDict["InvoiceLine"][0]);
-        }
+
+        // xmlDict = XmlToDict(res);
+        // TestXmlDict(xmlDict);
+
+
+        // MSG(xmlDict.Keys);
+
+        // MSG(xmlDict["InvoiceLine"]);
+
+        // MSG(type(xmlDict)); // ARRAY
+        // // MSG(Size(xmlDict.Keys)); // error
+        // MSG(xmlDict.Keys.Size); // 25
+        // MSG(Size(xmlDict)); // 25
+
+
+        // MSG(type(xmlDict["InvoiceLine"])); // ARRAY
+        // MSG(Size(xmlDict["InvoiceLine"].Keys)); // 4
+        // // MSG(xmlDict["InvoiceLine"].Keys);
+        // MSG(Size(xmlDict["InvoiceLine"])); // 4
+
+
+
+        // if(xmlDict["InvoiceLine"] != null){ // !!! IS Array
+        //     MSG(xmlDict["InvoiceLine"][0].Keys);
+        //     MSG(xmlDict["InvoiceLine"][0]);
+        // }
+
+
+
+
     }catch(ex){
         MessageBox("MERReceiveSuccess - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
     }

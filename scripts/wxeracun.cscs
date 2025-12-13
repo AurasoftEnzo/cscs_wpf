@@ -1895,7 +1895,7 @@ MessageBox("Slanje eRačuna putem posrednika: " + PROVIDER + " (" + ERAC_PASST +
         webRequestResult = WebRequest("POST", ERAC_SERVER + "apis/v2/send", jsonLoad, invNum,
                     "MERSuccess", "MERFailure", "application/json", null, 1000 * 20, false);
 
-         MSG("webRequestResult = " + webRequestResult); // !!! cijeli Json
+        //  MSG("webRequestResult = " + webRequestResult);
     }
     elif(PROVIDER == "EPOS" || PROVIDER == "EPOSDEMO")
     {
@@ -1909,7 +1909,8 @@ MessageBox("Slanje eRačuna putem posrednika: " + PROVIDER + " (" + ERAC_PASST +
         // za test koristimo račun "90100003"
         
         // MessageBox("Slanje putem FINA-e još nije implementirano.");
-        SendToFINA();
+        // SendToFINA();
+        SendToFINA_2();
         // ...
 
         return;
@@ -2010,38 +2011,66 @@ function LogResponse(responseCode, response) {
 }
 
 
-/*
-function SendToFINA() {
 
-    endpoint = "https://prezdigitalneusluge.fina.hr/SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService";        // production
-    // endpoint = "https://e-racun.fina.hr/services/InvoicingService";        // production
-    // endpoint = "https://test.e-racun.fina.hr/services/InvoicingService"; // test
+function SendToFINA_2() {
+
+    endpoint = ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService";
+
 
     base64Ubl = File2Base64(xmlFileName);
 
+    bodyId = "id-" + UUID();
+    messageId = "msg-" + UUID();
+
     soapEnvelope = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-    soapEnvelope += "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:fin=\"http://www.fina.hr/e-racun/services\">\n";
-    soapEnvelope += "  <soapenv:Header/>\n";
-    soapEnvelope += "  <soapenv:Body>\n";
+    soapEnvelope += "<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\"
+                   xmlns:wsu=\"http://schemas.xmlsoap.org/ws/2002/12/utility\"
+                   xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"
+                   xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n";
+    soapEnvelope += "  <SOAP-ENV:Header/>\n";
+    soapEnvelope += "  <SOAP-ENV:Body Id=\"Body\"
+                   d2p1:Id=\"Body\"
+                   wsu:Id=\"" + bodyId + "\"
+                   xmlns:d2p1=\"http://schemas.xmlsoap.org/ws/2002/12/utility\"
+                   xmlns:util=\"http://schemas.xmlsoap.org/ws/2002/12/utility\"
+                   xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\">\n";
+
     soapEnvelope += "    <fin:SendB2BOutgoingInvoiceMsg>\n";
     soapEnvelope += "      <HeaderSupplier>\n";
-    soapEnvelope += "        <MessageID>" + Math.Round(Math.Random() * 1000000000) + "</MessageID>\n";
-    soapEnvelope += "        <SupplierID>9934:HR" + supOIB + "</SupplierID>\n";
-    soapEnvelope += "        <AdditionalSupplierID>0088:" + KPSY_REZERVAX + "</AdditionalSupplierID>\n";
+    soapEnvelope += "        <MessageID>" + messageId + "</MessageID>\n";
+    soapEnvelope += "        <SupplierID>9934:" + supOIB + "</SupplierID>\n";
+    // soapEnvelope += "        <AdditionalSupplierID>0088:" + KPSY_REZERVAX + "</AdditionalSupplierID>\n";
     soapEnvelope += "        <MessageType>9001</MessageType>\n";
     soapEnvelope += "      </HeaderSupplier>\n";
     soapEnvelope += "      <Data>\n";
     soapEnvelope += "        <B2BOutgoingInvoiceEnvelope>\n";
     soapEnvelope += "          <XMLStandard>UBL</XMLStandard>\n";
+    /* // !!!
+    SpecificationIdentifier - Prilagodba XML dokumenta:
+    "urn:cen.eu:en16931:2017"
+    ili
+    "urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0"
+    */
     soapEnvelope += "          <SpecificationIdentifier>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0</SpecificationIdentifier>\n";
     soapEnvelope += "          <SupplierInvoiceID>" + invNum + "</SupplierInvoiceID>\n";
-    soapEnvelope += "          <BuyerID>9934:HR" + NKPR_GL_JMBG + "</BuyerID>\n";
+    // soapEnvelope += "          <BuyerID>9934:" + NKPR_GL_JMBG + "</BuyerID>\n";
+    soapEnvelope += "          <BuyerID>9934:" + "85821130368" + "</BuyerID>\n"; // !!! FINA-in OIB
+    
     soapEnvelope += "          <InvoiceEnvelope>" + base64Ubl + "</InvoiceEnvelope>\n";
+    // ILI
+    // soapEnvelope += "          <CreditNoteEnvelope>" + base64Ubl + "</CreditNoteEnvelope>\n";
+
     soapEnvelope += "        </B2BOutgoingInvoiceEnvelope>\n";
     soapEnvelope += "      </Data>\n";
     soapEnvelope += "    </fin:SendB2BOutgoingInvoiceMsg>\n";
-    soapEnvelope += "  </soapenv:Body>\n";
-    soapEnvelope += "</soapenv:Envelope>";
+
+    soapEnvelope += "  </SOAP-ENV:Body>\n";
+    soapEnvelope += "</SOAP-ENV:Envelope>";
+
+
+    Test99();
+    exit;
+
 
     // Sign SOAP with client certificate (WS-Security)
     signedSoap = SignSoapWithCert(soapEnvelope, ERAC_PASST, ERAC_PASS);
@@ -2053,7 +2082,7 @@ function SendToFINA() {
 
     headers = {};
     headers["Content-Type"] = "text/xml; charset=utf-8";
-    headers["SOAPAction"] = "";
+    // headers["SOAPAction"] = "";
 
     try {
         response = WebRequest(
@@ -2088,7 +2117,8 @@ function SendToFINA() {
     }
 }
 
-*/
+
+
 function SendToEPOS() {
     // Determine endpoint based on provider configuration
     endpoint = ERAC_SERVER;
@@ -2143,19 +2173,23 @@ function SendToEPOS() {
 }
 
 function SendToFINA() {
-    // Determine endpoint based on provider configuration
-    endpoint = ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService/";
-    if (endpoint == "") {
+    if (ERAC_SERVER == "") {
         MessageBox("Endpoint za FINA provider nije definiran u NKSYERAC.");
         return;
     }
 
+    // Determine endpoint based on provider configuration
+    endpoint = ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService/";
+    
+
     // 1. Prepare the XML body for the SOAP request
     base64Ubl = File2Base64(xmlFileName);
 
+    uuid = UUID();
+
     xmlBody = "<fin:SendB2BOutgoingInvoiceMsg xmlns:fin=\"http://www.fina.hr/e-racun/services\">\n";
     xmlBody += "  <HeaderSupplier>\n";
-    xmlBody += "    <MessageID>" + UUID() + "</MessageID>\n";
+    xmlBody += "    <MessageID>" + uuid + "</MessageID>\n";
     xmlBody += "    <SupplierID>9934:" + supOIB + "</SupplierID>\n";
     // xmlBody += "    <AdditionalSupplierID>0088:" + KPSY_REZERVAX + "</AdditionalSupplierID>\n";
     xmlBody += "    <MessageType>9001</MessageType>\n";
@@ -2166,7 +2200,8 @@ function SendToFINA() {
     //xmlBody += "      <SpecificationIdentifier>urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0</SpecificationIdentifier>\n";
      xmlBody += "      <SpecificationIdentifier>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0#conformant#urn:mfin.gov.hr:ext-2025:1.0</SpecificationIdentifier>\n";
     xmlBody += "      <SupplierInvoiceID>" + invNum + "</SupplierInvoiceID>\n";
-    xmlBody += "      <BuyerID>9934:" + NKPR_GL_JMBG + "</BuyerID>\n";
+    // xmlBody += "      <BuyerID>9934:" + NKPR_GL_JMBG + "</BuyerID>\n";
+    xmlBody += "      <BuyerID>9934:" + "85821130368" + "</BuyerID>\n"; // !!! tu je sada OIB od FINA-e
     xmlBody += "      <InvoiceEnvelope>" + base64Ubl + "</InvoiceEnvelope>\n";
     xmlBody += "    </B2BOutgoingInvoiceEnvelope>\n";
     xmlBody += "  </Data>\n";

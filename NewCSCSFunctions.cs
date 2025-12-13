@@ -119,6 +119,7 @@ namespace WpfCSCS
             interpreter.RegisterFunction("ReadAllText", new ReadAllTextFunction());
 
             interpreter.RegisterFunction("TestXmlDict", new TestXmlDictFunction());
+            interpreter.RegisterFunction("Test99", new Test99Function());
         }
         public partial class Constants
         {
@@ -3630,6 +3631,274 @@ namespace WpfCSCS
             {
                 throw new Exception("File not found: " + filePath);
             }
+        }
+    }
+    
+    class Test99Function : ParserFunction
+    {
+        //9.
+        class WSSignedXml : SignedXml
+        {
+            public WSSignedXml(XmlDocument doc) : base(doc) { }
+
+            public override XmlElement GetIdElement(XmlDocument doc, string id)
+            {
+                return doc.SelectSingleNode(
+                    $"//*[@wsu:Id='{id}']",
+                    CreateNamespaceManager(doc)
+                ) as XmlElement;
+            }
+
+            XmlNamespaceManager CreateNamespaceManager(XmlDocument doc)
+            {
+                var nsmgr = new XmlNamespaceManager(doc.NameTable);
+                nsmgr.AddNamespace("wsu",
+                    "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd");
+                return nsmgr;
+            }
+        }
+
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 0, m_name);
+
+            //var soapEnvelope = Utils.GetSafeString(args, 0);
+
+            //3.
+            var cert = new X509Certificate2(
+                "D:\\WinX\\ERAC\\certifikati\\p12_aurasoft_demo.p12",
+                "Aurasoft1",
+                X509KeyStorageFlags.MachineKeySet |
+                X509KeyStorageFlags.Exportable
+            );
+
+            ////4.
+            //XmlDocument doc = new XmlDocument();
+            //doc.PreserveWhitespace = true;
+
+            //doc.LoadXml(soapEnvelope);
+
+
+            // 4.2
+            XmlDocument doc = new XmlDocument();
+            doc.PreserveWhitespace = true;
+
+            doc.LoadXml(@"
+<SOAP-ENV:Envelope
+    xmlns:SOAP-ENV='http://schemas.xmlsoap.org/soap/envelope/'
+    
+xmlns:wsu=""http://schemas.xmlsoap.org/ws/2002/12/utility""
+xmlns:xsd=""http://www.w3.org/2001/XMLSchema""
+xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
+
+>
+  <SOAP-ENV:Header/>
+  <SOAP-ENV:Body/>
+</SOAP-ENV:Envelope>");
+            /*
+             xmlns:wsse='http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd'
+            xmlns:wsu='http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd'
+            xmlns:ds='http://www.w3.org/2000/09/xmldsig#'
+             */
+
+            //            // 5.
+            //            XmlElement body = doc.DocumentElement["SOAP-ENV:Body"];
+            //            string bodyId = "id-" + Guid.NewGuid().ToString("N");
+
+            //            body.SetAttribute("wsu:Id",
+            //                "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd",
+            //                bodyId);
+
+            //            body.InnerXml = @"
+            //<EchoMsg xmlns='http://fina.hr/eracun/b2b/pki/Echo/v0.1'>
+            //  <HeaderSupplier xmlns='http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1'>
+            //    <MessageID>" + Guid.NewGuid() + @"</MessageID>
+            //    <SupplierID>9934:26389058739</SupplierID>
+            //    <MessageType>9999</MessageType>
+            //  </HeaderSupplier>
+            //  <Data>
+            //    <EchoData>
+            //      <Echo>hello from .NET</Echo>
+            //    </EchoData>
+            //  </Data>
+            //</EchoMsg>";
+
+
+            //            var asdasdasd = @"<?xml version=""1.0"" encoding=""UTF-8""?>
+            //<SOAP-ENV:Envelope xmlns:SOAP-ENV=""http://schemas.xmlsoap.org/soap/envelope/""                   xmlns:wsu=""http://schemas.xmlsoap.org/ws/2002/12/utility""                   xmlns:xsd=""http://www.w3.org/2001/XMLSchema""                   xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
+            //  <SOAP-ENV:Header/>
+            //  <SOAP-ENV:Body Id=""Body""                   d2p1:Id=""Body""                   wsu:Id=""id-802e4f37-df38-4974-80c1-a987db752533""                   xmlns:d2p1=""http://schemas.xmlsoap.org/ws/2002/12/utility""                   xmlns:util=""http://schemas.xmlsoap.org/ws/2002/12/utility""                   xmlns:wsu=""http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"">
+            //    <SendB2BOutgoingInvoiceMsg>
+            //      <HeaderSupplier>
+            //        <MessageID>msg-51471a7d-009f-4d3c-b424-8f5e1755afc7</MessageID>
+            //        <SupplierID>9934:26389058739</SupplierID>
+            //        <MessageType>9001</MessageType>
+            //      </HeaderSupplier>
+            //      <Data>
+            //        <B2BOutgoingInvoiceEnvelope>
+            //          <XMLStandard>UBL</XMLStandard>
+            //          <SpecificationIdentifier>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0</SpecificationIdentifier>
+            //          <SupplierInvoiceID>90100002</SupplierInvoiceID>
+            //          <BuyerID>9934:85821130368</BuyerID>
+            //          <InvoiceEnvelope>PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPEludm9pY2UgeG1sbnM9InVybjpvYXNpczpuYW1lczpzcGVjaWZpY2F0aW9uOnVibDpzY2hlbWE6eHNkOkludm9pY2UtMiIKICAgIHhtbG5zOnhzaT0iaHR0cDovL3d3dy53My5vcmcvMjAwMS9YTUxTY2hlbWEtaW5zdGFuY2UiCiAgICB4bWxuczp4c2Q9Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvWE1MU2NoZW1hIgogICAgeG1sbnM6Y2FjPSJ1cm46b2FzaXM6bmFtZXM6c3BlY2lmaWNhdGlvbjp1Ymw6c2NoZW1hOnhzZDpDb21tb25BZ2dyZWdhdGVDb21wb25lbnRzLTIiCiAgICB4bWxuczpjYmM9InVybjpvYXNpczpuYW1lczpzcGVjaWZpY2F0aW9uOnVibDpzY2hlbWE6eHNkOkNvbW1vbkJhc2ljQ29tcG9uZW50cy0yIgogICAgeG1sbnM6ZXh0PSJ1cm46b2FzaXM6bmFtZXM6c3BlY2lmaWNhdGlvbjp1Ymw6c2NoZW1hOnhzZDpDb21tb25FeHRlbnNpb25Db21wb25lbnRzLTIiCiAgICB4bWxuczpzYWM9InVybjpvYXNpczpuYW1lczpzcGVjaWZpY2F0aW9uOnVibDpzY2hlbWE6eHNkOlNpZ25hdHVyZUFnZ3JlZ2F0ZUNvbXBvbmVudHMtMiIgCiAgICB4bWxuczpzaWc9InVybjpvYXNpczpuYW1lczpzcGVjaWZpY2F0aW9uOnVibDpzY2hlbWE6eHNkOkNvbW1vblNpZ25hdHVyZUNvbXBvbmVudHMtMiIgCiAgICB4bWxuczpocmV4dGFjPSJ1cm46bWZpbi5nb3YuaHI6c2NoZW1hOnhzZDpIUkV4dGVuc2lvbkFnZ3JlZ2F0ZUNvbXBvbmVudHMtMSI+CjxleHQ6VUJMRXh0ZW5zaW9ucz4KICA8ZXh0OlVCTEV4dGVuc2lvbj4KICAgIDxleHQ6RXh0ZW5zaW9uQ29udGVudD4KICAgICAgICA8aHJleHRhYzpIUkZJU0syMERhdGE+CiAgICAgICAgICAgIDxocmV4dGFjOkhSVGF4VG90YWw+CiAgICAgICAgICAgICAgICA8Y2JjOlRheEFtb3VudCBjdXJyZW5jeUlEPSJFVVIiPjY5LjIxPC9jYmM6VGF4QW1vdW50PgogICAgICAgICAgICAgICAgPGhyZXh0YWM6SFJUYXhTdWJ0b3RhbD4KICAgICAgICAgICAgICAgICAgICA8Y2JjOlRheGFibGVBbW91bnQgY3VycmVuY3lJRD0iRVVSIj4yNzYuODQ8L2NiYzpUYXhhYmxlQW1vdW50PgogICAgICAgICAgICAgICAgICAgIDxjYmM6VGF4QW1vdW50IGN1cnJlbmN5SUQ9IkVVUiI+NjkuMjE8L2NiYzpUYXhBbW91bnQ+CiAgICAgICAgICAgICAgICAgICAgPGhyZXh0YWM6SFJUYXhDYXRlZ29yeT4KICAgICAgICAgICAgICAgICAgICAgICAgPGNiYzpJRD5TPC9jYmM6SUQ+CiAgICAgICAgICAgICAgICAgICAgICAgIDxjYmM6TmFtZT5IUjpQRFYyNTwvY2JjOk5hbWU+CiAgICAgICAgICAgICAgICAgICAgICAgIDxjYmM6UGVyY2VudD4yNTwvY2JjOlBlcmNlbnQ+CiAgICAgICAgICAgICAgICAgICAgICAgIDxocmV4dGFjOkhSVGF4U2NoZW1lPgogICAgICAgICAgICAgICAgICAgICAgICAgICAgPGNiYzpJRD5WQVQ8L2NiYzpJRD4KICAgICAgICAgICAgICAgICAgICAgICAgPC9ocmV4dGFjOkhSVGF4U2NoZW1lPgogICAgICAgICAgICAgICAgICAgIDwvaHJleHRhYzpIUlRheENhdGVnb3J5PgogICAgICAgICAgICAgICAgPC9ocmV4dGFjOkhSVGF4U3VidG90YWw+CiAgICAgICAgICAgIDwvaHJleHRhYzpIUlRheFRvdGFsPgogICAgICAgICAgICA8aHJleHRhYzpIUkxlZ2FsTW9uZXRhcnlUb3RhbD4KICAgICAgICAgICAgICA8Y2JjOlRheEV4Y2x1c2l2ZUFtb3VudCBjdXJyZW5jeUlEPSJFVVIiPjI3Ni44NDwvY2JjOlRheEV4Y2x1c2l2ZUFtb3VudD4KICAgICAgICAgICAgICA8aHJleHRhYzpPdXRPZlNjb3BlT2ZWQVRBbW91bnQgY3VycmVuY3lJRD0iRVVSIj4wLjAwPC9ocmV4dGFjOk91dE9mU2NvcGVPZlZBVEFtb3VudD4KICAgICAgICAgICAgPC9ocmV4dGFjOkhSTGVnYWxNb25ldGFyeVRvdGFsPgogICAgICAgIDwvaHJleHRhYzpIUkZJU0syMERhdGE+CiAgICA8L2V4dDpFeHRlbnNpb25Db250ZW50PgogIDwvZXh0OlVCTEV4dGVuc2lvbj4KPC9leHQ6VUJMRXh0ZW5zaW9ucz4KPGNiYzpDdXN0b21pemF0aW9uSUQ+dXJuOmNlbi5ldTplbjE2OTMxOjIwMTcjY29tcGxpYW50I3VybjptZmluLmdvdi5ocjpjaXVzLTIwMjU6MS4wI2NvbmZvcm1hbnQjdXJuOm1maW4uZ292LmhyOmV4dC0yMDI1OjEuMDwvY2JjOkN1c3RvbWl6YXRpb25JRD4KPGNiYzpQcm9maWxlSUQ+UDc8L2NiYzpQcm9maWxlSUQ+CjxjYmM6SUQ+MDAwMDItOTAtMTwvY2JjOklEPgo8Y2JjOkNvcHlJbmRpY2F0b3I+ZmFsc2U8L2NiYzpDb3B5SW5kaWNhdG9yPgo8Y2JjOklzc3VlRGF0ZT4yMDI0LTAxLTEyPC9jYmM6SXNzdWVEYXRlPgo8Y2JjOklzc3VlVGltZT4xMTo0ODo1ODwvY2JjOklzc3VlVGltZT4KPGNiYzpEdWVEYXRlPjIwMjQtMDEtMTI8L2NiYzpEdWVEYXRlPgo8Y2JjOkludm9pY2VUeXBlQ29kZT4zODA8L2NiYzpJbnZvaWNlVHlwZUNvZGU+CjxjYmM6Tm90ZT4KCiAgVEs6IFRBUkEgVCNBQUkjPC9jYmM6Tm90ZT4KPGNiYzpUYXhQb2ludERhdGU+MjAyNC0wMS0xMTwvY2JjOlRheFBvaW50RGF0ZT4KPGNiYzpEb2N1bWVudEN1cnJlbmN5Q29kZT5FVVI8L2NiYzpEb2N1bWVudEN1cnJlbmN5Q29kZT4KPGNiYzpUYXhDdXJyZW5jeUNvZGU+RVVSPC9jYmM6VGF4Q3VycmVuY3lDb2RlPgo8Y2FjOkFjY291bnRpbmdTdXBwbGllclBhcnR5PgogIDxjYWM6UGFydHk+CiAgICA8Y2JjOkVuZHBvaW50SUQgc2NoZW1lSUQ9Ijk5MzQiPjI2Mzg5MDU4NzM5PC9jYmM6RW5kcG9pbnRJRD4KICAgIDxjYWM6UGFydHlJZGVudGlmaWNhdGlvbj48Y2JjOklEPjk5MzQ6MjYzODkwNTg3Mzk8L2NiYzpJRD48L2NhYzpQYXJ0eUlkZW50aWZpY2F0aW9uPgogICAgPGNhYzpQYXJ0eU5hbWU+PGNiYzpOYW1lPlByb2JhIGQuby5vLjwvY2JjOk5hbWU+PC9jYWM6UGFydHlOYW1lPgogICAgPGNhYzpQb3N0YWxBZGRyZXNzPgogICAgICA8Y2JjOlN0cmVldE5hbWU+S2FwZXRhbmEgTGF6YXJpxIdhIDFEPC9jYmM6U3RyZWV0TmFtZT4KICAgICAgPGNiYzpDaXR5TmFtZT5QYXppbjwvY2JjOkNpdHlOYW1lPgogICAgICA8Y2JjOlBvc3RhbFpvbmU+NTIwMDA8L2NiYzpQb3N0YWxab25lPgogICAgICA8Y2FjOkNvdW50cnk+PGNiYzpJZGVudGlmaWNhdGlvbkNvZGU+SFI8L2NiYzpJZGVudGlmaWNhdGlvbkNvZGU+PC9jYWM6Q291bnRyeT4KICAgIDwvY2FjOlBvc3RhbEFkZHJlc3M+CiAgICA8Y2FjOlBhcnR5VGF4U2NoZW1lPjxjYmM6Q29tcGFueUlEPkhSMjYzODkwNTg3Mzk8L2NiYzpDb21wYW55SUQ+PGNhYzpUYXhTY2hlbWU+PGNiYzpJRD5WQVQ8L2NiYzpJRD48L2NhYzpUYXhTY2hlbWU+PC9jYWM6UGFydHlUYXhTY2hlbWU+CiAgICA8Y2FjOlBhcnR5TGVnYWxFbnRpdHk+CiAgICAgIDxjYmM6UmVnaXN0cmF0aW9uTmFtZT5BVVJBIFNPRlQgZC5vLm8uIFByaW1qZXIgZHVnb2cgdGVrc3RhPC9jYmM6UmVnaXN0cmF0aW9uTmFtZT4KICAgIDwvY2FjOlBhcnR5TGVnYWxFbnRpdHk+CiAgICA8Y2FjOkNvbnRhY3Q+CiAgICAgIDxjYmM6VGVsZXBob25lPjA1Mi02MjEtOTI5PC9jYmM6VGVsZXBob25lPgogICAgPC9jYWM6Q29udGFjdD4KICA8L2NhYzpQYXJ0eT4KICA8Y2FjOlNlbGxlckNvbnRhY3Q+ICAgIDxjYmM6SUQ+MTIzNDU2Nzg5MDM8L2NiYzpJRD4gICAgPGNiYzpOYW1lPlRBUkEgVDwvY2JjOk5hbWU+ICA8L2NhYzpTZWxsZXJDb250YWN0PjwvY2FjOkFjY291bnRpbmdTdXBwbGllclBhcnR5Pgo8Y2FjOkFjY291bnRpbmdDdXN0b21lclBhcnR5PgogIDxjYWM6UGFydHk+CiAgICA8Y2JjOkVuZHBvaW50SUQgc2NoZW1lSUQ9Ijk5MzQiPjI2Mzg5MDU4NzM5PC9jYmM6RW5kcG9pbnRJRD4KICAgIDxjYWM6UGFydHlJZGVudGlmaWNhdGlvbj48Y2JjOklEPjk5MzQ6MjYzODkwNTg3Mzk8L2NiYzpJRD48L2NhYzpQYXJ0eUlkZW50aWZpY2F0aW9uPgogICAgPGNhYzpQYXJ0eU5hbWU+PGNiYzpOYW1lPlBhcnRuZXIgMzQxMzwvY2JjOk5hbWU+PC9jYWM6UGFydHlOYW1lPgogICAgPGNhYzpQb3N0YWxBZGRyZXNzPgogICAgICA8Y2JjOlN0cmVldE5hbWU+QkHFoFRJSkFOT1ZBIDEzPC9jYmM6U3RyZWV0TmFtZT4KICAgICAgPGNiYzpDaXR5TmFtZT5SSUpFS0E8L2NiYzpDaXR5TmFtZT4KICAgICAgPGNiYzpQb3N0YWxab25lPjUxMDAwPC9jYmM6UG9zdGFsWm9uZT4KICAgICAgPGNhYzpDb3VudHJ5PjxjYmM6SWRlbnRpZmljYXRpb25Db2RlPkhSPC9jYmM6SWRlbnRpZmljYXRpb25Db2RlPjwvY2FjOkNvdW50cnk+CiAgICA8L2NhYzpQb3N0YWxBZGRyZXNzPgogICAgPGNhYzpQYXJ0eVRheFNjaGVtZT48Y2JjOkNvbXBhbnlJRD5IUjI2Mzg5MDU4NzM5PC9jYmM6Q29tcGFueUlEPjxjYWM6VGF4U2NoZW1lPjxjYmM6SUQ+VkFUPC9jYmM6SUQ+PC9jYWM6VGF4U2NoZW1lPjwvY2FjOlBhcnR5VGF4U2NoZW1lPgogICAgPGNhYzpQYXJ0eUxlZ2FsRW50aXR5PgogICAgICA8Y2JjOlJlZ2lzdHJhdGlvbk5hbWU+UGFydG5lciAzNDEzPC9jYmM6UmVnaXN0cmF0aW9uTmFtZT4KICAgIDwvY2FjOlBhcnR5TGVnYWxFbnRpdHk+CiAgPC9jYWM6UGFydHk+CjwvY2FjOkFjY291bnRpbmdDdXN0b21lclBhcnR5Pgo8Y2FjOkRlbGl2ZXJ5PgogIDxjYWM6RGVsaXZlcnlMb2NhdGlvbj4KICAgIDxjYWM6QWRkcmVzcz4KICAgICAgPGNiYzpTdHJlZXROYW1lPkJBxaBUSUpBTk9WQSAxMzwvY2JjOlN0cmVldE5hbWU+CiAgICAgIDxjYmM6Q2l0eU5hbWU+UklKRUtBPC9jYmM6Q2l0eU5hbWU+CiAgICAgIDxjYmM6UG9zdGFsWm9uZT41MTAwMDwvY2JjOlBvc3RhbFpvbmU+CiAgICAgIDxjYWM6Q291bnRyeT4KICAgICAgICA8Y2JjOklkZW50aWZpY2F0aW9uQ29kZT5IUjwvY2JjOklkZW50aWZpY2F0aW9uQ29kZT4KICAgICAgPC9jYWM6Q291bnRyeT4KICAgIDwvY2FjOkFkZHJlc3M+CiAgPC9jYWM6RGVsaXZlcnlMb2NhdGlvbj4KICA8Y2FjOkRlbGl2ZXJ5UGFydHk+CiAgICA8Y2FjOlBhcnR5TmFtZT4KICAgICAgPGNiYzpOYW1lPlBhcnRuZXIgMzQxMzwvY2JjOk5hbWU+CiAgICA8L2NhYzpQYXJ0eU5hbWU+CiAgPC9jYWM6RGVsaXZlcnlQYXJ0eT4KPC9jYWM6RGVsaXZlcnk+CjxjYWM6UGF5bWVudE1lYW5zPgogIDxjYmM6UGF5bWVudE1lYW5zQ29kZT4zMDwvY2JjOlBheW1lbnRNZWFuc0NvZGU+CiAgPGNiYzpJbnN0cnVjdGlvbk5vdGU+VHJhbnNha2NpanNraSByYcSNdW48L2NiYzpJbnN0cnVjdGlvbk5vdGU+CiAgPGNiYzpQYXltZW50SUQ+MDAgMTAzMjAxLTkwMTAwMDAyLTE8L2NiYzpQYXltZW50SUQ+CiAgPGNhYzpQYXllZUZpbmFuY2lhbEFjY291bnQ+CiAgICA8Y2JjOklEPjIzODAwMDYtMTE0NzAwMjM3MTwvY2JjOklEPgogICAgPGNiYzpOYW1lPlByaXZyZWRuYSBiYW5rYSBkLmQuPC9jYmM6TmFtZT4KICA8L2NhYzpQYXllZUZpbmFuY2lhbEFjY291bnQ+CjwvY2FjOlBheW1lbnRNZWFucz4KICAgICAgICAgICAgPGNhYzpUYXhUb3RhbD4KICAgICAgICAgICAgICAgIDxjYmM6VGF4QW1vdW50IGN1cnJlbmN5SUQ9IkVVUiI+NjkuMjE8L2NiYzpUYXhBbW91bnQ+CiAgICAgICAgICAgICAgICA8Y2FjOlRheFN1YnRvdGFsPgogICAgICAgICAgICAgICAgICAgIDxjYmM6VGF4YWJsZUFtb3VudCBjdXJyZW5jeUlEPSJFVVIiPjI3Ni44NDwvY2JjOlRheGFibGVBbW91bnQ+CiAgICAgICAgICAgICAgICAgICAgPGNiYzpUYXhBbW91bnQgY3VycmVuY3lJRD0iRVVSIj42OS4yMTwvY2JjOlRheEFtb3VudD4KICAgICAgICAgICAgICAgICAgICA8Y2FjOlRheENhdGVnb3J5PgogICAgICAgICAgICAgICAgICAgICAgICA8Y2JjOklEPlM8L2NiYzpJRD4KICAgICAgICAgICAgICAgICAgICAgICAgPGNiYzpOYW1lPkhSOlBEVjI1PC9jYmM6TmFtZT4KICAgICAgICAgICAgICAgICAgICAgICAgPGNiYzpQZXJjZW50PjI1PC9jYmM6UGVyY2VudD4KICAgICAgICAgICAgICAgICAgICAgICAgPGNhYzpUYXhTY2hlbWU+CiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8Y2JjOklEPlZBVDwvY2JjOklEPgogICAgICAgICAgICAgICAgICAgICAgICA8L2NhYzpUYXhTY2hlbWU+CiAgICAgICAgICAgICAgICAgICAgPC9jYWM6VGF4Q2F0ZWdvcnk+CiAgICAgICAgICAgICAgICA8L2NhYzpUYXhTdWJ0b3RhbD4KICAgICAgICAgICAgPC9jYWM6VGF4VG90YWw+CjxjYWM6TGVnYWxNb25ldGFyeVRvdGFsPgogIDxjYmM6TGluZUV4dGVuc2lvbkFtb3VudCBjdXJyZW5jeUlEPSJFVVIiPjI3Ni44NDwvY2JjOkxpbmVFeHRlbnNpb25BbW91bnQ+CiAgPGNiYzpUYXhFeGNsdXNpdmVBbW91bnQgY3VycmVuY3lJRD0iRVVSIj4yNzYuODQ8L2NiYzpUYXhFeGNsdXNpdmVBbW91bnQ+CiAgPGNiYzpUYXhJbmNsdXNpdmVBbW91bnQgY3VycmVuY3lJRD0iRVVSIj4zNDYuMDU8L2NiYzpUYXhJbmNsdXNpdmVBbW91bnQ+CiAgPGNiYzpQYXlhYmxlQW1vdW50IGN1cnJlbmN5SUQ9IkVVUiI+MzQ2LjA1PC9jYmM6UGF5YWJsZUFtb3VudD4KPC9jYWM6TGVnYWxNb25ldGFyeVRvdGFsPgo8Y2FjOkludm9pY2VMaW5lPgogIDxjYmM6SUQ+MTwvY2JjOklEPgogIDxjYmM6SW52b2ljZWRRdWFudGl0eSB1bml0Q29kZT0iSDg3Ij43LjAwMDA8L2NiYzpJbnZvaWNlZFF1YW50aXR5PgogIDxjYmM6TGluZUV4dGVuc2lvbkFtb3VudCBjdXJyZW5jeUlEPSJFVVIiPjU2LjY0PC9jYmM6TGluZUV4dGVuc2lvbkFtb3VudD4KICA8Y2FjOkFsbG93YW5jZUNoYXJnZT4KICAgIDxjYmM6Q2hhcmdlSW5kaWNhdG9yPmZhbHNlPC9jYmM6Q2hhcmdlSW5kaWNhdG9yPgogICAgPGNiYzpBbGxvd2FuY2VDaGFyZ2VSZWFzb24+UG9wdXN0IG5hIHN0YXZrdSAoMTUuMDAlKTwvY2JjOkFsbG93YW5jZUNoYXJnZVJlYXNvbj4KICAgIDxjYmM6TXVsdGlwbGllckZhY3Rvck51bWVyaWM+MTUuMDE8L2NiYzpNdWx0aXBsaWVyRmFjdG9yTnVtZXJpYz4KICAgIDxjYmM6QW1vdW50IGN1cnJlbmN5SUQ9IkVVUiI+MTAuMDA8L2NiYzpBbW91bnQ+CiAgICA8Y2JjOkJhc2VBbW91bnQgY3VycmVuY3lJRD0iRVVSIj42Ni42NDwvY2JjOkJhc2VBbW91bnQ+CiAgPC9jYWM6QWxsb3dhbmNlQ2hhcmdlPgogIDxjYWM6SXRlbT4KICAgIDxjYmM6TmFtZT5GVUdBQkVMTEEgQ09MT1IgMDUgR1JJR0lPIExVQ0UgM0tHPC9jYmM6TmFtZT4KICAgIDxjYWM6U2VsbGVyc0l0ZW1JZGVudGlmaWNhdGlvbj48Y2JjOklEPjAxMDI4MzwvY2JjOklEPjwvY2FjOlNlbGxlcnNJdGVtSWRlbnRpZmljYXRpb24+CiAgICA8Y2FjOlN0YW5kYXJkSXRlbUlkZW50aWZpY2F0aW9uPjxjYmM6SUQgc2NoZW1lSUQ9IjAxNjAiPjgwMjE3MDQxNTUzNzk8L2NiYzpJRD48L2NhYzpTdGFuZGFyZEl0ZW1JZGVudGlmaWNhdGlvbj4KICAgIDxjYWM6Q29tbW9kaXR5Q2xhc3NpZmljYXRpb24+CiAgICAgIDxjYmM6SXRlbUNsYXNzaWZpY2F0aW9uQ29kZSBsaXN0SUQ9IkNHIj40Ni44OS4wMDwvY2JjOkl0ZW1DbGFzc2lmaWNhdGlvbkNvZGU+CiAgICA8L2NhYzpDb21tb2RpdHlDbGFzc2lmaWNhdGlvbj4KICAgIDxjYWM6Q2xhc3NpZmllZFRheENhdGVnb3J5PgogICAgICA8Y2JjOklEPlM8L2NiYzpJRD4KICAgICAgPGNiYzpQZXJjZW50PjI1PC9jYmM6UGVyY2VudD4KICAgICAgPGNhYzpUYXhTY2hlbWU+PGNiYzpJRD5WQVQ8L2NiYzpJRD48L2NhYzpUYXhTY2hlbWU+CiAgICA8L2NhYzpDbGFzc2lmaWVkVGF4Q2F0ZWdvcnk+CiAgPC9jYWM6SXRlbT4KICA8Y2FjOlByaWNlPgogICAgPGNiYzpQcmljZUFtb3VudCBjdXJyZW5jeUlEPSJFVVIiPjkuNTIwMDwvY2JjOlByaWNlQW1vdW50PgogICAgPGNiYzpCYXNlUXVhbnRpdHkgdW5pdENvZGU9Ikg4NyI+MTwvY2JjOkJhc2VRdWFudGl0eT4KICA8L2NhYzpQcmljZT4KPC9jYWM6SW52b2ljZUxpbmU+CjxjYWM6SW52b2ljZUxpbmU+CiAgPGNiYzpJRD4yPC9jYmM6SUQ+CiAgPGNiYzpJbnZvaWNlZFF1YW50aXR5IHVuaXRDb2RlPSJIODciPjEuMDAwMDwvY2JjOkludm9pY2VkUXVhbnRpdHk+CiAgPGNiYzpMaW5lRXh0ZW5zaW9uQW1vdW50IGN1cnJlbmN5SUQ9IkVVUiI+Ni44MDwvY2JjOkxpbmVFeHRlbnNpb25BbW91bnQ+CiAgPGNhYzpBbGxvd2FuY2VDaGFyZ2U+CiAgICA8Y2JjOkNoYXJnZUluZGljYXRvcj5mYWxzZTwvY2JjOkNoYXJnZUluZGljYXRvcj4KICAgIDxjYmM6QWxsb3dhbmNlQ2hhcmdlUmVhc29uPlBvcHVzdCBuYSBzdGF2a3UgKDE1LjAwJSk8L2NiYzpBbGxvd2FuY2VDaGFyZ2VSZWFzb24+CiAgICA8Y2JjOk11bHRpcGxpZXJGYWN0b3JOdW1lcmljPjE1LjAwPC9jYmM6TXVsdGlwbGllckZhY3Rvck51bWVyaWM+CiAgICA8Y2JjOkFtb3VudCBjdXJyZW5jeUlEPSJFVVIiPjEuMjA8L2NiYzpBbW91bnQ+CiAgICA8Y2JjOkJhc2VBbW91bnQgY3VycmVuY3lJRD0iRVVSIj44LjAwPC9jYmM6QmFzZUFtb3VudD4KICA8L2NhYzpBbGxvd2FuY2VDaGFyZ2U+CiAgPGNhYzpJdGVtPgogICAgPGNiYzpOYW1lPlBPU1VEQSBaQSDFvUJVS1UgT0tSVUdMQSA1NUw8L2NiYzpOYW1lPgogICAgPGNhYzpTZWxsZXJzSXRlbUlkZW50aWZpY2F0aW9uPjxjYmM6SUQ+MDE2MDAwPC9jYmM6SUQ+PC9jYWM6U2VsbGVyc0l0ZW1JZGVudGlmaWNhdGlvbj4KICAgIDxjYWM6U3RhbmRhcmRJdGVtSWRlbnRpZmljYXRpb24+PGNiYzpJRCBzY2hlbWVJRD0iMDE2MCI+Mzg1NjAwMzY4ODk3NzwvY2JjOklEPjwvY2FjOlN0YW5kYXJkSXRlbUlkZW50aWZpY2F0aW9uPgogICAgPGNhYzpDb21tb2RpdHlDbGFzc2lmaWNhdGlvbj4KICAgICAgPGNiYzpJdGVtQ2xhc3NpZmljYXRpb25Db2RlIGxpc3RJRD0iQ0ciPjQ2Ljg5LjAwPC9jYmM6SXRlbUNsYXNzaWZpY2F0aW9uQ29kZT4KICAgIDwvY2FjOkNvbW1vZGl0eUNsYXNzaWZpY2F0aW9uPgogICAgPGNhYzpDbGFzc2lmaWVkVGF4Q2F0ZWdvcnk+CiAgICAgIDxjYmM6SUQ+UzwvY2JjOklEPgogICAgICA8Y2JjOlBlcmNlbnQ+MjU8L2NiYzpQZXJjZW50PgogICAgICA8Y2FjOlRheFNjaGVtZT48Y2JjOklEPlZBVDwvY2JjOklEPjwvY2FjOlRheFNjaGVtZT4KICAgIDwvY2FjOkNsYXNzaWZpZWRUYXhDYXRlZ29yeT4KICA8L2NhYzpJdGVtPgogIDxjYWM6UHJpY2U+CiAgICA8Y2JjOlByaWNlQW1vdW50IGN1cnJlbmN5SUQ9IkVVUiI+OC4wMDAwPC9jYmM6UHJpY2VBbW91bnQ+CiAgICA8Y2JjOkJhc2VRdWFudGl0eSB1bml0Q29kZT0iSDg3Ij4xPC9jYmM6QmFzZVF1YW50aXR5PgogIDwvY2FjOlByaWNlPgo8L2NhYzpJbnZvaWNlTGluZT4KPGNhYzpJbnZvaWNlTGluZT4KICA8Y2JjOklEPjM8L2NiYzpJRD4KICA8Y2JjOkludm9pY2VkUXVhbnRpdHkgdW5pdENvZGU9Ikg4NyI+MS4wMDAwPC9jYmM6SW52b2ljZWRRdWFudGl0eT4KICA8Y2JjOkxpbmVFeHRlbnNpb25BbW91bnQgY3VycmVuY3lJRD0iRVVSIj40NC4yMDwvY2JjOkxpbmVFeHRlbnNpb25BbW91bnQ+CiAgPGNhYzpBbGxvd2FuY2VDaGFyZ2U+CiAgICA8Y2JjOkNoYXJnZUluZGljYXRvcj5mYWxzZTwvY2JjOkNoYXJnZUluZGljYXRvcj4KICAgIDxjYmM6QWxsb3dhbmNlQ2hhcmdlUmVhc29uPlBvcHVzdCBuYSBzdGF2a3UgKDE1LjAwJSk8L2NiYzpBbGxvd2FuY2VDaGFyZ2VSZWFzb24+CiAgICA8Y2JjOk11bHRpcGxpZXJGYWN0b3JOdW1lcmljPjE1LjAwPC9jYmM6TXVsdGlwbGllckZhY3Rvck51bWVyaWM+CiAgICA8Y2JjOkFtb3VudCBjdXJyZW5jeUlEPSJFVVIiPjcuODA8L2NiYzpBbW91bnQ+CiAgICA8Y2JjOkJhc2VBbW91bnQgY3VycmVuY3lJRD0iRVVSIj41Mi4wMDwvY2JjOkJhc2VBbW91bnQ+CiAgPC9jYWM6QWxsb3dhbmNlQ2hhcmdlPgogIDxjYWM6SXRlbT4KICAgIDxjYmM6TmFtZT5MRVRWQSBBTFVNLiBTIE9LT00gSSBSVUtPSFZBVE9NIFNMWEcgMjwvY2JjOk5hbWU+CiAgICA8Y2FjOlNlbGxlcnNJdGVtSWRlbnRpZmljYXRpb24+PGNiYzpJRD4wMDEwOTM8L2NiYzpJRD48L2NhYzpTZWxsZXJzSXRlbUlkZW50aWZpY2F0aW9uPgogICAgPGNhYzpTdGFuZGFyZEl0ZW1JZGVudGlmaWNhdGlvbj48Y2JjOklEIHNjaGVtZUlEPSIwMTYwIj45MDAyNzE5MDA4NDIyPC9jYmM6SUQ+PC9jYWM6U3RhbmRhcmRJdGVtSWRlbnRpZmljYXRpb24+CiAgICA8Y2FjOkNvbW1vZGl0eUNsYXNzaWZpY2F0aW9uPgogICAgICA8Y2JjOkl0ZW1DbGFzc2lmaWNhdGlvbkNvZGUgbGlzdElEPSJDRyI+NDYuODkuMDA8L2NiYzpJdGVtQ2xhc3NpZmljYXRpb25Db2RlPgogICAgPC9jYWM6Q29tbW9kaXR5Q2xhc3NpZmljYXRpb24+CiAgICA8Y2FjOkNsYXNzaWZpZWRUYXhDYXRlZ29yeT4KICAgICAgPGNiYzpJRD5TPC9jYmM6SUQ+CiAgICAgIDxjYmM6UGVyY2VudD4yNTwvY2JjOlBlcmNlbnQ+CiAgICAgIDxjYWM6VGF4U2NoZW1lPjxjYmM6SUQ+VkFUPC9jYmM6SUQ+PC9jYWM6VGF4U2NoZW1lPgogICAgPC9jYWM6Q2xhc3NpZmllZFRheENhdGVnb3J5PgogIDwvY2FjOkl0ZW0+CiAgPGNhYzpQcmljZT4KICAgIDxjYmM6UHJpY2VBbW91bnQgY3VycmVuY3lJRD0iRVVSIj41Mi4wMDAwPC9jYmM6UHJpY2VBbW91bnQ+CiAgICA8Y2JjOkJhc2VRdWFudGl0eSB1bml0Q29kZT0iSDg3Ij4xPC9jYmM6QmFzZVF1YW50aXR5PgogIDwvY2FjOlByaWNlPgo8L2NhYzpJbnZvaWNlTGluZT4KPGNhYzpJbnZvaWNlTGluZT4KICA8Y2JjOklEPjQ8L2NiYzpJRD4KICA8Y2JjOkludm9pY2VkUXVhbnRpdHkgdW5pdENvZGU9Ikg4NyI+MS4wMDAwPC9jYmM6SW52b2ljZWRRdWFudGl0eT4KICA8Y2JjOkxpbmVFeHRlbnNpb25BbW91bnQgY3VycmVuY3lJRD0iRVVSIj4xNjkuMjA8L2NiYzpMaW5lRXh0ZW5zaW9uQW1vdW50PgogIDxjYWM6QWxsb3dhbmNlQ2hhcmdlPgogICAgPGNiYzpDaGFyZ2VJbmRpY2F0b3I+ZmFsc2U8L2NiYzpDaGFyZ2VJbmRpY2F0b3I+CiAgICA8Y2JjOkFsbG93YW5jZUNoYXJnZVJlYXNvbj5Qb3B1c3QgbmEgc3Rhdmt1ICgxMC4wMCUpPC9jYmM6QWxsb3dhbmNlQ2hhcmdlUmVhc29uPgogICAgPGNiYzpNdWx0aXBsaWVyRmFjdG9yTnVtZXJpYz4xMC4wMDwvY2JjOk11bHRpcGxpZXJGYWN0b3JOdW1lcmljPgogICAgPGNiYzpBbW91bnQgY3VycmVuY3lJRD0iRVVSIj4xOC44MDwvY2JjOkFtb3VudD4KICAgIDxjYmM6QmFzZUFtb3VudCBjdXJyZW5jeUlEPSJFVVIiPjE4OC4wMDwvY2JjOkJhc2VBbW91bnQ+CiAgPC9jYWM6QWxsb3dhbmNlQ2hhcmdlPgogIDxjYWM6SXRlbT4KICAgIDxjYmM6TmFtZT5URVNMRVIgTUpFxaBBxIwgWiBCT0pVIFBST0ZFU0lPTkFMIDE2MDBXPC9jYmM6TmFtZT4KICAgIDxjYWM6U2VsbGVyc0l0ZW1JZGVudGlmaWNhdGlvbj48Y2JjOklEPjAwODY5MzwvY2JjOklEPjwvY2FjOlNlbGxlcnNJdGVtSWRlbnRpZmljYXRpb24+CiAgICA8Y2FjOlN0YW5kYXJkSXRlbUlkZW50aWZpY2F0aW9uPjxjYmM6SUQgc2NoZW1lSUQ9IjAxNjAiPjM4NTg4OTIzMDI0OTE8L2NiYzpJRD48L2NhYzpTdGFuZGFyZEl0ZW1JZGVudGlmaWNhdGlvbj4KICAgIDxjYWM6Q29tbW9kaXR5Q2xhc3NpZmljYXRpb24+CiAgICAgIDxjYmM6SXRlbUNsYXNzaWZpY2F0aW9uQ29kZSBsaXN0SUQ9IkNHIj40Ni44OS4wMDwvY2JjOkl0ZW1DbGFzc2lmaWNhdGlvbkNvZGU+CiAgICA8L2NhYzpDb21tb2RpdHlDbGFzc2lmaWNhdGlvbj4KICAgIDxjYWM6Q2xhc3NpZmllZFRheENhdGVnb3J5PgogICAgICA8Y2JjOklEPlM8L2NiYzpJRD4KICAgICAgPGNiYzpQZXJjZW50PjI1PC9jYmM6UGVyY2VudD4KICAgICAgPGNhYzpUYXhTY2hlbWU+PGNiYzpJRD5WQVQ8L2NiYzpJRD48L2NhYzpUYXhTY2hlbWU+CiAgICA8L2NhYzpDbGFzc2lmaWVkVGF4Q2F0ZWdvcnk+CiAgPC9jYWM6SXRlbT4KICA8Y2FjOlByaWNlPgogICAgPGNiYzpQcmljZUFtb3VudCBjdXJyZW5jeUlEPSJFVVIiPjE4OC4wMDAwPC9jYmM6UHJpY2VBbW91bnQ+CiAgICA8Y2JjOkJhc2VRdWFudGl0eSB1bml0Q29kZT0iSDg3Ij4xPC9jYmM6QmFzZVF1YW50aXR5PgogIDwvY2FjOlByaWNlPgo8L2NhYzpJbnZvaWNlTGluZT4KPC9JbnZvaWNlPgo=</InvoiceEnvelope>
+            //        </B2BOutgoingInvoiceEnvelope>
+            //      </Data>
+            //    </SendB2BOutgoingInvoiceMsg>
+            //  </SOAP-ENV:Body>
+            //</SOAP-ENV:Envelope>"
+
+
+            //5.2
+            XmlElement body = doc.DocumentElement["SOAP-ENV:Body"];
+            string bodyId = "id-" + Guid.NewGuid().ToString("N");
+
+            body.SetAttribute("Id",
+                "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd",
+                bodyId);
+
+            body.InnerXml = @"
+<EchoMsg xmlns='http://fina.hr/eracun/b2b/pki/Echo/v0.1'>
+  <HeaderSupplier xmlns='http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1'>
+    <MessageID>" + Guid.NewGuid() + @"</MessageID>
+    <SupplierID>9934:26389058739</SupplierID>
+    <MessageType>9999</MessageType>
+  </HeaderSupplier>
+  <Data>
+    <EchoData>
+      <Echo>hello from AURA</Echo>
+    </EchoData>
+  </Data>
+</EchoMsg>";
+
+
+            //6.2
+            XmlElement header = doc.DocumentElement["SOAP-ENV:Header"];
+
+            XmlElement security = doc.CreateElement("wsse", "Security",
+                "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd");
+
+            security.SetAttribute("mustUnderstand",
+                "http://schemas.xmlsoap.org/soap/envelope/", "1");
+
+            header.AppendChild(security);
+
+            //7.2
+            //            XmlElement timestamp = doc.CreateElement("wsu", "Timestamp",
+            //    "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd");
+
+            //            timestamp.SetAttribute("Id", timestamp.NamespaceURI,
+            //                "TS-" + Guid.NewGuid().ToString("N"));
+
+            //            DateTime now = DateTime.UtcNow;
+
+            //            timestamp.InnerXml = $@"
+            //<wsu:Created>{now:yyyy-MM-ddTHH:mm:ssZ}</wsu:Created>
+            //<wsu:Expires>{now.AddMinutes(50):yyyy-MM-ddTHH:mm:ssZ}</wsu:Expires>";
+
+            //            security.AppendChild(timestamp);
+
+            const string WSU =
+    "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd";
+
+            XmlElement timestamp = doc.CreateElement("wsu", "Timestamp", WSU);
+
+            timestamp.SetAttribute(
+                "Id",
+                WSU,
+                "TS-" + Guid.NewGuid().ToString("N")
+            );
+
+            DateTime now = DateTime.UtcNow;
+
+            XmlElement created = doc.CreateElement("wsu", "Created", WSU);
+            created.InnerText = now.ToString("yyyy-MM-ddTHH:mm:ssZ");
+
+            XmlElement expires = doc.CreateElement("wsu", "Expires", WSU);
+            expires.InnerText = now.AddMinutes(50).ToString("yyyy-MM-ddTHH:mm:ssZ");
+
+            timestamp.AppendChild(created);
+            timestamp.AppendChild(expires);
+
+            security.AppendChild(timestamp);
+
+
+            //8.2
+            XmlElement bst = doc.CreateElement("wsse", "BinarySecurityToken",
+    security.NamespaceURI);
+
+            bst.SetAttribute("EncodingType",
+                "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary");
+
+            bst.SetAttribute("ValueType",
+                "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3");
+
+            string certId = "X509-" + Guid.NewGuid().ToString("N");
+
+            bst.SetAttribute("Id",
+                "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd",
+                certId);
+
+            bst.InnerText = Convert.ToBase64String(cert.RawData);
+            security.AppendChild(bst);
+
+
+            //9.2
+            var signedXml = new WSSignedXml(doc);
+            signedXml.SigningKey = cert.GetRSAPrivateKey();
+
+            signedXml.SignedInfo.CanonicalizationMethod =
+                SignedXml.XmlDsigExcC14NTransformUrl;
+
+            signedXml.SignedInfo.SignatureMethod =
+                "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256";
+
+
+            //9.3
+            Reference reference = new Reference("#" + bodyId);
+            reference.DigestMethod = SignedXml.XmlDsigSHA256Url;
+
+            reference.AddTransform(
+                new XmlDsigExcC14NTransform()
+            );
+
+            signedXml.AddReference(reference);
+
+
+            //9.4
+            KeyInfo keyInfo = new KeyInfo();
+
+            XmlElement str = doc.CreateElement("wsse", "SecurityTokenReference",
+                security.NamespaceURI);
+
+            XmlElement refElem = doc.CreateElement("wsse", "Reference",
+                security.NamespaceURI);
+
+            refElem.SetAttribute("URI", "#" + certId);
+            refElem.SetAttribute("ValueType",
+                "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3");
+
+            str.AppendChild(refElem);
+            keyInfo.AddClause(new KeyInfoNode(str));
+
+            signedXml.KeyInfo = keyInfo;
+
+
+            //9.5
+            signedXml.ComputeSignature();
+
+            XmlElement signature = signedXml.GetXml();
+            security.AppendChild(doc.ImportNode(signature, true));
+
+
+
+
+
+            doc.Save("C:\\users\\user\\Desktop\\my.xml");
+
+
+
+            return Variable.EmptyInstance;
         }
     }
 }

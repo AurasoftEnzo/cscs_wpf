@@ -1994,18 +1994,22 @@ function MERFailure(_invNum, responseCode, res) {
         MessageBox("MERFailureException - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
     }
 }
-
-function LogResponse(responseCode, response) {
-    if(!DIR_EXISTS(FILESPATH + "responses\\")){
+logFilePath = "";
+function LogResponse(responseCode, response) 
+{
+    if(!DIR_EXISTS(FILESPATH + "responses\\"))
+    {
         MAKE_DIR(FILESPATH + "responses\\");
     }
-
-    logFilePath = FILESPATH + "responses\\" + parsefile(attachmentPdfPath, "pfName") + ".response";
+    logFilePath = FILESPATH + "responses\\" + parsefile(attachmentPdfPath, "pfName") + ".response"; //FILESPATH + "responses\\" + parsefile(attachmentPdfPath, "pfName") + ".response";
+messageBox("Logging response to file: " + logFilePath);
+    
     appendText = Now("yyyy-MM-dd HH:mm:ss") + " -----------------------------------\n\n" + "StatusCode = " + responseCode + "\n\n" + "Response:\n" + response + "\n\n";
+messageBox("Log text: " + appendText);
     try {
         SaveFile(appendText, logFilePath, "a");        
     } catch (ex) {
-        MessageBox("CRITICAL: Cannot write to log file: " + logPath + "\nError: " + ex);
+        MessageBox("CRITICAL: Cannot write to log file: " + logFilePath + "\nError: " + ex);
     }
 }
 

@@ -2112,141 +2112,6 @@ namespace WpfCSCS
                 }
             });
         }
-    }
-    
-    public class CreateSOAPFunction : ParserFunction
-    {
-        // Use async override for network operations
-        protected override async Task<Variable> EvaluateAsync(ParsingScript script)
-        {
-            List<Variable> args = await script.GetFunctionArgsAsync();
-            Utils.CheckArgs(args.Count, 4, m_name);
-
-            string xmlBody = Utils.GetSafeString(args, 0);
-            string soapAction = Utils.GetSafeString(args, 1);
-            string endpoint = Utils.GetSafeString(args, 2);
-            string certIdentifier = Utils.GetSafeString(args, 3); // Can be thumbprint or file path
-            string certPassword = Utils.GetSafeString(args, 4); // Password for file-based cert
-            int timeoutSeconds = Utils.GetSafeInt(args, 5, 30);
-
-            try
-            {
-                string soapResponse = await CreateAndSendSignedSOAPAsync(xmlBody, soapAction, endpoint, certIdentifier, certPassword, timeoutSeconds);
-                return new Variable(soapResponse);
-            }
-            catch (Exception ex)
-            {
-                // Return a detailed error message to the script
-                return new Variable("ERROR: " + ex.Message + (ex.InnerException != null ? " | Inner: " + ex.InnerException.Message : ""));
-            }
-        }
-
-        // Fallback for synchronous calls - not recommended
-        protected override Variable Evaluate(ParsingScript script)
-        {
-            try
-            {
-                return EvaluateAsync(script).GetAwaiter().GetResult();
-            }
-            catch (Exception ex)
-            {
-                return new Variable("ERROR: " + ex.Message);
-            }
-        }
-
-        public static async Task<string> CreateAndSendSignedSOAPAsync(string xmlBody, string soapAction, string endpoint, string certIdentifier, string certPassword, int timeoutSeconds)
-        {
-            // 1. Load Certificate
-            X509Certificate2 cert = LoadCertificate(certIdentifier, certPassword);
-            if (cert == null)
-            {
-                throw new ArgumentException("Certificate could not be loaded. Identifier: " + certIdentifier);
-            }
-
-            // 2. Create SOAP Envelope and add the body
-            string soapEnvelope = $@"<soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"">
-   <soapenv:Header/>
-   <soapenv:Body>
-     {xmlBody}
-   </soapenv:Body>
-</soapenv:Envelope>";
-
-            XmlDocument doc = new XmlDocument();
-            doc.PreserveWhitespace = true;
-            doc.LoadXml(soapEnvelope);
-
-            //// 3. Find the first element in the Body to be the signing reference
-            //XmlElement bodyContentElement = doc.DocumentElement.GetElementsByTagName("Body", "http://schemas.xmlsoap.org/soap/envelope/")[0]?.FirstChild as XmlElement;
-            //if (bodyContentElement == null)
-            //{
-            //    throw new InvalidOperationException("SOAP Body does not contain a valid XML element to sign.");
-            //}
-
-            // robust lookup of element child inside SOAP Body (replace the existing single-line FirstChild lookup)
-            XmlNodeList bodyNodes = doc.DocumentElement.GetElementsByTagName("Body", "http://schemas.xmlsoap.org/soap/envelope/");
-            if (bodyNodes == null || bodyNodes.Count == 0)
-            {
-                throw new InvalidOperationException("SOAP Envelope Body element not found (namespace mismatch or envelope malformed).");
-            }
-
-            XmlElement bodyElem = bodyNodes[0] as XmlElement;
-            if (bodyElem == null)
-            {
-                throw new InvalidOperationException("SOAP Body node is not an element.");
-            }
-
-            // find first element child (skip text/comments/processing instructions)
-            XmlElement bodyContentElement = null;
-            foreach (XmlNode node in bodyElem.ChildNodes)
-            {
-                if (node.NodeType == XmlNodeType.Element)
-                {
-                    bodyContentElement = (XmlElement)node;
-                    break;
-                }
-            }
-
-            if (bodyContentElement == null)
-            {
-                // Provide useful diagnostic: show a short snippet of Body contents
-                string snippet = bodyElem.InnerXml ?? string.Empty;
-                if (snippet.Length > 200) snippet = snippet.Substring(0, 200) + "...";
-                throw new InvalidOperationException("SOAP Body does not contain a valid XML element to sign. Body contents (truncated): " + snippet);
-            }
-
-            // 4. Add an ID to the element for signing
-            string referenceId = "id-" + Guid.NewGuid().ToString("N");
-            bodyContentElement.SetAttribute("Id", referenceId);
-
-            // 5. Sign the XML document
-            SignXml(doc, cert, referenceId);
-
-            // 6. Send the request using HttpClient
-            var handler = new HttpClientHandler();
-            handler.ClientCertificates.Add(cert);
-            // For development: bypass server certificate validation. Remove in production.
-            handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-
-            using (var client = new HttpClient(handler))
-            {
-                client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
-                var content = new StringContent(doc.OuterXml, Encoding.UTF8, "text/xml");
-                if (!string.IsNullOrEmpty(soapAction))
-                {
-                    content.Headers.Add("SOAPAction", soapAction);
-                }
-
-                HttpResponseMessage response = await client.PostAsync(endpoint, content);
-                string responseString = await response.Content.ReadAsStringAsync();
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    throw new WebException($"HTTP Error {(int)response.StatusCode} {response.ReasonPhrase}: {responseString}");
-                }
-
-                return responseString;
-            }
-        }
 
         private static X509Certificate2 LoadCertificate(string identifier, string password)
         {
@@ -2267,43 +2132,59 @@ namespace WpfCSCS
 
         private static void SignXml(XmlDocument doc, X509Certificate2 cert, string referenceId)
         {
-            if (cert.PrivateKey == null)
+            if (!cert.HasPrivateKey)
             {
                 throw new InvalidOperationException("Certificate does not contain a private key.");
             }
 
-            SignedXml signedXml = new SignedXml(doc);
-            signedXml.SigningKey = cert.PrivateKey;
-            signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
-            signedXml.SignedInfo.SignatureMethod = SignedXml.XmlDsigRSASHA256Url; // Explicitly set to SHA256
-
-            Reference reference = new Reference("#" + referenceId);
-            reference.AddTransform(new XmlDsigExcC14NTransform());
-            reference.DigestMethod = SignedXml.XmlDsigSHA256Url; // Use SHA256 for digest
-            signedXml.AddReference(reference);
-
-            KeyInfo keyInfo = new KeyInfo();
-            keyInfo.AddClause(new KeyInfoX509Data(cert));
-            signedXml.KeyInfo = keyInfo;
-
-            signedXml.ComputeSignature();
-
-            // The signature needs to be inserted into the SOAP Header inside a wsse:Security element
-            XmlElement signatureElement = signedXml.GetXml();
-            
-            XmlElement header = doc.DocumentElement.GetElementsByTagName("Header", "http://schemas.xmlsoap.org/soap/envelope/")[0] as XmlElement;
-            if (header == null)
+            // Explicitly get the RSA private key. This handles both CNG and older CryptoAPI keys.
+            var rsaKey = cert.GetRSAPrivateKey();
+            if (rsaKey == null)
             {
-                header = doc.CreateElement("soapenv", "Header", "http://schemas.xmlsoap.org/soap/envelope/");
-                doc.DocumentElement.PrependChild(header);
+                throw new InvalidOperationException("Could not retrieve RSA private key from the certificate.");
             }
 
-            XmlElement securityElement = doc.CreateElement("wsse", "Security", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd");
-            securityElement.AppendChild(signatureElement);
-            header.AppendChild(securityElement);
+            SignedXml signedXml = new SignedXml(doc);
+            signedXml.SigningKey = rsaKey; // Use the explicit RSA key object
+
+            // Set the signature method and digest method to SHA256, as required by FINA.
+            signedXml.SignedInfo.SignatureMethod = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256";
+
+            // Create Reference to "#Body"
+            Reference reference = new Reference("#" + referenceId);
+            reference.DigestMethod = SignedXml.XmlDsigSHA256Url;
+
+            reference.AddTransform(
+                new XmlDsigExcC14NTransform()
+            );
+
+            signedXml.AddReference(reference);
+
+
+            // Build KeyInfo using SecurityTokenReference pointing to BinarySecurityToken
+            KeyInfo keyInfo = new KeyInfo();
+            // create <wsse:SecurityTokenReference><wsse:Reference URI="#X509Token" ValueType="..."/></wsse:SecurityTokenReference>
+            var strXml = @"<wsse:SecurityTokenReference xmlns:wsse=""http://schemas.xmlsoap.org/ws/2002/12/secext"">" +
+                         @"<wsse:Reference URI=""#X509Token"" ValueType=""http://schemas.xmlsoap.org/ws/2002/12/secext#X509v3""/>" +
+                         @"</wsse:SecurityTokenReference>";
+
+            var strDoc = new XmlDocument();
+            strDoc.LoadXml(strXml);
+            keyInfo.AddClause(new KeyInfoNode(strDoc.DocumentElement));
+            signedXml.KeyInfo = keyInfo;
+
+            // Compute signature
+            signedXml.ComputeSignature();
+
+            // Get XML for signature and append into wsse:Security
+            var xmlDigitalSignature = signedXml.GetXml();
+            security.AppendChild(xmlDigitalSignature);
+
+            // Return signed SOAP
+            return doc.OuterXml;
         }
     }
-    
+
     public class UUIDFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -2354,7 +2235,7 @@ namespace WpfCSCS
                     // 3. Create SOAP envelope
                     string soapEnvelope =
                         $@"<?xml version=""1.0"" encoding=""utf-8""?>
-<soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"" xmlns:fin=""http://fina.hr/soap"">
+<soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"" xmlns:fin=""http://fina.hr/eracun/b2b/pki/Echo/v0.1"">
    <soapenv:Header/>
    <soapenv:Body>
       <fin:EchoMsg>
@@ -2423,13 +2304,13 @@ namespace WpfCSCS
         {
             public SignedXmlWithId(XmlDocument doc) : base(doc) { }
 
-            public override XmlElement GetIdElement(XmlDocument doc, string idValue)
+            public override XmlElement GetIdElement(XmlDocument doc, string id)
             {
                 // look for any attribute named "Id" or wsu:Id
                 var xpathCandidates = new string[] {
-                $"//*[@Id='{idValue}']",
-                $"//*[@wsu:Id='{idValue}']",
-                $"//*[@id='{idValue}']"
+                $"//*[@Id='{id}']",
+                $"//*[@wsu:Id='{id}']",
+                $"//*[@id='{id}']"
             };
 
                 var nsmgr = new XmlNamespaceManager(doc.NameTable);
@@ -2442,7 +2323,7 @@ namespace WpfCSCS
                         return node;
                 }
 
-                return base.GetIdElement(doc, idValue);
+                return base.GetIdElement(doc, id);
             }
         }
 
@@ -2508,434 +2389,74 @@ namespace WpfCSCS
             bst.SetAttribute("EncodingType", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary");
             bst.SetAttribute("ValueType", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3");
             bst.InnerText = Convert.ToBase64String(signingCert.RawData);
-            security.AppendChild(bst);
 
-            // Body with wsu:Id="Body-1"
-            var body = xmlDoc.CreateElement("soapenv", "Body", NS_SOAPENV);
-            var bodyId = xmlDoc.CreateAttribute("wsu", "Id", NS_WSU);
-            bodyId.Value = "Body-1";
-            body.Attributes.Append(bodyId);
-            envelope.AppendChild(body);
+            // 3) create the SecurityTokenReference element that will point to the BST
+            XmlElement str = xmlDoc.CreateElement("wsse", "SecurityTokenReference", NS_WSSE);
+            XmlElement strRef = xmlDoc.CreateElement("wsse", "Reference", NS_WSSE);
+            strRef.SetAttribute("URI", "#" + bstId);
+            strRef.SetAttribute("ValueType", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3");
+            str.AppendChild(strRef);
 
-            // EchoMsg payload
-            var echoMsg = xmlDoc.CreateElement("ech", "EchoMsg", NS_ECH);
-            body.AppendChild(echoMsg);
+            // 4) prepare SignedXml to sign the Body using RSA-SHA256
+            SignedXml signedXml = new SignedXml(doc);
+            var rsa = signingCert.GetRSAPrivateKey();
+            if (rsa == null) return "ERROR: RSA private key not available in certificate.";
+            signedXml.SigningKey = rsa;
+            signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
 
-            // HeaderSupplier
-            var headerSupplier = xmlDoc.CreateElement("iwsc", "HeaderSupplier", NS_IWSC);
-            echoMsg.AppendChild(headerSupplier);
+            // Reference the body by wsu:Id and use SHA256
+            Reference reference = new Reference("#" + bodyId);
+            reference.DigestMethod = SignedXml.XmlDsigSHA256Url;
+            // Use exclusive c14n transform for the referenced node
+            reference.AddTransform(new XmlDsigExcC14NTransform());
+            signedXml.AddReference(reference);
 
-            var elMessageID = xmlDoc.CreateElement("iwsc", "MessageID", NS_IWSC);
-            elMessageID.InnerText = messageId;
-            headerSupplier.AppendChild(elMessageID);
-
-            var elSupplierID = xmlDoc.CreateElement("iwsc", "SupplierID", NS_IWSC);
-            elSupplierID.InnerText = supplierId;
-            headerSupplier.AppendChild(elSupplierID);
-
-            var elERPID = xmlDoc.CreateElement("iwsc", "ERPID", NS_IWSC);
-            elERPID.InnerText = erpId;
-            headerSupplier.AppendChild(elERPID);
-
-            var elMessageType = xmlDoc.CreateElement("iwsc", "MessageType", NS_IWSC);
-            elMessageType.InnerText = messageType.ToString();
-            headerSupplier.AppendChild(elMessageType);
-
-            // Data/Echo
-            var data = xmlDoc.CreateElement("ech", "Data", NS_ECH);
-            var echo = xmlDoc.CreateElement("ech", "Echo", NS_ECH);
-
-            xmlDoc.LoadXml(@"<?xml version=""1.0"" encoding=""UTF-8""?>
-<soapenv:Envelope
-    xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/""
-    xmlns:ech=""http://fina.hr/eracun/b2b/pki/Echo/v0.1""
-    xmlns:iwsc=""http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1"">
-    <soapenv:Header/>
-    <soapenv:Body>
-        <EchoBuyerMsg>
-            <HeaderBuyer xmlns=""http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1"">
-                <MessageID>b96d8194-ff6a-4165-8d8e-39fb303ba2e1</MessageID>
-                <BuyerID>9934:26389058739</BuyerID>
-                <MessageType>9999</MessageType>
-            </HeaderBuyer>
-            <Data xmlns=""http://fina.hr/eracun/b2b/EchoBuyer/v0.1"">
-                <EchoData>
-                    <Echo>Hello world</Echo>
-                </EchoData>
-            </Data>
-        </EchoBuyerMsg>
-    </soapenv:Body>
-</soapenv:Envelope>");
-
-            echo.InnerText = echoText;
-            data.AppendChild(echo);
-            echoMsg.AppendChild(data);
-
-            // SIGNATURE: sign Timestamp (#TS-1) and Body (#Body-1)
-            var signedXml = new SignedXmlWithId(xmlDoc)
-            {
-                SigningKey = signingCert.GetRSAPrivateKey()
-            };
-
-            // Force RSA-SHA256
+            // Use RSA-SHA256 for signature method
             signedXml.SignedInfo.SignatureMethod = SignedXml.XmlDsigRSASHA256Url;
 
-            // Reference to Timestamp
-            var refTs = new Reference("#TS-1") { DigestMethod = SignedXml.XmlDsigSHA256Url };
-            refTs.AddTransform(new XmlDsigExcC14NTransform());
-            signedXml.AddReference(refTs);
-
-            // Reference to Body
-            var refBody = new Reference("#Body-1") { DigestMethod = SignedXml.XmlDsigSHA256Url };
-            refBody.AddTransform(new XmlDsigExcC14NTransform());
-            signedXml.AddReference(refBody);
-
-            // Build KeyInfo as SecurityTokenReference to BinarySecurityToken
-            var keyInfo = new KeyInfo();
-            // Add dummy X509Data so SignedXml will generate KeyInfo (we will replace it)
+            // 5) Build KeyInfo with X509Data and SecurityTokenReference BEFORE computing signature
+            KeyInfo keyInfo = new KeyInfo();
             keyInfo.AddClause(new KeyInfoX509Data(signingCert));
+
+            // import STR element into doc context and wrap as KeyInfoNode
+            XmlElement importedStr = (XmlElement)doc.ImportNode(str, true);
+            KeyInfoNode kin = new KeyInfoNode(importedStr);
+            keyInfo.AddClause(kin);
+
             signedXml.KeyInfo = keyInfo;
 
-            // Compute signature
+            // 6) Compute signature (STR is already present inside KeyInfo and will be serialized into Signature)
             signedXml.ComputeSignature();
+            XmlElement signatureElement = signedXml.GetXml();
 
-            // Get signature XML and replace KeyInfo with wsse:SecurityTokenReference -> wsse:Reference URI="#X509-1"
-            var sigXml = signedXml.GetXml();
+            // 7) build wsse:Security header and insert BinarySecurityToken and Signature
+            XmlElement security = doc.CreateElement("wsse", "Security", NS_WSSE);
+            security.SetAttribute("xmlns:wsu", NS_WSU);
 
-            // Build new KeyInfo node
-            var newKeyInfo = xmlDoc.CreateElement("ds", "KeyInfo", NS_DS);
-            var str = xmlDoc.CreateElement("wsse", "SecurityTokenReference", NS_WSSE);
-            var refNode = xmlDoc.CreateElement("wsse", "Reference", NS_WSSE);
+            // append BST and Signature (signature already contains KeyInfo with STR)
+            security.AppendChild(binaryToken);
+            security.AppendChild(doc.ImportNode(signatureElement, true));
 
-            var uriAttr = xmlDoc.CreateAttribute("URI");
-            uriAttr.Value = "#X509-1";
-            refNode.Attributes.Append(uriAttr);
-
-            var vtAttr = xmlDoc.CreateAttribute("ValueType");
-            vtAttr.Value = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3";
-            refNode.Attributes.Append(vtAttr);
-
-            str.AppendChild(refNode);
-            newKeyInfo.AppendChild(str);
-
-            // Replace KeyInfo element
-            var oldKeyInfo = sigXml.GetElementsByTagName("KeyInfo", NS_DS)[0];
-            if (oldKeyInfo != null)
-                sigXml.ReplaceChild(newKeyInfo, oldKeyInfo);
-
-            // Import signature into main document under wsse:Security
-            XmlNode importedSig = xmlDoc.ImportNode(sigXml, true);
-            security.AppendChild(importedSig);
+            // Insert Security header into SOAP Header (create Header if missing)
+            XmlElement envelope = doc.DocumentElement;
+            XmlElement header = null;
+            foreach (XmlNode n in envelope.ChildNodes)
+            {
+                if (n.NodeType == XmlNodeType.Element && n.LocalName == "Header")
+                {
+                    header = (XmlElement)n;
+                    break;
+                }
+            }
+            if (header == null)
+            {
+                header = doc.CreateElement(envelope.Prefix, "Header", envelope.NamespaceURI);
+                envelope.PrependChild(header);
+            }
+            header.PrependChild(security);
 
             // Return the formatted XML
-            return xmlDoc.OuterXml;
-        }
-
-        /// <summary>
-        /// Example showing load p12, create SOAP, and post to service endpoint.
-        /// </summary>
-        public static void ExampleUsage()
-        {
-            string p12Path = "D:\\WinX\\ERAC\\certifikati\\p12_aurasoft_demo.p12";      // <-- your file
-            string p12Password = "Aurasoft1";               // <-- your p12 password
-            //string serviceUrl = "http://prezdigitalneusluge.fina.hr/SendB2BOutgoingInvoicePKIWebService"; // <-- replace with real endpoint
-            string serviceUrl = "https://prezdigitalneusluge.fina.hr/SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService";
-
-            // Load signing cert (P12)
-            var signingCert = new X509Certificate2(
-                p12Path,
-                p12Password,
-                X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet
-            );
-
-            Console.WriteLine("Has private key: " + signingCert.HasPrivateKey);
-
-            // Build signed SOAP
-            string messageId = "MSG-0001";
-            string supplierId = "9934:26389058739";
-            string erpId = "e-racun-winx";
-            int messageType = 9999;
-            string echoText = "Hello from CSCS";
-
-            string soapXml = CreateSignedEchoSoap(signingCert, messageId, supplierId, erpId, messageType, echoText);
-
-            Console.WriteLine("SOAP length: " + soapXml.Length);
-            // Optionally save to file for inspection:
-            System.IO.File.WriteAllText("signedEchoMsg.xml", soapXml, System.Text.Encoding.UTF8);
-
-            // POST with HttpClient
-            using (var client = new HttpClient())
-            {
-                var content = new StringContent(soapXml, Encoding.UTF8, "text/xml");
-
-                // If server expects a SOAPAction header, set it. WSDL had no soapAction => try empty or operation-specific.
-                content.Headers.Remove("SOAPAction");
-                // content.Headers.Add("SOAPAction", "\"\"");
-
-                var response = client.PostAsync(serviceUrl, content).GetAwaiter().GetResult();
-                var respText = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-
-                Console.WriteLine("Status: " + response.StatusCode);
-                Console.WriteLine("Response: " + respText);
-
-                // Optionally validate response signature using e-invoice.cer (server's public cert)
-            }
-        }
-    }
-
-    public class CreateSOAP2Function : ParserFunction
-    {
-        protected override async Task<Variable> EvaluateAsync(ParsingScript script)
-        {
-            List<Variable> args = await script.GetFunctionArgsAsync();
-            Utils.CheckArgs(args.Count, 4, m_name);
-
-            string xmlBody = Utils.GetSafeString(args, 0);
-            string soapAction = Utils.GetSafeString(args, 1);
-            string endpoint = Utils.GetSafeString(args, 2);
-            string certIdentifier = Utils.GetSafeString(args, 3);
-            string certPassword = Utils.GetSafeString(args, 4);
-            string erpId = Utils.GetSafeString(args, 5, ""); // New ERPID parameter
-            int timeoutSeconds = Utils.GetSafeInt(args, 6, 60);
-
-            try
-            {
-                X509Certificate2 cert = LoadCertificate(certIdentifier, certPassword);
-                if (cert == null)
-                {
-                    return new Variable("ERROR: Certificate could not be loaded. Identifier: " + certIdentifier);
-                }
-
-                string soapResponse = await CreateAndSendFINACompliantSOAPAsync(xmlBody, soapAction, endpoint, cert, erpId, timeoutSeconds);
-                return new Variable(soapResponse);
-            }
-            catch (Exception ex)
-            {
-                return new Variable("ERROR: " + ex.Message + (ex.InnerException != null ? " | Inner: " + ex.InnerException.Message : ""));
-            }
-        }
-
-        public static async Task<string> CreateAndSendFINACompliantSOAPAsync(string xmlBody, string soapAction, string endpoint,
-            X509Certificate2 cert, string erpId, int timeoutSeconds)
-        {
-            // Generate unique IDs for WS-Security elements
-            string timestampId = "TS-" + Guid.NewGuid().ToString("N");
-            string securityTokenId = "X509-" + Guid.NewGuid().ToString("N");
-            string bodyId = "Body-" + Guid.NewGuid().ToString("N");
-
-            // Create FINA-compliant SOAP envelope
-            string soapEnvelope = CreateFINACompliantSoapEnvelope(xmlBody, securityTokenId, timestampId, bodyId, cert, erpId);
-            soapEnvelope = @"<?xml version=""1.0"" encoding=""UTF-8""?>
-<soapenv:Envelope
-    xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/""
-    xmlns:ech=""http://fina.hr/eracun/b2b/pki/Echo/v0.1""
-    xmlns:iwsc=""http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1"">
-    <soapenv:Header/>
-    <soapenv:Body>
-        <EchoBuyerMsg>
-            <HeaderBuyer xmlns=""http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1"">
-                <MessageID>b96d8194-ff6a-4165-8d8e-39fb303ba2e1</MessageID>
-                <BuyerID>9934:26389058739</BuyerID>
-                <MessageType>9999</MessageType>
-            </HeaderBuyer>
-            <Data xmlns=""http://fina.hr/eracun/b2b/EchoBuyer/v0.1"">
-                <EchoData>
-                    <Echo>Hello world</Echo>
-                </EchoData>
-            </Data>
-        </EchoBuyerMsg>
-    </soapenv:Body>
-</soapenv:Envelope>";
-
-            XmlDocument doc = new XmlDocument();
-            doc.PreserveWhitespace = true;
-            doc.LoadXml(soapEnvelope);
-
-            // Add ID to Body element
-            XmlElement bodyElement = doc.SelectSingleNode("//*[local-name()='Body']") as XmlElement;
-            if (bodyElement != null)
-            {
-                bodyElement.SetAttribute("Id", bodyId);
-            }
-
-            // Sign the SOAP document
-            SignFINACompliantSoap(doc, cert, securityTokenId, timestampId, bodyId);
-
-            // Send the request
-            using (var handler = new HttpClientHandler())
-            {
-                handler.ClientCertificates.Add(cert);
-                handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-
-                using (var client = new HttpClient(handler))
-                {
-                    client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
-
-                    var content = new StringContent(doc.OuterXml, Encoding.UTF8, "text/xml");
-
-                    // FINA requires empty SOAPAction for their services
-                    content.Headers.Add("SOAPAction", string.IsNullOrEmpty(soapAction) ? "" : soapAction);
-                    content.Headers.ContentType.CharSet = "utf-8";
-
-                    // Add custom headers if needed
-                    // content.Headers.Add("X-ERP-ID", erpId);
-
-                    try
-                    {
-                        HttpResponseMessage response = await client.PostAsync(endpoint, content);
-                        string responseString = await response.Content.ReadAsStringAsync();
-
-                        if (!response.IsSuccessStatusCode)
-                        {
-                            // Try to extract error details
-                            string errorDetails = ExtractFINAErrorMessage(responseString);
-                            throw new WebException($"HTTP Error {(int)response.StatusCode} {response.ReasonPhrase}. {errorDetails}");
-                        }
-
-                        return responseString;
-                    }
-                    catch (TaskCanceledException ex)
-                    {
-                        throw new WebException($"Request timeout after {timeoutSeconds} seconds: {ex.Message}");
-                    }
-                }
-            }
-        }
-
-        private static string CreateFINACompliantSoapEnvelope(string xmlBody, string securityTokenId, string timestampId,
-            string bodyId, X509Certificate2 cert, string erpId)
-        {
-            string certBase64 = Convert.ToBase64String(cert.RawData);
-            string created = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
-            string expires = DateTime.UtcNow.AddMinutes(5).ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
-
-            // Build FINA-compliant SOAP envelope with ERPID in custom header if provided
-            string envelope = $@"<soapenv:Envelope 
-    xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/""
-    xmlns:wsse=""http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd""
-    xmlns:wsu=""http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"">
-    <soapenv:Header>";
-
-            // Add ERPID as a custom header if provided
-            if (!string.IsNullOrEmpty(erpId))
-            {
-                envelope += $@"
-        <ERPID xmlns=""http://www.fina.hr/e-racun/services"">{erpId}</ERPID>";
-            }
-
-            envelope += $@"
-        <wsse:Security soapenv:mustUnderstand=""1"">
-            <wsse:BinarySecurityToken 
-                EncodingType=""http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary""
-                ValueType=""http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3""
-                wsu:Id=""{securityTokenId}"">
-                {certBase64}
-            </wsse:BinarySecurityToken>
-            <wsu:Timestamp wsu:Id=""{timestampId}"">
-                <wsu:Created>{created}</wsu:Created>
-                <wsu:Expires>{expires}</wsu:Expires>
-            </wsu:Timestamp>
-        </wsse:Security>
-    </soapenv:Header>
-    <soapenv:Body wsu:Id=""{bodyId}"">
-        {xmlBody}
-    </soapenv:Body>
- </soapenv:Envelope>";
-
-            return envelope;
-        }
-
-        private static void SignFINACompliantSoap(XmlDocument doc, X509Certificate2 cert, string securityTokenId,
-            string timestampId, string bodyId)
-        {
-            if (cert.PrivateKey == null)
-            {
-                throw new InvalidOperationException("Certificate does not contain a private key.");
-            }
-
-            SignedXml signedXml = new SignedXml(doc);
-            signedXml.SigningKey = cert.PrivateKey;
-
-            signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
-            signedXml.SignedInfo.SignatureMethod = SignedXml.XmlDsigRSASHA256Url;
-
-            // Reference to Body
-            Reference bodyRef = new Reference("#" + bodyId);
-            bodyRef.AddTransform(new XmlDsigExcC14NTransform());
-            bodyRef.DigestMethod = SignedXml.XmlDsigSHA256Url;
-            signedXml.AddReference(bodyRef);
-
-            // Reference to Timestamp
-            Reference timestampRef = new Reference("#" + timestampId);
-            timestampRef.AddTransform(new XmlDsigExcC14NTransform());
-            timestampRef.DigestMethod = SignedXml.XmlDsigSHA256Url;
-            signedXml.AddReference(timestampRef);
-
-            // Reference to BinarySecurityToken
-            Reference tokenRef = new Reference("#" + securityTokenId);
-            tokenRef.AddTransform(new XmlDsigExcC14NTransform());
-            tokenRef.DigestMethod = SignedXml.XmlDsigSHA256Url;
-            signedXml.AddReference(tokenRef);
-
-            // Add KeyInfo with SecurityTokenReference
-            KeyInfo keyInfo = new KeyInfo();
-            KeyInfoX509Data x509Data = new KeyInfoX509Data(cert);
-            keyInfo.AddClause(x509Data);
-
-            XmlElement keyInfoElement = keyInfo.GetXml();
-            XmlElement securityTokenRef = doc.CreateElement("wsse", "SecurityTokenReference",
-                "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd");
-            XmlElement referenceElement = doc.CreateElement("wsse", "Reference",
-                "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd");
-            referenceElement.SetAttribute("URI", "#" + securityTokenId);
-            referenceElement.SetAttribute("ValueType", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3");
-            securityTokenRef.AppendChild(referenceElement);
-
-            keyInfoElement.InsertBefore(securityTokenRef, keyInfoElement.FirstChild);
-            signedXml.KeyInfo = keyInfo;
-
-            // Compute signature
-            signedXml.ComputeSignature();
-
-            // Add signature to Security header
-            XmlNamespaceManager nsManager = new XmlNamespaceManager(doc.NameTable);
-            nsManager.AddNamespace("wsse", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd");
-            nsManager.AddNamespace("soapenv", "http://schemas.xmlsoap.org/soap/envelope/");
-
-            XmlElement securityElement = doc.SelectSingleNode("//soapenv:Header/wsse:Security", nsManager) as XmlElement;
-            if (securityElement != null)
-            {
-                securityElement.AppendChild(doc.ImportNode(signedXml.GetXml(), true));
-            }
-            else
-            {
-                throw new InvalidOperationException("Security element not found in SOAP header.");
-            }
-        }
-
-        private static string ExtractFINAErrorMessage(string response)
-        {
-            try
-            {
-                XmlDocument doc = new XmlDocument();
-                doc.LoadXml(response);
-
-                XmlNamespaceManager nsManager = new XmlNamespaceManager(doc.NameTable);
-                nsManager.AddNamespace("soap", "http://schemas.xmlsoap.org/soap/envelope/");
-                nsManager.AddNamespace("fin", "http://www.fina.hr/e-racun/services");
-
-                // Try to find error message in various locations
-                XmlNode errorNode = doc.SelectSingleNode("//faultstring", nsManager) ??
-                                   doc.SelectSingleNode("//ErrorMessage", nsManager) ??
-                                   doc.SelectSingleNode("//*[contains(local-name(), 'Error')]", nsManager);
-
-                return errorNode?.InnerText ?? "No error details available";
-            }
-            catch
-            {
-                // If XML parsing fails, return raw response or truncated version
-                return response.Length > 500 ? response.Substring(0, 500) + "..." : response;
-            }
+            return doc.OuterXml;
         }
 
         private static X509Certificate2 LoadCertificate(string identifier, string password)
@@ -2954,6 +2475,60 @@ namespace WpfCSCS
                 return certs.Count > 0 ? certs[0] : null;
             }
         }
+
+        private static void SignXml(XmlDocument doc, X509Certificate2 cert, string referenceId)
+        {
+            if (!cert.HasPrivateKey)
+            {
+                throw new InvalidOperationException("Certificate does not contain a private key.");
+            }
+
+            // Explicitly get the RSA private key. This handles both CNG and older CryptoAPI keys.
+            var rsaKey = cert.GetRSAPrivateKey();
+            if (rsaKey == null)
+            {
+                throw new InvalidOperationException("Could not retrieve RSA private key from the certificate.");
+            }
+
+            SignedXml signedXml = new SignedXml(doc);
+            signedXml.SigningKey = rsaKey; // Use the explicit RSA key object
+
+            // Set the signature method and digest method to SHA256, as required by FINA.
+            signedXml.SignedInfo.SignatureMethod = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256";
+
+            // Create Reference to "#Body"
+            Reference reference = new Reference("#" + referenceId);
+            reference.DigestMethod = SignedXml.XmlDsigSHA256Url;
+
+            reference.AddTransform(
+                new XmlDsigExcC14NTransform()
+            );
+
+            signedXml.AddReference(reference);
+
+
+            // Build KeyInfo using SecurityTokenReference pointing to BinarySecurityToken
+            KeyInfo keyInfo = new KeyInfo();
+            // create <wsse:SecurityTokenReference><wsse:Reference URI="#X509Token" ValueType="..."/></wsse:SecurityTokenReference>
+            var strXml = @"<wsse:SecurityTokenReference xmlns:wsse=""http://schemas.xmlsoap.org/ws/2002/12/secext"">" +
+                         @"<wsse:Reference URI=""#X509Token"" ValueType=""http://schemas.xmlsoap.org/ws/2002/12/secext#X509v3""/>" +
+                         @"</wsse:SecurityTokenReference>";
+
+            var strDoc = new XmlDocument();
+            strDoc.LoadXml(strXml);
+            keyInfo.AddClause(new KeyInfoNode(strDoc.DocumentElement));
+            signedXml.KeyInfo = keyInfo;
+
+            // Compute signature
+            signedXml.ComputeSignature();
+
+            // Get XML for signature and append into wsse:Security
+            var xmlDigitalSignature = signedXml.GetXml();
+            security.AppendChild(xmlDigitalSignature);
+
+            // Return signed SOAP
+            return doc.OuterXml;
+        }
     }
 
     public class TEST1Function : ParserFunction
@@ -2969,15 +2544,13 @@ namespace WpfCSCS
                    xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"">
     <SOAP-ENV:Header />
     <SOAP-ENV:Body
-                   xmlns:wsu=""http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"">
+                   xmlns:wsu=""http://schemas.xmlsoap.org/ws/2002/12/utility"">
         <EchoMsg xmlns=""http://fina.hr/eracun/b2b/pki/Echo/v0.1"">
             <HeaderSupplier xmlns=""http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1"">
                 <MessageID>" + Guid.NewGuid() + @"</MessageID>
-                <SupplierID>9934:26389058739</SupplierID>" + 
-                //"<ERPID>e-racun-winx</ERPID> " + 
-                //@"<MessageType>9999</MessageType>" +
-                //@"<MessageAttributes>echo poruka</MessageAttributes>" +
-            @"</HeaderSupplier>
+                <SupplierID>9934:26389058739</SupplierID>
+                <MessageType>9999</MessageType>
+            </HeaderSupplier>
             <Data>
                 <EchoData>
                     <Echo>hello from Aurasoft!</Echo>
@@ -2989,7 +2562,7 @@ namespace WpfCSCS
 
             //            unsignedXml = @"<?xml version=""1.0"" encoding=""UTF-8""?>
             //<Invoice xmlns=""urn:oasis:names:specification:ubl:schema:xsd:Invoice-2""
-            //    xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
+            //    xmlns:xsi=""http://www.w3.org/2001/XMLSchema""
             //    xmlns:xsd=""http://www.w3.org/2001/XMLSchema""
             //    xmlns:cac=""urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2""
             //    xmlns:cbc=""urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2""
@@ -3238,7 +2811,7 @@ namespace WpfCSCS
 
             string signedXml = FinaSoapSigner.SignSoap(
                 unsignedXml,
-                "D:\\WinX\\ERAC\\certifikati\\p12_aurasoft_demo.p12",
+                "C:\\WinX\\certifikati\\p12_aurasoft_demo.p12",
                 "Aurasoft1"
             );
 
@@ -3290,47 +2863,43 @@ namespace WpfCSCS
                 var header = (XmlElement)doc.SelectSingleNode("//soap:Header", ns);
                 if (header == null) throw new Exception("SOAP Header nije pronađen.");
 
-                var security = doc.CreateElement("wsse", "Security", "http://schemas.xmlsoap.org/ws/2002/12/secext");
-                // opcionalno: add mustUnderstand if needed
+                var security = doc.CreateElement("wsse", "Security",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext");
                 header.AppendChild(security);
 
-                // BinarySecurityToken
-                var bst = doc.CreateElement("wsse", "BinarySecurityToken", "http://schemas.xmlsoap.org/ws/2002/12/secext");
-                bst.SetAttribute("EncodingType", "http://schemas.xmlsoap.org/ws/2002/12/secext#Base64Binary");
-                bst.SetAttribute("ValueType", "http://schemas.xmlsoap.org/ws/2002/12/secext#X509v3");
-                // ensure wsu:Id attribute exists and has correct prefix
-                var bstIdAttr = doc.CreateAttribute("wsu", "Id", "http://schemas.xmlsoap.org/ws/2002/12/utility");
-                bstIdAttr.Value = "X509Token";
-                bst.Attributes.Append(bstIdAttr);
+                // Create BinarySecurityToken
+                var bst = doc.CreateElement("wsse", "BinarySecurityToken",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext");
+                bst.SetAttribute("EncodingType",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext#Base64Binary");
+                bst.SetAttribute("ValueType",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext#X509v3");
+                bst.SetAttribute("wsu:Id", "MyCert");
                 bst.InnerText = Convert.ToBase64String(cert.RawData);
                 security.AppendChild(bst);
 
                 // Prepare SignedXml
-                var signedXml = new SignedXml(doc);
+                var signedXml = new SignedXmlWithId(doc)
+                {
+                    SigningKey = cert.GetRSAPrivateKey()
+                };
 
-                // Use RSA (we already saw cert.GetRSAPrivateKey() is OK)
-                RSA rsa = cert.GetRSAPrivateKey();
-                if (rsa == null) throw new Exception("Nije pronađen RSA privatni ključ u certifikatu.");
-                signedXml.SigningKey = rsa;
-
-                // Ensure signature uses SHA256
+                // Force RSA-SHA256
                 signedXml.SignedInfo.SignatureMethod = SignedXml.XmlDsigRSASHA256Url;
 
                 // Create Reference to "#Body"
-                var reference = new Reference();
-                reference.Uri = "#Body";
+                Reference reference = new Reference("#" + bodyId);
                 reference.DigestMethod = SignedXml.XmlDsigSHA256Url;
-                reference.AddTransform(new XmlDsigExcC14NTransform()); // exclusive canonicalization
+
+                reference.AddTransform(
+                    new XmlDsigExcC14NTransform()
+                );
+
                 signedXml.AddReference(reference);
 
-                // IMPORTANT: register Id attribute so SignedXml can resolve "#Body"
-                // SignedXml looks for attribute named "Id" by default. We already set "Id".
-                // But to be robust, explicitly add id attribute mapping for the body element:
-                // (AddIdElement available as protected in some implementations; this approach is safe:)
-                //signedXml.AddReference(reference); // already added above — no harm repeating
 
                 // Build KeyInfo using SecurityTokenReference pointing to BinarySecurityToken
-                var keyInfo = new KeyInfo();
+                KeyInfo keyInfo = new KeyInfo();
                 // create <wsse:SecurityTokenReference><wsse:Reference URI="#X509Token" ValueType="..."/></wsse:SecurityTokenReference>
                 var strXml = @"<wsse:SecurityTokenReference xmlns:wsse=""http://schemas.xmlsoap.org/ws/2002/12/secext"">" +
                              @"<wsse:Reference URI=""#X509Token"" ValueType=""http://schemas.xmlsoap.org/ws/2002/12/secext#X509v3""/>" +
@@ -3346,8 +2915,7 @@ namespace WpfCSCS
 
                 // Get XML for signature and append into wsse:Security
                 var xmlDigitalSignature = signedXml.GetXml();
-                // The signature element uses ds: namespace by default; append as-is
-                security.AppendChild(doc.ImportNode(xmlDigitalSignature, true));
+                security.AppendChild(xmlDigitalSignature);
 
                 // Return signed SOAP
                 return doc.OuterXml;
@@ -3358,13 +2926,14 @@ namespace WpfCSCS
                 XmlElement str = doc.CreateElement("wsse", "SecurityTokenReference",
                     "http://schemas.xmlsoap.org/ws/2002/12/secext");
 
-                XmlElement reference = doc.CreateElement("wsse", "Reference",
+                XmlElement refElem = doc.CreateElement("wsse", "Reference",
                     "http://schemas.xmlsoap.org/ws/2002/12/secext");
-                reference.SetAttribute("URI", "#X509Token");
-                reference.SetAttribute("ValueType",
+
+                refElem.SetAttribute("URI", "#MyCert");
+                refElem.SetAttribute("ValueType",
                     "http://schemas.xmlsoap.org/ws/2002/12/secext#X509v3");
 
-                str.AppendChild(reference);
+                str.AppendChild(refElem);
                 return str;
             }
         }
@@ -3412,50 +2981,47 @@ namespace WpfCSCS
                 bst.SetAttribute("ValueType",
                     "http://schemas.xmlsoap.org/ws/2002/12/secext#X509v3");
                 bst.SetAttribute("wsu:Id", "MyCert");
-                bst.InnerText = Convert.ToBase64String(cert.GetRawCertData());
+                bst.InnerText = Convert.ToBase64String(cert.RawData);
                 security.AppendChild(bst);
 
-                // Create SignedXml object
+                // Create SignedXml
                 SignedXml signedXml = new SignedXml(doc);
                 signedXml.SigningKey = cert.PrivateKey;
 
-                // Reference to Body
-                Reference reference = new Reference();
-                reference.Uri = "#Body";
-                reference.AddTransform(new XmlDsigExcC14NTransform());
+                // Set the signature method and digest method to SHA256, as required by FINA.
+                signedXml.SignedInfo.SignatureMethod = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256";
+
+                // Create Reference to "#Body"
+                Reference reference = new Reference("#" + body.Id);
+                reference.DigestMethod = SignedXml.XmlDsigSHA256Url;
+
+                reference.AddTransform(
+                    new XmlDsigExcC14NTransform()
+                );
+
                 signedXml.AddReference(reference);
 
-                // Add KeyInfo pointing to BinarySecurityToken
+
+                // Build KeyInfo using SecurityTokenReference pointing to BinarySecurityToken
                 KeyInfo keyInfo = new KeyInfo();
-                KeyInfoNode refNode = new KeyInfoNode(
-                    CreateSecurityTokenReference(doc));
-                keyInfo.AddClause(refNode);
+                // create <wsse:SecurityTokenReference><wsse:Reference URI="#X509Token" ValueType="..."/></wsse:SecurityTokenReference>
+                var strXml = @"<wsse:SecurityTokenReference xmlns:wsse=""http://schemas.xmlsoap.org/ws/2002/12/secext"">" +
+                             @"<wsse:Reference URI=""#X509Token"" ValueType=""http://schemas.xmlsoap.org/ws/2002/12/secext#X509v3""/>" +
+                             @"</wsse:SecurityTokenReference>";
+
+                var strDoc = new XmlDocument();
+                strDoc.LoadXml(strXml);
+                keyInfo.AddClause(new KeyInfoNode(strDoc.DocumentElement));
                 signedXml.KeyInfo = keyInfo;
 
                 // Compute signature
                 signedXml.ComputeSignature();
 
-                // Append <Signature> under <wsse:Security>
-                XmlElement xmlDigitalSignature = signedXml.GetXml();
+                // Get XML for signature and append into wsse:Security
+                var xmlDigitalSignature = signedXml.GetXml();
                 security.AppendChild(xmlDigitalSignature);
 
                 return doc.OuterXml;
-            }
-
-            private static XmlElement CreateSecurityTokenReference(XmlDocument doc)
-            {
-                XmlElement str = doc.CreateElement("wsse", "SecurityTokenReference",
-                    "http://schemas.xmlsoap.org/ws/2002/12/secext");
-
-                XmlElement refElem = doc.CreateElement("wsse", "Reference",
-                    "http://schemas.xmlsoap.org/ws/2002/12/secext");
-
-                refElem.SetAttribute("URI", "#MyCert");
-                refElem.SetAttribute("ValueType",
-                    "http://schemas.xmlsoap.org/ws/2002/12/secext#X509v3");
-
-                str.AppendChild(refElem);
-                return str;
             }
         }
     }
@@ -3643,18 +3209,24 @@ namespace WpfCSCS
 
             public override XmlElement GetIdElement(XmlDocument doc, string id)
             {
-                return doc.SelectSingleNode(
-                    $"//*[@wsu:Id='{id}']",
-                    CreateNamespaceManager(doc)
-                ) as XmlElement;
-            }
+                // look for any attribute named "Id" or wsu:Id
+                var xpathCandidates = new string[] {
+                $"//*[@Id='{id}']",
+                $"//*[@wsu:Id='{id}']",
+                $"//*[@id='{id}']"
+            };
 
-            XmlNamespaceManager CreateNamespaceManager(XmlDocument doc)
-            {
                 var nsmgr = new XmlNamespaceManager(doc.NameTable);
-                nsmgr.AddNamespace("wsu",
-                    "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd");
-                return nsmgr;
+                nsmgr.AddNamespace("wsu", NS_WSU);
+
+                foreach (var xp in xpathCandidates)
+                {
+                    var node = doc.SelectSingleNode(xp, nsmgr) as XmlElement;
+                    if (node != null)
+                        return node;
+                }
+
+                return base.GetIdElement(doc, id);
             }
         }
 
@@ -3669,8 +3241,7 @@ namespace WpfCSCS
             var cert = new X509Certificate2(
                 "D:\\WinX\\ERAC\\certifikati\\p12_aurasoft_demo.p12",
                 "Aurasoft1",
-                X509KeyStorageFlags.MachineKeySet |
-                X509KeyStorageFlags.Exportable
+                X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable
             );
 
             ////4.
@@ -3686,7 +3257,7 @@ namespace WpfCSCS
 
             doc.LoadXml(@"
 <SOAP-ENV:Envelope
-    xmlns:SOAP-ENV='http://schemas.xmlsoap.org/soap/envelope/'
+    xmlns:SOAP-ENV=""http://schemas.xmlsoap.org/soap/envelope/""
     
 xmlns:wsu=""http://schemas.xmlsoap.org/ws/2002/12/utility""
 xmlns:xsd=""http://www.w3.org/2001/XMLSchema""
@@ -3726,179 +3297,788 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
 
 
             //            var asdasdasd = @"<?xml version=""1.0"" encoding=""UTF-8""?>
-            //<SOAP-ENV:Envelope xmlns:SOAP-ENV=""http://schemas.xmlsoap.org/soap/envelope/""                   xmlns:wsu=""http://schemas.xmlsoap.org/ws/2002/12/utility""                   xmlns:xsd=""http://www.w3.org/2001/XMLSchema""                   xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
-            //  <SOAP-ENV:Header/>
-            //  <SOAP-ENV:Body Id=""Body""                   d2p1:Id=""Body""                   wsu:Id=""id-802e4f37-df38-4974-80c1-a987db752533""                   xmlns:d2p1=""http://schemas.xmlsoap.org/ws/2002/12/utility""                   xmlns:util=""http://schemas.xmlsoap.org/ws/2002/12/utility""                   xmlns:wsu=""http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"">
-            //    <SendB2BOutgoingInvoiceMsg>
-            //      <HeaderSupplier>
-            //        <MessageID>msg-51471a7d-009f-4d3c-b424-8f5e1755afc7</MessageID>
-            //        <SupplierID>9934:26389058739</SupplierID>
-            //        <MessageType>9001</MessageType>
-            //      </HeaderSupplier>
-            //      <Data>
-            //        <B2BOutgoingInvoiceEnvelope>
-            //          <XMLStandard>UBL</XMLStandard>
-            //          <SpecificationIdentifier>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0</SpecificationIdentifier>
-            //          <SupplierInvoiceID>90100002</SupplierInvoiceID>
-            //          <BuyerID>9934:85821130368</BuyerID>
-            //          <InvoiceEnvelope>PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPEludm9pY2UgeG1sbnM9InVybjpvYXNpczpuYW1lczpzcGVjaWZpY2F0aW9uOnVibDpzY2hlbWE6eHNkOkludm9pY2UtMiIKICAgIHhtbG5zOnhzaT0iaHR0cDovL3d3dy53My5vcmcvMjAwMS9YTUxTY2hlbWEtaW5zdGFuY2UiCiAgICB4bWxuczp4c2Q9Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvWE1MU2NoZW1hIgogICAgeG1sbnM6Y2FjPSJ1cm46b2FzaXM6bmFtZXM6c3BlY2lmaWNhdGlvbjp1Ymw6c2NoZW1hOnhzZDpDb21tb25BZ2dyZWdhdGVDb21wb25lbnRzLTIiCiAgICB4bWxuczpjYmM9InVybjpvYXNpczpuYW1lczpzcGVjaWZpY2F0aW9uOnVibDpzY2hlbWE6eHNkOkNvbW1vbkJhc2ljQ29tcG9uZW50cy0yIgogICAgeG1sbnM6ZXh0PSJ1cm46b2FzaXM6bmFtZXM6c3BlY2lmaWNhdGlvbjp1Ymw6c2NoZW1hOnhzZDpDb21tb25FeHRlbnNpb25Db21wb25lbnRzLTIiCiAgICB4bWxuczpzYWM9InVybjpvYXNpczpuYW1lczpzcGVjaWZpY2F0aW9uOnVibDpzY2hlbWE6eHNkOlNpZ25hdHVyZUFnZ3JlZ2F0ZUNvbXBvbmVudHMtMiIgCiAgICB4bWxuczpzaWc9InVybjpvYXNpczpuYW1lczpzcGVjaWZpY2F0aW9uOnVibDpzY2hlbWE6eHNkOkNvbW1vblNpZ25hdHVyZUNvbXBvbmVudHMtMiIgCiAgICB4bWxuczpocmV4dGFjPSJ1cm46bWZpbi5nb3YuaHI6c2NoZW1hOnhzZDpIUkV4dGVuc2lvbkFnZ3JlZ2F0ZUNvbXBvbmVudHMtMSI+CjxleHQ6VUJMRXh0ZW5zaW9ucz4KICA8ZXh0OlVCTEV4dGVuc2lvbj4KICAgIDxleHQ6RXh0ZW5zaW9uQ29udGVudD4KICAgICAgICA8aHJleHRhYzpIUkZJU0syMERhdGE+CiAgICAgICAgICAgIDxocmV4dGFjOkhSVGF4VG90YWw+CiAgICAgICAgICAgICAgICA8Y2JjOlRheEFtb3VudCBjdXJyZW5jeUlEPSJFVVIiPjY5LjIxPC9jYmM6VGF4QW1vdW50PgogICAgICAgICAgICAgICAgPGhyZXh0YWM6SFJUYXhTdWJ0b3RhbD4KICAgICAgICAgICAgICAgICAgICA8Y2JjOlRheGFibGVBbW91bnQgY3VycmVuY3lJRD0iRVVSIj4yNzYuODQ8L2NiYzpUYXhhYmxlQW1vdW50PgogICAgICAgICAgICAgICAgICAgIDxjYmM6VGF4QW1vdW50IGN1cnJlbmN5SUQ9IkVVUiI+NjkuMjE8L2NiYzpUYXhBbW91bnQ+CiAgICAgICAgICAgICAgICAgICAgPGhyZXh0YWM6SFJUYXhDYXRlZ29yeT4KICAgICAgICAgICAgICAgICAgICAgICAgPGNiYzpJRD5TPC9jYmM6SUQ+CiAgICAgICAgICAgICAgICAgICAgICAgIDxjYmM6TmFtZT5IUjpQRFYyNTwvY2JjOk5hbWU+CiAgICAgICAgICAgICAgICAgICAgICAgIDxjYmM6UGVyY2VudD4yNTwvY2JjOlBlcmNlbnQ+CiAgICAgICAgICAgICAgICAgICAgICAgIDxocmV4dGFjOkhSVGF4U2NoZW1lPgogICAgICAgICAgICAgICAgICAgICAgICAgICAgPGNiYzpJRD5WQVQ8L2NiYzpJRD4KICAgICAgICAgICAgICAgICAgICAgICAgPC9ocmV4dGFjOkhSVGF4U2NoZW1lPgogICAgICAgICAgICAgICAgICAgIDwvaHJleHRhYzpIUlRheENhdGVnb3J5PgogICAgICAgICAgICAgICAgPC9ocmV4dGFjOkhSVGF4U3VidG90YWw+CiAgICAgICAgICAgIDwvaHJleHRhYzpIUlRheFRvdGFsPgogICAgICAgICAgICA8aHJleHRhYzpIUkxlZ2FsTW9uZXRhcnlUb3RhbD4KICAgICAgICAgICAgICA8Y2JjOlRheEV4Y2x1c2l2ZUFtb3VudCBjdXJyZW5jeUlEPSJFVVIiPjI3Ni44NDwvY2JjOlRheEV4Y2x1c2l2ZUFtb3VudD4KICAgICAgICAgICAgICA8aHJleHRhYzpPdXRPZlNjb3BlT2ZWQVRBbW91bnQgY3VycmVuY3lJRD0iRVVSIj4wLjAwPC9ocmV4dGFjOk91dE9mU2NvcGVPZlZBVEFtb3VudD4KICAgICAgICAgICAgPC9ocmV4dGFjOkhSTGVnYWxNb25ldGFyeVRvdGFsPgogICAgICAgIDwvaHJleHRhYzpIUkZJU0syMERhdGE+CiAgICA8L2V4dDpFeHRlbnNpb25Db250ZW50PgogIDwvZXh0OlVCTEV4dGVuc2lvbj4KPC9leHQ6VUJMRXh0ZW5zaW9ucz4KPGNiYzpDdXN0b21pemF0aW9uSUQ+dXJuOmNlbi5ldTplbjE2OTMxOjIwMTcjY29tcGxpYW50I3VybjptZmluLmdvdi5ocjpjaXVzLTIwMjU6MS4wI2NvbmZvcm1hbnQjdXJuOm1maW4uZ292LmhyOmV4dC0yMDI1OjEuMDwvY2JjOkN1c3RvbWl6YXRpb25JRD4KPGNiYzpQcm9maWxlSUQ+UDc8L2NiYzpQcm9maWxlSUQ+CjxjYmM6SUQ+MDAwMDItOTAtMTwvY2JjOklEPgo8Y2JjOkNvcHlJbmRpY2F0b3I+ZmFsc2U8L2NiYzpDb3B5SW5kaWNhdG9yPgo8Y2JjOklzc3VlRGF0ZT4yMDI0LTAxLTEyPC9jYmM6SXNzdWVEYXRlPgo8Y2JjOklzc3VlVGltZT4xMTo0ODo1ODwvY2JjOklzc3VlVGltZT4KPGNiYzpEdWVEYXRlPjIwMjQtMDEtMTI8L2NiYzpEdWVEYXRlPgo8Y2JjOkludm9pY2VUeXBlQ29kZT4zODA8L2NiYzpJbnZvaWNlVHlwZUNvZGU+CjxjYmM6Tm90ZT4KCiAgVEs6IFRBUkEgVCNBQUkjPC9jYmM6Tm90ZT4KPGNiYzpUYXhQb2ludERhdGU+MjAyNC0wMS0xMTwvY2JjOlRheFBvaW50RGF0ZT4KPGNiYzpEb2N1bWVudEN1cnJlbmN5Q29kZT5FVVI8L2NiYzpEb2N1bWVudEN1cnJlbmN5Q29kZT4KPGNiYzpUYXhDdXJyZW5jeUNvZGU+RVVSPC9jYmM6VGF4Q3VycmVuY3lDb2RlPgo8Y2FjOkFjY291bnRpbmdTdXBwbGllclBhcnR5PgogIDxjYWM6UGFydHk+CiAgICA8Y2JjOkVuZHBvaW50SUQgc2NoZW1lSUQ9Ijk5MzQiPjI2Mzg5MDU4NzM5PC9jYmM6RW5kcG9pbnRJRD4KICAgIDxjYWM6UGFydHlJZGVudGlmaWNhdGlvbj48Y2JjOklEPjk5MzQ6MjYzODkwNTg3Mzk8L2NiYzpJRD48L2NhYzpQYXJ0eUlkZW50aWZpY2F0aW9uPgogICAgPGNhYzpQYXJ0eU5hbWU+PGNiYzpOYW1lPlByb2JhIGQuby5vLjwvY2JjOk5hbWU+PC9jYWM6UGFydHlOYW1lPgogICAgPGNhYzpQb3N0YWxBZGRyZXNzPgogICAgICA8Y2JjOlN0cmVldE5hbWU+S2FwZXRhbmEgTGF6YXJpxIdhIDFEPC9jYmM6U3RyZWV0TmFtZT4KICAgICAgPGNiYzpDaXR5TmFtZT5QYXppbjwvY2JjOkNpdHlOYW1lPgogICAgICA8Y2JjOlBvc3RhbFpvbmU+NTIwMDA8L2NiYzpQb3N0YWxab25lPgogICAgICA8Y2FjOkNvdW50cnk+PGNiYzpJZGVudGlmaWNhdGlvbkNvZGU+SFI8L2NiYzpJZGVudGlmaWNhdGlvbkNvZGU+PC9jYWM6Q291bnRyeT4KICAgIDwvY2FjOlBvc3RhbEFkZHJlc3M+CiAgICA8Y2FjOlBhcnR5VGF4U2NoZW1lPjxjYmM6Q29tcGFueUlEPkhSMjYzODkwNTg3Mzk8L2NiYzpDb21wYW55SUQ+PGNhYzpUYXhTY2hlbWU+PGNiYzpJRD5WQVQ8L2NiYzpJRD48L2NhYzpUYXhTY2hlbWU+PC9jYWM6UGFydHlUYXhTY2hlbWU+CiAgICA8Y2FjOlBhcnR5TGVnYWxFbnRpdHk+CiAgICAgIDxjYmM6UmVnaXN0cmF0aW9uTmFtZT5BVVJBIFNPRlQgZC5vLm8uIFByaW1qZXIgZHVnb2cgdGVrc3RhPC9jYmM6UmVnaXN0cmF0aW9uTmFtZT4KICAgIDwvY2FjOlBhcnR5TGVnYWxFbnRpdHk+CiAgICA8Y2FjOkNvbnRhY3Q+CiAgICAgIDxjYmM6VGVsZXBob25lPjA1Mi02MjEtOTI5PC9jYmM6VGVsZXBob25lPgogICAgPC9jYWM6Q29udGFjdD4KICA8L2NhYzpQYXJ0eT4KICA8Y2FjOlNlbGxlckNvbnRhY3Q+ICAgIDxjYmM6SUQ+MTIzNDU2Nzg5MDM8L2NiYzpJRD4gICAgPGNiYzpOYW1lPlRBUkEgVDwvY2JjOk5hbWU+ICA8L2NhYzpTZWxsZXJDb250YWN0PjwvY2FjOkFjY291bnRpbmdTdXBwbGllclBhcnR5Pgo8Y2FjOkFjY291bnRpbmdDdXN0b21lclBhcnR5PgogIDxjYWM6UGFydHk+CiAgICA8Y2JjOkVuZHBvaW50SUQgc2NoZW1lSUQ9Ijk5MzQiPjI2Mzg5MDU4NzM5PC9jYmM6RW5kcG9pbnRJRD4KICAgIDxjYWM6UGFydHlJZGVudGlmaWNhdGlvbj48Y2JjOklEPjk5MzQ6MjYzODkwNTg3Mzk8L2NiYzpJRD48L2NhYzpQYXJ0eUlkZW50aWZpY2F0aW9uPgogICAgPGNhYzpQYXJ0eU5hbWU+PGNiYzpOYW1lPlBhcnRuZXIgMzQxMzwvY2JjOk5hbWU+PC9jYWM6UGFydHlOYW1lPgogICAgPGNhYzpQb3N0YWxBZGRyZXNzPgogICAgICA8Y2JjOlN0cmVldE5hbWU+QkHFoFRJSkFOT1ZBIDEzPC9jYmM6U3RyZWV0TmFtZT4KICAgICAgPGNiYzpDaXR5TmFtZT5SSUpFS0E8L2NiYzpDaXR5TmFtZT4KICAgICAgPGNiYzpQb3N0YWxab25lPjUxMDAwPC9jYmM6UG9zdGFsWm9uZT4KICAgICAgPGNhYzpDb3VudHJ5PjxjYmM6SWRlbnRpZmljYXRpb25Db2RlPkhSPC9jYmM6SWRlbnRpZmljYXRpb25Db2RlPjwvY2FjOkNvdW50cnk+CiAgICA8L2NhYzpQb3N0YWxBZGRyZXNzPgogICAgPGNhYzpQYXJ0eVRheFNjaGVtZT48Y2JjOkNvbXBhbnlJRD5IUjI2Mzg5MDU4NzM5PC9jYmM6Q29tcGFueUlEPjxjYWM6VGF4U2NoZW1lPjxjYmM6SUQ+VkFUPC9jYmM6SUQ+PC9jYWM6VGF4U2NoZW1lPjwvY2FjOlBhcnR5VGF4U2NoZW1lPgogICAgPGNhYzpQYXJ0eUxlZ2FsRW50aXR5PgogICAgICA8Y2JjOlJlZ2lzdHJhdGlvbk5hbWU+UGFydG5lciAzNDEzPC9jYmM6UmVnaXN0cmF0aW9uTmFtZT4KICAgIDwvY2FjOlBhcnR5TGVnYWxFbnRpdHk+CiAgPC9jYWM6UGFydHk+CjwvY2FjOkFjY291bnRpbmdDdXN0b21lclBhcnR5Pgo8Y2FjOkRlbGl2ZXJ5PgogIDxjYWM6RGVsaXZlcnlMb2NhdGlvbj4KICAgIDxjYWM6QWRkcmVzcz4KICAgICAgPGNiYzpTdHJlZXROYW1lPkJBxaBUSUpBTk9WQSAxMzwvY2JjOlN0cmVldE5hbWU+CiAgICAgIDxjYmM6Q2l0eU5hbWU+UklKRUtBPC9jYmM6Q2l0eU5hbWU+CiAgICAgIDxjYmM6UG9zdGFsWm9uZT41MTAwMDwvY2JjOlBvc3RhbFpvbmU+CiAgICAgIDxjYWM6Q291bnRyeT4KICAgICAgICA8Y2JjOklkZW50aWZpY2F0aW9uQ29kZT5IUjwvY2JjOklkZW50aWZpY2F0aW9uQ29kZT4KICAgICAgPC9jYWM6Q291bnRyeT4KICAgIDwvY2FjOkFkZHJlc3M+CiAgPC9jYWM6RGVsaXZlcnlMb2NhdGlvbj4KICA8Y2FjOkRlbGl2ZXJ5UGFydHk+CiAgICA8Y2FjOlBhcnR5TmFtZT4KICAgICAgPGNiYzpOYW1lPlBhcnRuZXIgMzQxMzwvY2JjOk5hbWU+CiAgICA8L2NhYzpQYXJ0eU5hbWU+CiAgPC9jYWM6RGVsaXZlcnlQYXJ0eT4KPC9jYWM6RGVsaXZlcnk+CjxjYWM6UGF5bWVudE1lYW5zPgogIDxjYmM6UGF5bWVudE1lYW5zQ29kZT4zMDwvY2JjOlBheW1lbnRNZWFuc0NvZGU+CiAgPGNiYzpJbnN0cnVjdGlvbk5vdGU+VHJhbnNha2NpanNraSByYcSNdW48L2NiYzpJbnN0cnVjdGlvbk5vdGU+CiAgPGNiYzpQYXltZW50SUQ+MDAgMTAzMjAxLTkwMTAwMDAyLTE8L2NiYzpQYXltZW50SUQ+CiAgPGNhYzpQYXllZUZpbmFuY2lhbEFjY291bnQ+CiAgICA8Y2JjOklEPjIzODAwMDYtMTE0NzAwMjM3MTwvY2JjOklEPgogICAgPGNiYzpOYW1lPlByaXZyZWRuYSBiYW5rYSBkLmQuPC9jYmM6TmFtZT4KICA8L2NhYzpQYXllZUZpbmFuY2lhbEFjY291bnQ+CjwvY2FjOlBheW1lbnRNZWFucz4KICAgICAgICAgICAgPGNhYzpUYXhUb3RhbD4KICAgICAgICAgICAgICAgIDxjYmM6VGF4QW1vdW50IGN1cnJlbmN5SUQ9IkVVUiI+NjkuMjE8L2NiYzpUYXhBbW91bnQ+CiAgICAgICAgICAgICAgICA8Y2FjOlRheFN1YnRvdGFsPgogICAgICAgICAgICAgICAgICAgIDxjYmM6VGF4YWJsZUFtb3VudCBjdXJyZW5jeUlEPSJFVVIiPjI3Ni44NDwvY2JjOlRheGFibGVBbW91bnQ+CiAgICAgICAgICAgICAgICAgICAgPGNiYzpUYXhBbW91bnQgY3VycmVuY3lJRD0iRVVSIj42OS4yMTwvY2JjOlRheEFtb3VudD4KICAgICAgICAgICAgICAgICAgICA8Y2FjOlRheENhdGVnb3J5PgogICAgICAgICAgICAgICAgICAgICAgICA8Y2JjOklEPlM8L2NiYzpJRD4KICAgICAgICAgICAgICAgICAgICAgICAgPGNiYzpOYW1lPkhSOlBEVjI1PC9jYmM6TmFtZT4KICAgICAgICAgICAgICAgICAgICAgICAgPGNiYzpQZXJjZW50PjI1PC9jYmM6UGVyY2VudD4KICAgICAgICAgICAgICAgICAgICAgICAgPGNhYzpUYXhTY2hlbWU+CiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8Y2JjOklEPlZBVDwvY2JjOklEPgogICAgICAgICAgICAgICAgICAgICAgICA8L2NhYzpUYXhTY2hlbWU+CiAgICAgICAgICAgICAgICAgICAgPC9jYWM6VGF4Q2F0ZWdvcnk+CiAgICAgICAgICAgICAgICA8L2NhYzpUYXhTdWJ0b3RhbD4KICAgICAgICAgICAgPC9jYWM6VGF4VG90YWw+CjxjYWM6TGVnYWxNb25ldGFyeVRvdGFsPgogIDxjYmM6TGluZUV4dGVuc2lvbkFtb3VudCBjdXJyZW5jeUlEPSJFVVIiPjI3Ni44NDwvY2JjOkxpbmVFeHRlbnNpb25BbW91bnQ+CiAgPGNiYzpUYXhFeGNsdXNpdmVBbW91bnQgY3VycmVuY3lJRD0iRVVSIj4yNzYuODQ8L2NiYzpUYXhFeGNsdXNpdmVBbW91bnQ+CiAgPGNiYzpUYXhJbmNsdXNpdmVBbW91bnQgY3VycmVuY3lJRD0iRVVSIj4zNDYuMDU8L2NiYzpUYXhJbmNsdXNpdmVBbW91bnQ+CiAgPGNiYzpQYXlhYmxlQW1vdW50IGN1cnJlbmN5SUQ9IkVVUiI+MzQ2LjA1PC9jYmM6UGF5YWJsZUFtb3VudD4KPC9jYWM6TGVnYWxNb25ldGFyeVRvdGFsPgo8Y2FjOkludm9pY2VMaW5lPgogIDxjYmM6SUQ+MTwvY2JjOklEPgogIDxjYmM6SW52b2ljZWRRdWFudGl0eSB1bml0Q29kZT0iSDg3Ij43LjAwMDA8L2NiYzpJbnZvaWNlZFF1YW50aXR5PgogIDxjYmM6TGluZUV4dGVuc2lvbkFtb3VudCBjdXJyZW5jeUlEPSJFVVIiPjU2LjY0PC9jYmM6TGluZUV4dGVuc2lvbkFtb3VudD4KICA8Y2FjOkFsbG93YW5jZUNoYXJnZT4KICAgIDxjYmM6Q2hhcmdlSW5kaWNhdG9yPmZhbHNlPC9jYmM6Q2hhcmdlSW5kaWNhdG9yPgogICAgPGNiYzpBbGxvd2FuY2VDaGFyZ2VSZWFzb24+UG9wdXN0IG5hIHN0YXZrdSAoMTUuMDAlKTwvY2JjOkFsbG93YW5jZUNoYXJnZVJlYXNvbj4KICAgIDxjYmM6TXVsdGlwbGllckZhY3Rvck51bWVyaWM+MTUuMDE8L2NiYzpNdWx0aXBsaWVyRmFjdG9yTnVtZXJpYz4KICAgIDxjYmM6QW1vdW50IGN1cnJlbmN5SUQ9IkVVUiI+MTAuMDA8L2NiYzpBbW91bnQ+CiAgICA8Y2JjOkJhc2VBbW91bnQgY3VycmVuY3lJRD0iRVVSIj42Ni42NDwvY2JjOkJhc2VBbW91bnQ+CiAgPC9jYWM6QWxsb3dhbmNlQ2hhcmdlPgogIDxjYWM6SXRlbT4KICAgIDxjYmM6TmFtZT5GVUdBQkVMTEEgQ09MT1IgMDUgR1JJR0lPIExVQ0UgM0tHPC9jYmM6TmFtZT4KICAgIDxjYWM6U2VsbGVyc0l0ZW1JZGVudGlmaWNhdGlvbj48Y2JjOklEPjAxMDI4MzwvY2JjOklEPjwvY2FjOlNlbGxlcnNJdGVtSWRlbnRpZmljYXRpb24+CiAgICA8Y2FjOlN0YW5kYXJkSXRlbUlkZW50aWZpY2F0aW9uPjxjYmM6SUQgc2NoZW1lSUQ9IjAxNjAiPjgwMjE3MDQxNTUzNzk8L2NiYzpJRD48L2NhYzpTdGFuZGFyZEl0ZW1JZGVudGlmaWNhdGlvbj4KICAgIDxjYWM6Q29tbW9kaXR5Q2xhc3NpZmljYXRpb24+CiAgICAgIDxjYmM6SXRlbUNsYXNzaWZpY2F0aW9uQ29kZSBsaXN0SUQ9IkNHIj40Ni44OS4wMDwvY2JjOkl0ZW1DbGFzc2lmaWNhdGlvbkNvZGU+CiAgICA8L2NhYzpDb21tb2RpdHlDbGFzc2lmaWNhdGlvbj4KICAgIDxjYWM6Q2xhc3NpZmllZFRheENhdGVnb3J5PgogICAgICA8Y2JjOklEPlM8L2NiYzpJRD4KICAgICAgPGNiYzpQZXJjZW50PjI1PC9jYmM6UGVyY2VudD4KICAgICAgPGNhYzpUYXhTY2hlbWU+PGNiYzpJRD5WQVQ8L2NiYzpJRD48L2NhYzpUYXhTY2hlbWU+CiAgICA8L2NhYzpDbGFzc2lmaWVkVGF4Q2F0ZWdvcnk+CiAgPC9jYWM6SXRlbT4KICA8Y2FjOlByaWNlPgogICAgPGNiYzpQcmljZUFtb3VudCBjdXJyZW5jeUlEPSJFVVIiPjkuNTIwMDwvY2JjOlByaWNlQW1vdW50PgogICAgPGNiYzpCYXNlUXVhbnRpdHkgdW5pdENvZGU9Ikg4NyI+MTwvY2JjOkJhc2VRdWFudGl0eT4KICA8L2NhYzpQcmljZT4KPC9jYWM6SW52b2ljZUxpbmU+CjxjYWM6SW52b2ljZUxpbmU+CiAgPGNiYzpJRD4yPC9jYmM6SUQ+CiAgPGNiYzpJbnZvaWNlZFF1YW50aXR5IHVuaXRDb2RlPSJIODciPjEuMDAwMDwvY2JjOkludm9pY2VkUXVhbnRpdHk+CiAgPGNiYzpMaW5lRXh0ZW5zaW9uQW1vdW50IGN1cnJlbmN5SUQ9IkVVUiI+Ni44MDwvY2JjOkxpbmVFeHRlbnNpb25BbW91bnQ+CiAgPGNhYzpBbGxvd2FuY2VDaGFyZ2U+CiAgICA8Y2JjOkNoYXJnZUluZGljYXRvcj5mYWxzZTwvY2JjOkNoYXJnZUluZGljYXRvcj4KICAgIDxjYmM6QWxsb3dhbmNlQ2hhcmdlUmVhc29uPlBvcHVzdCBuYSBzdGF2a3UgKDE1LjAwJSk8L2NiYzpBbGxvd2FuY2VDaGFyZ2VSZWFzb24+CiAgICA8Y2JjOk11bHRpcGxpZXJGYWN0b3JOdW1lcmljPjE1LjAwPC9jYmM6TXVsdGlwbGllckZhY3Rvck51bWVyaWM+CiAgICA8Y2JjOkFtb3VudCBjdXJyZW5jeUlEPSJFVVIiPjEuMjA8L2NiYzpBbW91bnQ+CiAgICA8Y2JjOkJhc2VBbW91bnQgY3VycmVuY3lJRD0iRVVSIj44LjAwPC9jYmM6QmFzZUFtb3VudD4KICA8L2NhYzpBbGxvd2FuY2VDaGFyZ2U+CiAgPGNhYzpJdGVtPgogICAgPGNiYzpOYW1lPlBPU1VEQSBaQSDFvUJVS1UgT0tSVUdMQSA1NUw8L2NiYzpOYW1lPgogICAgPGNhYzpTZWxsZXJzSXRlbUlkZW50aWZpY2F0aW9uPjxjYmM6SUQ+MDE2MDAwPC9jYmM6SUQ+PC9jYWM6U2VsbGVyc0l0ZW1JZGVudGlmaWNhdGlvbj4KICAgIDxjYWM6U3RhbmRhcmRJdGVtSWRlbnRpZmljYXRpb24+PGNiYzpJRCBzY2hlbWVJRD0iMDE2MCI+Mzg1NjAwMzY4ODk3NzwvY2JjOklEPjwvY2FjOlN0YW5kYXJkSXRlbUlkZW50aWZpY2F0aW9uPgogICAgPGNhYzpDb21tb2RpdHlDbGFzc2lmaWNhdGlvbj4KICAgICAgPGNiYzpJdGVtQ2xhc3NpZmljYXRpb25Db2RlIGxpc3RJRD0iQ0ciPjQ2Ljg5LjAwPC9jYmM6SXRlbUNsYXNzaWZpY2F0aW9uQ29kZT4KICAgIDwvY2FjOkNvbW1vZGl0eUNsYXNzaWZpY2F0aW9uPgogICAgPGNhYzpDbGFzc2lmaWVkVGF4Q2F0ZWdvcnk+CiAgICAgIDxjYmM6SUQ+UzwvY2JjOklEPgogICAgICA8Y2JjOlBlcmNlbnQ+MjU8L2NiYzpQZXJjZW50PgogICAgICA8Y2FjOlRheFNjaGVtZT48Y2JjOklEPlZBVDwvY2JjOklEPjwvY2FjOlRheFNjaGVtZT4KICAgIDwvY2FjOkNsYXNzaWZpZWRUYXhDYXRlZ29yeT4KICA8L2NhYzpJdGVtPgogIDxjYWM6UHJpY2U+CiAgICA8Y2JjOlByaWNlQW1vdW50IGN1cnJlbmN5SUQ9IkVVUiI+OC4wMDAwPC9jYmM6UHJpY2VBbW91bnQ+CiAgICA8Y2JjOkJhc2VRdWFudGl0eSB1bml0Q29kZT0iSDg3Ij4xPC9jYmM6QmFzZVF1YW50aXR5PgogIDwvY2FjOlByaWNlPgo8L2NhYzpJbnZvaWNlTGluZT4KPGNhYzpJbnZvaWNlTGluZT4KICA8Y2JjOklEPjM8L2NiYzpJRD4KICA8Y2JjOkludm9pY2VkUXVhbnRpdHkgdW5pdENvZGU9Ikg4NyI+MS4wMDAwPC9jYmM6SW52b2ljZWRRdWFudGl0eT4KICA8Y2JjOkxpbmVFeHRlbnNpb25BbW91bnQgY3VycmVuY3lJRD0iRVVSIj40NC4yMDwvY2JjOkxpbmVFeHRlbnNpb25BbW91bnQ+CiAgPGNhYzpBbGxvd2FuY2VDaGFyZ2U+CiAgICA8Y2JjOkNoYXJnZUluZGljYXRvcj5mYWxzZTwvY2JjOkNoYXJnZUluZGljYXRvcj4KICAgIDxjYmM6QWxsb3dhbmNlQ2hhcmdlUmVhc29uPlBvcHVzdCBuYSBzdGF2a3UgKDE1LjAwJSk8L2NiYzpBbGxvd2FuY2VDaGFyZ2VSZWFzb24+CiAgICA8Y2JjOk11bHRpcGxpZXJGYWN0b3JOdW1lcmljPjE1LjAwPC9jYmM6TXVsdGlwbGllckZhY3Rvck51bWVyaWM+CiAgICA8Y2JjOkFtb3VudCBjdXJyZW5jeUlEPSJFVVIiPjcuODA8L2NiYzpBbW91bnQ+CiAgICA8Y2JjOkJhc2VBbW91bnQgY3VycmVuY3lJRD0iRVVSIj41Mi4wMDwvY2JjOkJhc2VBbW91bnQ+CiAgPC9jYWM6QWxsb3dhbmNlQ2hhcmdlPgogIDxjYWM6SXRlbT4KICAgIDxjYmM6TmFtZT5MRVRWQSBBTFVNLiBTIE9LT00gSSBSVUtPSFZBVE9NIFNMWEcgMjwvY2JjOk5hbWU+CiAgICA8Y2FjOlNlbGxlcnNJdGVtSWRlbnRpZmljYXRpb24+PGNiYzpJRD4wMDEwOTM8L2NiYzpJRD48L2NhYzpTZWxsZXJzSXRlbUlkZW50aWZpY2F0aW9uPgogICAgPGNhYzpTdGFuZGFyZEl0ZW1JZGVudGlmaWNhdGlvbj48Y2JjOklEIHNjaGVtZUlEPSIwMTYwIj45MDAyNzE5MDA4NDIyPC9jYmM6SUQ+PC9jYWM6U3RhbmRhcmRJdGVtSWRlbnRpZmljYXRpb24+CiAgICA8Y2FjOkNvbW1vZGl0eUNsYXNzaWZpY2F0aW9uPgogICAgICA8Y2JjOkl0ZW1DbGFzc2lmaWNhdGlvbkNvZGUgbGlzdElEPSJDRyI+NDYuODkuMDA8L2NiYzpJdGVtQ2xhc3NpZmljYXRpb25Db2RlPgogICAgPC9jYWM6Q29tbW9kaXR5Q2xhc3NpZmljYXRpb24+CiAgICA8Y2FjOkNsYXNzaWZpZWRUYXhDYXRlZ29yeT4KICAgICAgPGNiYzpJRD5TPC9jYmM6SUQ+CiAgICAgIDxjYmM6UGVyY2VudD4yNTwvY2JjOlBlcmNlbnQ+CiAgICAgIDxjYWM6VGF4U2NoZW1lPjxjYmM6SUQ+VkFUPC9jYmM6SUQ+PC9jYWM6VGF4U2NoZW1lPgogICAgPC9jYWM6Q2xhc3NpZmllZFRheENhdGVnb3J5PgogIDwvY2FjOkl0ZW0+CiAgPGNhYzpQcmljZT4KICAgIDxjYmM6UHJpY2VBbW91bnQgY3VycmVuY3lJRD0iRVVSIj41Mi4wMDAwPC9jYmM6UHJpY2VBbW91bnQ+CiAgICA8Y2JjOkJhc2VRdWFudGl0eSB1bml0Q29kZT0iSDg3Ij4xPC9jYmM6QmFzZVF1YW50aXR5PgogIDwvY2FjOlByaWNlPgo8L2NhYzpJbnZvaWNlTGluZT4KPGNhYzpJbnZvaWNlTGluZT4KICA8Y2JjOklEPjQ8L2NiYzpJRD4KICA8Y2JjOkludm9pY2VkUXVhbnRpdHkgdW5pdENvZGU9Ikg4NyI+MS4wMDAwPC9jYmM6SW52b2ljZWRRdWFudGl0eT4KICA8Y2JjOkxpbmVFeHRlbnNpb25BbW91bnQgY3VycmVuY3lJRD0iRVVSIj4xNjkuMjA8L2NiYzpMaW5lRXh0ZW5zaW9uQW1vdW50PgogIDxjYWM6QWxsb3dhbmNlQ2hhcmdlPgogICAgPGNiYzpDaGFyZ2VJbmRpY2F0b3I+ZmFsc2U8L2NiYzpDaGFyZ2VJbmRpY2F0b3I+CiAgICA8Y2JjOkFsbG93YW5jZUNoYXJnZVJlYXNvbj5Qb3B1c3QgbmEgc3Rhdmt1ICgxMC4wMCUpPC9jYmM6QWxsb3dhbmNlQ2hhcmdlUmVhc29uPgogICAgPGNiYzpNdWx0aXBsaWVyRmFjdG9yTnVtZXJpYz4xMC4wMDwvY2JjOk11bHRpcGxpZXJGYWN0b3JOdW1lcmljPgogICAgPGNiYzpBbW91bnQgY3VycmVuY3lJRD0iRVVSIj4xOC44MDwvY2JjOkFtb3VudD4KICAgIDxjYmM6QmFzZUFtb3VudCBjdXJyZW5jeUlEPSJFVVIiPjE4OC4wMDwvY2JjOkJhc2VBbW91bnQ+CiAgPC9jYWM6QWxsb3dhbmNlQ2hhcmdlPgogIDxjYWM6SXRlbT4KICAgIDxjYmM6TmFtZT5URVNMRVIgTUpFxaBBxIwgWiBCT0pVIFBST0ZFU0lPTkFMIDE2MDBXPC9jYmM6TmFtZT4KICAgIDxjYWM6U2VsbGVyc0l0ZW1JZGVudGlmaWNhdGlvbj48Y2JjOklEPjAwODY5MzwvY2JjOklEPjwvY2FjOlNlbGxlcnNJdGVtSWRlbnRpZmljYXRpb24+CiAgICA8Y2FjOlN0YW5kYXJkSXRlbUlkZW50aWZpY2F0aW9uPjxjYmM6SUQgc2NoZW1lSUQ9IjAxNjAiPjM4NTg4OTIzMDI0OTE8L2NiYzpJRD48L2NhYzpTdGFuZGFyZEl0ZW1JZGVudGlmaWNhdGlvbj4KICAgIDxjYWM6Q29tbW9kaXR5Q2xhc3NpZmljYXRpb24+CiAgICAgIDxjYmM6SXRlbUNsYXNzaWZpY2F0aW9uQ29kZSBsaXN0SUQ9IkNHIj40Ni44OS4wMDwvY2JjOkl0ZW1DbGFzc2lmaWNhdGlvbkNvZGU+CiAgICA8L2NhYzpDb21tb2RpdHlDbGFzc2lmaWNhdGlvbj4KICAgIDxjYWM6Q2xhc3NpZmllZFRheENhdGVnb3J5PgogICAgICA8Y2JjOklEPlM8L2NiYzpJRD4KICAgICAgPGNiYzpQZXJjZW50PjI1PC9jYmM6UGVyY2VudD4KICAgICAgPGNhYzpUYXhTY2hlbWU+PGNiYzpJRD5WQVQ8L2NiYzpJRD48L2NhYzpUYXhTY2hlbWU+CiAgICA8L2NhYzpDbGFzc2lmaWVkVGF4Q2F0ZWdvcnk+CiAgPC9jYWM6SXRlbT4KICA8Y2FjOlByaWNlPgogICAgPGNiYzpQcmljZUFtb3VudCBjdXJyZW5jeUlEPSJFVVIiPjE4OC4wMDAwPC9jYmM6UHJpY2VBbW91bnQ+CiAgICA8Y2JjOkJhc2VRdWFudGl0eSB1bml0Q29kZT0iSDg3Ij4xPC9jYmM6QmFzZVF1YW50aXR5PgogIDwvY2FjOlByaWNlPgo8L2NhYzpJbnZvaWNlTGluZT4KPC9JbnZvaWNlPgo=</InvoiceEnvelope>
-            //        </B2BOutgoingInvoiceEnvelope>
-            //      </Data>
-            //    </SendB2BOutgoingInvoiceMsg>
-            //  </SOAP-ENV:Body>
-            //</SOAP-ENV:Envelope>"
+            //<Invoice xmlns=""urn:oasis:names:specification:ubl:schema:xsd:Invoice-2""
+            //    xmlns:xsi=""http://www.w3.org/2001/XMLSchema""
+            //    xmlns:xsd=""http://www.w3.org/2001/XMLSchema""
+            //    xmlns:cac=""urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2""
+            //    xmlns:cbc=""urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2""
+            //    xmlns:ext=""urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2""
+            //    xmlns:hrextac=""urn:mfin.gov.hr:schema:xsd:HRExtensionAggregateComponents-1"">
+            //<ext:UBLExtensions>
+            //  <ext:UBLExtension>
+            //    <ext:ExtensionContent>
+            //        <hrextac:HRFISK20Data>
+            //            <hrextac:HRTaxTotal>
+            //                <cbc:TaxAmount currencyID=""EUR"">209.54</cbc:TaxAmount>
+            //                <hrextac:HRTaxSubtotal>
+            //                    <cbc:TaxableAmount currencyID=""EUR"">838.15</cbc:TaxableAmount>
+            //                    <cbc:TaxAmount currencyID=""EUR"">209.54</cbc:TaxAmount>
+            //                    <hrextac:HRTaxCategory>
+            //                        <cbc:ID>S</cbc:ID>
+            //                        <cbc:Name>HR:PDV25</cbc:Name>
+            //                        <cbc:Percent>25</cbc:Percent>
+            //                        <hrextac:HRTaxScheme>
+            //                            <cbc:ID>VAT</cbc:ID>
+            //                        </hrextac:HRTaxScheme>
+            //                    </hrextac:HRTaxCategory>
+            //                </hrextac:HRTaxSubtotal>
+            //            </hrextac:HRTaxTotal>
+            //            <hrextac:HRLegalMonetaryTotal>
+            //              <cbc:TaxExclusiveAmount currencyID=""EUR"">0.00</cbc:TaxExclusiveAmount>
+            //              <hrextac:OutOfScopeOfVATAmount currencyID=""EUR"">0.00</hrextac:OutOfScopeOfVATAmount>
+            //            </hrextac:HRLegalMonetaryTotal>
+            //        </hrextac:HRFISK20Data>
+            //    </ext:ExtensionContent>
+            //  </ext:UBLExtension>
+            //</ext:UBLExtensions>
+            //<cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0#conformant#urn:mfin.gov.hr:ext-2025:1.0</cbc:CustomizationID>
+            //<cbc:ProfileID>P7</cbc:ProfileID>
+            //<cbc:ID>00003-90-1</cbc:ID>
+            //<cbc:CopyIndicator>false</cbc:CopyIndicator>
+            //<cbc:IssueDate>2024-01-12</cbc:IssueDate>
+            //<cbc:IssueTime>11:52:07</cbc:IssueTime>
+            //<cbc:DueDate>2024-01-12</cbc:DueDate>
+            //<cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>
+            //<cbc:Note>
 
+            //  TK: TARA T#AAI#</cbc:Note>
+            //<cbc:TaxPointDate>2024-01-05</cbc:TaxPointDate>
+            //<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>
+            //<cbc:TaxCurrencyCode>EUR</cbc:TaxCurrencyCode>
+            //<cac:AccountingSupplierParty>
+            //  <cac:Party>
+            //    <cbc:EndpointID schemeID=""9934"">26389058739</cbc:EndpointID>
+            //    <cac:PartyIdentification><cbc:ID>9934:26389058739</cbc:ID></cac:PartyIdentification>
+            //    <cac:PartyName><cbc:Name>Proba d.o.o.</cbc:Name></cac:PartyName>
+            //    <cac:PostalAddress>
+            //      <cbc:StreetName>Kapetana Lazarića 1D</cbc:StreetName>
+            //      <cbc:CityName>Pazin</cbc:CityName>
+            //      <cbc:PostalZone>52000</cbc:PostalZone>
+            //      <cac:Country><cbc:IdentificationCode>HR</cbc:IdentificationCode></cac:Country>
+            //    </cac:PostalAddress>
+            //    <cac:PartyTaxScheme><cbc:CompanyID>HR26389058739</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>
+            //    <cac:PartyLegalEntity>
+            //      <cbc:RegistrationName>AURA SOFT d.o.o. Primjer dugog teksta</cbc:RegistrationName>
+            //    </cac:PartyLegalEntity>
+            //    <cac:Contact>
+            //      <cbc:Telephone>052-621-929</cbc:Telephone>
+            //    </cac:Contact>
+            //  </cac:Party>
+            //  <cac:SellerContact>    <cbc:ID>12345678903</cbc:ID>    <cbc:Name>TARA T</cbc:Name>  </cac:SellerContact></cac:AccountingSupplierParty>
+            //<cac:AccountingCustomerParty>
+            //  <cac:Party>
+            //    <cbc:EndpointID schemeID=""9934"">85821130368</cbc:EndpointID>
+            //    <cac:PartyIdentification><cbc:ID>9934:85821130368</cbc:ID></cac:PartyIdentification>
+            //    <cac:PartyName><cbc:Name>Partner 3413</cbc:Name></cac:PartyName>
+            //    <cac:PostalAddress>
+            //      <cbc:StreetName>BAŠTIJANOVA 13</cbc:StreetName>
+            //      <cbc:CityName>RIJEKA</cbc:CityName>
+            //      <cbc:PostalZone>51000</cbc:PostalZone>
+            //      <cac:Country><cbc:IdentificationCode>HR</cbc:IdentificationCode></cac:Country>
+            //    </cac:PostalAddress>
+            //    <cac:PartyTaxScheme><cbc:CompanyID>HR26389058739</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>
+            //    <cac:PartyLegalEntity>
+            //      <cbc:RegistrationName>Partner 3413</cbc:RegistrationName>
+            //    </cac:PartyLegalEntity>
+            //  </cac:Party>
+            //</cac:AccountingCustomerParty>
+            //<cac:PaymentMeans>
+            //  <cbc:PaymentMeansCode>30</cbc:PaymentMeansCode>
+            //  <cbc:InstructionNote>Transakcijski račun</cbc:InstructionNote>
+            //  <cbc:PaymentID>00 103201-90100003-1</cbc:PaymentID>
+            //  <cac:PayeeFinancialAccount>
+            //    <cbc:ID>2380006-1147002371</cbc:ID>
+            //    <cbc:Name>Privredna banka d.d.</cbc:Name>
+            //  </cac:PayeeFinancialAccount>
+            //</cac:PaymentMeans>
+            //<cac:TaxTotal>
+            //  <cbc:TaxAmount currencyID=""EUR"">209.54</cbc:TaxAmount>
+            //  <cac:TaxSubtotal>
+            //    <cbc:TaxableAmount currencyID=""EUR"">838.15</cbc:TaxableAmount>
+            //    <cbc:TaxAmount currencyID=""EUR"">209.54</cbc:TaxAmount>
+            //    <cac:TaxCategory>
+            //      <cbc:ID>S</cbc:ID>
+            //      <cbc:Percent>25</cbc:Percent>
+            //      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+            //    </cac:TaxCategory>
+            //  </cac:TaxSubtotal>
+            //</cac:TaxTotal>
+            //<cac:LegalMonetaryTotal>
+            //  <cbc:LineExtensionAmount currencyID=""EUR"">838.15</cbc:LineExtensionAmount>
+            //  <cbc:TaxExclusiveAmount currencyID=""EUR"">838.15</cbc:TaxExclusiveAmount>
+            //  <cbc:TaxInclusiveAmount currencyID=""EUR"">1047.69</cbc:TaxInclusiveAmount>
+            //  <cbc:PayableAmount currencyID=""EUR"">1047.69</cbc:PayableAmount>
+            //</cac:LegalMonetaryTotal>
+            //<cac:InvoiceLine>
+            //  <cbc:ID>1</cbc:ID>
+            //  <cbc:InvoicedQuantity unitCode=""H87"">72.0000</cbc:InvoicedQuantity>
+            //  <cbc:LineExtensionAmount currencyID=""EUR"">583.26</cbc:LineExtensionAmount>
+            //  <cac:AllowanceCharge>
+            //    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+            //    <cbc:AllowanceChargeReason>Popust na stavku (17.00%)</cbc:AllowanceChargeReason>
+            //    <cbc:MultiplierFactorNumeric>17.00</cbc:MultiplierFactorNumeric>
+            //    <cbc:Amount currencyID=""EUR"">119.46</cbc:Amount>
+            //    <cbc:BaseAmount currencyID=""EUR"">702.72</cbc:BaseAmount>
+            //  </cac:AllowanceCharge>
+            //  <cac:Item>
+            //    <cbc:Name>BK SIPROFIX 160 SUPERFLEX C2TE LJEP. 25/1 (48#)</cbc:Name>
+            //    <cac:SellersItemIdentification><cbc:ID>000164</cbc:ID></cac:SellersItemIdentification>
+            //    <cac:StandardItemIdentification><cbc:ID schemeID=""0160"">1000000000028</cbc:ID></cac:StandardItemIdentification>
+            //    <cac:CommodityClassification>
+            //      <cbc:ItemClassificationCode listID=""CG"">46.89.00</cbc:ItemClassificationCode>
+            //    </cac:CommodityClassification>
+            //    <cac:ClassifiedTaxCategory>
+            //      <cbc:ID>S</cbc:ID>
+            //      <cbc:Percent>25</cbc:Percent>
+            //      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+            //    </cac:ClassifiedTaxCategory>
+            //  </cac:Item>
+            //  <cac:Price>
+            //    <cbc:PriceAmount currencyID=""EUR"">9.7600</cbc:PriceAmount>
+            //    <cbc:BaseQuantity unitCode=""H87"">1</cbc:BaseQuantity>
+            //  </cac:Price>
+            //</cac:InvoiceLine>
+            //<cac:InvoiceLine>
+            //  <cbc:ID>2</cbc:ID>
+            //  <cbc:InvoicedQuantity unitCode=""H87"">6.0000</cbc:InvoicedQuantity>
+            //  <cbc:LineExtensionAmount currencyID=""EUR"">168.52</cbc:LineExtensionAmount>
+            //  <cac:AllowanceCharge>
+            //    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+            //    <cbc:AllowanceChargeReason>Popust na stavku (17.00%)</cbc:AllowanceChargeReason>
+            //    <cbc:MultiplierFactorNumeric>17.00</cbc:MultiplierFactorNumeric>
+            //    <cbc:Amount currencyID=""EUR"">34.52</cbc:Amount>
+            //    <cbc:BaseAmount currencyID=""EUR"">203.04</cbc:BaseAmount>
+            //  </cac:AllowanceCharge>
+            //  <cac:Item>
+            //    <cbc:Name>BK HIDROSTOP 2 (16,6+5) 16,6/1</cbc:Name>
+            //    <cac:SellersItemIdentification><cbc:ID>000080</cbc:ID></cac:SellersItemIdentification>
+            //    <cac:StandardItemIdentification><cbc:ID schemeID=""0160"">8606103352033</cbc:ID></cac:StandardItemIdentification>
+            //    <cac:CommodityClassification>
+            //      <cbc:ItemClassificationCode listID=""CG"">46.89.00</cbc:ItemClassificationCode>
+            //    </cac:CommodityClassification>
+            //    <cac:ClassifiedTaxCategory>
+            //      <cbc:ID>S</cbc:ID>
+            //      <cbc:Percent>25</cbc:Percent>
+            //      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+            //    </cac:ClassifiedTaxCategory>
+            //  </cac:Item>
+            //  <cac:Price>
+            //    <cbc:PriceAmount currencyID=""EUR"">33.8400</cbc:PriceAmount>
+            //    <cbc:BaseQuantity unitCode=""H87"">1</cbc:BaseQuantity>
+            //  </cac:Price>
+            //</cac:InvoiceLine>
+            //<cac:InvoiceLine>
+            //  <cbc:ID>3</cbc:ID>
+            //  <cbc:InvoicedQuantity unitCode=""H87"">6.0000</cbc:InvoicedQuantity>
+            //  <cbc:LineExtensionAmount currencyID=""EUR"">50.60</cbc:LineExtensionAmount>
+            //  <cac:AllowanceCharge>
+            //    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+            //    <cbc:AllowanceChargeReason>Popust na stavku (17.00%)</cbc:AllowanceChargeReason>
+            //    <cbc:MultiplierFactorNumeric>16.99</cbc:MultiplierFactorNumeric>
+            //    <cbc:Amount currencyID=""EUR"">10.36</cbc:Amount>
+            //    <cbc:BaseAmount currencyID=""EUR"">60.96</cbc:BaseAmount>
+            //  </cac:AllowanceCharge>
+            //  <cac:Item>
+            //    <cbc:Name>BK EMULZIJA HIDROSTOP 2 (20+5) 5/1</cbc:Name>
+            //    <cac:SellersItemIdentification><cbc:ID>000324</cbc:ID></cac:SellersItemIdentification>
+            //    <cac:StandardItemIdentification><cbc:ID schemeID=""0160"">8606103352040</cbc:ID></cac:StandardItemIdentification>
+            //    <cac:CommodityClassification>
+            //      <cbc:ItemClassificationCode listID=""CG"">46.89.00</cbc:ItemClassificationCode>
+            //    </cac:CommodityClassification>
+            //    <cac:ClassifiedTaxCategory>
+            //      <cbc:ID>S</cbc:ID>
+            //      <cbc:Percent>25</cbc:Percent>
+            //      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+            //    </cac:ClassifiedTaxCategory>
+            //  </cac:Item>
+            //  <cac:Price>
+            //    <cbc:PriceAmount currencyID=""EUR"">10.1600</cbc:PriceAmount>
+            //    <cbc:BaseQuantity unitCode=""H87"">1</cbc:BaseQuantity>
+            //  </cac:Price>
+            //</cac:InvoiceLine>
+            //<cac:InvoiceLine>
+            //  <cbc:ID>4</cbc:ID>
+            //  <cbc:InvoicedQuantity unitCode=""H87"">2.0000</cbc:InvoicedQuantity>
+            //  <cbc:LineExtensionAmount currencyID=""EUR"">35.77</cbc:LineExtensionAmount>
+            //  <cac:AllowanceCharge>
+            //    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+            //    <cbc:AllowanceChargeReason>Popust na stavku (15.00%)</cbc:AllowanceChargeReason>
+            //    <cbc:MultiplierFactorNumeric>15.00</cbc:MultiplierFactorNumeric>
+            //    <cbc:Amount currencyID=""EUR"">6.31</cbc:Amount>
+            //    <cbc:BaseAmount currencyID=""EUR"">42.08</cbc:BaseAmount>
+            //  </cac:AllowanceCharge>
+            //  <cac:Item>
+            //    <cbc:Name>BK PODLOGA  5L</cbc:Name>
+            //    <cac:SellersItemIdentification><cbc:ID>000264</cbc:ID></cac:SellersItemIdentification>
+            //    <cac:StandardItemIdentification><cbc:ID schemeID=""0160"">8606102367779</cbc:ID></cac:StandardItemIdentification>
+            //    <cac:CommodityClassification>
+            //      <cbc:ItemClassificationCode listID=""CG"">46.89.00</cbc:ItemClassificationCode>
+            //    </cac:CommodityClassification>
+            //    <cac:ClassifiedTaxCategory>
+            //      <cbc:ID>S</cbc:ID>
+            //      <cbc:Percent>25</cbc:Percent>
+            //      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+            //    </cac:ClassifiedTaxCategory>
+            //  </cac:Item>
+            //  <cac:Price>
+            //    <cbc:PriceAmount currencyID=""EUR"">21.0400</cbc:PriceAmount>
+            //    <cbc:BaseQuantity unitCode=""H87"">1</cbc:BaseQuantity>
+            //  </cac:Price>
+            //</cac:InvoiceLine>
+            //</Invoice>
+            //";
 
-            //5.2
-            XmlElement body = doc.DocumentElement["SOAP-ENV:Body"];
-            string bodyId = "id-" + Guid.NewGuid().ToString("N");
+            //--- od čovika --------------------------------
 
-            body.SetAttribute("Id",
-                "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd",
-                bodyId);
+            //// potpisi e_racun:
+            //DigitalSignature dsig = new DigitalSignature();
+            //var cert = new X509Certificate2(@"D:\WinX\ERAC\certifikati\p12_aurasoft_demo.p12", "Aurasoft1",
+            //        X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable);
+            //dsig.Certificate = cert;
+            //byte[] nepotpisaniRacun = Encoding.ASCII.GetBytes(unsignedXml);
+            //byte[] bajtoviPotpisanogRacuna = dsig.SignInvoiceOrCreditNote(nepotpisaniRacun);
+            ////System.IO.File.WriteAllBytes(@"C:\potpisani_eracun.xml", bajtoviPotpisanogRacuna);
 
-            body.InnerXml = @"
-<EchoMsg xmlns='http://fina.hr/eracun/b2b/pki/Echo/v0.1'>
-  <HeaderSupplier xmlns='http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1'>
-    <MessageID>" + Guid.NewGuid() + @"</MessageID>
-    <SupplierID>9934:26389058739</SupplierID>
-    <MessageType>9999</MessageType>
-  </HeaderSupplier>
-  <Data>
-    <EchoData>
-      <Echo>hello from AURA</Echo>
-    </EchoData>
-  </Data>
-</EchoMsg>";
+            //string signedXml = System.Text.Encoding.UTF8.GetString(bajtoviPotpisanogRacuna);
 
+            //return new Variable(signedXml);
 
-            //6.2
-            XmlElement header = doc.DocumentElement["SOAP-ENV:Header"];
+            //-----------------------------------
 
-            XmlElement security = doc.CreateElement("wsse", "Security",
-                "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd");
-
-            security.SetAttribute("mustUnderstand",
-                "http://schemas.xmlsoap.org/soap/envelope/", "1");
-
-            header.AppendChild(security);
-
-            //7.2
-            //            XmlElement timestamp = doc.CreateElement("wsu", "Timestamp",
-            //    "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd");
-
-            //            timestamp.SetAttribute("Id", timestamp.NamespaceURI,
-            //                "TS-" + Guid.NewGuid().ToString("N"));
-
-            //            DateTime now = DateTime.UtcNow;
-
-            //            timestamp.InnerXml = $@"
-            //<wsu:Created>{now:yyyy-MM-ddTHH:mm:ssZ}</wsu:Created>
-            //<wsu:Expires>{now.AddMinutes(50):yyyy-MM-ddTHH:mm:ssZ}</wsu:Expires>";
-
-            //            security.AppendChild(timestamp);
-
-            const string WSU =
-    "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd";
-
-            XmlElement timestamp = doc.CreateElement("wsu", "Timestamp", WSU);
-
-            timestamp.SetAttribute(
-                "Id",
-                WSU,
-                "TS-" + Guid.NewGuid().ToString("N")
+            string signedXml = FinaSoapSigner.SignSoap(
+                unsignedXml,
+                "C:\\WinX\\certifikati\\p12_aurasoft_demo.p12",
+                "Aurasoft1"
             );
 
-            DateTime now = DateTime.UtcNow;
+            //File.WriteAllText("signed.xml", signedXml);
 
-            XmlElement created = doc.CreateElement("wsu", "Created", WSU);
-            created.InnerText = now.ToString("yyyy-MM-ddTHH:mm:ssZ");
-
-            XmlElement expires = doc.CreateElement("wsu", "Expires", WSU);
-            expires.InnerText = now.AddMinutes(50).ToString("yyyy-MM-ddTHH:mm:ssZ");
-
-            timestamp.AppendChild(created);
-            timestamp.AppendChild(expires);
-
-            security.AppendChild(timestamp);
+            return new Variable(signedXml);
 
 
-            //8.2
-            XmlElement bst = doc.CreateElement("wsse", "BinarySecurityToken",
-    security.NamespaceURI);
+        }
 
-            bst.SetAttribute("EncodingType",
-                "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary");
+        public class FinaSoapSigner
+        {
+            public static string SignSoap(string unsignedSoapXml, string pfxPath, string pfxPassword)
+            {
+                // Load cert
+                var cert = new X509Certificate2(pfxPath, pfxPassword,
+                    X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable);
 
-            bst.SetAttribute("ValueType",
-                "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3");
+                // Load XML
+                var doc = new XmlDocument();
+                doc.PreserveWhitespace = true;
+                doc.LoadXml(unsignedSoapXml);
 
-            string certId = "X509-" + Guid.NewGuid().ToString("N");
+                // Namespace manager
+                var ns = new XmlNamespaceManager(doc.NameTable);
+                ns.AddNamespace("soap", "http://schemas.xmlsoap.org/soap/envelope/");
 
-            bst.SetAttribute("Id",
-                "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd",
-                certId);
+                // Find Body
+                var body = (XmlElement)doc.SelectSingleNode("//soap:Body", ns);
+                if (body == null) throw new Exception("SOAP Body nije pronađen.");
 
-            bst.InnerText = Convert.ToBase64String(cert.RawData);
-            security.AppendChild(bst);
+                // Ensure both Id (for SignedXml) and wsu:Id (for WSS) are present
+                // 1) add plain Id (SignedXml prepoznaje atribut "Id")
+                body.SetAttribute("Id", "Body");
 
+                // 2) add wsu:Id as well (WS-Security expects wsu:Id)
+                // ensure wsu namespace is declared at envelope level
+                var env = (XmlElement)doc.DocumentElement;
+                if (env != null && env.GetAttribute("xmlns:wsu") == string.Empty)
+                {
+                    env.SetAttribute("xmlns:wsu", "http://schemas.xmlsoap.org/ws/2002/12/utility");
+                }
+                //body.SetAttribute("wsu:Id", "Body", "http://schemas.xmlsoap.org/ws/2002/12/utility");
+                var wsuId = doc.CreateAttribute("wsu", "Id", "http://schemas.xmlsoap.org/ws/2002/12/utility");
+                wsuId.Value = "Body";
+                body.Attributes.Append(wsuId);
 
-            //9.2
-            var signedXml = new WSSignedXml(doc);
-            signedXml.SigningKey = cert.GetRSAPrivateKey();
+                // Find Header, create Security element
+                var header = (XmlElement)doc.SelectSingleNode("//soap:Header", ns);
+                if (header == null) throw new Exception("SOAP Header nije pronađen.");
 
-            signedXml.SignedInfo.CanonicalizationMethod =
-                SignedXml.XmlDsigExcC14NTransformUrl;
+                var security = doc.CreateElement("wsse", "Security",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext");
+                header.AppendChild(security);
 
-            signedXml.SignedInfo.SignatureMethod =
-                "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256";
+                // Create BinarySecurityToken
+                var bst = doc.CreateElement("wsse", "BinarySecurityToken",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext");
+                bst.SetAttribute("EncodingType",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext#Base64Binary");
+                bst.SetAttribute("ValueType",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext#X509v3");
+                bst.SetAttribute("wsu:Id", "MyCert");
+                bst.InnerText = Convert.ToBase64String(cert.RawData);
+                security.AppendChild(bst);
 
+                // Prepare SignedXml
+                var signedXml = new SignedXmlWithId(doc)
+                {
+                    SigningKey = cert.GetRSAPrivateKey()
+                };
 
-            //9.3
-            Reference reference = new Reference("#" + bodyId);
-            reference.DigestMethod = SignedXml.XmlDsigSHA256Url;
+                // Force RSA-SHA256
+                signedXml.SignedInfo.SignatureMethod = SignedXml.XmlDsigRSASHA256Url;
 
-            reference.AddTransform(
-                new XmlDsigExcC14NTransform()
-            );
+                // Create Reference to "#Body"
+                Reference reference = new Reference("#" + bodyId);
+                reference.DigestMethod = SignedXml.XmlDsigSHA256Url;
 
-            signedXml.AddReference(reference);
+                reference.AddTransform(
+                    new XmlDsigExcC14NTransform()
+                );
 
-
-            //9.4
-            KeyInfo keyInfo = new KeyInfo();
-
-            XmlElement str = doc.CreateElement("wsse", "SecurityTokenReference",
-                security.NamespaceURI);
-
-            XmlElement refElem = doc.CreateElement("wsse", "Reference",
-                security.NamespaceURI);
-
-            refElem.SetAttribute("URI", "#" + certId);
-            refElem.SetAttribute("ValueType",
-                "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3");
-
-            str.AppendChild(refElem);
-            keyInfo.AddClause(new KeyInfoNode(str));
-
-            signedXml.KeyInfo = keyInfo;
-
-
-            //9.5
-            signedXml.ComputeSignature();
-
-            XmlElement signature = signedXml.GetXml();
-            security.AppendChild(doc.ImportNode(signature, true));
-
-
-
-
-
-            doc.Save("C:\\users\\user\\Desktop\\my.xml");
-
+                signedXml.AddReference(reference);
 
 
-            return Variable.EmptyInstance;
+                // Build KeyInfo using SecurityTokenReference pointing to BinarySecurityToken
+                KeyInfo keyInfo = new KeyInfo();
+                // create <wsse:SecurityTokenReference><wsse:Reference URI="#X509Token" ValueType="..."/></wsse:SecurityTokenReference>
+                var strXml = @"<wsse:SecurityTokenReference xmlns:wsse=""http://schemas.xmlsoap.org/ws/2002/12/secext"">" +
+                             @"<wsse:Reference URI=""#X509Token"" ValueType=""http://schemas.xmlsoap.org/ws/2002/12/secext#X509v3""/>" +
+                             @"</wsse:SecurityTokenReference>";
+
+                var strDoc = new XmlDocument();
+                strDoc.LoadXml(strXml);
+                keyInfo.AddClause(new KeyInfoNode(strDoc.DocumentElement));
+                signedXml.KeyInfo = keyInfo;
+
+                // Compute signature
+                signedXml.ComputeSignature();
+
+                // Get XML for signature and append into wsse:Security
+                var xmlDigitalSignature = signedXml.GetXml();
+                security.AppendChild(xmlDigitalSignature);
+
+                // Return signed SOAP
+                return doc.OuterXml;
+            }
+
+            private static XmlElement CreateSecurityTokenReference(XmlDocument doc)
+            {
+                XmlElement str = doc.CreateElement("wsse", "SecurityTokenReference",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext");
+
+                XmlElement refElem = doc.CreateElement("wsse", "Reference",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext");
+
+                refElem.SetAttribute("URI", "#MyCert");
+                refElem.SetAttribute("ValueType",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext#X509v3");
+
+                str.AppendChild(refElem);
+                return str;
+            }
         }
     }
-}
+
+    public class TEST1Function : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 0, m_name);
+
+            string unsignedXml = @"<?xml version=""1.0"" encoding=""utf-8""?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV=""http://schemas.xmlsoap.org/soap/envelope/""
+                   xmlns:xsd=""http://www.w3.org/2001/XMLSchema""
+                   xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"">
+    <SOAP-ENV:Header />
+    <SOAP-ENV:Body
+                   xmlns:wsu=""http://schemas.xmlsoap.org/ws/2002/12/utility"">
+        <EchoMsg xmlns=""http://fina.hr/eracun/b2b/pki/Echo/v0.1"">
+            <HeaderSupplier xmlns=""http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1"">
+                <MessageID>" + Guid.NewGuid() + @"</MessageID>
+                <SupplierID>9934:26389058739</SupplierID>
+                <MessageType>9999</MessageType>
+            </HeaderSupplier>
+            <Data>
+                <EchoData>
+                    <Echo>hello from Aurasoft!</Echo>
+                </EchoData>
+            </Data>
+        </EchoMsg>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>";
+
+            //            unsignedXml = @"<?xml version=""1.0"" encoding=""UTF-8""?>
+            //<Invoice xmlns=""urn:oasis:names:specification:ubl:schema:xsd:Invoice-2""
+            //    xmlns:xsi=""http://www.w3.org/2001/XMLSchema""
+            //    xmlns:xsd=""http://www.w3.org/2001/XMLSchema""
+            //    xmlns:cac=""urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2""
+            //    xmlns:cbc=""urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2""
+            //    xmlns:ext=""urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2""
+            //    xmlns:hrextac=""urn:mfin.gov.hr:schema:xsd:HRExtensionAggregateComponents-1"">
+            //<ext:UBLExtensions>
+            //  <ext:UBLExtension>
+            //    <ext:ExtensionContent>
+            //        <hrextac:HRFISK20Data>
+            //            <hrextac:HRTaxTotal>
+            //                <cbc:TaxAmount currencyID=""EUR"">209.54</cbc:TaxAmount>
+            //                <hrextac:HRTaxSubtotal>
+            //                    <cbc:TaxableAmount currencyID=""EUR"">838.15</cbc:TaxableAmount>
+            //                    <cbc:TaxAmount currencyID=""EUR"">209.54</cbc:TaxAmount>
+            //                    <hrextac:HRTaxCategory>
+            //                        <cbc:ID>S</cbc:ID>
+            //                        <cbc:Name>HR:PDV25</cbc:Name>
+            //                        <cbc:Percent>25</cbc:Percent>
+            //                        <hrextac:HRTaxScheme>
+            //                            <cbc:ID>VAT</cbc:ID>
+            //                        </hrextac:HRTaxScheme>
+            //                    </hrextac:HRTaxCategory>
+            //                </hrextac:HRTaxSubtotal>
+            //            </hrextac:HRTaxTotal>
+            //            <hrextac:HRLegalMonetaryTotal>
+            //              <cbc:TaxExclusiveAmount currencyID=""EUR"">0.00</cbc:TaxExclusiveAmount>
+            //              <hrextac:OutOfScopeOfVATAmount currencyID=""EUR"">0.00</hrextac:OutOfScopeOfVATAmount>
+            //            </hrextac:HRLegalMonetaryTotal>
+            //        </hrextac:HRFISK20Data>
+            //    </ext:ExtensionContent>
+            //  </ext:UBLExtension>
+            //</ext:UBLExtensions>
+            //<cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0#conformant#urn:mfin.gov.hr:ext-2025:1.0</cbc:CustomizationID>
+            //<cbc:ProfileID>P7</cbc:ProfileID>
+            //<cbc:ID>00003-90-1</cbc:ID>
+            //<cbc:CopyIndicator>false</cbc:CopyIndicator>
+            //<cbc:IssueDate>2024-01-12</cbc:IssueDate>
+            //<cbc:IssueTime>11:52:07</cbc:IssueTime>
+            //<cbc:DueDate>2024-01-12</cbc:DueDate>
+            //<cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>
+            //<cbc:Note>
+
+            //  TK: TARA T#AAI#</cbc:Note>
+            //<cbc:TaxPointDate>2024-01-05</cbc:TaxPointDate>
+            //<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>
+            //<cbc:TaxCurrencyCode>EUR</cbc:TaxCurrencyCode>
+            //<cac:AccountingSupplierParty>
+            //  <cac:Party>
+            //    <cbc:EndpointID schemeID=""9934"">26389058739</cbc:EndpointID>
+            //    <cac:PartyIdentification><cbc:ID>9934:26389058739</cbc:ID></cac:PartyIdentification>
+            //    <cac:PartyName><cbc:Name>Proba d.o.o.</cbc:Name></cac:PartyName>
+            //    <cac:PostalAddress>
+            //      <cbc:StreetName>Kapetana Lazarića 1D</cbc:StreetName>
+            //      <cbc:CityName>Pazin</cbc:CityName>
+            //      <cbc:PostalZone>52000</cbc:PostalZone>
+            //      <cac:Country><cbc:IdentificationCode>HR</cbc:IdentificationCode></cac:Country>
+            //    </cac:PostalAddress>
+            //    <cac:PartyTaxScheme><cbc:CompanyID>HR26389058739</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>
+            //    <cac:PartyLegalEntity>
+            //      <cbc:RegistrationName>AURA SOFT d.o.o. Primjer dugog teksta</cbc:RegistrationName>
+            //    </cac:PartyLegalEntity>
+            //    <cac:Contact>
+            //      <cbc:Telephone>052-621-929</cbc:Telephone>
+            //    </cac:Contact>
+            //  </cac:Party>
+            //  <cac:SellerContact>    <cbc:ID>12345678903</cbc:ID>    <cbc:Name>TARA T</cbc:Name>  </cac:SellerContact></cac:AccountingSupplierParty>
+            //<cac:AccountingCustomerParty>
+            //  <cac:Party>
+            //    <cbc:EndpointID schemeID=""9934"">85821130368</cbc:EndpointID>
+            //    <cac:PartyIdentification><cbc:ID>9934:85821130368</cbc:ID></cac:PartyIdentification>
+            //    <cac:PartyName><cbc:Name>Partner 3413</cbc:Name></cac:PartyName>
+            //    <cac:PostalAddress>
+            //      <cbc:StreetName>BAŠTIJANOVA 13</cbc:StreetName>
+            //      <cbc:CityName>RIJEKA</cbc:CityName>
+            //      <cbc:PostalZone>51000</cbc:PostalZone>
+            //      <cac:Country><cbc:IdentificationCode>HR</cbc:IdentificationCode></cac:Country>
+            //    </cac:PostalAddress>
+            //    <cac:PartyTaxScheme><cbc:CompanyID>HR26389058739</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>
+            //    <cac:PartyLegalEntity>
+            //      <cbc:RegistrationName>Partner 3413</cbc:RegistrationName>
+            //    </cac:PartyLegalEntity>
+            //  </cac:Party>
+            //</cac:AccountingCustomerParty>
+            //<cac:PaymentMeans>
+            //  <cbc:PaymentMeansCode>30</cbc:PaymentMeansCode>
+            //  <cbc:InstructionNote>Transakcijski račun</cbc:InstructionNote>
+            //  <cbc:PaymentID>00 103201-90100003-1</cbc:PaymentID>
+            //  <cac:PayeeFinancialAccount>
+            //    <cbc:ID>2380006-1147002371</cbc:ID>
+            //    <cbc:Name>Privredna banka d.d.</cbc:Name>
+            //  </cac:PayeeFinancialAccount>
+            //</cac:PaymentMeans>
+            //<cac:TaxTotal>
+            //  <cbc:TaxAmount currencyID=""EUR"">209.54</cbc:TaxAmount>
+            //  <cac:TaxSubtotal>
+            //    <cbc:TaxableAmount currencyID=""EUR"">838.15</cbc:TaxableAmount>
+            //    <cbc:TaxAmount currencyID=""EUR"">209.54</cbc:TaxAmount>
+            //    <cac:TaxCategory>
+            //      <cbc:ID>S</cbc:ID>
+            //      <cbc:Percent>25</cbc:Percent>
+            //      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+            //    </cac:TaxCategory>
+            //  </cac:TaxSubtotal>
+            //</cac:TaxTotal>
+            //<cac:LegalMonetaryTotal>
+            //  <cbc:LineExtensionAmount currencyID=""EUR"">838.15</cbc:LineExtensionAmount>
+            //  <cbc:TaxExclusiveAmount currencyID=""EUR"">838.15</cbc:TaxExclusiveAmount>
+            //  <cbc:TaxInclusiveAmount currencyID=""EUR"">1047.69</cbc:TaxInclusiveAmount>
+            //  <cbc:PayableAmount currencyID=""EUR"">1047.69</cbc:PayableAmount>
+            //</cac:LegalMonetaryTotal>
+            //<cac:InvoiceLine>
+            //  <cbc:ID>1</cbc:ID>
+            //  <cbc:InvoicedQuantity unitCode=""H87"">72.0000</cbc:InvoicedQuantity>
+            //  <cbc:LineExtensionAmount currencyID=""EUR"">583.26</cbc:LineExtensionAmount>
+            //  <cac:AllowanceCharge>
+            //    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+            //    <cbc:AllowanceChargeReason>Popust na stavku (17.00%)</cbc:AllowanceChargeReason>
+            //    <cbc:MultiplierFactorNumeric>17.00</cbc:MultiplierFactorNumeric>
+            //    <cbc:Amount currencyID=""EUR"">119.46</cbc:Amount>
+            //    <cbc:BaseAmount currencyID=""EUR"">702.72</cbc:BaseAmount>
+            //  </cac:AllowanceCharge>
+            //  <cac:Item>
+            //    <cbc:Name>BK SIPROFIX 160 SUPERFLEX C2TE LJEP. 25/1 (48#)</cbc:Name>
+            //    <cac:SellersItemIdentification><cbc:ID>000164</cbc:ID></cac:SellersItemIdentification>
+            //    <cac:StandardItemIdentification><cbc:ID schemeID=""0160"">1000000000028</cbc:ID></cac:StandardItemIdentification>
+            //    <cac:CommodityClassification>
+            //      <cbc:ItemClassificationCode listID=""CG"">46.89.00</cbc:ItemClassificationCode>
+            //    </cac:CommodityClassification>
+            //    <cac:ClassifiedTaxCategory>
+            //      <cbc:ID>S</cbc:ID>
+            //      <cbc:Percent>25</cbc:Percent>
+            //      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+            //    </cac:ClassifiedTaxCategory>
+            //  </cac:Item>
+            //  <cac:Price>
+            //    <cbc:PriceAmount currencyID=""EUR"">9.7600</cbc:PriceAmount>
+            //    <cbc:BaseQuantity unitCode=""H87"">1</cbc:BaseQuantity>
+            //  </cac:Price>
+            //</cac:InvoiceLine>
+            //<cac:InvoiceLine>
+            //  <cbc:ID>2</cbc:ID>
+            //  <cbc:InvoicedQuantity unitCode=""H87"">6.0000</cbc:InvoicedQuantity>
+            //  <cbc:LineExtensionAmount currencyID=""EUR"">168.52</cbc:LineExtensionAmount>
+            //  <cac:AllowanceCharge>
+            //    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+            //    <cbc:AllowanceChargeReason>Popust na stavku (17.00%)</cbc:AllowanceChargeReason>
+            //    <cbc:MultiplierFactorNumeric>17.00</cbc:MultiplierFactorNumeric>
+            //    <cbc:Amount currencyID=""EUR"">34.52</cbc:Amount>
+            //    <cbc:BaseAmount currencyID=""EUR"">203.04</cbc:BaseAmount>
+            //  </cac:AllowanceCharge>
+            //  <cac:Item>
+            //    <cbc:Name>BK HIDROSTOP 2 (16,6+5) 16,6/1</cbc:Name>
+            //    <cac:SellersItemIdentification><cbc:ID>000080</cbc:ID></cac:SellersItemIdentification>
+            //    <cac:StandardItemIdentification><cbc:ID schemeID=""0160"">8606103352033</cbc:ID></cac:StandardItemIdentification>
+            //    <cac:CommodityClassification>
+            //      <cbc:ItemClassificationCode listID=""CG"">46.89.00</cbc:ItemClassificationCode>
+            //    </cac:CommodityClassification>
+            //    <cac:ClassifiedTaxCategory>
+            //      <cbc:ID>S</cbc:ID>
+            //      <cbc:Percent>25</cbc:Percent>
+            //      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+            //    </cac:ClassifiedTaxCategory>
+            //  </cac:Item>
+            //  <cac:Price>
+            //    <cbc:PriceAmount currencyID=""EUR"">33.8400</cbc:PriceAmount>
+            //    <cbc:BaseQuantity unitCode=""H87"">1</cbc:BaseQuantity>
+            //  </cac:Price>
+            //</cac:InvoiceLine>
+            //<cac:InvoiceLine>
+            //  <cbc:ID>3</cbc:ID>
+            //  <cbc:InvoicedQuantity unitCode=""H87"">6.0000</cbc:InvoicedQuantity>
+            //  <cbc:LineExtensionAmount currencyID=""EUR"">50.60</cbc:LineExtensionAmount>
+            //  <cac:AllowanceCharge>
+            //    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+            //    <cbc:AllowanceChargeReason>Popust na stavku (17.00%)</cbc:AllowanceChargeReason>
+            //    <cbc:MultiplierFactorNumeric>16.99</cbc:MultiplierFactorNumeric>
+            //    <cbc:Amount currencyID=""EUR"">10.36</cbc:Amount>
+            //    <cbc:BaseAmount currencyID=""EUR"">60.96</cbc:BaseAmount>
+            //  </cac:AllowanceCharge>
+            //  <cac:Item>
+            //    <cbc:Name>BK EMULZIJA HIDROSTOP 2 (20+5) 5/1</cbc:Name>
+            //    <cac:SellersItemIdentification><cbc:ID>000324</cbc:ID></cac:SellersItemIdentification>
+            //    <cac:StandardItemIdentification><cbc:ID schemeID=""0160"">8606103352040</cbc:ID></cac:StandardItemIdentification>
+            //    <cac:CommodityClassification>
+            //      <cbc:ItemClassificationCode listID=""CG"">46.89.00</cbc:ItemClassificationCode>
+            //    </cac:CommodityClassification>
+            //    <cac:ClassifiedTaxCategory>
+            //      <cbc:ID>S</cbc:ID>
+            //      <cbc:Percent>25</cbc:Percent>
+            //      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+            //    </cac:ClassifiedTaxCategory>
+            //  </cac:Item>
+            //  <cac:Price>
+            //    <cbc:PriceAmount currencyID=""EUR"">10.1600</cbc:PriceAmount>
+            //    <cbc:BaseQuantity unitCode=""H87"">1</cbc:BaseQuantity>
+            //  </cac:Price>
+            //</cac:InvoiceLine>
+            //<cac:InvoiceLine>
+            //  <cbc:ID>4</cbc:ID>
+            //  <cbc:InvoicedQuantity unitCode=""H87"">2.0000</cbc:InvoicedQuantity>
+            //  <cbc:LineExtensionAmount currencyID=""EUR"">35.77</cbc:LineExtensionAmount>
+            //  <cac:AllowanceCharge>
+            //    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+            //    <cbc:AllowanceChargeReason>Popust na stavku (15.00%)</cbc:AllowanceChargeReason>
+            //    <cbc:MultiplierFactorNumeric>15.00</cbc:MultiplierFactorNumeric>
+            //    <cbc:Amount currencyID=""EUR"">6.31</cbc:Amount>
+            //    <cbc:BaseAmount currencyID=""EUR"">42.08</cbc:BaseAmount>
+            //  </cac:AllowanceCharge>
+            //  <cac:Item>
+            //    <cbc:Name>BK PODLOGA  5L</cbc:Name>
+            //    <cac:SellersItemIdentification><cbc:ID>000264</cbc:ID></cac:SellersItemIdentification>
+            //    <cac:StandardItemIdentification><cbc:ID schemeID=""0160"">8606102367779</cbc:ID></cac:StandardItemIdentification>
+            //    <cac:CommodityClassification>
+            //      <cbc:ItemClassificationCode listID=""CG"">46.89.00</cbc:ItemClassificationCode>
+            //    </cac:CommodityClassification>
+            //    <cac:ClassifiedTaxCategory>
+            //      <cbc:ID>S</cbc:ID>
+            //      <cbc:Percent>25</cbc:Percent>
+            //      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+            //    </cac:ClassifiedTaxCategory>
+            //  </cac:Item>
+            //  <cac:Price>
+            //    <cbc:PriceAmount currencyID=""EUR"">21.0400</cbc:PriceAmount>
+            //    <cbc:BaseQuantity unitCode=""H87"">1</cbc:BaseQuantity>
+            //  </cac:Price>
+            //</cac:InvoiceLine>
+            //</Invoice>
+            //";
+
+            //--- od čovika --------------------------------
+
+            //// potpisi e_racun:
+            //DigitalSignature dsig = new DigitalSignature();
+            //var cert = new X509Certificate2(@"D:\WinX\ERAC\certifikati\p12_aurasoft_demo.p12", "Aurasoft1",
+            //        X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable);
+            //dsig.Certificate = cert;
+            //byte[] nepotpisaniRacun = Encoding.ASCII.GetBytes(unsignedXml);
+            //byte[] bajtoviPotpisanogRacuna = dsig.SignInvoiceOrCreditNote(nepotpisaniRacun);
+            ////System.IO.File.WriteAllBytes(@"C:\potpisani_eracun.xml", bajtoviPotpisanogRacuna);
+
+            //string signedXml = System.Text.Encoding.UTF8.GetString(bajtoviPotpisanogRacuna);
+
+            //return new Variable(signedXml);
+
+            //-----------------------------------
+
+            string signedXml = FinaSoapSigner.SignSoap(
+                unsignedXml,
+                "C:\\WinX\\certifikati\\p12_aurasoft_demo.p12",
+                "Aurasoft1"
+            );
+
+            //File.WriteAllText("signed.xml", signedXml);
+
+            return new Variable(signedXml);
+
+
+        }
+
+        public class FinaSoapSigner
+        {
+            public static string SignSoap(string unsignedSoapXml, string pfxPath, string pfxPassword)
+            {
+                // Load cert
+                var cert = new X509Certificate2(pfxPath, pfxPassword,
+                    X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable);
+
+                // Load XML
+                var doc = new XmlDocument();
+                doc.PreserveWhitespace = true;
+                doc.LoadXml(unsignedSoapXml);
+
+                // Namespace manager
+                var ns = new XmlNamespaceManager(doc.NameTable);
+                ns.AddNamespace("soap", "http://schemas.xmlsoap.org/soap/envelope/");
+
+                // Find Body
+                var body = (XmlElement)doc.SelectSingleNode("//soap:Body", ns);
+                if (body == null) throw new Exception("SOAP Body nije pronađen.");
+
+                // Ensure both Id (for SignedXml) and wsu:Id (for WSS) are present
+                // 1) add plain Id (SignedXml prepoznaje atribut "Id")
+                body.SetAttribute("Id", "Body");
+
+                // 2) add wsu:Id as well (WS-Security expects wsu:Id)
+                // ensure wsu namespace is declared at envelope level
+                var env = (XmlElement)doc.DocumentElement;
+                if (env != null && env.GetAttribute("xmlns:wsu") == string.Empty)
+                {
+                    env.SetAttribute("xmlns:wsu", "http://schemas.xmlsoap.org/ws/2002/12/utility");
+                }
+                //body.SetAttribute("wsu:Id", "Body", "http://schemas.xmlsoap.org/ws/2002/12/utility");
+                var wsuId = doc.CreateAttribute("wsu", "Id", "http://schemas.xmlsoap.org/ws/2002/12/utility");
+                wsuId.Value = "Body";
+                body.Attributes.Append(wsuId);
+
+                // Find Header, create Security element
+                var header = (XmlElement)doc.SelectSingleNode("//soap:Header", ns);
+                if (header == null) throw new Exception("SOAP Header nije pronađen.");
+
+                var security = doc.CreateElement("wsse", "Security",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext");
+                header.AppendChild(security);
+
+                // Create BinarySecurityToken
+                var bst = doc.CreateElement("wsse", "BinarySecurityToken",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext");
+                bst.SetAttribute("EncodingType",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext#Base64Binary");
+                bst.SetAttribute("ValueType",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext#X509v3");
+                bst.SetAttribute("wsu:Id", "MyCert");
+                bst.InnerText = Convert.ToBase64String(cert.RawData);
+                security.AppendChild(bst);
+
+                // Prepare SignedXml
+                var signedXml = new SignedXmlWithId(doc)
+                {
+                    SigningKey = cert.GetRSAPrivateKey()
+                };
+
+                // Force RSA-SHA256
+                signedXml.SignedInfo.SignatureMethod = SignedXml.XmlDsigRSASHA256Url;
+
+                // Create Reference to "#Body"
+                Reference reference = new Reference("#" + bodyId);
+                reference.DigestMethod = SignedXml.XmlDsigSHA256Url;
+
+                reference.AddTransform(
+                    new XmlDsigExcC14NTransform()
+                );
+
+                signedXml.AddReference(reference);
+
+
+                // Build KeyInfo using SecurityTokenReference pointing to BinarySecurityToken
+                KeyInfo keyInfo = new KeyInfo();
+                // create <wsse:SecurityTokenReference><wsse:Reference URI="#X509Token" ValueType="..."/></wsse:SecurityTokenReference>
+                var strXml = @"<wsse:SecurityTokenReference xmlns:wsse=""http://schemas.xmlsoap.org/ws/2002/12/secext"">" +
+                             @"<wsse:Reference URI=""#X509Token"" ValueType=""http://schemas.xmlsoap.org/ws/2002/12/secext#X509v3""/>" +
+                             @"</wsse:SecurityTokenReference>";
+
+                var strDoc = new XmlDocument();
+                strDoc.LoadXml(strXml);
+                keyInfo.AddClause(new KeyInfoNode(strDoc.DocumentElement));
+                signedXml.KeyInfo = keyInfo;
+
+                // Compute signature
+                signedXml.ComputeSignature();
+
+                // Get XML for signature and append into wsse:Security
+                var xmlDigitalSignature = signedXml.GetXml();
+                security.AppendChild(xmlDigitalSignature);
+
+                // Return signed SOAP
+                return doc.OuterXml;
+            }
+
+            private static XmlElement CreateSecurityTokenReference(XmlDocument doc)
+            {
+                XmlElement str = doc.CreateElement("wsse", "SecurityTokenReference",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext");
+
+                XmlElement refElem = doc.CreateElement("wsse", "Reference",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext");
+
+                refElem.SetAttribute("URI", "#MyCert");
+                refElem.SetAttribute("ValueType",
+                    "http://schemas.xmlsoap.org/ws/2002/12/secext#X509v3");
+
+                str.AppendChild(refElem);
+                return str;
+            }
+        }
+    }

@@ -1107,7 +1107,7 @@ function GenerateUBLXml() {
          deliveryLocationID = "";
          deliverySchemeID = "";
       
-         if (NKPR_AD_GLN != "" && Length(NKPR_AD_GLN) == 13) {
+         if (NKPR_AD_GLN != "" && NKPR_AD_GLN.Length == 13) {
              // GLN number has preference (13 characters)
              deliveryLocationID = NKPR_AD_GLN;
              deliverySchemeID = "0088"; // GLN scheme
@@ -1908,9 +1908,8 @@ MessageBox("Slanje eRačuna putem posrednika: " + PROVIDER + " (" + ERAC_PASST +
         //koristimo FINA način slanja
         // za test koristimo račun "90100003"
         
-        // MessageBox("Slanje putem FINA-e još nije implementirano.");
-        // SendToFINA();
-        SendToFINA_2();
+         SendToFINA();
+        //SendToFINA_2();
         // ...
 
         return;
@@ -2067,13 +2066,14 @@ function SendToFINA_2() {
     soapEnvelope += "  </SOAP-ENV:Body>\n";
     soapEnvelope += "</SOAP-ENV:Envelope>";
 
-
-    Test99();
-    exit;
+MessageBox("AAAA: SOAP Envelope prepared for FINA:\n\n" + soapEnvelope);
+    //Test99();
+    //exit;
 
 
     // Sign SOAP with client certificate (WS-Security)
     signedSoap = SignSoapWithCert(soapEnvelope, ERAC_PASST, ERAC_PASS);
+MessageBox("BBBB: Signed SOAP for FINA:\n\n" + signedSoap);
 
     // if (signedSoap == "") {
     //     LogError("FINA_SIGN_FAIL", "SOAP signing failed", "");
@@ -2098,6 +2098,7 @@ function SendToFINA_2() {
             false                       // justFire
         );
         // SaveResponseLog(response, "FINA");
+MessageBox("CCCC: Response from FINA:\n\n" + response);
 
         // ackStatus = ExtractXML(response, "AckStatus");
         // zki = ExtractXML(response, "ZKI");
@@ -2179,12 +2180,12 @@ function SendToFINA() {
     }
 
     // Determine endpoint based on provider configuration
-    endpoint = ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService/";
+    endpoint = ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService";
     
 
     // 1. Prepare the XML body for the SOAP request
     base64Ubl = File2Base64(xmlFileName);
-
+MessageBox("1111" + ": base64Ubl length = " + base64Ubl.Length);
     uuid = UUID();
 
     xmlBody = "<fin:SendB2BOutgoingInvoiceMsg xmlns:fin=\"http://www.fina.hr/e-racun/services\">\n";
@@ -2208,27 +2209,29 @@ function SendToFINA() {
     xmlBody += "</fin:SendB2BOutgoingInvoiceMsg>";
     // 2. Define the SOAPAction (often empty for FINA services)
     soapAction = "";
-
+MessageBox("2222" + ": Prepared XML Body for FINA:\n\n" + xmlBody);
     // 3. Call the unified CreateSOAP function
     try {
         // CreateSOAP handles signing and sending the request, and returns the response.
         // It expects: xmlBody, soapAction, endpoint, certIdentifier, certPassword
+MessageBox("3333" + ": Calling CreateSOAP... : "+soapAction+".... "+endpoint+".... "+ERAC_PASST+".... "+ERAC_PASS);
         response = CreateSOAP(
             xmlBody,
             soapAction,
             endpoint,
             ERAC_PASST, // Certificate path from NKSYERAC
-            ERAC_PASS   // Certificate password from NKSYERAC
+            ERAC_PASS,   // Certificate password from NKSYERAC
+            60
         );
 
         MSG(response);
 
         // // 4. Process the response
-        // if (response.StartsWith("ERROR:") || response.StartsWith("HTTP_ERROR:") || response.StartsWith("EXCEPTION:")) {
-        //     FINAFailure(invNum, 0, response);
-        // } else {
-        //     FINASuccess(invNum, 200, response);
-        // }
+         if (response.StartsWith("ERROR:") || response.StartsWith("HTTP_ERROR:") || response.StartsWith("EXCEPTION:")) {
+             FINAFailure(invNum, 0, response);
+         } else {
+             FINASuccess(invNum, 200, response);
+         }
     } catch (ex) {
         FINAFailure(invNum, 0, "Greška pri pozivu CreateSOAP funkcije: " + ex);
     }
@@ -2340,6 +2343,15 @@ function StoreEPOSDocumentId(invoiceNum, documentId, insertedOn) {
 
 function FINASuccess(_invNum, responseCode, res) {
     MSG("FINASuccess");
+
+    // Check if the response from FINA is successful but empty.
+    // This is expected behavior for this specific web service.
+    if (res == null || res.Trim() == "") {
+        res = "FINA server returned HTTP 200 OK with an empty body. This indicates the request was accepted for processing.";
+        LogNKSYELOG("C", "FINA request accepted (empty response).");
+    } else {
+        LogNKSYELOG("C", "FINA request successful.");
+    }
 
     LogResponse(responseCode, res);
 }

@@ -1,0 +1,17 @@
+CreateWindow("../../scripts/testChainNewruntime.xaml");
+
+function testChainNewruntime_onDisplay(){
+	MessageBox("parent script");
+}
+
+function btnTest@clicked(){
+	MessageBox("button Test START");
+
+	//Chain("../../scripts/testCHAINNewruntimeChild.cscs"); //Works 
+
+	//CHAIN "../../scripts/testCHAINNewruntimeChild.cscs" NEWRUNTIME; //Works //Doesn't work QUIT on child form
+
+	CHAIN "../../scripts/testCHAINNewruntimeChild.cscs" NEWRUNTIME WITH "myGrid" "bla1"+"bla2" 50 "bla4"; //Works //Doesn't work QUIT on child form
+
+	MessageBox("button Test END");
+}

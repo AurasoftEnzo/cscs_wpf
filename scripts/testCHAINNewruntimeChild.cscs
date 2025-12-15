@@ -1,0 +1,22 @@
+CreateWindow("../../scripts/testChainNewruntimeChild.xaml");
+
+DEFINE arg1, arg2, arg3, arg4 type a size 20;
+DEFINE arg3B type R;
+
+function testChainNewruntimeChild_onDisplay(){
+	MessageBox("child script");	
+
+	PARAM (arg1, arg2, arg3B, arg4);
+	MessageBox("Got params:\n\n" + arg1 + "\n" + arg2 + "\n" + arg3B + "\n" + arg4);
+}
+
+function btnSum@clicked(){
+	A = 10;
+	B = 5;
+	C = A + B;
+	MessageBox("C=" + C);
+}
+
+function btnExit@clicked(){
+	quit;
+}

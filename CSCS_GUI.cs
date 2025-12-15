@@ -30,6 +30,7 @@ using System.Windows.Xps;
 using WpfControlsLibrary;
 using WpfCSCS;
 using WpfCSCS.Reporting;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 using static WpfCSCS.Btrieve;
 
 namespace SplitAndMerge
@@ -106,7 +107,9 @@ namespace SplitAndMerge
             //interpreter.RegisterFunction("MBox", new MBoxFunction());
             //interpreter.RegisterFunction("MBoxTimer", new MBoxTimerFunction());
             interpreter.RegisterFunction("MBox", new MBoxFunction());
-            
+            interpreter.RegisterFunction("MBoxAsinkroni", new MBoxAsinkroniFunction());
+            interpreter.RegisterFunction("MBoxWindowless", new MBoxWindowlessFunction());
+
 
             interpreter.RegisterFunction("SendToPrinter", new PrintFunction());
 
@@ -4847,9 +4850,405 @@ namespace WpfCSCS
         }
     }
 
+    //****************************************************************************************************
+    //****************************************************************************************************
+    //****************************************************************************************************
+	
+	//MBoxAsinkroni JE ZA IZBRISAT
+    public class MBoxAsinkroniFunction : ParserFunction
+    {
+        private static SemaphoreSlim _messageSemaphore = new SemaphoreSlim(1, 1);
 
-	//****************************************************************************************************
-	//****************************************************************************************************
+        protected override async Task<Variable> EvaluateAsync(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+
+            Utils.CheckArgs(args.Count, 1, m_name);
+
+            var message = Utils.GetSafeString(args, 0);
+            var caption = Utils.GetSafeString(args, 1, "Info");
+            var answerType = Utils.GetSafeString(args, 2, "ok").ToLower();
+            var messageType = Utils.GetSafeString(args, 3, "info").ToLower();
+            var duration = Utils.GetSafeDouble(args, 4, -1);
+
+            // Wait for any previous message box to complete
+            await _messageSemaphore.WaitAsync();
+
+            try
+            {
+                string result = await Application.Current.Dispatcher.Invoke(async () =>
+                {
+                    if (duration > 0)
+                    {
+                        return await ShowAutoCloseMessageBoxAsync(message, caption,
+                                                                answerType, messageType,
+                                                                (int)duration);
+                    }
+                    else
+                    {
+                        return await ShowMessageBoxAsync(message, caption,
+                                                       answerType, messageType);
+                    }
+                });
+
+                return new Variable(result);
+            }
+            finally
+            {
+                _messageSemaphore.Release();
+            }
+        }
+
+        public static Task<string> ShowMessageBoxAsync(string message, string caption = "Info",
+                                                     string answerType = "ok", string messageType = "info")
+        {
+            var tcs = new TaskCompletionSource<string>();
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                var result = ShowMessageBox(message, caption, answerType, messageType);
+                tcs.SetResult(result);
+            });
+
+            return tcs.Task;
+        }
+
+        public static Task<string> ShowAutoCloseMessageBoxAsync(string message, string caption = "Info",
+                                                              string answerType = "ok", string messageType = "info",
+                                                              int durationSeconds = 5)
+        {
+            var tcs = new TaskCompletionSource<string>();
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                //var dialog = new AutoCloseMessageBoxWindow(message, caption, answerType,
+                //                                          messageType, durationSeconds);
+                var dialog = new AutoCloseMessageBoxWindow(message, caption, answerType,
+                                                          messageType, durationSeconds, "Red");
+
+                dialog.Closed += (s, e) =>
+                {
+                    tcs.SetResult(dialog.Result);
+                };
+
+                dialog.Show();
+            });
+
+            return tcs.Task;
+        }
+
+
+
+        //rest of existing methods
+        public static string ShowMessageBox(string message, string caption = "Info",
+                                           string answerType = "ok", string messageType = "info")
+        {
+            MessageBoxButton buttons =
+                answerType == "ok" ? MessageBoxButton.OK :
+                answerType == "okcancel" ? MessageBoxButton.OKCancel :
+                answerType == "yesno" ? MessageBoxButton.YesNo :
+                answerType == "yesnocancel" ? MessageBoxButton.YesNoCancel : MessageBoxButton.OK;
+
+            MessageBoxImage icon =
+                messageType == "question" ? MessageBoxImage.Question :
+                messageType == "info" ? MessageBoxImage.Information :
+                messageType == "warning" ? MessageBoxImage.Warning :
+                messageType == "error" ? MessageBoxImage.Error :
+                messageType == "exclamation" ? MessageBoxImage.Exclamation :
+                messageType == "stop" ? MessageBoxImage.Stop :
+                messageType == "hand" ? MessageBoxImage.Hand :
+                messageType == "asterisk" ? MessageBoxImage.Asterisk :
+                            MessageBoxImage.None;
+            var result = MessageBox.Show(message, caption, buttons, icon);
+
+            var ret = result == MessageBoxResult.OK ? "OK" :
+                result == MessageBoxResult.Cancel ? "Cancel" :
+                result == MessageBoxResult.Yes ? "Yes" :
+                result == MessageBoxResult.No ? "No" : "None";
+
+            return ret;
+        }
+
+        
+
+    }
+
+    //****************************************************************************************************
+    //****************************************************************************************************
+    //****************************************************************************************************
+    //public class MBoxWindowlessFunction : ParserFunction
+    //{
+    //    protected override Variable Evaluate(ParsingScript script)
+    //    {
+    //        List<Variable> args = script.GetFunctionArgs();
+    //        Utils.CheckArgs(args.Count, 1, m_name);
+
+    //        var message = Utils.GetSafeString(args, 0);
+    //        var caption = Utils.GetSafeString(args, 1, "Info");
+    //        var answerType = Utils.GetSafeString(args, 2, "ok").ToLower();
+    //        var messageType = Utils.GetSafeString(args, 3, "info").ToLower();
+    //        var duration = Utils.GetSafeDouble(args, 4, -1);
+    //        var titleBackgroundColor = Utils.GetSafeString(args, 5, "");
+
+    //        // Use the MessageBoxManager
+    //        MessageBoxManager.ShowMessageBox(message, caption, answerType,
+    //                                       messageType, duration, titleBackgroundColor);
+
+    //        return new Variable("Queued");
+    //    }
+    //}
+
+    public class MBoxWindowlessFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+			string result = "";
+
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+
+            var message = Utils.GetSafeString(args, 0);
+            var caption = Utils.GetSafeString(args, 1, "Info");
+            var answerType = Utils.GetSafeString(args, 2, "ok").ToLower();
+            var messageType = Utils.GetSafeString(args, 3, "info").ToLower();
+            var duration = Utils.GetSafeDouble(args, 4, -1);
+            var titleBackgroundColor = Utils.GetSafeString(args, 5, "");
+
+            // Use the MessageBoxManager
+            result = MessageBoxManager.ShowMessageBox(message, caption, answerType,
+                                           messageType, duration, titleBackgroundColor);
+
+            return new Variable(result);
+        }
+    }
+
+    public class MessageBoxManager
+    {
+        private static Window _hiddenMainWindow;
+        private static readonly Queue<MessageBoxRequest> _messageQueue = new Queue<MessageBoxRequest>();
+        private static bool _isShowingMessage = false;
+        private static ManualResetEvent _appReadyEvent = new ManualResetEvent(false);
+        private static Thread _uiThread;
+
+        // Initialize the message box manager
+        public static void Initialize()
+        {
+            if (_uiThread != null && _uiThread.IsAlive)
+                return;
+
+            // Start UI thread if not already running
+            _uiThread = new Thread(() =>
+            {
+                // Create hidden application window
+                _hiddenMainWindow = new Window
+                {
+                    Width = 1,
+                    Height = 1,
+                    WindowStyle = WindowStyle.None,
+                    ShowInTaskbar = false,
+                    Visibility = Visibility.Hidden,
+                    Title = "MessageBox Host Window"
+                };
+
+                // Show and immediately hide it
+                _hiddenMainWindow.Show();
+                _hiddenMainWindow.Hide();
+
+                // Signal that app is ready
+                _appReadyEvent.Set();
+
+                // Start dispatcher
+                Dispatcher.Run();
+            });
+
+            _uiThread.SetApartmentState(ApartmentState.STA);
+            _uiThread.IsBackground = true;
+            _uiThread.Start();
+
+            // Wait for app to be ready (with timeout)
+            _appReadyEvent.WaitOne(5000);
+        }
+
+        public static string ShowMessageBox(string message, string caption = "Info",
+                                        string answerType = "ok", string messageType = "info",
+                                        double duration = -1, string titleBackgroundColor = "")
+        {
+			string result = "";
+
+            // Ensure initialized
+            Initialize();
+
+            // Create request
+            var request = new MessageBoxRequest(message, caption, answerType,
+                                              messageType, duration, titleBackgroundColor);
+
+            // Queue the request
+            if (_hiddenMainWindow != null && _hiddenMainWindow.Dispatcher != null)
+            {
+                _hiddenMainWindow.Dispatcher.Invoke(() =>
+                {
+                    _messageQueue.Enqueue(request);
+                    result = ProcessMessageQueue();
+                });
+            }
+
+			return result;
+        }
+
+        private static string ProcessMessageQueue()
+        {
+            string result = "";
+
+            if (_isShowingMessage || _messageQueue.Count == 0)
+                return "";
+
+            _isShowingMessage = true;
+            var request = _messageQueue.Dequeue();
+
+            try
+            {                
+                if (request.Duration > 0)
+                {
+                    result = ShowAutoCloseMessageBox(request.Message, request.Caption,
+                                                   request.AnswerType, request.MessageType,
+                                                   (int)request.Duration, request.TitleBackgroundColor);
+                }
+                else
+                {
+                    result = ShowStandardMessageBox(request.Message, request.Caption,
+                                                  request.AnswerType, request.MessageType);
+                }
+            }
+            finally
+            {
+                _isShowingMessage = false;
+
+                // Process next message with a small delay to ensure proper cleanup
+                if (_hiddenMainWindow != null && _hiddenMainWindow.Dispatcher != null)
+                {
+                    _hiddenMainWindow.Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        Thread.Sleep(100); // Small delay
+                        result = ProcessMessageQueue();
+                    }), DispatcherPriority.Background);
+                }
+            }
+
+			return result;
+        }
+
+        private static string ShowStandardMessageBox(string message, string caption,
+                                                   string answerType, string messageType)
+        {
+            MessageBoxButton buttons =
+                answerType == "ok" ? MessageBoxButton.OK :
+                answerType == "okcancel" ? MessageBoxButton.OKCancel :
+                answerType == "yesno" ? MessageBoxButton.YesNo :
+                answerType == "yesnocancel" ? MessageBoxButton.YesNoCancel : MessageBoxButton.OK;
+
+            MessageBoxImage icon =
+                messageType == "question" ? MessageBoxImage.Question :
+                messageType == "info" ? MessageBoxImage.Information :
+                messageType == "warning" ? MessageBoxImage.Warning :
+                messageType == "error" ? MessageBoxImage.Error :
+                messageType == "exclamation" ? MessageBoxImage.Exclamation :
+                messageType == "stop" ? MessageBoxImage.Stop :
+                messageType == "hand" ? MessageBoxImage.Hand :
+                messageType == "asterisk" ? MessageBoxImage.Asterisk :
+                            MessageBoxImage.None;
+
+            // Use the hidden window as owner
+            var result = MessageBox.Show(_hiddenMainWindow, message, caption, buttons, icon);
+
+            return result == MessageBoxResult.OK ? "OK" :
+                   result == MessageBoxResult.Cancel ? "Cancel" :
+                   result == MessageBoxResult.Yes ? "Yes" :
+                   result == MessageBoxResult.No ? "No" : "None";
+        }
+
+        private static string ShowAutoCloseMessageBox(string message, string caption,
+                                                    string answerType, string messageType,
+                                                    int durationSeconds, string titleBackgroundColor)
+        {
+            string result = "Timeout";
+
+            var dialog = new AutoCloseMessageBoxWindow(message, caption, answerType,
+                                                     messageType, durationSeconds, titleBackgroundColor);
+
+            // Set owner to hidden window
+            dialog.Owner = _hiddenMainWindow;
+            //dialog.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            dialog.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+
+            dialog.ShowDialog();
+            result = dialog.Result;
+
+            return result;
+        }
+
+        public static void Shutdown()
+        {
+            if (_hiddenMainWindow != null && _hiddenMainWindow.Dispatcher != null)
+            {
+                _hiddenMainWindow.Dispatcher.InvokeShutdown();
+            }
+            _uiThread = null;
+        }
+    }
+
+	public class MessageBoxRequest
+    {
+		public MessageBoxRequest(string message, string caption, string answerType, string messageType,
+                                double duration, string titleBackgroundColor)
+		{
+			this._message = message;
+			this._caption = caption;
+			this._answerType = answerType;
+			this._messageType = messageType;
+            this._duration = duration;
+			this._titleBackgroundColor = titleBackgroundColor;
+        }
+
+        private string _message;
+        private string _caption;
+        private string _answerType;
+        private string _messageType;
+        private double _duration;
+        private string _titleBackgroundColor;
+
+        public string Message {
+			get { return this._message; }
+			set { this._message = value; } 
+		}
+        public string Caption
+        {
+            get { return this._caption; }
+            set { this._caption = value; }
+        }
+        public string AnswerType
+        {
+            get { return this._answerType; }
+            set { this._answerType = value; }
+        }
+        public string MessageType
+        {
+            get { return this._messageType; }
+            set { this._messageType = value; }
+        }
+        public double Duration
+        {
+            get { return this._duration; }
+            set { this._duration = value; }
+        }
+        public string TitleBackgroundColor
+        {
+            get { return this._titleBackgroundColor; }
+            set { this._titleBackgroundColor = value; }
+        }
+    }
+
+    //****************************************************************************************************
+    //****************************************************************************************************
     //****************************************************************************************************
     public class YearFunction : ParserFunction
 	{

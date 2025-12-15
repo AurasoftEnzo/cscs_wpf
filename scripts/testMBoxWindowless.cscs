@@ -1,0 +1,78 @@
+CreateWindow(strTrim(tpath()) + "testMBoxWindowless.xaml");
+
+function btnTest@clicked() 
+{
+    //MessageBox("Test button clicked");
+    res0 = MBoxWindowless("000");
+    MessageBox("Result: " + res0);
+
+    res1 = MBoxWindowless("AAA", "caption", "ok", "info", 5, "Red");
+    sleep(1000);
+    res2 = MBoxWindowless("BBB", "caption", "ok", "info", 5, "Green");
+    sleep(1000);
+    res3 = MBoxWindowless("CCC", "caption", "ok", "info", 5, "Blue");
+    sleep(1000);
+
+    MessageBox("Results: " + res1 + ", " + res2 + ", " + res3);
+/*
+    MBoxWindowless("GGG", "caption", "ok", "info");
+    MBoxWindowless("HHH", "caption", "ok", "info");
+    MBoxWindowless("III", "caption", "ok", "info");
+*/
+
+/*
+    res10 = MBoxWindowless("AnswerType = ok", "caption", "ok", "info");
+    MessageBox("Result: " + res10);
+
+    res11 = MBoxWindowless("AnswerType = okcancel", "caption", "okcancel", "info");
+    MessageBox("Result: " + res11);
+    
+    res12 = MBoxWindowless("AnswerType = yesno", "caption", "yesno", "info");
+    MessageBox("Result: " + res12);
+
+    res13 = MBoxWindowless("AnswerType = yesnocancel", "caption", "yesnocancel", "info");
+    MessageBox("Result: " + res13);
+   */
+
+/*
+    MBoxWindowless("MessageType1 question", "caption", "ok", "question");
+    MBoxWindowless("MessageType2 info", "caption", "ok", "info");
+    MBoxWindowless("MessageType3 warning", "caption", "ok", "warning");
+    MBoxWindowless("MessageType4 error", "caption", "ok", "error");
+    MBoxWindowless("MessageType5 exclamation", "caption", "ok", "exclamation");
+    MBoxWindowless("MessageType6 stop", "caption", "ok", "stop");
+    MBoxWindowless("MessageType7 hand", "caption", "ok", "hand");           
+    MBoxWindowless("MessageType8 asterisk", "caption", "ok", "asterisk");   
+    MBoxWindowless("MessageType9 none", "caption", "ok", ""); //NONE
+*/
+
+    res20 = MBoxWindowless("AnswerType = ok", "caption", "ok", "info", 5);
+    MessageBox("Result: " + res20);
+
+    res21 = MBoxWindowless("AnswerType = okcancel", "caption", "okcancel", "info", 5);
+    MessageBox("Result: " + res21);
+    
+    res22 = MBoxWindowless("AnswerType = yesno", "caption", "yesno", "info", 5);
+    MessageBox("Result: " + res22);
+
+    res23 = MBoxWindowless("AnswerType = yesnocancel", "caption", "yesnocancel", "info", 5);
+    MessageBox("Result: " + res23);  
+    
+/*
+    lines = readfile("D:\XML\eIzvjestavanje_202512.xml");
+    //Messagebox(lines);
+    s="";
+    for (i=0; i<size(lines); i++)
+    {
+	    line = lines[i];
+	    s += line + "\n";
+    } 
+    MessageBox(s);
+
+    MBoxWindowless(s, "caption", "ok", "info", 10, "Orange");
+*/
+
+    MessageBox("END");
+
+
+}

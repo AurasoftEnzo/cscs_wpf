@@ -4524,15 +4524,18 @@ namespace WpfCSCS
             _remainingSeconds = durationSeconds;
             _result = "Timeout";
 
-            // Window setup
+            // Window setup - allow automatic sizing based on content
             Title = caption;
-            Width = 400;
-            Height = 280; // Increased height to accommodate title bar
+            // Start without fixed size and let SizeToContent handle sizing
+            SizeToContent = SizeToContent.WidthAndHeight;
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
-            ResizeMode = ResizeMode.NoResize;            
+            ResizeMode = ResizeMode.NoResize;
             WindowStyle = WindowStyle.None; // Remove default window style for custom title bar
             AllowsTransparency = false;
             Topmost = true;
+            // Constrain maximum size to a reasonable portion of the screen
+            MaxWidth = SystemParameters.WorkArea.Width * 0.85;
+            MaxHeight = SystemParameters.WorkArea.Height * 0.85;
 
             // Create main grid
             var mainGrid = new Grid();
@@ -4546,19 +4549,96 @@ namespace WpfCSCS
             Grid.SetRow(_titleBar, 0);
             mainGrid.Children.Add(_titleBar);
 
-            // Message text
+            // Message text - wrap and put inside a ScrollViewer so very long messages
+            // will wrap and scroll if they exceed the available area.
+            //********************************************************
+            //var textBlock = new TextBlock
+            //{
+            //    Text = message,
+            //    TextWrapping = TextWrapping.Wrap,
+            //    Margin = new Thickness(20),
+            //    VerticalAlignment = VerticalAlignment.Center,
+            //    HorizontalAlignment = HorizontalAlignment.Left,
+            //    FontSize = 14
+            //};
+
+            //// Use a ScrollViewer so the window can grow but not exceed MaxHeight/MaxWidth
+            //var scroll = new ScrollViewer
+            //{
+            //    Content = textBlock,
+            //    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            //    HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            //    MaxWidth = MaxWidth - 40,
+            //    MaxHeight = MaxHeight - 120
+            //};
+
+            //Grid.SetRow(scroll, 1);
+            //mainGrid.Children.Add(scroll);
+            //********************************************************
+            // Build message area with optional icon on the left
+            var messageGrid = new Grid();
+            messageGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // icon
+            messageGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // text
+
             var textBlock = new TextBlock
             {
                 Text = message,
                 TextWrapping = TextWrapping.Wrap,
-                Margin = new Thickness(20),
+                Margin = new Thickness(0),
                 VerticalAlignment = VerticalAlignment.Center,
-                HorizontalAlignment = HorizontalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Left,
                 FontSize = 14
             };
-            Grid.SetRow(textBlock, 1);
-            mainGrid.Children.Add(textBlock);
 
+            // Image column: try to get an icon for the message type
+            var iconSource = GetIconForMessageType(messageType);
+            if (iconSource != null)
+            {
+                var img = new Image
+                {
+                    Source = iconSource,
+                    Width = 48,
+                    Height = 48,
+                    Margin = new Thickness(20, 20, 10, 20),
+                    VerticalAlignment = VerticalAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Center
+                };
+                Grid.SetColumn(img, 0);
+                messageGrid.Children.Add(img);
+
+                // put text into a ScrollViewer occupying column 1
+                var scroll = new ScrollViewer
+                {
+                    Content = textBlock,
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                    HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+                    Margin = new Thickness(0, 20, 20, 20),
+                    MaxWidth = MaxWidth - 40,
+                    MaxHeight = MaxHeight - 120
+                };
+                Grid.SetColumn(scroll, 1);
+                messageGrid.Children.Add(scroll);
+            }
+            else
+            {
+                // No icon: text fills the whole width, with margins
+                var scroll = new ScrollViewer
+                {
+                    Content = textBlock,
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                    HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+                    Margin = new Thickness(20),
+                    MaxWidth = MaxWidth - 40,
+                    MaxHeight = MaxHeight - 120
+                };
+                Grid.SetColumn(scroll, 1); // second column still present, first will be empty width=Auto
+                messageGrid.Children.Add(scroll);
+            }
+
+            Grid.SetRow(messageGrid, 1);
+            mainGrid.Children.Add(messageGrid);
+
+            //********************************************************
             // Timer label
             _timerLabel = new Label
             {
@@ -4584,49 +4664,69 @@ namespace WpfCSCS
             Grid.SetRow(_buttonGrid, 3);
             mainGrid.Children.Add(_buttonGrid);
 
-            //DALIBOR
-            //Content = mainGrid;
-
-            ////*************************************************
-            ////Set window border
-            //Border border = new Border
-            //{
-            //	BorderBrush = Brushes.Gray,
-            //	BorderThickness = new Thickness(1),
-            //	Child = mainGrid
-            //};
-
-            //Content = border;
-            //*************************************************
             Content = WrapWithBorder(mainGrid, Brushes.Gray, new Thickness(1));
-
-            //*************************************************
+            
             // Setup and start timer
             SetupTimer();
+        }
 
-			//Loaded += (s, e) =>
-			//{
-   //             _timer = new DispatcherTimer
-   //             {
-   //                 Interval = TimeSpan.FromSeconds(durationSeconds)
-   //             };
-   //             _timer.Tick += (sender, args) =>
-   //             {
-   //                 //_timer.Stop();
-   //                 //this.Close();  // closes the modal window
+        private System.Windows.Media.ImageSource GetIconForMessageType(string messageType)
+        {
+            if (string.IsNullOrWhiteSpace(messageType))
+                return null;
 
-   //                 _remainingSeconds--;
-   //                 _timerLabel.Content = $"Closing in {_remainingSeconds} seconds...";
+            // Map messageType strings to System icons
+            System.Drawing.Icon sysIcon = null;
+            switch (messageType.ToLower())
+            {
+                case "question":
+                    sysIcon = System.Drawing.SystemIcons.Question;
+                    break;
+                case "info":
+                case "information":
+                    sysIcon = System.Drawing.SystemIcons.Information;
+                    break;
+                case "warning":
+                    sysIcon = System.Drawing.SystemIcons.Warning;
+                    break;
+                case "error":
+                    sysIcon = System.Drawing.SystemIcons.Error;
+                    break;
+                case "stop":
+                    sysIcon = System.Drawing.SystemIcons.Error;
+                    break;
+                case "hand":
+                    sysIcon = System.Drawing.SystemIcons.Hand;
+                    break;
+                case "exclamation":
+                    sysIcon = System.Drawing.SystemIcons.Exclamation;
+                    break;
+                case "asterisk":
+                    sysIcon = System.Drawing.SystemIcons.Asterisk;
+                    break;
+                case "none":
+                default:
+                    sysIcon = null;
+                    break;
+            }
 
-   //                 if (_remainingSeconds <= 0)
-   //                 {
-   //                     _timer.Stop();
-   //                     DialogResult = true;
-   //                     Close();
-   //                 }
-   //             };
-   //             _timer.Start();
-   //         };
+            if (sysIcon == null)
+                return null;
+
+            // Convert HICON to ImageSource (WPF)
+            try
+            {
+                var bmp = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(
+                    sysIcon.Handle,
+                    System.Windows.Int32Rect.Empty,
+                    System.Windows.Media.Imaging.BitmapSizeOptions.FromWidthAndHeight(48, 48));
+                bmp.Freeze();
+                return bmp;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private void CreateTitleBar(string caption, string backgroundColor)
@@ -4822,7 +4922,7 @@ namespace WpfCSCS
             _timer.Start();
         }
 
-		//DALIBOR DODAO
+		
         private static Border WrapWithBorder(UIElement element, Brush borderBrush, Thickness borderThickness)
         {
             // detach from current logical parent first (common parent types)
@@ -4838,15 +4938,22 @@ namespace WpfCSCS
 
         private void Timer_Tick(object sender, EventArgs e)
         {
-            _remainingSeconds--;
-            _timerLabel.Content = $"Closing in {_remainingSeconds} seconds...";
+			//try
+			//{
+				_remainingSeconds--;
+				_timerLabel.Content = $"Closing in {_remainingSeconds} seconds...";
 
-            if (_remainingSeconds <= 0)
-            {
-                _timer.Stop();
-                DialogResult = true;
-                Close();
-            }
+				if (_remainingSeconds <= 0)
+				{
+					_timer.Stop();
+					DialogResult = true;
+					Close();
+				}
+			//}
+			//catch (Exception ex)
+			//{
+			//	throw ("ERROR" + ex.Message);
+			//}
         }
     }
 
@@ -4976,27 +5083,6 @@ namespace WpfCSCS
     //****************************************************************************************************
     //****************************************************************************************************
     //****************************************************************************************************
-    //public class MBoxWindowlessFunction : ParserFunction
-    //{
-    //    protected override Variable Evaluate(ParsingScript script)
-    //    {
-    //        List<Variable> args = script.GetFunctionArgs();
-    //        Utils.CheckArgs(args.Count, 1, m_name);
-
-    //        var message = Utils.GetSafeString(args, 0);
-    //        var caption = Utils.GetSafeString(args, 1, "Info");
-    //        var answerType = Utils.GetSafeString(args, 2, "ok").ToLower();
-    //        var messageType = Utils.GetSafeString(args, 3, "info").ToLower();
-    //        var duration = Utils.GetSafeDouble(args, 4, -1);
-    //        var titleBackgroundColor = Utils.GetSafeString(args, 5, "");
-
-    //        // Use the MessageBoxManager
-    //        MessageBoxManager.ShowMessageBox(message, caption, answerType,
-    //                                       messageType, duration, titleBackgroundColor);
-
-    //        return new Variable("Queued");
-    //    }
-    //}
 
     public class MBoxWindowlessFunction : ParserFunction
     {
@@ -5023,7 +5109,42 @@ namespace WpfCSCS
     }
 
     public class MessageBoxManager
-    {
+    {        
+        [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
+        private const uint SWP_NOSIZE = 0x0001;
+        private const uint SWP_NOMOVE = 0x0002;
+        private const uint SWP_SHOWWINDOW = 0x0040;
+
+        private static void EnsureHiddenHostTopMost()
+        {
+            try
+            {
+                if (_hiddenMainWindow == null) return;
+                var helper = new System.Windows.Interop.WindowInteropHelper(_hiddenMainWindow);
+                IntPtr hWnd = helper.Handle;
+                if (hWnd == IntPtr.Zero) return;
+
+                // Make the hidden host topmost (don't change size/position) and try to set foreground
+                SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+                SetForegroundWindow(hWnd);
+
+                // small pause can help on some systems
+                Thread.Sleep(10);
+            }
+            catch
+            {
+                // best-effort - swallow exceptions
+            }
+        }
+        
+
+
         private static Window _hiddenMainWindow;
         private static readonly Queue<MessageBoxRequest> _messageQueue = new Queue<MessageBoxRequest>();
         private static bool _isShowingMessage = false;
@@ -5138,7 +5259,7 @@ namespace WpfCSCS
         }
 
         private static string ShowStandardMessageBox(string message, string caption,
-                                                   string answerType, string messageType)
+                                           string answerType, string messageType)
         {
             MessageBoxButton buttons =
                 answerType == "ok" ? MessageBoxButton.OK :
@@ -5157,13 +5278,38 @@ namespace WpfCSCS
                 messageType == "asterisk" ? MessageBoxImage.Asterisk :
                             MessageBoxImage.None;
 
-            // Use the hidden window as owner
-            var result = MessageBox.Show(_hiddenMainWindow, message, caption, buttons, icon);
+            MessageBoxResult res = MessageBoxResult.None;
 
-            return result == MessageBoxResult.OK ? "OK" :
-                   result == MessageBoxResult.Cancel ? "Cancel" :
-                   result == MessageBoxResult.Yes ? "Yes" :
-                   result == MessageBoxResult.No ? "No" : "None";
+            // Show on the hidden manager dispatcher so we control Z-order from that STA thread.
+            if (_hiddenMainWindow != null && _hiddenMainWindow.Dispatcher != null)
+            {
+                _hiddenMainWindow.Dispatcher.Invoke(() =>
+                {
+                    try
+                    {
+                        // Ensure the hidden host is topmost/foreground (best-effort)
+                        EnsureHiddenHostTopMost();
+
+                        // Use DefaultDesktopOnly to improve chances the dialog is above other apps.
+                        res = MessageBox.Show(_hiddenMainWindow, message, caption, buttons, icon, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                    }
+                    catch
+                    {
+                        // fallback if options fail
+                        res = MessageBox.Show(_hiddenMainWindow, message, caption, buttons, icon);
+                    }
+                });
+            }
+            else
+            {
+                // fallback to current thread
+                res = MessageBox.Show(message, caption, buttons, icon);
+            }
+
+            return res == MessageBoxResult.OK ? "OK" :
+                   res == MessageBoxResult.Cancel ? "Cancel" :
+                   res == MessageBoxResult.Yes ? "Yes" :
+                   res == MessageBoxResult.No ? "No" : "None";
         }
 
         private static string ShowAutoCloseMessageBox(string message, string caption,

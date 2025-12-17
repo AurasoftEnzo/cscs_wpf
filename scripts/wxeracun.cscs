@@ -132,7 +132,7 @@ xmlFileName = "";
 
 // generate xml
 if(!GenerateUBLXml()){
-    MessageBox("Greška pri generiranju UBL XML-a za račun " + invNum + "!");    
+    MessageBox("Greška pri generiranju UBL XML-a za račun " + invID + "!");    
     exit;
 }else{
     LogNKSYELOG("A");
@@ -269,6 +269,7 @@ function GenerateUBLXml() {
     // -----------------------------------------------------------
     // 2.1. Load KPSYUSER and find user OIB
     // -----------------------------------------------------------
+    
     sql_KPSYUSER = "SELECT
                 KPSY_USER_NAZIV, KPSY_USER_CODE
                 FROM " + databaseName + ".dbo.KPSYUSER WHERE KPSY_USER_ZNAK = @p1";
@@ -998,7 +999,8 @@ function GenerateUBLXml() {
     xml += "      <cac:Country><cbc:IdentificationCode>" + supCountry + "</cbc:IdentificationCode></cac:Country>\n";
     xml += "    </cac:PostalAddress>\n";
     
-    xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + KPSY_PO_FREIGHT + supOIB + "</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>\n";
+    //xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + KPSY_PO_FREIGHT + supOIB + "</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>\n";
+    xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + supOIB + "</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>\n";
 
     RegistrationName = (NazivFirme != "" ? NazivFirme : KPSY_COMP_NAME);
     RegistrationName = RegistrationName.trim();
@@ -1073,7 +1075,8 @@ function GenerateUBLXml() {
         MessageBox("Kupac nema unesenu oznaku države uz OIB!");
         return false;
     }
-    xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + NKPR_GL_CUSST + NKPR_GL_JMBG + "</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>\n";
+    //xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + NKPR_GL_CUSST + NKPR_GL_JMBG + "</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>\n";
+    xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + NKPR_GL_JMBG + "</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>\n";
     
 
 
@@ -1887,7 +1890,7 @@ MessageBox("Slanje eRačuna putem posrednika: " + PROVIDER + " (" + ERAC_PASST +
         
         jsonLoad = '{"Username": "' + ERAC_USER + '", "Password": "' + ERAC_PASS + '", "CompanyId": "' + supOIB + '"'/*uzet iz KPSYMSTR*/ + ', "SoftwareId": "' + ERAC_DESC + '", "File": "' + escapedXml + '"}';
 
-        webRequestResult = WebRequest("POST", ERAC_SERVER + "apis/v2/send", jsonLoad, invNum,
+        webRequestResult = WebRequest("POST", ERAC_SERVER + "apis/v2/send", jsonLoad, invID,
                     "MERSuccess", "MERFailure", "application/json", null, 1000 * 20, false);
 
         //  MSG("webRequestResult = " + webRequestResult);
@@ -1917,7 +1920,7 @@ MessageBox("Slanje eRačuna putem posrednika: " + PROVIDER + " (" + ERAC_PASST +
     }    
 }
 
-function MERSuccess(_invNum, responseCode, res) {
+function MERSuccess(_invID, responseCode, res) {
     MSG("MERSuccess");
 
     try{
@@ -1957,13 +1960,13 @@ function MERSuccess(_invNum, responseCode, res) {
     
 }
 
-function MERFailure(_invNum, responseCode, res) {
+function MERFailure(_invID, responseCode, res) {
     MSG("MERFailure");
 
     try{
         LogResponse(responseCode, res);
 
-        MSG("Slanje računa broj " + _invNum + " NEUSPJEŠNO!");
+        MSG("Slanje računa broj " + _invID + " NEUSPJEŠNO!");
 
         // MessageBox("SendingFailure.ResponseCode = " + responseCode);
 
@@ -2071,7 +2074,7 @@ function SendToFINA_2() {
     "urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0"
     */
     soapEnvelope += "          <SpecificationIdentifier>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0</SpecificationIdentifier>\n";
-    soapEnvelope += "          <SupplierInvoiceID>" + invNum + "</SupplierInvoiceID>\n";
+    soapEnvelope += "          <SupplierInvoiceID>" + invID + "</SupplierInvoiceID>\n";
     // soapEnvelope += "          <BuyerID>9934:" + NKPR_GL_JMBG + "</BuyerID>\n";
     soapEnvelope += "          <BuyerID>9934:" + "85821130368" + "</BuyerID>\n"; // !!! FINA-in OIB
     
@@ -2109,7 +2112,7 @@ function SendToFINA_2() {
             "POST",                     // method
             endpoint,                   // URL
             signedSoap,                 // load
-            invNum,                     // trackingId
+            invID,                     // trackingId
             "FINASuccess",              // OnSuccess
             "FINAFailure",              // OnFailure
             "text/xml; charset=utf-8",  // contentType
@@ -2179,7 +2182,7 @@ function SendToEPOS() {
             "POST",                         // method
             endpoint + "/api/v2/document/send",  // URL with API v2 endpoint
             jsonLoad,                       // JSON payload
-            invNum,                         // tracking ID
+            invID,                         // tracking ID
             "EPOSSuccess",                  // success callback
             "EPOSFailure",                  // failure callback
             "application/json",             // content type
@@ -2348,26 +2351,26 @@ function SendToFINA() {
     base64Ubl = File2Base64(xmlFileName);
 MessageBox("1111" + ": base64Ubl length = " + base64Ubl.Length);
     uuid = UUID();
+    buyerOIB= "85821130368"; // !!! FINA-in OIB 
 
-    xmlBody = "<fin:SendB2BOutgoingInvoiceMsg xmlns:fin=\"http://www.fina.hr/e-racun/services\">\n";
-    xmlBody += "  <HeaderSupplier>\n";
+    xmlBody = "<SendB2BOutgoingInvoiceMsg xmlns='http://fina.hr/eracun/b2b/pki/SendB2BOutgoingInvoice/v0.1'>\n";
+    xmlBody += "  <HeaderSupplier xmlns='http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1'>\n";
     xmlBody += "    <MessageID>" + uuid + "</MessageID>\n";
     xmlBody += "    <SupplierID>9934:" + supOIB + "</SupplierID>\n";
-    // xmlBody += "    <AdditionalSupplierID>0088:" + KPSY_REZERVAX + "</AdditionalSupplierID>\n";
     xmlBody += "    <MessageType>9001</MessageType>\n";
     xmlBody += "  </HeaderSupplier>\n";
     xmlBody += "  <Data>\n";
     xmlBody += "    <B2BOutgoingInvoiceEnvelope>\n";
     xmlBody += "      <XMLStandard>UBL</XMLStandard>\n";
-    //xmlBody += "      <SpecificationIdentifier>urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0</SpecificationIdentifier>\n";
-     xmlBody += "      <SpecificationIdentifier>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0#conformant#urn:mfin.gov.hr:ext-2025:1.0</SpecificationIdentifier>\n";
-    xmlBody += "      <SupplierInvoiceID>" + invNum + "</SupplierInvoiceID>\n";
-    // xmlBody += "      <BuyerID>9934:" + NKPR_GL_JMBG + "</BuyerID>\n";
-    xmlBody += "      <BuyerID>9934:" + "85821130368" + "</BuyerID>\n"; // !!! tu je sada OIB od FINA-e
+     //xmlBody += "      <SpecificationIdentifier>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0#conformant#urn:mfin.gov.hr:ext-2025:1.0</SpecificationIdentifier>\n";
+    xmlBody += "         <SpecificationIdentifier>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0</SpecificationIdentifier>\n";
+    xmlBody += "      <SupplierInvoiceID>" + invID + "</SupplierInvoiceID>\n";
+    xmlBody += "      <BuyerID>9934:" + buyerOIB + "</BuyerID>\n"; // !!! tu je sada OIB od FINA-e
     xmlBody += "      <InvoiceEnvelope>" + base64Ubl + "</InvoiceEnvelope>\n";
     xmlBody += "    </B2BOutgoingInvoiceEnvelope>\n";
     xmlBody += "  </Data>\n";
-    xmlBody += "</fin:SendB2BOutgoingInvoiceMsg>";
+    xmlBody += "</SendB2BOutgoingInvoiceMsg>\n";
+
     // 2. Define the SOAPAction (often empty for FINA services)
     soapAction = "";
 MessageBox("2222" + ": Prepared XML Body for FINA:\n\n" + xmlBody);
@@ -2393,16 +2396,16 @@ MessageBox("3333" + ": Calling CreateSOAP... : "+soapAction+".... "+endpoint+"..
 
         // // 4. Process the response
          if (response.StartsWith("ERROR:") || response.StartsWith("HTTP_ERROR:") || response.StartsWith("EXCEPTION:")) {
-            FINAFailure(invNum, 0, response);
+             FINAFailure(invID, 0, response);
          } else {
-            FINASuccess(invNum, 200, response);
+             FINASuccess(invID, 200, response);
          }
     } catch (ex) {
-        FINAFailure(invNum, 0, "Greška pri pozivu CreateSOAP funkcije: " + ex);
+        FINAFailure(invID, 0, "Greška pri pozivu CreateSOAP funkcije: " + ex);
     }
 }
 
-function EPOSSuccess(_invNum, responseCode, res) {
+function EPOSSuccess(_invID, responseCode, res) {
     MSG("EPOSSuccess");
 
     try {
@@ -2424,7 +2427,7 @@ function EPOSSuccess(_invNum, responseCode, res) {
             LogNKSYELOG("C", "EPOS Success - Doc ID: " + documentId);
             
             // Optional: Store document ID for future reference
-            StoreEPOSDocumentId(_invNum, documentId, insertedOn);
+            StoreEPOSDocumentId(_invID, documentId, insertedOn);
         }
         else {
             MSG("ePoslovanje response structure unexpected");
@@ -2437,13 +2440,13 @@ function EPOSSuccess(_invNum, responseCode, res) {
     }
 }
 
-function EPOSFailure(_invNum, responseCode, res) {
+function EPOSFailure(_invID, responseCode, res) {
     MSG("EPOSFailure");
 
     try {
         LogResponse(responseCode, res);
 
-        MSG("Slanje računa broj " + _invNum + " na ePoslovanje NEUSPJEŠNO!");
+        MSG("Slanje računa broj " + _invID + " na ePoslovanje NEUSPJEŠNO!");
         MSG("Response Code: " + responseCode);
 
         // Try to parse error response
@@ -2506,7 +2509,7 @@ function StoreEPOSDocumentId(invoiceNum, documentId, insertedOn) {
     }
 }
 
-function FINASuccess(_invNum, responseCode, res) {
+function FINASuccess(_invID, responseCode, res) {
     MSG("FINASuccess");
 
     // Check if the response from FINA is successful but empty.
@@ -2521,7 +2524,7 @@ function FINASuccess(_invNum, responseCode, res) {
     LogResponse(responseCode, res);
 }
 
-function FINAFailure(_invNum, responseCode, res) {
+function FINAFailure(_invID, responseCode, res) {
     MSG("FINAFailure");
 
     LogResponse(responseCode, res);

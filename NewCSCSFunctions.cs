@@ -5,11 +5,10 @@ using LiveChartsCore.SkiaSharpView.Painting;
 using MapControl;
 using NixxonERacun.Signing;
 using OfficeOpenXml.Drawing.Chart;
-using org.apache.xerces.xni;
 using Org.BouncyCastle.Tls;
 using Renci.SshNet;
 using Renci.SshNet.Sftp;
-using Saxon.Api;
+//using Saxon.Api;
 using SkiaSharp;
 using SplitAndMerge;
 using System;
@@ -39,6 +38,7 @@ using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Schema;
 using System.Xml.Xsl;
+using WpfCSCS.ServiceReference1_fina_wsdl;
 using static System.Net.WebRequestMethods;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
@@ -87,7 +87,7 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.File2Base64, new File2Base64Function());
             interpreter.RegisterFunction(Constants.Base642File, new Base642FileFunction());
             interpreter.RegisterFunction(Constants.ValidateXsd, new ValidateXsdFunction());
-            interpreter.RegisterFunction(Constants.ValidateSch, new ValidateSchFunction());
+            //interpreter.RegisterFunction(Constants.ValidateSch, new ValidateSchFunction());
             interpreter.RegisterFunction(Constants.EscapeQuotesInXml, new EscapeQuotesInXmlFunction());
 
             //interpreter.RegisterFunction(Constants.FinaTest, new FinaTestFunction());
@@ -120,6 +120,21 @@ namespace WpfCSCS
 
             interpreter.RegisterFunction("TestXmlDict", new TestXmlDictFunction());
             interpreter.RegisterFunction("Test99", new Test99Function());
+
+
+
+            interpreter.RegisterFunction(Constants.CreateAndSendSOAPMsg, new CreateAndSendSOAPMsgFunction());
+
+
+
+            //funkcije iz wsdl-a
+            interpreter.RegisterFunction("FINA_ECHO", new FINA_ECHOFunction());
+            interpreter.RegisterFunction("FINA_SEND_OUTGOING_INVOICE", new FINA_SEND_OUTGOING_INVOICEFunction());
+            interpreter.RegisterFunction("FINA_GET_OUTGOING_INVOICE_STATUS", new FINA_GET_OUTGOING_INVOICE_STATUSFunction());
+            interpreter.RegisterFunction("FINA_SEND_OUTGOING_INVOICE_REPORTING", new FINA_SEND_OUTGOING_INVOICE_REPORTINGFunction());
+
+            //interpreter.RegisterFunction("FINA_ECHO_BUYER", new FINA_ECHO_BUYERFunction());
+            
         }
         public partial class Constants
         {
@@ -171,6 +186,8 @@ namespace WpfCSCS
             public const string TEST1 = "TEST1";
 
             public const string SignXml = "SignXml";
+
+            public const string CreateAndSendSOAPMsg = "CreateAndSendSOAPMsg";
         }
     }
 
@@ -1438,120 +1455,120 @@ namespace WpfCSCS
         }
     }
 
-    class ValidateSchFunction : ParserFunction
-    {
-        protected override Variable Evaluate(ParsingScript script)
-        {
-            List<Variable> args = script.GetFunctionArgs();
-            Utils.CheckArgs(args.Count, 4, m_name);
+    //class ValidateSchFunction : ParserFunction
+    //{
+    //    protected override Variable Evaluate(ParsingScript script)
+    //    {
+    //        List<Variable> args = script.GetFunctionArgs();
+    //        Utils.CheckArgs(args.Count, 4, m_name);
 
-            var xmlContent = Utils.GetSafeString(args, 0);
-            var schFilesArray = Utils.GetSafeVariable(args, 1);
-            var transpilerPath = Utils.GetSafeString(args, 2);
-            var logFilePath = Utils.GetSafeString(args, 3);
+    //        var xmlContent = Utils.GetSafeString(args, 0);
+    //        var schFilesArray = Utils.GetSafeVariable(args, 1);
+    //        var transpilerPath = Utils.GetSafeString(args, 2);
+    //        var logFilePath = Utils.GetSafeString(args, 3);
 
 
-            List<string> schFiles = new List<string>();
-            if (schFilesArray.Tuple != null)
-            {
-                foreach (var schFileVar in schFilesArray.Tuple)
-                {
-                    schFiles.Add(schFileVar.AsString());
-                }
-            }
+    //        List<string> schFiles = new List<string>();
+    //        if (schFilesArray.Tuple != null)
+    //        {
+    //            foreach (var schFileVar in schFilesArray.Tuple)
+    //            {
+    //                schFiles.Add(schFileVar.AsString());
+    //            }
+    //        }
 
-            try
-            {
-                StringBuilder allErrors = new StringBuilder();
+    //        try
+    //        {
+    //            StringBuilder allErrors = new StringBuilder();
 
-                var processor = new Processor();
-                var compiler = processor.NewXsltCompiler();
+    //            var processor = new Processor();
+    //            var compiler = processor.NewXsltCompiler();
 
-                foreach (string schFile in schFiles)
-                {
-                    if (!System.IO.File.Exists(schFile))
-                    {
-                        allErrors.AppendLine("\nSchematron not found: " + schFile);
-                        continue;
-                    }
+    //            foreach (string schFile in schFiles)
+    //            {
+    //                if (!System.IO.File.Exists(schFile))
+    //                {
+    //                    allErrors.AppendLine("\nSchematron not found: " + schFile);
+    //                    continue;
+    //                }
 
-                    // Step 1: Compile Schematron .sch to .xsl
-                    string compiledXslPath = Path.GetTempFileName() + ".xsl";
+    //                // Step 1: Compile Schematron .sch to .xsl
+    //                string compiledXslPath = Path.GetTempFileName() + ".xsl";
 
-                    var exec1 = compiler.Compile(new Uri(transpilerPath));
-                    var transformer1 = exec1.Load();
-                    transformer1.SetInputStream(new FileStream(schFile, FileMode.Open, FileAccess.Read), new Uri(schFile));
+    //                var exec1 = compiler.Compile(new Uri(transpilerPath));
+    //                var transformer1 = exec1.Load();
+    //                transformer1.SetInputStream(new FileStream(schFile, FileMode.Open, FileAccess.Read), new Uri(schFile));
 
-                    using (var outputStream = new FileStream(compiledXslPath, FileMode.Create))
-                    {
-                        var serializer = processor.NewSerializer();
-                        serializer.SetOutputStream(outputStream);
-                        transformer1.Run(serializer);
-                    }
+    //                using (var outputStream = new FileStream(compiledXslPath, FileMode.Create))
+    //                {
+    //                    var serializer = processor.NewSerializer();
+    //                    serializer.SetOutputStream(outputStream);
+    //                    transformer1.Run(serializer);
+    //                }
 
-                    // Step 2: Validate XML using compiled XSLT
-                    string resultPath = Path.GetTempFileName() + ".xml";
+    //                // Step 2: Validate XML using compiled XSLT
+    //                string resultPath = Path.GetTempFileName() + ".xml";
 
-                    var exec2 = compiler.Compile(new Uri(compiledXslPath));
-                    var transformer2 = exec2.Load();
+    //                var exec2 = compiler.Compile(new Uri(compiledXslPath));
+    //                var transformer2 = exec2.Load();
 
-                    using (var xmlStream = new MemoryStream(Encoding.UTF8.GetBytes(xmlContent)))
-                    {
-                        transformer2.SetInputStream(xmlStream, new Uri("file:///temp.xml"));
+    //                using (var xmlStream = new MemoryStream(Encoding.UTF8.GetBytes(xmlContent)))
+    //                {
+    //                    transformer2.SetInputStream(xmlStream, new Uri("file:///temp.xml"));
 
-                        using (var resultStream = new FileStream(resultPath, FileMode.Create))
-                        {
-                            var serializer = processor.NewSerializer();
-                            serializer.SetOutputStream(resultStream);
-                            transformer2.Run(serializer);
-                        }
-                    }
+    //                    using (var resultStream = new FileStream(resultPath, FileMode.Create))
+    //                    {
+    //                        var serializer = processor.NewSerializer();
+    //                        serializer.SetOutputStream(resultStream);
+    //                        transformer2.Run(serializer);
+    //                    }
+    //                }
 
-                    // Step 3: Parse SVRL result for errors
-                    XmlDocument svrlDoc = new XmlDocument();
-                    svrlDoc.Load(resultPath);
+    //                // Step 3: Parse SVRL result for errors
+    //                XmlDocument svrlDoc = new XmlDocument();
+    //                svrlDoc.Load(resultPath);
 
-                    var ns = new XmlNamespaceManager(svrlDoc.NameTable);
-                    ns.AddNamespace("svrl", "http://purl.oclc.org/dsdl/svrl");
-                    var failedAsserts = svrlDoc.SelectNodes("//svrl:failed-assert", ns);
-                    var successfulReports = svrlDoc.SelectNodes("//svrl:successful-report", ns);
+    //                var ns = new XmlNamespaceManager(svrlDoc.NameTable);
+    //                ns.AddNamespace("svrl", "http://purl.oclc.org/dsdl/svrl");
+    //                var failedAsserts = svrlDoc.SelectNodes("//svrl:failed-assert", ns);
+    //                var successfulReports = svrlDoc.SelectNodes("//svrl:successful-report", ns);
 
-                    if (failedAsserts.Count > 0 || successfulReports.Count > 0)
-                    {
-                        int errorCounter = 0;
+    //                if (failedAsserts.Count > 0 || successfulReports.Count > 0)
+    //                {
+    //                    int errorCounter = 0;
 
-                        allErrors.AppendLine("=== Errors from " + Path.GetFileName(schFile) + " ===");
-                        foreach (XmlNode assert in failedAsserts)
-                        {
-                            allErrors.AppendLine("");
-                            allErrors.AppendLine(++errorCounter + ". " + "FAILED: " + assert.SelectSingleNode("svrl:text", ns)?.InnerText);
-                            var location = assert.SelectSingleNode("@location", ns);
-                            if (location != null) allErrors.AppendLine("Location: " + location.Value);
-                        }
-                        allErrors.AppendLine("");
-                        allErrors.AppendLine("");
-                    }
+    //                    allErrors.AppendLine("=== Errors from " + Path.GetFileName(schFile) + " ===");
+    //                    foreach (XmlNode assert in failedAsserts)
+    //                    {
+    //                        allErrors.AppendLine("");
+    //                        allErrors.AppendLine(++errorCounter + ". " + "FAILED: " + assert.SelectSingleNode("svrl:text", ns)?.InnerText);
+    //                        var location = assert.SelectSingleNode("@location", ns);
+    //                        if (location != null) allErrors.AppendLine("Location: " + location.Value);
+    //                    }
+    //                    allErrors.AppendLine("");
+    //                    allErrors.AppendLine("");
+    //                }
 
-                    // Cleanup
-                    if (System.IO.File.Exists(compiledXslPath))
-                        System.IO.File.Delete(compiledXslPath);
-                    if (System.IO.File.Exists(resultPath))
-                        System.IO.File.Delete(resultPath);
-                }
+    //                // Cleanup
+    //                if (System.IO.File.Exists(compiledXslPath))
+    //                    System.IO.File.Delete(compiledXslPath);
+    //                if (System.IO.File.Exists(resultPath))
+    //                    System.IO.File.Delete(resultPath);
+    //            }
 
-                if (allErrors.Length > 0)
-                {
-                    System.IO.File.WriteAllText(logFilePath, allErrors.ToString());
-                }
-                return new Variable(allErrors.Length == 0 ? true : false);
-            }
-            catch (Exception ex)
-            {
-                System.IO.File.WriteAllText(logFilePath, "ex.Message: " + ex.Message);
-                return new Variable(false);
-            }
-        }
-    }
+    //            if (allErrors.Length > 0)
+    //            {
+    //                System.IO.File.WriteAllText(logFilePath, allErrors.ToString());
+    //            }
+    //            return new Variable(allErrors.Length == 0 ? true : false);
+    //        }
+    //        catch (Exception ex)
+    //        {
+    //            System.IO.File.WriteAllText(logFilePath, "ex.Message: " + ex.Message);
+    //            return new Variable(false);
+    //        }
+    //    }
+    //}
     
     class EscapeQuotesInXmlFunction : ParserFunction
     {
@@ -4187,6 +4204,379 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
 
 
             return Variable.EmptyInstance;
+        }
+    }
+
+
+
+    
+    
+
+
+
+    class CreateAndSendSOAPMsgFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 0, m_name);
+
+            var xmlBody = Utils.GetSafeString(args, 0);
+            var soapAction = Utils.GetSafeString(args, 1);
+            var endpoint = Utils.GetSafeString(args, 2);
+            var certPath = Utils.GetSafeString(args, 3);
+            var certPassword = Utils.GetSafeString(args, 4);
+            var timeout = Utils.GetSafeInt(args, 5);
+
+            string res = CreateAndSendSOAPMsg(xmlBody, soapAction, endpoint, certPath, certPassword, timeout);
+
+            return new Variable(res);
+        }
+
+        public static string CreateAndSendSOAPMsg(
+            string xmlBody,
+            string soapAction,
+            string endpoint,
+            string certPath,
+            string certPassword,
+            int timeoutSeconds
+        )
+        {
+            // Load certificate with private key
+            var cert = new X509Certificate2(certPath, certPassword,
+                X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable);
+
+            // Build SOAP envelope
+            string soapEnvelope = $@"
+<soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"" 
+                   xmlns:fin=""http://www.fina.hr/e-racun/services"">
+  <soapenv:Header/>
+  <soapenv:Body>
+    {xmlBody}
+  </soapenv:Body>
+</soapenv:Envelope>";
+
+            var doc = new XmlDocument();
+            doc.PreserveWhitespace = false;
+            doc.LoadXml(soapEnvelope);
+
+            // Get the body element to sign
+            XmlElement body = doc.DocumentElement["soapenv:Body"];
+            XmlElement msgElement = body["fin:SendB2BOutgoingInvoiceMsg"];
+            string msgId = msgElement.GetElementsByTagName("MessageID")[0].InnerText;
+
+            // Create enveloped XAdES-B signature
+            var signedXml = new SignedXml(doc)
+            {
+                SigningKey = cert.GetRSAPrivateKey()
+            };
+
+            // Reference to message body
+            Reference bodyRef = new Reference($"#{msgId}");
+            bodyRef.DigestMethod = "http://www.w3.org/2001/04/xmlenc#sha256";
+            bodyRef.AddTransform(new XmlDsigEnvelopedSignatureTransform());
+            bodyRef.AddTransform(new XmlDsigExcC14NTransform());
+            signedXml.AddReference(bodyRef);
+
+            // XAdES-B SignedProperties reference
+            string xadesId = "xades-" + Guid.NewGuid().ToString("N");
+            Reference xadesRef = new Reference($"#{xadesId}")
+            {
+                Type = "http://uri.etsi.org/01903#SignedProperties"
+            };
+            xadesRef.DigestMethod = "http://www.w3.org/2001/04/xmlenc#sha256";
+            xadesRef.AddTransform(new XmlDsigExcC14NTransform());
+            signedXml.AddReference(xadesRef);
+
+            // KeyInfo with certificate
+            KeyInfo keyInfo = new KeyInfo();
+            keyInfo.AddClause(new KeyInfoX509Data(cert, X509IncludeOption.WholeChain));
+            signedXml.KeyInfo = keyInfo;
+
+            // Signature method and canonicalization
+            signedXml.SignedInfo.CanonicalizationMethod = "http://www.w3.org/2001/10/xml-exc-c14n#";
+            signedXml.SignedInfo.SignatureMethod = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256";
+
+            // Compute signature
+            signedXml.ComputeSignature();
+
+            // Build XAdES-B <Object>
+            XmlElement xadesObject = BuildXadesObject(doc, xadesId, cert, msgId);
+
+            // Insert <ds:Signature> as child of <SendB2BOutgoingInvoiceMsg>
+            XmlElement signatureElement = signedXml.GetXml();
+            signatureElement.SetAttribute("Id", "SIG-" + Guid.NewGuid().ToString("N"));
+            signatureElement.AppendChild(xadesObject);
+            msgElement.AppendChild(doc.ImportNode(signatureElement, true));
+
+            // Final signed SOAP message
+            string signedSoap = doc.OuterXml;
+
+            // Send via HTTPS
+            var handler = new HttpClientHandler();
+            handler.ClientCertificates.Add(cert);
+            handler.ServerCertificateCustomValidationCallback = (message, cert2, chain, errors) => true; // for dev only
+
+            var client = new HttpClient(handler);
+            client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
+
+            var content = new StringContent(signedSoap, Encoding.UTF8, "text/xml");
+            if (!string.IsNullOrEmpty(soapAction))
+                content.Headers.Add("SOAPAction", soapAction);
+
+            var response = client.PostAsync(endpoint, content).GetAwaiter().GetResult();
+            response.EnsureSuccessStatusCode();
+
+            return response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+        }
+
+        private static XmlElement BuildXadesObject(XmlDocument doc, string xadesId, X509Certificate2 cert, string targetId)
+        {
+            const string xadesNs = "http://uri.etsi.org/01903/v1.3.2#";
+            const string dsNs = "http://www.w3.org/2000/09/xmldsig#";
+
+            XmlElement obj = doc.CreateElement("Object", dsNs);
+            XmlElement qualifyingProps = doc.CreateElement("QualifyingProperties", xadesNs);
+            qualifyingProps.SetAttribute("Target", $"#{targetId}");
+            obj.AppendChild(qualifyingProps);
+
+            XmlElement signedProps = doc.CreateElement("SignedProperties", xadesNs);
+            signedProps.SetAttribute("Id", xadesId);
+            qualifyingProps.AppendChild(signedProps);
+
+            // SignedSignatureProperties
+            XmlElement signedSigProps = doc.CreateElement("SignedSignatureProperties", xadesNs);
+            signedProps.AppendChild(signedSigProps);
+
+            XmlElement signingTime = doc.CreateElement("SigningTime", xadesNs);
+            signingTime.InnerText = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
+            signedSigProps.AppendChild(signingTime);
+
+            XmlElement signingCertV2 = doc.CreateElement("SigningCertificateV2", xadesNs);
+            signedSigProps.AppendChild(signingCertV2);
+
+            XmlElement certEl = doc.CreateElement("Cert", xadesNs);
+            signingCertV2.AppendChild(certEl);
+
+            XmlElement certDigest = doc.CreateElement("CertDigest", xadesNs);
+            certEl.AppendChild(certDigest);
+
+            XmlElement digestMethod = doc.CreateElement("DigestMethod", dsNs);
+            digestMethod.SetAttribute("Algorithm", "http://www.w3.org/2001/04/xmlenc#sha256");
+            certDigest.AppendChild(digestMethod);
+
+            using (var sha256 = SHA256.Create())
+            {
+                byte[] hash = sha256.ComputeHash(cert.RawData);
+                XmlElement digestValue = doc.CreateElement("DigestValue", dsNs);
+                digestValue.InnerText = Convert.ToBase64String(hash);
+                certDigest.AppendChild(digestValue);
+            }
+
+            XmlElement issuerSerialV2 = doc.CreateElement("IssuerSerialV2", xadesNs);
+            issuerSerialV2.InnerText = Convert.ToBase64String(
+                Encoding.UTF8.GetBytes($"{cert.Issuer}{cert.SerialNumber}")
+            );
+            certEl.AppendChild(issuerSerialV2);
+
+            // SignedDataObjectProperties
+            XmlElement dataObjProps = doc.CreateElement("SignedDataObjectProperties", xadesNs);
+            signedProps.AppendChild(dataObjProps);
+
+            XmlElement dataObjFormat = doc.CreateElement("DataObjectFormat", xadesNs);
+            dataObjFormat.SetAttribute("ObjectReference", $"#{xadesId.Replace("xades-", "ref-")}");
+            dataObjProps.AppendChild(dataObjFormat);
+
+            XmlElement mimeType = doc.CreateElement("MimeType", xadesNs);
+            mimeType.InnerText = "text/xml";
+            dataObjFormat.AppendChild(mimeType);
+
+            return obj;
+        }
+    }
+
+
+    class FINA_ECHOFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 8, m_name);
+
+            var endpoint = Utils.GetSafeString(args, 0);
+            var dnsIdentity = Utils.GetSafeString(args, 1);
+            var serviceCertificatePath = Utils.GetSafeString(args, 2);
+            var clientCertificatePath = Utils.GetSafeString(args, 3);
+            var clientCertificatePassword = Utils.GetSafeString(args, 4);
+
+            var messageId = Utils.GetSafeString(args, 5);
+            var echoText = Utils.GetSafeString(args, 6);
+            var supplierId = Utils.GetSafeString(args, 7);
+
+            Variable resVar = new Fiskalizacija2.FINA.Echo().Send(
+                endpoint,
+                dnsIdentity,
+                serviceCertificatePath,
+                clientCertificatePath,
+                clientCertificatePassword,
+
+                messageId,
+                echoText,
+                supplierId);
+
+            return resVar;
+        }
+    }
+
+    class FINA_SEND_OUTGOING_INVOICEFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 11, m_name);
+
+            var endpoint = Utils.GetSafeString(args, 0);
+            var dnsIdentity = Utils.GetSafeString(args, 1);
+            var serviceCertificatePath = Utils.GetSafeString(args, 2);
+            var clientCertificatePath = Utils.GetSafeString(args, 3);
+            var clientCertificatePassword = Utils.GetSafeString(args, 4);
+
+            var messageId = Utils.GetSafeString(args, 5);
+            var supplierId = Utils.GetSafeString(args, 6);
+            var buyerId = Utils.GetSafeString(args, 7);
+            var supplierInvoiceId = Utils.GetSafeString(args, 8);
+            
+            var invoiceOrCreditNote = Utils.GetSafeString(args, 9);
+            ItemChoiceType itemChoiceType = ItemChoiceType.InvoiceEnvelope;
+            if (invoiceOrCreditNote.ToLower() == "creditnote")
+            {
+                itemChoiceType = ItemChoiceType.CreditNoteEnvelope;
+            }
+
+            var unsignedInvoiceXmlPath = Utils.GetSafeString(args, 10);
+
+            //var additionalSupplierId = Utils.GetSafeString(args, );
+            //var additionalBuyerId = Utils.GetSafeString(args, );
+            //var erpid = Utils.GetSafeString(args, );
+            //var messageAttributes = Utils.GetSafeString(args, );
+            
+            Variable resVar = new Fiskalizacija2.FINA.SendOutgoingInvoice().Send(
+                endpoint,
+                dnsIdentity,
+                serviceCertificatePath,
+                clientCertificatePath,
+                clientCertificatePassword,
+
+                messageId,
+                supplierId,
+                buyerId,
+                supplierInvoiceId,
+                itemChoiceType,
+                unsignedInvoiceXmlPath);
+
+            return resVar;
+
+            // // TEST CALL
+            //new FINA_SEND_INVOICE().SendInvoice("9934:26389058739",
+            //    "9934:26389058739",
+            //    "111-11-1",
+            //    null, // AdditinalDocumentReference
+            //    "D:\\WinX\\ERAC\\D4\\test.xml",
+            //    "https://prezdigitalneusluge.fina.hr/SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",
+            //    "e-invoice",
+            //    "D:\\WinX\\ERAC\\certifikati\\e-invoice.cer",
+            //    "D:\\WinX\\ERAC\\certifikati\\p12_aurasoft_demo.p12",
+            //    "Aurasoft1");
+        }
+    }
+    
+    
+    class FINA_GET_OUTGOING_INVOICE_STATUSFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 9, m_name);
+
+            var endpoint = Utils.GetSafeString(args, 0);
+            var dnsIdentity = Utils.GetSafeString(args, 1);
+            var serviceCertificatePath = Utils.GetSafeString(args, 2);
+            var clientCertificatePath = Utils.GetSafeString(args, 3);
+            var clientCertificatePassword = Utils.GetSafeString(args, 4);
+
+            var messageId = Utils.GetSafeString(args, 5);
+            var supplierId = Utils.GetSafeString(args, 6);
+            var supplierInvoiceId = Utils.GetSafeString(args, 7);
+            var invoiceYear = Utils.GetSafeString(args, 8);
+
+            //var additionalSupplierId = Utils.GetSafeString(args, );
+            //var erpid = Utils.GetSafeString(args, );
+            //var messageAttributes = Utils.GetSafeString(args, );
+            //var documentCurrencyCode = Utils.GetSafeString(args, ); // true/false ispis valute iznosa djelomičnog plaćanja u odgovornoj poruci (neobavezan element)
+
+            Variable resVar = new Fiskalizacija2.FINA.GetOutgoingInvoiceStatus().Send(
+                endpoint,
+                dnsIdentity,
+                serviceCertificatePath,
+                clientCertificatePath,
+                clientCertificatePassword,
+
+                messageId,
+                supplierId,
+                supplierInvoiceId,
+                invoiceYear);
+
+            return resVar;
+        }
+    }
+    
+    class FINA_SEND_OUTGOING_INVOICE_REPORTINGFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 9, m_name);
+
+            var endpoint = Utils.GetSafeString(args, 0);
+            var dnsIdentity = Utils.GetSafeString(args, 1);
+            var serviceCertificatePath = Utils.GetSafeString(args, 2);
+            var clientCertificatePath = Utils.GetSafeString(args, 3);
+            var clientCertificatePassword = Utils.GetSafeString(args, 4);
+
+            var messageId = Utils.GetSafeString(args, 5);
+            var supplierId = Utils.GetSafeString(args, 6);
+            var buyerId = Utils.GetSafeString(args, 7);
+            var supplierInvoiceId = Utils.GetSafeString(args, 8);
+
+            var invoiceOrCreditNote = Utils.GetSafeString(args, 9);
+            ItemChoiceType1 itemChoiceType = ItemChoiceType1.InvoiceEnvelope;
+            if (invoiceOrCreditNote.ToLower() == "creditnote")
+            {
+                itemChoiceType = ItemChoiceType1.CreditNoteEnvelope;
+            }
+
+            var unsignedInvoiceXmlPath = Utils.GetSafeString(args, 10);
+
+            //var additionalSupplierId = Utils.GetSafeString(args, );
+            //var erpid = Utils.GetSafeString(args, );
+            //var messageAttributes = Utils.GetSafeString(args, );
+            //var documentCurrencyCode = Utils.GetSafeString(args, ); // true/false ispis valute iznosa djelomičnog plaćanja u odgovornoj poruci (neobavezan element)
+
+            Variable resVar = new Fiskalizacija2.FINA.SendOutgoingInvoiceReporting().Send(
+                endpoint,
+                dnsIdentity,
+                serviceCertificatePath,
+                clientCertificatePath,
+                clientCertificatePassword,
+
+                messageId,
+                supplierId,
+                buyerId,
+                supplierInvoiceId,
+                itemChoiceType,
+                unsignedInvoiceXmlPath);
+
+            return resVar;
         }
     }
 }

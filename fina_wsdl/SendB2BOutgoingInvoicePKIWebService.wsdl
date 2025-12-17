@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://schemas.xmlsoap.org/wsdl/" 
+			 xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" 
+			 xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+			 xmlns:b2bEracImpl="http://fina.hr/eracun/b2b/ws/pki/v0.1" 
+			 xmlns:soi="http://fina.hr/eracun/b2b/pki/SendB2BOutgoingInvoice/v0.1"
+			 xmlns:soir="http://fina.hr/eracun/b2b/pki/SendB2BOutgoingInvoiceReporting/v0.1"
+			 xmlns:e="http://fina.hr/eracun/b2b/pki/Echo/v0.1"
+			 xmlns:gois="http://fina.hr/eracun/b2b/pki/GetB2BOutgoingInvoiceStatus/v0.1" 
+			 targetNamespace="http://fina.hr/eracun/b2b/ws/pki/v0.1">
+	<types>
+		<xsd:schema targetNamespace="http://fina.hr/eracun/b2b/ws/pki/v0.1" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+			<xsd:import namespace="http://fina.hr/eracun/b2b/pki/Echo/v0.1" schemaLocation="EchoMsg.xsd"/>
+			<xsd:import namespace="http://fina.hr/eracun/b2b/pki/SendB2BOutgoingInvoice/v0.1" schemaLocation="SendB2BOutgoingInvoiceMsg.xsd"/>
+			<xsd:import namespace="http://fina.hr/eracun/b2b/pki/SendB2BOutgoingInvoiceReporting/v0.1" schemaLocation="SendB2BOutgoingInvoiceReportingMsg.xsd" />
+			<xsd:import namespace="http://fina.hr/eracun/b2b/pki/GetB2BOutgoingInvoiceStatus/v0.1" schemaLocation="GetB2BOutgoingInvoiceStatusMsg.xsd"/>
+		</xsd:schema>
+	</types>
+	<message name="EchoSoapIn">
+		<part name="body" element="e:EchoMsg"/>
+	</message>
+	<message name="EchoSoapOut">
+		<part name="bodyAck" element="e:EchoAckMsg"/>
+	</message>
+	<message name="SendB2BOutgoingInvoiceSoapIn">
+		<part name="body" element="soi:SendB2BOutgoingInvoiceMsg"/>
+	</message>
+	<message name="SendB2BOutgoingInvoiceSoapOut">
+		<part name="bodyAck" element="soi:SendB2BOutgoingInvoiceAckMsg"/>
+	</message>
+	<message name="SendB2BOutgoingInvoiceReportingSoapIn">
+		<part name="body" element="soir:SendB2BOutgoingInvoiceReportingMsg" />
+	</message>
+	<message name="SendB2BOutgoingInvoiceReportingSoapOut">
+		<part name="bodyAck" element="soir:SendB2BOutgoingInvoiceReportingAckMsg" />
+	</message>
+	<message name="GetB2BOutgoingInvoiceStatusSoapIn">
+		<part name="body" element="gois:GetB2BOutgoingInvoiceStatusMsg"/>
+	</message>
+	<message name="GetB2BOutgoingInvoiceStatusSoapOut">
+		<part name="bodyAck" element="gois:GetB2BOutgoingInvoiceStatusAckMsg"/>
+	</message>
+	<portType name="eRacunB2BPortType">
+		<operation name="echo">
+			<input message="b2bEracImpl:EchoSoapIn"/>
+			<output message="b2bEracImpl:EchoSoapOut"/>
+		</operation>
+		<operation name="sendB2BOutgoingInvoice">
+			<input message="b2bEracImpl:SendB2BOutgoingInvoiceSoapIn"/>
+			<output message="b2bEracImpl:SendB2BOutgoingInvoiceSoapOut"/>
+		</operation>
+		<operation name="sendB2BOutgoingInvoiceReporting">
+			<input message="b2bEracImpl:SendB2BOutgoingInvoiceReportingSoapIn" />
+			<output message="b2bEracImpl:SendB2BOutgoingInvoiceReportingSoapOut" />
+		</operation>
+		<operation name="getB2BOutgoingInvoiceStatus">
+			<input message="b2bEracImpl:GetB2BOutgoingInvoiceStatusSoapIn"/>
+			<output message="b2bEracImpl:GetB2BOutgoingInvoiceStatusSoapOut"/>
+		</operation>
+	</portType>
+	<binding name="eRacunB2BBinding" type="b2bEracImpl:eRacunB2BPortType">
+		<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+		<operation name="echo">
+			<soap:operation soapAction="http://fina.hr/eracun/b2b/Echo" style="document"/>
+			<input>
+				<soap:body use="literal"/>
+			</input>
+			<output>
+				<soap:body use="literal"/>
+			</output>
+		</operation>
+		<operation name="sendB2BOutgoingInvoice">
+			<soap:operation soapAction="http://fina.hr/eracun/b2b/SendB2BOutgoingInvoice" style="document"/>
+			<input>
+				<soap:body use="literal"/>
+			</input>
+			<output>
+				<soap:body use="literal"/>
+			</output>
+		</operation>
+		<operation name="sendB2BOutgoingInvoiceReporting">
+			<soap:operation soapAction="http://fina.hr/eracun/b2g/SendB2BOutgoingInvoiceReporting"
+							style="document" />
+			<input>
+				<soap:body use="literal" />
+			</input>
+			<output>
+				<soap:body use="literal" />
+			</output>
+		</operation>
+		<operation name="getB2BOutgoingInvoiceStatus">
+			<soap:operation soapAction="http://fina.hr/eracun/b2b/GetB2BOutgoingInvoiceStatus" style="document"/>
+			<input>
+				<soap:body use="literal"/>
+			</input>
+			<output>
+				<soap:body use="literal"/>
+			</output>
+		</operation>
+	</binding>
+	<service name="SendB2BOutgoingInvoicePKIWebService">
+		<port name="eRacunB2BPortType" binding="b2bEracImpl:eRacunB2BBinding">
+			<soap:address location="http://ADDRESS/SendB2BOutgoingInvoicePKIWebService"/>
+		</port>
+	</service>
+</definitions>

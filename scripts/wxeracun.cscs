@@ -1040,11 +1040,6 @@ function GenerateUBLXml() {
     xml += "  <cac:Party>\n";
     
 
-
-    // !!!
-    NKPR_GL_JMBG = "26389058739";
-    // NKPR_GL_JMBG = "2631289058739";
-
     // Use GLN (0088 scheme) if available and valid (13 characters), otherwise use OIB (9934 scheme)
     cusSchemeID = "9934";
     cusEndpointID = NKPR_GL_JMBG;
@@ -1715,10 +1710,10 @@ function GenerateUBLXml() {
     schFiles = {};
     schFiles.Add(SCHEMASPATH + "schematron\\HR-CIUS-EXT-EN16931-UBL.sch");
     // schFiles.Add(SCHEMASPATH + "schematron\\preprocessed\\EN16931-UBL-validation-preprocessed.sch");
-    if(!ValidateSch(xml, schFiles, SCHEMASPATH + "schematron\\transpile.xsl", schValidationResultOutputFile)){
-        MessageBox("xml FAILED SCH validation\n\nSee _SCH.err file for details.");
-        return false;
-    }
+    // if(!ValidateSch(xml, schFiles, SCHEMASPATH + "schematron\\transpile.xsl", schValidationResultOutputFile)){
+    //     MessageBox("xml FAILED SCH validation\n\nSee _SCH.err file for details.");
+    //     return false;
+    // }
 
 
 
@@ -1908,6 +1903,7 @@ MessageBox("Slanje eRačuna putem posrednika: " + PROVIDER + " (" + ERAC_PASST +
         //koristimo FINA način slanja
         // za test koristimo račun "90100003"
         
+
          SendToFINA();
         //SendToFINA_2();
         // ...
@@ -1994,7 +1990,9 @@ function MERFailure(_invNum, responseCode, res) {
         MessageBox("MERFailureException - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
     }
 }
+
 logFilePath = "";
+
 function LogResponse(responseCode, response) 
 {
     if(!DIR_EXISTS(FILESPATH + "responses\\"))
@@ -2006,6 +2004,24 @@ messageBox("Logging response to file: " + logFilePath);
     
     appendText = Now("yyyy-MM-dd HH:mm:ss") + " -----------------------------------\n\n" + "StatusCode = " + responseCode + "\n\n" + "Response:\n" + response + "\n\n";
 messageBox("Log text: " + appendText);
+    try {
+        SaveFile(appendText, logFilePath, "a");        
+    } catch (ex) {
+        MessageBox("CRITICAL: Cannot write to log file: " + logFilePath + "\nError: " + ex);
+    }
+}
+
+function LogException(exText) 
+{
+    if(!DIR_EXISTS(FILESPATH + "responses\\"))
+    {
+        MAKE_DIR(FILESPATH + "responses\\");
+    }
+    logFilePath = FILESPATH + "responses\\" + parsefile(attachmentPdfPath, "pfName") + ".response"; //FILESPATH + "responses\\" + parsefile(attachmentPdfPath, "pfName") + ".response";
+    // messageBox("Logging response to file: " + logFilePath);
+    
+    appendText = Now("yyyy-MM-dd HH:mm:ss") + " -----------------------------------\n\n" + "Exception = " + exText + "\n\n";
+    // messageBox("Log text: " + appendText);
     try {
         SaveFile(appendText, logFilePath, "a");        
     } catch (ex) {
@@ -2070,14 +2086,14 @@ function SendToFINA_2() {
     soapEnvelope += "  </SOAP-ENV:Body>\n";
     soapEnvelope += "</SOAP-ENV:Envelope>";
 
-MessageBox("AAAA: SOAP Envelope prepared for FINA:\n\n" + soapEnvelope);
+    MSG("AAAA: SOAP Envelope prepared for FINA:\n\n" + soapEnvelope);
     //Test99();
     //exit;
 
 
     // Sign SOAP with client certificate (WS-Security)
     signedSoap = SignSoapWithCert(soapEnvelope, ERAC_PASST, ERAC_PASS);
-MessageBox("BBBB: Signed SOAP for FINA:\n\n" + signedSoap);
+    MSG("BBBB: Signed SOAP for FINA:\n\n" + signedSoap);
 
     // if (signedSoap == "") {
     //     LogError("FINA_SIGN_FAIL", "SOAP signing failed", "");
@@ -2102,7 +2118,7 @@ MessageBox("BBBB: Signed SOAP for FINA:\n\n" + signedSoap);
             false                       // justFire
         );
         // SaveResponseLog(response, "FINA");
-MessageBox("CCCC: Response from FINA:\n\n" + response);
+    MSG("CCCC: Response from FINA:\n\n" + response);
 
         // ackStatus = ExtractXML(response, "AckStatus");
         // zki = ExtractXML(response, "ZKI");
@@ -2177,7 +2193,148 @@ function SendToEPOS() {
     }
 }
 
+
 function SendToFINA() {
+    
+    // // TEST ECHO CALL
+    // try {
+    //     MSG("izvršavam ECHO test prema FINA-i putem WSDL-a!");
+
+    //     ack = FINA_ECHO(
+    //         ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",
+    //         ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
+    //         ERAC_USERT, // servisni certifikat
+    //         ERAC_PASST, // p12 certifikat (klijentski)
+    //         ERAC_PASS, // password za p12 certifikat
+
+    //         UUID(), // messageId
+    //         "ECHO TEXT STRING.............", // echoText
+    //         supOib // supplierOib
+    //     );
+    //     MSG("ack = " + ack);
+
+    //     if(ack["AckStatusCode"] == 10){
+    //         MessageBox("Uspješan ECHO test prema FINA-i!");
+    //     }
+    // }catch(ex){
+    //     MessageBox("Nepoznata greška:\n" + ex);
+    //     LogException(ex);
+    // }
+    
+
+    // SEND RAČUN
+    try {
+        MSG("šaljem račun!\nKoristim WSDL!");
+
+        ack = FINA_SEND_OUTGOING_INVOICE(
+            ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",
+            ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
+            ERAC_USERT, // servisni certifikat
+            ERAC_PASST, // p12 certifikat (klijentski)
+            ERAC_PASS, // password za p12 certifikat
+
+            UUID(), // messageId
+            "9934:" + supOib, // supplierId
+            "9934:" + NKPR_GL_JMBG, // buyerId // "9934:" + "85821130368" FINA-in OIB
+            invID, // supplierInvoiceId
+            "Invoice", // itemType -> Invoice ili CreditNote
+            xmlFileName // unsignedXmlPath
+        );
+        MSG("ack = " + ack);
+        
+        if(ack["AckStatusCode"] == 10){
+            MessageBox("Uspješno poslan RAČUN prema FINA-i!");
+
+            MSG("ack[\"Correct\"] = " + ack["Correct"]);
+            if(ack["Correct"]){
+                MSG("Šifra računa kod FINA-e (ack[\"InvoiceID\"]) = " + ack["InvoiceID"]);
+                LogNKSYELOG("C");
+            }else{
+                MSG("ack[\"ErrorCode\"] = " + ack["ErrorCode"]);
+                MSG("ack[\"ErrorMessage\"] = " + ack["ErrorMessage"]);
+            }
+        }else{
+            MessageBox("NEUSPJEŠNO poslan RAČUN prema FINA-i!");
+        }
+    }catch(ex){
+        MessageBox("Nepoznata greška:\n" + ex);
+        LogException(ex);
+    }
+    
+
+    // GET STATUS RAČUNA
+    try {
+        MSG("provjeravam status računa putem WSDL-a!");
+
+            ack = FINA_GET_OUTGOING_INVOICE_STATUS(
+            ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",
+            ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
+            ERAC_USERT, // servisni certifikat
+            ERAC_PASST, // p12 certifikat (klijentski)
+            ERAC_PASS, // password za p12 certifikat
+            
+            UUID(),
+            "9934:" + supOib, // supplierId
+            invID, // supplierInvoiceId
+            "2024" // invoiceYear
+        );
+        MSG("ack = " + ack);
+
+        for(i = 0; i < Size(ack["DocumentStatuses"]); i++){
+            MSG("ack[\"DocumentStatuses\"][" + i + "] = " + ack["DocumentStatuses"][i]);
+        }
+
+        // StatusText = ack["DocumentStatuses"][0]["StatusText"];
+        // MSG(StatusText);
+
+    }catch(ex){
+        MessageBox("Nepoznata greška:\n" + ex);
+        LogException(ex);
+    }
+
+
+    // TEST FINA eIzvjestavanje
+    try {
+        // MSG("Izvještavam na eIzvještavanje putem FINA WSDL-a!");
+
+        //     ack = FINA_SEND_OUTGOING_INVOICE_REPORTING(
+        //     ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",
+        //     ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
+        //     ERAC_USERT, // servisni certifikat
+        //     ERAC_PASST, // p12 certifikat (klijentski)
+        //     ERAC_PASS, // password za p12 certifikat
+            
+        //     UUID(),
+        //     "9934:" + supOib, // supplierId
+        //     invID, // supplierInvoiceId
+        //     "2024" // invoiceYear
+        // );
+        // MSG("ack = " + ack);
+
+        // // for(i = 0; i < Size(ack["DocumentStatuses"]); i++){
+        // //     MSG("ack[\"DocumentStatuses\"][" + i + "] = " + ack["DocumentStatuses"][i]);
+        // // }
+
+        // // // StatusText = ack["DocumentStatuses"][0]["StatusText"];
+        // // // MSG(StatusText);
+
+    }catch(ex){
+        MessageBox("Nepoznata greška:\n" + ex);
+        LogException(ex);
+    }
+
+
+    exit;
+
+
+
+
+
+
+
+
+
+
     if (ERAC_SERVER == "") {
         MessageBox("Endpoint za FINA provider nije definiran u NKSYERAC.");
         return;
@@ -2216,6 +2373,10 @@ MessageBox("1111" + ": base64Ubl length = " + base64Ubl.Length);
 MessageBox("2222" + ": Prepared XML Body for FINA:\n\n" + xmlBody);
     // 3. Call the unified CreateSOAP function
     try {
+        msg(CreateAndSendSOAPMsg(xmlBody, soapAction, endpoint, ERAC_PASST, ERAC_PASS, 60));
+        msg("exiting");
+        exit;
+
         // CreateSOAP handles signing and sending the request, and returns the response.
         // It expects: xmlBody, soapAction, endpoint, certIdentifier, certPassword
 MessageBox("3333" + ": Calling CreateSOAP... : "+soapAction+".... "+endpoint+".... "+ERAC_PASST+".... "+ERAC_PASS);
@@ -2232,9 +2393,9 @@ MessageBox("3333" + ": Calling CreateSOAP... : "+soapAction+".... "+endpoint+"..
 
         // // 4. Process the response
          if (response.StartsWith("ERROR:") || response.StartsWith("HTTP_ERROR:") || response.StartsWith("EXCEPTION:")) {
-             FINAFailure(invNum, 0, response);
+            FINAFailure(invNum, 0, response);
          } else {
-             FINASuccess(invNum, 200, response);
+            FINASuccess(invNum, 200, response);
          }
     } catch (ex) {
         FINAFailure(invNum, 0, "Greška pri pozivu CreateSOAP funkcije: " + ex);

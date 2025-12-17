@@ -104,11 +104,7 @@ namespace SplitAndMerge
 
 			interpreter.RegisterFunction("MessageBox", new MessageBoxFunction());
 			interpreter.RegisterFunction("msg", new MessageBoxFunction());
-            //interpreter.RegisterFunction("MBox", new MBoxFunction());
-            //interpreter.RegisterFunction("MBoxTimer", new MBoxTimerFunction());
-            interpreter.RegisterFunction("MBox", new MBoxFunction());
-            interpreter.RegisterFunction("MBoxAsinkroni", new MBoxAsinkroniFunction());
-            interpreter.RegisterFunction("MBoxWindowless", new MBoxWindowlessFunction());
+            interpreter.RegisterFunction("MBox", new MBoxFunction());                        
 
 
             interpreter.RegisterFunction("SendToPrinter", new PrintFunction());
@@ -4353,17 +4349,13 @@ namespace WpfCSCS
 		}
 	}
 
-    //****************************************************************************************************    
-    //****************************************************************************************************
-    //****************************************************************************************************
-    //****************************************************************************************************
-    public class MBoxFunction : ParserFunction
+	
+	public class MBoxFunction : ParserFunction
     {
-        private static readonly Queue<MessageBoxRequest> _messageQueue = new Queue<MessageBoxRequest>();
-        private static bool _isShowingMessage = false;
-
         protected override Variable Evaluate(ParsingScript script)
         {
+			string result = "";
+
             List<Variable> args = script.GetFunctionArgs();
             Utils.CheckArgs(args.Count, 1, m_name);
 
@@ -4372,134 +4364,201 @@ namespace WpfCSCS
             var answerType = Utils.GetSafeString(args, 2, "ok").ToLower();
             var messageType = Utils.GetSafeString(args, 3, "info").ToLower();
             var duration = Utils.GetSafeDouble(args, 4, -1);
-            var titleBackgroundColor = Utils.GetSafeString(args, 5, ""); // 6th parameter
+            var titleBackgroundColor = Utils.GetSafeString(args, 5, "");
+            
+            result = MessageBoxManager.ShowMessageBox(message, caption, answerType,
+                                           messageType, duration, titleBackgroundColor);
 
-            // Create a request and add it to the queue
+            return new Variable(result);
+        }
+    }    
+
+    public class MessageBoxManager
+    {    		
+        private static Window _hiddenMainWindow;
+        private static readonly Queue<MessageBoxRequest> _messageQueue = new Queue<MessageBoxRequest>();
+        private static bool _isShowingMessage = false;
+        private static ManualResetEvent _appReadyEvent = new ManualResetEvent(false);
+        private static Thread _uiThread;
+
+        // Initialize the message box manager
+        public static void Initialize()
+        {
+            if (_uiThread != null && _uiThread.IsAlive)
+                return;
+
+            // Start UI thread if not already running
+            _uiThread = new Thread(() =>
+            {
+                // Create hidden application window
+                _hiddenMainWindow = new Window
+                {
+                    Width = 1,
+                    Height = 1,
+                    WindowStyle = WindowStyle.None,
+                    ShowInTaskbar = false,
+                    Visibility = Visibility.Hidden,
+                    Title = "MessageBox Host Window"
+                };
+
+                // Show and immediately hide it
+                _hiddenMainWindow.Show();
+                _hiddenMainWindow.Hide();
+
+                // Signal that app is ready
+                _appReadyEvent.Set();
+
+                // Start dispatcher
+                Dispatcher.Run();
+            });
+
+            _uiThread.SetApartmentState(ApartmentState.STA);
+            _uiThread.IsBackground = true;
+            _uiThread.Start();
+
+            // Wait for app to be ready (with timeout)
+            _appReadyEvent.WaitOne(5000);
+        }
+
+        public static string ShowMessageBox(string message, string caption = "Info",
+                                        string answerType = "ok", string messageType = "info",
+                                        double duration = -1, string titleBackgroundColor = "")
+        {
+			string result = "";
+
+            // Ensure initialized
+            Initialize();
+
+            // Create request
             var request = new MessageBoxRequest(message, caption, answerType,
                                               messageType, duration, titleBackgroundColor);
 
-
-            string result;
-            if (request.Duration > 0)
+            // Queue the request
+            if (_hiddenMainWindow != null && _hiddenMainWindow.Dispatcher != null)
             {
-                result = ShowAutoCloseMessageBox(request.Message, request.Caption,
-                                               request.AnswerType, request.MessageType,
-                                               (int)request.Duration, request.TitleBackgroundColor);
-            }
-            else
-            {
-                result = ShowMessageBox(request.Message, request.Caption,
-                                      request.AnswerType, request.MessageType);
+                _hiddenMainWindow.Dispatcher.Invoke(() =>
+                {
+                    _messageQueue.Enqueue(request);
+                    result = ProcessMessageQueue();
+                });
             }
 
-
-            //// Run on UI thread
-            //Application.Current.Dispatcher.Invoke(() =>
-            //{
-            //    _messageQueue.Enqueue(request);
-            //    ProcessMessageQueue();
-            //});
-
-            // For synchronous behavior, we need to wait for the result
-            // This requires a more complex async/await pattern
-            return new Variable("Queued");
+			return result;
         }
 
-        private static void ProcessMessageQueue()
+        private static string ProcessMessageQueue()
         {
+            string result = "";
+
             if (_isShowingMessage || _messageQueue.Count == 0)
-                return;
+                return "";
 
             _isShowingMessage = true;
             var request = _messageQueue.Dequeue();
 
-            string result;
-            if (request.Duration > 0)
-            {
-                result = ShowAutoCloseMessageBox(request.Message, request.Caption,
-                                               request.AnswerType, request.MessageType,
-                                               (int)request.Duration, request.TitleBackgroundColor);
+            try
+            {                
+				result = ShowAutoCloseMessageBox(request.Message, request.Caption,
+                                                   request.AnswerType, request.MessageType,
+                                                   (int)request.Duration, request.TitleBackgroundColor);
             }
-            else
+            finally
             {
-                result = ShowMessageBox(request.Message, request.Caption,
-                                      request.AnswerType, request.MessageType);
+                _isShowingMessage = false;
+
+                // Process next message with a small delay to ensure proper cleanup
+                if (_hiddenMainWindow != null && _hiddenMainWindow.Dispatcher != null)
+                {
+                    _hiddenMainWindow.Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        Thread.Sleep(100); // Small delay
+                        result = ProcessMessageQueue();
+                    }), DispatcherPriority.Background);
+                }
             }
 
-            // When done, process next message
-            _isShowingMessage = false;
-            ProcessMessageQueue();
+			return result;
         }
 
-        public static string ShowMessageBox(string message, string caption = "Info",
-                                           string answerType = "ok", string messageType = "info")
-        {
-            MessageBoxButton buttons =
-                answerType == "ok" ? MessageBoxButton.OK :
-                answerType == "okcancel" ? MessageBoxButton.OKCancel :
-                answerType == "yesno" ? MessageBoxButton.YesNo :
-                answerType == "yesnocancel" ? MessageBoxButton.YesNoCancel : MessageBoxButton.OK;
-
-            MessageBoxImage icon =
-                messageType == "question" ? MessageBoxImage.Question :
-                messageType == "info" ? MessageBoxImage.Information :
-                messageType == "warning" ? MessageBoxImage.Warning :
-                messageType == "error" ? MessageBoxImage.Error :
-                messageType == "exclamation" ? MessageBoxImage.Exclamation :
-                messageType == "stop" ? MessageBoxImage.Stop :
-                messageType == "hand" ? MessageBoxImage.Hand :
-                messageType == "asterisk" ? MessageBoxImage.Asterisk :
-                            MessageBoxImage.None;
-            var result = MessageBox.Show(message, caption, buttons, icon);
-
-            var ret = result == MessageBoxResult.OK ? "OK" :
-                result == MessageBoxResult.Cancel ? "Cancel" :
-                result == MessageBoxResult.Yes ? "Yes" :
-                result == MessageBoxResult.No ? "No" : "None";
-
-            return ret;
-        }
-
-        public static string ShowAutoCloseMessageBox(string message, string caption = "Info",
-                                                   string answerType = "ok", string messageType = "info",
-                                                   int durationSeconds = 5, string titleBackgroundColor = "")
+        private static string ShowAutoCloseMessageBox(string message, string caption,
+                                                    string answerType, string messageType,
+                                                    int durationSeconds, string titleBackgroundColor)
         {
             string result = "Timeout";
 
+            var dialog = new AutoCloseMessageBoxWindow(message, caption, answerType,
+                                                     messageType, durationSeconds, titleBackgroundColor);
 
+            // Set owner to hidden window
+            dialog.Owner = _hiddenMainWindow;
+            //dialog.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            dialog.WindowStartupLocation = WindowStartupLocation.CenterScreen;
 
-            // Run on UI thread
-            CSCS_GUI.Dispatcher.Invoke(() =>
-			{
-				var dialog = new AutoCloseMessageBoxWindow(message, caption, answerType,
-                                                          messageType, durationSeconds, titleBackgroundColor);
-                dialog.ShowDialog();
-                result = dialog.Result;
-			});
+            dialog.ShowDialog();
+            result = dialog.Result;
 
             return result;
         }
 
-        private class MessageBoxRequest
+        public static void Shutdown()
         {
-            public string Message { get; }
-            public string Caption { get; }
-            public string AnswerType { get; }
-            public string MessageType { get; }
-            public double Duration { get; }
-            public string TitleBackgroundColor { get; }
-
-            public MessageBoxRequest(string message, string caption,
-                                   string answerType, string messageType,
-                                   double duration, string titleBackgroundColor)
+            if (_hiddenMainWindow != null && _hiddenMainWindow.Dispatcher != null)
             {
-                Message = message;
-                Caption = caption;
-                AnswerType = answerType;
-                MessageType = messageType;
-                Duration = duration;
-                TitleBackgroundColor = titleBackgroundColor;
+                _hiddenMainWindow.Dispatcher.InvokeShutdown();
             }
+            _uiThread = null;
+        }
+    }
+
+    public class MessageBoxRequest
+    {
+        public MessageBoxRequest(string message, string caption, string answerType, string messageType,
+                                double duration, string titleBackgroundColor)
+        {
+            this._message = message;
+            this._caption = caption;
+            this._answerType = answerType;
+            this._messageType = messageType;
+            this._duration = duration;
+            this._titleBackgroundColor = titleBackgroundColor;
+        }
+
+        private string _message;
+        private string _caption;
+        private string _answerType;
+        private string _messageType;
+        private double _duration;
+        private string _titleBackgroundColor;
+
+        public string Message
+        {
+            get { return this._message; }
+            set { this._message = value; }
+        }
+        public string Caption
+        {
+            get { return this._caption; }
+            set { this._caption = value; }
+        }
+        public string AnswerType
+        {
+            get { return this._answerType; }
+            set { this._answerType = value; }
+        }
+        public string MessageType
+        {
+            get { return this._messageType; }
+            set { this._messageType = value; }
+        }
+        public double Duration
+        {
+            get { return this._duration; }
+            set { this._duration = value; }
+        }
+        public string TitleBackgroundColor
+        {
+            get { return this._titleBackgroundColor; }
+            set { this._titleBackgroundColor = value; }
         }
     }
 
@@ -4530,9 +4589,13 @@ namespace WpfCSCS
             SizeToContent = SizeToContent.WidthAndHeight;
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
             ResizeMode = ResizeMode.NoResize;
-            WindowStyle = WindowStyle.None; // Remove default window style for custom title bar
-            AllowsTransparency = false;
+            WindowStyle = WindowStyle.None; // Remove default window style for custom title bar            
+            AllowsTransparency = true;            
+            Background = Brushes.Transparent; // make window background transparent so Border defines visible shape            
             Topmost = true;
+            // Minimum size constraints (prevent window becoming smaller than desired)
+            MinWidth = 400;
+            MinHeight = 200;
             // Constrain maximum size to a reasonable portion of the screen
             MaxWidth = SystemParameters.WorkArea.Width * 0.85;
             MaxHeight = SystemParameters.WorkArea.Height * 0.85;
@@ -4549,32 +4612,6 @@ namespace WpfCSCS
             Grid.SetRow(_titleBar, 0);
             mainGrid.Children.Add(_titleBar);
 
-            // Message text - wrap and put inside a ScrollViewer so very long messages
-            // will wrap and scroll if they exceed the available area.
-            //********************************************************
-            //var textBlock = new TextBlock
-            //{
-            //    Text = message,
-            //    TextWrapping = TextWrapping.Wrap,
-            //    Margin = new Thickness(20),
-            //    VerticalAlignment = VerticalAlignment.Center,
-            //    HorizontalAlignment = HorizontalAlignment.Left,
-            //    FontSize = 14
-            //};
-
-            //// Use a ScrollViewer so the window can grow but not exceed MaxHeight/MaxWidth
-            //var scroll = new ScrollViewer
-            //{
-            //    Content = textBlock,
-            //    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-            //    HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
-            //    MaxWidth = MaxWidth - 40,
-            //    MaxHeight = MaxHeight - 120
-            //};
-
-            //Grid.SetRow(scroll, 1);
-            //mainGrid.Children.Add(scroll);
-            //********************************************************
             // Build message area with optional icon on the left
             var messageGrid = new Grid();
             messageGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // icon
@@ -4649,7 +4686,10 @@ namespace WpfCSCS
                 FontSize = 12
             };
             Grid.SetRow(_timerLabel, 2);
-            mainGrid.Children.Add(_timerLabel);
+			if (durationSeconds > 0)
+			{
+				mainGrid.Children.Add(_timerLabel);
+			}
 
             // Button grid
             _buttonGrid = new Grid
@@ -4663,11 +4703,42 @@ namespace WpfCSCS
 
             Grid.SetRow(_buttonGrid, 3);
             mainGrid.Children.Add(_buttonGrid);
+                        
+            var outerBorder = new Border
+            {
+                //RADIUS setup is on 2 places: here and in CreateTitleBar
+                CornerRadius = new CornerRadius(7,7,7,7),   // rounded corners radius = 30
+                Background = Brushes.White,                   // dialog background (change if you want)
+                BorderBrush = Brushes.Gray,
+                BorderThickness = new Thickness(1.5),
+                Child = mainGrid,
+                SnapsToDevicePixels = true,
+                Padding = new Thickness(0)
+            };
 
-            Content = WrapWithBorder(mainGrid, Brushes.Gray, new Thickness(1));
-            
-            // Setup and start timer
-            SetupTimer();
+			// optional drop shadow (looks better with transparency)
+			//try
+			//{
+			//    outerBorder.Effect = new System.Windows.Media.Effects.DropShadowEffect
+			//    {
+			//        BlurRadius = 12,
+			//        ShadowDepth = 0,
+			//        Opacity = 0.35
+			//    };
+			//}
+			//catch
+			//{
+			//    // DropShadowEffect is best-effort; swallow if unavailable on target environment
+			//}
+			outerBorder.Effect = null;
+
+            Content = outerBorder;
+
+            if (durationSeconds > 0)
+			{
+				// Setup and start timer
+				SetupTimer();
+			}
         }
 
         private System.Windows.Media.ImageSource GetIconForMessageType(string messageType)
@@ -4736,7 +4807,13 @@ namespace WpfCSCS
                 Height = 30,
                 Background = ParseColor(backgroundColor),
                 BorderBrush = Brushes.LightGray,
-                BorderThickness = new Thickness(0, 0, 0, 1)
+                BorderThickness = new Thickness(0, 0, 0, 1),
+                //**************
+                //RADIUS setup is on 2 places: here and in AutoCloseMessageBoxWindow
+                CornerRadius = new CornerRadius(7, 7, 0, 0), // match outer border top corners
+                SnapsToDevicePixels = true,
+                Padding = new Thickness(0)
+                //**************
             };
 
             var titleGrid = new Grid();
@@ -4749,7 +4826,7 @@ namespace WpfCSCS
                 Text = caption,
                 VerticalAlignment = VerticalAlignment.Center,
                 HorizontalAlignment = HorizontalAlignment.Left,
-                Margin = new Thickness(10, 0, 0, 0),
+                Margin = new Thickness(20, 0, 0, 0),
                 FontWeight = FontWeights.Bold,
                 Foreground = GetContrastColor(_titleBar.Background as SolidColorBrush)
             };
@@ -4767,8 +4844,8 @@ namespace WpfCSCS
                 Foreground = Brushes.Gray,
                 FontWeight = FontWeights.Bold,
                 FontSize = 14,
-                Margin = new Thickness(0),
-                Padding = new Thickness(0)
+                Margin = new Thickness(0,0,10,0),
+                Padding = new Thickness(0,0,0,0)
             };
 
             closeButton.Click += (s, e) =>
@@ -4922,480 +4999,32 @@ namespace WpfCSCS
             _timer.Start();
         }
 
-		
-        private static Border WrapWithBorder(UIElement element, Brush borderBrush, Thickness borderThickness)
-        {
-            // detach from current logical parent first (common parent types)
-            var parent = LogicalTreeHelper.GetParent(element);
-            if (parent is ContentControl cc) cc.Content = null;
-            else if (parent is Panel panel) panel.Children.Remove(element);
-            else if (parent is Decorator decorator) decorator.Child = null;
-            else if (parent is ItemsControl items) items.Items.Remove(element);
-
-            var border = new Border { BorderBrush = borderBrush, BorderThickness = borderThickness, Child = element };
-            return border;
-        }
-
         private void Timer_Tick(object sender, EventArgs e)
         {
-			//try
-			//{
+			try
+			{
 				_remainingSeconds--;
 				_timerLabel.Content = $"Closing in {_remainingSeconds} seconds...";
 
 				if (_remainingSeconds <= 0)
 				{
 					_timer.Stop();
-					DialogResult = true;
+					try
+					{
+						DialogResult = true;
+					}
+					catch 
+					{ 
+					}
 					Close();
 				}
-			//}
-			//catch (Exception ex)
-			//{
-			//	throw ("ERROR" + ex.Message);
-			//}
-        }
-    }
-
-    //****************************************************************************************************
-    //****************************************************************************************************
-    //****************************************************************************************************
-	
-	//MBoxAsinkroni JE ZA IZBRISAT
-    public class MBoxAsinkroniFunction : ParserFunction
-    {
-        private static SemaphoreSlim _messageSemaphore = new SemaphoreSlim(1, 1);
-
-        protected override async Task<Variable> EvaluateAsync(ParsingScript script)
-        {
-            List<Variable> args = script.GetFunctionArgs();
-
-            Utils.CheckArgs(args.Count, 1, m_name);
-
-            var message = Utils.GetSafeString(args, 0);
-            var caption = Utils.GetSafeString(args, 1, "Info");
-            var answerType = Utils.GetSafeString(args, 2, "ok").ToLower();
-            var messageType = Utils.GetSafeString(args, 3, "info").ToLower();
-            var duration = Utils.GetSafeDouble(args, 4, -1);
-
-            // Wait for any previous message box to complete
-            await _messageSemaphore.WaitAsync();
-
-            try
-            {
-                string result = await Application.Current.Dispatcher.Invoke(async () =>
-                {
-                    if (duration > 0)
-                    {
-                        return await ShowAutoCloseMessageBoxAsync(message, caption,
-                                                                answerType, messageType,
-                                                                (int)duration);
-                    }
-                    else
-                    {
-                        return await ShowMessageBoxAsync(message, caption,
-                                                       answerType, messageType);
-                    }
-                });
-
-                return new Variable(result);
-            }
-            finally
-            {
-                _messageSemaphore.Release();
-            }
-        }
-
-        public static Task<string> ShowMessageBoxAsync(string message, string caption = "Info",
-                                                     string answerType = "ok", string messageType = "info")
-        {
-            var tcs = new TaskCompletionSource<string>();
-
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                var result = ShowMessageBox(message, caption, answerType, messageType);
-                tcs.SetResult(result);
-            });
-
-            return tcs.Task;
-        }
-
-        public static Task<string> ShowAutoCloseMessageBoxAsync(string message, string caption = "Info",
-                                                              string answerType = "ok", string messageType = "info",
-                                                              int durationSeconds = 5)
-        {
-            var tcs = new TaskCompletionSource<string>();
-
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                //var dialog = new AutoCloseMessageBoxWindow(message, caption, answerType,
-                //                                          messageType, durationSeconds);
-                var dialog = new AutoCloseMessageBoxWindow(message, caption, answerType,
-                                                          messageType, durationSeconds, "Red");
-
-                dialog.Closed += (s, e) =>
-                {
-                    tcs.SetResult(dialog.Result);
-                };
-
-                dialog.Show();
-            });
-
-            return tcs.Task;
-        }
-
-
-
-        //rest of existing methods
-        public static string ShowMessageBox(string message, string caption = "Info",
-                                           string answerType = "ok", string messageType = "info")
-        {
-            MessageBoxButton buttons =
-                answerType == "ok" ? MessageBoxButton.OK :
-                answerType == "okcancel" ? MessageBoxButton.OKCancel :
-                answerType == "yesno" ? MessageBoxButton.YesNo :
-                answerType == "yesnocancel" ? MessageBoxButton.YesNoCancel : MessageBoxButton.OK;
-
-            MessageBoxImage icon =
-                messageType == "question" ? MessageBoxImage.Question :
-                messageType == "info" ? MessageBoxImage.Information :
-                messageType == "warning" ? MessageBoxImage.Warning :
-                messageType == "error" ? MessageBoxImage.Error :
-                messageType == "exclamation" ? MessageBoxImage.Exclamation :
-                messageType == "stop" ? MessageBoxImage.Stop :
-                messageType == "hand" ? MessageBoxImage.Hand :
-                messageType == "asterisk" ? MessageBoxImage.Asterisk :
-                            MessageBoxImage.None;
-            var result = MessageBox.Show(message, caption, buttons, icon);
-
-            var ret = result == MessageBoxResult.OK ? "OK" :
-                result == MessageBoxResult.Cancel ? "Cancel" :
-                result == MessageBoxResult.Yes ? "Yes" :
-                result == MessageBoxResult.No ? "No" : "None";
-
-            return ret;
-        }
-
-        
-
-    }
-
-    //****************************************************************************************************
-    //****************************************************************************************************
-    //****************************************************************************************************
-
-    public class MBoxWindowlessFunction : ParserFunction
-    {
-        protected override Variable Evaluate(ParsingScript script)
-        {
-			string result = "";
-
-            List<Variable> args = script.GetFunctionArgs();
-            Utils.CheckArgs(args.Count, 1, m_name);
-
-            var message = Utils.GetSafeString(args, 0);
-            var caption = Utils.GetSafeString(args, 1, "Info");
-            var answerType = Utils.GetSafeString(args, 2, "ok").ToLower();
-            var messageType = Utils.GetSafeString(args, 3, "info").ToLower();
-            var duration = Utils.GetSafeDouble(args, 4, -1);
-            var titleBackgroundColor = Utils.GetSafeString(args, 5, "");
-
-            // Use the MessageBoxManager
-            result = MessageBoxManager.ShowMessageBox(message, caption, answerType,
-                                           messageType, duration, titleBackgroundColor);
-
-            return new Variable(result);
-        }
-    }
-
-    public class MessageBoxManager
-    {        
-        [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
-        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
-
-        [System.Runtime.InteropServices.DllImport("user32.dll")]
-        private static extern bool SetForegroundWindow(IntPtr hWnd);
-
-        private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
-        private const uint SWP_NOSIZE = 0x0001;
-        private const uint SWP_NOMOVE = 0x0002;
-        private const uint SWP_SHOWWINDOW = 0x0040;
-
-        private static void EnsureHiddenHostTopMost()
-        {
-            try
-            {
-                if (_hiddenMainWindow == null) return;
-                var helper = new System.Windows.Interop.WindowInteropHelper(_hiddenMainWindow);
-                IntPtr hWnd = helper.Handle;
-                if (hWnd == IntPtr.Zero) return;
-
-                // Make the hidden host topmost (don't change size/position) and try to set foreground
-                SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-                SetForegroundWindow(hWnd);
-
-                // small pause can help on some systems
-                Thread.Sleep(10);
-            }
-            catch
-            {
-                // best-effort - swallow exceptions
-            }
-        }
-        
-
-
-        private static Window _hiddenMainWindow;
-        private static readonly Queue<MessageBoxRequest> _messageQueue = new Queue<MessageBoxRequest>();
-        private static bool _isShowingMessage = false;
-        private static ManualResetEvent _appReadyEvent = new ManualResetEvent(false);
-        private static Thread _uiThread;
-
-        // Initialize the message box manager
-        public static void Initialize()
-        {
-            if (_uiThread != null && _uiThread.IsAlive)
-                return;
-
-            // Start UI thread if not already running
-            _uiThread = new Thread(() =>
-            {
-                // Create hidden application window
-                _hiddenMainWindow = new Window
-                {
-                    Width = 1,
-                    Height = 1,
-                    WindowStyle = WindowStyle.None,
-                    ShowInTaskbar = false,
-                    Visibility = Visibility.Hidden,
-                    Title = "MessageBox Host Window"
-                };
-
-                // Show and immediately hide it
-                _hiddenMainWindow.Show();
-                _hiddenMainWindow.Hide();
-
-                // Signal that app is ready
-                _appReadyEvent.Set();
-
-                // Start dispatcher
-                Dispatcher.Run();
-            });
-
-            _uiThread.SetApartmentState(ApartmentState.STA);
-            _uiThread.IsBackground = true;
-            _uiThread.Start();
-
-            // Wait for app to be ready (with timeout)
-            _appReadyEvent.WaitOne(5000);
-        }
-
-        public static string ShowMessageBox(string message, string caption = "Info",
-                                        string answerType = "ok", string messageType = "info",
-                                        double duration = -1, string titleBackgroundColor = "")
-        {
-			string result = "";
-
-            // Ensure initialized
-            Initialize();
-
-            // Create request
-            var request = new MessageBoxRequest(message, caption, answerType,
-                                              messageType, duration, titleBackgroundColor);
-
-            // Queue the request
-            if (_hiddenMainWindow != null && _hiddenMainWindow.Dispatcher != null)
-            {
-                _hiddenMainWindow.Dispatcher.Invoke(() =>
-                {
-                    _messageQueue.Enqueue(request);
-                    result = ProcessMessageQueue();
-                });
-            }
-
-			return result;
-        }
-
-        private static string ProcessMessageQueue()
-        {
-            string result = "";
-
-            if (_isShowingMessage || _messageQueue.Count == 0)
-                return "";
-
-            _isShowingMessage = true;
-            var request = _messageQueue.Dequeue();
-
-            try
-            {                
-                if (request.Duration > 0)
-                {
-                    result = ShowAutoCloseMessageBox(request.Message, request.Caption,
-                                                   request.AnswerType, request.MessageType,
-                                                   (int)request.Duration, request.TitleBackgroundColor);
-                }
-                else
-                {
-                    result = ShowStandardMessageBox(request.Message, request.Caption,
-                                                  request.AnswerType, request.MessageType);
-                }
-            }
-            finally
-            {
-                _isShowingMessage = false;
-
-                // Process next message with a small delay to ensure proper cleanup
-                if (_hiddenMainWindow != null && _hiddenMainWindow.Dispatcher != null)
-                {
-                    _hiddenMainWindow.Dispatcher.BeginInvoke(new Action(() =>
-                    {
-                        Thread.Sleep(100); // Small delay
-                        result = ProcessMessageQueue();
-                    }), DispatcherPriority.Background);
-                }
-            }
-
-			return result;
-        }
-
-        private static string ShowStandardMessageBox(string message, string caption,
-                                           string answerType, string messageType)
-        {
-            MessageBoxButton buttons =
-                answerType == "ok" ? MessageBoxButton.OK :
-                answerType == "okcancel" ? MessageBoxButton.OKCancel :
-                answerType == "yesno" ? MessageBoxButton.YesNo :
-                answerType == "yesnocancel" ? MessageBoxButton.YesNoCancel : MessageBoxButton.OK;
-
-            MessageBoxImage icon =
-                messageType == "question" ? MessageBoxImage.Question :
-                messageType == "info" ? MessageBoxImage.Information :
-                messageType == "warning" ? MessageBoxImage.Warning :
-                messageType == "error" ? MessageBoxImage.Error :
-                messageType == "exclamation" ? MessageBoxImage.Exclamation :
-                messageType == "stop" ? MessageBoxImage.Stop :
-                messageType == "hand" ? MessageBoxImage.Hand :
-                messageType == "asterisk" ? MessageBoxImage.Asterisk :
-                            MessageBoxImage.None;
-
-            MessageBoxResult res = MessageBoxResult.None;
-
-            // Show on the hidden manager dispatcher so we control Z-order from that STA thread.
-            if (_hiddenMainWindow != null && _hiddenMainWindow.Dispatcher != null)
-            {
-                _hiddenMainWindow.Dispatcher.Invoke(() =>
-                {
-                    try
-                    {
-                        // Ensure the hidden host is topmost/foreground (best-effort)
-                        EnsureHiddenHostTopMost();
-
-                        // Use DefaultDesktopOnly to improve chances the dialog is above other apps.
-                        res = MessageBox.Show(_hiddenMainWindow, message, caption, buttons, icon, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    }
-                    catch
-                    {
-                        // fallback if options fail
-                        res = MessageBox.Show(_hiddenMainWindow, message, caption, buttons, icon);
-                    }
-                });
-            }
-            else
-            {
-                // fallback to current thread
-                res = MessageBox.Show(message, caption, buttons, icon);
-            }
-
-            return res == MessageBoxResult.OK ? "OK" :
-                   res == MessageBoxResult.Cancel ? "Cancel" :
-                   res == MessageBoxResult.Yes ? "Yes" :
-                   res == MessageBoxResult.No ? "No" : "None";
-        }
-
-        private static string ShowAutoCloseMessageBox(string message, string caption,
-                                                    string answerType, string messageType,
-                                                    int durationSeconds, string titleBackgroundColor)
-        {
-            string result = "Timeout";
-
-            var dialog = new AutoCloseMessageBoxWindow(message, caption, answerType,
-                                                     messageType, durationSeconds, titleBackgroundColor);
-
-            // Set owner to hidden window
-            dialog.Owner = _hiddenMainWindow;
-            //dialog.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-            dialog.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-
-            dialog.ShowDialog();
-            result = dialog.Result;
-
-            return result;
-        }
-
-        public static void Shutdown()
-        {
-            if (_hiddenMainWindow != null && _hiddenMainWindow.Dispatcher != null)
-            {
-                _hiddenMainWindow.Dispatcher.InvokeShutdown();
-            }
-            _uiThread = null;
-        }
-    }
-
-	public class MessageBoxRequest
-    {
-		public MessageBoxRequest(string message, string caption, string answerType, string messageType,
-                                double duration, string titleBackgroundColor)
-		{
-			this._message = message;
-			this._caption = caption;
-			this._answerType = answerType;
-			this._messageType = messageType;
-            this._duration = duration;
-			this._titleBackgroundColor = titleBackgroundColor;
-        }
-
-        private string _message;
-        private string _caption;
-        private string _answerType;
-        private string _messageType;
-        private double _duration;
-        private string _titleBackgroundColor;
-
-        public string Message {
-			get { return this._message; }
-			set { this._message = value; } 
+			}
+			catch 
+			{
+			}
 		}
-        public string Caption
-        {
-            get { return this._caption; }
-            set { this._caption = value; }
-        }
-        public string AnswerType
-        {
-            get { return this._answerType; }
-            set { this._answerType = value; }
-        }
-        public string MessageType
-        {
-            get { return this._messageType; }
-            set { this._messageType = value; }
-        }
-        public double Duration
-        {
-            get { return this._duration; }
-            set { this._duration = value; }
-        }
-        public string TitleBackgroundColor
-        {
-            get { return this._titleBackgroundColor; }
-            set { this._titleBackgroundColor = value; }
-        }
     }
-
-    //****************************************************************************************************
-    //****************************************************************************************************
-    //****************************************************************************************************
+    
     public class YearFunction : ParserFunction
 	{
 		protected override Variable Evaluate(ParsingScript script)

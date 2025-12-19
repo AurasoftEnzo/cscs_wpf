@@ -1,0 +1,169 @@
+MessageBox("...Testing sqltransaction...");
+
+
+sqlconnectionstring("Server=localhost;Database=testdb;User Id=sa;Password=aura;");
+
+
+//*********************************************************
+//SIMPLE TRANSACTION EXAMPLE
+
+/*
+query = "BEGIN TRANSACTION; \n";
+query += "INSERT INTO tbl_students VALUES (201, 'John', 'male'); \n";
+query += "INSERT INTO tbl_students VALUES (202, 'John', 'male'); \n";
+query += "INSERT INTO tbl_students VALUES (203, 'John', 'male'); \n";
+query += "COMMIT TRANSACTION; \n";
+
+rowsAffected = sqlnonquery(query);
+MessageBox("rowsAffected = " + rowsAffected);
+*/
+
+//*********************************************************
+//TRANSACTION WITH PARAMETERS EXAMPLE
+
+/*
+query = "BEGIN TRANSACTION; \n";
+query += "INSERT INTO tbl_students VALUES (@id1, 'John', 'male'); \n";
+query += "INSERT INTO tbl_students VALUES (@id2, 'John', 'male'); \n";
+query += "INSERT INTO tbl_students VALUES (@id3, 'John', 'male'); \n";
+query += "COMMIT TRANSACTION; \n";
+
+params = {};
+tempParam = {"@id1", 301};
+params.Add(tempParam);
+tempParam = {"@id2", 302};
+params.Add(tempParam);
+tempParam = {"@id3", 303};
+params.Add(tempParam);
+
+//MessageBox("params = " + params);
+
+rowsAffected = sqlnonquery(query, params);
+MessageBox("rowsAffected = " + rowsAffected);
+*/
+
+//*********************************************************
+//TRANSACTION WITH PARAMETERS EXAMPLE2
+/*
+params = {};
+
+query = "BEGIN TRANSACTION; \n";
+
+for (i = 1; i <= 3; i++) {
+    strIndex = i.ToString();
+    query += "INSERT INTO tbl_students VALUES (@id" + strIndex + ", @name" + strIndex + ", @gender" + strIndex + "); \n";
+    tempParam = {"@id" + strIndex, 400 + i};
+    params.Add(tempParam);
+    tempParam = {"@name" + strIndex, "Ime" + i.ToString()};
+    params.Add(tempParam);
+    tempParam = {"@gender" + strIndex, "Spol" + i.ToString()};
+    params.Add(tempParam);
+}
+
+query += "COMMIT TRANSACTION; \n";
+
+//MessageBox("params = " + params);
+
+rowsAffected = sqlnonquery(query, params);
+MessageBox("rowsAffected = " + rowsAffected);
+*/
+
+//*********************************************************
+//TRANSACTION WITH PARAMETERS ROLLBACK COMMIT
+/*
+params = {};
+
+query = "BEGIN TRANSACTION; \n";
+
+query += "DECLARE @x INT; \n";
+query += "SET @x = 0; \n";
+
+for (i = 1; i <= 3; i++) {
+    query += "SET @x = @x + 1; \n";
+    strIndex = i.ToString();
+    query += "INSERT INTO tbl_students VALUES (@id" + strIndex + ", @name" + strIndex + ", @gender" + strIndex + "); \n";
+    tempParam = {"@id" + strIndex, 600 + i};
+    params.Add(tempParam);
+    tempParam = {"@name" + strIndex, "Ime" + i.ToString()};
+    params.Add(tempParam);
+    tempParam = {"@gender" + strIndex, "Spol" + i.ToString()};
+    params.Add(tempParam);
+}
+
+query += "IF (@x=3) \n";//CONDITION FOR ROLLBACK
+query += "BEGIN \n";
+query += "    ROLLBACK TRANSACTION; \n";
+query += "END \n";
+query += "ELSE \n";
+query += "BEGIN \n";
+query += "    COMMIT TRANSACTION; \n";
+query += "END \n";
+
+//MessageBox("params = " + params);
+
+rowsAffected = sqlnonquery(query, params);
+MessageBox("rowsAffected = " + rowsAffected);
+*/
+//*********************************************************
+
+//TRANSACTION THAT RETURNS VALUE BASED ON SUCCESS OR FAILURE EXAMPLE
+/*
+query = "BEGIN TRY \n";
+query += "    BEGIN TRANSACTION; \n";
+query += "    INSERT INTO tbl_students VALUES (801, 'John', 'male'); \n";
+query += "    INSERT INTO tbl_students VALUES (802, 'Alice', 'female'); \n";
+query += "    INSERT INTO tbl_students VALUES (803, 'Bob', 'male'); \n";
+//query += "    THROW 50001, 'Something went wrong!', 1; \n";
+query += "    COMMIT TRANSACTION; \n";   
+query += "    SELECT 111 AS Result; \n"; //Return 111 for success
+query += "END TRY \n";    
+query += "BEGIN CATCH \n";
+query += "    ROLLBACK TRANSACTION; \n";
+query += "    SELECT 222 AS Result; \n"; //Return 222 for error
+query += "END CATCH \n";
+
+sqlresult = sqlquery(query);
+MessageBox("sqlresult = " + sqlresult);
+if (Size(sqlresult) > 1) 
+{
+    MessageBox("Return value = " + sqlresult[1][0]);
+}
+*/
+//*********************************************************
+
+//TRANSACTION THAT RETURNS ERROR NUMBER, ERROR MESSAGE EXAMPLE
+
+//Typical error codes:
+//2627 Violation of PRIMARY KEY constraint
+//2601 Unique key constraint violation
+
+query =  "BEGIN TRY \n";
+query += "    BEGIN TRANSACTION; \n";
+query += "    INSERT INTO tbl_students VALUES (2001, 'John', 'male'); \n";
+query += "    INSERT INTO tbl_students VALUES (2002, 'Alice', 'female'); \n";
+query += "    INSERT INTO tbl_students VALUES (2003, 'Bob', 'male'); \n";
+//query += "    THROW 50001, 'Something went wrong!', 1; \n";
+query += "    COMMIT TRANSACTION; \n";   
+query += "    SELECT 0 AS ErrorNumber, 'OK' AS ErrorMessage; \n"; //Return 0, OK for success
+query += "END TRY \n";    
+query += "BEGIN CATCH \n";
+query += "    DECLARE @x INT; \n";
+query += "    DECLARE @y NVARCHAR(1000); \n";
+query += "    SET @x = ERROR_NUMBER(); \n";
+query += "    SET @y = ERROR_MESSAGE(); \n";
+query += "    ROLLBACK TRANSACTION; \n";
+query += "    SELECT @x AS ErrorNumber, @y AS ErrorMessage; \n"; //Return error number, error message
+query += "END CATCH \n";
+
+sqlresult = sqlquery(query);
+//MessageBox("sqlresult = " + sqlresult);
+if (Size(sqlresult) > 1) 
+{
+    MessageBox("ErrorNumber = " + sqlresult[1][0] + "\nErrorMessage = " + sqlresult[1][1]);
+}
+
+//*********************************************************
+
+MessageBox("END");
+
+quit;

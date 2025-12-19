@@ -91,9 +91,9 @@ if (size(sqlResult) > 1)
     KPSY_PO_FREIGHT = substring(sqlResult[1][9], 0, 2).trim();
     KPSY_REZERVAX = sqlResult[1][10].trim(); // Supplier GLN
 
-    supOIB = Substring(KPSY_REZERVA, 0, 13); // ??? a ča ne 11(OIB) znakova ?? ili 13(JMBG) + trim() ??
-    supOIBParts = supOIB.split(" ");
-    supOIB = supOIBParts[0];
+    supOIB = Substring(KPSY_REZERVA, 0, 11); // ??? a ča ne 11(OIB) znakova ?? ili 13(JMBG) + trim() ??
+    //supOIBParts = supOIB.split(" ");
+    //supOIB = supOIBParts[0].trim();
 } 
 
 
@@ -1000,7 +1000,8 @@ function GenerateUBLXml() {
     xml += "    </cac:PostalAddress>\n";
     
     //xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + KPSY_PO_FREIGHT + supOIB + "</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>\n";
-    xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + supOIB + "</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>\n";
+    xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + kpsy_po_freight.trim()+supOIB + "</cbc:CompanyID>\n"; //BT-31
+    xml += "      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>\n"; 
 
     RegistrationName = (NazivFirme != "" ? NazivFirme : KPSY_COMP_NAME);
     RegistrationName = RegistrationName.trim();
@@ -1044,6 +1045,7 @@ function GenerateUBLXml() {
 
     // Use GLN (0088 scheme) if available and valid (13 characters), otherwise use OIB (9934 scheme)
     cusSchemeID = "9934";
+    NKPR_GL_JMBG = "82113036885";
     cusEndpointID = NKPR_GL_JMBG;
     cusPartyID = "9934:" + NKPR_GL_JMBG;
     
@@ -1075,14 +1077,15 @@ function GenerateUBLXml() {
         MessageBox("Kupac nema unesenu oznaku države uz OIB!");
         return false;
     }
-    //xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + NKPR_GL_CUSST + NKPR_GL_JMBG + "</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>\n";
-    xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + NKPR_GL_JMBG + "</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>\n";
+    xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + nkpr_gl_cusst.trim()+NKPR_GL_JMBG + "</cbc:CompanyID>\n"; //BT-48
+    xml += "      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>\n";
+    //xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + NKPR_GL_JMBG + "</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>\n";
     
 
 
     // ??? PartyLegalEntity
     xml += "    <cac:PartyLegalEntity>\n";
-    xml += "      <cbc:RegistrationName>" + NKPR_GL_CUSNME + "</cbc:RegistrationName>\n";
+    xml += "      <cbc:RegistrationName>" + NKPR_GL_CUSNME + "</cbc:RegistrationName>\n"; 
     // if (KPSY_COMP_JMBFI != "") {
     //     // xml += "      <cbc:CompanyID schemeID=\"MBS\">" + KPSY_COMP_JMBFI + "</cbc:CompanyID>\n";
     //     // xml += "      <cbc:CompanyID>" +  + "</cbc:CompanyID>\n";
@@ -2076,7 +2079,7 @@ function SendToFINA_2() {
     soapEnvelope += "          <SpecificationIdentifier>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0</SpecificationIdentifier>\n";
     soapEnvelope += "          <SupplierInvoiceID>" + invID + "</SupplierInvoiceID>\n";
     // soapEnvelope += "          <BuyerID>9934:" + NKPR_GL_JMBG + "</BuyerID>\n";
-    soapEnvelope += "          <BuyerID>9934:" + "85821130368" + "</BuyerID>\n"; // !!! FINA-in OIB
+    soapEnvelope += "          <BuyerID>9934:" + "82113036885" + "</BuyerID>\n"; // !!! FINA-in OIB
     
     soapEnvelope += "          <InvoiceEnvelope>" + base64Ubl + "</InvoiceEnvelope>\n";
     // ILI

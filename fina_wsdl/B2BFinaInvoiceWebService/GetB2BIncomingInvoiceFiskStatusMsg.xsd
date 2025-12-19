@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns="http://fina.hr/eracun/b2b/GetB2BIncomingInvoiceFiskStatus/v0.1" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:iwsc="http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1" targetNamespace="http://fina.hr/eracun/b2b/GetB2BIncomingInvoiceFiskStatus/v0.1" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xsd:import namespace="http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1" schemaLocation="InvoiceWebServiceComponents.xsd"/>
+	<xsd:element name="GetB2BIncomingInvoiceFiskStatusMsg">
+		<xsd:annotation>
+			<xsd:documentation>Poruka za dohvat statusa fiskalizacije/eIzvještavanja ulaznog računa.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="iwsc:HeaderBuyer">
+					<xsd:annotation>
+						<xsd:documentation>Zaglavlje poruke</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="Data">
+					<xsd:annotation>
+						<xsd:documentation>XML s podacima</xsd:documentation>
+					</xsd:annotation>
+					<xsd:complexType>
+						<xsd:sequence>
+							<xsd:element name="B2BIncomingInvoiceFiskStatus">
+								<xsd:annotation>
+									<xsd:documentation>Omotač za dohvat statusa fiskalizacije/eIzvještavanja ulaznog računa</xsd:documentation>
+								</xsd:annotation>
+								<xsd:complexType>
+									<xsd:sequence>
+										<xsd:element name="InvoiceID" type="xsd:integer">
+											<xsd:annotation>
+												<xsd:documentation>Identifikator računa u sustavu e-Račun B2B.</xsd:documentation>
+											</xsd:annotation>
+										</xsd:element>			
+									</xsd:sequence>
+								</xsd:complexType>
+							</xsd:element>
+						</xsd:sequence>
+					</xsd:complexType>
+				</xsd:element>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="GetB2BIncomingInvoiceFiskStatusAckMsg">
+		<xsd:annotation>
+			<xsd:documentation>Sinkroni odgovor na poruku za dohvat statusa fiskalizacije/eIzvještavanja ulaznog računa.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="iwsc:MessageAck"/>
+				<xsd:choice>
+					<xsd:element name="B2BIncomingInvoiceFiskStatus">
+						<xsd:annotation>
+							<xsd:documentation>Omotač za dohvat statusa fiskalizacije/eIzvještavanja ulaznog računa</xsd:documentation>
+						</xsd:annotation>
+						<xsd:complexType>
+							<xsd:sequence>
+								<xsd:element name="InvoiceID" type="xsd:integer">
+									<xsd:annotation>
+										<xsd:documentation>Identifikator računa u sustavu e-Račun B2B.</xsd:documentation>
+									</xsd:annotation>
+								</xsd:element>
+								<xsd:element name="FiskStatus">
+									<xsd:complexType>
+										<xsd:sequence>
+											<xsd:element name="Status" type="xsd:boolean">
+												<xsd:annotation>
+													<xsd:documentation>Status fiskalizacije ulaznog računa - true/false.</xsd:documentation>
+												</xsd:annotation>
+											</xsd:element>
+											<xsd:element name="StatusTimestamp" type="xsd:dateTime">
+												<xsd:annotation>
+													<xsd:documentation>Timestamp fiskalizacije ulaznog računa.</xsd:documentation>
+												</xsd:annotation>
+											</xsd:element>
+										</xsd:sequence>
+									</xsd:complexType>
+								</xsd:element>
+								<xsd:element name="ReportRejectionStatus" minOccurs="0">
+									<xsd:complexType>
+										<xsd:sequence>
+											<xsd:element name="Status" type="xsd:boolean">
+												<xsd:annotation>
+													<xsd:documentation>Status eIzvještavanja odbijenog računa - true/false.</xsd:documentation>
+												</xsd:annotation>
+											</xsd:element>
+											<xsd:element name="StatusTimestamp" type="xsd:dateTime">
+												<xsd:annotation>
+													<xsd:documentation>Timestamp eIzvještavanja odbijenog računa.</xsd:documentation>
+												</xsd:annotation>
+											</xsd:element>
+										</xsd:sequence>
+									</xsd:complexType>
+								</xsd:element>
+							</xsd:sequence>
+						</xsd:complexType>
+					</xsd:element>
+					<xsd:element ref="iwsc:Error"></xsd:element>
+				</xsd:choice>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+</xsd:schema>

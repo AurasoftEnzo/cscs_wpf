@@ -39,6 +39,7 @@ using System.Xml.Linq;
 using System.Xml.Schema;
 using System.Xml.Xsl;
 using WpfCSCS.ServiceReference1_fina_wsdl;
+using WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService;
 using static System.Net.WebRequestMethods;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 using static WpfCSCS.TEST1Function;
@@ -134,7 +135,10 @@ namespace WpfCSCS
             interpreter.RegisterFunction("FINA_GET_OUTGOING_INVOICE_STATUS", new FINA_GET_OUTGOING_INVOICE_STATUSFunction());
             interpreter.RegisterFunction("FINA_SEND_OUTGOING_INVOICE_REPORTING", new FINA_SEND_OUTGOING_INVOICE_REPORTINGFunction());
 
-            //interpreter.RegisterFunction("FINA_ECHO_BUYER", new FINA_ECHO_BUYERFunction());
+            interpreter.RegisterFunction("FINA_ECHO_BUYER", new FINA_ECHO_BUYERFunction());
+            interpreter.RegisterFunction("FINA_GET_INCOMING_INVOICE_LIST", new FINA_GET_INCOMING_INVOICE_LISTFunction());
+            interpreter.RegisterFunction("FINA_GET_INCOMING_INVOICE", new FINA_GET_INCOMING_INVOICEFunction());
+            interpreter.RegisterFunction("FINA_CHANGE_INCOMING_INVOICE_STATUS", new FINA_CHANGE_INCOMING_INVOICE_STATUSFunction());
             
         }
         public partial class Constants
@@ -192,6 +196,8 @@ namespace WpfCSCS
         }
     }
 
+    #region ALL
+    
     class SetMainMenuFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -251,7 +257,7 @@ namespace WpfCSCS
                     continue;
                 }
 
-                
+
 
                 if (splitted[0] == "0")
                 {
@@ -487,7 +493,7 @@ namespace WpfCSCS
                 {
                     newMenuItem.Items.Add(CloneMenuItem(subMenuItem));
                 }
-                else if(item is Separator)
+                else if (item is Separator)
                 {
                     newMenuItem.Items.Add(new Separator());
                 }
@@ -500,7 +506,7 @@ namespace WpfCSCS
             return newMenuItem;
         }
     }
-    
+
     enum MapFunctionOption
     {
         Setup,
@@ -522,10 +528,10 @@ namespace WpfCSCS
         }
 
         static List<PointItem> Points { get; } = new List<PointItem>();
-        
+
         protected override Variable Evaluate(ParsingScript script)
         {
-            if(option == MapFunctionOption.Setup)
+            if (option == MapFunctionOption.Setup)
             {
                 List<Variable> args = script.GetFunctionArgs();
                 Utils.CheckArgs(args.Count, 1, m_name);
@@ -554,7 +560,7 @@ namespace WpfCSCS
                 var ct = new ControlTemplate(typeof(MapItem));
 
                 //FrameworkElementFactory mapItemFactory = new FrameworkElementFactory(typeof(Canvas));
-                
+
                 //mapItemFactory.SetValue(Canvas.HeightProperty, 200);
                 //mapItemFactory.SetValue(Canvas.WidthProperty, 200);
 
@@ -562,7 +568,7 @@ namespace WpfCSCS
 
                 //mapItemFactoryChild.SetValue(System.Windows.Shapes.Path.WidthProperty, 50);
                 //mapItemFactoryChild.SetValue(System.Windows.Shapes.Path.HeightProperty, 50);
-                mapItemFactoryChild.SetValue(System.Windows.Shapes.Path.DataProperty, new EllipseGeometry() { RadiusX = 20, RadiusY = 20});
+                mapItemFactoryChild.SetValue(System.Windows.Shapes.Path.DataProperty, new EllipseGeometry() { RadiusX = 20, RadiusY = 20 });
                 mapItemFactoryChild.SetValue(System.Windows.Shapes.Path.StrokeProperty, Brushes.DarkGray);
                 mapItemFactoryChild.SetValue(System.Windows.Shapes.Path.FillProperty, Brushes.DodgerBlue);
                 mapItemFactoryChild.SetValue(System.Windows.Shapes.Path.OpacityProperty, 0.7);
@@ -590,7 +596,7 @@ namespace WpfCSCS
                 var xcoo = Utils.GetSafeDouble(args, 0);
                 var ycoo = Utils.GetSafeDouble(args, 1);
                 var pointName = Utils.GetSafeString(args, 2);
-                if(pointName.Length == 0)
+                if (pointName.Length == 0)
                 {
                     pointName = "Point " + Points.Count;
                 }
@@ -632,13 +638,14 @@ namespace WpfCSCS
                 {
                     return new Variable(fbd.SelectedPath);
                 }
-                else{
+                else
+                {
                     return new Variable("");
                 }
             }
         }
     }
-    
+
     class ZipFileFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -676,10 +683,10 @@ namespace WpfCSCS
             catch (Exception ex)
             {
                 return new Variable(false);
-            }            
+            }
         }
     }
-    
+
     class GetSQLRecordFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -726,7 +733,7 @@ namespace WpfCSCS
                 gui.OnVariableChange(defineVarName, gui.DEFINES[defineVarName], true);
             }
 
-            return Variable.EmptyInstance;          
+            return Variable.EmptyInstance;
         }
     }
 
@@ -735,7 +742,7 @@ namespace WpfCSCS
         public static System.Timers.Timer timer1;
         public static System.Timers.Timer timer2;
     }
-    
+
     class ScheduleFunctionFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -747,7 +754,7 @@ namespace WpfCSCS
 
             var timeVar = Utils.GetSafeVariable(args, 0);
             var functionName = Utils.GetSafeString(args, 1);
-            
+
             var alertTime = timeVar.DateTime.TimeOfDay;
             DateTime current = DateTime.Now;
             TimeSpan timeToGo;
@@ -796,7 +803,7 @@ namespace WpfCSCS
             return Variable.EmptyInstance;
         }
     }
-    
+
     class CancelScheduledFunctionFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -804,12 +811,12 @@ namespace WpfCSCS
             List<Variable> args = script.GetFunctionArgs();
             Utils.CheckArgs(args.Count, 0, m_name);
 
-            if(Timers.timer1 != null)
+            if (Timers.timer1 != null)
             {
                 Timers.timer1.Stop();
                 Timers.timer1.Dispose();
             }
-            if(Timers.timer2 != null)
+            if (Timers.timer2 != null)
             {
                 Timers.timer2.Stop();
                 Timers.timer2.Dispose();
@@ -818,7 +825,7 @@ namespace WpfCSCS
             return Variable.EmptyInstance;
         }
     }
-    
+
     class ClockFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -832,7 +839,8 @@ namespace WpfCSCS
 
             var widget = gui.GetWidget(widgetName);
 
-            if (widget is Label label) {
+            if (widget is Label label)
+            {
                 DispatcherTimer LiveTime = new DispatcherTimer();
                 LiveTime.Interval = TimeSpan.FromMilliseconds(200);
                 LiveTime.Tick += (object sender, EventArgs e) => {
@@ -844,7 +852,7 @@ namespace WpfCSCS
             return Variable.EmptyInstance;
         }
     }
-    
+
     class FTPFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -858,13 +866,13 @@ namespace WpfCSCS
             var sendOrReceive = Utils.GetSafeString(args, 1).ToLower();
             var serverAddress = Utils.GetSafeString(args, 2);
             var port = Utils.GetSafeInt(args, 3);
-            if(port == 0)
+            if (port == 0)
             {
                 if (protocol == "ftp")
                 {
                     port = 21;
                 }
-                else if(protocol == "sftp")
+                else if (protocol == "sftp")
                 {
                     port = 22;
                 }
@@ -928,8 +936,8 @@ namespace WpfCSCS
             return Variable.EmptyInstance;
         }
     }
-    
-        
+
+
     class GetCompNameFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -940,7 +948,7 @@ namespace WpfCSCS
             return new Variable(System.Environment.MachineName.Trim());
         }
     }
-    
+
     class DaysInMonthFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -954,7 +962,7 @@ namespace WpfCSCS
             return new Variable(DateTime.DaysInMonth(year, month));
         }
     }
-    
+
     class FormatNumFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -968,7 +976,7 @@ namespace WpfCSCS
 
             string resultString = value.ToString("F" + decimalPlaces.ToString());
 
-            if(decimalSeparator == ",")
+            if (decimalSeparator == ",")
             {
                 resultString = resultString.Replace(".", ",");
             }
@@ -1285,7 +1293,7 @@ namespace WpfCSCS
             return new Variable(base64String);
         }
     }
-    
+
     class Base642FileFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -1309,8 +1317,8 @@ namespace WpfCSCS
             }
         }
     }
-    
-    
+
+
     class ValidateXsdFunction : ParserFunction
     {
         private List<string> verificationMessages;
@@ -1414,7 +1422,7 @@ namespace WpfCSCS
                 //settings.DtdProcessing = DtdProcessing.Parse;
                 //settings.ValidationType = ValidationType.Schema;
                 settings.ValidationEventHandler += new ValidationEventHandler(ValidationHandler);
-                
+
                 // Validate the XML string
                 using (StringReader stringReader = new StringReader(xmlContent))
                 using (XmlReader reader = XmlReader.Create(stringReader, settings))
@@ -1570,7 +1578,7 @@ namespace WpfCSCS
     //        }
     //    }
     //}
-    
+
     class EscapeQuotesInXmlFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -1579,7 +1587,7 @@ namespace WpfCSCS
             Utils.CheckArgs(args.Count, 1, m_name);
 
             var xmlContent = Utils.GetSafeString(args, 0);
-            
+
             return new Variable(xmlContent.Replace("\"", "\\\""));
         }
     }
@@ -3800,10 +3808,10 @@ namespace WpfCSCS
         <EchoMsg xmlns=""http://fina.hr/eracun/b2b/pki/Echo/v0.1"">
             <HeaderSupplier xmlns=""http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1"">
                 <MessageID>" + Guid.NewGuid() + @"</MessageID>
-                <SupplierID>9934:26389058739</SupplierID>" + 
-                //"<ERPID>e-racun-winx</ERPID> " + 
-                //@"<MessageType>9999</MessageType>" +
-                //@"<MessageAttributes>echo poruka</MessageAttributes>" +
+                <SupplierID>9934:26389058739</SupplierID>" +
+            //"<ERPID>e-racun-winx</ERPID> " + 
+            //@"<MessageType>9999</MessageType>" +
+            //@"<MessageAttributes>echo poruka</MessageAttributes>" +
             @"</HeaderSupplier>
             <Data>
                 <EchoData>
@@ -4308,8 +4316,8 @@ namespace WpfCSCS
             throw new Exception("Not implemented");
         }
     }
-    
-    
+
+
     class TestXmlDictFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -4322,8 +4330,8 @@ namespace WpfCSCS
             return Variable.EmptyInstance;
         }
     }
-    
-    
+
+
     class NixxonSignXmlFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -4362,8 +4370,8 @@ namespace WpfCSCS
             return new Variable(signedXml);
         }
     }
-    
-    
+
+
     class ReplaceInJSONFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -4382,8 +4390,8 @@ namespace WpfCSCS
             return new Variable(json);
         }
     }
-    
-    
+
+
     class IsDoubleFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -4396,7 +4404,7 @@ namespace WpfCSCS
             return new Variable(double.TryParse(stringValue, NumberStyles.Number, CultureInfo.InvariantCulture, out double result));
         }
     }
-    
+
     class FindColonIndexFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -4439,8 +4447,8 @@ namespace WpfCSCS
             return new Variable(-1);
         }
     }
-    
-    
+
+
     class ReadAllTextFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -4460,7 +4468,7 @@ namespace WpfCSCS
             }
         }
     }
-    
+
     class Test99Function : ParserFunction
     {
         //9.
@@ -4731,8 +4739,8 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
 
 
 
-    
-    
+
+
 
 
 
@@ -4917,6 +4925,10 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
         }
     }
 
+    #endregion
+
+
+    #region FINA FISKALIZACIJA
 
     class FINA_ECHOFunction : ParserFunction
     {
@@ -4935,7 +4947,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             var echoText = Utils.GetSafeString(args, 6);
             var supplierId = Utils.GetSafeString(args, 7);
 
-            Variable resVar = new Fiskalizacija2.FINA.Echo().Send(
+            Variable resVar = new Fiskalizacija2.FINA.Outgoing.Echo().Send(
                 endpoint,
                 dnsIdentity,
                 serviceCertificatePath,
@@ -4967,12 +4979,12 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             var supplierId = Utils.GetSafeString(args, 6);
             var buyerId = Utils.GetSafeString(args, 7);
             var supplierInvoiceId = Utils.GetSafeString(args, 8);
-            
+
             var invoiceOrCreditNote = Utils.GetSafeString(args, 9);
-            ItemChoiceType itemChoiceType = ItemChoiceType.InvoiceEnvelope;
+            ServiceReference1_fina_wsdl.ItemChoiceType itemChoiceType = ServiceReference1_fina_wsdl.ItemChoiceType.InvoiceEnvelope;
             if (invoiceOrCreditNote.ToLower() == "creditnote")
             {
-                itemChoiceType = ItemChoiceType.CreditNoteEnvelope;
+                itemChoiceType = ServiceReference1_fina_wsdl.ItemChoiceType.CreditNoteEnvelope;
             }
 
             var unsignedInvoiceXmlPath = Utils.GetSafeString(args, 10);
@@ -4981,8 +4993,8 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             //var additionalBuyerId = Utils.GetSafeString(args, );
             //var erpid = Utils.GetSafeString(args, );
             //var messageAttributes = Utils.GetSafeString(args, );
-            
-            Variable resVar = new Fiskalizacija2.FINA.SendOutgoingInvoice().Send(
+
+            Variable resVar = new Fiskalizacija2.FINA.Outgoing.SendOutgoingInvoice().Send(
                 endpoint,
                 dnsIdentity,
                 serviceCertificatePath,
@@ -5011,8 +5023,8 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             //    "Aurasoft1");
         }
     }
-    
-    
+
+
     class FINA_GET_OUTGOING_INVOICE_STATUSFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -5036,7 +5048,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             //var messageAttributes = Utils.GetSafeString(args, );
             //var documentCurrencyCode = Utils.GetSafeString(args, ); // true/false ispis valute iznosa djelomičnog plaćanja u odgovornoj poruci (neobavezan element)
 
-            Variable resVar = new Fiskalizacija2.FINA.GetOutgoingInvoiceStatus().Send(
+            Variable resVar = new Fiskalizacija2.FINA.Outgoing.GetOutgoingInvoiceStatus().Send(
                 endpoint,
                 dnsIdentity,
                 serviceCertificatePath,
@@ -5051,7 +5063,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             return resVar;
         }
     }
-    
+
     class FINA_SEND_OUTGOING_INVOICE_REPORTINGFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -5071,10 +5083,10 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             var supplierInvoiceId = Utils.GetSafeString(args, 8);
 
             var invoiceOrCreditNote = Utils.GetSafeString(args, 9);
-            ItemChoiceType1 itemChoiceType = ItemChoiceType1.InvoiceEnvelope;
+            ServiceReference1_fina_wsdl.ItemChoiceType1 itemChoiceType = ServiceReference1_fina_wsdl.ItemChoiceType1.InvoiceEnvelope;
             if (invoiceOrCreditNote.ToLower() == "creditnote")
             {
-                itemChoiceType = ItemChoiceType1.CreditNoteEnvelope;
+                itemChoiceType = ServiceReference1_fina_wsdl.ItemChoiceType1.CreditNoteEnvelope;
             }
 
             var unsignedInvoiceXmlPath = Utils.GetSafeString(args, 10);
@@ -5084,7 +5096,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             //var messageAttributes = Utils.GetSafeString(args, );
             //var documentCurrencyCode = Utils.GetSafeString(args, ); // true/false ispis valute iznosa djelomičnog plaćanja u odgovornoj poruci (neobavezan element)
 
-            Variable resVar = new Fiskalizacija2.FINA.SendOutgoingInvoiceReporting().Send(
+            Variable resVar = new Fiskalizacija2.FINA.Outgoing.SendOutgoingInvoiceReporting().Send(
                 endpoint,
                 dnsIdentity,
                 serviceCertificatePath,
@@ -5101,4 +5113,200 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             return resVar;
         }
     }
+
+    class FINA_ECHO_BUYERFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 8, m_name);
+
+            var endpoint = Utils.GetSafeString(args, 0);
+            var dnsIdentity = Utils.GetSafeString(args, 1);
+            var serviceCertificatePath = Utils.GetSafeString(args, 2);
+            var clientCertificatePath = Utils.GetSafeString(args, 3);
+            var clientCertificatePassword = Utils.GetSafeString(args, 4);
+
+            var messageId = Utils.GetSafeString(args, 5);
+            var echoText = Utils.GetSafeString(args, 6);
+            var buyerId = Utils.GetSafeString(args, 7);
+
+            Variable resVar = new Fiskalizacija2.FINA.Incoming.EchoBuyer().Send(
+                endpoint,
+                dnsIdentity,
+                serviceCertificatePath,
+                clientCertificatePath,
+                clientCertificatePassword,
+
+                messageId,
+                echoText,
+                buyerId);
+
+            return resVar;
+        }
+    }
+    
+    class FINA_GET_INCOMING_INVOICE_LISTFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 7, m_name);
+
+            var endpoint = Utils.GetSafeString(args, 0);
+            var dnsIdentity = Utils.GetSafeString(args, 1);
+            var serviceCertificatePath = Utils.GetSafeString(args, 2);
+            var clientCertificatePath = Utils.GetSafeString(args, 3);
+            var clientCertificatePassword = Utils.GetSafeString(args, 4);
+
+            var messageId = Utils.GetSafeString(args, 5);
+            var buyerId = Utils.GetSafeString(args, 6);
+
+            Variable resVar = new Fiskalizacija2.FINA.Incoming.GetIncomingInvoiceList().Send(
+                endpoint,
+                dnsIdentity,
+                serviceCertificatePath,
+                clientCertificatePath,
+                clientCertificatePassword,
+
+                messageId,
+                buyerId);
+
+            return resVar;
+        }
+    }
+    
+    class FINA_GET_INCOMING_INVOICEFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 8, m_name);
+
+            var endpoint = Utils.GetSafeString(args, 0);
+            var dnsIdentity = Utils.GetSafeString(args, 1);
+            var serviceCertificatePath = Utils.GetSafeString(args, 2);
+            var clientCertificatePath = Utils.GetSafeString(args, 3);
+            var clientCertificatePassword = Utils.GetSafeString(args, 4);
+
+            var messageId = Utils.GetSafeString(args, 5);
+            var buyerId = Utils.GetSafeString(args, 6);
+            var invoiceId = Utils.GetSafeString(args, 7);
+
+            Variable resVar = new Fiskalizacija2.FINA.Incoming.GetIncomingInvoice().Send(
+                endpoint,
+                dnsIdentity,
+                serviceCertificatePath,
+                clientCertificatePath,
+                clientCertificatePassword,
+
+                messageId,
+                buyerId,
+                invoiceId);
+
+            return resVar;
+        }
+    }
+    
+    class FINA_CHANGE_INCOMING_INVOICE_STATUSFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 9, m_name);
+
+            var endpoint = Utils.GetSafeString(args, 0);
+            var dnsIdentity = Utils.GetSafeString(args, 1);
+            var serviceCertificatePath = Utils.GetSafeString(args, 2);
+            var clientCertificatePath = Utils.GetSafeString(args, 3);
+            var clientCertificatePassword = Utils.GetSafeString(args, 4);
+
+            var messageId = Utils.GetSafeString(args, 5);
+            var buyerId = Utils.GetSafeString(args, 6);
+            var invoiceId = Utils.GetSafeString(args, 7);
+
+            var newStatusCodeString = Utils.GetSafeString(args, 8);
+            InvoiceStatusTypeStatusCode newStatusCode = InvoiceStatusTypeStatusCode.RECEIVED;
+            switch (newStatusCodeString.ToUpper())
+            {
+                case "RECEIVED":
+                    newStatusCode = InvoiceStatusTypeStatusCode.RECEIVED;
+                    break;
+                case "RECEIVING_CONFIRMED":
+                    newStatusCode = InvoiceStatusTypeStatusCode.RECEIVING_CONFIRMED;
+                    break;
+                case "APPROVED":
+                    newStatusCode = InvoiceStatusTypeStatusCode.APPROVED;
+                    break;
+                case "REJECTED":
+                    newStatusCode = InvoiceStatusTypeStatusCode.REJECTED;
+                    break;
+                case "PAYMENT_RECEIVED":
+                    newStatusCode = InvoiceStatusTypeStatusCode.PAYMENT_RECEIVED;
+                    break;
+                case "PAYMENT_FULFILLED":
+                    newStatusCode = InvoiceStatusTypeStatusCode.PAYMENT_FULFILLED;
+                    break;
+                case "PAYMENT_PARTIALLY_FULFILLED":
+                    newStatusCode = InvoiceStatusTypeStatusCode.PAYMENT_PARTIALLY_FULFILLED;
+                    break;
+                default:
+                    throw new Exception("Invalid newStatusCodeString!");
+            }
+
+            var codeReasonString = Utils.GetSafeString(args, 9, "");
+            bool codeReasonSpecified = false;
+            InvoiceStatusTypeCodeReason codeReason = InvoiceStatusTypeCodeReason.OTHER_REASON;
+            switch (codeReasonString.ToUpper())
+            {
+                case "":
+                    codeReasonSpecified = false;
+                    codeReason = InvoiceStatusTypeCodeReason.OTHER_REASON;
+                    break;
+                case "VAT_REASON":
+                    codeReasonSpecified = true;
+                    codeReason = InvoiceStatusTypeCodeReason.VAT_REASON;
+                    break;
+                case "NOT_VAT_REASON":
+                    codeReasonSpecified = true;
+                    codeReason = InvoiceStatusTypeCodeReason.NOT_VAT_REASON;
+                    break;
+                case "OTHER_REASON":
+                    codeReasonSpecified = true;
+                    codeReason = InvoiceStatusTypeCodeReason.OTHER_REASON;
+                    break;
+                default:
+                    throw new Exception("Invalid codeReasonString!");
+            }
+
+            var note = Utils.GetSafeString(args, 10, "");
+            if(note.Length == 0)
+            {
+                note = null;
+            }
+
+            Variable resVar = new Fiskalizacija2.FINA.Incoming.ChangeIncomingInvoiceStatus().Send(
+                endpoint,
+                dnsIdentity,
+                serviceCertificatePath,
+                clientCertificatePath,
+                clientCertificatePassword,
+
+                messageId,
+                buyerId,
+                invoiceId,
+
+                newStatusCode,
+                codeReasonSpecified,
+                codeReason,
+                note
+                );
+
+            return resVar;
+        }
+    }
+
+    #endregion
+
+
 }

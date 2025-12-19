@@ -4,63 +4,62 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using WpfCSCS.ServiceReference1_fina_wsdl;
+using WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService;
 
-namespace WpfCSCS.Fiskalizacija2.FINA
+
+namespace WpfCSCS.Fiskalizacija2.FINA.Incoming
 {
-    public class Echo
+    public class EchoBuyer
     {
         private const string B2B_ECHO_MESSAGE_TYPE = "9999";
 
         public Variable Send(string endpointAddress,
-                                 string dnsIdentity,
-                                 string serviceCertificatePath,
-                                 string clientCertificatePath,
-                                 string clientCertificatePassword,
+                                string dnsIdentity,
+                                string serviceCertificatePath,
+                                string clientCertificatePath,
+                                string clientCertificatePassword,
 
-                                 string messageId,
-                                 string echoText,
-                                 string supplierId,
+                                string messageId,
+                                string echoText,
+                                string buyerId,
 
-                                 string additionalSupplierId = null,
-                                 string erpid = null,
-                                 string messageAttributes = null)
+                                string additionalBuyerId = null,
+                                string messageAttributes = null)
         {
-            EchoMsg message = new EchoMsg();
+            EchoBuyerMsg message = new EchoBuyerMsg();
 
             //Header
-            HeaderSupplierType header = new HeaderSupplierType();
+            HeaderBuyerType header = new HeaderBuyerType();
             header.MessageID = messageId;
-            header.SupplierID = supplierId;
+            header.BuyerID = buyerId;
+            header.AdditionalBuyerID = additionalBuyerId;
             header.MessageType = B2B_ECHO_MESSAGE_TYPE;
-            header.AdditionalSupplierID = additionalSupplierId;
-            header.ERPID = erpid;
             header.MessageAttributes = messageAttributes;
 
-            message.HeaderSupplier = header;
+            message.HeaderBuyer = header;
 
             //Data
-            EchoMsgData data = new EchoMsgData();
+            EchoBuyerMsgData data = new EchoBuyerMsgData();
 
-            EchoMsgDataEchoData B2BOutgoingInvoiceEnvelope = new EchoMsgDataEchoData();
+            EchoBuyerMsgDataEchoData reqEchoData = new EchoBuyerMsgDataEchoData();
 
-            B2BOutgoingInvoiceEnvelope.Echo = echoText;
+            reqEchoData.Echo = echoText;
 
-            data.EchoData = B2BOutgoingInvoiceEnvelope;
+            data.EchoData = reqEchoData;
 
             message.Data = data;
 
 
             //SEND
-            eRacunB2BPortTypeClient client = FINACommon.GeteRacunB2BPortTypeClientClient(endpointAddress,
+            FinaInvoiceB2BPortTypeClient client = _client.GetFinaInvoiceB2BPortTypeClient(endpointAddress,
                                                                                          dnsIdentity,
                                                                                          serviceCertificatePath,
                                                                                          clientCertificatePath,
                                                                                          clientCertificatePassword);
-            EchoAckMsg rez = client.echo(message);
+            EchoBuyerAckMsg rez = client.echo(message);
 
             MessageAckType messageAck = rez.MessageAck;
-            EchoAckMsgEchoData echoData = rez.EchoData;
+            EchoBuyerAckMsgEchoData resEchoData = rez.EchoData;
 
 
             //RETURN
@@ -72,7 +71,7 @@ namespace WpfCSCS.Fiskalizacija2.FINA
             retVar.SetHashVariable("MessageID", new Variable(messageAck.MessageID));
             retVar.SetHashVariable("MessageAckID", new Variable(messageAck.MessageAckID));
             retVar.SetHashVariable("MessageType", new Variable(messageAck.MessageType));
-            retVar.SetHashVariable("Echo", new Variable(echoData.Echo));
+            retVar.SetHashVariable("Echo", new Variable(resEchoData.Echo));
 
             return retVar;
         }

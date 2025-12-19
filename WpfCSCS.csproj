@@ -318,6 +318,11 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Reference.svcmap</DependentUpon>
     </Compile>
+    <Compile Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\Reference.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </Compile>
     <Compile Include="CSCS\DllCreator.cs" />
     <Compile Include="CSCS\Functions.SQL.cs" />
     <Compile Include="CSCS\ICscsModule.cs" />
@@ -327,10 +332,16 @@
     <Compile Include="CSCS\InterpreterManagerModule.cs" />
     <Compile Include="Excel.cs" />
     <Compile Include="Fiskalizacija2\FINA\Common.cs" />
-    <Compile Include="Fiskalizacija2\FINA\Echo.cs" />
-    <Compile Include="Fiskalizacija2\FINA\GetOutgoingInvoiceStatus.cs" />
-    <Compile Include="Fiskalizacija2\FINA\SendOutgoingInvoice.cs" />
-    <Compile Include="Fiskalizacija2\FINA\SendOutgoingInvoiceReporting.cs" />
+    <Compile Include="Fiskalizacija2\FINA\Incoming\ChangeIncomingInvoiceStatus.cs" />
+    <Compile Include="Fiskalizacija2\FINA\Incoming\GetIncomingInvoice.cs" />
+    <Compile Include="Fiskalizacija2\FINA\Incoming\_client.cs" />
+    <Compile Include="Fiskalizacija2\FINA\Incoming\EchoBuyer.cs" />
+    <Compile Include="Fiskalizacija2\FINA\Outgoing\_client.cs" />
+    <Compile Include="Fiskalizacija2\FINA\Outgoing\Echo.cs" />
+    <Compile Include="Fiskalizacija2\FINA\Outgoing\GetOutgoingInvoiceStatus.cs" />
+    <Compile Include="Fiskalizacija2\FINA\Incoming\GetIncomingInvoiceList.cs" />
+    <Compile Include="Fiskalizacija2\FINA\Outgoing\SendOutgoingInvoice.cs" />
+    <Compile Include="Fiskalizacija2\FINA\Outgoing\SendOutgoingInvoiceReporting.cs" />
     <Compile Include="IniFileUtil.cs" />
     <Compile Include="Locking.cs" />
     <Compile Include="NavigatorClass.cs" />
@@ -380,6 +391,118 @@
       <DependentUpon>Reference.svcmap</DependentUpon>
     </None>
     <None Include="Connected Services\ServiceReference1_fina_wsdl\WpfCSCS.ServiceReference1_fina_wsdl.sendB2BOutgoingInvoiceResponse.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\B2BFinaInvoiceWebService.wsdl" />
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\ChangeB2BIncomingInvoiceStatusMsg.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\ChangeB2BOutgoingInvoiceStatusMsg.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\EchoBuyerMsg.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\GetB2BIncomingInvoiceFiskStatusMsg.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\GetB2BIncomingInvoiceListMsg.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\GetB2BIncomingInvoiceMsg.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\GetB2BOutgoingInvoiceFiskStatusMsg.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\GetB2BOutgoingInvoiceListMsg.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\GetB2BOutgoingInvoiceMsg.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\GetReceiverListJTMsg.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\GetReceiverListMsg.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\GetReceiverListOIBMsg.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\InvoiceWebServiceComponents.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService.ChangeB2BIncomingInvoiceStatusAckMsg.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService.changeB2BIncomingInvoiceStatusResponse.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService.ChangeB2BOutgoingInvoiceStatusAckMsg.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService.changeB2BOutgoingInvoiceStatusResponse.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService.EchoBuyerAckMsg.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService.echoResponse.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService.GetB2BIncomingInvoiceAckMsg.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService.GetB2BIncomingInvoiceFiskStatusAckMsg.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService.getB2BIncomingInvoiceFiskStatusResponse.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService.GetB2BIncomingInvoiceListAckMsg.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService.getB2BIncomingInvoiceListResponse.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService.getB2BIncomingInvoiceResponse.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService.GetB2BOutgoingInvoiceAckMsg.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService.GetB2BOutgoingInvoiceFiskStatusAckMsg.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService.getB2BOutgoingInvoiceFiskStatusResponse.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService.GetB2BOutgoingInvoiceListAckMsg.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService.getB2BOutgoingInvoiceListResponse.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService.getB2BOutgoingInvoiceResponse.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService.GetReceiverListAckMsg.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService.GetReceiverListAckMsg2.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService.getReceiverListJTResponse.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService.GetReceiverListOIBAckMsg.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService.getReceiverListOIBResponse.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService.getReceiverListResponse.datasource">
       <DependentUpon>Reference.svcmap</DependentUpon>
     </None>
     <None Include="scripts\DaliborTest.cscs" />
@@ -838,6 +961,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="scripts\wxeracunget.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="scripts\wxtransferura.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -959,6 +1086,7 @@
   </ItemGroup>
   <ItemGroup>
     <WCFMetadataStorage Include="Connected Services\ServiceReference1_fina_wsdl\" />
+    <WCFMetadataStorage Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Connected Services\ServiceReference1_fina_wsdl\configuration91.svcinfo" />
@@ -968,6 +1096,18 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Connected Services\ServiceReference1_fina_wsdl\Reference.svcmap">
+      <Generator>WCF Proxy Generator</Generator>
+      <LastGenOutput>Reference.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\configuration91.svcinfo" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\configuration.svcinfo" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Connected Services\ServiceReference2_B2BFinaInvoiceWebService\Reference.svcmap">
       <Generator>WCF Proxy Generator</Generator>
       <LastGenOutput>Reference.cs</LastGenOutput>
     </None>

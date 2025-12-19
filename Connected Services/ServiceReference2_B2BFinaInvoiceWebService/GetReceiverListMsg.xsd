@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsd:schema xmlns:iwsc="http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1" xmlns="http://fina.hr/eracun/b2b/sync/GetReceiverList/v0.1" attributeFormDefault="unqualified" elementFormDefault="qualified" targetNamespace="http://fina.hr/eracun/b2b/sync/GetReceiverList/v0.1" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:import schemaLocation="InvoiceWebServiceComponents.xsd" namespace="http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1" />
+  <xsd:element name="GetReceiverListMsg">
+    <xsd:annotation>
+      <xsd:documentation>Poruka za dohvat liste primatelja iz registra.</xsd:documentation>
+    </xsd:annotation>
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element ref="iwsc:HeaderSupplier">
+          <xsd:annotation>
+            <xsd:documentation>Zaglavlje poruke</xsd:documentation>
+          </xsd:annotation>
+        </xsd:element>
+        <xsd:element name="Data">
+          <xsd:annotation>
+            <xsd:documentation>XML s podacima</xsd:documentation>
+          </xsd:annotation>
+          <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name="ReceiverList">
+                <xsd:annotation>
+                  <xsd:documentation>Omota?? upita za dohvat liste ulaznih ra??una</xsd:documentation>
+                </xsd:annotation>
+                <xsd:complexType>
+                  <xsd:sequence>
+                    <xsd:element ref="iwsc:Filter">
+                      <xsd:annotation>
+                        <xsd:documentation>Filter za dohvat.</xsd:documentation>
+                      </xsd:annotation>
+                    </xsd:element>
+                  </xsd:sequence>
+                </xsd:complexType>
+              </xsd:element>
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:element>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="GetReceiverListAckMsg">
+    <xsd:annotation>
+      <xsd:documentation>Sinkroni odgovor na poruku za dohvat liste primatelja iz registra.</xsd:documentation>
+    </xsd:annotation>
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element ref="iwsc:MessageAck" />
+        <xsd:element minOccurs="0" name="BusinessBranchList">
+          <xsd:annotation>
+            <xsd:documentation>Omota?? upita za dohvat liste primatelja iz registra</xsd:documentation>
+          </xsd:annotation>
+          <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element minOccurs="0" maxOccurs="unbounded" name="BusinessBranch">
+                <xsd:annotation>
+                  <xsd:documentation>Poslovna jedinica</xsd:documentation>
+                </xsd:annotation>
+                <xsd:complexType>
+                  <xsd:sequence>
+                    <xsd:element name="BuyerID" type="xsd:string">
+                      <xsd:annotation>
+                        <xsd:documentation>Identifikator poslovne jedinice (BuyerID).</xsd:documentation>
+                      </xsd:annotation>
+                    </xsd:element>
+                    <xsd:element name="SchemeName" type="xsd:string">
+                      <xsd:annotation>
+                        <xsd:documentation>Vrsta sheme poslovne jedinice (GLN, JUS, RKP,...).</xsd:documentation>
+                      </xsd:annotation>
+                    </xsd:element>
+                    <xsd:element minOccurs="0" name="ReceiptType" type="xsd:string">
+                      <xsd:annotation>
+                        <xsd:documentation>Tip zaprimanja (1-UBL, 2-UBL EN, 3-CII)</xsd:documentation>
+                      </xsd:annotation>
+                    </xsd:element>
+                    <xsd:element name="BusinessBranchCode" type="xsd:string">
+                      <xsd:annotation>
+                        <xsd:documentation>??ifra poslovne jedinice.</xsd:documentation>
+                      </xsd:annotation>
+                    </xsd:element>
+                    <xsd:element name="BusinessBranchName" type="xsd:string">
+                      <xsd:annotation>
+                        <xsd:documentation>Naziv poslovne jedinice.</xsd:documentation>
+                      </xsd:annotation>
+                    </xsd:element>
+                    <xsd:element ref="iwsc:PostalAddress">
+                      <xsd:annotation>
+                        <xsd:documentation>Adresa</xsd:documentation>
+                      </xsd:annotation>
+                    </xsd:element>
+                    <xsd:element name="Activity" type="xsd:integer">
+                      <xsd:annotation>
+                        <xsd:documentation>Naziv poslovne jedinice.</xsd:documentation>
+                      </xsd:annotation>
+                    </xsd:element>
+                    <xsd:element minOccurs="0" name="Receiver">
+                      <xsd:annotation>
+                        <xsd:documentation>Naziv tvrtke primatelja ra??una.</xsd:documentation>
+                      </xsd:annotation>
+                      <xsd:complexType>
+                        <xsd:sequence>
+                          <xsd:element name="RegistrationName" type="xsd:string">
+                            <xsd:annotation>
+                              <xsd:documentation>Naziv tvrtke primatelja ra??una.</xsd:documentation>
+                            </xsd:annotation>
+                          </xsd:element>
+                          <xsd:element minOccurs="0" name="ISOCode" type="xsd:string">
+                            <xsd:annotation>
+                              <xsd:documentation>ISO kod dr??ave (HR)</xsd:documentation>
+                            </xsd:annotation>
+                          </xsd:element>
+                          <xsd:element name="CompanyID" type="xsd:string">
+                            <xsd:annotation>
+                              <xsd:documentation>OIB</xsd:documentation>
+                            </xsd:annotation>
+                          </xsd:element>
+                          <xsd:element ref="iwsc:PostalAddress">
+                            <xsd:annotation>
+                              <xsd:documentation>Adresa</xsd:documentation>
+                            </xsd:annotation>
+                          </xsd:element>
+                        </xsd:sequence>
+                      </xsd:complexType>
+                    </xsd:element>
+                  </xsd:sequence>
+                </xsd:complexType>
+              </xsd:element>
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:element>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+</xsd:schema>

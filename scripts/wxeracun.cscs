@@ -1045,7 +1045,7 @@ function GenerateUBLXml() {
 
     // Use GLN (0088 scheme) if available and valid (13 characters), otherwise use OIB (9934 scheme)
     cusSchemeID = "9934";
-    NKPR_GL_JMBG = "82113036885";
+    // NKPR_GL_JMBG = "82113036885";
     cusEndpointID = NKPR_GL_JMBG;
     cusPartyID = "9934:" + NKPR_GL_JMBG;
     
@@ -2078,8 +2078,8 @@ function SendToFINA_2() {
     */
     soapEnvelope += "          <SpecificationIdentifier>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0</SpecificationIdentifier>\n";
     soapEnvelope += "          <SupplierInvoiceID>" + invID + "</SupplierInvoiceID>\n";
-    // soapEnvelope += "          <BuyerID>9934:" + NKPR_GL_JMBG + "</BuyerID>\n";
-    soapEnvelope += "          <BuyerID>9934:" + "82113036885" + "</BuyerID>\n"; // !!! FINA-in OIB
+    soapEnvelope += "          <BuyerID>9934:" + NKPR_GL_JMBG + "</BuyerID>\n";
+    // soapEnvelope += "          <BuyerID>9934:" + "82113036885" + "</BuyerID>\n"; // !!! FINA-in OIB
     
     soapEnvelope += "          <InvoiceEnvelope>" + base64Ubl + "</InvoiceEnvelope>\n";
     // ILI

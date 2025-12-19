@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using WpfCSCS.ServiceReference1_fina_wsdl;
 
-namespace WpfCSCS.Fiskalizacija2.FINA
+namespace WpfCSCS.Fiskalizacija2.FINA.Outgoing
 {
     public class GetOutgoingInvoiceStatus
     {
@@ -60,7 +60,7 @@ namespace WpfCSCS.Fiskalizacija2.FINA
 
 
             //SEND
-            eRacunB2BPortTypeClient client = FINACommon.GeteRacunB2BPortTypeClientClient(endpointAddress,
+            eRacunB2BPortTypeClient client = _client.GeteRacunB2BPortTypeClient(endpointAddress,
                                                                               dnsIdentity,
                                                                               serviceCertificatePath,
                                                                               clientCertificatePath,

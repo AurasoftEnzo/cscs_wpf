@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using WpfCSCS.ServiceReference1_fina_wsdl;
 
-namespace WpfCSCS.Fiskalizacija2.FINA
+namespace WpfCSCS.Fiskalizacija2.FINA.Outgoing
 {
     public class SendOutgoingInvoiceReporting
     {
@@ -66,7 +66,7 @@ namespace WpfCSCS.Fiskalizacija2.FINA
 
 
             //SEND
-            eRacunB2BPortTypeClient client = FINACommon.GeteRacunB2BPortTypeClientClient(endpointAddress,
+            eRacunB2BPortTypeClient client = _client.GeteRacunB2BPortTypeClient(endpointAddress,
                                                                               dnsIdentity,
                                                                               serviceCertificatePath,
                                                                               clientCertificatePath,
@@ -88,7 +88,8 @@ namespace WpfCSCS.Fiskalizacija2.FINA
             retVar.SetHashVariable("MessageAckID", new Variable(messageAck.MessageAckID));
             retVar.SetHashVariable("MessageType", new Variable(messageAck.MessageType));
 
-            // !!! DODAT rezultat u Variable i vratit CSCS-u
+
+            // // !!! DODAT rezultat(B2BOutgoingInvoiceEnvelope) u retVar(Variable) i vratit CSCS-u
 
             //if (resB2BOutgoingInvoiceEnvelope != null && resB2BOutgoingInvoiceEnvelope.B2BOutgoingInvoiceProcessing != null)
             //{

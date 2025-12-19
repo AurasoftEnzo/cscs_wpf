@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://schemas.xmlsoap.org/wsdl/" 
+			 xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" 
+			 xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+			 xmlns:b2bEracImpl="http://fina.hr/eracun/b2b/ws/erp/v0.1" 
+			 xmlns:eb="http://fina.hr/eracun/b2b/EchoBuyer/v0.1"
+			 xmlns:ciis="http://fina.hr/eracun/b2b/ChangeB2BIncomingInvoiceStatus/v0.1" 
+			 xmlns:cois="http://fina.hr/eracun/b2b/ChangeB2BOutgoingInvoiceStatus/v0.1" 
+			 xmlns:gil="http://fina.hr/eracun/b2b/sync/GetB2BIncomingInvoiceList/v0.1" 
+			 xmlns:gi="http://fina.hr/eracun/b2b/sync/GetB2BIncomingInvoice/v0.1"
+			 xmlns:gol="http://fina.hr/eracun/b2b/sync/GetB2BOutgoingInvoiceList/v0.1" 
+			 xmlns:go="http://fina.hr/eracun/b2b/sync/GetB2BOutgoingInvoice/v0.1" 
+			 xmlns:grl="http://fina.hr/eracun/b2b/sync/GetReceiverList/v0.1"
+			 xmlns:grljt="http://fina.hr/eracun/b2b/sync/GetReceiverListJT/v0.1"
+			 xmlns:grloib="http://fina.hr/eracun/b2b/sync/GetReceiverListOIB/v0.1"
+			 xmlns:goifs="http://fina.hr/eracun/b2b/GetB2BOutgoingInvoiceFiskStatus/v0.1"
+			 xmlns:giifs="http://fina.hr/eracun/b2b/GetB2BIncomingInvoiceFiskStatus/v0.1"
+			 targetNamespace="http://fina.hr/eracun/b2b/ws/erp/v0.1">
+	<types>
+		<xsd:schema targetNamespace="http://fina.hr/eracun/b2b/ws/erp/v0.1" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+			<xsd:import namespace="http://fina.hr/eracun/b2b/EchoBuyer/v0.1" schemaLocation="EchoBuyerMsg.xsd"/>
+			<xsd:import namespace="http://fina.hr/eracun/b2b/ChangeB2BIncomingInvoiceStatus/v0.1" schemaLocation="ChangeB2BIncomingInvoiceStatusMsg.xsd"/>
+			<xsd:import namespace="http://fina.hr/eracun/b2b/ChangeB2BOutgoingInvoiceStatus/v0.1" schemaLocation="ChangeB2BOutgoingInvoiceStatusMsg.xsd"/>
+			<xsd:import namespace="http://fina.hr/eracun/b2b/sync/GetB2BIncomingInvoiceList/v0.1" schemaLocation="GetB2BIncomingInvoiceListMsg.xsd"/>
+			<xsd:import namespace="http://fina.hr/eracun/b2b/sync/GetB2BIncomingInvoice/v0.1" schemaLocation="GetB2BIncomingInvoiceMsg.xsd"/>			
+			<xsd:import namespace="http://fina.hr/eracun/b2b/sync/GetB2BOutgoingInvoiceList/v0.1" schemaLocation="GetB2BOutgoingInvoiceListMsg.xsd"/>
+			<xsd:import namespace="http://fina.hr/eracun/b2b/sync/GetB2BOutgoingInvoice/v0.1" schemaLocation="GetB2BOutgoingInvoiceMsg.xsd"/>
+			<xsd:import namespace="http://fina.hr/eracun/b2b/sync/GetReceiverList/v0.1" schemaLocation="GetReceiverListMsg.xsd"/>
+			<xsd:import namespace="http://fina.hr/eracun/b2b/sync/GetReceiverListJT/v0.1" schemaLocation="GetReceiverListJTMsg.xsd"/>
+			<xsd:import namespace="http://fina.hr/eracun/b2b/sync/GetReceiverListOIB/v0.1" schemaLocation="GetReceiverListOIBMsg.xsd"/>
+			<xsd:import namespace="http://fina.hr/eracun/b2b/GetB2BOutgoingInvoiceFiskStatus/v0.1" schemaLocation="GetB2BOutgoingInvoiceFiskStatusMsg.xsd"/>
+			<xsd:import namespace="http://fina.hr/eracun/b2b/GetB2BIncomingInvoiceFiskStatus/v0.1" schemaLocation="GetB2BIncomingInvoiceFiskStatusMsg.xsd"/>
+		</xsd:schema>
+	</types>
+	<message name="EchoBuyerSoapIn">
+		<part name="body" element="eb:EchoBuyerMsg"/>
+	</message>
+	<message name="EchoBuyerSoapOut">
+		<part name="bodyAck" element="eb:EchoBuyerAckMsg"/>
+	</message>
+	<message name="ChangeB2BIncomingInvoiceStatusSoapIn">
+		<part name="body" element="ciis:ChangeB2BIncomingInvoiceStatusMsg"/>
+	</message>
+	<message name="ChangeB2BIncomingInvoiceStatusSoapOut">
+		<part name="bodyAck" element="ciis:ChangeB2BIncomingInvoiceStatusAckMsg"/>
+	</message>
+	<message name="ChangeB2BOutgoingInvoiceStatusSoapIn">
+		<part name="body" element="cois:ChangeB2BOutgoingInvoiceStatusMsg"/>
+	</message>
+	<message name="ChangeB2BOutgoingInvoiceStatusSoapOut">
+		<part name="bodyAck" element="cois:ChangeB2BOutgoingInvoiceStatusAckMsg"/>
+	</message>
+	<message name="GetB2BIncomingInvoiceListSoapIn">
+		<part name="body" element="gil:GetB2BIncomingInvoiceListMsg"/>
+	</message>
+	<message name="GetB2BIncomingInvoiceListSoapOut">
+		<part name="bodyAck" element="gil:GetB2BIncomingInvoiceListAckMsg"/>
+	</message>
+	<message name="GetB2BIncomingInvoiceSoapIn">
+		<part name="body" element="gi:GetB2BIncomingInvoiceMsg"/>
+	</message>
+	<message name="GetB2BIncomingInvoiceSoapOut">
+		<part name="bodyAck" element="gi:GetB2BIncomingInvoiceAckMsg"/>
+	</message>
+	<message name="GetB2BOutgoingInvoiceListSoapIn">
+		<part name="body" element="gol:GetB2BOutgoingInvoiceListMsg"/>
+	</message>
+	<message name="GetB2BOutgoingInvoiceListSoapOut">
+		<part name="bodyAck" element="gol:GetB2BOutgoingInvoiceListAckMsg"/>
+	</message>
+	<message name="GetB2BOutgoingInvoiceSoapIn">
+		<part name="body" element="go:GetB2BOutgoingInvoiceMsg"/>
+	</message>
+	<message name="GetB2BOutgoingInvoiceSoapOut">
+		<part name="bodyAck" element="go:GetB2BOutgoingInvoiceAckMsg"/>
+	</message>	
+	<message name="GetReceiverListSoapIn">
+		<part name="body" element="grl:GetReceiverListMsg"/>
+	</message>
+	<message name="GetReceiverListSoapOut">
+		<part name="bodyAck" element="grl:GetReceiverListAckMsg"/>
+	</message>
+	<message name="GetReceiverListJTSoapIn">
+		<part name="body" element="grljt:GetReceiverListMsg"/>
+	</message>
+	<message name="GetReceiverListJTSoapOut">
+		<part name="bodyAck" element="grljt:GetReceiverListAckMsg"/>
+	</message>	
+	<message name="GetReceiverListOIBSoapIn">
+		<part name="body" element="grloib:GetReceiverListOIBMsg"/>
+	</message>
+	<message name="GetReceiverListOIBSoapOut">
+		<part name="bodyAck" element="grloib:GetReceiverListOIBAckMsg"/>
+	</message>
+	<message name="GetB2BOutgoingInvoiceFiskStatusSoapIn">
+		<part name="body" element="goifs:GetB2BOutgoingInvoiceFiskStatusMsg"/>
+	</message>
+	<message name="GetB2BOutgoingInvoiceFiskStatusSoapOut">
+		<part name="bodyAck" element="goifs:GetB2BOutgoingInvoiceFiskStatusAckMsg"/>
+	</message>
+	<message name="GetB2BIncomingInvoiceFiskStatusSoapIn">
+		<part name="body" element="giifs:GetB2BIncomingInvoiceFiskStatusMsg"/>
+	</message>
+	<message name="GetB2BIncomingInvoiceFiskStatusSoapOut">
+		<part name="bodyAck" element="giifs:GetB2BIncomingInvoiceFiskStatusAckMsg"/>
+	</message>
+	<portType name="FinaInvoiceB2BPortType">
+		<operation name="echo">
+			<input message="b2bEracImpl:EchoBuyerSoapIn"/>
+			<output message="b2bEracImpl:EchoBuyerSoapOut"/>
+		</operation>
+		<operation name="changeB2BIncomingInvoiceStatus">
+			<input message="b2bEracImpl:ChangeB2BIncomingInvoiceStatusSoapIn"/>
+			<output message="b2bEracImpl:ChangeB2BIncomingInvoiceStatusSoapOut"/>
+		</operation>
+		<operation name="changeB2BOutgoingInvoiceStatus">
+			<input message="b2bEracImpl:ChangeB2BOutgoingInvoiceStatusSoapIn"/>
+			<output message="b2bEracImpl:ChangeB2BOutgoingInvoiceStatusSoapOut"/>
+		</operation>
+		<operation name="getB2BIncomingInvoiceList">
+			<input message="b2bEracImpl:GetB2BIncomingInvoiceListSoapIn"/>
+			<output message="b2bEracImpl:GetB2BIncomingInvoiceListSoapOut"/>
+		</operation>
+		<operation name="getB2BIncomingInvoice">
+			<input message="b2bEracImpl:GetB2BIncomingInvoiceSoapIn"/>
+			<output message="b2bEracImpl:GetB2BIncomingInvoiceSoapOut"/>
+		</operation>
+		<operation name="getB2BOutgoingInvoiceList">
+			<input message="b2bEracImpl:GetB2BOutgoingInvoiceListSoapIn"/>
+			<output message="b2bEracImpl:GetB2BOutgoingInvoiceListSoapOut"/>
+		</operation>
+		<operation name="getB2BOutgoingInvoice">
+			<input message="b2bEracImpl:GetB2BOutgoingInvoiceSoapIn"/>
+			<output message="b2bEracImpl:GetB2BOutgoingInvoiceSoapOut"/>
+		</operation>		
+		<operation name="getReceiverList">
+			<input message="b2bEracImpl:GetReceiverListSoapIn"/>
+			<output message="b2bEracImpl:GetReceiverListSoapOut"/>
+		</operation>
+		<operation name="getReceiverListJT">
+			<input message="b2bEracImpl:GetReceiverListJTSoapIn"/>
+			<output message="b2bEracImpl:GetReceiverListJTSoapOut"/>
+		</operation>		
+		<operation name="getReceiverListOIB">
+			<input message="b2bEracImpl:GetReceiverListOIBSoapIn"/>
+			<output message="b2bEracImpl:GetReceiverListOIBSoapOut"/>
+		</operation>
+		<operation name="getB2BOutgoingInvoiceFiskStatus">
+			<input message="b2bEracImpl:GetB2BOutgoingInvoiceFiskStatusSoapIn"/>
+			<output message="b2bEracImpl:GetB2BOutgoingInvoiceFiskStatusSoapOut"/>
+		</operation>
+		<operation name="getB2BIncomingInvoiceFiskStatus">
+			<input message="b2bEracImpl:GetB2BIncomingInvoiceFiskStatusSoapIn"/>
+			<output message="b2bEracImpl:GetB2BIncomingInvoiceFiskStatusSoapOut"/>
+		</operation>
+	</portType>
+	<binding name="FinaInvoiceB2BBinding" type="b2bEracImpl:FinaInvoiceB2BPortType">
+		<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+		<operation name="echo">
+			<soap:operation soapAction="http://fina.hr/eracun/b2b/EchoBuyer" style="document"/>
+			<input>
+				<soap:body use="literal"/>
+			</input>
+			<output>
+				<soap:body use="literal"/>
+			</output>
+		</operation>
+		<operation name="changeB2BIncomingInvoiceStatus">
+			<soap:operation soapAction="http://fina.hr/eracun/b2b/ChangeB2BIncomingInvoiceStatus" style="document"/>
+			<input>
+				<soap:body use="literal"/>
+			</input>
+			<output>
+				<soap:body use="literal"/>
+			</output>
+		</operation>
+		<operation name="changeB2BOutgoingInvoiceStatus">
+			<soap:operation soapAction="http://fina.hr/eracun/b2b/ChangeB2BOutgoingInvoiceStatus" style="document"/>
+			<input>
+				<soap:body use="literal"/>
+			</input>
+			<output>
+				<soap:body use="literal"/>
+			</output>
+		</operation>
+		<operation name="getB2BIncomingInvoiceList">
+			<soap:operation soapAction="http://fina.hr/eracun/b2b/GetB2BIncomingInvoiceList" style="document"/>
+			<input>
+				<soap:body use="literal"/>
+			</input>
+			<output>
+				<soap:body use="literal"/>
+			</output>
+		</operation>
+		<operation name="getB2BIncomingInvoice">
+			<soap:operation soapAction="http://fina.hr/eracun/b2b/GetB2BIncomingInvoice" style="document"/>
+			<input>
+				<soap:body use="literal"/>
+			</input>
+			<output>
+				<soap:body use="literal"/>
+			</output>
+		</operation>		
+		<operation name="getB2BOutgoingInvoiceList">
+			<soap:operation soapAction="http://fina.hr/eracun/b2b/GetB2BOutgoingInvoiceList" style="document"/>
+			<input>
+				<soap:body use="literal"/>
+			</input>
+			<output>
+				<soap:body use="literal"/>
+			</output>
+		</operation>
+		<operation name="getB2BOutgoingInvoice">
+			<soap:operation soapAction="http://fina.hr/eracun/b2b/GetB2BOutgoingInvoice" style="document"/>
+			<input>
+				<soap:body use="literal"/>
+			</input>
+			<output>
+				<soap:body use="literal"/>
+			</output>
+		</operation>
+		<operation name="getReceiverList">
+			<soap:operation soapAction="http://fina.hr/eracun/b2b/GetReceiverList" style="document"/>
+			<input>
+				<soap:body use="literal"/>
+			</input>
+			<output>
+				<soap:body use="literal"/>
+			</output>
+		</operation>
+		<operation name="getReceiverListJT">
+			<soap:operation soapAction="http://fina.hr/eracun/b2b/GetReceiverListJT" style="document"/>
+			<input>
+				<soap:body use="literal"/>
+			</input>
+			<output>
+				<soap:body use="literal"/>
+			</output>
+		</operation>
+		<operation name="getReceiverListOIB">
+			<soap:operation soapAction="http://fina.hr/eracun/b2b/GetReceiverListOIB" style="document"/>
+			<input>
+				<soap:body use="literal"/>
+			</input>
+			<output>
+				<soap:body use="literal"/>
+			</output>
+		</operation>
+		<operation name="getB2BOutgoingInvoiceFiskStatus">
+			<soap:operation soapAction="http://fina.hr/eracun/b2b/GetB2BOutgoingInvoiceFiskStatus" style="document"/>
+			<input>
+				<soap:body use="literal"/>
+			</input>
+			<output>
+				<soap:body use="literal"/>
+			</output>
+		</operation>
+		<operation name="getB2BIncomingInvoiceFiskStatus">
+			<soap:operation soapAction="http://fina.hr/eracun/b2b/GetB2BIncomingInvoiceFiskStatus" style="document"/>
+			<input>
+				<soap:body use="literal"/>
+			</input>
+			<output>
+				<soap:body use="literal"/>
+			</output>
+		</operation>
+	</binding>
+	<service name="B2BFinaInvoiceWebService">
+		<port name="FinaInvoiceB2BPortType" binding="b2bEracImpl:FinaInvoiceB2BBinding">
+			<soap:address location="http://ADDRESS/B2BFinaInvoiceWebService"/>
+		</port>
+	</service>
+</definitions>

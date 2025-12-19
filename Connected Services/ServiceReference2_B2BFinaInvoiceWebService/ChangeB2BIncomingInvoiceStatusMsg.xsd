@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsd:schema xmlns:iwsc="http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1" xmlns="http://fina.hr/eracun/b2b/ChangeB2BIncomingInvoiceStatus/v0.1" attributeFormDefault="unqualified" elementFormDefault="qualified" targetNamespace="http://fina.hr/eracun/b2b/ChangeB2BIncomingInvoiceStatus/v0.1" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:import schemaLocation="InvoiceWebServiceComponents.xsd" namespace="http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1" />
+  <xsd:element name="ChangeB2BIncomingInvoiceStatusMsg">
+    <xsd:annotation>
+      <xsd:documentation>Poruka za promjenu statusa ulaznog ra??una za dr??avu.</xsd:documentation>
+    </xsd:annotation>
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element ref="iwsc:HeaderBuyer">
+          <xsd:annotation>
+            <xsd:documentation>Zaglavlje poruke</xsd:documentation>
+          </xsd:annotation>
+        </xsd:element>
+        <xsd:element name="Data">
+          <xsd:annotation>
+            <xsd:documentation>XML s podacima</xsd:documentation>
+          </xsd:annotation>
+          <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name="B2BIncomingInvoiceStatus">
+                <xsd:annotation>
+                  <xsd:documentation>Omota?? za promjenu statusa ulaznog ra??una</xsd:documentation>
+                </xsd:annotation>
+                <xsd:complexType>
+                  <xsd:sequence>
+                    <xsd:element name="InvoiceID" type="xsd:integer">
+                      <xsd:annotation>
+                        <xsd:documentation>Identifikator ra??una u sustavu e-Ra??un B2B.</xsd:documentation>
+                      </xsd:annotation>
+                    </xsd:element>
+                    <xsd:element ref="iwsc:InvoiceStatus">
+                      <xsd:annotation>
+                        <xsd:documentation>Status u koji se ??eli napraviti promjena u sustavu e-Ra??un B2B.</xsd:documentation>
+                      </xsd:annotation>
+                    </xsd:element>
+                  </xsd:sequence>
+                </xsd:complexType>
+              </xsd:element>
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:element>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="ChangeB2BIncomingInvoiceStatusAckMsg">
+    <xsd:annotation>
+      <xsd:documentation>Sinkroni odgovor na poruku za promjenu statusa ulaznog ra??una za dr??avu.</xsd:documentation>
+    </xsd:annotation>
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element ref="iwsc:MessageAck" />
+        <xsd:element minOccurs="0" ref="iwsc:Error" />
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+</xsd:schema>

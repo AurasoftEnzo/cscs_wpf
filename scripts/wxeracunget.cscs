@@ -13,26 +13,25 @@ Import(strTrim(mpath()) + "CSCS.Math.dll");
 
 CreateWindow(strTrim(tpath()) + "wxeracunget.xaml");
 
+DEFINE Rbr, cntr1 type i;
+
 DEFINE arrayRbr type i size 100 array 10000;
 DEFINE arrayDobavljac type a size 500 array 10000;
+DEFINE arrayOibDobavljaca type a size 11 array 10000;
+DEFINE arrayDatumRacuna type a size 10 array 10000;
+DEFINE arrayDatumPDVa type a size 10 array 10000;
 DEFINE arrayBrojRacuna type a size 50 array 10000;
 
 function wxeracunget_onDisplay(){
     // start();
     init();
     getLista();
+
+    DisplayArraySetup("datagridListaRacuna", counterFld: cntr1, activeElements: Rbr, maxElements: Rbr);
 }
 
-// function btnPokreni@clicked(){
-//     cursor("wait");
-//     startPreuzimanje();
-//     cursor("default");
-// }
 
 
-// function startPreuzimanje(){
-//     wait(10000);
-// }
 
 function init(){
     args = CommandLineArgs(); 
@@ -142,8 +141,120 @@ function init(){
 }
 
 function getLista(){
-    
+    try {
+        sql_erac = "SELECT
+                ERAC_REZ1, ERAC_SERVER, ERAC_SERVERT, ERAC_USER, ERAC_PASS, ERAC_USERT, ERAC_PASST, ERAC_DESC 
+                FROM " + databaseName + ".dbo.NKSYERAC WHERE ERAC_CODE = @p1;";
+        sqlParams = {};
+        // if(NKSC_POSREDNIK != ""){
+        //     sqlParams.Add({"@p1", NKSC_POSREDNIK});
+        //     PROVIDER = NKSC_POSREDNIK;
+        // }else{
+            sqlParams.Add({"@p1", PROVIDER});
+        // }
+        
+        eracRes = sqlQuery(sql_erac, sqlParams);
+        if (Size(eracRes) < 2) {
+            MessageBox("Nema podataka o posredniku " + NKSC_POSREDNIK + "!");
+            return false;
+        }
+
+        ERAC_REZ1 = eracRes[1][0].trim();
+        ERAC_SERVER = eracRes[1][1].trim();
+        ERAC_SERVERT = eracRes[1][2].trim();
+        ERAC_USER = eracRes[1][3].trim();
+        ERAC_PASS = eracRes[1][4].trim();
+        ERAC_USERT = eracRes[1][5].trim(); // cer certificate
+        ERAC_PASST = eracRes[1][6].trim(); // p12 certificate
+        ERAC_DESC = eracRes[1][7].trim();
+        
+        if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
+            GetListMER();
+        } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
+            GetListFINA();
+        } else {
+            MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA");
+            exit;
+        }
+    } catch (error) {
+        MessageBox("Greška u preuzimanju sa provider-a " + PROVIDER + ": " + error);
+        exit;
+    }
 }
+
+function GetListFINA(){
+    // GET INCOMING INVOICE LIST
+    try{
+        MSG("Dohvaćam listu ULAZNIH računa preko FINA-e putem WSDL-a!");
+        ack = FINA_GET_INCOMING_INVOICE_LIST(
+            ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
+            ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
+            ERAC_USERT, // servisni certifikat
+            ERAC_PASST, // p12 certifikat (klijentski)
+            ERAC_PASS, // password za p12 certifikat
+
+            UUID(), // messageId
+            "9934:" + "26389058739" // OIB primatelja (VLASTITI) // !!! stavit pravi OIB iz baze
+        );
+
+        MSG("ack = " + ack);
+       
+        MSG("ackStatusText = " + ack["ackstatustext"]);
+
+
+        if(!Contains(ack, "Error")){
+            MSG("U listi je " + Size(ack["InvoiceList"]) + " računa za preuzimanje sa FINA servera.");
+            for(i = 0; i < Size(ack["InvoiceList"]); i++){
+                MSG(ack["InvoiceList"][i]);
+
+                
+                supplierName = ack["InvoiceList"][i]["SupplierRegistrationName"];
+                supplierId = ack["InvoiceList"][i]["SupplierId"];
+
+                supplierInvoiceId = ack["InvoiceList"][i]["SupplierInvoiceID"];
+
+                AddRacunToArrays(supplierName, supplierId, "2025-01-01", "2025-01-01", supplierInvoiceId);
+            }
+        }else{
+            MessageBox("ack[\"Error\"]" + ack["Error"]);
+        }
+    }catch(ex){
+        MessageBox("Nepoznata greška:\n" + ex);
+        LogException(ex);
+        exit;
+    }
+}
+
+function GetListMER(){
+
+}
+
+function AddRacunToArrays(supplierName, supplierId, date1, date2, supplierInvoiceId){
+    arrayDobavljac[Rbr] = supplierName;
+    arrayOibDobavljaca[Rbr] = supplierId;
+    arrayDatumRacuna[Rbr] = date1;
+    arrayDatumPDVa[Rbr] = date2;
+    arrayBrojRacuna[Rbr] = supplierInvoiceId;
+    arrayRbr[Rbr] = ++Rbr;
+}
+
+
+
+
+
+
+function btnPokreni@clicked(){
+    cursor("wait");
+    startPreuzimanje();
+    cursor("default");
+}
+
+
+function startPreuzimanje(){
+    wait(2000);
+}
+
+
 
 // // Provider Configuration
 // if (PROVIDER == null || PROVIDER == "") {
@@ -175,6 +286,7 @@ function getLista(){
 //i to je sve, nakon toga stvar preuzima program u Knjigama
 //
 
+
 function start(){
     // Phase 1: Download all NEW invoices from configured provider to folder
     MessageBox("Koristim provider: " + PROVIDER);
@@ -189,50 +301,7 @@ function start(){
 
 
 
-// Phase 1: Download all new invoices from configured provider (MER or FINA)
-function DownloadNewInvoicesFromProvider() {
-    try {
-        sql_erac = "SELECT
-                ERAC_REZ1, ERAC_SERVER, ERAC_SERVERT, ERAC_USER, ERAC_PASS, ERAC_USERT, ERAC_PASST, ERAC_DESC 
-                FROM " + databaseName + ".dbo.NKSYERAC WHERE ERAC_CODE = @p1;";
-        sqlParams = {};
-        // if(NKSC_POSREDNIK != ""){
-        //     sqlParams.Add({"@p1", NKSC_POSREDNIK});
-        //     PROVIDER = NKSC_POSREDNIK;
-        // }else{
-            sqlParams.Add({"@p1", PROVIDER});
-        // }
-        
-        eracRes = sqlQuery(sql_erac, sqlParams);
-        if (Size(eracRes) < 2) {
-            MessageBox("Nema podataka o posredniku " + NKSC_POSREDNIK + "!");
-            return false;
-        }
 
-        ERAC_REZ1 = eracRes[1][0].trim();
-        ERAC_SERVER = eracRes[1][1].trim();
-        ERAC_SERVERT = eracRes[1][2].trim();
-        ERAC_USER = eracRes[1][3].trim();
-        ERAC_PASS = eracRes[1][4].trim();
-        ERAC_USERT = eracRes[1][5].trim(); // cer certificate
-        ERAC_PASST = eracRes[1][6].trim(); // p12 certificate
-        ERAC_DESC = eracRes[1][7].trim();
-        
-        if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
-            return DownloadNewInvoicesFromMeR();
-        } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
-            return DownloadNewInvoicesFromFINA();
-        } else {
-            MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA");
-            return 0;
-        }
-    } catch (error) {
-        MessageBox("Greška u preuzimanju sa provider-a " + PROVIDER + ": " + error);
-        return 0;
-    }
-}
-
-// MSG(9);
 
 // MojEracun (MER) specific download function
 function DownloadNewInvoicesFromMeR() {
@@ -368,7 +437,6 @@ function DownloadNewInvoicesFromMeR() {
     }
 }
 
-
 function MERSuccess(trackingId, responseCode, res) {
     MSG("MERSuccess");
 
@@ -426,7 +494,6 @@ function MERFailure(trackingId, responseCode, res) {
 }
 
 
-
 function LogResponse(responseCode, response) {
     if(!DIR_EXISTS(FILESPATH + "ul\\" + "responses\\")){
         MAKE_DIR(FILESPATH + "ul\\" + "responses\\");
@@ -440,8 +507,6 @@ function LogResponse(responseCode, response) {
         MessageBox("CRITICAL: Cannot write to log file: " + logPath + "\nError: " + ex);
     }
 }
-
-
 
 
 
@@ -495,8 +560,7 @@ function MERReceiveFailure(trackingId, responseCode, res) {
 }
 
 
-function LogException(exText) 
-{
+function LogException(exText) {
     MSG("IMPLEMENT LogException function!!!")
     // if(!DIR_EXISTS(FILESPATH + "ul\\" + "responses\\"))
     // {
@@ -513,9 +577,6 @@ function LogException(exText)
     //     MessageBox("CRITICAL: Cannot write to log file: " + logFilePath + "\nError: " + ex);
     // }
 }
-
-
-
 
 
 
@@ -552,37 +613,37 @@ function DownloadNewInvoicesFromFINA() {
     
 
 
-    // GET INCOMING INVOICE LIST
-    try{
-        MSG("Dohvaćam listu ULAZNIH računa preko FINA-e putem WSDL-a!");
-        ack = FINA_GET_INCOMING_INVOICE_LIST(
-            ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
-            ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
-            ERAC_USERT, // servisni certifikat
-            ERAC_PASST, // p12 certifikat (klijentski)
-            ERAC_PASS, // password za p12 certifikat
+    // // GET INCOMING INVOICE LIST
+    // try{
+    //     MSG("Dohvaćam listu ULAZNIH računa preko FINA-e putem WSDL-a!");
+    //     ack = FINA_GET_INCOMING_INVOICE_LIST(
+    //         ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
+    //         ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
+    //         ERAC_USERT, // servisni certifikat
+    //         ERAC_PASST, // p12 certifikat (klijentski)
+    //         ERAC_PASS, // password za p12 certifikat
 
-            UUID(), // messageId
-            "9934:" + "26389058739" // OIB primatelja (VLASTITI) // !!! stavit pravi OIB iz baze
-        );
+    //         UUID(), // messageId
+    //         "9934:" + "26389058739" // OIB primatelja (VLASTITI) // !!! stavit pravi OIB iz baze
+    //     );
 
-        MSG("ack = " + ack);
+    //     MSG("ack = " + ack);
        
-        MSG("ackStatusText = " + ack["ackstatustext"]);
+    //     MSG("ackStatusText = " + ack["ackstatustext"]);
 
 
-        if(!Contains(ack, "Error")){
-            MSG("U listi je " + Size(ack["InvoiceList"]) + " računa za preuzimanje sa FINA servera.");
-            for(i = 0; i < Size(ack["InvoiceList"]); i++){
-                MSG(ack["InvoiceList"][i]);
-            }
-        }else{
-            MessageBox("ack[\"Error\"]" + ack["Error"]);
-        }
-    }catch(ex){
-        MessageBox("Nepoznata greška:\n" + ex);
-        LogException(ex);
-    }
+    //     if(!Contains(ack, "Error")){
+    //         MSG("U listi je " + Size(ack["InvoiceList"]) + " računa za preuzimanje sa FINA servera.");
+    //         for(i = 0; i < Size(ack["InvoiceList"]); i++){
+    //             MSG(ack["InvoiceList"][i]);
+    //         }
+    //     }else{
+    //         MessageBox("ack[\"Error\"]" + ack["Error"]);
+    //     }
+    // }catch(ex){
+    //     MessageBox("Nepoznata greška:\n" + ex);
+    //     LogException(ex);
+    // }
     
     
     

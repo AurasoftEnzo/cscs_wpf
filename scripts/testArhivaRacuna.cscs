@@ -1,0 +1,136 @@
+MessageBox("......Testing testArhivaRacuna.cscs......");
+
+//CreateWindow(strTrim(tpath()) + "testArhivaRacuna.xaml");
+
+function isFileDateInRange(file, brojDana)
+{
+    
+    /*
+    fileDate = filedate(file); //File date as DateTime object
+    currentDate = now();       //Current date as DateTime object
+    dateDiff = currentDate - fileDate; //Difference as TimeSpan object
+    daysDiff = dateDiff.totalDays();    //Difference in days as integer
+
+    if (daysDiff <= brojDana)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+    */
+    return true;
+}
+
+XMLpath = "D:\\TEST\\XML\\";
+ZIPpath = "D:\\TEST\\ZIP\\";
+unatragBrojDana = 30;
+
+if (XMLpath == "")
+{
+    MessageBox("XMLpath is not defined!");
+    quit;
+}
+
+if (!DIR_EXISTS(XMLpath))
+{
+    try
+    {
+        mkdir(XMLpath);
+        MessageBox("Creating directory: \n" + XMLpath + "\nDone.");
+    }
+    catch (ex)
+    {
+        MessageBox("Error creating directory: \n" + XMLpath + "\n\n" + ex);
+        quit;
+    }        
+}
+
+if (ZIPpath == "")
+{
+    MessageBox("ZIPpath is not defined!");
+    quit;
+}
+
+if (!DIR_EXISTS(ZIPpath))
+{
+    try
+    {
+        mkdir(ZIPpath);
+        MessageBox("Creating directory: \n" + ZIPpath + "\nDone.");
+    }
+    catch (ex)
+    {
+        MessageBox("Error creating directory: \n" + ZIPpath + "\n\n" + ex);
+        quit;
+    }        
+}
+
+//****************************************************************
+
+cd(XMLpath);
+
+/*
+MessageBox(currentPath());		//___c:\___cscswpf\scripts
+MessageBox("xPath=" + xPath()); //___c:\___cscswpf\bin\debug\
+MessageBox("tPath=" + tPath()); //___c:\___cscswpf\scripts
+MessageBox("iPath=" + iPath()); //___c:\___cscswpf\images\
+MessageBox("mPath=" + mPath()); //___c:\___cscswpf\modules\
+MessageBox("wPath=" + wPath()); //c:\winx\
+*/
+
+listOfFiles = findfiles("*.xml");
+//MessageBox(listOfFiles); //Output: ["C:\TEST\a.xml", "C:\TEST\b.xml", ...]
+
+strdatumvrijeme = DateTime().ToString("yyyyMMdd_HHmmss");
+zipFilePath = ZIPpath + "XML_Files_" + strdatumvrijeme + ".zip";
+MessageBox("ZIP file will be created at: \n" + zipFilePath);
+
+
+firstFile = true;
+countFiles = 0;
+
+try
+{
+    for (file:listOfFiles)
+    {
+        //MessageBox("Found XML file: \n" + file);
+
+        if (!exists(file))
+        {        
+            continue;
+        }
+        
+        
+
+        if (isFileDateInRange(file, unatragBrojDana))
+        {
+            MessageBox("Archiving file: \n" + file);
+
+            if (firstFile)
+            {
+                ZipFile(file, zipFilePath, "new");
+                countFiles = countFiles + 1;
+                firstFile = false;
+            }
+            else
+            {
+                ZipFile(file, zipFilePath, "add");
+                countFiles = countFiles + 1;
+            }  
+        }
+    }
+}
+catch (ex)
+{
+    MessageBox("ZIP file (BACKUP of invoices) failed to create: \n\n" + ex);
+    quit;
+}
+
+
+
+
+quit;
+
+

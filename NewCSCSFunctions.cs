@@ -3,7 +3,7 @@ using DevExpress.XtraReports.Templates;
 using DevExpress.XtraRichEdit.Import.Doc;
 using LiveChartsCore.SkiaSharpView.Painting;
 using MapControl;
-using NixxonERacun.Signing;
+//using NixxonERacun.Signing;
 using OfficeOpenXml.Drawing.Chart;
 using Org.BouncyCastle.Tls;
 using Renci.SshNet;
@@ -108,7 +108,7 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.TEST1, new TEST1Function());
 
             interpreter.RegisterFunction(Constants.SignXml, new SignXmlFunction());
-            interpreter.RegisterFunction("NixxonSignXml", new NixxonSignXmlFunction());
+            //interpreter.RegisterFunction("NixxonSignXml", new NixxonSignXmlFunction());
 
             interpreter.RegisterFunction("ReplaceInJSON", new ReplaceInJSONFunction());
             interpreter.RegisterFunction("IsDouble", new IsDoubleFunction());
@@ -4332,44 +4332,44 @@ namespace WpfCSCS
     }
 
 
-    class NixxonSignXmlFunction : ParserFunction
-    {
-        protected override Variable Evaluate(ParsingScript script)
-        {
-            List<Variable> args = script.GetFunctionArgs();
-            Utils.CheckArgs(args.Count, 1, m_name);
+    //class NixxonSignXmlFunction : ParserFunction
+    //{
+    //    protected override Variable Evaluate(ParsingScript script)
+    //    {
+    //        List<Variable> args = script.GetFunctionArgs();
+    //        Utils.CheckArgs(args.Count, 1, m_name);
 
-            var unsignedXml = Utils.GetSafeString(args, 0);
-            var certPath = Utils.GetSafeString(args, 1);
-            var certPass = Utils.GetSafeString(args, 2);
+    //        var unsignedXml = Utils.GetSafeString(args, 0);
+    //        var certPath = Utils.GetSafeString(args, 1);
+    //        var certPass = Utils.GetSafeString(args, 2);
 
-            // dohvati potpisni certifikat iz USER certificate store pomocu zadanog thumbprinta:
-            //X509Store store = new X509Store("MY", StoreLocation.LocalMachine);
-            //store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
-            //X509Certificate2Collection collection = (X509Certificate2Collection)store.Certificates;
+    //        // dohvati potpisni certifikat iz USER certificate store pomocu zadanog thumbprinta:
+    //        //X509Store store = new X509Store("MY", StoreLocation.LocalMachine);
+    //        //store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
+    //        //X509Certificate2Collection collection = (X509Certificate2Collection)store.Certificates;
 
-            //// dohvati potpisni certifikat:
-            //X509Certificate2Collection fcollection = (X509Certificate2Collection)collection.Find(X509FindType.FindByThumbprint, "OVDJE_STAVI_THUMPRINT_POTPISNOG_CERTIFIKATA!!!", false);
-            //X509Certificate2 cert = fcollection[0];
-            //store.Close();
+    //        //// dohvati potpisni certifikat:
+    //        //X509Certificate2Collection fcollection = (X509Certificate2Collection)collection.Find(X509FindType.FindByThumbprint, "OVDJE_STAVI_THUMPRINT_POTPISNOG_CERTIFIKATA!!!", false);
+    //        //X509Certificate2 cert = fcollection[0];
+    //        //store.Close();
 
-            // potpisi e_racun:
-            DigitalSignature dsig = new DigitalSignature();
+    //        // potpisi e_racun:
+    //        DigitalSignature dsig = new DigitalSignature();
 
-            X509Certificate2 cert = new X509Certificate2(certPath, certPass,
-                        X509KeyStorageFlags.Exportable | X509KeyStorageFlags.MachineKeySet);
+    //        X509Certificate2 cert = new X509Certificate2(certPath, certPass,
+    //                    X509KeyStorageFlags.Exportable | X509KeyStorageFlags.MachineKeySet);
 
-            dsig.Certificate = cert;
-            byte[] nepotpisaniRacun = Encoding.ASCII.GetBytes(unsignedXml);
+    //        dsig.Certificate = cert;
+    //        byte[] nepotpisaniRacun = Encoding.ASCII.GetBytes(unsignedXml);
 
 
 
-            byte[] bajtoviPotpisanogRacuna = dsig.SignInvoiceOrCreditNote(nepotpisaniRacun);
-            var signedXml = Encoding.ASCII.GetString(bajtoviPotpisanogRacuna);
+    //        byte[] bajtoviPotpisanogRacuna = dsig.SignInvoiceOrCreditNote(nepotpisaniRacun);
+    //        var signedXml = Encoding.ASCII.GetString(bajtoviPotpisanogRacuna);
 
-            return new Variable(signedXml);
-        }
-    }
+    //        return new Variable(signedXml);
+    //    }
+    //}
 
 
     class ReplaceInJSONFunction : ParserFunction

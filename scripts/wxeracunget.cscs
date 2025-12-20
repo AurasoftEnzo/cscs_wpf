@@ -25,7 +25,7 @@ DEFINE arrayBrojRacuna type a size 50 array 10000;
 function wxeracunget_onDisplay(){
     // start();
     init();
-    getLista();
+    getList();
 
     DisplayArraySetup("datagridListaRacuna", counterFld: cntr1, activeElements: Rbr, maxElements: Rbr);
 }
@@ -140,7 +140,7 @@ function init(){
     }
 }
 
-function getLista(){
+function getList(){
     try {
         sql_erac = "SELECT
                 ERAC_REZ1, ERAC_SERVER, ERAC_SERVERT, ERAC_USER, ERAC_PASS, ERAC_USERT, ERAC_PASST, ERAC_DESC 
@@ -226,7 +226,7 @@ function GetListFINA(){
 }
 
 function GetListMER(){
-
+    
 }
 
 function AddRacunToArrays(supplierName, supplierId, date1, date2, supplierInvoiceId){
@@ -239,20 +239,22 @@ function AddRacunToArrays(supplierName, supplierId, date1, date2, supplierInvoic
 }
 
 
+//-----------------------------------------------------------
 
-
-
-
-function btnPokreni@clicked(){
+function btnPreuzmi@clicked(){
     cursor("wait");
     startPreuzimanje();
-    cursor("default");
+    cursor("dflt");
 }
 
 
 function startPreuzimanje(){
-    wait(2000);
+    sleep(1000);
 }
+
+
+
+
 
 
 

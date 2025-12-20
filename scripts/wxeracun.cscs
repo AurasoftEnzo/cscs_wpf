@@ -838,10 +838,10 @@ function GenerateUBLXml() {
             // Parse additional references from Note field using #REF() format
             if (note != "") {
                 // Look for #REF( pattern
-                refStartPos = IndexOf(note, "#REF(");
+                refStartPos = StrIndexOf(note, "#REF(");
                 if (refStartPos >= 0) {
                     // Find the closing parenthesis
-                    refEndPos = IndexOf(note, ")", refStartPos);
+                    refEndPos = StrIndexOf(note, ")", refStartPos);
                     if (refEndPos >= 0) {
                         // Extract the content between #REF( and )
                         refContent = Substring(note, refStartPos + 5, refEndPos - refStartPos - 5);
@@ -1910,7 +1910,7 @@ MessageBox("Slanje eRačuna putem posrednika: " + PROVIDER + " (" + ERAC_PASST +
         // za test koristimo račun "90100003"
         
 
-         SendToFINA();
+        SendToFINA();
         //SendToFINA_2();
         // ...
 

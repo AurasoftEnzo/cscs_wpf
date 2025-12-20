@@ -635,7 +635,6 @@ function GenerateUBLXml() {
         }
         elif (PKFK_TAX_TARIFA == "POVNAK"){ 
             //Povratna naknada
-mbox("AAAA - POVNAK");
             taxName = "HR:POVNAK"; //nema poreza
             taxSchemeID = "OTH";
             xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
@@ -649,7 +648,6 @@ mbox("AAAA - POVNAK");
             xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
             xml += "                        </hrextac:HRTaxScheme>\n";
             xml += "                    </hrextac:HRTaxCategory>\n";
-mbox("BBBB - POVNAK");
         }
         elif (SUBSTRING(PKFK_TAX_TARIFA,0,3) == 'PDV'){
             taxName = "HR:" + PKFK_TAX_TARIFA; //+ FormatNum(NKPR_LN_PRNPR, 0, ".");
@@ -754,7 +752,6 @@ mbox("BBBB - POVNAK");
     xml += "</ext:UBLExtensions>\n";
     xml += "<cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0#conformant#urn:mfin.gov.hr:ext-2025:1.0</cbc:CustomizationID>\n"; // BT-24; 1..1
     xml += "<cbc:ProfileID>" + profileID + "</cbc:ProfileID>\n"; // BT-23; 1..1
-mbox("CCCC - POVNAK");
     // BT-1; Invoice number; 1..1
     // Invoice Number (8 digits: 90100002 -->> 00002-90-1)
     invNumStr = String(NKPR_GL_NUM); // 
@@ -1303,8 +1300,6 @@ mbox("CCCC - POVNAK");
             xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
             xml += "                        </cac:TaxScheme>\n";
             xml += "                    </cac:TaxCategory>\n";
-   mbox("DDDD - POVNAK");
-         
         }
         elif (SUBSTRING(PKFK_TAX_TARIFA, 0, 3) == 'PDV'){
             taxName = "HR:" + PKFK_TAX_TARIFA; //+ FormatNum(NKPR_LN_PRNPR, 0, ".");
@@ -1406,7 +1401,7 @@ mbox("CCCC - POVNAK");
     xml += "  <cbc:PayableAmount currencyID=\"EUR\">" + FormatNum(payable, 2, ".") + "</cbc:PayableAmount>\n";
     // if (rounding != 0) { xml += "  <cbc:PayableRoundingAmount currencyID=\"EUR\">" + FormatNum(rounding, 2, ".") + "</cbc:PayableRoundingAmount>\n"; }
     xml += "</cac:LegalMonetaryTotal>\n";
-    
+    mbox("AAAA -LINIJE");
     // -----------------------------------------------------------
     // Invoice Lines
     // -----------------------------------------------------------
@@ -1606,7 +1601,7 @@ mbox("CCCC - POVNAK");
             xml += "      <cbc:ItemClassificationCode listID=\"CG\">" + Substring(kpd, 0, 2) + "." + Substring(kpd, 2, 2) + "." + Substring(kpd, 4, 2) + "</cbc:ItemClassificationCode>\n";
             xml += "    </cac:CommodityClassification>\n";
         }
-
+Mbox("BBBB -LINIJE POREZI");
         // Tax
         sql_taxc = "SELECT PKFK_TAX_TARIFA,pkfk_tax_p_porz FROM " + databaseName + ".dbo.PKFKPORZ WHERE PKFK_TAX_CODE = @p1;";
         sqlParams = {};
@@ -1634,7 +1629,7 @@ mbox("CCCC - POVNAK");
         xml += "    </cac:ClassifiedTaxCategory>\n";
 
         xml += "  </cac:Item>\n";
-
+Mbox("CCCC -LINIJE POREZI");
         // Price
         xml += "  <cac:Price>\n";
         xml += "    <cbc:PriceAmount currencyID=\"EUR\">" + FormatNum(NKPR_LN_PPRCE, 4, ".") + "</cbc:PriceAmount>\n";

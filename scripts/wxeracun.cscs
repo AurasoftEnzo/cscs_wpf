@@ -139,7 +139,9 @@ if(!GenerateUBLXml()){
 }
 
 //send xml
-SendERacun();  
+mbox("AAA ŠALJEM XML ZA RAČUN " + invNum);
+SendERacun(); 
+mbox("BBB POSLAN XML ZA RAČUN " + invNum); 
 exit;
 
 
@@ -838,10 +840,10 @@ function GenerateUBLXml() {
             // Parse additional references from Note field using #REF() format
             if (note != "") {
                 // Look for #REF( pattern
-                refStartPos = StrIndexOf(note, "#REF(");
+                refStartPos = IndexOf(note, "#REF(");
                 if (refStartPos >= 0) {
                     // Find the closing parenthesis
-                    refEndPos = StrIndexOf(note, ")", refStartPos);
+                    refEndPos = IndexOf(note, ")", refStartPos);
                     if (refEndPos >= 0) {
                         // Extract the content between #REF( and )
                         refContent = Substring(note, refStartPos + 5, refEndPos - refStartPos - 5);
@@ -1000,7 +1002,7 @@ function GenerateUBLXml() {
     xml += "    </cac:PostalAddress>\n";
     
     //xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + KPSY_PO_FREIGHT + supOIB + "</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>\n";
-    xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + kpsy_po_freight.trim()+supOIB + "</cbc:CompanyID>\n"; //BT-31
+    xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + supOIB + "</cbc:CompanyID>\n"; //BT-31
     xml += "      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>\n"; 
 
     RegistrationName = (NazivFirme != "" ? NazivFirme : KPSY_COMP_NAME);
@@ -1045,7 +1047,7 @@ function GenerateUBLXml() {
 
     // Use GLN (0088 scheme) if available and valid (13 characters), otherwise use OIB (9934 scheme)
     cusSchemeID = "9934";
-    // NKPR_GL_JMBG = "82113036885";
+    NKPR_GL_JMBG = "82113036885";
     cusEndpointID = NKPR_GL_JMBG;
     cusPartyID = "9934:" + NKPR_GL_JMBG;
     
@@ -1401,7 +1403,7 @@ function GenerateUBLXml() {
     xml += "  <cbc:PayableAmount currencyID=\"EUR\">" + FormatNum(payable, 2, ".") + "</cbc:PayableAmount>\n";
     // if (rounding != 0) { xml += "  <cbc:PayableRoundingAmount currencyID=\"EUR\">" + FormatNum(rounding, 2, ".") + "</cbc:PayableRoundingAmount>\n"; }
     xml += "</cac:LegalMonetaryTotal>\n";
-    mbox("AAAA -LINIJE");
+    
     // -----------------------------------------------------------
     // Invoice Lines
     // -----------------------------------------------------------
@@ -1601,7 +1603,7 @@ function GenerateUBLXml() {
             xml += "      <cbc:ItemClassificationCode listID=\"CG\">" + Substring(kpd, 0, 2) + "." + Substring(kpd, 2, 2) + "." + Substring(kpd, 4, 2) + "</cbc:ItemClassificationCode>\n";
             xml += "    </cac:CommodityClassification>\n";
         }
-Mbox("BBBB -LINIJE POREZI");
+
         // Tax
         sql_taxc = "SELECT PKFK_TAX_TARIFA,pkfk_tax_p_porz FROM " + databaseName + ".dbo.PKFKPORZ WHERE PKFK_TAX_CODE = @p1;";
         sqlParams = {};
@@ -1629,7 +1631,7 @@ Mbox("BBBB -LINIJE POREZI");
         xml += "    </cac:ClassifiedTaxCategory>\n";
 
         xml += "  </cac:Item>\n";
-Mbox("CCCC -LINIJE POREZI");
+
         // Price
         xml += "  <cac:Price>\n";
         xml += "    <cbc:PriceAmount currencyID=\"EUR\">" + FormatNum(NKPR_LN_PPRCE, 4, ".") + "</cbc:PriceAmount>\n";
@@ -1857,7 +1859,7 @@ function GetMimeType(file) {
 // -----------------------------------------------------------
 
 function SendERacun(){
-
+mbox("CCC Slanje eRačuna putem posrednika: " + PROVIDER);
     sql_erac = "SELECT
                 ERAC_REZ1, ERAC_SERVER, ERAC_SERVERT, ERAC_USER, ERAC_PASS, ERAC_USERT, ERAC_PASST, ERAC_DESC 
                 FROM " + databaseName + ".dbo.NKSYERAC WHERE ERAC_CODE = @p1;";
@@ -1910,7 +1912,7 @@ MessageBox("Slanje eRačuna putem posrednika: " + PROVIDER + " (" + ERAC_PASST +
         // za test koristimo račun "90100003"
         
 
-        SendToFINA();
+         SendToFINA();
         //SendToFINA_2();
         // ...
 
@@ -2078,8 +2080,8 @@ function SendToFINA_2() {
     */
     soapEnvelope += "          <SpecificationIdentifier>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0</SpecificationIdentifier>\n";
     soapEnvelope += "          <SupplierInvoiceID>" + invID + "</SupplierInvoiceID>\n";
-    soapEnvelope += "          <BuyerID>9934:" + NKPR_GL_JMBG + "</BuyerID>\n";
-    // soapEnvelope += "          <BuyerID>9934:" + "82113036885" + "</BuyerID>\n"; // !!! FINA-in OIB
+    // soapEnvelope += "          <BuyerID>9934:" + NKPR_GL_JMBG + "</BuyerID>\n";
+    soapEnvelope += "          <BuyerID>9934:" + "82113036885" + "</BuyerID>\n"; // !!! FINA-in OIB
     
     soapEnvelope += "          <InvoiceEnvelope>" + base64Ubl + "</InvoiceEnvelope>\n";
     // ILI

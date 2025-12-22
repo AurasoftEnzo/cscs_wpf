@@ -134,15 +134,17 @@ xmlFileName = "";
 if(!GenerateUBLXml()){
     MessageBox("Greška pri generiranju UBL XML-a za račun " + invID + "!");    
     exit;
-}else{
+}elif(NKSC_REZ10 == "P"){
     LogNKSYELOG("A");
+    //send xml
+    MessageBox("AAA ŠALJEM XML ZA RAČUN " + invNum);
+    SendERacun(); 
+    MessageBox("BBB POSLAN XML ZA RAČUN " + invNum); 
 }
 
-//send xml
-mbox("AAA ŠALJEM XML ZA RAČUN " + invNum);
-SendERacun(); 
-mbox("BBB POSLAN XML ZA RAČUN " + invNum); 
 exit;
+
+
 
 
 
@@ -170,7 +172,7 @@ function GenerateUBLXml() {
                 CONVERT(varchar(10), DATEADD(DAY, NKPR_GL_NOKAM + NKPR_GL_ROKPL, NKPR_GL_DVO), 23) as NKPR_GL_DUE_DATE,
                 NKPR_GL_SCONTO,NKPR_GL_DANSC,NKPR_GL_REZ3,NKPR_GL_SHPCOD, NKPR_GL_SHPNME, NKPR_GL_SHPRO, NKPR_GL_SHPA1, 
                 NKPR_GL_SHPZIP, NKPR_GL_SHPCTY,NKPR_GL_SHPST, SUBSTRING(NKSP_AD_REZ,37,13) as NKSP_AD_GLN,
-                NKSC_SOP, NKSC_POSREDNIK
+                NKSC_SOP, NKSC_POSREDNIK, NKSC_REZ10
                 FROM " + databaseName + ".dbo.NKPRINV LEFT JOIN " + databaseName + ".dbo.NKSCPART ON NKPR_GL_CUSCOD = NKSC_PARTCODE
                     LEFT JOIN " + databaseName + ".dbo.NKSPADRS ON nkpr_gl_cuscod= nksp_ad_code AND nkpr_gl_shpcod= nksp_ad_codeint
                 WHERE NKPR_GL_NUM = @p1;";
@@ -229,7 +231,14 @@ function GenerateUBLXml() {
     NKPR_AD_GLN = hdrRes[1][41].trim();
     NKSC_SOP = hdrRes[1][42].trim(); // Customer GLN
     NKSC_POSREDNIK = hdrRes[1][43].trim().Upper(); // Intermediary GLN
-
+    NKSC_REZ10 = hdrRes[1][44].trim().Upper(); // P - šalji na server / F = spremi file na disk / E - šalji na E-mail(NIJE U FUNKCIJI)
+    if(NKSC_REZ10 == "E"){
+        MessageBox("Način slanja e-računa e-mailom(E) nije podržan! Partner " + NKSC_PARTCODE + ".");
+        exit;
+    }elif(NKSC_REZ10 != "P" && NKSC_REZ10 != "F"){
+        MessageBox("Neispravno konfiguriran način slanja e-računa(" + NKSC_REZ10 + ") za partnera " + NKSC_PARTCODE + "!");
+        exit;
+    }
 
     // -----------------------------------------------------------
     // 2. Load Lines
@@ -1001,8 +1010,7 @@ function GenerateUBLXml() {
     xml += "      <cac:Country><cbc:IdentificationCode>" + supCountry + "</cbc:IdentificationCode></cac:Country>\n";
     xml += "    </cac:PostalAddress>\n";
     
-    //xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + KPSY_PO_FREIGHT + supOIB + "</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>\n";
-    xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + supOIB + "</cbc:CompanyID>\n"; //BT-31
+    xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + KPSY_PO_FREIGHT + supOIB + "</cbc:CompanyID>\n"; //BT-31
     xml += "      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>\n"; 
 
     RegistrationName = (NazivFirme != "" ? NazivFirme : KPSY_COMP_NAME);
@@ -1047,7 +1055,7 @@ function GenerateUBLXml() {
 
     // Use GLN (0088 scheme) if available and valid (13 characters), otherwise use OIB (9934 scheme)
     cusSchemeID = "9934";
-    NKPR_GL_JMBG = "82113036885";
+    // NKPR_GL_JMBG = "82113036885";
     cusEndpointID = NKPR_GL_JMBG;
     cusPartyID = "9934:" + NKPR_GL_JMBG;
     
@@ -1079,7 +1087,7 @@ function GenerateUBLXml() {
         MessageBox("Kupac nema unesenu oznaku države uz OIB!");
         return false;
     }
-    xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + nkpr_gl_cusst.trim()+NKPR_GL_JMBG + "</cbc:CompanyID>\n"; //BT-48
+    xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + nkpr_gl_cusst.trim() + NKPR_GL_JMBG + "</cbc:CompanyID>\n"; //BT-48
     xml += "      <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>\n";
     //xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + NKPR_GL_JMBG + "</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>\n";
     
@@ -1657,12 +1665,27 @@ function GenerateUBLXml() {
         xml += "</Invoice>\n";
     }
 
+
+
+
+
+
     // -----------------------------------------------------------
     // ...Save xml BEFORE validation
     // -----------------------------------------------------------
-    xmlFileName = FILESPATH + "IR\\" + parsefile(attachmentPdfPath, "pfName") + ".xml";
-    // msg(xmlFileName);
+    if(NKSC_REZ10 == "F"){
+        xmlFileName = parsefile(attachmentPdfPath, "pfPath") + parsefile(attachmentPdfPath, "pfName") + ".xml";
+    }elif(NKSC_REZ10 == "P"){
+        xmlFileName = FILESPATH + "IR\\" + parsefile(attachmentPdfPath, "pfName") + ".xml";
+    }
+    
+    msg(xmlFileName);
+
     SaveFile(xml, xmlFileName);
+
+
+
+
 
 
     // -----------------------------------------------------------
@@ -2080,8 +2103,8 @@ function SendToFINA_2() {
     */
     soapEnvelope += "          <SpecificationIdentifier>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0</SpecificationIdentifier>\n";
     soapEnvelope += "          <SupplierInvoiceID>" + invID + "</SupplierInvoiceID>\n";
-    // soapEnvelope += "          <BuyerID>9934:" + NKPR_GL_JMBG + "</BuyerID>\n";
-    soapEnvelope += "          <BuyerID>9934:" + "82113036885" + "</BuyerID>\n"; // !!! FINA-in OIB
+    soapEnvelope += "          <BuyerID>9934:" + NKPR_GL_JMBG + "</BuyerID>\n";
+    // soapEnvelope += "          <BuyerID>9934:" + "82113036885" + "</BuyerID>\n"; // !!! FINA-in OIB
     
     soapEnvelope += "          <InvoiceEnvelope>" + base64Ubl + "</InvoiceEnvelope>\n";
     // ILI

@@ -32,6 +32,7 @@ DEFINE arrayBrojRacuna type a size 50 array 10000;
 DEFINE arrayBrojRacunaFina type a size 50 array 10000;
 DEFINE arrayBrojRacunaMer type a size 50 array 10000;
 
+savedXmlFilesList = {};
 
 function wxeracunget_onDisplay(){
     cursor("wait");
@@ -357,16 +358,11 @@ function btnPreuzmi@clicked(){
     SetWidgetOptions("btnPreuzmi", "IsEnabled", "false");
     SetWidgetOptions("StatusLabel", "Content", "Preuzimanje...");
 
-    AsyncCall("startPreuzimanje", "kraj");   
+    AsyncCall("startDownload", "startImportCall");   
+    
 }
 
-function kraj(){
-    cursor("dflt");
-    MessageBox("Kraj");
-    exit;
-}
-
-function startPreuzimanje(){
+function startDownload(){
     // Create incoming folder if it doesn't exist
     incomingFolder = FILESPATH + "UR\\";
     if (!Exists(incomingFolder)) {
@@ -407,7 +403,13 @@ function GetRacuniFINA(){
             // MSG("ack[\"AckStatusCode\"] = " + ack["AckStatusCode"]);
             // MSG("ack[\"AckStatusText\"] = " + ack["AckStatusText"]);
 
-            SaveFile(ack["ItemContent"], FILESPATH + "UR\\" + "FINA_UR_" + invoiceId + ".xml");
+
+            //Save XML
+            xmlFilePath = FILESPATH + "UR\\" + "FINA_UR_" + invoiceId + ".xml";
+            SaveFile(ack["ItemContent"], xmlFilePath);
+            savedXmlFilesList.Add(xmlFilePath);
+
+            // Save PDF
             Base642File(ack["Base64PdfDocumentString"], FILESPATH + "UR\\" + "FINA_UR_" + invoiceId + ".pdf");
 
             // NKSYELOG
@@ -444,7 +446,10 @@ function MERReceiveRacunSuccess(trackingId, responseCode, res) {
     // MSG("MERReceiveSuccess" + "\n" + XmlToDict(res));
     try{
         LogResponse(responseCode, res);
-        SaveFile(res, FILESPATH + "UR\\" + trackingId + ".xml");
+
+        xmlFilePath = FILESPATH + "UR\\" + trackingId + ".xml";
+        SaveFile(res, xmlFilePath);
+        savedXmlFilesList.Add(xmlFilePath);
     }catch(ex){
         MessageBox("MERReceiveRacunSuccess - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
         // !!! LOG !!!
@@ -464,7 +469,28 @@ function MERReceiveRacunFailure(trackingId, responseCode, res) {
 }
 
 
+//-----------------------------------------------------------
 
+function startImportCall(){
+    AsyncCall("startImport", "end");
+}
+
+function startImport(){
+    // MSG(savedXmlFilesList);
+
+    for(i = 0; i < Size(savedXmlFilesList); i++){
+        xmlFilePath = savedXmlFilesList[i];
+        MSG("Importing XML file: " + xmlFilePath);
+        // importUBLXml(xmlFilePath);
+        MSG(XmlToDict(ReadAllText(xmlFilePath)));
+    }
+}
+
+function end(){
+    cursor("dflt");
+    MessageBox("Kraj");
+    exit;
+}
 
 
 

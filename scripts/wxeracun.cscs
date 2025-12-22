@@ -1660,7 +1660,7 @@ function GenerateUBLXml() {
     // -----------------------------------------------------------
     // ...Save xml BEFORE validation
     // -----------------------------------------------------------
-    xmlFileName = FILESPATH + parsefile(attachmentPdfPath, "pfName") + ".xml";
+    xmlFileName = FILESPATH + "IR\\" + parsefile(attachmentPdfPath, "pfName") + ".xml";
     // msg(xmlFileName);
     SaveFile(xml, xmlFileName);
 
@@ -1678,8 +1678,8 @@ function GenerateUBLXml() {
     // regedit("regClose");
     
 
-    xsdValidationResultOutputFile = FILESPATH + parsefile(attachmentPdfPath, "pfName") + "_XSD.err";
-    schValidationResultOutputFile = FILESPATH + parsefile(attachmentPdfPath, "pfName") + "_SCH.err";
+    xsdValidationResultOutputFile = FILESPATH + "IR\\" + parsefile(attachmentPdfPath, "pfName") + "_XSD.err";
+    schValidationResultOutputFile = FILESPATH + "IR\\" + parsefile(attachmentPdfPath, "pfName") + "_SCH.err";
     
 
     // -----------------------------------------------------------
@@ -2003,11 +2003,11 @@ logFilePath = "";
 
 function LogResponse(responseCode, response) 
 {
-    if(!DIR_EXISTS(FILESPATH + "responses\\"))
+    if(!DIR_EXISTS(FILESPATH + "IR\\" + "responses\\"))
     {
-        MAKE_DIR(FILESPATH + "responses\\");
+        MAKE_DIR(FILESPATH + "IR\\" + "responses\\");
     }
-    logFilePath = FILESPATH + "responses\\" + parsefile(attachmentPdfPath, "pfName") + ".response"; //FILESPATH + "responses\\" + parsefile(attachmentPdfPath, "pfName") + ".response";
+    logFilePath = FILESPATH + "IR\\" + "responses\\" + parsefile(attachmentPdfPath, "pfName") + ".response"; //FILESPATH + "responses\\" + parsefile(attachmentPdfPath, "pfName") + ".response";
 messageBox("Logging response to file: " + logFilePath);
     
     appendText = Now("yyyy-MM-dd HH:mm:ss") + " -----------------------------------\n\n" + "StatusCode = " + responseCode + "\n\n" + "Response:\n" + response + "\n\n";
@@ -2021,11 +2021,11 @@ messageBox("Log text: " + appendText);
 
 function LogException(exText) 
 {
-    if(!DIR_EXISTS(FILESPATH + "responses\\"))
+    if(!DIR_EXISTS(FILESPATH + "IR\\" + "responses\\"))
     {
-        MAKE_DIR(FILESPATH + "responses\\");
+        MAKE_DIR(FILESPATH + "IR\\" + "responses\\");
     }
-    logFilePath = FILESPATH + "responses\\" + parsefile(attachmentPdfPath, "pfName") + ".response"; //FILESPATH + "responses\\" + parsefile(attachmentPdfPath, "pfName") + ".response";
+    logFilePath = FILESPATH + "IR\\" + "responses\\" + parsefile(attachmentPdfPath, "pfName") + ".response"; //FILESPATH + "responses\\" + parsefile(attachmentPdfPath, "pfName") + ".response";
     // messageBox("Logging response to file: " + logFilePath);
     
     appendText = Now("yyyy-MM-dd HH:mm:ss") + " -----------------------------------\n\n" + "Exception = " + exText + "\n\n";

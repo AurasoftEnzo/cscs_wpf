@@ -239,6 +239,9 @@ function GenerateUBLXml() {
         MessageBox("Neispravno konfiguriran način slanja e-računa(" + NKSC_REZ10 + ") za partnera " + NKSC_PARTCODE + "!");
         exit;
     }
+    if(NKSC_POSREDNIK != ""){    
+        PROVIDER = NKSC_POSREDNIK;
+    }
 
     // -----------------------------------------------------------
     // 2. Load Lines
@@ -849,10 +852,10 @@ function GenerateUBLXml() {
             // Parse additional references from Note field using #REF() format
             if (note != "") {
                 // Look for #REF( pattern
-                refStartPos = IndexOf(note, "#REF(");
+                refStartPos = strIndexOf(note, "#REF(");
                 if (refStartPos >= 0) {
                     // Find the closing parenthesis
-                    refEndPos = IndexOf(note, ")", refStartPos);
+                    refEndPos = strIndexOf(note, ")", refStartPos);
                     if (refEndPos >= 0) {
                         // Extract the content between #REF( and )
                         refContent = Substring(note, refStartPos + 5, refEndPos - refStartPos - 5);
@@ -1941,11 +1944,82 @@ MessageBox("Slanje eRačuna putem posrednika: " + PROVIDER + " (" + ERAC_PASST +
 
         return;
     }
+    elif(PROVIDER == "EDITEL" || PROVIDER == "EDITELDEMO"){
+        //koristimo EDITEL način slanja
+        SendToEDITEL();
+        return;
+    }
     else
     {
         MessageBox("Nepoznat tip posrednika " + ERAC_REZ1 + " za slanje na eRačun: " + tip);
         return;
     }    
+}
+
+function SendToEDITEL() {
+    // Editel provider - samo spremanje XML datoteke na disk
+    try {
+        // Determine output directory based on provider configuration
+        outputPath = ERAC_SERVER;  // Use ERAC_SERVER as output directory path
+        if (PROVIDER == "EDITEL") {
+            outputPath = ERAC_SERVERT;  // Use ERAC_SERVERT for demo/test
+        }
+
+        if (outputPath == "") {
+            outputPath = FILESPATH + "editel\\";  // Default to subfolder in FILESPATH
+        }
+
+        // Ensure output directory exists
+        if (!DIR_EXISTS(outputPath)) {
+            try {
+                MAKE_DIR(outputPath);
+            } catch (dirEx) {
+                MessageBox("Greška pri stvaranju direktorija za Editel: " + outputPath + "\n" + dirEx);
+                return;
+            }
+        }
+
+        // Generate filename with timestamp for uniqueness
+        timestamp = Now("yyyyMMdd_HHmmss");
+        editelFileName = "Invoice_" + invNum + "_" + timestamp + ".xml";
+        editelFilePath = outputPath + editelFileName;
+
+        // Read the XML content from the generated file
+        xmlContent = ReadFile(xmlFileName);
+        if (xmlContent == "") {
+            MessageBox("Greška pri čitanju XML datoteke za Editel.");
+            return;
+        }
+
+        // Save XML to Editel output location
+        SaveFile(xmlContent, editelFilePath, "");
+
+        // Show success message
+        MessageBox("Editel XML datoteka uspješno spremljena:\n" + editelFilePath);
+
+        // Optional: Log to file for audit trail (not to NKSYELOG)
+        LogEditelOperation(invNum, editelFilePath, "XML_SAVED");
+
+    } catch (ex) {
+        MessageBox("Greška pri radu s Editel providerom: " + ex);
+    }
+}
+
+// Helper function for Editel audit logging (separate from NKSYELOG)
+function LogEditelOperation(invoiceNum, filePath, operation) {
+    try {
+        if (!DIR_EXISTS(FILESPATH + "editel_logs\\")) {
+            MAKE_DIR(FILESPATH + "editel_logs\\");
+        }
+
+        logFilePath = FILESPATH + "editel_logs\\editel_" + Now("yyyyMM") + ".log";
+        logEntry = Now("yyyy-MM-dd HH:mm:ss") + " | " + operation + " | Invoice: " + invoiceNum + " | File: " + filePath + "\n";
+        
+        SaveFile(logEntry, logFilePath, "a");  // Append mode
+    } catch (logEx) {
+        // Non-critical error, don't interrupt the main process
+        MSG("Editel logging error: " + logEx);
+    }
 }
 
 function MERSuccess(_invID, responseCode, res) {
@@ -2175,7 +2249,7 @@ function SendToEPOS() {
     // Determine endpoint based on provider configuration
     endpoint = ERAC_SERVER;
     if (PROVIDER == "EPOSDEMO") {
-        endpoint = ERAC_SERVERT;
+        endpoint = ERAC_SERVER;
     }
 
     if (endpoint == "") {

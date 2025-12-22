@@ -129,7 +129,7 @@ namespace WpfCSCS
 
 
 
-            //funkcije iz wsdl-a
+            //FINA funkcije (wsdl-i)
             interpreter.RegisterFunction("FINA_ECHO", new FINA_ECHOFunction());
             interpreter.RegisterFunction("FINA_SEND_OUTGOING_INVOICE", new FINA_SEND_OUTGOING_INVOICEFunction());
             interpreter.RegisterFunction("FINA_GET_OUTGOING_INVOICE_STATUS", new FINA_GET_OUTGOING_INVOICE_STATUSFunction());

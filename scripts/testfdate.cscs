@@ -1,0 +1,29 @@
+MessageBox("......Testing testfdate.cscs......");
+
+filePath = "D:\\TEST\\XML\\A.xml";
+
+dtCreated = FDATE(filePath, "CREATED");
+dtModified = FDATE(filePath, "MODIFIED");
+dtAccessed = FDATE(filePath, "ACCESSED");
+
+MessageBox("File created date: " + dtCreated.ToString("yyyyMMdd_HHmmss"));
+MessageBox("File modified date: " + dtModified.ToString("yyyyMMdd_HHmmss"));
+MessageBox("File accessed date: " + dtAccessed.ToString("yyyyMMdd_HHmmss"));
+
+
+
+
+//INACURATE USAGE TESTS
+
+//dtError1 = FDATE("D:\\TEST\\XML\\NONEXISTENT.xml", "CREATED"); //Exception
+
+//dtError2 = FDATE(filePath, "INVALIDDATECHOICE"); //Exception
+
+//dtError3 = FDATE(); //Exception: Expecting 2 arguments but got 0 in FDATE
+
+//dtError4 = FDATE(filePath); //Exception: Expecting 2 arguments but got 1 in FDATE
+
+//dtError5 = FDATE("", "CREATED"); Exception
+
+
+quit;

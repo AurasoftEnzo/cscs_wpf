@@ -126,6 +126,10 @@ namespace WpfCSCS
 
 
             interpreter.RegisterFunction(Constants.CreateAndSendSOAPMsg, new CreateAndSendSOAPMsgFunction());
+            
+            interpreter.RegisterFunction(Constants.FDATE, new FDATEFunction());
+            interpreter.RegisterFunction(Constants.DateTimeToDouble, new DateTimeToDoubleFunction());
+            interpreter.RegisterFunction(Constants.DoubleToDateTime, new DoubleToDateTimeFunction());
 
 
 
@@ -193,6 +197,10 @@ namespace WpfCSCS
             public const string SignXml = "SignXml";
 
             public const string CreateAndSendSOAPMsg = "CreateAndSendSOAPMsg";
+            
+            public const string FDATE = "FDATE";
+            public const string DateTimeToDouble = "DateTimeToDouble";
+            public const string DoubleToDateTime = "DoubleToDateTime";
         }
     }
 
@@ -4922,6 +4930,89 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             dataObjFormat.AppendChild(mimeType);
 
             return obj;
+        }
+    }
+    
+    class FDATEFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 2, m_name);
+            
+            var filePath = Utils.GetSafeString(args, 0);
+            var dateChoice = Utils.GetSafeString(args, 1);
+
+            DateTime dt;
+
+            dt = FileGetDate(filePath, dateChoice);
+
+            return new Variable(dt);
+        }
+
+        private DateTime FileGetDate(string filePath, string dateChoice)
+        {
+            if (!System.IO.File.Exists(filePath))
+            {
+                //return null;
+                throw new Exception("File " + filePath + " does not exist. (Function FDATE).");
+            }
+
+            string dateChoiceUpper = dateChoice.ToUpper();
+            DateTime dt;
+
+            switch (dateChoiceUpper)
+            {
+                case "CREATED":
+                    dt = System.IO.File.GetCreationTime(filePath);
+                    break;
+                case "MODIFIED":
+                    dt = System.IO.File.GetLastWriteTime(filePath);
+                    break;
+                case "ACCESSED":
+                    dt = System.IO.File.GetLastAccessTime(filePath);
+                    break;
+                default:
+                    //dt = null;
+                    throw new Exception("Invalid date choice " + dateChoice + ". (Function FDATE).");                    
+            }
+
+            return dt;
+        }
+    }
+
+    class DateTimeToDoubleFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+
+            //var datetime = Utils.GetSafeDateTime(args, 0);            
+            var datetimeVariable = Utils.GetSafeVariable(args, 0);
+            if(datetimeVariable != null)
+            {
+                double oaDate = datetimeVariable.DateTime.ToOADate();//OLE Automation Date
+
+                return new Variable(oaDate);
+            }
+
+            return new Variable(0);
+        }       
+    }
+
+    class DoubleToDateTimeFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+
+            var dd = Utils.GetSafeDouble(args, 0);
+
+            DateTime datetime = DateTime.FromOADate(dd); //OLE Automation Date
+            
+            return new Variable(datetime);
         }
     }
 

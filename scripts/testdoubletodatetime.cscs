@@ -1,0 +1,51 @@
+MessageBox(".....testing testDoubleToDateTime.....");
+
+dtNow = DateTime(); //current date and time
+MessageBox("Current date and time: " + dtNow.ToString("yyyyMMdd_HHmmss"));
+//output: 20251222_090705
+
+dd = DateTimeToDouble(dtNow);
+MessageBox("Current date and time as double: " + dd.ToString());
+//output: 46013.3799192708
+
+dt2 = DoubleToDateTime(dd);
+MessageBox("Double converted back to DateTime: " + dt2.ToString("yyyyMMdd_HHmmss"));
+//output: 20251222_090705
+
+
+//*******************************************************************
+//*******************************************************************
+//*******************************************************************
+//*********************** ALL OTHER TESTS ***************************
+
+/*
+cc = DoubleToDateTime(1);
+MessageBox("cc date and time from double 1: " + cc.ToString("yyyyMMdd_HHmmss"));
+//output: 18991231_000000
+*/
+/*
+tt = DoubleToDateTime(0);
+MessageBox("tt date and time from double 0: " + tt.ToString("yyyyMMdd_HHmmss"));
+//output: 18991230_000000
+*/
+/*
+ff = DoubleToDateTime(-1);
+MessageBox("ff date and time from double -1: " + ff.ToString("yyyyMMdd_HHmmss"));
+//output: 18991229_000000
+*/
+/*
+ee = DoubleToDateTime("44561.123456");
+MessageBox("ee date and time from double 44561.123456: " + ee.ToString("yyyyMMdd_HHmmss"));
+//output: 20211231_025746
+*/
+/*
+gg = DoubleToDateTime(null);
+MessageBox("gg date and time from double null: " + gg.ToString("yyyyMMdd_HHmmss"));
+//output: Exception
+*/
+/*
+hh = 44561.123456;
+ii = DoubleToDateTime(hh);
+MessageBox("ii date and time from double 44561.123456: " + ii.ToString("yyyyMMdd_HHmmss"));
+//output: 20211231_025746
+*/

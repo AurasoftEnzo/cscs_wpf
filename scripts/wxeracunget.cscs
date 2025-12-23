@@ -32,7 +32,7 @@ DEFINE arrayBrojRacuna type a size 50 array 10000;
 DEFINE arrayBrojRacunaFina type a size 50 array 10000;
 DEFINE arrayBrojRacunaMer type a size 50 array 10000;
 
-savedXmlFilesList = {};
+// savedXmlFilesList = {};
 
 function wxeracunget_onDisplay(){
     cursor("wait");
@@ -407,7 +407,7 @@ function GetRacuniFINA(){
             //Save XML
             xmlFilePath = FILESPATH + "UR\\" + "FINA_UR_" + invoiceId + ".xml";
             SaveFile(ack["ItemContent"], xmlFilePath);
-            savedXmlFilesList.Add(xmlFilePath);
+            // savedXmlFilesList.Add(xmlFilePath);
 
             // Save PDF
             Base642File(ack["Base64PdfDocumentString"], FILESPATH + "UR\\" + "FINA_UR_" + invoiceId + ".pdf");
@@ -449,7 +449,7 @@ function MERReceiveRacunSuccess(trackingId, responseCode, res) {
 
         xmlFilePath = FILESPATH + "UR\\" + trackingId + ".xml";
         SaveFile(res, xmlFilePath);
-        savedXmlFilesList.Add(xmlFilePath);
+        // savedXmlFilesList.Add(xmlFilePath);
     }catch(ex){
         MessageBox("MERReceiveRacunSuccess - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
         // !!! LOG !!!
@@ -476,13 +476,64 @@ function startImportCall(){
 }
 
 function startImport(){
-    // MSG(savedXmlFilesList);
+    cd(FILESPATH + "UR\\");
+    listOfXmls = FindFiles("*.xml");
 
-    for(i = 0; i < Size(savedXmlFilesList); i++){
-        xmlFilePath = savedXmlFilesList[i];
+    MSG(listOfXmls);
+    MSG(Size(listOfXmls));
+
+    for(i = 0; i < Size(listOfXmls); i++){
+        ImportXml(listOfXmls[i]);
+    }
+}
+
+function ImportXml(xmlFilePath){
+    try{
         MSG("Importing XML file: " + xmlFilePath);
-        // importUBLXml(xmlFilePath);
-        MSG(XmlToDict(ReadAllText(xmlFilePath)));
+            
+        xmlDict = XmlToDict(ReadAllText(xmlFilePath));
+        
+            // MSG(xmlDict.Keys);
+            
+            // if(Contains(xmlDict, "Invoice")){
+            //     mainNode = xmlDict["Invoice"];
+            // }elif(Contains(xmlDict, "CreditNote")){
+            //     mainNode = xmlDict["CreditNote"];
+            // }else{
+            //     MessageBox("Nepoznat tip XML datoteke: " + xmlFilePath);
+            //     continue;
+            // }
+            
+            // if(Contains(xmlDict, "Invoice")){
+            //     mainNode = xmlDict["Invoice"];
+            // }elif(Contains(xmlDict, "CreditNote")){
+            //     mainNode = xmlDict["CreditNote"];
+            // }else{
+            //     MessageBox("Nepoznat tip XML datoteke: " + xmlFilePath);
+            //     continue;
+            // }
+
+            // if(Contains(mainNode, "AdditionalDocumentReference")){
+            //     adr = mainNode["AdditionalDocumentReference"];
+            //     MSG(adr);
+            // }
+
+        if(Contains(xmlDict, "AdditionalDocumentReference")){
+            adr = xmlDict["AdditionalDocumentReference"];
+
+            if(Contains(adr, "Attachment")){
+                att = adr["Attachment"];
+                if(Contains(att, "EmbeddedDocumentBinaryObject")){
+                    edbo = att["EmbeddedDocumentBinaryObject"];
+                    
+                    Base642File(edbo, "C:\\test\\" + parsefile(xmlFilePath, "pfName") + "_attachment" + ".pdf");
+                }
+            }
+        }
+    }catch(ex){
+        MessageBox("Greška pri importu XML datoteke " + xmlFilePath + ":\n" + ex);
+        // LogException(ex); // !!!
+        return;
     }
 }
 

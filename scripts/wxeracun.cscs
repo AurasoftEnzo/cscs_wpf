@@ -1682,7 +1682,7 @@ function GenerateUBLXml() {
         xmlFileName = FILESPATH + "IR\\" + parsefile(attachmentPdfPath, "pfName") + ".xml";
     }
     
-    msg(xmlFileName);
+    // msg(xmlFileName);
 
     SaveFile(xml, xmlFileName);
 
@@ -1885,7 +1885,7 @@ function GetMimeType(file) {
 // -----------------------------------------------------------
 
 function SendERacun(){
-mbox("CCC Slanje eRačuna putem posrednika: " + PROVIDER);
+msg("CCC Slanje eRačuna putem posrednika: " + PROVIDER);
     sql_erac = "SELECT
                 ERAC_REZ1, ERAC_SERVER, ERAC_SERVERT, ERAC_USER, ERAC_PASS, ERAC_USERT, ERAC_PASST, ERAC_DESC 
                 FROM " + databaseName + ".dbo.NKSYERAC WHERE ERAC_CODE = @p1;";
@@ -1938,7 +1938,7 @@ MessageBox("Slanje eRačuna putem posrednika: " + PROVIDER + " (" + ERAC_PASST +
         // za test koristimo račun "90100003"
         
 
-         SendToFINA();
+        SendToFINA();
         //SendToFINA_2();
         // ...
 
@@ -1946,7 +1946,8 @@ MessageBox("Slanje eRačuna putem posrednika: " + PROVIDER + " (" + ERAC_PASST +
     }
     elif(PROVIDER == "EDITEL" || PROVIDER == "EDITELDEMO"){
         //koristimo EDITEL način slanja
-        SendToEDITEL();
+        MessageBox("Slanje eRačuna putem posrednika " + PROVIDER + " nije predviđeno ovim programom.");
+        // SendToEDITEL();
         return;
     }
     else
@@ -1956,71 +1957,71 @@ MessageBox("Slanje eRačuna putem posrednika: " + PROVIDER + " (" + ERAC_PASST +
     }    
 }
 
-function SendToEDITEL() {
-    // Editel provider - samo spremanje XML datoteke na disk
-    try {
-        // Determine output directory based on provider configuration
-        outputPath = ERAC_SERVER;  // Use ERAC_SERVER as output directory path
-        if (PROVIDER == "EDITEL") {
-            outputPath = ERAC_SERVERT;  // Use ERAC_SERVERT for demo/test
-        }
+// function SendToEDITEL() {
+//     // Editel provider - samo spremanje XML datoteke na disk
+//     try {
+//         // Determine output directory based on provider configuration
+//         outputPath = ERAC_SERVER;  // Use ERAC_SERVER as output directory path
+//         if (PROVIDER == "EDITEL") {
+//             outputPath = ERAC_SERVERT;  // Use ERAC_SERVERT for demo/test
+//         }
 
-        if (outputPath == "") {
-            outputPath = FILESPATH + "editel\\";  // Default to subfolder in FILESPATH
-        }
+//         if (outputPath == "") {
+//             outputPath = FILESPATH + "editel\\";  // Default to subfolder in FILESPATH
+//         }
 
-        // Ensure output directory exists
-        if (!DIR_EXISTS(outputPath)) {
-            try {
-                MAKE_DIR(outputPath);
-            } catch (dirEx) {
-                MessageBox("Greška pri stvaranju direktorija za Editel: " + outputPath + "\n" + dirEx);
-                return;
-            }
-        }
+//         // Ensure output directory exists
+//         if (!DIR_EXISTS(outputPath)) {
+//             try {
+//                 MAKE_DIR(outputPath);
+//             } catch (dirEx) {
+//                 MessageBox("Greška pri stvaranju direktorija za Editel: " + outputPath + "\n" + dirEx);
+//                 return;
+//             }
+//         }
 
-        // Generate filename with timestamp for uniqueness
-        timestamp = Now("yyyyMMdd_HHmmss");
-        editelFileName = "Invoice_" + invNum + "_" + timestamp + ".xml";
-        editelFilePath = outputPath + editelFileName;
+//         // Generate filename with timestamp for uniqueness
+//         timestamp = Now("yyyyMMdd_HHmmss");
+//         editelFileName = "Invoice_" + invNum + "_" + timestamp + ".xml";
+//         editelFilePath = outputPath + editelFileName;
 
-        // Read the XML content from the generated file
-        xmlContent = ReadFile(xmlFileName);
-        if (xmlContent == "") {
-            MessageBox("Greška pri čitanju XML datoteke za Editel.");
-            return;
-        }
+//         // Read the XML content from the generated file
+//         xmlContent = ReadFile(xmlFileName);
+//         if (xmlContent == "") {
+//             MessageBox("Greška pri čitanju XML datoteke za Editel.");
+//             return;
+//         }
 
-        // Save XML to Editel output location
-        SaveFile(xmlContent, editelFilePath, "");
+//         // Save XML to Editel output location
+//         SaveFile(xmlContent, editelFilePath, "");
 
-        // Show success message
-        MessageBox("Editel XML datoteka uspješno spremljena:\n" + editelFilePath);
+//         // Show success message
+//         MessageBox("Editel XML datoteka uspješno spremljena:\n" + editelFilePath);
 
-        // Optional: Log to file for audit trail (not to NKSYELOG)
-        LogEditelOperation(invNum, editelFilePath, "XML_SAVED");
+//         // Optional: Log to file for audit trail (not to NKSYELOG)
+//         LogEditelOperation(invNum, editelFilePath, "XML_SAVED");
 
-    } catch (ex) {
-        MessageBox("Greška pri radu s Editel providerom: " + ex);
-    }
-}
+//     } catch (ex) {
+//         MessageBox("Greška pri radu s Editel providerom: " + ex);
+//     }
+// }
 
-// Helper function for Editel audit logging (separate from NKSYELOG)
-function LogEditelOperation(invoiceNum, filePath, operation) {
-    try {
-        if (!DIR_EXISTS(FILESPATH + "editel_logs\\")) {
-            MAKE_DIR(FILESPATH + "editel_logs\\");
-        }
+// // Helper function for Editel audit logging (separate from NKSYELOG)
+// function LogEditelOperation(invoiceNum, filePath, operation) {
+//     try {
+//         if (!DIR_EXISTS(FILESPATH + "editel_logs\\")) {
+//             MAKE_DIR(FILESPATH + "editel_logs\\");
+//         }
 
-        logFilePath = FILESPATH + "editel_logs\\editel_" + Now("yyyyMM") + ".log";
-        logEntry = Now("yyyy-MM-dd HH:mm:ss") + " | " + operation + " | Invoice: " + invoiceNum + " | File: " + filePath + "\n";
+//         logFilePath = FILESPATH + "editel_logs\\editel_" + Now("yyyyMM") + ".log";
+//         logEntry = Now("yyyy-MM-dd HH:mm:ss") + " | " + operation + " | Invoice: " + invoiceNum + " | File: " + filePath + "\n";
         
-        SaveFile(logEntry, logFilePath, "a");  // Append mode
-    } catch (logEx) {
-        // Non-critical error, don't interrupt the main process
-        MSG("Editel logging error: " + logEx);
-    }
-}
+//         SaveFile(logEntry, logFilePath, "a");  // Append mode
+//     } catch (logEx) {
+//         // Non-critical error, don't interrupt the main process
+//         MSG("Editel logging error: " + logEx);
+//     }
+// }
 
 function MERSuccess(_invID, responseCode, res) {
     MSG("MERSuccess");
@@ -2246,6 +2247,12 @@ function SendToFINA_2() {
 
 
 function SendToEPOS() {
+    MessageBox("Slanje na EPOS nije implementirano.");
+    return;
+
+
+
+
     // Determine endpoint based on provider configuration
     endpoint = ERAC_SERVER;
     if (PROVIDER == "EPOSDEMO") {

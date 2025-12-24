@@ -11,10 +11,6 @@
 
 
 
-
-
-
-
 Import(strTrim(mpath()) + "CSCS.Math.dll");
 
 CreateWindow(strTrim(tpath()) + "wxeracunget.xaml");
@@ -47,7 +43,7 @@ function wxeracunget_onDisplay(){
         DisplayArraySetup("datagridListaRacuna", counterFld: cntr1, activeElements: Rbr, maxElements: Rbr);
     }catch(ex){
         MessageBox("Greška pri inicijalizaciji:\n" + ex);
-        // !!! LOG !!!
+        // ??? LOG? ne?
         exit;
     }
     
@@ -84,7 +80,7 @@ function init(){
     catch(ex)
     {
         MessageBox("Greška čitanja NKSYCCYR:\n" + ex);
-        // !!! LOG !!!
+        // ??? LOG? ne?
         exit;
     }
 
@@ -95,6 +91,45 @@ function init(){
         SY_CC_USER = sqlResult[1][0].trim(); // KAMEND
         databaseName = sqlResult[1][1].trim(); // ime baze
     }    
+
+
+    // NKSYSYCO Configuration
+    sqlQueryString = " SELECT NKSYS_FIELD, NKSYS_VALUE 
+        FROM " + databaseName + ".dbo.NKSYSYCO 
+        WHERE NKSYS_MODUL = 'WKSY'
+        AND NKSYS_GRUP = 'ERACUN'";
+    try
+    {
+        sqlResult = sqlQuery(sqlQueryString);
+    }
+    catch(ex)
+    {
+        MessageBox("Greška čitanja NKSYSYCO:\n" + ex);
+        // ??? LOG? ne?
+        exit;
+    }
+
+    if (size(sqlResult) > 1)
+    {
+        for(i = 1; i < Size(sqlResult); i++){
+            if(sqlResult[i][0].trim() == "FILESPATH"){
+                FILESPATH = sqlResult[i][1].trim();
+            }
+            elif(sqlResult[i][0].trim() == "PROVIDER")
+            {
+                PROVIDER = sqlResult[i][1].trim();
+            }
+            elif(sqlResult[i][0].trim() == "SCHEMASPATH")
+            {
+                SCHEMASPATH = sqlResult[i][1].trim();
+            }
+        }
+    }
+
+    logFolder = FILESPATH + "UR\\" + "log\\";
+    if (!Exists(logFolder)) {
+        MkDir(logFolder);
+    }
 
 
     // KPSYMSTR
@@ -108,7 +143,7 @@ function init(){
     catch(ex)
     {
         MessageBox("Greška čitanja KPSYMSTR:\n" + ex);
-        // !!! LOG !!!
+        // !!! LOG ???
         exit;
     }
 
@@ -133,40 +168,6 @@ function init(){
         KPSY_REZERVAX = sqlResult[1][10].trim(); // Supplier GLN
         KPSY_FISCAL_YR = sqlResult[1][11].trim();
     } 
-
-
-    // NKSYSYCO Configuration
-    sqlQueryString = " SELECT NKSYS_FIELD, NKSYS_VALUE 
-        FROM " + databaseName + ".dbo.NKSYSYCO 
-        WHERE NKSYS_MODUL = 'WKSY'
-        AND NKSYS_GRUP = 'ERACUN'";
-    try
-    {
-        sqlResult = sqlQuery(sqlQueryString);
-    }
-    catch(ex)
-    {
-        MessageBox("Greška čitanja NKSYSYCO:\n" + ex);
-        // !!! LOG !!!
-        exit;
-    }
-
-    if (size(sqlResult) > 1)
-    {
-        for(i = 1; i < Size(sqlResult); i++){
-            if(sqlResult[i][0].trim() == "FILESPATH"){
-                FILESPATH = sqlResult[i][1].trim();
-            }
-            elif(sqlResult[i][0].trim() == "PROVIDER")
-            {
-                PROVIDER = sqlResult[i][1].trim();
-            }
-            elif(sqlResult[i][0].trim() == "SCHEMASPATH")
-            {
-                SCHEMASPATH = sqlResult[i][1].trim();
-            }
-        }
-    }
 }
 
 function getList(){
@@ -343,7 +344,7 @@ function AddRacunToArrays(supplierName, supplierId, date1, date2, supplierInvoic
     } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
         arrayBrojRacunaFina[Rbr] = eRacunBrojRacuna;
     } else {
-        MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA");
+        MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA, MERDEMO, FINADEMO");
         exit;
     }
 
@@ -359,7 +360,6 @@ function btnPreuzmi@clicked(){
     SetWidgetOptions("StatusLabel", "Content", "Preuzimanje...");
 
     AsyncCall("startDownload", "startImportCall");   
-    
 }
 
 function startDownload(){

@@ -623,7 +623,7 @@ function GenerateUBLXml() {
             xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
             xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
             if (exemptReason != ""){
-                xml += "                        <cbc:TaxExemptionReason>" + exemptReason + "</cbc:TaxExemptionReason>\n";
+                xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
             }   
             xml += "                        <cbc:Percent>" + 0.00 + "</cbc:Percent>\n";
             xml += "                        <hrextac:HRTaxScheme>\n";
@@ -690,7 +690,7 @@ function GenerateUBLXml() {
             xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
             xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
             if (exemptReason != ""){
-                xml += "                        <cbc:TaxExemptionReason>" + exemptReason + "</cbc:TaxExemptionReason>\n";
+                xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
             }   
             xml += "                        <hrextac:HRTaxScheme>\n";
             xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
@@ -706,7 +706,7 @@ function GenerateUBLXml() {
             xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
             xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
             if (exemptReason != ""){
-                xml += "                        <cbc:TaxExemptionReason>" + exemptReason + "</cbc:TaxExemptionReason>\n";
+                xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
             }   
             xml += "                        <hrextac:HRTaxScheme>\n";
             xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
@@ -722,7 +722,7 @@ function GenerateUBLXml() {
             xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
             xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
             if (exemptReason != ""){
-                xml += "                        <cbc:TaxExemptionReason>" + exemptReason + "</cbc:TaxExemptionReason>\n";
+                xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
             }   
             xml += "                        <hrextac:HRTaxScheme>\n";
             xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
@@ -739,7 +739,7 @@ function GenerateUBLXml() {
             xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
             xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
             if (exemptReason != ""){
-                xml += "                        <cbc:TaxExemptionReason>" + exemptReason + "</cbc:TaxExemptionReason>\n";
+                xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
             }   
             xml += "                        <hrextac:HRTaxScheme>\n";
             xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
@@ -831,7 +831,7 @@ function GenerateUBLXml() {
             note += NKPR_GL_ENTBY + ": " + KPSY_USER_NAZIV;
         }
         if (note != "") {
-            xml += "<cbc:Note>" + note + "#AAI#" + "</cbc:Note>\n"; // BT-21, 0..1 (note code) and BT-22; 1..1 note text
+            xml += "<cbc:Note>" + EscapeForXml(note) + "#AAI#" + "</cbc:Note>\n"; // BT-21, 0..1 (note code) and BT-22; 1..1 note text
         }
 
         xml += "<cbc:TaxPointDate>" + NKPR_GL_ESD + "</cbc:TaxPointDate>\n";
@@ -913,26 +913,46 @@ function GenerateUBLXml() {
 
 
     // -----------------------------------------------------------
+    // main Račun pdf Attachment
+    // -----------------------------------------------------------
+    if (true) { // !!!
+        opis = "pdf dokumenta";
+        if (Exists(attachmentPdfPath)) {
+            mime = GetMimeType(attachmentPdfPath);
+            b64 = File2Base64(attachmentPdfPath);
+            xml += "<cac:AdditionalDocumentReference>\n";
+            xml += "  <cbc:ID>" + "0" + "</cbc:ID>\n"; 
+            // xml += "  <cbc:DocumentTypeCode>130</cbc:DocumentTypeCode>\n"; //130 must be used for INVOICE type document
+            xml += "  <cbc:DocumentDescription>" + EscapeForXml(opis) + "</cbc:DocumentDescription>\n";
+            xml += "  <cac:Attachment>\n";
+            xml += "    <cbc:EmbeddedDocumentBinaryObject mimeCode=\"" + mime + "\" filename=\"" + ParseFile(attachmentPdfPath, "pfName") + ParseFile(attachmentPdfPath, "pfExt") + "\">" + b64 + "</cbc:EmbeddedDocumentBinaryObject>\n";
+            xml += "  </cac:Attachment>\n";
+            // xml += "  <hrextac:DocumentValidationRef>" + NKPR_GL_PICTHDR + "</hrextac:DocumentValidationRef>\n";
+            xml += "</cac:AdditionalDocumentReference>\n";
+        }
+    }
+    
+    // -----------------------------------------------------------
     // Header Attachments
     // -----------------------------------------------------------
     if (NKPR_GL_PICTHDR != 0) {
-        sql_pic = "SELECT SY_SL_PATH, SY_SL_OPIS FROM " + databaseName + ".dbo.NKSYPICT WHERE SY_SL_CODE = @p1;";
+        sql_pic = "SELECT SY_SL_PATH, SY_SL_OPIS FROM " + databaseName + ".dbo.NKSYPICT WHERE SY_SL_NUM = @p1;";
         sqlParams = {};
         sqlParams.Add({"@p1", NKPR_GL_PICTHDR});
         picRes = sqlQuery(sql_pic, sqlParams);
-        SY_SL_PATH = picRes[1][0];
-        SY_SL_OPIS = picRes[1][1];
+        SY_SL_PATH = picRes[1][0].trim();
+        SY_SL_OPIS = picRes[1][1].trim();
         if (Size(picRes) >= 2 && Exists(SY_SL_PATH)) {
             mime = GetMimeType(SY_SL_PATH);
             b64 = File2Base64(SY_SL_PATH);
             xml += "<cac:AdditionalDocumentReference>\n";
             xml += "  <cbc:ID>" + NKPR_GL_PICTHDR + "</cbc:ID>\n"; 
-            xml += "  <cbc:DocumentTypeCode>130</cbc:DocumentTypeCode>\n"; //130 must be used for INVOICE type document
-            xml += "  <cbc:DocumentDescription>" + SY_SL_OPIS + "</cbc:DocumentDescription>\n";
+            // xml += "  <cbc:DocumentTypeCode>130</cbc:DocumentTypeCode>\n"; //130 must be used for INVOICE type document
+            xml += "  <cbc:DocumentDescription>" + EscapeForXml(SY_SL_OPIS) + "</cbc:DocumentDescription>\n";
             xml += "  <cac:Attachment>\n";
-            xml += "    <cbc:EmbeddedDocumentBinaryObject mimeCode=\"" + mime + "\" filename=\"" + ParseFile(SY_SL_PATH, "pfName") + "." + ParseFile(SY_SL_PATH, "pfExt") + "\">" + b64 + "</cbc:EmbeddedDocumentBinaryObject>\n";
+            xml += "    <cbc:EmbeddedDocumentBinaryObject mimeCode=\"" + mime + "\" filename=\"" + ParseFile(SY_SL_PATH, "pfName") + ParseFile(SY_SL_PATH, "pfExt") + "\">" + b64 + "</cbc:EmbeddedDocumentBinaryObject>\n";
             xml += "  </cac:Attachment>\n";
-            xml += "  <hr:DocumentValidationRef>" + NKPR_GL_PICTHDR + "</hr:DocumentValidationRef>\n";
+            // xml += "  <hrextac:DocumentValidationRef>" + NKPR_GL_PICTHDR + "</hrextac:DocumentValidationRef>\n";
             xml += "</cac:AdditionalDocumentReference>\n";
         }
     }
@@ -941,24 +961,52 @@ function GenerateUBLXml() {
     // Footer Attachments
     // -----------------------------------------------------------
     if (NKPR_GL_PICTFTR != 0) {
-        sql_pic = "SELECT SY_SL_PATH, SY_SL_OPIS FROM " + databaseName + ".dbo.NKSYPICT WHERE SY_SL_CODE = @p1;";
+        sql_pic = "SELECT SY_SL_PATH, SY_SL_OPIS FROM " + databaseName + ".dbo.NKSYPICT WHERE SY_SL_NUM = @p1;";
         sqlParams = {};
         sqlParams.Add({"@p1", NKPR_GL_PICTFTR});
         picRes = sqlQuery(sql_pic, sqlParams);
-        SY_SL_PATH = picRes[1][0];
-        SY_SL_OPIS = picRes[1][1];
+        SY_SL_PATH = picRes[1][0].trim();
+        SY_SL_OPIS = picRes[1][1].trim();
         if (Size(picRes) >= 2 && Exists(SY_SL_PATH)) {
             mime = GetMimeType(SY_SL_PATH);
             b64 = File2Base64(SY_SL_PATH);
             xml += "<cac:AdditionalDocumentReference>\n";
             xml += "  <cbc:ID>" + NKPR_GL_PICTFTR + "</cbc:ID>\n";
-            xml += "  <cbc:DocumentTypeCode>130</cbc:DocumentTypeCode>\n";
-            xml += "  <cbc:DocumentDescription>" + SY_SL_OPIS + "</cbc:DocumentDescription>\n";
+            // xml += "  <cbc:DocumentTypeCode>130</cbc:DocumentTypeCode>\n";
+            xml += "  <cbc:DocumentDescription>" + EscapeForXml(SY_SL_OPIS) + "</cbc:DocumentDescription>\n";
             xml += "  <cac:Attachment>\n";
-            xml += "    <cbc:EmbeddedDocumentBinaryObject mimeCode=\"" + mime + "\" filename=\"" + ParseFile(SY_SL_PATH, "pfName") + "." + ParseFile(SY_SL_PATH, "pfExt") + "\">" + b64 + "</cbc:EmbeddedDocumentBinaryObject>\n";
+            xml += "    <cbc:EmbeddedDocumentBinaryObject mimeCode=\"" + mime + "\" filename=\"" + ParseFile(SY_SL_PATH, "pfName") + ParseFile(SY_SL_PATH, "pfExt") + "\">" + b64 + "</cbc:EmbeddedDocumentBinaryObject>\n";
             xml += "  </cac:Attachment>\n";
-            xml += "  <hr:DocumentValidationRef>" + NKPR_GL_PICTHDR + "</hr:DocumentValidationRef>\n";
+            // xml += "  <hrextac:DocumentValidationRef>" + NKPR_GL_PICTFTR + "</hrextac:DocumentValidationRef>\n";
             xml += "</cac:AdditionalDocumentReference>\n";
+        }
+    }
+
+
+    for (j = 1; j < Size(linRes); j++) {
+
+        fillInvoiceLine(j);
+
+        if (NKPR_LN_SASTAV != 0) {
+            sql_pic = "SELECT SY_SL_PATH, SY_SL_OPIS FROM " + databaseName + ".dbo.NKSYPICT WHERE SY_SL_NUM = @p1;";
+            sqlParams = {};
+            sqlParams.Add({"@p1", NKPR_LN_SASTAV});
+            picRes = sqlQuery(sql_pic, sqlParams);
+            SY_SL_PATH = picRes[1][0].trim();
+            SY_SL_OPIS = picRes[1][1].trim();
+            if (Size(picRes) >= 2 && Exists(SY_SL_PATH)) {
+                mime = GetMimeType(SY_SL_PATH);
+                b64 = File2Base64(SY_SL_PATH);
+                xml += "<cac:AdditionalDocumentReference>\n";
+                xml += "  <cbc:ID>" + NKPR_LN_SASTAV + "</cbc:ID>\n";
+                // xml += "  <cbc:DocumentTypeCode>130</cbc:DocumentTypeCode>\n";
+                xml += "  <cbc:DocumentDescription>" + "Linija " + NKPR_LN_BR_LN + ".: " + EscapeForXml(SY_SL_OPIS) + "</cbc:DocumentDescription>\n";
+                xml += "  <cac:Attachment>\n";
+                xml += "    <cbc:EmbeddedDocumentBinaryObject mimeCode=\"" + mime + "\" filename=\"" + ParseFile(SY_SL_PATH, "pfName") + ParseFile(SY_SL_PATH, "pfExt") + "\">" + b64 + "</cbc:EmbeddedDocumentBinaryObject>\n";
+                xml += "  </cac:Attachment>\n";
+                // xml += "  <hrextac:DocumentValidationRef>" + NKPR_LN_SASTAV + "</hrextac:DocumentValidationRef>\n";
+                xml += "</cac:AdditionalDocumentReference>\n";
+            }
         }
     }
 
@@ -1004,13 +1052,13 @@ function GenerateUBLXml() {
     
     xml += "    <cbc:EndpointID schemeID=\"" + supSchemeID + "\">" + supEndpointID + "</cbc:EndpointID>\n"; // !!! // ???
     xml += "    <cac:PartyIdentification><cbc:ID>" + supPartyID + "</cbc:ID></cac:PartyIdentification>\n";
-    xml += "    <cac:PartyName><cbc:Name>" + supName + "</cbc:Name></cac:PartyName>\n";
+    xml += "    <cac:PartyName><cbc:Name>" + EscapeForXml(supName) + "</cbc:Name></cac:PartyName>\n";
     
     xml += "    <cac:PostalAddress>\n";
-    xml += "      <cbc:StreetName>" + supAddr + "</cbc:StreetName>\n";
-    xml += "      <cbc:CityName>" + supCity + "</cbc:CityName>\n";
-    xml += "      <cbc:PostalZone>" + supZip + "</cbc:PostalZone>\n";
-    xml += "      <cac:Country><cbc:IdentificationCode>" + supCountry + "</cbc:IdentificationCode></cac:Country>\n";
+    xml += "      <cbc:StreetName>" + EscapeForXml(supAddr) + "</cbc:StreetName>\n";
+    xml += "      <cbc:CityName>" + EscapeForXml(supCity) + "</cbc:CityName>\n";
+    xml += "      <cbc:PostalZone>" + EscapeForXml(supZip) + "</cbc:PostalZone>\n";
+    xml += "      <cac:Country><cbc:IdentificationCode>" + EscapeForXml(supCountry) + "</cbc:IdentificationCode></cac:Country>\n";
     xml += "    </cac:PostalAddress>\n";
     
     xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + KPSY_PO_FREIGHT + supOIB + "</cbc:CompanyID>\n"; //BT-31
@@ -1021,7 +1069,7 @@ function GenerateUBLXml() {
 
 
     xml += "    <cac:PartyLegalEntity>\n";
-    xml += "      <cbc:RegistrationName>" + RegistrationName + "</cbc:RegistrationName>\n";
+    xml += "      <cbc:RegistrationName>" + EscapeForXml(RegistrationName) + "</cbc:RegistrationName>\n";
     if (KPSY_COMP_JMBFI != "") {
         // xml += "      <cbc:CompanyID schemeID=\"MBS\">" + KPSY_COMP_JMBFI + "</cbc:CompanyID>\n";
         xml += "      <cbc:CompanyID>" + KPSY_COMP_JMBFI + "</cbc:CompanyID>\n";
@@ -1033,7 +1081,7 @@ function GenerateUBLXml() {
     if (KPSY_COMP_PHONE != "" || KPSY_COMP_EMAIL != "") {
         xml += "    <cac:Contact>\n";
         if (KPSY_COMP_PHONE != "") { xml += "      <cbc:Telephone>" + KPSY_COMP_PHONE + "</cbc:Telephone>\n"; }
-        if (KPSY_COMP_EMAIL != "") { xml += "      <cbc:ElectronicMail>" + KPSY_COMP_EMAIL + "</cbc:ElectronicMail>\n"; }
+        if (KPSY_COMP_EMAIL != "") { xml += "      <cbc:ElectronicMail>" + EscapeForXml(KPSY_COMP_EMAIL) + "</cbc:ElectronicMail>\n"; }
         xml += "    </cac:Contact>\n";
     }
 
@@ -1041,9 +1089,9 @@ function GenerateUBLXml() {
 
 
     
-    xml += "  <cac:SellerContact>"; //možda bi tu trebalo zapravo OIB i naziv prodavača a ne operatera???? ali u dokumentaciji piše operatera!
+    xml += "  <cac:SellerContact>"; //možda     bi tu trebalo zapravo OIB i naziv prodavača a ne operatera???? ali u dokumentaciji piše operatera!
     xml += "    <cbc:ID>" + UserOib + "</cbc:ID>"; //HR-BT-5; 1..1 ; OIB operatera
-    xml += "    <cbc:Name>" + KPSY_USER_NAZIV + "</cbc:Name>"; //HR-BT-4; 0..1 ; naziv operatera
+    xml += "    <cbc:Name>" + EscapeForXml(KPSY_USER_NAZIV) + "</cbc:Name>"; //HR-BT-4; 0..1 ; naziv operatera
     xml += "  </cac:SellerContact>";
 
 
@@ -1071,19 +1119,19 @@ function GenerateUBLXml() {
     xml += "    <cbc:EndpointID schemeID=\"" + cusSchemeID + "\">" + cusEndpointID + "</cbc:EndpointID>\n";
     xml += "    <cac:PartyIdentification><cbc:ID>" + cusPartyID + "</cbc:ID></cac:PartyIdentification>\n";
 
-    xml += "    <cac:PartyName><cbc:Name>" + NKPR_GL_CUSNME + "</cbc:Name></cac:PartyName>\n";
+    xml += "    <cac:PartyName><cbc:Name>" + EscapeForXml(NKPR_GL_CUSNME) + "</cbc:Name></cac:PartyName>\n";
 
     xml += "    <cac:PostalAddress>\n";
 
     gl_ro = (NKPR_GL_RO != "" ? " " + NKPR_GL_RO : "");
     StreetName = NKPR_GL_CUSA1 + gl_ro;
 
-    xml += "      <cbc:StreetName>" + StreetName + "</cbc:StreetName>\n";
+    xml += "      <cbc:StreetName>" + EscapeForXml(StreetName) + "</cbc:StreetName>\n";
     // xml += "      <cbc:AdditionalStreetName>***put 6***</cbc:AdditionalStreetName>\n";
-    xml += "      <cbc:CityName>" + NKPR_GL_CUSCTY + "</cbc:CityName>\n";
-    xml += "      <cbc:PostalZone>" + NKPR_GL_CUSZIP + "</cbc:PostalZone>\n";
+    xml += "      <cbc:CityName>" + EscapeForXml(NKPR_GL_CUSCTY) + "</cbc:CityName>\n";
+    xml += "      <cbc:PostalZone>" + EscapeForXml(NKPR_GL_CUSZIP) + "</cbc:PostalZone>\n";
     // xml += "      <cbc:CountrySubentity>***Grad Zagreb***</cbc:CountrySubentity>\n";
-    xml += "      <cac:Country><cbc:IdentificationCode>" + NKPR_GL_DRZAVA + "</cbc:IdentificationCode></cac:Country>\n";
+    xml += "      <cac:Country><cbc:IdentificationCode>" + EscapeForXml(NKPR_GL_DRZAVA) + "</cbc:IdentificationCode></cac:Country>\n";
     xml += "    </cac:PostalAddress>\n";
 
     if(NKPR_GL_CUSST == ""){
@@ -1098,7 +1146,7 @@ function GenerateUBLXml() {
 
     // ??? PartyLegalEntity
     xml += "    <cac:PartyLegalEntity>\n";
-    xml += "      <cbc:RegistrationName>" + NKPR_GL_CUSNME + "</cbc:RegistrationName>\n"; 
+    xml += "      <cbc:RegistrationName>" + EscapeForXml(NKPR_GL_CUSNME) + "</cbc:RegistrationName>\n"; 
     // if (KPSY_COMP_JMBFI != "") {
     //     // xml += "      <cbc:CompanyID schemeID=\"MBS\">" + KPSY_COMP_JMBFI + "</cbc:CompanyID>\n";
     //     // xml += "      <cbc:CompanyID>" +  + "</cbc:CompanyID>\n";
@@ -1142,20 +1190,20 @@ function GenerateUBLXml() {
              xml += "    <cac:Address>\n";
             
              if (NKPR_GL_SHPA1 != "") {
-                 xml += "      <cbc:StreetName>" + NKPR_GL_SHPA1 + "</cbc:StreetName>\n";
+                 xml += "      <cbc:StreetName>" + EscapeForXml(NKPR_GL_SHPA1) + "</cbc:StreetName>\n";
              }
             
              if (NKPR_GL_SHPCTY != "") {
-                 xml += "      <cbc:CityName>" + NKPR_GL_SHPCTY + "</cbc:CityName>\n";
+                 xml += "      <cbc:CityName>" + EscapeForXml(NKPR_GL_SHPCTY) + "</cbc:CityName>\n";
              }
             
              if (NKPR_GL_SHPZIP != "") {
-                 xml += "      <cbc:PostalZone>" + NKPR_GL_SHPZIP + "</cbc:PostalZone>\n";
+                 xml += "      <cbc:PostalZone>" + EscapeForXml(NKPR_GL_SHPZIP) + "</cbc:PostalZone>\n";
              }
             
              if (NKPR_GL_SHPST != "") {
                  xml += "      <cac:Country>\n";
-                 xml += "        <cbc:IdentificationCode>" + NKPR_GL_SHPST + "</cbc:IdentificationCode>\n";
+                 xml += "        <cbc:IdentificationCode>" + EscapeForXml(NKPR_GL_SHPST) + "</cbc:IdentificationCode>\n";
                  xml += "      </cac:Country>\n";
              }
             
@@ -1178,7 +1226,7 @@ function GenerateUBLXml() {
              if (NKPR_GL_SHPRO != "" && NKPR_GL_SHPRO != NKPR_GL_SHPST) {
                  xml += "    <cac:PhysicalLocation>\n";
                  xml += "      <cac:Address>\n";
-                 xml += "        <cbc:CountrySubentity>" + NKPR_GL_SHPRO + "</cbc:CountrySubentity>\n";
+                 xml += "        <cbc:CountrySubentity>" + EscapeForXml(NKPR_GL_SHPRO) + "</cbc:CountrySubentity>\n";
                  xml += "      </cac:Address>\n";
                  xml += "    </cac:PhysicalLocation>\n";
              }
@@ -1209,7 +1257,7 @@ function GenerateUBLXml() {
     }
     xml += "<cac:PaymentMeans>\n";
     xml += "  <cbc:PaymentMeansCode>" + payCode + "</cbc:PaymentMeansCode>\n";
-    xml += "  <cbc:InstructionNote>" + KPKS_PL_OPIS + "</cbc:InstructionNote>\n";
+    xml += "  <cbc:InstructionNote>" + EscapeForXml(KPKS_PL_OPIS) + "</cbc:InstructionNote>\n";
     xml += "  <cbc:PaymentID>" + NKPR_GL_MODEL + " " + NKPR_GL_POZIV + "</cbc:PaymentID>\n";
 
     sql_bank = "SELECT NKSC_ZR_KONTO, NKSC_ZR_NAZIV FROM " + databaseName + ".dbo.NKSCZIRO WHERE NKSC_ZR_BANKA = @p1;";
@@ -1222,7 +1270,7 @@ function GenerateUBLXml() {
         xml += "  <cac:PayeeFinancialAccount>\n";
         xml += "    <cbc:ID>" + NKSC_ZR_KONTO + "</cbc:ID>\n";
         // xml += "    <cbc:AccountType>TRAN</cbc:AccountType>\n";
-        xml += "    <cbc:Name>" + NKSC_ZR_NAZIV + "</cbc:Name>\n";
+        xml += "    <cbc:Name>" + EscapeForXml(NKSC_ZR_NAZIV) + "</cbc:Name>\n";
         xml += "  </cac:PayeeFinancialAccount>\n";
     }
     xml += "</cac:PaymentMeans>\n";
@@ -1270,9 +1318,9 @@ function GenerateUBLXml() {
             xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + taxOutOfScopeAmt + "</cbc:TaxAmount>\n";
             xml += "                    <cac:TaxCategory>\n";
             xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
-            xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
+            xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
             if (exemptReason != ""){
-                xml += "                        <cbc:TaxExemptionReason>" + exemptReason + "</cbc:TaxExemptionReason>\n";
+                xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
             }   
             xml += "                        <cbc:Percent>" + 0.00 + "</cbc:Percent>\n";
             xml += "                        <cac:TaxScheme>\n";
@@ -1290,7 +1338,7 @@ function GenerateUBLXml() {
             xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
             xml += "                    <cac:TaxCategory>\n";
             xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
-            xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
+            xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
             xml += "                        <cbc:Percent>" + 0.00 + "</cbc:Percent>\n";
             xml += "                        <cac:TaxScheme>\n";
             xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
@@ -1307,7 +1355,7 @@ function GenerateUBLXml() {
             xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
             xml += "                    <cac:TaxCategory>\n";
             xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
-            xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
+            xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
             xml += "                        <cbc:Percent>" + 0.00 + "</cbc:Percent>\n";
             xml += "                        <cac:TaxScheme>\n";
             xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
@@ -1335,10 +1383,10 @@ function GenerateUBLXml() {
             xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
             xml += "                    <cac:TaxCategory>\n";
             xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
-            xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
+            xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
             xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
             if (exemptReason != ""){
-                xml += "                        <cbc:TaxExemptionReason>" + exemptReason + "</cbc:TaxExemptionReason>\n";
+                xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
             }   
             xml += "                        <cac:TaxScheme>\n";
             xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
@@ -1351,10 +1399,10 @@ function GenerateUBLXml() {
             xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
             xml += "                    <cac:TaxCategory>\n";
             xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
-            xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
+            xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
             xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
             if (exemptReason != ""){
-                xml += "                        <cbc:TaxExemptionReason>" + exemptReason + "</cbc:TaxExemptionReason>\n";
+                xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
             }   
             xml += "                        <cac:TaxScheme>\n";
             xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
@@ -1367,10 +1415,10 @@ function GenerateUBLXml() {
             xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
             xml += "                    <cac:TaxCategory>\n";
             xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
-            xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
+            xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
             xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
             if (exemptReason != ""){
-                xml += "                        <cbc:TaxExemptionReason>" + exemptReason + "</cbc:TaxExemptionReason>\n";
+                xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
             }   
             xml += "                        <cac:TaxScheme>\n";
             xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
@@ -1384,10 +1432,10 @@ function GenerateUBLXml() {
             xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
             xml += "                    <cac:TaxCategory>\n";
             xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
-            xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
+            xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
             xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
             if (exemptReason != ""){
-                xml += "                        <cbc:TaxExemptionReason>" + exemptReason + "</cbc:TaxExemptionReason>\n";
+                xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
             }   
             xml += "                        <cac:TaxScheme>\n";
             xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
@@ -1514,7 +1562,7 @@ function GenerateUBLXml() {
             } elif (NKPR_LN_PSTOPA != 0) {
                 reasonText += " (" + FormatNum(NKPR_LN_PSTOPA, 2, ".") + "%)";
             }
-            xml += "    <cbc:AllowanceChargeReason>" + reasonText + "</cbc:AllowanceChargeReason>\n";
+            xml += "    <cbc:AllowanceChargeReason>" + EscapeForXml(reasonText) + "</cbc:AllowanceChargeReason>\n";
             xml += "    <cbc:MultiplierFactorNumeric>" + FormatNum((lineLevelDiscountAmount / grossAmount) * 100, 2, ".") + "</cbc:MultiplierFactorNumeric>\n";
             xml += "    <cbc:Amount currencyID=\"EUR\">" + FormatNum(lineLevelDiscountAmount, 2, ".") + "</cbc:Amount>\n";
             xml += "    <cbc:BaseAmount currencyID=\"EUR\">" + FormatNum(grossAmount, 2, ".") + "</cbc:BaseAmount>\n";
@@ -1548,30 +1596,9 @@ function GenerateUBLXml() {
             xml += "  <!-- DISCOUNT VERIFICATION: Calculated=" + FormatNum(calculatedDiscountTotal, 2, ".") + 
                    " vs Current=" + FormatNum(discountTotal, 2, ".") + " -->\n";
         }
-
-        // Line attachment
-        if (NKPR_LN_SASTAV != 0) {
-            sql_pic = "SELECT SY_SL_PATH, SY_SL_OPIS FROM " + databaseName + ".dbo.NKSYPICT WHERE SY_SL_CODE = @p1;";
-            sqlParams = {};
-            sqlParams.Add({"@p1", NKPR_LN_SASTAV});
-            picRes = sqlQuery(sql_pic, sqlParams);
-            if (Size(picRes) >= 2 && Exists(picRes[1][0])) {
-                SY_SL_PATH = picRes[1][0];
-                SY_SL_OPIS = picRes[1][1];
-                mime = GetMimeType(SY_SL_PATH);
-                b64 = File2Base64(SY_SL_PATH);
-                xml += "  <cac:DocumentReference>\n";
-                xml += "    <cbc:ID>" + NKPR_LN_SASTAV + "</cbc:ID>\n";
-                xml += "    <cbc:DocumentDescription>" + SY_SL_OPIS + "</cbc:DocumentDescription>\n";
-                xml += "    <cac:Attachment>\n";
-                xml += "      <cbc:EmbeddedDocumentBinaryObject mimeCode=\"" + mime + "\" filename=\"" + ParseFile(SY_SL_PATH, "pfName") + "." + ParseFile(SY_SL_PATH, "pfExt") + "\">" + b64 + "</cbc:EmbeddedDocumentBinaryObject>\n";
-                xml += "    </cac:Attachment>\n";
-                xml += "  </cac:DocumentReference>\n";
-            }
-        }
-
+        
         xml += "  <cac:Item>\n";
-        xml += "    <cbc:Name>" + NKPR_LN_PDESC + "</cbc:Name>\n";
+        xml += "    <cbc:Name>" + EscapeForXml(NKPR_LN_PDESC) + "</cbc:Name>\n";
 
         // Item codes
         sql_art = "SELECT ARTI_ARTIKL, ARTI_SIFART_BAR, ARTI_PRELIMTEZ FROM " + databaseName + ".dbo.NKMKARTI WHERE ARTI_ARTIKL = @p1 ORDER BY ARTI_ARTIKL;";
@@ -1642,6 +1669,27 @@ function GenerateUBLXml() {
         xml += "    </cac:ClassifiedTaxCategory>\n";
 
         xml += "  </cac:Item>\n";
+
+        // // Line attachment
+        // if (NKPR_LN_SASTAV != 0) {
+        //     sql_pic = "SELECT SY_SL_PATH, SY_SL_OPIS FROM " + databaseName + ".dbo.NKSYPICT WHERE SY_SL_NUM = @p1;";
+        //     sqlParams = {};
+        //     sqlParams.Add({"@p1", NKPR_LN_SASTAV});
+        //     picRes = sqlQuery(sql_pic, sqlParams);
+        //     if (Size(picRes) >= 2 && Exists(picRes[1][0].trim())) {
+        //         SY_SL_PATH = picRes[1][0].trim();
+        //         SY_SL_OPIS = picRes[1][1].trim();
+        //         mime = GetMimeType(SY_SL_PATH);
+        //         b64 = File2Base64(SY_SL_PATH);
+        //         xml += "  <cac:DocumentReference>\n";
+        //         xml += "    <cbc:ID>" + NKPR_LN_SASTAV + "</cbc:ID>\n";
+        //         xml += "    <cbc:DocumentDescription>" + EscapeForXml(SY_SL_OPIS) + "</cbc:DocumentDescription>\n";
+        //         xml += "    <cac:Attachment>\n";
+        //         xml += "      <cbc:EmbeddedDocumentBinaryObject mimeCode=\"" + mime + "\" filename=\"" + ParseFile(SY_SL_PATH, "pfName") + ParseFile(SY_SL_PATH, "pfExt") + "\">" + b64 + "</cbc:EmbeddedDocumentBinaryObject>\n";
+        //         xml += "    </cac:Attachment>\n";
+        //         xml += "  </cac:DocumentReference>\n";
+        //     }
+        // }
 
         // Price
         xml += "  <cac:Price>\n";
@@ -1820,7 +1868,10 @@ function GenerateUBLXml() {
     return true;
 }
 
-
+function EscapeForXml(inputString){
+    // return inputString.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;").Replace("'", "&apos;");
+    return inputString.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+}
 
 function fillInvoiceLine(lineNum){
     NKPR_LN_PQTY = linRes[lineNum][0];
@@ -1868,14 +1919,14 @@ function GetUNUnitCode(jedmj) {
 
 function GetMimeType(file) {
     ext = ParseFile(file, "pfExt").Lower(); // StrLower(string)
-    if (ext == "pdf")  { return "application/pdf"; }
-    if (ext == "doc")  { return "application/msword"; }
-    if (ext == "docx") { return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"; }
-    if (ext == "xls")  { return "application/vnd.ms-excel"; }
-    if (ext == "xlsx") { return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"; }
-    if (ext == "odt")  { return "application/vnd.oasis.opendocument.text"; }
-    if (ext == "jpg" || ext == "jpeg") { return "image/jpeg"; }
-    if (ext == "png")  { return "image/png"; }
+    if (ext == ".pdf")  { return "application/pdf"; }
+    if (ext == ".doc")  { return "application/msword"; }
+    if (ext == ".docx") { return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"; }
+    if (ext == ".xls")  { return "application/vnd.ms-excel"; }
+    if (ext == ".xlsx") { return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"; }
+    if (ext == ".odt")  { return "application/vnd.oasis.opendocument.text"; }
+    if (ext == ".jpg" || ext == ".jpeg") { return "image/jpeg"; }
+    if (ext == ".png")  { return "image/png"; }
     return "application/octet-stream";
 }
 

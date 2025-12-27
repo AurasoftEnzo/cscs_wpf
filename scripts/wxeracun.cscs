@@ -171,10 +171,12 @@ function GenerateUBLXml() {
                 NKPR_GL_ENTBY, NKPR_GL_BROPIS, NKPR_GL_BROPIS1,
                 CONVERT(varchar(10), DATEADD(DAY, NKPR_GL_NOKAM + NKPR_GL_ROKPL, NKPR_GL_DVO), 23) as NKPR_GL_DUE_DATE,
                 NKPR_GL_SCONTO,NKPR_GL_DANSC,NKPR_GL_REZ3,NKPR_GL_SHPCOD, NKPR_GL_SHPNME, NKPR_GL_SHPRO, NKPR_GL_SHPA1, 
-                NKPR_GL_SHPZIP, NKPR_GL_SHPCTY,NKPR_GL_SHPST, SUBSTRING(NKSP_AD_REZ,37,13) as NKSP_AD_GLN,
-                NKSC_SOP, NKSC_POSREDNIK, NKSC_REZ10
+                NKPR_GL_SHPZIP, NKPR_GL_SHPCTY,NKPR_GL_SHPST, NKPR_GL_UGOVOR,SUBSTRING(NKSP_AD_REZ,37,13) as NKSP_AD_GLN,
+                NKSC_SOP, NKSC_POSREDNIK, NKSC_REZ10,NKSC_TAX_DN,
+                PKKU_PP_OPIS
                 FROM " + databaseName + ".dbo.NKPRINV LEFT JOIN " + databaseName + ".dbo.NKSCPART ON NKPR_GL_CUSCOD = NKSC_PARTCODE
                     LEFT JOIN " + databaseName + ".dbo.NKSPADRS ON nkpr_gl_cuscod= nksp_ad_code AND nkpr_gl_shpcod= nksp_ad_codeint
+                    LEFT JOIN " + databaseName + ".dbo.PKPUPPUG ON nkpr_gl_ugovor= pkku_pp_broj
                 WHERE NKPR_GL_NUM = @p1;";
     sqlParams = {};
     sqlParams.Add({"@p1", invNum});
@@ -228,10 +230,14 @@ function GenerateUBLXml() {
     NKPR_GL_SHPZIP = hdrRes[1][38].trim();
     NKPR_GL_SHPCTY = hdrRes[1][39].trim();
     NKPR_GL_SHPST = hdrRes[1][40].trim();
-    NKPR_AD_GLN = hdrRes[1][41].trim();
-    NKSC_SOP = hdrRes[1][42].trim(); // Customer GLN
-    NKSC_POSREDNIK = hdrRes[1][43].trim().Upper(); // Intermediary GLN
-    NKSC_REZ10 = hdrRes[1][44].trim().Upper(); // P - šalji na server / F = spremi file na disk / E - šalji na E-mail(NIJE U FUNKCIJI)
+    NKPR_GL_UGOVOR = hdrRes[1][41].trim();
+    NKPR_AD_GLN = hdrRes[1][42].trim();
+    NKSC_SOP = hdrRes[1][43].trim(); // Customer GLN
+    NKSC_POSREDNIK = hdrRes[1][44].trim().Upper(); // Intermediary GLN
+    NKSC_REZ10 = hdrRes[1][45].trim().Upper(); // P - šalji na server / F = spremi file na disk / E - šalji na E-mail(NIJE U FUNKCIJI)
+    NKSC_TAX_DN = hdrRes[1][46].trim().Upper(); // F - kupac po fakturiranoj realizaciji/ N = po naplaćenoj realizaciji / X - nije u sustavu PDV-a
+    PKKU_PP_OPIS = hdrRes[1][47].trim();
+
     if(NKSC_REZ10 == "E"){
         MessageBox("Način slanja e-računa e-mailom(E) nije podržan! Partner " + NKSC_PARTCODE + ".");
         exit;
@@ -316,13 +322,14 @@ function GenerateUBLXml() {
     // -----------------------------------------------------------
     profileID = "P1";
     typeCode = "380";
-    invType = "Izdavanje računa za isporuke prema ugovoru";
+    invType = "Izdavanje računa za isporuke prema neformalnom ugovoru";
 
     if (NKPR_GL_OZNAKA == "S") {
         if (NKPR_GL_BROTP != 0) {
             profileID = "P7";
             invType = "Račun s referencama na otpremnicu";
         } elif (NKPR_GL_REZ1 != 0) {
+            //u REZ1 je referenca na prethodni račun
             profileID = "P11";
             invType = "Djelomični i konačni račun";
         }
@@ -349,6 +356,7 @@ function GenerateUBLXml() {
     } elif (NKPR_GL_OZNAKA == "O") {
         //Odobrenje
         if (NKPR_GL_REZ3 != 0) {
+            //mora imati referencu na neki račun
             profileID = "P9";
             typeCode = "381";
             invType = "Kreditni račun (CreditNote)"; // (negativni iznosi, povrati) - u pravilu su iznosi u minusu, osim ako se odobrava cassa sconto";
@@ -782,7 +790,6 @@ function GenerateUBLXml() {
     // CreditNote: BillingReference
     if (profileID == "P9") {
         xml += "<cbc:CreditNoteTypeCode>381</cbc:CreditNoteTypeCode>\n"; // BT-3; 1..1
-        xml += "<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>\n"; // BT-5; 1..1 
         /*
         // BillingReference for CreditNote (always required for P9)
         xml += "<cac:BillingReference>\n";
@@ -795,13 +802,11 @@ function GenerateUBLXml() {
         xml += "</cac:BillingReference>\n";
         */
     } else {
-        // dueDate = NKPR_GL_DUE_DATE;
-        if (NKPR_GL_DUE_DATE != '1900-01-01') {
-            xml += "<cbc:DueDate>" + NKPR_GL_DUE_DATE + "</cbc:DueDate>\n";
-        }
-        xml += "<cbc:InvoiceTypeCode>" + typeCode + "</cbc:InvoiceTypeCode>\n";
+        //Invoice data
+        xml += "<cbc:InvoiceTypeCode>" + typeCode + "</cbc:InvoiceTypeCode>\n"; //BT-3; 1..1
         // xml += "<cbc:InvoiceType>" + invType + "</cbc:InvoiceType>\n";
-
+    }
+        xml += "<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>\n"; // BT-5; 1..1 
         note = "\n";
         if (NKPR_GL_BROPIS != "") {
             sql_note = "SELECT kppr_op_text FROM " + databaseName + ".dbo.KPPROPIS WHERE KPPR_OP_BROJ = @p1 ORDER BY KPPR_OP_BROJ, kppr_op_lin;";
@@ -834,10 +839,28 @@ function GenerateUBLXml() {
             xml += "<cbc:Note>" + EscapeForXml(note) + "#AAI#" + "</cbc:Note>\n"; // BT-21, 0..1 (note code) and BT-22; 1..1 note text
         }
 
-        xml += "<cbc:TaxPointDate>" + NKPR_GL_ESD + "</cbc:TaxPointDate>\n";
-        
-        xml += "<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>\n";
-        
+        xml += "<cbc:TaxPointDate>" + NKPR_GL_ESD + "</cbc:TaxPointDate>\n"; //BT-7; 0..1
+        xml += "<cac:InvoicePeriod>\n";
+        if( NKPR_GL_INVDTE < NKPR_GL_ESD) { //ovu matematiku sa datumima treba provjeriti!!!!
+            xml += "  <cbc:DescriptionCode>3</cbc:DescriptionCode>\n"; //BT-8; 0..1
+        }else{
+            xml += "  <cbc:DescriptionCode>35</cbc:DescriptionCode>\n";
+        }
+        if (NKSC_TAX_DN== 'N') {
+            xml += "  <cbc:DescriptionCode>432</cbc:DescriptionCode>\n";
+        }
+        xml += "</cac:InvoicePeriod>\n";
+        if (profileID != "P9") {
+            //samo za invoice, za Credit note ima u paymentmeans, ako treba
+            // dueDate = NKPR_GL_DUE_DATE;
+            if (NKPR_GL_DUE_DATE != '1900-01-01') {
+                xml += "<cbc:DueDate>" + NKPR_GL_DUE_DATE + "</cbc:DueDate>\n"; //BT-9; 0..1
+            }
+        if (NKPR_GL_UGOVOR != 0 && PKKU_PP_OPIS != "") {  
+            xml += "<cac:ContractDocumentReference>";
+                xml +=      "<cbc:ID>"+PKKU_PP_OPIS+"; INT.REF:"+NKPR_GL_UGOVOR+"</cbc:ID>";
+            xml += "</cac:ContractDocumentReference>";
+        }
         // BillingReference for all document types (except standard invoices with NKPR_GL_OZNAKA = 'S')
         // Required when referencing another document (Credit Note, Corrective Invoice, Debit Note, etc.)
         if (NKPR_GL_OZNAKA != 'S') {
@@ -909,7 +932,7 @@ function GenerateUBLXml() {
         //     // xml += "  <cbc:SettlementPeriodMeasure unitCode=\"DAY\">" + NKPR_GL_NOKAM + NKPR_GL_ROKPL + "</cbc:SettlementPeriodMeasure>\n";
         //     // xml += "</cac:PaymentTerms>\n";
         // }
-    }
+    
 
 
     // -----------------------------------------------------------
@@ -1242,13 +1265,14 @@ function GenerateUBLXml() {
     // -----------------------------------------------------------
     payCode = "30";
     KPKS_PL_OPIS = "Plaćanje virmanom";
-    sql_pay = "SELECT KPKS_PL_NAZIV2, KPKS_PL_OPIS FROM " + databaseName + ".dbo.KPKSVRPL WHERE KPKS_PL_SIF_PL = @p1;";
+    sql_pay = "SELECT KPKS_PL_NAZIV2, KPKS_PL_OPIS, KPKS_PL_TIP FROM " + databaseName + ".dbo.KPKSVRPL WHERE KPKS_PL_SIF_PL = @p1;";
     sqlParams = {};
     sqlParams.Add({"@p1", NKPR_GL_SIF_PL});
     payRes = sqlQuery(sql_pay, sqlParams);
     if (Size(payRes) >= 2) {
         KPKS_PL_NAZIV2 = payRes[1][0].trim();
         KPKS_PL_OPIS = payRes[1][1].trim();
+        KPKS_PL_TIP = payRes[1][2].trim();
 
         code3 = int(Substring(payRes[1][0], 0, 2));
         if (code3 >= 30 && code3 <= 59) { // ???

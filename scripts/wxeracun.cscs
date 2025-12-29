@@ -1849,7 +1849,12 @@ function GenerateUBLXml() {
     // 8.2. XSD VALIDATION 
     // -----------------------------------------------------------
     xsdFiles = {};
-    xsdFiles.Add(SCHEMASPATH + "xsd\\maindoc\\UBL-Invoice-2.1.xsd");
+    if (profileID == "P9") {
+        xsdFiles.Add(SCHEMASPATH + "xsd\\maindoc\\UBL-CreditNote-2.1.xsd");
+    } else {
+        xsdFiles.Add(SCHEMASPATH + "xsd\\maindoc\\UBL-Invoice-2.1.xsd");
+    }
+    
     if (!ValidateXsd(xml, xsdFiles, xsdValidationResultOutputFile)) {
         // LogError("XSD_FAIL", "Validation failed for " + invNum, validationErrors);
         MessageBox("xml FAILED XSD validation\n\nSee _XSD.err file for details.");
@@ -2445,9 +2450,8 @@ function SendToFINA() {
         } else {
             invoiceOrCreditNote = "Invoice";
         }
-        
+        // invoiceOrCreditNote = "CreditNote"; // TEST !!!
 
-        invoiceOrCreditNote = "CreditNote"; // TEST !!!
 
         ack = FINA_SEND_OUTGOING_INVOICE(
             ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",

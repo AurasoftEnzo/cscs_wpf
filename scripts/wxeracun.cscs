@@ -890,11 +890,6 @@ function GenerateUBLXml() {
             xml +=      "<cbc:ID>"+NKPR_GL_CUSORD+"</cbc:ID>"; //BT-14; 0..1
         xml += "</cac:OrderDocumentReference>";
     }
-    if (NKPR_GL_BROTP != 0 ) {  
-        xml += "<cac:DespatchDocumentReference>";
-            xml +=      "<cbc:ID>"+NKPR_GL_BROTP+"</cbc:ID>"; //BT-16; 0..1
-        xml += "</cac:DespatchDocumentReference>";
-    }
 
     // BillingReference for all document types (except standard invoices with NKPR_GL_OZNAKA = 'S')
     // Required when referencing another document (Credit Note, Corrective Invoice, Debit Note, etc.)
@@ -968,6 +963,14 @@ function GenerateUBLXml() {
             xml += "</cac:BillingReference>\n";
         }
     }
+    
+    if (NKPR_GL_BROTP != 0 ) {  
+        xml += "<cac:DespatchDocumentReference>";
+            xml +=      "<cbc:ID>"+NKPR_GL_BROTP+"</cbc:ID>"; //BT-16; 0..1
+        xml += "</cac:DespatchDocumentReference>";
+    }
+
+    
 
 
     // if (profileID != "P4") {

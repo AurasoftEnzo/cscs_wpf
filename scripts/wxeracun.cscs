@@ -963,7 +963,7 @@ function GenerateUBLXml() {
             xml += "</cac:BillingReference>\n";
         }
     }
-    
+
     if (NKPR_GL_BROTP != 0 ) {  
         xml += "<cac:DespatchDocumentReference>";
             xml +=      "<cbc:ID>"+NKPR_GL_BROTP+"</cbc:ID>"; //BT-16; 0..1
@@ -2145,10 +2145,15 @@ function MERSuccess(_invID, responseCode, res) {
         resObject = DeserializeJson(res);    
         if(Contains(resObject, "StatusId") && resObject["StatusId"] == 20){
             // MessageBox('resObject["StatusId"] == 20');
+
+            MessageBox("Dokument poslan.");
+
             LogNKSYELOG("A");
             LogNKSYELOG("C");
         }
         else{
+            MessageBox("GREŠKA slanja dokumenta.");
+
             LogNKSYELOG("B", 'Debug: NEPOZNATA GREŠKA'); // !!!
         }
 

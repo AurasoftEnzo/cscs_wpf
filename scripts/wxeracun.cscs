@@ -595,6 +595,7 @@ function GenerateUBLXml() {
     // -----------------------------------------------------------
     // 4. Start XML Builder
     // -----------------------------------------------------------
+
     xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
 
     if (profileID == "P9") {
@@ -1166,10 +1167,10 @@ function GenerateUBLXml() {
 
 
     
-    xml += "  <cac:SellerContact>"; //možda     bi tu trebalo zapravo OIB i naziv prodavača a ne operatera???? ali u dokumentaciji piše operatera!
-    xml += "    <cbc:ID>" + UserOib + "</cbc:ID>"; //HR-BT-5; 1..1 ; OIB operatera
-    xml += "    <cbc:Name>" + EscapeForXml(KPSY_USER_NAZIV) + "</cbc:Name>"; //HR-BT-4; 0..1 ; naziv operatera
-    xml += "  </cac:SellerContact>";
+    xml += "  <cac:SellerContact>\n"; //možda     bi tu trebalo zapravo OIB i naziv prodavača a ne operatera???? ali u dokumentaciji piše operatera!
+    xml += "    <cbc:ID>" + UserOib + "</cbc:ID>\n"; //HR-BT-5; 1..1 ; OIB operatera
+    xml += "    <cbc:Name>" + EscapeForXml(KPSY_USER_NAZIV) + "</cbc:Name>\n"; //HR-BT-4; 0..1 ; naziv operatera
+    xml += "  </cac:SellerContact>\n";
 
 
     xml += "</cac:AccountingSupplierParty>\n";
@@ -1390,8 +1391,8 @@ function GenerateUBLXml() {
             taxName = "HR:PP"; // + FormatNum(NKPR_LN_PRNPR, 0, ".");
             taxSchemeID = "LOC";
             taxOutOfScopeAmt = FormatNum(POREZ, 2, ".");
-            xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
-            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + 0 + "</cbc:TaxAmount>\n";
+//            xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
+//            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + 0 + "</cbc:TaxAmount>\n";
             xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
             xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + taxOutOfScopeAmt + "</cbc:TaxAmount>\n";
             xml += "                    <cac:TaxCategory>\n";
@@ -1412,8 +1413,8 @@ function GenerateUBLXml() {
             taxSchemeID = "VAT";
             xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
             xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + 0 + "</cbc:TaxAmount>\n";
-            xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
-            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
+//            xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
+//            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
             xml += "                    <cac:TaxCategory>\n";
             xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
             xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
@@ -1426,15 +1427,18 @@ function GenerateUBLXml() {
         elif (PKFK_TAX_TARIFA == "POVNAK"){ 
             //Povratna naknada
             taxName = "HR:POVNAK"; //nema poreza
-            taxSchemeID = "OTH";
+            taxSchemeID = "VAT";
             xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
             xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + 0 + "</cbc:TaxAmount>\n";
-            xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
-            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
+//            xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
+//            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
             xml += "                    <cac:TaxCategory>\n";
-            xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
+            xml += "                        <cbc:ID>E</cbc:ID>\n";
             xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
             xml += "                        <cbc:Percent>" + 0.00 + "</cbc:Percent>\n";
+            if (exemptReason != ""){
+                xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
+            }   
             xml += "                        <cac:TaxScheme>\n";
             xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
             xml += "                        </cac:TaxScheme>\n";
@@ -1565,28 +1569,26 @@ function GenerateUBLXml() {
         // Current discountTotal calculation for verification
         discountTotal = grossAmount - netAmount;
 
-
         noteText= "";
-        if (NKPR_LN_BROPI1 != "") {
+        if (NKPR_LN_BROPI1 != 0) {
             sql_note = "SELECT kppr_op_text FROM " + databaseName + ".dbo.KPPROPIS WHERE KPPR_OP_BROJ = @p1 ORDER BY KPPR_OP_BROJ, kppr_op_lin;";
             sqlParams = {};
             sqlParams.Add({"@p1", NKPR_LN_BROPI1});
             noteRes = sqlQuery(sql_note, sqlParams);
             if (Size(noteRes) >= 2) {
-                for (j = 1; j < Size(linRes); j++) {   
-                    noteText += noteRes[j][0];
+                for (m = 1; m < Size(noteRes); m++) {   
+                    noteText += noteRes[m][0];
                 }
             }    
         }
-        if (NKPR_LN_BROPI != "") {
+        if (NKPR_LN_BROPI != 0) {
             sql_note = "SELECT kppr_op_text FROM " + databaseName + ".dbo.KPPROPIS WHERE KPPR_OP_BROJ = @p1 ORDER BY KPPR_OP_BROJ, kppr_op_lin;";
             sqlParams = {};
             sqlParams.Add({"@p1", NKPR_LN_BROPI});
             noteRes = sqlQuery(sql_note, sqlParams);
             if (Size(noteRes) >= 2) {
-                noteText += 
-                for (j = 1; j < Size(linRes); j++) {   
-                    noteText += noteRes[j][0];
+                for (N = 1; N < Size(noteRes); N++) {   
+                    noteText += noteRes[N][0];
                 }
             }    
         }
@@ -1674,7 +1676,7 @@ function GenerateUBLXml() {
             xml += "    <cbc:BaseAmount currencyID=\"EUR\">" + FormatNum(grossAmount, 2, ".") + "</cbc:BaseAmount>\n";
             xml += "  </cac:AllowanceCharge>\n";
         }
-        
+       
         // Verification: Check if our calculation matches the current discountTotal
         calculatedDiscountTotal = invoiceLevelDiscountAmount + lineLevelDiscountAmount;
         if (Math.abs(calculatedDiscountTotal - discountTotal) > 0.01) {
@@ -1727,7 +1729,6 @@ function GenerateUBLXml() {
             xml += "      <cbc:ItemClassificationCode listID=\"CG\">" + Substring(kpd, 0, 2) + "." + Substring(kpd, 2, 2) + "." + Substring(kpd, 4, 2) + "</cbc:ItemClassificationCode>\n";
             xml += "    </cac:CommodityClassification>\n";
         }
-
         // Tax
         sql_taxc = "SELECT PKFK_TAX_TARIFA,pkfk_tax_p_porz FROM " + databaseName + ".dbo.PKFKPORZ WHERE PKFK_TAX_CODE = @p1;";
         sqlParams = {};
@@ -1803,10 +1804,6 @@ function GenerateUBLXml() {
     }
 
 
-
-
-
-
     // -----------------------------------------------------------
     // ...Save xml BEFORE validation
     // -----------------------------------------------------------
@@ -1819,11 +1816,6 @@ function GenerateUBLXml() {
     // msg(xmlFileName);
 
     SaveFile(xml, xmlFileName);
-
-
-
-
-
 
     // -----------------------------------------------------------
     // 8.0. VALIDATION 

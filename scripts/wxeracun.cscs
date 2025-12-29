@@ -823,30 +823,8 @@ function GenerateUBLXml() {
     }
     xml += "<cbc:IssueDate>" + NKPR_GL_INVDTE + "</cbc:IssueDate>\n"; // BT-2; 1..1
     xml += "<cbc:IssueTime>" + NKPR_GL_TIMECR + "</cbc:IssueTime>\n"; // HR-BT-2; 1..1
-    // DueDate element - must come before aggregate components
-    if (profileID != "P9") {
-        //samo za invoice, za Credit note ima u paymentmeans, ako treba
-        // dueDate = NKPR_GL_DUE_DATE;
-        if (NKPR_GL_DUE_DATE != '1900-01-01') {
-            xml += "<cbc:DueDate>" + NKPR_GL_DUE_DATE + "</cbc:DueDate>\n"; //BT-9; 0..1
-        }
-    }
 
-    // CreditNote: BillingReference
-    if (profileID == "P9") {
-        xml += "<cbc:CreditNoteTypeCode>381</cbc:CreditNoteTypeCode>\n"; // BT-3; 1..1
-    } else {
-        //Invoice data
-        xml += "<cbc:InvoiceTypeCode>" + typeCode + "</cbc:InvoiceTypeCode>\n"; //BT-3; 1..1
-        // xml += "<cbc:InvoiceType>" + invType + "</cbc:InvoiceType>\n";
-    }
-        xml += "<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>\n"; // BT-5; 1..1 
-        xml += "<cbc:TaxCurrencyCode>EUR</cbc:TaxCurrencyCode>\n";
-
-        if (NKPR_GL_ESD != NKPR_GL_INVDTE){
-            //ako je datum oporezivanja različit od datuma računa, treba ga unijeti; PROVJERI MATEMATIKU SA DATUMIMA!!!!
-            xml += "<cbc:TaxPointDate>" + NKPR_GL_ESD + "</cbc:TaxPointDate>\n"; //BT-7; 0..1
-        }
+    note = "";
         if (NKPR_GL_BROPIS != "") {
             note = "\n";
             sql_note = "SELECT kppr_op_text FROM " + databaseName + ".dbo.KPPROPIS WHERE KPPR_OP_BROJ = @p1 ORDER BY KPPR_OP_BROJ, kppr_op_lin;";
@@ -871,6 +849,40 @@ function GenerateUBLXml() {
                 }
             }
         }
+
+
+    if (profileID == "P9") {
+        if (NKPR_GL_ESD != NKPR_GL_INVDTE){
+            //ako je datum oporezivanja različit od datuma računa, treba ga unijeti; PROVJERI MATEMATIKU SA DATUMIMA!!!!
+            xml += "<cbc:TaxPointDate>" + NKPR_GL_ESD + "</cbc:TaxPointDate>\n"; //BT-7; 0..1
+        }
+        xml += "<cbc:CreditNoteTypeCode>381</cbc:CreditNoteTypeCode>\n"; // BT-3; 1..1
+        if (note.length > 2) {
+            xml += "<cbc:Note>" + EscapeForXml(note) + "</cbc:Note>\n"; // BT-21, 0..1 (note code) and BT-22; 1..1 note text
+        }
+    } else {
+        //Invoice data
+        //samo za invoice, za Credit note ima u paymentmeans, ako treba
+        // dueDate = NKPR_GL_DUE_DATE;
+        if (NKPR_GL_DUE_DATE != '1900-01-01') {
+            xml += "<cbc:DueDate>" + NKPR_GL_DUE_DATE + "</cbc:DueDate>\n"; //BT-9; 0..1
+        }
+        xml += "<cbc:InvoiceTypeCode>" + typeCode + "</cbc:InvoiceTypeCode>\n"; //BT-3; 1..1
+        // xml += "<cbc:InvoiceType>" + invType + "</cbc:InvoiceType>\n";
+        if (note.length > 2) {
+            xml += "<cbc:Note>" + EscapeForXml(note) + "</cbc:Note>\n"; // BT-21, 0..1 (note code) and BT-22; 1..1 note text
+        }
+
+        if (NKPR_GL_ESD != NKPR_GL_INVDTE){
+            //ako je datum oporezivanja različit od datuma računa, treba ga unijeti; PROVJERI MATEMATIKU SA DATUMIMA!!!!
+            xml += "<cbc:TaxPointDate>" + NKPR_GL_ESD + "</cbc:TaxPointDate>\n"; //BT-7; 0..1
+        }
+
+    }
+
+        xml += "<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>\n"; // BT-5; 1..1 
+        xml += "<cbc:TaxCurrencyCode>EUR</cbc:TaxCurrencyCode>\n";
+
         if (NKPR_GL_UGOVOR != 0 && PKKU_PP_OPIS != "") {  
             xml += "<cac:ContractDocumentReference>";
                 xml +=      "<cbc:ID>"+PKKU_PP_OPIS+"; INT.REF:"+NKPR_GL_UGOVOR+"</cbc:ID>"; //BT-12; 0..1
@@ -885,9 +897,6 @@ function GenerateUBLXml() {
             xml += "<cac:DespatchDocumentReference>";
                 xml +=      "<cbc:ID>"+NKPR_GL_BROTP+"</cbc:ID>"; //BT-16; 0..1
             xml += "</cac:DespatchDocumentReference>";
-        }
-        if (note.length > 2) {
-            xml += "<cbc:Note>" + EscapeForXml(note) + "</cbc:Note>\n"; // BT-21, 0..1 (note code) and BT-22; 1..1 note text
         }
 
         // BillingReference for all document types (except standard invoices with NKPR_GL_OZNAKA = 'S')

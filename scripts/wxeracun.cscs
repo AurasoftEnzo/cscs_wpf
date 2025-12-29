@@ -825,33 +825,32 @@ function GenerateUBLXml() {
     xml += "<cbc:IssueTime>" + NKPR_GL_TIMECR + "</cbc:IssueTime>\n"; // HR-BT-2; 1..1
 
     note = "";
-        if (NKPR_GL_BROPIS != "") {
-            note = "\n";
-            sql_note = "SELECT kppr_op_text FROM " + databaseName + ".dbo.KPPROPIS WHERE KPPR_OP_BROJ = @p1 ORDER BY KPPR_OP_BROJ, kppr_op_lin;";
-            sqlParams = {};
-            sqlParams.Add({"@p1", NKPR_GL_BROPIS});
-            noteRes = sqlQuery(sql_note, sqlParams);
-            if (Size(noteRes) >= 2) {
-                for (j = 1; j < Size(noteRes); j++) {   
-                    note += noteRes[j][0];
-                }
-            }    
-        }
-        if (nkpr_gl_bropis1 != "") {
-            note += "\n";
-            sql_note = "SELECT kppr_op_text FROM " + databaseName + ".dbo.KPPROPIS WHERE KPPR_OP_BROJ = @p1 ORDER BY KPPR_OP_BROJ, kppr_op_lin;";
-            sqlParams = {};
-            sqlParams.Add({"@p1", NKPR_GL_bropis1});
-            noteRes = sqlQuery(sql_note, sqlParams);
-            if (Size(noteRes) >= 2) {
-                for (j = 1; j < Size(noteRes); j++) {   
-                    note += noteRes[j][0];
-                }
+    if (NKPR_GL_BROPIS != "") {
+        note = "\n";
+        sql_note = "SELECT kppr_op_text FROM " + databaseName + ".dbo.KPPROPIS WHERE KPPR_OP_BROJ = @p1 ORDER BY KPPR_OP_BROJ, kppr_op_lin;";
+        sqlParams = {};
+        sqlParams.Add({"@p1", NKPR_GL_BROPIS});
+        noteRes = sqlQuery(sql_note, sqlParams);
+        if (Size(noteRes) >= 2) {
+            for (j = 1; j < Size(noteRes); j++) {   
+                note += noteRes[j][0];
+            }
+        }    
+    }
+    if (nkpr_gl_bropis1 != "") {
+        note += "\n";
+        sql_note = "SELECT kppr_op_text FROM " + databaseName + ".dbo.KPPROPIS WHERE KPPR_OP_BROJ = @p1 ORDER BY KPPR_OP_BROJ, kppr_op_lin;";
+        sqlParams = {};
+        sqlParams.Add({"@p1", NKPR_GL_bropis1});
+        noteRes = sqlQuery(sql_note, sqlParams);
+        if (Size(noteRes) >= 2) {
+            for (j = 1; j < Size(noteRes); j++) {   
+                note += noteRes[j][0];
             }
         }
+    }
 
-
-    if (profileID == "P9") {
+    if (profileID == "P9") { // credit note
         if (NKPR_GL_ESD != NKPR_GL_INVDTE){
             //ako je datum oporezivanja različit od datuma računa, treba ga unijeti; PROVJERI MATEMATIKU SA DATUMIMA!!!!
             xml += "<cbc:TaxPointDate>" + NKPR_GL_ESD + "</cbc:TaxPointDate>\n"; //BT-7; 0..1
@@ -860,8 +859,7 @@ function GenerateUBLXml() {
         if (note.length > 2) {
             xml += "<cbc:Note>" + EscapeForXml(note) + "</cbc:Note>\n"; // BT-21, 0..1 (note code) and BT-22; 1..1 note text
         }
-    } else {
-        //Invoice data
+    } else {// invoice
         //samo za invoice, za Credit note ima u paymentmeans, ako treba
         // dueDate = NKPR_GL_DUE_DATE;
         if (NKPR_GL_DUE_DATE != '1900-01-01') {
@@ -877,115 +875,114 @@ function GenerateUBLXml() {
             //ako je datum oporezivanja različit od datuma računa, treba ga unijeti; PROVJERI MATEMATIKU SA DATUMIMA!!!!
             xml += "<cbc:TaxPointDate>" + NKPR_GL_ESD + "</cbc:TaxPointDate>\n"; //BT-7; 0..1
         }
-
     }
 
-        xml += "<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>\n"; // BT-5; 1..1 
-        xml += "<cbc:TaxCurrencyCode>EUR</cbc:TaxCurrencyCode>\n";
+    xml += "<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>\n"; // BT-5; 1..1 
+    xml += "<cbc:TaxCurrencyCode>EUR</cbc:TaxCurrencyCode>\n";
 
-        if (NKPR_GL_UGOVOR != 0 && PKKU_PP_OPIS != "") {  
-            xml += "<cac:ContractDocumentReference>";
-                xml +=      "<cbc:ID>"+PKKU_PP_OPIS+"; INT.REF:"+NKPR_GL_UGOVOR+"</cbc:ID>"; //BT-12; 0..1
-            xml += "</cac:ContractDocumentReference>";
-        }
-        if (NKPR_GL_CUSORD != "") {  
-            xml += "<cac:OrderDocumentReference>";
-                xml +=      "<cbc:ID>"+NKPR_GL_CUSORD+"</cbc:ID>"; //BT-14; 0..1
-            xml += "</cac:OrderDocumentReference>";
-        }
-        if (NKPR_GL_BROTP != 0 ) {  
-            xml += "<cac:DespatchDocumentReference>";
-                xml +=      "<cbc:ID>"+NKPR_GL_BROTP+"</cbc:ID>"; //BT-16; 0..1
-            xml += "</cac:DespatchDocumentReference>";
-        }
+    if (NKPR_GL_UGOVOR != 0 && PKKU_PP_OPIS != "") {  
+        xml += "<cac:ContractDocumentReference>";
+            xml +=      "<cbc:ID>"+PKKU_PP_OPIS+"; INT.REF:"+NKPR_GL_UGOVOR+"</cbc:ID>"; //BT-12; 0..1
+        xml += "</cac:ContractDocumentReference>";
+    }
+    if (NKPR_GL_CUSORD != "") {  
+        xml += "<cac:OrderDocumentReference>";
+            xml +=      "<cbc:ID>"+NKPR_GL_CUSORD+"</cbc:ID>"; //BT-14; 0..1
+        xml += "</cac:OrderDocumentReference>";
+    }
+    if (NKPR_GL_BROTP != 0 ) {  
+        xml += "<cac:DespatchDocumentReference>";
+            xml +=      "<cbc:ID>"+NKPR_GL_BROTP+"</cbc:ID>"; //BT-16; 0..1
+        xml += "</cac:DespatchDocumentReference>";
+    }
 
-        // BillingReference for all document types (except standard invoices with NKPR_GL_OZNAKA = 'S')
-        // Required when referencing another document (Credit Note, Corrective Invoice, Debit Note, etc.)
-        if (ProfileID == 'P9' || ProfileID == 'P10' || ProfileID=='P11' || ProfileID == 'P2') {
+    // BillingReference for all document types (except standard invoices with NKPR_GL_OZNAKA = 'S')
+    // Required when referencing another document (Credit Note, Corrective Invoice, Debit Note, etc.)
+    if (ProfileID == 'P9' || ProfileID == 'P10' || ProfileID=='P11' || ProfileID == 'P2') {
 
-            // Parse multiple invoice references from Note field using #REF() format
-            referencedInvoices = {};
-            
-            // First, add primary reference from NKPR_GL_REZ3 if exists
-            if (NKPR_GL_REZ3 != "" && NKPR_GL_REZ3 != "0") {
-                referencedInvoices.Add(NKPR_GL_REZ3);
-            }
-            
-            // Parse additional references from Note field using #REF() format
-            if (note != "") {
-                // Look for #REF( pattern
-                refStartPos = strIndexOf(note, "#REF(");
-                if (refStartPos >= 0) {
-                    // Find the closing parenthesis
-                    refEndPos = strIndexOf(note, ")", refStartPos);
-                    if (refEndPos >= 0) {
-                        // Extract the content between #REF( and )
-                        refContent = Substring(note, refStartPos + 5, refEndPos - refStartPos - 5);
-                        
-                        // Split by comma and process each reference
-                        refNumbers = Split(refContent, ",");
-                        for (refIdx = 0; refIdx < Size(refNumbers); refIdx++) {
-                            refNum = refNumbers[refIdx].trim();
-                            if (refNum != "" && refNum != "0") {
-                                // Add to references list if not already present
-                                found = false;
-                                for (existIdx = 0; existIdx < Size(referencedInvoices); existIdx++) {
-                                    if (referencedInvoices[existIdx] == refNum) {
-                                        found = true;
-                                        break;
-                                    }
+        // Parse multiple invoice references from Note field using #REF() format
+        referencedInvoices = {};
+        
+        // First, add primary reference from NKPR_GL_REZ3 if exists
+        if (NKPR_GL_REZ3 != "" && NKPR_GL_REZ3 != "0") {
+            referencedInvoices.Add(NKPR_GL_REZ3);
+        }
+        
+        // Parse additional references from Note field using #REF() format
+        if (note != "") {
+            // Look for #REF( pattern
+            refStartPos = strIndexOf(note, "#REF(");
+            if (refStartPos >= 0) {
+                // Find the closing parenthesis
+                refEndPos = strIndexOf(note, ")", refStartPos);
+                if (refEndPos >= 0) {
+                    // Extract the content between #REF( and )
+                    refContent = Substring(note, refStartPos + 5, refEndPos - refStartPos - 5);
+                    
+                    // Split by comma and process each reference
+                    refNumbers = Split(refContent, ",");
+                    for (refIdx = 0; refIdx < Size(refNumbers); refIdx++) {
+                        refNum = refNumbers[refIdx].trim();
+                        if (refNum != "" && refNum != "0") {
+                            // Add to references list if not already present
+                            found = false;
+                            for (existIdx = 0; existIdx < Size(referencedInvoices); existIdx++) {
+                                if (referencedInvoices[existIdx] == refNum) {
+                                    found = true;
+                                    break;
                                 }
-                                if (!found) {
-                                    referencedInvoices.Add(refNum);
-                                }
+                            }
+                            if (!found) {
+                                referencedInvoices.Add(refNum);
                             }
                         }
                     }
                 }
             }
-            
-            // Generate BillingReference elements for each referenced invoice
-            for (refIdx = 0; refIdx < Size(referencedInvoices); refIdx++) {
-                refStr = String(referencedInvoices[refIdx]);
-                refID = Substring(refStr, 3, 5) + "-" + Substring(refStr, 0, 2) + "-" + Substring(refStr, 2, 1);
-                datumRefRacuna = "";
-                //first see if thereis a referenced document/invoice specified in nkpr_gl_rez3
-                //get date of referenced invoice
-                sql_ref_inv_date = "SELECT CONVERT(VARCHAR(10), NKPR_GL_INVDTE, 23) as NKPR_GL_INVDTE FROM " + databaseName + ".dbo.NKPRINV WHERE NKPR_GL_NUM = @p1;";
-                sqlParams = {};
-                sqlParams.Add({"@p1", refStr}); //NKPR_GL_REZ3
-                refInvDateRes = sqlQuery(sql_ref_inv_date, sqlParams);
-                if (Size(refInvDateRes) < 2) {
-                    MessageBox("Ne postoji referentni račun " + refStr + " za račun " + invNum + "!");
-                    return false;
-                }
-                datumRefRacuna = refInvDateRes[1][0].trim();
-        // messageBox("NKPR_GL_OZNAKA: " + NKPR_GL_OZNAKA+".... datumRefRacuna: " + datumRefRacuna);   
-
-
-                xml += "<cac:BillingReference>\n";
-                xml += "  <cac:InvoiceDocumentReference>\n"; // BG-3; 0..n
-                xml += "    <cbc:ID>" + refID + "</cbc:ID>\n"; // BT-25; 1..1
-                xml += "    <cbc:IssueDate>" + datumRefRacuna + "</cbc:IssueDate>\n"; // BT-26; 1..1
-                xml += "  </cac:InvoiceDocumentReference>\n";
-                xml += "</cac:BillingReference>\n";
-            }
         }
+        
+        // Generate BillingReference elements for each referenced invoice
+        for (refIdx = 0; refIdx < Size(referencedInvoices); refIdx++) {
+            refStr = String(referencedInvoices[refIdx]);
+            refID = Substring(refStr, 3, 5) + "-" + Substring(refStr, 0, 2) + "-" + Substring(refStr, 2, 1);
+            datumRefRacuna = "";
+            //first see if thereis a referenced document/invoice specified in nkpr_gl_rez3
+            //get date of referenced invoice
+            sql_ref_inv_date = "SELECT CONVERT(VARCHAR(10), NKPR_GL_INVDTE, 23) as NKPR_GL_INVDTE FROM " + databaseName + ".dbo.NKPRINV WHERE NKPR_GL_NUM = @p1;";
+            sqlParams = {};
+            sqlParams.Add({"@p1", refStr}); //NKPR_GL_REZ3
+            refInvDateRes = sqlQuery(sql_ref_inv_date, sqlParams);
+            if (Size(refInvDateRes) < 2) {
+                MessageBox("Ne postoji referentni račun " + refStr + " za račun " + invNum + "!");
+                return false;
+            }
+            datumRefRacuna = refInvDateRes[1][0].trim();
+    // messageBox("NKPR_GL_OZNAKA: " + NKPR_GL_OZNAKA+".... datumRefRacuna: " + datumRefRacuna);   
 
 
-        // if (profileID != "P4") {
-        //     ptDesc = "Rok plaćanja je " + NKPR_GL_NOKAM + " dana";
-        //     if (NKPR_GL_ROKPL != 0) {
-        //         ptDesc += " nakon roka za provjeru od " + NKPR_GL_ROKPL + " dana";
-        //     }
-        //     ptDesc += ". Rok plaćanja teče od: " + NKPR_GL_DVO;
-        //     // xml += "<cbc:PaymentTermsDescription>" + ptDesc + "</cbc:PaymentTermsDescription>\n";
+            xml += "<cac:BillingReference>\n";
+            xml += "  <cac:InvoiceDocumentReference>\n"; // BG-3; 0..n
+            xml += "    <cbc:ID>" + refID + "</cbc:ID>\n"; // BT-25; 1..1
+            xml += "    <cbc:IssueDate>" + datumRefRacuna + "</cbc:IssueDate>\n"; // BT-26; 1..1
+            xml += "  </cac:InvoiceDocumentReference>\n";
+            xml += "</cac:BillingReference>\n";
+        }
+    }
 
-        //     // xml += "<cac:PaymentTerms>\n";
-        //     // xml += "  <cbc:Note>Rok plaćanja teče od datuma " + NKPR_GL_DVO + "</cbc:Note>\n";
-        //     // xml += "  <cbc:SettlementPeriodMeasure unitCode=\"DAY\">" + NKPR_GL_NOKAM + NKPR_GL_ROKPL + "</cbc:SettlementPeriodMeasure>\n";
-        //     // xml += "</cac:PaymentTerms>\n";
-        // }
+
+    // if (profileID != "P4") {
+    //     ptDesc = "Rok plaćanja je " + NKPR_GL_NOKAM + " dana";
+    //     if (NKPR_GL_ROKPL != 0) {
+    //         ptDesc += " nakon roka za provjeru od " + NKPR_GL_ROKPL + " dana";
+    //     }
+    //     ptDesc += ". Rok plaćanja teče od: " + NKPR_GL_DVO;
+    //     // xml += "<cbc:PaymentTermsDescription>" + ptDesc + "</cbc:PaymentTermsDescription>\n";
+
+    //     // xml += "<cac:PaymentTerms>\n";
+    //     // xml += "  <cbc:Note>Rok plaćanja teče od datuma " + NKPR_GL_DVO + "</cbc:Note>\n";
+    //     // xml += "  <cbc:SettlementPeriodMeasure unitCode=\"DAY\">" + NKPR_GL_NOKAM + NKPR_GL_ROKPL + "</cbc:SettlementPeriodMeasure>\n";
+    //     // xml += "</cac:PaymentTerms>\n";
+    // }
     
 
 

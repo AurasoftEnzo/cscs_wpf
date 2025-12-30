@@ -1,136 +1,616 @@
-MessageBox("......Testing testArhivaRacuna.cscs......");
+//MessageBox("......Testing testArhivaRacuna.cscs......");
+Import(strTrim(mpath()) + "CSCS.Math.dll");
+CreateWindow(strTrim(tpath()) + "testArhivaRacuna.xaml");
 
-//CreateWindow(strTrim(tpath()) + "testArhivaRacuna.xaml");
+DEFINE XMLpath type A size 1000;
+DEFINE ZIPpath type A size 1000;
+DEFINE LOGpath type A size 1000;
+DEFINE logFileName type A size 1000;
+DEFINE unatragBrojDana type R;
+DEFINE datumVrijemeStr type A size 20;
+DEFINE countFilesXML type R;
+DEFINE countFilesInDateRange type R;
+DEFINE countFilesArchived type R;
+DEFINE errorInitPathsXML type A size 1000;
+DEFINE errorInitPathsZIP type A size 1000;
+DEFINE errorInitPathsLOG type A size 1000;
+DEFINE errorFromInitPaths type A size 1000;
+DEFINE mozeDaljeWidgets type L;
+DEFINE mozeDaljeDatumVrijeme type L;
+DEFINE mozeDaljePaths type L;
+DEFINE mozeDaljeLog type L;
+DEFINE logFromInitPaths type A size 10000;
+DEFINE logFromInitLogging type A size 10000;//da li ovo imamo u kodu
 
-function isFileDateInRange(file, brojDana)
+unatragBrojDana = 20;
+
+function InitWidgets()
 {
-    
-    /*
-    fileDate = filedate(file); //File date as DateTime object
-    currentDate = now();       //Current date as DateTime object
-    dateDiff = currentDate - fileDate; //Difference as TimeSpan object
-    daysDiff = dateDiff.totalDays();    //Difference in days as integer
+    try
+    {
+        mozeDaljeWidgets = true;
 
-    if (daysDiff <= brojDana)
-    {
-        return true;
+        RunOnMain("SetWidgetDateTimeTitle", ""); 
+        RunOnMain("SetWidgetDateTimeValue", "");
+
+        RunOnMain("SetWidgetProgressTitle", "");
+        RunOnMain("SetWidgetProgressValue", "");
+
+        RunOnMain("SetWidgetGotovo", "");
+
+        RunOnMain("SetWidgetErrorsTitle", "");
+        RunOnMain("SetWidgetErrorsValue", "");
+
+        RunOnMain("SetWidgetZIPTitle", "");
+        RunOnMain("SetWidgetZIPValue", "");
+
+        RunOnMain("SetWidgetLOGTitle", "");
+        RunOnMain("SetWidgetLOGValue", "");
     }
-    else
+    catch (ex)
     {
+        mozeDaljeWidgets = false;
+    }
+}
+
+function InitDatumVrijeme()
+{
+    try
+    {
+        mozeDaljeDatumVrijeme = true;
+
+        datumVrijeme = DateTime();
+        datumVrijemeStr = datumVrijeme.ToString("yyyyMMdd_HHmmss");
+
+        RunOnMain("SetWidgetDateTimeTitle", "Datum vrijeme:"); 
+        RunOnMain("SetWidgetDateTimeValue", datumVrijeme.ToString("dd.MM.yyyy HH:mm:ss"));
+        
+        //throw "Neka testna greška"; //TEST ERROR HANDLING
+    }
+    catch (ex)
+    {
+        RunOnMain("SetWidgetDateTimeTitle", "Datum vrijeme:"); 
+        RunOnMain("SetWidgetDateTimeValue", "GREŠKA");
+
+        mozeDaljeDatumVrijeme = false;
+    }
+}
+
+
+function InitPaths()
+{
+    try
+    {
+        errorInitPathsXML = "";
+        errorInitPathsZIP = "";
+        errorInitPathsLOG = "";
+        mozeDaljePaths = true;
+
+        XMLpath = "D:\\TEST\\XML\\";        
+        ZIPpath = "D:\\TEST\\ZIP\\";        
+        LOGpath = "D:\\TEST\\LOG\\";        
+    
+        if (XMLpath == "")
+        {            
+            errorInitPathsXML = "XML mapa nije postavljena!";
+            mozeDaljePaths = false;                        
+        }
+        if (ZIPpath == "")
+        {
+            errorInitPathsZIP = "ZIP mapa nije postavljena!";
+            mozeDaljePaths = false;
+        }
+        if (LOGpath == "")
+        {
+            errorInitPathsLOG = "LOG mapa nije postavljena!";
+            mozeDaljePaths = false;
+        }
+
+        strErrors = "";
+        if (errorInitPathsXML != "")
+        {
+            strErrors += errorInitPathsXML + "\n";
+        }
+        if (errorInitPathsZIP != "")
+        {
+            strErrors += errorInitPathsZIP + "\n";
+        }
+        if (errorInitPathsLOG != "")
+        {
+            strErrors += errorInitPathsLOG + "\n";
+        }
+
+        if (strErrors != "")
+        {    
+            RunOnMain("SetWidgetErrorsTitle", "Greška:");
+            RunOnMain("SetWidgetErrorsValue", strErrors);
+            RunOnMain("SetWidgetGotovo", "Gotovo");                       
+        }
+
+        if (mozeDaljePaths == false)
+        {
+            return; 
+        }
+        //********************************
+        logFromInitPaths = "";
+        errorFromInitPaths = "";
+
+        if (mozeDaljePaths == true)
+        {
+            if (!DIR_EXISTS(XMLpath))
+            {
+                try
+                {
+                    mkdir(XMLpath);                              
+                    logFromInitPaths += "Stvaranje XML mape: \n" + XMLpath + "\nObavljeno.\n\n";
+                }
+                catch (ex)
+                {                    
+                    errorFromInitPaths += "Greška prilikom stvaranja XML mape: \n" + XMLpath + "\n" + ex + "\n\n";
+                    mozeDaljePaths = false;
+                }        
+            }
+                
+            if (!DIR_EXISTS(ZIPpath))
+            {
+                try
+                {
+                    mkdir(ZIPpath);
+                    logFromInitPaths += "Stvaranje ZIP mape: \n" + ZIPpath + "\nObavljeno.\n\n";
+                }
+                catch (ex)
+                {
+                    errorFromInitPaths += "Greška prilikom stvaranja ZIP mape: \n" + ZIPpath + "\n" + ex + "\n\n";
+                    mozeDaljePaths = false;
+                }        
+            }
+
+        
+            if (!DIR_EXISTS(LOGpath))
+            {
+                try
+                {            
+                    mkdir(LOGpath);
+                    logFromInitPaths += "Stvaranje LOG mape: \n" + LOGpath + "\nObavljeno.\n\n";
+                }
+                catch (ex)
+                {
+                    errorFromInitPaths += "Greška prilikom stvaranja LOG mape: \n" + LOGpath + "\n" + ex + "\n\n";
+                    mozeDaljePaths = false;
+                }  
+            } 
+
+            if (mozeDaljePaths == false)
+            {
+                RunOnMain("SetWidgetErrorsTitle", "Greška:");
+                RunOnMain("SetWidgetErrorsValue", errorFromInitPaths); 
+                RunOnMain("SetWidgetGotovo", "Gotovo");    
+            }
+        }
+        /*
+        MessageBox(currentPath());		//___c:\___cscswpf\scripts
+        MessageBox("xPath=" + xPath()); //___c:\___cscswpf\bin\debug\
+        MessageBox("tPath=" + tPath()); //___c:\___cscswpf\scripts
+        MessageBox("iPath=" + iPath()); //___c:\___cscswpf\images\
+        MessageBox("mPath=" + mPath()); //___c:\___cscswpf\modules\
+        MessageBox("wPath=" + wPath()); //c:\winx\
+        */
+      
+ 
+    }
+    catch (ex)
+    {        
+        logFromInitPaths += "Greška prilikom inicijalizacije mapa XML, ZIP, LOG\n" + ex + "\n\n";
+        mozeDaljePaths = false;
+    }       
+}
+
+function InitLogging()
+{   
+    try
+    { 
+        mozeDaljeLog = true;
+        //logFileName = LOGpath + "LOG_ArhivaRacuna_" + datumVrijemeStr + ".log";            
+        logFileName = GetLOGfileName()
+    }
+    catch(ex)
+    {
+        logFromInitLogging = "Greška prilikom inicijalizacije imena LOG datoteke.\n" + ex;        
+        mozeDaljeLog = false;
+    }   
+}
+
+function Log(message)
+{   
+    try
+    {
+        if (message == "")
+        {
+            return;
+        }
+               
+        if (logFileName == "")
+        {
+            return;
+        }
+
+        SaveFile(message, logFileName, "A");//APPEND
+    }
+    catch (ex)
+    {
+        //Hard drive full -> do nothing        
+    }     
+}
+
+function btnArhivaRacuna@clicked()
+{  
+    //SetWidgetOptions("btnArhivaRacuna", "IsEnabled", "false"); //ovo ne radi
+    cursor("wait");
+    AsyncCall("ArhivaRacuna", "workDone");
+    Sleep(1000);//mora biti jer btn.IsEnabled ne radi, pa je to zaštita ako 2xklikne u istoj sekundi
+    //cursor("dflt");
+    //SetWidgetOptions("btnArhivaRacuna", "IsEnabled", "true"); //ovo ne radi
+}
+
+function ArhivaRacuna()
+{    
+    InitWidgets();
+    if (mozeDaljeWidgets == false)
+    {
+        return;
+    }
+    InitDatumVrijeme();
+    if (mozeDaljeDatumVrijeme == false)
+    {
+        return;
+    }
+    InitPaths();
+    if (mozeDaljePaths == false)
+    {               
+        return;
+    }
+    InitLogging();
+    if (mozeDaljeLog == false)
+    {
+        return;
+    }
+
+    RunOnMain("SetWidgetGotovo", "Arhiviranje u tijeku...");
+
+    countFilesXML = 0;
+    countFilesInDateRange = 0;
+    countFilesArchived = 0;     
+    Log("------ Start ArhivaRacuna ------\n"); 
+    Log("Datum i vrijeme: " + datumVrijemeStr + "\n");
+
+    if (logFromInitPaths != "")
+    {
+        Log(logFromInitPaths);
+    }
+
+    Log("XML mapa: " + XMLpath);
+    Log("ZIP mapa: " + ZIPpath);   
+    Log("LOG mapa: " + LOGpath + "\n"); 
+    Log("Unatrag broj dana: " + unatragBrojDana.ToString() + "\n");
+
+    ArhivaXMLDatoteka();
+
+    Log("TOTAL XML DATOTEKA PRONAĐENO:  " + countFilesXML.ToString());
+    Log("TOTAL XML DATOTEKA U PERIODU:  " + countFilesInDateRange.ToString());
+    Log("TOTAL XML DATOTEKA ARHIVIRANO: " + countFilesArchived.ToString() + "\n");          
+    
+    Log("------ Kraj ArhivaRacuna -------");
+
+    zipFilePath = GetZIPfileName();
+    RunOnMain("SetWidgetZIPTitle", "ZIP datoteka:");
+    RunOnMain("SetWidgetZIPValue", zipFilePath);
+
+    logFilePath = GetLOGfileName();
+    RunOnMain("SetWidgetLOGTitle", "LOG datoteka:");
+    RunOnMain("SetWidgetLOGValue", logFilePath);
+
+    RunOnMain("SetWidgetGotovo", "Gotovo");  
+}
+
+function workDone(sender, load) 
+{
+    try
+    {
+        cursor("dflt");
+    }
+    catch (ex)
+    {
+    }
+    //MessageBox("GOTOVO");
+}
+
+function SetWidgetDateTimeTitle(ss)
+{    
+    try
+    {
+        SetWidgetOptions("labelDateTime1", "Content", ss);
+    }
+    catch (ex)
+    {
+    }        
+}
+
+function SetWidgetDateTimeValue(ss)
+{   
+    try
+    {
+        SetWidgetOptions("labelDateTime2", "Content", ss);  
+    }
+    catch (ex)
+    {
+    }       
+}
+
+function SetWidgetProgressTitle(ss)
+{   
+    try
+    {
+        SetWidgetOptions("labelProgress1", "Content", ss);
+    }
+    catch (ex)
+    {
+    }         
+}
+
+function SetWidgetProgressValue(ss)
+{
+    try
+    {
+        //Sleep(1000);  //ZA ZBRISAT //NEMA NIKAKVU UPOTREBU 
+        SetWidgetOptions("labelProgress2", "Content", ss);
+    }
+    catch (ex)
+    {
+    }           
+}
+
+function SetWidgetGotovo(ss)
+{   
+    try
+    {
+        SetWidgetOptions("labelFinished", "Content", ss); 
+    }
+    catch (ex)
+    {
+    }           
+}
+
+function SetWidgetErrorsTitle(ss)
+{   
+    try
+    {
+        SetWidgetOptions("labelErrors1", "Content", ss); 
+    }
+    catch (ex)
+    {
+    }           
+}
+
+function SetWidgetErrorsValue(ss)
+{   
+    try
+    {
+        SetWidgetOptions("labelErrors2", "Content", ss); 
+    }
+    catch (ex)
+    {
+    }           
+}
+
+function SetWidgetZIPTitle(ss)
+{   
+    try
+    {
+        SetWidgetOptions("labelZIP1", "Content", ss); 
+    }
+    catch (ex)
+    {
+    }           
+}
+
+function SetWidgetZIPValue(ss)
+{   
+    try
+    {
+        SetWidgetOptions("labelZIP2", "Content", ss); 
+    }
+    catch (ex)
+    {
+    }           
+}
+
+function SetWidgetLOGTitle(ss)
+{   
+    try
+    {
+        SetWidgetOptions("labelLOG1", "Content", ss); 
+    }
+    catch (ex)
+    {
+    }           
+}
+
+function SetWidgetLOGValue(ss)
+{   
+    try
+    {
+        SetWidgetOptions("labelLOG2", "Content", ss); 
+    }
+    catch (ex)
+    {
+    }           
+}
+
+function IsFileDateInRange(file, brojDana)
+{
+    try
+    {
+        fileDateModified = FDATE(file, "MODIFIED"); //File date as DateTime
+    }
+    catch (ex)
+    {
+        Log("Greška u dohvaćanju datotečnog datuma za datoteku: " + file + "\n" + ex + "\n");
         return false;
     }
-    */
-    return true;
-}
 
-XMLpath = "D:\\TEST\\XML\\";
-ZIPpath = "D:\\TEST\\ZIP\\";
-unatragBrojDana = 30;
-
-if (XMLpath == "")
-{
-    MessageBox("XMLpath is not defined!");
-    quit;
-}
-
-if (!DIR_EXISTS(XMLpath))
-{
     try
     {
-        mkdir(XMLpath);
-        MessageBox("Creating directory: \n" + XMLpath + "\nDone.");
+        currentDate = DateTime();       //Current date as DateTime
+        currentDateInt = Math.Floor(DateTimeToDouble(currentDate));
+        fileDateModifiedInt = Math.Floor(DateTimeToDouble(fileDateModified));
+        dateDiff = currentDateInt - fileDateModifiedInt; //Difference as int, number of days
+        /*
+        MessageBox("Current date = " + currentDate.ToString("yyyyMMdd_HHmmss") + "\n" +
+           "File modified date = " + fileDateModified.ToString("yyyyMMdd_HHmmss") + "\n" +
+           "Date difference (in days) = " + dateDiff.ToString() + "\n" +
+           "Unatrag broj dana = " + unatragBrojDana.ToString());
+        */
+
+        if (dateDiff <= unatragBrojDana)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }        
     }
     catch (ex)
     {
-        MessageBox("Error creating directory: \n" + XMLpath + "\n\n" + ex);
-        quit;
-    }        
-}
-
-if (ZIPpath == "")
-{
-    MessageBox("ZIPpath is not defined!");
-    quit;
-}
-
-if (!DIR_EXISTS(ZIPpath))
-{
-    try
-    {
-        mkdir(ZIPpath);
-        MessageBox("Creating directory: \n" + ZIPpath + "\nDone.");
+        Log("Greška u funkciji IsFileDateInRange za datoteku: " + file + "\n" + ex + "\n");
+        return false;
     }
-    catch (ex)
-    {
-        MessageBox("Error creating directory: \n" + ZIPpath + "\n\n" + ex);
-        quit;
-    }        
+ 
+    return false;
 }
 
 //****************************************************************
 
-cd(XMLpath);
-
-/*
-MessageBox(currentPath());		//___c:\___cscswpf\scripts
-MessageBox("xPath=" + xPath()); //___c:\___cscswpf\bin\debug\
-MessageBox("tPath=" + tPath()); //___c:\___cscswpf\scripts
-MessageBox("iPath=" + iPath()); //___c:\___cscswpf\images\
-MessageBox("mPath=" + mPath()); //___c:\___cscswpf\modules\
-MessageBox("wPath=" + wPath()); //c:\winx\
-*/
-
-listOfFiles = findfiles("*.xml");
-//MessageBox(listOfFiles); //Output: ["C:\TEST\a.xml", "C:\TEST\b.xml", ...]
-
-strdatumvrijeme = DateTime().ToString("yyyyMMdd_HHmmss");
-zipFilePath = ZIPpath + "XML_Files_" + strdatumvrijeme + ".zip";
-MessageBox("ZIP file will be created at: \n" + zipFilePath);
-
-
-firstFile = true;
-countFiles = 0;
-
-try
+function ArhivaXMLDatoteka()
 {
-    for (file:listOfFiles)
+    try
     {
-        //MessageBox("Found XML file: \n" + file);
-
-        if (!exists(file))
-        {        
-            continue;
+        cd(XMLpath);
+        listOfFiles = findfiles("*.xml");
+        //MessageBox(listOfFiles); //Output: ["C:\TEST\a.xml", "C:\TEST\b.xml", ...]  
+        countFilesXML = Size(listOfFiles);
+    }
+    catch (ex)
+    {
+        Log("Greška u funkciji ArhivaXMLDatoteka: nemože se dobiti listu datoteka u mapi: \n" + XMLpath + "\n" + ex + "\n");
+        return;
+    }
+    
+    try
+    {
+        if (countFilesXML == 0)
+        {            
+            RunOnMain("SetWidgetProgressTitle", "Obavijest:");
+            RunOnMain("SetWidgetProgressValue", "Nema XML datoteka.");
+            return;
         }
-        
-        
-
-        if (isFileDateInRange(file, unatragBrojDana))
+        else
         {
-            MessageBox("Archiving file: \n" + file);
+            RunOnMain("SetWidgetProgressTitle", "Napredak:");
+            RunOnMain("SetWidgetProgressValue", "");
+        }        
+    }
+    catch(ex)
+    {
+        Log("Greška u funkciji ArhivaXMLDatoteka: postavljanje widget teksta uzrokovalo je grešku.\n" + ex + "\n");        
+        return;
+    }
 
-            if (firstFile)
+    try
+    {        
+        //zipFilePath = ZIPpath + "ArhivaRacuna_XML_Files_" + datumVrijemeStr + ".zip";        
+        zipFilePath = GetZIPfileName();
+        Log("ZIP FILE: " + zipFilePath + "\n");
+
+        firstFile = true;
+        countFilesInDateRange = 0;
+        countFilesArchived = 0;        
+        counter_f = 0;
+
+        for (file:listOfFiles)
+        {            
+            //MessageBox("Found XML file: \n" + file);
+            counter_f++;   
+            ss = counter_f.ToString() + " / " + countFilesXML.ToString();         
+            RunOnMain("SetWidgetProgressValue", ss);
+
+            try
             {
-                ZipFile(file, zipFilePath, "new");
-                countFiles = countFiles + 1;
-                firstFile = false;
+                if (!exists(file))
+                {   
+                    Log("Datoteka ne postoji (preskačemo datoteku): " + file + "\n");     
+                    continue;
+                }                
+
+                if (IsFileDateInRange(file, unatragBrojDana))
+                {
+                    countFilesInDateRange++;
+
+                    Log("Arhiviranje datoteke: " + file);
+
+                    if (firstFile)
+                    {
+                        ZipFile(file, zipFilePath, "new");                    
+                        firstFile = false;
+                    }
+                    else
+                    {
+                        ZipFile(file, zipFilePath, "add");                    
+                    } 
+
+                    countFilesArchived++;
+
+                    Log("Datoteka arhivirana uspješno: " + file + "\n"); 
+                }
             }
-            else
+            catch (ex)
             {
-                ZipFile(file, zipFilePath, "add");
-                countFiles = countFiles + 1;
-            }  
+                Log("GREŠKA prilikom obrade datoteke: " + file + "\n" + ex + "\n");
+            }
         }
     }
+    catch (ex)
+    {
+        Log("Greška u funkciji ArhivaXMLDatoteka: \n" + ex + "\n");        
+    }
 }
-catch (ex)
+
+function GetZIPfileName()
 {
-    MessageBox("ZIP file (BACKUP of invoices) failed to create: \n\n" + ex);
-    quit;
+    try
+    {
+        ZIP_fileName = ZIPpath + "ArhivaRacuna_XML_Files_" + datumVrijemeStr + ".zip";  
+        return ZIP_fileName;
+    }
+    catch (ex)
+    {
+        Log("Greška u funkciji GetZIPfileName: \n" + ex + "\n"); 
+    }
+    return "";
 }
 
-
-
-
-quit;
+function GetLOGfileName()
+{
+    try
+    {
+        LOG_fileName = LOGpath + "LOG_ArhivaRacuna_" + datumVrijemeStr + ".log";         
+        return LOG_fileName;
+    }
+    catch (ex)
+    {
+        Log("Greška u funkciji GetLOGfileName: \n" + ex + "\n"); 
+    }
+    return "";
+}
 
 

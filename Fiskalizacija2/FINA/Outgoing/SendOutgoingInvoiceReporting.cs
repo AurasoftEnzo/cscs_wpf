@@ -20,15 +20,17 @@ namespace WpfCSCS.Fiskalizacija2.FINA.Outgoing
                              string serviceCertificatePath,
                              string clientCertificatePath,
                              string clientCertificatePassword,
+                             string erpid,
+
                              string messageId,
                              string supplierID,
                              string buyerID,
                              string supplierInvoiceID,
                              ItemChoiceType1 itemChoiceType,
                              string unsignedInvoiceXMLPath,
+
                              string additionalSupplierId = null,
                              string additionalBuyerId = null,
-                             string erpid = null,
                              string messageAttributes = null,
                              SendB2BOutgoingInvoiceReportingMsgDataB2BOutgoingInvoiceEnvelopeSpecificationIdentifier specificationIdentifier = SendB2BOutgoingInvoiceReportingMsgDataB2BOutgoingInvoiceEnvelopeSpecificationIdentifier.urnceneuen169312017complianturnmfingovhrcius202510conformanturnmfingovhrext202510)
         {

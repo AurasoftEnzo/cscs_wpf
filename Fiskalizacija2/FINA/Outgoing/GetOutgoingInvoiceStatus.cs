@@ -20,6 +20,7 @@ namespace WpfCSCS.Fiskalizacija2.FINA.Outgoing
                                     string serviceCertificatePath,
                                     string clientCertificatePath,
                                     string clientCertificatePassword,
+                                    string erpid,
 
                                     string messageId,
                                     string supplierID,
@@ -27,7 +28,6 @@ namespace WpfCSCS.Fiskalizacija2.FINA.Outgoing
                                     string invoiceYear,
 
                                     string additionalSupplierId = null,
-                                    string erpid = null,
                                     string messageAttributes = null,
                                     bool documentCurrencyCode = false
                                     )

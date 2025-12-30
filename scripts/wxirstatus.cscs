@@ -1,19 +1,7 @@
-﻿// -----------------------------------------------------------
-// WxEracunGet.cscs - UBL XML Invoice Import Program
-// -----------------------------------------------------------
-// Purpose: Import UBL XML invoices into database tables
-// Main Function: importUBLXml(xmlFilePath)
-// Created: November 19, 2025
-// Compatible with: wxeracun.cscs export format
-// -----------------------------------------------------------
-// Global variables for database connection
-//databaseName = "your_database_name"; // Update with actual database name
-
-
-
+﻿
 Import(strTrim(mpath()) + "CSCS.Math.dll");
 
-CreateWindow(strTrim(tpath()) + "wxeracunget.xaml");
+CreateWindow(strTrim(tpath()) + "wxirstatus.xaml");
 
 DEFINE Rbr type i;
 DEFINE cntr1 type i;
@@ -30,17 +18,15 @@ DEFINE arrayBrojRacunaMer type a size 50 array 10000;
 
 // savedXmlFilesList = {};
 
-function wxeracunget_onDisplay(){
+function wxirstatus_onDisplay(){
     cursor("wait");
-    SetWidgetOptions("btnPreuzmi", "IsEnabled", "false");
-    SetWidgetOptions("StatusLabel", "Content", "Dohvaćanje liste ulaznih e-računa");
+    SetWidgetOptions("btnPrikazi", "IsEnabled", "false");
+    SetWidgetOptions("StatusLabel", "Content", "Dohvaćanje liste izlaznih e-računa");
     SetWidgetOptions("StatusLabel2", "Content", "Pričekajte...");
 
     try{
         init();
-        SetWindowOptions("wxeracungetWindow", "title", "Preuzimanje ulaznih e-računa(" + PROVIDER + ")");
-        getList();
-        DisplayArraySetup("datagridListaRacuna", counterFld: cntr1, activeElements: Rbr, maxElements: Rbr);
+        SetWindowOptions("wxirstatusWindow", "title", "Pregled statusa izlaznih e-računa(" + PROVIDER + ")");
     }catch(ex){
         MessageBox("Greška pri inicijalizaciji:\n" + ex);
         // ??? LOG? ne?
@@ -48,7 +34,7 @@ function wxeracunget_onDisplay(){
     }
     
     cursor("dflt");
-    SetWidgetOptions("btnPreuzmi", "IsEnabled", "true");
+    SetWidgetOptions("btnPrikazi", "IsEnabled", "true");
     SetWidgetOptions("StatusLabel", "Content", "");
     SetWidgetOptions("StatusLabel2", "Content", "");
 }
@@ -126,7 +112,7 @@ function init(){
         }
     }
 
-    logFolder = FILESPATH + "UR\\" + "log\\";
+    logFolder = FILESPATH + "IRStatus\\" + "log\\";
     if (!Exists(logFolder)) {
         MkDir(logFolder);
     }
@@ -170,6 +156,8 @@ function init(){
     } 
 }
 
+//-----------------------------------------------------------
+
 function getList(){
     try {
         sql_erac = "SELECT
@@ -202,6 +190,9 @@ function getList(){
         companyOIB = substring(KPSY_REZERVA, 0, 11).trim();
 
         if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
+            // !!!
+            MessageBox("NIJE IMPLEMENTIRANO!");
+            exit;
             GetListMER();
         } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
             GetListFINA();
@@ -220,7 +211,7 @@ function GetListFINA(){
     // GET INCOMING INVOICE LIST
     try{
         // MSG("Dohvaćam listu ULAZNIH računa preko FINA-e putem WSDL-a!");
-        ack = FINA_GET_INCOMING_INVOICE_LIST(
+        ack = FINA_GET_OUTGOING_INVOICE_LIST(
             ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
             ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
             ERAC_USERT, // servisni certifikat
@@ -231,15 +222,15 @@ function GetListFINA(){
             "9934:" + companyOIB // OIB primatelja (VLASTITI) // !!! stavit pravi OIB iz baze
         );
 
-        MSG("ack = " + ack);
+        // MSG("ack = " + ack);
        
-        MSG("ackStatusText = " + ack["ackstatustext"]);
+        // MSG("ackStatusText = " + ack["ackstatustext"]);
 
 
         if(!Contains(ack, "ErrorCode")){
             MSG("U listi je " + Size(ack["InvoiceList"]) + " računa za preuzimanje sa FINA servera.");
             for(i = 0; i < Size(ack["InvoiceList"]); i++){
-                MSG(ack["InvoiceList"][i]);
+                // MSG(ack["InvoiceList"][i]);
 
                 supplierName = ack["InvoiceList"][i]["SupplierRegistrationName"];
                 supplierId = ack["InvoiceList"][i]["SupplierId"];
@@ -354,30 +345,46 @@ function AddRacunToArrays(supplierName, supplierId, date1, date2, supplierInvoic
 
 //-----------------------------------------------------------
 
-function btnPreuzmi@clicked(){
+function btnPrikazi@clicked(){
     cursor("wait");
-    SetWidgetOptions("btnPreuzmi", "IsEnabled", "false");
-    SetWidgetOptions("StatusLabel", "Content", "Preuzimanje...");
+    SetWidgetOptions("btnPrikazi", "IsEnabled", "false");
+    SetWidgetOptions("StatusLabel", "Content", "Dohvaćanje liste izlaznih e-računa");
+    SetWidgetOptions("StatusLabel2", "Content", "Pričekajte...");
 
-    AsyncCall("startDownload", "startImportCall");   
+    AsyncCall("startGetLista", "end");   
 }
 
-function startDownload(){
-    // Create incoming folder if it doesn't exist
-    incomingFolder = FILESPATH + "UR\\";
-    if (!Exists(incomingFolder)) {
-        MkDir(incomingFolder);
-    }
+function startGetLista(){
+    
+    getList();
+    DisplayArray("datagridListaRacuna", "close");
+    DisplayArraySetup("datagridListaRacuna", counterFld: cntr1, activeElements: Rbr, maxElements: Rbr);
 
-    if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
-        GetRacuniMER();
-    } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
-        GetRacuniFINA();
-    } else {
-        MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA");
-        exit;
-    }
+
+        // // Create incoming folder if it doesn't exist
+        // incomingFolder = FILESPATH + "IRStatus\\";
+        // if (!Exists(incomingFolder)) {
+        //     MkDir(incomingFolder);
+        // }
+
+            // if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
+            //     GetRacuniMER();
+            // } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
+            //     GetRacuniFINA();
+            // } else {
+            //     MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA");
+            //     exit;
+            // }
 }
+
+function end(){
+    cursor("dflt");
+    SetWidgetOptions("btnPrikazi", "IsEnabled", "true");
+    SetWidgetOptions("StatusLabel", "Content", "");
+    SetWidgetOptions("StatusLabel2", "Content", "");
+}
+
+//-----------------------------------------------------------
 
 function GetRacuniFINA(){
     for(i = 0; i < Rbr; i++) {
@@ -468,7 +475,6 @@ function MERReceiveRacunFailure(trackingId, responseCode, res) {
     }
 }
 
-
 //-----------------------------------------------------------
 
 function startImportCall(){
@@ -537,11 +543,7 @@ function ImportXml(xmlFilePath){
     }
 }
 
-function end(){
-    cursor("dflt");
-    MessageBox("Kraj");
-    exit;
-}
+
 
 
 

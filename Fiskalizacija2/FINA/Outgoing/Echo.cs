@@ -17,13 +17,13 @@ namespace WpfCSCS.Fiskalizacija2.FINA.Outgoing
                                  string serviceCertificatePath,
                                  string clientCertificatePath,
                                  string clientCertificatePassword,
+                                 string erpid,
 
                                  string messageId,
                                  string echoText,
                                  string supplierId,
 
                                  string additionalSupplierId = null,
-                                 string erpid = null,
                                  string messageAttributes = null)
         {
             EchoMsg message = new EchoMsg();

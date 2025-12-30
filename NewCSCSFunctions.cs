@@ -143,7 +143,9 @@ namespace WpfCSCS
             interpreter.RegisterFunction("FINA_GET_INCOMING_INVOICE_LIST", new FINA_GET_INCOMING_INVOICE_LISTFunction());
             interpreter.RegisterFunction("FINA_GET_INCOMING_INVOICE", new FINA_GET_INCOMING_INVOICEFunction());
             interpreter.RegisterFunction("FINA_CHANGE_INCOMING_INVOICE_STATUS", new FINA_CHANGE_INCOMING_INVOICE_STATUSFunction());
-            
+            interpreter.RegisterFunction("FINA_GET_OUTGOING_INVOICE_LIST", new FINA_GET_OUTGOING_INVOICE_LISTFunction());
+
+
         }
         public partial class Constants
         {
@@ -5026,17 +5028,18 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
         protected override Variable Evaluate(ParsingScript script)
         {
             List<Variable> args = script.GetFunctionArgs();
-            Utils.CheckArgs(args.Count, 8, m_name);
+            Utils.CheckArgs(args.Count, 9, m_name);
 
             var endpoint = Utils.GetSafeString(args, 0);
             var dnsIdentity = Utils.GetSafeString(args, 1);
             var serviceCertificatePath = Utils.GetSafeString(args, 2);
             var clientCertificatePath = Utils.GetSafeString(args, 3);
             var clientCertificatePassword = Utils.GetSafeString(args, 4);
+            var erpid = Utils.GetSafeString(args, 5);
 
-            var messageId = Utils.GetSafeString(args, 5);
-            var echoText = Utils.GetSafeString(args, 6);
-            var supplierId = Utils.GetSafeString(args, 7);
+            var messageId = Utils.GetSafeString(args, 6);
+            var echoText = Utils.GetSafeString(args, 7);
+            var supplierId = Utils.GetSafeString(args, 8);
 
             Variable resVar = new Fiskalizacija2.FINA.Outgoing.Echo().Send(
                 endpoint,
@@ -5044,10 +5047,12 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
                 serviceCertificatePath,
                 clientCertificatePath,
                 clientCertificatePassword,
+                erpid,
 
                 messageId,
                 echoText,
-                supplierId);
+                supplierId
+                );
 
             return resVar;
         }
@@ -5058,27 +5063,28 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
         protected override Variable Evaluate(ParsingScript script)
         {
             List<Variable> args = script.GetFunctionArgs();
-            Utils.CheckArgs(args.Count, 11, m_name);
+            Utils.CheckArgs(args.Count, 12, m_name);
 
             var endpoint = Utils.GetSafeString(args, 0);
             var dnsIdentity = Utils.GetSafeString(args, 1);
             var serviceCertificatePath = Utils.GetSafeString(args, 2);
             var clientCertificatePath = Utils.GetSafeString(args, 3);
             var clientCertificatePassword = Utils.GetSafeString(args, 4);
+            var erpid = Utils.GetSafeString(args, 5);
 
-            var messageId = Utils.GetSafeString(args, 5);
-            var supplierId = Utils.GetSafeString(args, 6);
-            var buyerId = Utils.GetSafeString(args, 7);
-            var supplierInvoiceId = Utils.GetSafeString(args, 8);
+            var messageId = Utils.GetSafeString(args, 6);
+            var supplierId = Utils.GetSafeString(args, 7);
+            var buyerId = Utils.GetSafeString(args, 8);
+            var supplierInvoiceId = Utils.GetSafeString(args, 9);
 
-            var invoiceOrCreditNote = Utils.GetSafeString(args, 9);
+            var invoiceOrCreditNote = Utils.GetSafeString(args, 10);
             ServiceReference1_fina_wsdl.ItemChoiceType itemChoiceType = ServiceReference1_fina_wsdl.ItemChoiceType.InvoiceEnvelope;
             if (invoiceOrCreditNote.ToLower() == "creditnote")
             {
                 itemChoiceType = ServiceReference1_fina_wsdl.ItemChoiceType.CreditNoteEnvelope;
             }
 
-            var unsignedInvoiceXmlPath = Utils.GetSafeString(args, 10);
+            var unsignedInvoiceXmlPath = Utils.GetSafeString(args, 11);
 
             //var additionalSupplierId = Utils.GetSafeString(args, );
             //var additionalBuyerId = Utils.GetSafeString(args, );
@@ -5091,6 +5097,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
                 serviceCertificatePath,
                 clientCertificatePath,
                 clientCertificatePassword,
+                erpid,
 
                 messageId,
                 supplierId,
@@ -5121,18 +5128,19 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
         protected override Variable Evaluate(ParsingScript script)
         {
             List<Variable> args = script.GetFunctionArgs();
-            Utils.CheckArgs(args.Count, 9, m_name);
+            Utils.CheckArgs(args.Count, 10, m_name);
 
             var endpoint = Utils.GetSafeString(args, 0);
             var dnsIdentity = Utils.GetSafeString(args, 1);
             var serviceCertificatePath = Utils.GetSafeString(args, 2);
             var clientCertificatePath = Utils.GetSafeString(args, 3);
             var clientCertificatePassword = Utils.GetSafeString(args, 4);
+            var erpid = Utils.GetSafeString(args, 5);
 
-            var messageId = Utils.GetSafeString(args, 5);
-            var supplierId = Utils.GetSafeString(args, 6);
-            var supplierInvoiceId = Utils.GetSafeString(args, 7);
-            var invoiceYear = Utils.GetSafeString(args, 8);
+            var messageId = Utils.GetSafeString(args, 6);
+            var supplierId = Utils.GetSafeString(args, 7);
+            var supplierInvoiceId = Utils.GetSafeString(args, 8);
+            var invoiceYear = Utils.GetSafeString(args, 9);
 
             //var additionalSupplierId = Utils.GetSafeString(args, );
             //var erpid = Utils.GetSafeString(args, );
@@ -5145,6 +5153,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
                 serviceCertificatePath,
                 clientCertificatePath,
                 clientCertificatePassword,
+                erpid,
 
                 messageId,
                 supplierId,
@@ -5160,27 +5169,28 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
         protected override Variable Evaluate(ParsingScript script)
         {
             List<Variable> args = script.GetFunctionArgs();
-            Utils.CheckArgs(args.Count, 9, m_name);
+            Utils.CheckArgs(args.Count, 12, m_name); // !!!
 
             var endpoint = Utils.GetSafeString(args, 0);
             var dnsIdentity = Utils.GetSafeString(args, 1);
             var serviceCertificatePath = Utils.GetSafeString(args, 2);
             var clientCertificatePath = Utils.GetSafeString(args, 3);
             var clientCertificatePassword = Utils.GetSafeString(args, 4);
+            var erpid = Utils.GetSafeString(args, 5);
 
-            var messageId = Utils.GetSafeString(args, 5);
-            var supplierId = Utils.GetSafeString(args, 6);
-            var buyerId = Utils.GetSafeString(args, 7);
-            var supplierInvoiceId = Utils.GetSafeString(args, 8);
+            var messageId = Utils.GetSafeString(args, 6);
+            var supplierId = Utils.GetSafeString(args, 7);
+            var buyerId = Utils.GetSafeString(args, 8);
+            var supplierInvoiceId = Utils.GetSafeString(args, 9);
 
-            var invoiceOrCreditNote = Utils.GetSafeString(args, 9);
+            var invoiceOrCreditNote = Utils.GetSafeString(args, 10);
             ServiceReference1_fina_wsdl.ItemChoiceType1 itemChoiceType = ServiceReference1_fina_wsdl.ItemChoiceType1.InvoiceEnvelope;
             if (invoiceOrCreditNote.ToLower() == "creditnote")
             {
                 itemChoiceType = ServiceReference1_fina_wsdl.ItemChoiceType1.CreditNoteEnvelope;
             }
 
-            var unsignedInvoiceXmlPath = Utils.GetSafeString(args, 10);
+            var unsignedInvoiceXmlPath = Utils.GetSafeString(args, 11);
 
             //var additionalSupplierId = Utils.GetSafeString(args, );
             //var erpid = Utils.GetSafeString(args, );
@@ -5193,6 +5203,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
                 serviceCertificatePath,
                 clientCertificatePath,
                 clientCertificatePassword,
+                erpid,
 
                 messageId,
                 supplierId,
@@ -5392,6 +5403,36 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
                 codeReason,
                 note
                 );
+
+            return resVar;
+        }
+    }
+
+    class FINA_GET_OUTGOING_INVOICE_LISTFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 7, m_name);
+
+            var endpoint = Utils.GetSafeString(args, 0);
+            var dnsIdentity = Utils.GetSafeString(args, 1);
+            var serviceCertificatePath = Utils.GetSafeString(args, 2);
+            var clientCertificatePath = Utils.GetSafeString(args, 3);
+            var clientCertificatePassword = Utils.GetSafeString(args, 4);
+
+            var messageId = Utils.GetSafeString(args, 5);
+            var supplierId = Utils.GetSafeString(args, 6);
+
+            Variable resVar = new Fiskalizacija2.FINA.Incoming.GetOutgoingInvoiceList().Send(
+                endpoint,
+                dnsIdentity,
+                serviceCertificatePath,
+                clientCertificatePath,
+                clientCertificatePassword,
+
+                messageId,
+                supplierId);
 
             return resVar;
         }

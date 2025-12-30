@@ -86,7 +86,7 @@ function InitPaths()
         errorInitPathsLOG = "";
         mozeDaljePaths = true;
 
-        XMLpath = "D:\\TEST\\XML\\";        
+        XMLpath = "D:\\TEST\\XML\\";               
         ZIPpath = "D:\\TEST\\ZIP\\";        
         LOGpath = "D:\\TEST\\LOG\\";        
     
@@ -244,72 +244,85 @@ function Log(message)
 
 function btnArhivaRacuna@clicked()
 {  
-    //SetWidgetOptions("btnArhivaRacuna", "IsEnabled", "false"); //ovo ne radi
-    cursor("wait");
-    AsyncCall("ArhivaRacuna", "workDone");
-    Sleep(1000);//mora biti jer btn.IsEnabled ne radi, pa je to zaštita ako 2xklikne u istoj sekundi
-    //cursor("dflt");
-    //SetWidgetOptions("btnArhivaRacuna", "IsEnabled", "true"); //ovo ne radi
+    try
+    {
+        //SetWidgetOptions("btnArhivaRacuna", "IsEnabled", "false"); //ovo ne radi
+        cursor("wait");
+        AsyncCall("ArhivaRacuna", "workDone");
+        Sleep(1000);//mora biti jer btn.IsEnabled ne radi, pa je to zaštita ako 2xklikne u istoj sekundi
+        //cursor("dflt");
+        //SetWidgetOptions("btnArhivaRacuna", "IsEnabled", "true"); //ovo ne radi
+    }
+    catch (ex)
+    {        
+    }
 }
 
 function ArhivaRacuna()
-{    
-    InitWidgets();
-    if (mozeDaljeWidgets == false)
-    {
-        return;
-    }
-    InitDatumVrijeme();
-    if (mozeDaljeDatumVrijeme == false)
-    {
-        return;
-    }
-    InitPaths();
-    if (mozeDaljePaths == false)
-    {               
-        return;
-    }
-    InitLogging();
-    if (mozeDaljeLog == false)
-    {
-        return;
-    }
+{  
+    try
+    {  
+        InitWidgets();
+        if (mozeDaljeWidgets == false)
+        {
+            return;
+        }
+        InitDatumVrijeme();
+        if (mozeDaljeDatumVrijeme == false)
+        {
+            return;
+        }
+        InitPaths();
+        if (mozeDaljePaths == false)
+        {               
+            return;
+        }
+        InitLogging();
+        if (mozeDaljeLog == false)
+        {
+            return;
+        }
 
-    RunOnMain("SetWidgetGotovo", "Arhiviranje u tijeku...");
+        RunOnMain("SetWidgetGotovo", "Arhiviranje u tijeku...");
 
-    countFilesXML = 0;
-    countFilesInDateRange = 0;
-    countFilesArchived = 0;     
-    Log("------ Start ArhivaRacuna ------\n"); 
-    Log("Datum i vrijeme: " + datumVrijemeStr + "\n");
-
-    if (logFromInitPaths != "")
-    {
-        Log(logFromInitPaths);
-    }
-
-    Log("XML mapa: " + XMLpath);
-    Log("ZIP mapa: " + ZIPpath);   
-    Log("LOG mapa: " + LOGpath + "\n"); 
-    Log("Unatrag broj dana: " + unatragBrojDana.ToString() + "\n");
-
-    ArhivaXMLDatoteka();
-
-    Log("TOTAL XML DATOTEKA PRONAĐENO:  " + countFilesXML.ToString());
-    Log("TOTAL XML DATOTEKA U PERIODU:  " + countFilesInDateRange.ToString());
-    Log("TOTAL XML DATOTEKA ARHIVIRANO: " + countFilesArchived.ToString() + "\n");          
+        countFilesXML = 0;
+        countFilesInDateRange = 0;
+        countFilesArchived = 0;     
+        Log("------ Start ArhivaRacuna ------\n"); 
+        Log("Datum i vrijeme: " + datumVrijemeStr + "\n");
     
-    Log("------ Kraj ArhivaRacuna -------");
+        Log("Unatrag broj dana: " + unatragBrojDana.ToString() + "\n");
 
-    zipFilePath = GetZIPfileName();
-    RunOnMain("SetWidgetZIPTitle", "ZIP datoteka:");
-    RunOnMain("SetWidgetZIPValue", zipFilePath);
+        if (logFromInitPaths != "")
+        {
+            Log(logFromInitPaths);
+        }
 
-    logFilePath = GetLOGfileName();
-    RunOnMain("SetWidgetLOGTitle", "LOG datoteka:");
-    RunOnMain("SetWidgetLOGValue", logFilePath);
+        Log("XML mapa: " + XMLpath);
+        Log("ZIP mapa: " + ZIPpath);   
+        Log("LOG mapa: " + LOGpath + "\n"); 
+    
+        ArhivaXMLDatoteka();
 
-    RunOnMain("SetWidgetGotovo", "Gotovo");  
+        Log("TOTAL XML DATOTEKA PRONAĐENO:  " + countFilesXML.ToString());
+        Log("TOTAL XML DATOTEKA U PERIODU:  " + countFilesInDateRange.ToString());
+        Log("TOTAL XML DATOTEKA ARHIVIRANO: " + countFilesArchived.ToString() + "\n");          
+    
+        Log("------ Kraj ArhivaRacuna -------");
+
+        zipFilePath = GetZIPfileName();
+        RunOnMain("SetWidgetZIPTitle", "ZIP datoteka:");
+        RunOnMain("SetWidgetZIPValue", zipFilePath);
+
+        logFilePath = GetLOGfileName();
+        RunOnMain("SetWidgetLOGTitle", "LOG datoteka:");
+        RunOnMain("SetWidgetLOGValue", logFilePath);
+
+        RunOnMain("SetWidgetGotovo", "Gotovo");  
+    }
+    catch (ex)
+    {        
+    }
 }
 
 function workDone(sender, load) 

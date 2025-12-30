@@ -48,7 +48,7 @@ namespace WpfCSCS.Fiskalizacija2.FINA.Incoming
 
 
             //......
-            var fromDateTime = DateTime.Today.AddDays(-1);
+            var fromDateTime = DateTime.Today.AddDays(-100);
             var toDateTime = DateTime.Now;
 
             // !!! FILTER 

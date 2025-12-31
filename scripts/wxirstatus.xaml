@@ -31,7 +31,7 @@
             <DataGrid.Resources>
                 <Style TargetType="{x:Type DataGridColumnHeader}">
                     <Setter Property="Background"
-                    Value="#FF006393" />
+                    Value="#FFCC0000" />
                     <Setter Property="Foreground"
                     Value="White" />
                     <Setter Property="FontSize" Value="17"/>
@@ -49,6 +49,25 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="Broj računa"
+                Width="100">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <wcl:ASGridCell FieldName="arrayBrojRacuna"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="Status računa"
+                    Width="130">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <wcl:ASGridCell FieldName="arrayStatusRacuna" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
                 <DataGridTemplateColumn Header="Kupac"
                                 Width="200">
                     <DataGridTemplateColumn.CellTemplate>
@@ -57,47 +76,33 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="Datum računa"
+                                Width="130">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <wcl:ASGridCell FieldName="arrayDatumRacuna" HorizontalContentAlignment="Center"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="Datum PDV-a"
+                            Width="130">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <wcl:ASGridCell FieldName="arrayDatumPDVa" HorizontalContentAlignment="Center"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
                 <DataGridTemplateColumn Header="OIB kupca"
-                                    Width="130">
+                    Width="130">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <wcl:ASGridCell FieldName="arrayOibKupca" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Status računa"
-                                    Width="130">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <wcl:ASGridCell FieldName="arrayStatusRacuna" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Datum računa"
-                                Width="130">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <wcl:ASGridCell FieldName="arrayDatumRacuna"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Datum PDV-a"
-                            Width="130">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <wcl:ASGridCell FieldName="arrayDatumPDVa"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Broj računa"
-                                Width="200">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <wcl:ASGridCell FieldName="arrayBrojRacuna"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                
 
             </DataGrid.Columns>
         </DataGrid>
@@ -108,11 +113,32 @@
                 Name="btnPrikazi"
                 FontSize="35"
                 HorizontalAlignment="Left"
-                VerticalAlignment="Top" Margin="200,439,0,0" Width="385" Height="70" />
+                VerticalAlignment="Top" Margin="210,434,0,0" Width="385" Height="70" />
 
         <Label Content="" Name="StatusLabel" FontSize="25" HorizontalContentAlignment="Center" Height="50" Width="570" Margin="110,534,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
         <Label Content="" Name="StatusLabel2" FontSize="25" HorizontalContentAlignment="Center" Height="45" Width="570" Margin="110,579,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
 
         <Image x:Name="asImage" DataContext="Sat" Height="90" Width="100" Margin="680,534,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+        <wcl:ASDateEditer
+            DisplaySize="8"
+            DisplayDate="01/01/26"
+            ButtonWidth="19"
+            x:Name="dateEditerFrom"
+            DataContext="FilterDateFrom"
+            FontSize="20"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top" Margin="70,434,0,0" Width="130" Height="30" />
+        <Label Content="Od:" FontSize="20" HorizontalContentAlignment="Center" Height="35" Width="65" Margin="10,429,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+        
+        <wcl:ASDateEditer
+            DisplaySize="8"
+            DisplayDate="01/01/26"
+            ButtonWidth="19"
+            x:Name="dateEditerTo"
+            DataContext="FilterDateTo"
+            FontSize="20"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top" Margin="70,474,0,0" Width="130" Height="30" />
+        <Label Content="Do:" FontSize="20" HorizontalContentAlignment="Center" Height="35" Width="65" Margin="10,469,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
     </Grid>
 </Window>

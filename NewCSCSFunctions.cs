@@ -5413,7 +5413,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
         protected override Variable Evaluate(ParsingScript script)
         {
             List<Variable> args = script.GetFunctionArgs();
-            Utils.CheckArgs(args.Count, 7, m_name);
+            Utils.CheckArgs(args.Count, 9, m_name);
 
             var endpoint = Utils.GetSafeString(args, 0);
             var dnsIdentity = Utils.GetSafeString(args, 1);
@@ -5423,6 +5423,12 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
 
             var messageId = Utils.GetSafeString(args, 5);
             var supplierId = Utils.GetSafeString(args, 6);
+            
+            var filterDateFrom = Utils.GetSafeString(args, 7);
+            var filterDateTo = Utils.GetSafeString(args, 8);
+
+            DateTime.TryParseExact(filterDateFrom, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateFrom);
+            DateTime.TryParseExact(filterDateTo, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTo);
 
             Variable resVar = new Fiskalizacija2.FINA.Incoming.GetOutgoingInvoiceList().Send(
                 endpoint,
@@ -5432,7 +5438,9 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
                 clientCertificatePassword,
 
                 messageId,
-                supplierId);
+                supplierId,
+                dateFrom,
+                dateTo);
 
             return resVar;
         }

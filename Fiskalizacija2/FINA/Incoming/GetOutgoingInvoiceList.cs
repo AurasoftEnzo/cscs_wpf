@@ -21,6 +21,9 @@ namespace WpfCSCS.Fiskalizacija2.FINA.Incoming
                                 string messageId,
                                 string supplierId,
 
+                                DateTime dateFrom,
+                                DateTime dateTo,
+
                                 string additionalSupplierId = null,
                                 string messageAttributes = null,
 
@@ -48,8 +51,8 @@ namespace WpfCSCS.Fiskalizacija2.FINA.Incoming
 
 
             //......
-            var fromDateTime = DateTime.Today.AddDays(-100);
-            var toDateTime = DateTime.Now;
+            var fromDateTime = dateFrom.Date;
+            var toDateTime = dateTo.Date.AddHours(23).AddMinutes(59).AddSeconds(59);
 
             // !!! FILTER 
             B2BOutgoingInvoiceList.Item = new FilterType()

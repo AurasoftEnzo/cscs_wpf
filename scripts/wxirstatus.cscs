@@ -17,6 +17,12 @@ DEFINE arrayBrojRacuna type a size 50 array 10000;
 DEFINE arrayBrojRacunaFina type a size 50 array 10000;
 DEFINE arrayBrojRacunaMer type a size 50 array 10000;
 
+DEFINE FilterDateFrom type d size 10;
+DEFINE FilterDateTo type d size 10;
+
+FilterDateFrom = Now("dd/MM/yyyy");
+FilterDateTo = Now("dd/MM/yyyy");
+
 // savedXmlFilesList = {};
 
 function wxirstatus_onDisplay(){
@@ -220,7 +226,9 @@ function GetListFINA(){
             ERAC_PASS, // password za p12 certifikat
 
             UUID(), // messageId
-            "9934:" + companyOIB // OIB primatelja (VLASTITI) // !!! stavit pravi OIB iz baze
+            "9934:" + companyOIB, // OIB primatelja (VLASTITI) // !!! stavit pravi OIB iz baze
+            FilterDateFrom, // dateFrom (dd/MM/yyyy)
+            FilterDateTo  // dateTo (dd/MM/yyyy)
         );
 
         // MSG("ack = " + ack);
@@ -229,7 +237,7 @@ function GetListFINA(){
 
 
         if(!Contains(ack, "ErrorCode")){
-            MSG("U listi je " + Size(ack["InvoiceList"]) + " računa za preuzimanje sa FINA servera.");
+            // MSG("U listi je " + Size(ack["InvoiceList"]) + " računa za preuzimanje sa FINA servera.");
             for(i = 0; i < Size(ack["InvoiceList"]); i++){
                 // MSG(ack["InvoiceList"][i]);
 
@@ -237,11 +245,13 @@ function GetListFINA(){
                 buyerId = ack["InvoiceList"][i]["BuyerId"];
                 // !!! datumi (2)
                 supplierInvoiceId = ack["InvoiceList"][i]["SupplierInvoiceID"];
+                aurasoftFormatSupplierInvoiceId = TransformInvoiceNumberToAurasoftFormat(supplierInvoiceId);
+
                 invoiceId = ack["InvoiceList"][i]["InvoiceID"];
 
                 statusCode = ack["InvoiceList"][i]["StatusCode"];
 
-                AddRacunToArrays(buyerName, buyerId, "2025-01-01", "2025-01-01", supplierInvoiceId, invoiceId, statusCode);
+                AddRacunToArrays(buyerName, buyerId, "2025-01-01", "2025-01-01", aurasoftFormatSupplierInvoiceId, invoiceId, statusCode);
             }
         }else{
             MessageBox("ack[\"ErrorCode\"]" + ack["ErrorCode"] + "\nack[\"ErrorText\"]" + ack["ErrorText"] + "\nack[\"ErrorMessage\"]" + ack["ErrorMessage"]);
@@ -251,6 +261,25 @@ function GetListFINA(){
         LogException(ex); // !!!
         exit;
     }
+}
+
+// 123-90-1 -> 90100123
+function TransformInvoiceNumberToAurasoftFormat(supplierInvoiceId){
+    parts = supplierInvoiceId.Split("-");
+    
+    part0 = parts[0];
+    part1 = parts[1];
+    part2 = parts[2];
+
+
+    parts0Length = part0.length;
+
+    while(parts0Length < 5){
+        part0 = "0" + part0;
+        parts0Length = part0.length;
+    }
+    
+    final = part1 + part2 + part0;
 }
 
 function GetListMER(){
@@ -350,6 +379,8 @@ function AddRacunToArrays(supplierName, supplierId, date1, date2, supplierInvoic
 //-----------------------------------------------------------
 
 function btnPrikazi@clicked(){
+    cntr1 = 0;
+    Rbr = 0;
     cursor("wait");
     SetWidgetOptions("btnPrikazi", "IsEnabled", "false");
     SetWidgetOptions("StatusLabel", "Content", "Dohvaćanje liste izlaznih e-računa");

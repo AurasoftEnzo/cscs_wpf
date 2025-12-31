@@ -1374,24 +1374,24 @@ function GenerateUBLXml() {
     
     for (i = 1; i < Size(taxRes2); i++) {
         row = taxRes2[i];
-
+    
         POREZ = row[0];
         OSNOVICA = row[1];
         NKPR_LN_PRNPR = row[2];
         PKFK_TAX_TARIFA = row[3].trim();
         PKFK_TAX_DOBOPC = Substring(row[4], 0, 2).trim(); //šifra izjave za oslobođenje od poreza
         PKFK_TAX_P_PORZ = row[6]; // Get tax type (P=PDV, T=Consumption tax, etc.)
-        
+    
         // Map tax categories - all PDV variants (PDV25, PDV13, PDV5) should be 'S'
         categoryID = PKFK_TAX_TARIFA;
         if (SUBSTRING(PKFK_TAX_TARIFA, 0, 3) == 'PDV') {
             categoryID = "S"; // Standard rate for all PDV variants
         }
-        
+
         // Create unique key for grouping: categoryID + taxRate + exemptCode
         groupKey = categoryID + "_" + NKPR_LN_PRNPR + "_" + PKFK_TAX_DOBOPC;
-        
-        if (taxCategoryGroups[groupKey] == null) {
+
+        if (!Contains(taxCategoryGroups, groupKey)) {
             // First entry for this group
             taxCategoryGroups[groupKey] = {
                 "categoryID": categoryID,
@@ -1410,8 +1410,10 @@ function GenerateUBLXml() {
     }
     
     // Generate TaxSubtotal for each category group
-    for (groupKey in taxCategoryGroups) {
-        group = taxCategoryGroups[groupKey];
+    for (group : taxCategoryGroups) {
+        // MSG("groupKey: " + groupKey);
+
+        // group = taxCategoryGroups[groupKey];
         categoryID = group["categoryID"];
         originalTarifa = group["originalTarifa"];
         taxRate = group["taxRate"];
@@ -2464,7 +2466,8 @@ function SendToFINA() {
         }
         // invoiceOrCreditNote = "CreditNote"; // TEST !!!
 
-Msg("Slanje " + invoiceOrCreditNote + " na FINA-u putem WSDL-a...");
+        Msg("Slanje " + invoiceOrCreditNote + " na FINA-u putem WSDL-a...");
+        
         ack = FINA_SEND_OUTGOING_INVOICE(
             ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",
             ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !

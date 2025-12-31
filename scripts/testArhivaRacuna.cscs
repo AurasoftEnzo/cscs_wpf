@@ -15,12 +15,25 @@ DEFINE errorInitPathsXML type A size 1000;
 DEFINE errorInitPathsZIP type A size 1000;
 DEFINE errorInitPathsLOG type A size 1000;
 DEFINE errorFromInitPaths type A size 1000;
+DEFINE mozeDaljeBaza type L;
 DEFINE mozeDaljeWidgets type L;
 DEFINE mozeDaljeDatumVrijeme type L;
 DEFINE mozeDaljePaths type L;
 DEFINE mozeDaljeLog type L;
 DEFINE logFromInitPaths type A size 10000;
 DEFINE logFromInitLogging type A size 10000;//da li ovo imamo u kodu
+
+DEFINE winxIniPath type a size 255;
+DEFINE tasproIniPath type a size 255;
+DEFINE DatabasePrazno type a size 50;
+DEFINE ShortDbName type a size 5;
+DEFINE ShortDbNameWithoutB type a size 5;
+DEFINE CurrentYearDatabase type a size 255;
+DEFINE errorGetCurrentDatabaseName type a size 1000;
+
+DEFINE errorGetFilesPath type a size 1000;
+DEFINE filesPath type A size 1000;
+
 
 unatragBrojDana = 20;
 
@@ -51,6 +64,123 @@ function InitWidgets()
     {
         mozeDaljeWidgets = false;
     }
+}
+
+function GetCurrentDatabaseName()
+{
+    try
+    {
+        mozeDaljeBaza = true;
+        errorGetCurrentDatabaseName = "";
+        DatabasePrazno = "";
+        CurrentYearDatabase = "";
+
+        // naziv database "prazno"(npr. "C__DATAX__B") iz Winx.ini
+        winxIniPath = strtrim(wpath()) + "winx.ini";
+
+        if(!regedit("regOpen", winxIniPath, "rtFile")){
+            mozeDaljeBaza = false;
+            errorGetCurrentDatabaseName = "Datoteka " + winxIniPath + " nije dostupna.";
+            //MessageBox("Datoteka " + winxIniPath + " nije dostupna.");
+            //Cursor("dflt");
+            //quit;            
+            return;
+        }
+
+        DatabasePrazno = regedit("regReadStr", 'MSSQL_SERVER', 'UserBase');
+        if(DatabasePrazno == ""){
+            mozeDaljeBaza = false;
+            errorGetCurrentDatabaseName = "Potrebno je podesiti UserBase(DatabasePrazno) u ini datoteci.";
+            //MessageBox("Potrebno je podesiti UserBase(DatabasePrazno) u ini datoteci.");
+            regedit("regWriteStr", 'MSSQL_SERVER', 'UserBase', "");
+            //Cursor("dflt");
+            //quit;
+            return;
+        }
+
+        regedit("regClose");
+        //--------------
+
+        // kratki naziv baze(npr. "B25") iz Taspro.ini
+        tasproIniPath = strtrim(wpath()) + "taspro.ini";
+
+        if(!regedit("regOpen", tasproIniPath, "rtFile")){
+            mozeDaljeBaza = false;
+            errorGetCurrentDatabaseName = "Datoteka " + tasproIniPath + " nije dostupna.";
+            //MessageBox("Datoteka " + tasproIniPath + " nije dostupna.");
+            //Cursor("dflt");
+            //quit;
+            return;
+        }
+
+        ShortDbName = regedit("regReadStr", 'Setup', 'DfltCompanyCode');
+        if(ShortDbName == ""){
+            mozeDaljeBaza = false;
+            errorGetCurrentDatabaseName = "Potrebno je podesiti DfltCompanyCode(ShortDbName) u ini datoteci.";
+            //MessageBox("Potrebno je podesiti DfltCompanyCode(ShortDbName) u ini datoteci.");
+            regedit("regWriteStr", 'Setup', 'DfltCompanyCode', "");
+            //Cursor("dflt");
+            //quit;
+            return;
+        }
+
+        regedit("regClose");
+
+        ShortDbNameWithoutB = substring(ShortDbName, 1, 2);
+        //--------------
+
+        //sql upit -> C__DATAX__B.dbo.NKSYCCYR WHERE kratkiNazivBaze = 'B25' -> dobit puno ime baze trenutne godine
+        sqlString = "SELECT SY_CC_DBASE from " + DatabasePrazno + ".dbo.NKSYCCYR WHERE SY_CC_CODE = '" + ShortDbNameWithoutB + "'";
+    
+        sqlResult = SqlQuery(sqlString);
+
+        if(Size(sqlResult) <= 1){
+            mozeDaljeBaza = false;
+            errorGetCurrentDatabaseName = "Greška prilikom dohvata trenutne godine iz baze.";
+            //MessageBox("Greška prilikom dohvata trenutne godine iz baze.");
+            //Cursor("dflt");
+            //quit;
+            return;
+        }else{
+            CurrentYearDatabase = strTrim(sqlResult[1][0]);
+        }        
+    }
+    catch (ex)
+    {
+        mozeDaljeBaza = false;
+        errorGetCurrentDatabaseName = ex;
+        return;
+    }
+    return;
+}
+
+
+function GetFilesPath()
+{
+    try
+    {
+        mozeDaljeFilesPath = true;
+        filesPath = "";
+        
+        sqlString = "SELECT NKSYS_VALUE from " + CurrentYearDatabase + ".dbo.NKSYSYCO WHERE NKSYS_GRUP = 'ERACUN' AND NKSYS_FIELD = 'FILESPATH'";
+    
+        sqlResult = SqlQuery(sqlString);
+
+        if(Size(sqlResult) <= 1){
+            mozeDaljeFilesPath = false;
+            errorGetFilesPath = "Greška prilikom dohvata staze datoteka iz baze.";
+            return;
+        }else{
+            filesPath = strTrim(sqlResult[1][0]);
+        }    
+    }
+    catch (ex)
+    {
+        mozeDaljeFilesPath = false;
+        errorGetFilesPath = ex;
+        return;
+    }
+    return;
 }
 
 function InitDatumVrijeme()
@@ -267,6 +397,27 @@ function ArhivaRacuna()
         {
             return;
         }
+
+        GetCurrentDatabaseName();
+        if (mozeDaljeBaza == false)
+        {
+            RunOnMain("SetWidgetErrorsTitle", "Greška:");
+            RunOnMain("SetWidgetErrorsValue", errorGetCurrentDatabaseName); 
+            RunOnMain("SetWidgetGotovo", "Gotovo");   
+            return;
+        }        
+        //MessageBox("Trenutna baza je: " + CurrentYearDatabase);
+
+        GetFilesPath();
+        if (mozeDaljeFilesPath == false)
+        {
+            RunOnMain("SetWidgetErrorsTitle", "Greška:");
+            RunOnMain("SetWidgetErrorsValue", errorGetFilesPath); 
+            RunOnMain("SetWidgetGotovo", "Gotovo");   
+            return;
+        }
+        //MessageBox("filesPath: " + filesPath);
+
         InitDatumVrijeme();
         if (mozeDaljeDatumVrijeme == false)
         {

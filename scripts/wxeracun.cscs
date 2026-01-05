@@ -2002,13 +2002,13 @@ msg ("AAAA: " + taxRes2);
     } else {
         xsdFiles.Add(SCHEMASPATH + "xsd\\maindoc\\UBL-Invoice-2.1.xsd");
     }
-   /* 
+
     if (!ValidateXsd(xml, xsdFiles, xsdValidationResultOutputFile)) {
         // LogError("XSD_FAIL", "Validation failed for " + invNum, validationErrors);
         MessageBox("XML nije prošao XSD validaciju\n\nProvjerite _XSD.err datoteku za detalje.");
         return false;
     }
-*/
+
     // // signature
     // MessageBox(SignXml(xmlFileName, "C:\\temp\\cert\\p12_aurasoft_demo.p12", "Aurasoft1", SavePath + parsefile(attachmentPdfPath, "pfName") + "_signed.xml"));
     // return false;
@@ -2019,17 +2019,15 @@ msg ("AAAA: " + taxRes2);
     // -----------------------------------------------------------
     // 8.3. SCH VALIDATION 
     // -----------------------------------------------------------
-    /*
+    
     schFiles = {};
     schFiles.Add(SCHEMASPATH + "schematron\\HR-CIUS-EXT-EN16931-UBL.sch");
-     schFiles.Add(SCHEMASPATH + "schematron\\preprocessed\\EN16931-UBL-validation-preprocessed.sch");
-     if(!ValidateSch(xml, schFiles, SCHEMASPATH + "schematron\\transpile.xsl", schValidationResultOutputFile)){
-         MessageBox("xml FAILED SCH validation\n\nSee _SCH.err file for details.");
-         return false;
-     }
-     */
-
-
+    //  schFiles.Add(SCHEMASPATH + "schematron\\preprocessed\\EN16931-UBL-validation-preprocessed.sch");
+    if(!ValidateSch(xml, schFiles, SCHEMASPATH + "schematron\\transpile.xsl", schValidationResultOutputFile)){
+        MessageBox("xml FAILED SCH validation\n\nSee _SCH.err file for details.");
+        return false;
+    }
+     
 
 
 
@@ -2625,9 +2623,9 @@ function SendToFINA() {
             invoiceOrCreditNote, // itemType -> Invoice ili CreditNote
             xmlFileName // unsignedXmlPath
         );
-         MSG("ack = " + ack);
-         responseCode= 'AAQQ';
-                LogResponse(responseCode, ack);
+        MSG("ack = " + ack);
+        responseCode= 'AAQQ';
+        LogResponse(responseCode, ack);
  
         if(ack["AckStatusCode"] == 10){
             // MessageBox("Uspješno poslan RAČUN prema FINA-i!");

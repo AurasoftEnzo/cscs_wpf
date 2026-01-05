@@ -231,26 +231,32 @@ function GetListFINA(){
             "9934:" + companyOIB // OIB primatelja (VLASTITI) // !!! stavit pravi OIB iz baze
         );
 
-        MSG("ack = " + ack);
+        // MSG("ack = " + ack);
        
-        MSG("ackStatusText = " + ack["ackstatustext"]);
+        // MSG("ackStatusText = " + ack["ackstatustext"]);
 
+        if(ack["AckStatusCode"] == 10){
+            if(!Contains(ack, "ErrorCode")){
+                // MSG("U listi je " + Size(ack["InvoiceList"]) + " računa za preuzimanje sa FINA servera.");
+                for(i = 0; i < Size(ack["InvoiceList"]); i++){
+                    // MSG(ack["InvoiceList"][i]);
 
-        if(!Contains(ack, "ErrorCode")){
-            MSG("U listi je " + Size(ack["InvoiceList"]) + " računa za preuzimanje sa FINA servera.");
-            for(i = 0; i < Size(ack["InvoiceList"]); i++){
-                MSG(ack["InvoiceList"][i]);
+                    supplierName = ack["InvoiceList"][i]["SupplierRegistrationName"];
+                    supplierId = ack["InvoiceList"][i]["SupplierId"];
+                    // !!! datumi (2)
+                    supplierInvoiceId = ack["InvoiceList"][i]["SupplierInvoiceID"];
+                    invoiceId = ack["InvoiceList"][i]["InvoiceID"];
 
-                supplierName = ack["InvoiceList"][i]["SupplierRegistrationName"];
-                supplierId = ack["InvoiceList"][i]["SupplierId"];
-                // !!! datumi (2)
-                supplierInvoiceId = ack["InvoiceList"][i]["SupplierInvoiceID"];
-                invoiceId = ack["InvoiceList"][i]["InvoiceID"];
-
-                AddRacunToArrays(supplierName, supplierId, "2025-01-01", "2025-01-01", supplierInvoiceId, invoiceId);
+                    AddRacunToArrays(supplierName, supplierId, "2025-01-01", "2025-01-01", supplierInvoiceId, invoiceId);
+                }
+            }else{
+                MessageBox("ack[\"ErrorCode\"]" + ack["ErrorCode"] + "\nack[\"ErrorText\"]" + ack["ErrorText"] + "\nack[\"ErrorMessage\"]" + ack["ErrorMessage"]);
+                exit;
             }
         }else{
-            MessageBox("ack[\"ErrorCode\"]" + ack["ErrorCode"] + "\nack[\"ErrorText\"]" + ack["ErrorText"] + "\nack[\"ErrorMessage\"]" + ack["ErrorMessage"]);
+            MessageBox("AckStatusText = " + ack["AckStatusText"]);
+            // MessageBox("NEUSPJEŠNO poslan RAČUN prema FINA-i!");
+            exit;
         }
     }catch(ex){
         MessageBox("Nepoznata greška:\n" + ex);
@@ -479,8 +485,8 @@ function startImport(){
     cd(FILESPATH + "UR\\");
     listOfXmls = FindFiles("*.xml");
 
-    MSG(listOfXmls);
-    MSG(Size(listOfXmls));
+    // MSG(listOfXmls);
+    // MSG(Size(listOfXmls));
 
     for(i = 0; i < Size(listOfXmls); i++){
         ImportXml(listOfXmls[i]);
@@ -489,7 +495,7 @@ function startImport(){
 
 function ImportXml(xmlFilePath){
     try{
-        MSG("Importing XML file: " + xmlFilePath);
+        // MSG("Importing XML file: " + xmlFilePath);
             
         xmlDict = XmlToDict(ReadAllText(xmlFilePath));
         

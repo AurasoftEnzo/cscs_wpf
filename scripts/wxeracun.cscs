@@ -1380,7 +1380,7 @@ msg ("AAAA: " + taxRes2);
     xml += "<cac:PaymentMeans>\n";
     xml += "  <cbc:PaymentMeansCode>" + payCode + "</cbc:PaymentMeansCode>\n";
     xml += "  <cbc:InstructionNote>" + EscapeForXml(KPKS_PL_OPIS) + "</cbc:InstructionNote>\n";
-    xml += "  <cbc:PaymentID>" + NKPR_GL_MODEL + " " + NKPR_GL_POZIV + "</cbc:PaymentID>\n";
+    xml += "  <cbc:PaymentID>HR" + NKPR_GL_MODEL + " " + NKPR_GL_POZIV + "</cbc:PaymentID>\n";
 
     sql_bank = "SELECT NKSC_ZR_KONTO, NKSC_ZR_NAZIV FROM " + databaseName + ".dbo.NKSCZIRO WHERE NKSC_ZR_BANKA = @p1;";
     sqlParams = {};

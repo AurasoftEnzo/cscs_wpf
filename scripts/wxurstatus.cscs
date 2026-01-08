@@ -1,17 +1,17 @@
 ﻿
 Import(strTrim(mpath()) + "CSCS.Math.dll");
 
-CreateWindow(strTrim(tpath()) + "wxirstatus.xaml");
+CreateWindow(strTrim(tpath()) + "wxurstatus.xaml");
 
 DEFINE Rbr type i;
 DEFINE cntr1 type i;
 
 DEFINE arrayRbr type i size 100 array 10000;
-DEFINE arrayKupac type a size 500 array 10000;
-DEFINE arrayOibKupca type a size 11 array 10000;
+DEFINE arrayDobavljac type a size 500 array 10000;
+DEFINE arrayOibDobavljaca type a size 11 array 10000;
 DEFINE arrayStatusRacuna type a size 100 array 10000;
 DEFINE arrayDatumIzdavanja type a size 10 array 10000;
-DEFINE arrayDatumKnjizenja type a size 10 array 10000;
+DEFINE arrayDatumPDVa type a size 10 array 10000;
 DEFINE arrayBrojRacuna type a size 50 array 10000;
 
 DEFINE arrayBrojRacunaFina type a size 50 array 10000;
@@ -20,20 +20,28 @@ DEFINE arrayBrojRacunaMer type a size 50 array 10000;
 DEFINE FilterDateFrom type d size 10;
 DEFINE FilterDateTo type d size 10;
 
-FilterDateFrom = Now("dd/MM/yyyy");
-FilterDateTo = Now("dd/MM/yyyy");
+// FilterDateFrom = Now("dd/MM/yyyy");
+// FilterDateTo = Now("dd/MM/yyyy");
+
+dtNow = DateTime();
+
+doubleToday = Math.Trunc(DateTimeToDouble(dtNow));
+
+FilterDateFrom = DoubleToDateTime(doubleToday - 30).ToString("dd/MM/yyyy");
+FilterDateTo = DoubleToDateTime(doubleToday + 7).ToString("dd/MM/yyyy");
+
 
 // savedXmlFilesList = {};
 
-function wxirstatus_onDisplay(){
+function wxurstatus_onDisplay(){
     cursor("wait");
     SetWidgetOptions("btnPrikazi", "IsEnabled", "false");
-    SetWidgetOptions("StatusLabel", "Content", "Dohvaćanje liste izlaznih e-računa");
+    SetWidgetOptions("StatusLabel", "Content", "Dohvaćanje liste ulaznih e-računa");
     SetWidgetOptions("StatusLabel2", "Content", "Pričekajte...");
 
     try{
         init();
-        SetWindowOptions("wxirstatusWindow", "title", "Pregled statusa izlaznih e-računa(" + PROVIDER + ")");
+        SetWindowOptions("wxurstatusWindow", "title", "Pregled statusa ulaznih e-računa(" + PROVIDER + ")");
     }catch(ex){
         MessageBox("Greška pri inicijalizaciji:\n" + ex);
         // ??? LOG? ne?
@@ -217,8 +225,9 @@ function getList(){
 function GetListFINA(){
     // GET INCOMING INVOICE LIST
     try{
+        // MSG("dateFrom = " + FilterDateFrom + ", dateTo = " + FilterDateTo);
         // MSG("Dohvaćam listu ULAZNIH računa preko FINA-e putem WSDL-a!");
-        ack = FINA_GET_OUTGOING_INVOICE_LIST(
+        ack = FINA_GET_INCOMING_INVOICE_LIST(
             ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
             ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
             ERAC_USERT, // servisni certifikat
@@ -241,28 +250,28 @@ function GetListFINA(){
             for(i = 0; i < Size(ack["InvoiceList"]); i++){
                 // MSG(ack["InvoiceList"][i]);
 
-                buyerName = ack["InvoiceList"][i]["BuyerRegistrationName"];
-                buyerId = ack["InvoiceList"][i]["BuyerId"];
-                // !!! datumi (2)
-                supplierInvoiceId = ack["InvoiceList"][i]["SupplierInvoiceID"];
-                aurasoftFormatSupplierInvoiceId = TransformInvoiceNumberToAurasoftFormat(supplierInvoiceId);
-
-                invoiceId = ack["InvoiceList"][i]["InvoiceID"];
+                supplierName = ack["InvoiceList"][i]["SupplierRegistrationName"];
+                supplierId = ack["InvoiceList"][i]["SupplierID"];
 
                 statusCode = ack["InvoiceList"][i]["StatusCode"];
+                
+                // !!! datumi (2)
+                // invoiceId = ack["InvoiceList"][i]["InvoiceID"];
 
                 datumIzdavanja = ack["InvoiceList"][i]["InvoiceIssueDate"];
                 datumIzdavanja = Substring(datumIzdavanja, 0, 8);
-                datumKnjizenja = ack["InvoiceList"][i]["InvoiceDate"];
-                datumKnjizenja = Substring(datumKnjizenja, 0, 8);
+                datumPdva = ack["InvoiceList"][i]["InvoiceDate"];
+                datumPdva = Substring(datumPdva, 0, 8);
 
-                AddRacunToArrays(buyerName, buyerId, datumIzdavanja, datumKnjizenja, aurasoftFormatSupplierInvoiceId, invoiceId, statusCode);
+                supplierInvoiceId = ack["InvoiceList"][i]["SupplierInvoiceID"];
+
+                AddRacunToArrays(supplierName, supplierId, statusCode, datumIzdavanja, datumPdva, supplierInvoiceId);
             }
         }else{
             MessageBox("ack[\"ErrorCode\"]" + ack["ErrorCode"] + "\nack[\"ErrorText\"]" + ack["ErrorText"] + "\nack[\"ErrorMessage\"]" + ack["ErrorMessage"]);
         }
     }catch(ex){
-        MessageBox("Nepoznata greška:\n" + ex);
+        MessageBox("A: Nepoznata greška:\n" + ex);
         LogException(ex); // !!!
         exit;
     }
@@ -359,23 +368,24 @@ function GetListMERFailure(trackingId, responseCode, res) {
 }
 
 
-function AddRacunToArrays(supplierName, supplierId, datumIzdavanja, datumKnjizenja, supplierInvoiceId, eRacunBrojRacuna, statusRacuna){
-    arrayKupac[Rbr] = supplierName;
-    arrayOibKupca[Rbr] = supplierId;
+function AddRacunToArrays(supplierName, supplierId, statusRacuna, datumIzdavanja, datumPdva, supplierInvoiceId){
+    
+    arrayDobavljac[Rbr] = supplierName;
+    arrayOibDobavljaca[Rbr] = supplierId;
     arrayStatusRacuna[Rbr] = statusRacuna;
     arrayDatumIzdavanja[Rbr] = datumIzdavanja;
-    arrayDatumKnjizenja[Rbr] = datumKnjizenja;
+    arrayDatumPDVa[Rbr] = datumPdva;
     arrayBrojRacuna[Rbr] = supplierInvoiceId;
     
 
-    if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
-        arrayBrojRacunaMer[Rbr] = eRacunBrojRacuna;
-    } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
-        arrayBrojRacunaFina[Rbr] = eRacunBrojRacuna;
-    } else {
-        MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA, MERDEMO, FINADEMO");
-        exit;
-    }
+    // if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
+    //     arrayBrojRacunaMer[Rbr] = eRacunBrojRacuna;
+    // } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
+    //     arrayBrojRacunaFina[Rbr] = eRacunBrojRacuna;
+    // } else {
+    //     MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA, MERDEMO, FINADEMO");
+    //     exit;
+    // }
 
     arrayRbr[Rbr] = ++Rbr;
 }
@@ -388,7 +398,7 @@ function btnPrikazi@clicked(){
     Rbr = 0;
     cursor("wait");
     SetWidgetOptions("btnPrikazi", "IsEnabled", "false");
-    SetWidgetOptions("StatusLabel", "Content", "Dohvaćanje liste izlaznih e-računa");
+    SetWidgetOptions("StatusLabel", "Content", "Dohvaćanje liste ulaznih e-računa");
     SetWidgetOptions("StatusLabel2", "Content", "Pričekajte...");
 
     AsyncCall("startGetLista", "end");   

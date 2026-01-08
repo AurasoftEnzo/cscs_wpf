@@ -21,7 +21,7 @@ DEFINE cntr1 type i;
 DEFINE arrayRbr type i size 100 array 10000;
 DEFINE arrayDobavljac type a size 500 array 10000;
 DEFINE arrayOibDobavljaca type a size 11 array 10000;
-DEFINE arrayDatumRacuna type a size 10 array 10000;
+DEFINE arrayDatumIzdavanja type a size 10 array 10000;
 DEFINE arrayDatumPDVa type a size 10 array 10000;
 DEFINE arrayBrojRacuna type a size 50 array 10000;
 
@@ -247,7 +247,12 @@ function GetListFINA(){
                     supplierInvoiceId = ack["InvoiceList"][i]["SupplierInvoiceID"];
                     invoiceId = ack["InvoiceList"][i]["InvoiceID"];
 
-                    AddRacunToArrays(supplierName, supplierId, "2025-01-01", "2025-01-01", supplierInvoiceId, invoiceId);
+                    datumIzdavanja = ack["InvoiceList"][i]["InvoiceIssueDate"];
+                    datumIzdavanja = Substring(datumIzdavanja, 0, 8);
+                    datumPdva = ack["InvoiceList"][i]["InvoiceDate"];
+                    datumPdva = Substring(datumPdva, 0, 8);
+
+                    AddRacunToArrays(supplierName, supplierId, datumIzdavanja, datumPdva, supplierInvoiceId, invoiceId);
                 }
             }else{
                 MessageBox("ack[\"ErrorCode\"]" + ack["ErrorCode"] + "\nack[\"ErrorText\"]" + ack["ErrorText"] + "\nack[\"ErrorMessage\"]" + ack["ErrorMessage"]);
@@ -337,11 +342,11 @@ function GetListMERFailure(trackingId, responseCode, res) {
 }
 
 
-function AddRacunToArrays(supplierName, supplierId, date1, date2, supplierInvoiceId, eRacunBrojRacuna){
+function AddRacunToArrays(supplierName, supplierId, datumIzdavanja, datumPdva, supplierInvoiceId, eRacunBrojRacuna){
     arrayDobavljac[Rbr] = supplierName;
     arrayOibDobavljaca[Rbr] = supplierId;
-    arrayDatumRacuna[Rbr] = date1;
-    arrayDatumPDVa[Rbr] = date2;
+    arrayDatumIzdavanja[Rbr] = datumIzdavanja;
+    arrayDatumPDVa[Rbr] = datumPdva;
     arrayBrojRacuna[Rbr] = supplierInvoiceId;
     
 

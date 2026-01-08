@@ -5291,6 +5291,12 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             var messageId = Utils.GetSafeString(args, 5);
             var buyerId = Utils.GetSafeString(args, 6);
 
+            var filterDateFrom = Utils.GetSafeString(args, 7);
+            var filterDateTo = Utils.GetSafeString(args, 8);
+
+            DateTime.TryParseExact(filterDateFrom, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateFrom);
+            DateTime.TryParseExact(filterDateTo, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTo);
+
             Variable resVar = new Fiskalizacija2.FINA.Incoming.GetIncomingInvoiceList().Send(
                 endpoint,
                 dnsIdentity,
@@ -5299,7 +5305,10 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
                 clientCertificatePassword,
 
                 messageId,
-                buyerId);
+                buyerId,
+
+                dateFrom,
+                dateTo);
 
             return resVar;
         }

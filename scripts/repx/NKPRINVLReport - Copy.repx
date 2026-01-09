@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<XtraReportsLayoutSerializer SerializerVersion="18.2.14.0" Ref="0" ControlType="DevExpress.XtraReports.UI.XtraReport, DevExpress.XtraReports.v18.2, Version=18.2.14.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" Name="NKPRINVLReport" Margins="100, 123, 0, 0" PageWidth="850" PageHeight="1100" Version="18.2" Font="Arial, 9.75pt">
+  <Bands>
+    <Item1 Ref="1" ControlType="TopMarginBand" Name="TopMargin" HeightF="0" />
+    <Item2 Ref="2" ControlType="BottomMarginBand" Name="BottomMargin" HeightF="0" />
+    <Item3 Ref="3" ControlType="DetailBand" Name="Detail" HeightF="23">
+      <Controls>
+        <Item1 Ref="4" ControlType="XRLabel" Name="xrLabel12" Multiline="true" SizeF="100,23" LocationFloat="500, 0" Padding="2,2,0,0,100" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="NKPR_LN_PQTY" />
+        <Item2 Ref="5" ControlType="XRLabel" Name="xrLabel11" Multiline="true" SizeF="100,23" LocationFloat="400, 0" Padding="2,2,0,0,100" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="NKPR_LN_PPRCE" />
+        <Item3 Ref="6" ControlType="XRLabel" Name="xrLabel10" Multiline="true" SizeF="100,23" LocationFloat="300, 0" Padding="2,2,0,0,100" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="NKPR_LN_PCODE" />
+        <Item4 Ref="7" ControlType="XRLabel" Name="xrLabel9" Multiline="true" SizeF="100,23" LocationFloat="200, 0" Padding="2,2,0,0,100" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="NKPR_LN_POREZ" />
+        <Item5 Ref="8" ControlType="XRLabel" Name="xrLabel8" Multiline="true" SizeF="100,23" LocationFloat="100, 0" Padding="2,2,0,0,100" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="NKPR_LN_AMT" />
+        <Item6 Ref="9" ControlType="XRLabel" Name="xrLabel7" Multiline="true" SizeF="100,23" LocationFloat="0, 0" Padding="2,2,0,0,100" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="NKPR_LN_BR_LN" />
+      </Controls>
+    </Item3>
+    <Item4 Ref="10" ControlType="GroupHeaderBand" Name="GroupHeader1" HeightF="23">
+      <Controls>
+        <Item1 Ref="11" ControlType="XRLabel" Name="xrLabel6" Multiline="true" Text="kolicina:" SizeF="100,23" LocationFloat="500, 0" Padding="2,2,0,0,100" />
+        <Item2 Ref="12" ControlType="XRLabel" Name="xrLabel5" Multiline="true" Text="cijena:" SizeF="100,23" LocationFloat="400, 0" Padding="2,2,0,0,100" />
+        <Item3 Ref="13" ControlType="XRLabel" Name="xrLabel4" Multiline="true" Text="sifra artikla:" SizeF="100,23" LocationFloat="300, 0" Padding="2,2,0,0,100" />
+        <Item4 Ref="14" ControlType="XRLabel" Name="xrLabel3" Multiline="true" Text="porez:" SizeF="100,23" LocationFloat="200, 0" Padding="2,2,0,0,100" />
+        <Item5 Ref="15" ControlType="XRLabel" Name="xrLabel2" Multiline="true" Text="amount:" SizeF="100,23" LocationFloat="100, 0" Padding="2,2,0,0,100" />
+        <Item6 Ref="16" ControlType="XRLabel" Name="xrLabel1" Multiline="true" Text="r.br. linije:" SizeF="100,23" LocationFloat="0, 0" Padding="2,2,0,0,100" />
+      </Controls>
+    </Item4>
+    <Item5 Ref="17" ControlType="GroupFooterBand" Name="GroupFooter1" HeightF="59.20834">
+      <Controls>
+        <Item1 Ref="18" ControlType="XRLabel" Name="xrLabel15" Multiline="true" Text="sum:" SizeF="100,23" LocationFloat="200, 0" ForeColor="Red" BackColor="Transparent" Padding="2,2,0,0,100">
+          <StylePriority Ref="19" UseForeColor="false" UseBackColor="false" />
+        </Item1>
+        <Item2 Ref="20" ControlType="XRLabel" Name="xrLabel16" TextFormatString="{0:n2}" Multiline="true" SizeF="100,23" LocationFloat="200, 22.9999866" ForeColor="Red" BackColor="Transparent" Padding="2,2,0,0,100">
+          <Summary Ref="21" Running="Report" />
+          <ExpressionBindings>
+            <Item1 Ref="22" Expression="sumSum([NKPR_LN_POREZ])" PropertyName="Text" EventName="BeforePrint" />
+          </ExpressionBindings>
+          <StylePriority Ref="23" UseForeColor="false" UseBackColor="false" />
+        </Item2>
+        <Item3 Ref="24" ControlType="XRLine" Name="xrLine1" SizeF="626.9999,8.166698" LocationFloat="0, 51.04164" />
+        <Item4 Ref="25" ControlType="XRLabel" Name="xrLabel13" TextFormatString="{0:n2}" Multiline="true" SizeF="100,23" LocationFloat="400, 22.99999" ForeColor="Red" BackColor="Transparent" Padding="2,2,0,0,100">
+          <Summary Ref="26" Running="Report" />
+          <ExpressionBindings>
+            <Item1 Ref="27" Expression="sumSum([NKPR_LN_PPRCE])" PropertyName="Text" EventName="BeforePrint" />
+          </ExpressionBindings>
+          <StylePriority Ref="28" UseForeColor="false" UseBackColor="false" />
+        </Item4>
+        <Item5 Ref="29" ControlType="XRLabel" Name="xrLabel14" Multiline="true" Text="sum:" SizeF="100,23" LocationFloat="400, 0" ForeColor="Red" BackColor="Transparent" Padding="2,2,0,0,100">
+          <StylePriority Ref="30" UseForeColor="false" UseBackColor="false" />
+        </Item5>
+      </Controls>
+    </Item5>
+  </Bands>
+</XtraReportsLayoutSerializer>

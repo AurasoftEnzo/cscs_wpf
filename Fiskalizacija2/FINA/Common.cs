@@ -15,7 +15,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Xml.Serialization;
-using WpfCSCS.ServiceReference1_fina_wsdl;
+using WpfCSCS.ServiceReference1_SendB2BOutgoingInvoicePKIWebService;
 using WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService;
 
 namespace WpfCSCS.Fiskalizacija2.FINA
@@ -23,7 +23,7 @@ namespace WpfCSCS.Fiskalizacija2.FINA
     //public class FINACommon
     //{
 
-    class B2BCustomBinding
+    class FinaCustomBinding
     {
         public CustomBinding GetB2BCustomBinding()
         {

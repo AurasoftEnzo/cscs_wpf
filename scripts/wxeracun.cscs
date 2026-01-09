@@ -2544,7 +2544,7 @@ function SendToFINA() {
     // try {
     //     MSG("izvršavam ECHO test prema FINA-i putem WSDL-a!");
 
-    //     ack = FINA_ECHO(
+    //     ack = FINA_B2B_ECHO(
     //         ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",
     //         ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
     //         ERAC_USERT, // servisni certifikat
@@ -2582,7 +2582,7 @@ function SendToFINA() {
 
         Msg("Slanje " + invoiceOrCreditNote + " na FINA-u putem WSDL-a...");
         
-        ack = FINA_SEND_OUTGOING_INVOICE(
+        ack = FINA_SEND_B2B_OUTGOING_INVOICE(
             ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",
             ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
             ERAC_USERT, // servisni certifikat
@@ -2627,7 +2627,7 @@ function SendToFINA() {
     // try {
     //     MSG("provjeravam status računa putem WSDL-a!");
 
-    //         ack = FINA_GET_OUTGOING_INVOICE_STATUS(
+    //         ack = FINA_GET_B2B_OUTGOING_INVOICE_STATUS(
     //         ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",
     //         ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
     //         ERAC_USERT, // servisni certifikat
@@ -2662,7 +2662,7 @@ function SendToFINA() {
     // try {
     //     // MSG("Izvještavam na eIzvještavanje putem FINA WSDL-a!");
 
-    //     //     ack = FINA_SEND_OUTGOING_INVOICE_REPORTING(
+    //     //     ack = FINA_SEND_B2B_OUTGOING_INVOICE_REPORTING(
     //     //     ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",
     //     //     ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
     //     //     ERAC_USERT, // servisni certifikat

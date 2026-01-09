@@ -227,7 +227,7 @@ function GetListFINA(){
     try{
         // MSG("dateFrom = " + FilterDateFrom + ", dateTo = " + FilterDateTo);
         // MSG("Dohvaćam listu ULAZNIH računa preko FINA-e putem WSDL-a!");
-        ack = FINA_GET_INCOMING_INVOICE_LIST(
+        ack = FINA_GET_B2B_INCOMING_INVOICE_LIST(
             ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
             ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
             ERAC_USERT, // servisni certifikat
@@ -444,7 +444,7 @@ function GetRacuniFINA(){
 
             invoiceId = arrayBrojRacunaFina[i];
 
-            ack = FINA_GET_INCOMING_INVOICE(
+            ack = FINA_GET_B2B_INCOMING_INVOICE(
                 ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
                 ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
                 ERAC_USERT, // servisni certifikat
@@ -641,7 +641,7 @@ function ImportXml(xmlFilePath){
     // // TEST ECHO BUYER CALL
     // try{
     //     MSG("izvršavam ECHO BUYER test prema FINA-i putem WSDL-a!");
-    //     ack = FINA_ECHO_BUYER(
+    //     ack = FINA_B2B_ECHO_BUYER(
     //         ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
     //         ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
     //         ERAC_USERT, // servisni certifikat
@@ -671,7 +671,7 @@ function ImportXml(xmlFilePath){
     // // GET INCOMING INVOICE LIST
     // try{
     //     MSG("Dohvaćam listu ULAZNIH računa preko FINA-e putem WSDL-a!");
-    //     ack = FINA_GET_INCOMING_INVOICE_LIST(
+    //     ack = FINA_GET_B2B_INCOMING_INVOICE_LIST(
     //         ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
     //         ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
     //         ERAC_USERT, // servisni certifikat
@@ -711,7 +711,7 @@ function ImportXml(xmlFilePath){
 
     //     invoiceId = "56463"; // !!! maknut hardkodirano
 
-    //     ack = FINA_GET_INCOMING_INVOICE(
+    //     ack = FINA_GET_B2B_INCOMING_INVOICE(
     //         ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
     //         ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
     //         ERAC_USERT, // servisni certifikat
@@ -750,7 +750,7 @@ function ImportXml(xmlFilePath){
 
     //     MSG("Postavljam STATUS ulaznog računa " + invoiceId + " kod FINA-e putem WSDL-a!");
 
-    //     ack = FINA_CHANGE_INCOMING_INVOICE_STATUS(
+    //     ack = FINA_CHANGE_B2B_INCOMING_INVOICE_STATUS(
     //         ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
     //         ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
     //         ERAC_USERT, // servisni certifikat

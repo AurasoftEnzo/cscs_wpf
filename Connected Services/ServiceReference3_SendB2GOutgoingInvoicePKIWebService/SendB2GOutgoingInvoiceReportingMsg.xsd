@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsd:schema xmlns:iwsc="http://fina.hr/eracun/b2g/invoicewebservicecomponents/v0.1" xmlns="http://fina.hr/eracun/b2g/pki/SendB2GOutgoingInvoiceReporting/v0.1" attributeFormDefault="unqualified" elementFormDefault="qualified" targetNamespace="http://fina.hr/eracun/b2g/pki/SendB2GOutgoingInvoiceReporting/v0.1" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:import schemaLocation="InvoiceWebServiceComponents.xsd" namespace="http://fina.hr/eracun/b2g/invoicewebservicecomponents/v0.1" />
+  <xsd:element name="SendB2GOutgoingInvoiceReportingMsg">
+    <xsd:annotation>
+      <xsd:documentation>Poruka za slanje izlaznog ra??una od strane po??iljatelja u dr??avu.</xsd:documentation>
+    </xsd:annotation>
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element ref="iwsc:HeaderSupplier">
+          <xsd:annotation>
+            <xsd:documentation>Zaglavlje poruke</xsd:documentation>
+          </xsd:annotation>
+        </xsd:element>
+        <xsd:element name="Data">
+          <xsd:annotation>
+            <xsd:documentation>XML s podacima</xsd:documentation>
+          </xsd:annotation>
+          <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name="B2GOutgoingInvoiceEnvelope">
+                <xsd:annotation>
+                  <xsd:documentation>Omotnica izlaznog ra??una</xsd:documentation>
+                </xsd:annotation>
+                <xsd:complexType>
+                  <xsd:sequence>
+                    <xsd:element name="XMLStandard">
+                      <xsd:annotation>
+                        <xsd:documentation>Standard XML dokumenta (UBL ili CII)</xsd:documentation>
+                      </xsd:annotation>
+                      <xsd:simpleType>
+                        <xsd:restriction base="xsd:string">
+                          <xsd:enumeration value="UBL" />
+                          <xsd:enumeration value="CII" />
+                        </xsd:restriction>
+                      </xsd:simpleType>
+                    </xsd:element>
+                    <xsd:element name="SpecificationIdentifier">
+                      <xsd:annotation>
+                        <xsd:documentation>Prilagodba XML dokumenta (urn:cen.eu:en16931:2017)</xsd:documentation>
+                      </xsd:annotation>
+                      <xsd:simpleType>
+                        <xsd:restriction base="xsd:string">
+                          <xsd:enumeration value="urn:cen.eu:en16931:2017" />
+                          <xsd:enumeration value="urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0" />
+                          <xsd:enumeration value="urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0#conformant#urn:mfin.gov.hr:ext-2025:1.0" />
+                        </xsd:restriction>
+                      </xsd:simpleType>
+                    </xsd:element>
+                    <xsd:element name="SupplierInvoiceID" type="xsd:string">
+                      <xsd:annotation>
+                        <xsd:documentation>Identifikator ra??una u sustavu po??iljatelja.</xsd:documentation>
+                      </xsd:annotation>
+                    </xsd:element>
+                    <xsd:element name="BuyerID" type="xsd:string">
+                      <xsd:annotation>
+                        <xsd:documentation>Identifikator primatelja ra??una u sustavu (OIB) - 9934:12345678909</xsd:documentation>
+                      </xsd:annotation>
+                    </xsd:element>
+                    <xsd:element minOccurs="0" name="AdditionalBuyerID" type="xsd:string">
+                      <xsd:annotation>
+                        <xsd:documentation>Dodatni identifikator primatelja ra??una u sustavu (GLN, JUS, ...) - 0088:38545468711</xsd:documentation>
+                      </xsd:annotation>
+                    </xsd:element>
+                    <xsd:choice>
+                      <xsd:element name="InvoiceEnvelope" type="xsd:base64Binary">
+                        <xsd:annotation>
+                          <xsd:documentation>Omota?? e-Ra??una po UBL shemi.</xsd:documentation>
+                        </xsd:annotation>
+                      </xsd:element>
+                      <xsd:element name="CreditNoteEnvelope" type="xsd:base64Binary">
+                        <xsd:annotation>
+                          <xsd:documentation>Omota?? e-Odobrenja po UBL shemi.</xsd:documentation>
+                        </xsd:annotation>
+                      </xsd:element>
+                    </xsd:choice>
+                  </xsd:sequence>
+                </xsd:complexType>
+              </xsd:element>
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:element>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="SendB2GOutgoingInvoiceReportingAckMsg">
+    <xsd:annotation>
+      <xsd:documentation>Sinkroni odgovor na slanje izlaznog ra??una.</xsd:documentation>
+    </xsd:annotation>
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element ref="iwsc:MessageAck" />
+        <xsd:element minOccurs="0" name="B2GOutgoingInvoiceEnvelope">
+          <xsd:annotation>
+            <xsd:documentation>Omotnica izlaznog ra??una</xsd:documentation>
+          </xsd:annotation>
+          <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name="B2GOutgoingInvoiceProcessing">
+                <xsd:annotation>
+                  <xsd:documentation>Rezultat obrade</xsd:documentation>
+                </xsd:annotation>
+                <xsd:complexType>
+                  <xsd:choice>
+                    <xsd:element name="CorrectB2GOutgoingInvoice">
+                      <xsd:annotation>
+                        <xsd:documentation>Ispravan izlazni ra??un.</xsd:documentation>
+                      </xsd:annotation>
+                      <xsd:complexType>
+                        <xsd:sequence>
+                          <xsd:element name="SupplierInvoiceID" type="xsd:string">
+                            <xsd:annotation>
+                              <xsd:documentation>Identifikator ra??una u sustavu Po??iljatelja.</xsd:documentation>
+                            </xsd:annotation>
+                          </xsd:element>
+                          <xsd:element name="InvoiceID" type="xsd:integer">
+                            <xsd:annotation>
+                              <xsd:documentation>Identifikator ra??una u sustavu e-Ra??unB2G.</xsd:documentation>
+                            </xsd:annotation>
+                          </xsd:element>
+                          <xsd:element name="InvoiceTimestamp" type="xsd:dateTime">
+                            <xsd:annotation>
+                              <xsd:documentation>Vrijeme zaprimanja ra??una u sustav.</xsd:documentation>
+                            </xsd:annotation>
+                          </xsd:element>
+                        </xsd:sequence>
+                      </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="IncorrectB2GOutgoingInvoice">
+                      <xsd:annotation>
+                        <xsd:documentation>Neispravan izlazni ra??un.</xsd:documentation>
+                      </xsd:annotation>
+                      <xsd:complexType>
+                        <xsd:sequence>
+                          <xsd:element name="SupplierInvoiceID" type="xsd:string">
+                            <xsd:annotation>
+                              <xsd:documentation>Identifikator ra??una u sustavu Po??iljatelja.</xsd:documentation>
+                            </xsd:annotation>
+                          </xsd:element>
+                          <xsd:element name="ErrorCode" type="xsd:string">
+                            <xsd:annotation>
+                              <xsd:documentation>??ifre gre??aka neispravnog izlaznog ra??una odvojene delimiterom.</xsd:documentation>
+                            </xsd:annotation>
+                          </xsd:element>
+                          <xsd:element minOccurs="0" name="ErrorMessage" type="xsd:string">
+                            <xsd:annotation>
+                              <xsd:documentation>Opis gre??aka neispravnog izlaznog ra??una.</xsd:documentation>
+                            </xsd:annotation>
+                          </xsd:element>
+                        </xsd:sequence>
+                      </xsd:complexType>
+                    </xsd:element>
+                  </xsd:choice>
+                </xsd:complexType>
+              </xsd:element>
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:element>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+</xsd:schema>

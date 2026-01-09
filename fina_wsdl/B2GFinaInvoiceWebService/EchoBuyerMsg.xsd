@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns="http://fina.hr/eracun/b2g/EchoBuyer/v0.1" xmlns:iwsc="http://fina.hr/eracun/b2g/invoicewebservicecomponents/v0.1" xmlns:xsd="http://www.w3.org/2001/XMLSchema" attributeFormDefault="unqualified" elementFormDefault="qualified" targetNamespace="http://fina.hr/eracun/b2g/EchoBuyer/v0.1">
+    <xsd:import namespace="http://fina.hr/eracun/b2g/invoicewebservicecomponents/v0.1" schemaLocation="InvoiceWebServiceComponents.xsd"/>
+    <xsd:element name="EchoBuyerMsg">
+        <xsd:annotation>
+            <xsd:documentation>Poruka testiranje dostupnosti web servisa</xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:sequence>
+                <xsd:element ref="iwsc:HeaderBuyer">
+                    <xsd:annotation>
+                        <xsd:documentation>Zaglavlje poruke</xsd:documentation>
+                    </xsd:annotation>
+                </xsd:element>
+                <xsd:element name="Data">
+                    <xsd:annotation>
+                        <xsd:documentation>XML s podacima</xsd:documentation>
+                    </xsd:annotation>
+                    <xsd:complexType>
+                        <xsd:sequence>
+                            <xsd:element name="EchoData">
+                                <xsd:annotation>
+                                    <xsd:documentation>Kontejner za sadržaj</xsd:documentation>
+                                </xsd:annotation>
+                                <xsd:complexType>
+                                	<xsd:sequence>
+                                		<xsd:element name="Echo" type="xsd:string">
+                                			<xsd:annotation>
+                                				<xsd:documentation>Sadržaj teksta</xsd:documentation>
+                                			</xsd:annotation>
+                                		</xsd:element>
+                                	</xsd:sequence>
+                                </xsd:complexType>
+                            </xsd:element>
+                        </xsd:sequence>
+                    </xsd:complexType>
+                </xsd:element>
+            </xsd:sequence>
+        </xsd:complexType>
+    </xsd:element>
+    <xsd:element name="EchoBuyerAckMsg">
+        <xsd:annotation>
+            <xsd:documentation>Sinkroni odgovor na echo metodu</xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:sequence>
+                <xsd:element ref="iwsc:MessageAck"/>
+                <xsd:element name="EchoData">
+                	<xsd:annotation>
+                		<xsd:documentation>XML s podacima odgovora</xsd:documentation>
+                	</xsd:annotation>
+                	<xsd:complexType>
+                		<xsd:sequence>
+                			<xsd:element name="Echo" type="xsd:string">
+                				<xsd:annotation>
+                                    <xsd:documentation>Sadržaj teksta</xsd:documentation>
+                                </xsd:annotation>
+                			</xsd:element>
+                		</xsd:sequence>
+                	</xsd:complexType>
+                </xsd:element>
+            </xsd:sequence>
+        </xsd:complexType>
+    </xsd:element>
+</xsd:schema>

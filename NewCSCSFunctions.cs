@@ -38,7 +38,7 @@ using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Schema;
 using System.Xml.Xsl;
-using WpfCSCS.ServiceReference1_fina_wsdl;
+using WpfCSCS.ServiceReference1_SendB2BOutgoingInvoicePKIWebService;
 using WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService;
 using static System.Net.WebRequestMethods;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
@@ -133,19 +133,31 @@ namespace WpfCSCS
 
 
 
-            //FINA funkcije (wsdl-i)
-            interpreter.RegisterFunction("FINA_ECHO", new FINA_ECHOFunction());
-            interpreter.RegisterFunction("FINA_SEND_OUTGOING_INVOICE", new FINA_SEND_OUTGOING_INVOICEFunction());
-            interpreter.RegisterFunction("FINA_GET_OUTGOING_INVOICE_STATUS", new FINA_GET_OUTGOING_INVOICE_STATUSFunction());
-            interpreter.RegisterFunction("FINA_SEND_OUTGOING_INVOICE_REPORTING", new FINA_SEND_OUTGOING_INVOICE_REPORTINGFunction());
+            // FINA B2B OUTGOING
+            interpreter.RegisterFunction("FINA_B2B_ECHO", new FINA_B2B_ECHOFunction());
+            interpreter.RegisterFunction("FINA_SEND_B2B_OUTGOING_INVOICE", new FINA_SEND_B2B_OUTGOING_INVOICEFunction());
+            interpreter.RegisterFunction("FINA_GET_B2B_OUTGOING_INVOICE_STATUS", new FINA_GET_B2B_OUTGOING_INVOICE_STATUSFunction());
+            interpreter.RegisterFunction("FINA_SEND_B2B_OUTGOING_INVOICE_REPORTING", new FINA_SEND_B2B_OUTGOING_INVOICE_REPORTINGFunction());
 
-            interpreter.RegisterFunction("FINA_ECHO_BUYER", new FINA_ECHO_BUYERFunction());
-            interpreter.RegisterFunction("FINA_GET_INCOMING_INVOICE_LIST", new FINA_GET_INCOMING_INVOICE_LISTFunction());
-            interpreter.RegisterFunction("FINA_GET_INCOMING_INVOICE", new FINA_GET_INCOMING_INVOICEFunction());
-            interpreter.RegisterFunction("FINA_CHANGE_INCOMING_INVOICE_STATUS", new FINA_CHANGE_INCOMING_INVOICE_STATUSFunction());
-            interpreter.RegisterFunction("FINA_GET_OUTGOING_INVOICE_LIST", new FINA_GET_OUTGOING_INVOICE_LISTFunction());
+            // FINA B2B INCOMING
+            interpreter.RegisterFunction("FINA_B2B_ECHO_BUYER", new FINA_B2B_ECHO_BUYERFunction());
+            interpreter.RegisterFunction("FINA_GET_B2B_INCOMING_INVOICE_LIST", new FINA_GET_B2B_INCOMING_INVOICE_LISTFunction());
+            interpreter.RegisterFunction("FINA_GET_B2B_INCOMING_INVOICE", new FINA_GET_B2B_INCOMING_INVOICEFunction());
+            interpreter.RegisterFunction("FINA_CHANGE_B2B_INCOMING_INVOICE_STATUS", new FINA_CHANGE_B2B_INCOMING_INVOICE_STATUSFunction());
+            interpreter.RegisterFunction("FINA_GET_B2B_OUTGOING_INVOICE_LIST", new FINA_GET_B2B_OUTGOING_INVOICE_LISTFunction());
 
+            // FINA B2G OUTGOING
+            //interpreter.RegisterFunction("FINA_B2G_ECHO", new FINA_B2G_ECHOFunction());
+            //interpreter.RegisterFunction("FINA_SEND_B2G_OUTGOING_INVOICE", new FINA_SEND_B2G_OUTGOING_INVOICEFunction());
+            //interpreter.RegisterFunction("FINA_GET_B2G_OUTGOING_INVOICE_STATUS", new FINA_GET_B2G_OUTGOING_INVOICE_STATUSFunction());
+            //interpreter.RegisterFunction("FINA_SEND_B2G_OUTGOING_INVOICE_REPORTING", new FINA_SEND_B2G_OUTGOING_INVOICE_REPORTINGFunction());
 
+            ////FINA B2G INCOMING
+            //interpreter.RegisterFunction("FINA_B2G_ECHO_BUYER", new FINA_B2G_ECHO_BUYERFunction());
+            //interpreter.RegisterFunction("FINA_GET_B2G_INCOMING_INVOICE_LIST", new FINA_GET_B2G_INCOMING_INVOICE_LISTFunction());
+            //interpreter.RegisterFunction("FINA_GET_B2G_INCOMING_INVOICE", new FINA_GET_B2G_INCOMING_INVOICEFunction());
+            //interpreter.RegisterFunction("FINA_CHANGE_B2G_INCOMING_INVOICE_STATUS", new FINA_CHANGE_B2G_INCOMING_INVOICE_STATUSFunction());
+            interpreter.RegisterFunction("FINA_GET_B2G_OUTGOING_INVOICE_LIST", new FINA_GET_B2G_OUTGOING_INVOICE_LISTFunction());
         }
         public partial class Constants
         {
@@ -5050,7 +5062,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
 
     #region FINA FISKALIZACIJA
 
-    class FINA_ECHOFunction : ParserFunction
+    class FINA_B2B_ECHOFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
         {
@@ -5068,7 +5080,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             var echoText = Utils.GetSafeString(args, 7);
             var supplierId = Utils.GetSafeString(args, 8);
 
-            Variable resVar = new Fiskalizacija2.FINA.Outgoing.Echo().Send(
+            Variable resVar = new Fiskalizacija2.FINA.B2BOutgoing.Echo().Send(
                 endpoint,
                 dnsIdentity,
                 serviceCertificatePath,
@@ -5085,7 +5097,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
         }
     }
 
-    class FINA_SEND_OUTGOING_INVOICEFunction : ParserFunction
+    class FINA_SEND_B2B_OUTGOING_INVOICEFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
         {
@@ -5105,10 +5117,10 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             var supplierInvoiceId = Utils.GetSafeString(args, 9);
 
             var invoiceOrCreditNote = Utils.GetSafeString(args, 10);
-            ServiceReference1_fina_wsdl.ItemChoiceType itemChoiceType = ServiceReference1_fina_wsdl.ItemChoiceType.InvoiceEnvelope;
+            ServiceReference1_SendB2BOutgoingInvoicePKIWebService.ItemChoiceType itemChoiceType = ServiceReference1_SendB2BOutgoingInvoicePKIWebService.ItemChoiceType.InvoiceEnvelope;
             if (invoiceOrCreditNote.ToLower() == "creditnote")
             {
-                itemChoiceType = ServiceReference1_fina_wsdl.ItemChoiceType.CreditNoteEnvelope;
+                itemChoiceType = ServiceReference1_SendB2BOutgoingInvoicePKIWebService.ItemChoiceType.CreditNoteEnvelope;
             }
 
             var unsignedInvoiceXmlPath = Utils.GetSafeString(args, 11);
@@ -5118,7 +5130,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             //var erpid = Utils.GetSafeString(args, );
             //var messageAttributes = Utils.GetSafeString(args, );
 
-            Variable resVar = new Fiskalizacija2.FINA.Outgoing.SendOutgoingInvoice().Send(
+            Variable resVar = new Fiskalizacija2.FINA.B2BOutgoing.SendOutgoingInvoice().Send(
                 endpoint,
                 dnsIdentity,
                 serviceCertificatePath,
@@ -5150,7 +5162,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
     }
 
 
-    class FINA_GET_OUTGOING_INVOICE_STATUSFunction : ParserFunction
+    class FINA_GET_B2B_OUTGOING_INVOICE_STATUSFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
         {
@@ -5174,7 +5186,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             //var messageAttributes = Utils.GetSafeString(args, );
             //var documentCurrencyCode = Utils.GetSafeString(args, ); // true/false ispis valute iznosa djelomičnog plaćanja u odgovornoj poruci (neobavezan element)
 
-            Variable resVar = new Fiskalizacija2.FINA.Outgoing.GetOutgoingInvoiceStatus().Send(
+            Variable resVar = new Fiskalizacija2.FINA.B2BOutgoing.GetOutgoingInvoiceStatus().Send(
                 endpoint,
                 dnsIdentity,
                 serviceCertificatePath,
@@ -5191,7 +5203,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
         }
     }
 
-    class FINA_SEND_OUTGOING_INVOICE_REPORTINGFunction : ParserFunction
+    class FINA_SEND_B2B_OUTGOING_INVOICE_REPORTINGFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
         {
@@ -5211,10 +5223,10 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             var supplierInvoiceId = Utils.GetSafeString(args, 9);
 
             var invoiceOrCreditNote = Utils.GetSafeString(args, 10);
-            ServiceReference1_fina_wsdl.ItemChoiceType1 itemChoiceType = ServiceReference1_fina_wsdl.ItemChoiceType1.InvoiceEnvelope;
+            ServiceReference1_SendB2BOutgoingInvoicePKIWebService.ItemChoiceType1 itemChoiceType = ServiceReference1_SendB2BOutgoingInvoicePKIWebService.ItemChoiceType1.InvoiceEnvelope;
             if (invoiceOrCreditNote.ToLower() == "creditnote")
             {
-                itemChoiceType = ServiceReference1_fina_wsdl.ItemChoiceType1.CreditNoteEnvelope;
+                itemChoiceType = ServiceReference1_SendB2BOutgoingInvoicePKIWebService.ItemChoiceType1.CreditNoteEnvelope;
             }
 
             var unsignedInvoiceXmlPath = Utils.GetSafeString(args, 11);
@@ -5224,7 +5236,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             //var messageAttributes = Utils.GetSafeString(args, );
             //var documentCurrencyCode = Utils.GetSafeString(args, ); // true/false ispis valute iznosa djelomičnog plaćanja u odgovornoj poruci (neobavezan element)
 
-            Variable resVar = new Fiskalizacija2.FINA.Outgoing.SendOutgoingInvoiceReporting().Send(
+            Variable resVar = new Fiskalizacija2.FINA.B2BOutgoing.SendOutgoingInvoiceReporting().Send(
                 endpoint,
                 dnsIdentity,
                 serviceCertificatePath,
@@ -5243,7 +5255,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
         }
     }
 
-    class FINA_ECHO_BUYERFunction : ParserFunction
+    class FINA_B2B_ECHO_BUYERFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
         {
@@ -5260,7 +5272,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             var echoText = Utils.GetSafeString(args, 6);
             var buyerId = Utils.GetSafeString(args, 7);
 
-            Variable resVar = new Fiskalizacija2.FINA.Incoming.EchoBuyer().Send(
+            Variable resVar = new Fiskalizacija2.FINA.B2BIncoming.EchoBuyer().Send(
                 endpoint,
                 dnsIdentity,
                 serviceCertificatePath,
@@ -5275,7 +5287,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
         }
     }
     
-    class FINA_GET_INCOMING_INVOICE_LISTFunction : ParserFunction
+    class FINA_GET_B2B_INCOMING_INVOICE_LISTFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
         {
@@ -5297,7 +5309,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             DateTime.TryParseExact(filterDateFrom, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateFrom);
             DateTime.TryParseExact(filterDateTo, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTo);
 
-            Variable resVar = new Fiskalizacija2.FINA.Incoming.GetIncomingInvoiceList().Send(
+            Variable resVar = new Fiskalizacija2.FINA.B2BIncoming.GetIncomingInvoiceList().Send(
                 endpoint,
                 dnsIdentity,
                 serviceCertificatePath,
@@ -5314,7 +5326,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
         }
     }
     
-    class FINA_GET_INCOMING_INVOICEFunction : ParserFunction
+    class FINA_GET_B2B_INCOMING_INVOICEFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
         {
@@ -5331,7 +5343,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             var buyerId = Utils.GetSafeString(args, 6);
             var invoiceId = Utils.GetSafeString(args, 7);
 
-            Variable resVar = new Fiskalizacija2.FINA.Incoming.GetIncomingInvoice().Send(
+            Variable resVar = new Fiskalizacija2.FINA.B2BIncoming.GetIncomingInvoice().Send(
                 endpoint,
                 dnsIdentity,
                 serviceCertificatePath,
@@ -5346,7 +5358,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
         }
     }
     
-    class FINA_CHANGE_INCOMING_INVOICE_STATUSFunction : ParserFunction
+    class FINA_CHANGE_B2B_INCOMING_INVOICE_STATUSFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
         {
@@ -5423,7 +5435,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
                 note = null;
             }
 
-            Variable resVar = new Fiskalizacija2.FINA.Incoming.ChangeIncomingInvoiceStatus().Send(
+            Variable resVar = new Fiskalizacija2.FINA.B2BIncoming.ChangeIncomingInvoiceStatus().Send(
                 endpoint,
                 dnsIdentity,
                 serviceCertificatePath,
@@ -5444,7 +5456,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
         }
     }
 
-    class FINA_GET_OUTGOING_INVOICE_LISTFunction : ParserFunction
+    class FINA_GET_B2B_OUTGOING_INVOICE_LISTFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
         {
@@ -5466,7 +5478,51 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             DateTime.TryParseExact(filterDateFrom, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateFrom);
             DateTime.TryParseExact(filterDateTo, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTo);
 
-            Variable resVar = new Fiskalizacija2.FINA.Incoming.GetOutgoingInvoiceList().Send(
+            Variable resVar = new Fiskalizacija2.FINA.B2BIncoming.GetOutgoingInvoiceList().Send(
+                endpoint,
+                dnsIdentity,
+                serviceCertificatePath,
+                clientCertificatePath,
+                clientCertificatePassword,
+
+                messageId,
+                supplierId,
+                dateFrom,
+                dateTo);
+
+            return resVar;
+        }
+    }
+    
+    
+    
+    
+    
+    
+    
+    class FINA_GET_B2G_OUTGOING_INVOICE_LISTFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 9, m_name);
+
+            var endpoint = Utils.GetSafeString(args, 0);
+            var dnsIdentity = Utils.GetSafeString(args, 1);
+            var serviceCertificatePath = Utils.GetSafeString(args, 2);
+            var clientCertificatePath = Utils.GetSafeString(args, 3);
+            var clientCertificatePassword = Utils.GetSafeString(args, 4);
+
+            var messageId = Utils.GetSafeString(args, 5);
+            var supplierId = Utils.GetSafeString(args, 6);
+            
+            var filterDateFrom = Utils.GetSafeString(args, 7);
+            var filterDateTo = Utils.GetSafeString(args, 8);
+
+            DateTime.TryParseExact(filterDateFrom, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateFrom);
+            DateTime.TryParseExact(filterDateTo, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTo);
+
+            Variable resVar = new Fiskalizacija2.FINA.B2GIncoming.GetOutgoingInvoiceList().Send(
                 endpoint,
                 dnsIdentity,
                 serviceCertificatePath,

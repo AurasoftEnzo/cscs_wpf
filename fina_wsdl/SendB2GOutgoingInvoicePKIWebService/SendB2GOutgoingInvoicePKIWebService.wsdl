@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://schemas.xmlsoap.org/wsdl/"
+	xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	xmlns:b2gEracImpl="http://fina.hr/eracun/b2g/ws/pki/v0.1"
+	xmlns:soi="http://fina.hr/eracun/b2g/pki/SendB2GOutgoingInvoice/v0.1"
+	xmlns:soir="http://fina.hr/eracun/b2g/pki/SendB2GOutgoingInvoiceReporting/v0.1"
+	xmlns:e="http://fina.hr/eracun/b2g/pki/Echo/v0.1"
+	xmlns:gois="http://fina.hr/eracun/b2g/pki/GetB2GOutgoingInvoiceStatus/v0.1"
+	xmlns:grl="http://fina.hr/eracun/b2g/GetReceiverList/v0.1"
+	xmlns:grloib="http://fina.hr/eracun/b2g/GetReceiverListOIB/v0.1"
+	targetNamespace="http://fina.hr/eracun/b2g/ws/pki/v0.1">
+	<types>
+		<xsd:schema targetNamespace="http://fina.hr/eracun/b2g/ws/pki/v0.1"
+			xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+			<xsd:import namespace="http://fina.hr/eracun/b2g/pki/Echo/v0.1"
+				schemaLocation="EchoMsg.xsd" />
+			<xsd:import
+				namespace="http://fina.hr/eracun/b2g/pki/SendB2GOutgoingInvoice/v0.1"
+				schemaLocation="SendB2GOutgoingInvoiceMsg.xsd" />
+			<xsd:import
+					namespace="http://fina.hr/eracun/b2g/pki/SendB2GOutgoingInvoiceReporting/v0.1"
+					schemaLocation="SendB2GOutgoingInvoiceReportingMsg.xsd" />
+			<xsd:import
+				namespace="http://fina.hr/eracun/b2g/pki/GetB2GOutgoingInvoiceStatus/v0.1"
+				schemaLocation="GetB2GOutgoingInvoiceStatusMsg.xsd" />
+			<xsd:import namespace="http://fina.hr/eracun/b2g/GetReceiverList/v0.1"
+				schemaLocation="GetReceiverListMsg.xsd" />
+			<xsd:import namespace="http://fina.hr/eracun/b2g/GetReceiverListOIB/v0.1"
+				schemaLocation="GetReceiverListOIBMsg.xsd" />
+		</xsd:schema>
+	</types>
+	<message name="EchoSoapIn">
+		<part name="body" element="e:EchoMsg" />
+	</message>
+	<message name="EchoSoapOut">
+		<part name="bodyAck" element="e:EchoAckMsg" />
+	</message>
+	<message name="SendB2GOutgoingInvoiceSoapIn">
+		<part name="body" element="soi:SendB2GOutgoingInvoiceMsg" />
+	</message>
+	<message name="SendB2GOutgoingInvoiceSoapOut">
+		<part name="bodyAck" element="soi:SendB2GOutgoingInvoiceAckMsg" />
+	</message>
+	<message name="SendB2GOutgoingInvoiceReportingSoapIn">
+		<part name="body" element="soir:SendB2GOutgoingInvoiceReportingMsg" />
+	</message>
+	<message name="SendB2GOutgoingInvoiceReportingSoapOut">
+		<part name="bodyAck" element="soir:SendB2GOutgoingInvoiceReportingAckMsg" />
+	</message>
+	<message name="GetB2GOutgoingInvoiceStatusSoapIn">
+		<part name="body" element="gois:GetB2GOutgoingInvoiceStatusMsg" />
+	</message>
+	<message name="GetB2GOutgoingInvoiceStatusSoapOut">
+		<part name="bodyAck" element="gois:GetB2GOutgoingInvoiceStatusAckMsg" />
+	</message>
+	<message name="GetReceiverListSoapIn">
+		<part name="body" element="grl:GetReceiverListMsg" />
+	</message>
+	<message name="GetReceiverListSoapOut">
+		<part name="bodyAck" element="grl:GetReceiverListAckMsg" />
+	</message>
+	<message name="GetReceiverListOIBSoapIn">
+		<part name="body" element="grloib:GetReceiverListOIBMsg" />
+	</message>
+	<message name="GetReceiverListOIBSoapOut">
+		<part name="bodyAck" element="grloib:GetReceiverListOIBAckMsg" />
+	</message>
+	<portType name="eRacunB2GPortType">
+		<operation name="echo">
+			<input message="b2gEracImpl:EchoSoapIn" />
+			<output message="b2gEracImpl:EchoSoapOut" />
+		</operation>
+		<operation name="sendB2GOutgoingInvoice">
+			<input message="b2gEracImpl:SendB2GOutgoingInvoiceSoapIn" />
+			<output message="b2gEracImpl:SendB2GOutgoingInvoiceSoapOut" />
+		</operation>
+		<operation name="sendB2GOutgoingInvoiceReporting">
+			<input message="b2gEracImpl:SendB2GOutgoingInvoiceReportingSoapIn" />
+			<output message="b2gEracImpl:SendB2GOutgoingInvoiceReportingSoapOut" />
+		</operation>
+		<operation name="getB2GOutgoingInvoiceStatus">
+			<input message="b2gEracImpl:GetB2GOutgoingInvoiceStatusSoapIn" />
+			<output message="b2gEracImpl:GetB2GOutgoingInvoiceStatusSoapOut" />
+		</operation>
+		<operation name="getReceiverList">
+			<input message="b2gEracImpl:GetReceiverListSoapIn" />
+			<output message="b2gEracImpl:GetReceiverListSoapOut" />
+		</operation>
+		<operation name="getReceiverListOIB">
+			<input message="b2gEracImpl:GetReceiverListOIBSoapIn"/>
+			<output message="b2gEracImpl:GetReceiverListOIBSoapOut"/>
+		</operation>
+	</portType>
+	<binding name="eRacunB2GBinding" type="b2gEracImpl:eRacunB2GPortType">
+		<soap:binding style="document"
+			transport="http://schemas.xmlsoap.org/soap/http" />
+		<operation name="echo">
+			<soap:operation soapAction="http://fina.hr/eracun/b2g/Echo"
+				style="document" />
+			<input>
+				<soap:body use="literal" />
+			</input>
+			<output>
+				<soap:body use="literal" />
+			</output>
+		</operation>
+		<operation name="sendB2GOutgoingInvoice">
+			<soap:operation soapAction="http://fina.hr/eracun/b2g/SendB2GOutgoingInvoice"
+				style="document" />
+			<input>
+				<soap:body use="literal" />
+			</input>
+			<output>
+				<soap:body use="literal" />
+			</output>
+		</operation>
+		<operation name="sendB2GOutgoingInvoiceReporting">
+			<soap:operation soapAction="http://fina.hr/eracun/b2g/SendB2GOutgoingInvoiceReporting"
+							style="document" />
+			<input>
+				<soap:body use="literal" />
+			</input>
+			<output>
+				<soap:body use="literal" />
+			</output>
+		</operation>
+		<operation name="getB2GOutgoingInvoiceStatus">
+			<soap:operation
+				soapAction="http://fina.hr/eracun/b2g/GetB2GOutgoingInvoiceStatus"
+				style="document" />
+			<input>
+				<soap:body use="literal" />
+			</input>
+			<output>
+				<soap:body use="literal" />
+			</output>
+		</operation>
+		<operation name="getReceiverList">
+			<soap:operation soapAction="http://fina.hr/eracun/b2g/GetReceiverList"
+				style="document" />
+			<input>
+				<soap:body use="literal" />
+			</input>
+			<output>
+				<soap:body use="literal" />
+			</output>
+		</operation>
+		<operation name="getReceiverListOIB">
+			<soap:operation soapAction="http://fina.hr/eracun/b2g/GetReceiverListOIB" style="document"/>
+			<input>
+				<soap:body use="literal"/>
+			</input>
+			<output>
+				<soap:body use="literal"/>
+			</output>
+		</operation>
+	</binding>
+	<service name="SendB2GOutgoingInvoicePKIWebService">
+		<port name="eRacunB2GPortType" binding="b2gEracImpl:eRacunB2GBinding">
+			<soap:address location="http://ADDRESS/SendB2GOutgoingInvoicePKIWebService" />
+		</port>
+	</service>
+</definitions>

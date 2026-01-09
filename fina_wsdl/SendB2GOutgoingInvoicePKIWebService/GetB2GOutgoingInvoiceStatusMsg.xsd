@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns="http://fina.hr/eracun/b2g/pki/GetB2GOutgoingInvoiceStatus/v0.1" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:iwsc="http://fina.hr/eracun/b2g/invoicewebservicecomponents/v0.1" targetNamespace="http://fina.hr/eracun/b2g/pki/GetB2GOutgoingInvoiceStatus/v0.1" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xsd:import namespace="http://fina.hr/eracun/b2g/invoicewebservicecomponents/v0.1" schemaLocation="InvoiceWebServiceComponents.xsd"/>
+	<xsd:element name="GetB2GOutgoingInvoiceStatusMsg">
+		<xsd:annotation>
+			<xsd:documentation>Poruka za dohvat statusa izlaznog računa za poslovne subjekte.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="iwsc:HeaderSupplier">
+					<xsd:annotation>
+						<xsd:documentation>Zaglavlje poruke</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="Data">
+					<xsd:annotation>
+						<xsd:documentation>XML s podacima</xsd:documentation>
+					</xsd:annotation>
+					<xsd:complexType>
+						<xsd:sequence>
+							<xsd:element name="B2GOutgoingInvoiceStatus">
+								<xsd:annotation>
+									<xsd:documentation>Omotač upita za dohvat statusa izlaznog računa</xsd:documentation>
+								</xsd:annotation>
+								<xsd:complexType>
+									<xsd:sequence>
+										<xsd:element name="SupplierInvoiceID" type="xsd:string">
+											<xsd:annotation>
+												<xsd:documentation>Identifikator računa u sustavu pošiljatelja.</xsd:documentation>
+											</xsd:annotation>
+										</xsd:element>
+										<xsd:element name="InvoiceYear" type="xsd:integer">
+											<xsd:annotation>
+												<xsd:documentation>Godina računa u sustavu pošiljatelja.</xsd:documentation>
+											</xsd:annotation>
+										</xsd:element>
+										<xsd:element name="DocumentCurrencyCode" type="xsd:boolean" minOccurs="0">
+											<xsd:annotation>
+												<xsd:documentation>prikaz valute (DocumentCurrencyCode)</xsd:documentation>
+											</xsd:annotation>
+										</xsd:element>
+									</xsd:sequence>
+								</xsd:complexType>
+							</xsd:element>
+						</xsd:sequence>
+					</xsd:complexType>
+				</xsd:element>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="GetB2GOutgoingInvoiceStatusAckMsg">
+		<xsd:annotation>
+			<xsd:documentation>Sinkroni odgovor na poruku za dohvat statusa izlaznog računa za poslovne subjekte.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="iwsc:MessageAck"/>
+					<xsd:element name="B2GOutgoingInvoiceStatus"  minOccurs="0">
+						<xsd:annotation>
+							<xsd:documentation>Omotač upita za dohvat statusa izlaznog računa</xsd:documentation>
+						</xsd:annotation>
+						<xsd:complexType>
+							<xsd:sequence>
+								<xsd:element name="SupplierID" type="xsd:string">
+									<xsd:annotation>
+										<xsd:documentation>Identifikator pošiljatelja računa u sustavu e-Račun.</xsd:documentation>
+									</xsd:annotation>
+								</xsd:element>
+								<xsd:element name="AdditionalSupplierID" type="xsd:string" minOccurs="0">
+									<xsd:annotation>
+										<xsd:documentation>Dodatni identifikator izdavatelja (GLN, JUS,...) - 0088:38545468711</xsd:documentation>
+									</xsd:annotation>
+								</xsd:element>
+								<xsd:element name="InvoiceID" type="xsd:integer">
+									<xsd:annotation>
+										<xsd:documentation>Identifikator računa u sustavu e-Račun.</xsd:documentation>
+									</xsd:annotation>
+								</xsd:element>
+								<xsd:element name="SupplierInvoiceID" type="xsd:string">
+									<xsd:annotation>
+										<xsd:documentation>Identifikator računa u sustavu pošiljatelja.</xsd:documentation>
+									</xsd:annotation>
+								</xsd:element>
+								<xsd:element name="InvoiceTimestamp" type="xsd:dateTime">
+									<xsd:annotation>
+										<xsd:documentation>Timestamp računa u sustavu e-RačunB2G.</xsd:documentation>
+									</xsd:annotation>
+								</xsd:element>
+								<xsd:element ref="iwsc:DocumentStatus"  minOccurs="0" maxOccurs="unbounded">
+									<xsd:annotation>
+										<xsd:documentation>Status u sustavu e-Račun.</xsd:documentation>
+									</xsd:annotation>
+								</xsd:element>
+							</xsd:sequence>
+						</xsd:complexType>
+					</xsd:element>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+</xsd:schema>

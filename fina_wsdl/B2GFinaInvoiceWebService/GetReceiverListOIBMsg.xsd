@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns="http://fina.hr/eracun/b2g/sync/GetReceiverListOIB/v0.1" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:iwsc="http://fina.hr/eracun/b2g/invoicewebservicecomponents/v0.1" targetNamespace="http://fina.hr/eracun/b2g/sync/GetReceiverListOIB/v0.1" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xsd:import namespace="http://fina.hr/eracun/b2g/invoicewebservicecomponents/v0.1" schemaLocation="InvoiceWebServiceComponents.xsd"/>
+	<xsd:element name="GetReceiverListOIBMsg">
+		<xsd:annotation>
+			<xsd:documentation>Poruka za dohvat liste OIBa i šifri pretinaca primatelja iz registra.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="iwsc:HeaderSupplier">
+					<xsd:annotation>
+						<xsd:documentation>Zaglavlje poruke</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="Data">
+					<xsd:annotation>
+						<xsd:documentation>XML s podacima</xsd:documentation>
+					</xsd:annotation>
+					<xsd:complexType>
+						<xsd:sequence>
+							<xsd:element name="ReceiverListOIB">
+								<xsd:annotation>
+									<xsd:documentation>Omotač upita za dohvat liste OIBa i šifri pretinaca primatelja računa</xsd:documentation>
+								</xsd:annotation>
+								<xsd:complexType>
+									<xsd:sequence>
+										<xsd:element ref="iwsc:Filter">
+											<xsd:annotation>
+												<xsd:documentation>Filter za dohvat.</xsd:documentation>
+											</xsd:annotation>
+										</xsd:element>
+									</xsd:sequence>
+								</xsd:complexType>
+							</xsd:element>
+						</xsd:sequence>
+					</xsd:complexType>
+				</xsd:element>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="GetReceiverListOIBAckMsg">
+		<xsd:annotation>
+			<xsd:documentation>Sinkroni odgovor na poruku za dohvat liste primatelja iz registra.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="iwsc:MessageAck"/>
+				<xsd:element name="ReceiverListOIB" minOccurs="0">
+					<xsd:annotation>
+						<xsd:documentation>Omotač upita za dohvat liste primatelja iz registra</xsd:documentation>
+					</xsd:annotation>
+					<xsd:complexType>
+						<xsd:sequence>
+							<xsd:element name="Receiver" minOccurs="0" maxOccurs="unbounded">
+								<xsd:annotation>
+									<xsd:documentation>Primatelj računa.</xsd:documentation>
+								</xsd:annotation>
+								<xsd:complexType>
+									<xsd:sequence>
+										<xsd:element name="ISOCode" type="xsd:string">
+											<xsd:annotation>
+												<xsd:documentation>ISO kod države (HR)</xsd:documentation>
+											</xsd:annotation>
+										</xsd:element>
+										<xsd:element name="OIB" type="xsd:string">
+											<xsd:annotation>
+												<xsd:documentation>OIB primatelja računa.</xsd:documentation>
+											</xsd:annotation>
+										</xsd:element>
+										<xsd:element name="BusinessBranch" minOccurs="1" maxOccurs="unbounded">
+											<xsd:annotation>
+												<xsd:documentation>Podaci o pretincu primatelja</xsd:documentation>
+											</xsd:annotation>
+											<xsd:complexType>
+												<xsd:sequence>
+													<xsd:element name="EndpointID" type="xsd:string">
+														<xsd:annotation>
+															<xsd:documentation>Elektronička adresa (EndpointID npr. OIB, GLN).</xsd:documentation>
+														</xsd:annotation>
+													</xsd:element>
+													<xsd:element name="EndpointIDSchemeID" type="xsd:string">
+														<xsd:annotation>
+															<xsd:documentation>Identifikator sheme elektroničke adrese (EndpointID @schemeID npr. 9934, 0088).</xsd:documentation>
+														</xsd:annotation>
+													</xsd:element>
+													<!-- Ako nema poslovne jedinice onda je PartyIdentification u xml-u neobavezan element -->
+													<xsd:element name="PartyIdentificationID" type="xsd:string" minOccurs="0">
+														<xsd:annotation>
+															<xsd:documentation>Identifikator poslovne jedinice (PartyIdentificationID npr. 9934:OIB::HR99:1234).</xsd:documentation>
+														</xsd:annotation>
+													</xsd:element>
+													<xsd:element name="PartyName" type="xsd:string" minOccurs="1">
+														<xsd:annotation>
+															<xsd:documentation>Naziv poslovne jedinice.</xsd:documentation>
+														</xsd:annotation>
+													</xsd:element>
+												</xsd:sequence>
+											</xsd:complexType>
+										</xsd:element>
+									</xsd:sequence>
+								</xsd:complexType>
+							</xsd:element>
+						</xsd:sequence>
+					</xsd:complexType>
+				</xsd:element>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+</xsd:schema>

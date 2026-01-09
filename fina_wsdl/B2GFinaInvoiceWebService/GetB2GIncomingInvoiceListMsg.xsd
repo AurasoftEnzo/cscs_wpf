@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns="http://fina.hr/eracun/b2g/sync/GetB2GIncomingInvoiceList/v0.1" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:iwsc="http://fina.hr/eracun/b2g/invoicewebservicecomponents/v0.1" targetNamespace="http://fina.hr/eracun/b2g/sync/GetB2GIncomingInvoiceList/v0.1" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xsd:import namespace="http://fina.hr/eracun/b2g/invoicewebservicecomponents/v0.1" schemaLocation="InvoiceWebServiceComponents.xsd"/>
+	<xsd:element name="GetB2GIncomingInvoiceListMsg">
+		<xsd:annotation>
+			<xsd:documentation>Poruka za dohvat liste ulaznih računa za poslovne subjekte.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="iwsc:HeaderBuyer">
+					<xsd:annotation>
+						<xsd:documentation>Zaglavlje poruke</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="Data">
+					<xsd:annotation>
+						<xsd:documentation>XML s podacima</xsd:documentation>
+					</xsd:annotation>
+					<xsd:complexType>
+						<xsd:sequence>
+							<xsd:element name="B2GIncomingInvoiceList">
+								<xsd:annotation>
+									<xsd:documentation>Omotač upita za dohvat liste ulaznih računa</xsd:documentation>
+								</xsd:annotation>
+								<xsd:complexType>
+									<xsd:sequence>
+										<xsd:element name="DocumentCurrencyCode" type="xsd:boolean" minOccurs="0">
+											<xsd:annotation>
+												<xsd:documentation>prikaz valute (DocumentCurrencyCode)</xsd:documentation>
+											</xsd:annotation>
+										</xsd:element>
+										<xsd:choice>
+											<xsd:element ref="iwsc:Filter">
+												<xsd:annotation>
+													<xsd:documentation>Filter za dohvat.</xsd:documentation>
+												</xsd:annotation>
+											</xsd:element>
+											<xsd:element name="InvoiceIDRange">
+												<xsd:annotation>
+													<xsd:documentation>Raspon za dohvat računa preko Fina InvoiceID</xsd:documentation>
+												</xsd:annotation>
+												<xsd:complexType>
+													<xsd:sequence>
+														<xsd:element name="From" type="xsd:integer" minOccurs="0">
+															<xsd:annotation>
+																<xsd:documentation>Invoice ID od (ne uključujući taj ID, veće od)</xsd:documentation>
+															</xsd:annotation>
+														</xsd:element>
+														<xsd:element name="To" type="xsd:integer" minOccurs="0">
+															<xsd:annotation>
+																<xsd:documentation>Invoice ID do (uključujući taj ID, manje ili jednako do)</xsd:documentation>
+															</xsd:annotation>
+														</xsd:element>
+													</xsd:sequence>
+												</xsd:complexType>
+											</xsd:element>
+										</xsd:choice>
+									</xsd:sequence>
+								</xsd:complexType>
+							</xsd:element>
+						</xsd:sequence>
+					</xsd:complexType>
+				</xsd:element>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="GetB2GIncomingInvoiceListAckMsg">
+		<xsd:annotation>
+			<xsd:documentation>Sinkroni odgovor na poruku za dohvat liste ulaznih računa za poslovne subjekte.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="iwsc:MessageAck"/>
+				<xsd:choice>
+					<xsd:element name="B2GIncomingInvoiceList">
+						<xsd:annotation>
+							<xsd:documentation>Omotač upita za dohvat liste ulaznih računa</xsd:documentation>
+						</xsd:annotation>
+						<xsd:complexType>
+							<xsd:sequence>
+								<xsd:element name="B2GIncomingInvoice" minOccurs="0" maxOccurs="unbounded">
+									<xsd:annotation>
+										<xsd:documentation>Omotač ulaznog računa.</xsd:documentation>
+									</xsd:annotation>
+									<xsd:complexType>
+										<xsd:sequence>
+											<xsd:element ref="iwsc:DocumentType">
+												<xsd:annotation>
+													<xsd:documentation>Tip dokumenta.</xsd:documentation>
+												</xsd:annotation>
+											</xsd:element>
+											<xsd:element ref="iwsc:InvoiceStatus">
+												<xsd:annotation>
+													<xsd:documentation>Status dokumenta.</xsd:documentation>
+												</xsd:annotation>
+											</xsd:element>
+											<xsd:element name="SupplierID" type="xsd:string">
+												<xsd:annotation>
+													<xsd:documentation>Identifikator dobavljača (OIB, npr. 9943:12345678901).</xsd:documentation>
+												</xsd:annotation>
+											</xsd:element>
+											<xsd:element name="AdditionalSupplierID" type="xsd:string" minOccurs="0">
+												<xsd:annotation>
+													<xsd:documentation>Dodatni identifikator dobavljača (GLN, npr. 0088:12345678901).</xsd:documentation>
+												</xsd:annotation>
+											</xsd:element>
+											<xsd:element name="SupplierRegistrationName" type="xsd:string">
+												<xsd:annotation>
+													<xsd:documentation>Naziv pošiljatelja računa u sustavu.</xsd:documentation>
+												</xsd:annotation>
+											</xsd:element>
+											<xsd:element name="SupplierCompanyID" type="xsd:string">
+												<xsd:annotation>
+													<xsd:documentation>MB pošiljatelja računa u sustavu.</xsd:documentation>
+												</xsd:annotation>
+											</xsd:element>
+											<xsd:element name="InvoiceID" type="xsd:integer">
+												<xsd:annotation>
+													<xsd:documentation>Identifikator računa u sustavu e-RačunB2B.</xsd:documentation>
+												</xsd:annotation>
+											</xsd:element>
+											<xsd:element name="SupplierInvoiceID" type="xsd:string">
+												<xsd:annotation>
+													<xsd:documentation>Identifikator računa pošiljatelja.</xsd:documentation>
+												</xsd:annotation>
+											</xsd:element>
+											<xsd:element name="DataInterchangeMethod">
+												<xsd:annotation>
+													<xsd:documentation>Metoda slanja računa (PKI, EDI, OTHER)</xsd:documentation>
+												</xsd:annotation>
+												<xsd:simpleType>
+													<xsd:restriction base="xsd:string">
+														<xsd:enumeration value="PKI"></xsd:enumeration>
+														<xsd:enumeration value="EDI"></xsd:enumeration>
+														<xsd:enumeration value="OTHER"></xsd:enumeration>
+													</xsd:restriction>
+												</xsd:simpleType>
+											</xsd:element>
+											<xsd:element name="InvoiceIssueDate" type="xsd:date">
+												<xsd:annotation>
+													<xsd:documentation>Datum izdavanja računa.</xsd:documentation>
+												</xsd:annotation>
+											</xsd:element>
+											<xsd:element name="InvoiceDate" type="xsd:date">
+												<xsd:annotation>
+													<xsd:documentation>Datum računa.</xsd:documentation>
+												</xsd:annotation>
+											</xsd:element>
+											<xsd:element name="InvoiceTimestamp" type="xsd:dateTime">
+												<xsd:annotation>
+													<xsd:documentation>Timestamp računa u sustavu e-RačunB2G.</xsd:documentation>
+												</xsd:annotation>
+											</xsd:element>
+											<xsd:element name="InvoicePayableAmount" type="xsd:decimal">
+												<xsd:annotation>
+													<xsd:documentation>Iznos računa.</xsd:documentation>
+												</xsd:annotation>
+											</xsd:element>
+											<xsd:element name="DocumentCurrencyCode" type="xsd:string" minOccurs="0">
+												<xsd:annotation>
+													<xsd:documentation>Valuta računa.</xsd:documentation>
+												</xsd:annotation>
+											</xsd:element>
+										</xsd:sequence>
+									</xsd:complexType>
+								</xsd:element>
+							</xsd:sequence>
+						</xsd:complexType>
+					</xsd:element>
+					<xsd:element ref="iwsc:Error"></xsd:element>
+				</xsd:choice>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+</xsd:schema>

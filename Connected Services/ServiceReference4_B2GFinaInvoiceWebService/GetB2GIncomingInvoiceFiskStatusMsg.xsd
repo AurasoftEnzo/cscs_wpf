@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsd:schema xmlns:iwsc="http://fina.hr/eracun/b2g/invoicewebservicecomponents/v0.1" xmlns="http://fina.hr/eracun/b2g/GetB2GIncomingInvoiceFiskStatus/v0.1" attributeFormDefault="unqualified" elementFormDefault="qualified" targetNamespace="http://fina.hr/eracun/b2g/GetB2GIncomingInvoiceFiskStatus/v0.1" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:import schemaLocation="InvoiceWebServiceComponents.xsd" namespace="http://fina.hr/eracun/b2g/invoicewebservicecomponents/v0.1" />
+  <xsd:element name="GetB2GIncomingInvoiceFiskStatusMsg">
+    <xsd:annotation>
+      <xsd:documentation>Poruka za dohvat statusa fiskalizacije/eIzvje??tavanja ulaznog ra??una.</xsd:documentation>
+    </xsd:annotation>
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element ref="iwsc:HeaderBuyer">
+          <xsd:annotation>
+            <xsd:documentation>Zaglavlje poruke</xsd:documentation>
+          </xsd:annotation>
+        </xsd:element>
+        <xsd:element name="Data">
+          <xsd:annotation>
+            <xsd:documentation>XML s podacima</xsd:documentation>
+          </xsd:annotation>
+          <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name="B2GIncomingInvoiceFiskStatus">
+                <xsd:annotation>
+                  <xsd:documentation>Omota?? za dohvat statusa fiskalizacije/eIzvje??tavanja ulaznog ra??una</xsd:documentation>
+                </xsd:annotation>
+                <xsd:complexType>
+                  <xsd:sequence>
+                    <xsd:element name="InvoiceID" type="xsd:integer">
+                      <xsd:annotation>
+                        <xsd:documentation>Identifikator ra??una u sustavu e-Ra??un B2G.</xsd:documentation>
+                      </xsd:annotation>
+                    </xsd:element>
+                  </xsd:sequence>
+                </xsd:complexType>
+              </xsd:element>
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:element>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="GetB2GIncomingInvoiceFiskStatusAckMsg">
+    <xsd:annotation>
+      <xsd:documentation>Sinkroni odgovor na poruku za dohvat statusa fiskalizacije/eIzvje??tavanja ulaznog ra??una.</xsd:documentation>
+    </xsd:annotation>
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element ref="iwsc:MessageAck" />
+        <xsd:choice>
+          <xsd:element name="B2GIncomingInvoiceFiskStatus">
+            <xsd:annotation>
+              <xsd:documentation>Omota?? za dohvat statusa fiskalizacije/eIzvje??tavanja ulaznog ra??una</xsd:documentation>
+            </xsd:annotation>
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="InvoiceID" type="xsd:integer">
+                  <xsd:annotation>
+                    <xsd:documentation>Identifikator ra??una u sustavu e-Ra??un B2G.</xsd:documentation>
+                  </xsd:annotation>
+                </xsd:element>
+                <xsd:element name="FiskStatus">
+                  <xsd:complexType>
+                    <xsd:sequence>
+                      <xsd:element name="Status" type="xsd:boolean">
+                        <xsd:annotation>
+                          <xsd:documentation>Status fiskalizacije ulaznog ra??una - true/false.</xsd:documentation>
+                        </xsd:annotation>
+                      </xsd:element>
+                      <xsd:element name="StatusTimestamp" type="xsd:dateTime">
+                        <xsd:annotation>
+                          <xsd:documentation>Timestamp fiskalizacije ulaznog ra??una.</xsd:documentation>
+                        </xsd:annotation>
+                      </xsd:element>
+                    </xsd:sequence>
+                  </xsd:complexType>
+                </xsd:element>
+                <xsd:element minOccurs="0" name="ReportRejectionStatus">
+                  <xsd:complexType>
+                    <xsd:sequence>
+                      <xsd:element name="Status" type="xsd:boolean">
+                        <xsd:annotation>
+                          <xsd:documentation>Status eIzvje??tavanja odbijenog ra??una - true/false.</xsd:documentation>
+                        </xsd:annotation>
+                      </xsd:element>
+                      <xsd:element name="StatusTimestamp" type="xsd:dateTime">
+                        <xsd:annotation>
+                          <xsd:documentation>Timestamp eIzvje??tavanja odbijenog ra??una.</xsd:documentation>
+                        </xsd:annotation>
+                      </xsd:element>
+                    </xsd:sequence>
+                  </xsd:complexType>
+                </xsd:element>
+              </xsd:sequence>
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element ref="iwsc:Error" />
+        </xsd:choice>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+</xsd:schema>

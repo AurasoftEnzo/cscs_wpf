@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns="http://fina.hr/eracun/b2g/GetReceiverListJT/v0.1" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:iwsc="http://fina.hr/eracun/b2g/invoicewebservicecomponents/v0.1" targetNamespace="http://fina.hr/eracun/b2g/GetReceiverListJT/v0.1" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xsd:import namespace="http://fina.hr/eracun/b2g/invoicewebservicecomponents/v0.1" schemaLocation="InvoiceWebServiceComponents.xsd"/>
+	<xsd:element name="GetReceiverListMsg">
+		<xsd:annotation>
+			<xsd:documentation>Poruka za dohvat liste primatelja iz registra.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="iwsc:HeaderSupplier">
+					<xsd:annotation>
+						<xsd:documentation>Zaglavlje poruke</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="Data">
+					<xsd:annotation>
+						<xsd:documentation>XML s podacima</xsd:documentation>
+					</xsd:annotation>
+					<xsd:complexType>
+						<xsd:sequence>
+							<xsd:element name="ReceiverList">
+								<xsd:annotation>
+									<xsd:documentation>Omotač upita za dohvat liste ulaznih računa</xsd:documentation>
+								</xsd:annotation>
+								<xsd:complexType>
+									<xsd:sequence>
+										<xsd:element ref="iwsc:Filter">
+											<xsd:annotation>
+												<xsd:documentation>Filter za dohvat.</xsd:documentation>
+											</xsd:annotation>
+										</xsd:element>
+									</xsd:sequence>
+								</xsd:complexType>
+							</xsd:element>
+						</xsd:sequence>
+					</xsd:complexType>
+				</xsd:element>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="GetReceiverListAckMsg">
+		<xsd:annotation>
+			<xsd:documentation>Sinkroni odgovor na poruku za dohvat liste primatelja obveznika javne nabave iz registra.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="iwsc:MessageAck"/>
+				<xsd:element name="ReceiverList" minOccurs="0">
+					<xsd:annotation>
+						<xsd:documentation>Omotač upita za dohvat liste primatelja iz registra</xsd:documentation>
+					</xsd:annotation>
+					<xsd:complexType>
+						<xsd:sequence>
+							<xsd:element name="Receiver" minOccurs="0" maxOccurs="unbounded">
+								<xsd:annotation>
+									<xsd:documentation>Naziv tvrtke primatelja računa.</xsd:documentation>
+								</xsd:annotation>
+								<xsd:complexType>
+									<xsd:sequence>
+										<xsd:element name="RegistrationName" type="xsd:string">
+											<xsd:annotation>
+												<xsd:documentation>Naziv tvrtke primatelja računa.</xsd:documentation>
+											</xsd:annotation>
+										</xsd:element>
+										<xsd:element name="ISOCode" type="xsd:string">
+											<xsd:annotation>
+												<xsd:documentation>ISO kod države (HR)</xsd:documentation>
+											</xsd:annotation>
+										</xsd:element>
+										<xsd:element name="CompanyID" type="xsd:string">
+											<xsd:annotation>
+												<xsd:documentation>OIB</xsd:documentation>
+											</xsd:annotation>
+										</xsd:element>
+										<xsd:element ref="iwsc:PostalAddress">
+											<xsd:annotation>
+												<xsd:documentation>Adresa</xsd:documentation>
+											</xsd:annotation>
+										</xsd:element>
+										<xsd:element name="BusinessBranch" minOccurs="1" maxOccurs="unbounded">
+											<xsd:annotation>
+												<xsd:documentation>Poslovna jedinica</xsd:documentation>
+											</xsd:annotation>
+											<xsd:complexType>
+												<xsd:sequence>
+													<xsd:element name="EndpointID" type="xsd:string">
+														<xsd:annotation>
+															<xsd:documentation>Identifikator poslovne jedinice (EndpointID).</xsd:documentation>
+														</xsd:annotation>
+													</xsd:element>
+													<xsd:element name="EndpointIDSchemeID" type="xsd:string">
+														<xsd:annotation>
+															<xsd:documentation>Identifikator shema (CEF lista).</xsd:documentation>
+														</xsd:annotation>
+													</xsd:element>
+													<xsd:element name="PartyIdentificationID" type="xsd:string">
+														<xsd:annotation>
+															<xsd:documentation>Identifikator poslovne jedinice (PartyIdentificationID npr. 9934:OIB::HR99:1234).</xsd:documentation>
+														</xsd:annotation>
+													</xsd:element>
+													<xsd:element name="PartyIdentificationIDSchemeID" type="xsd:string" minOccurs="0">
+														<xsd:annotation>
+															<xsd:documentation>Identifikator shema (ISO 6523 npr. 0088->GLN).</xsd:documentation>
+														</xsd:annotation>
+													</xsd:element>
+													<xsd:element name="BusinessBranchName" type="xsd:string">
+														<xsd:annotation>
+															<xsd:documentation>Naziv poslovne jedinice.</xsd:documentation>
+														</xsd:annotation>
+													</xsd:element>
+													<xsd:element
+														name="InformationProvider" type="xsd:string">
+														<xsd:annotation>
+															<xsd:documentation>
+																Naziv informacijskog posrednika preko kojeg pretinac zaprima dokumente (naziv - tip)
+															</xsd:documentation>
+														</xsd:annotation>
+													</xsd:element>
+													<xsd:element ref="iwsc:PostalAddress">
+														<xsd:annotation>
+															<xsd:documentation>Adresa</xsd:documentation>
+														</xsd:annotation>
+													</xsd:element>
+													<xsd:element name="Activity" type="xsd:integer">
+														<xsd:annotation>
+															<xsd:documentation>Aktivnost poslovne jedinice.</xsd:documentation>
+														</xsd:annotation>
+													</xsd:element>
+													<xsd:any
+														namespace="##any" minOccurs="0" />
+												</xsd:sequence>
+											</xsd:complexType>
+										</xsd:element>
+									</xsd:sequence>
+								</xsd:complexType>
+							</xsd:element>
+						</xsd:sequence>
+					</xsd:complexType>
+				</xsd:element>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+</xsd:schema>

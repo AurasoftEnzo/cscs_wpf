@@ -89,7 +89,7 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.File2Base64, new File2Base64Function());
             interpreter.RegisterFunction(Constants.Base642File, new Base642FileFunction());
             interpreter.RegisterFunction(Constants.ValidateXsd, new ValidateXsdFunction());
-            //interpreter.RegisterFunction(Constants.ValidateSch, new ValidateSchFunction());
+            interpreter.RegisterFunction(Constants.ValidateSch, new ValidateSchFunction());
             interpreter.RegisterFunction(Constants.EscapeQuotesInXml, new EscapeQuotesInXmlFunction());
 
             //interpreter.RegisterFunction(Constants.FinaTest, new FinaTestFunction());
@@ -1473,6 +1473,33 @@ namespace WpfCSCS
             }
         }
     }
+
+    class ValidateSchFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 4, m_name);
+
+            var xmlContent = Utils.GetSafeString(args, 0);
+            var schFilesArray = Utils.GetSafeVariable(args, 1);
+            var transpilerPath = Utils.GetSafeString(args, 2);
+            var logFilePath = Utils.GetSafeString(args, 3);
+
+
+            List<string> schFiles = new List<string>();
+            if (schFilesArray.Tuple != null)
+            {
+                foreach (var schFileVar in schFilesArray.Tuple)
+                {
+                    schFiles.Add(schFileVar.AsString());
+                }
+            }
+
+            return new Variable(new SchematronValidation.SchematronValidation().Validate(xmlContent, schFiles, transpilerPath, logFilePath));
+        }
+    }
+
 
     //class ValidateSchFunction : ParserFunction
     //{
@@ -5264,6 +5291,12 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             var messageId = Utils.GetSafeString(args, 5);
             var buyerId = Utils.GetSafeString(args, 6);
 
+            var filterDateFrom = Utils.GetSafeString(args, 7);
+            var filterDateTo = Utils.GetSafeString(args, 8);
+
+            DateTime.TryParseExact(filterDateFrom, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateFrom);
+            DateTime.TryParseExact(filterDateTo, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTo);
+
             Variable resVar = new Fiskalizacija2.FINA.Incoming.GetIncomingInvoiceList().Send(
                 endpoint,
                 dnsIdentity,
@@ -5272,7 +5305,10 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
                 clientCertificatePassword,
 
                 messageId,
-                buyerId);
+                buyerId,
+
+                dateFrom,
+                dateTo);
 
             return resVar;
         }

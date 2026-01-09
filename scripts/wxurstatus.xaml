@@ -5,12 +5,12 @@
         xmlns:wcl="clr-namespace:WpfControlsLibrary;assembly=WpfControlsLibrary"
         xmlns:local="clr-namespace:WpfCSCS"
         mc:Ignorable="d"
-        Title="Pregled statusa izlaznih e-računa"
+        Title="Pregled statusa ulaznih e-računa"
         Height="670"
         Width="800"
         ResizeMode="CanMinimize"
         WindowStartupLocation="CenterScreen"
-        Name="wxirstatusWindow">
+        Name="wxurstatusWindow">
     <Grid>
 
         <DataGrid GridLinesVisibility="Horizontal"
@@ -31,7 +31,7 @@
             <DataGrid.Resources>
                 <Style TargetType="{x:Type DataGridColumnHeader}">
                     <Setter Property="Background"
-                    Value="#FFCC0000" />
+                    Value="#FF006393" />
                     <Setter Property="Foreground"
                     Value="White" />
                     <Setter Property="FontSize" Value="17"/>
@@ -42,6 +42,64 @@
             </DataGrid.Resources>
             <DataGrid.Columns>
                 <DataGridTemplateColumn Header="R. br."
+                Width="50">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <wcl:ASGridCell FieldName="arrayRbr" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Dobavljač"
+                Width="200">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <wcl:ASGridCell FieldName="arrayDobavljac" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="OIB dobavljača"
+                    Width="160">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <wcl:ASGridCell FieldName="arrayOibDobavljaca" HorizontalContentAlignment="Center"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Status računa"
+    Width="130">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <wcl:ASGridCell FieldName="arrayStatusRacuna" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Dat. izdavanja"
+                Width="110">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <wcl:ASGridCell FieldName="arrayDatumIzdavanja" HorizontalContentAlignment="Center"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Dat. PDV-a"
+            Width="110">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <wcl:ASGridCell FieldName="arrayDatumPDVa" HorizontalContentAlignment="Center"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Broj računa"
+                Width="200">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <wcl:ASGridCell FieldName="arrayBrojRacuna"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+
+                <!--<DataGridTemplateColumn Header="R. br."
                                 Width="50">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
@@ -102,7 +160,7 @@
                             <wcl:ASGridCell FieldName="arrayOibKupca" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+                </DataGridTemplateColumn>-->
 
             </DataGrid.Columns>
         </DataGrid>

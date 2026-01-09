@@ -172,7 +172,7 @@ function GenerateUBLXml() {
                 NKPR_GL_ENTBY, NKPR_GL_BROPIS, NKPR_GL_BROPIS1,
                 CONVERT(varchar(10), DATEADD(DAY, NKPR_GL_NOKAM + NKPR_GL_ROKPL, NKPR_GL_DVO), 23) as NKPR_GL_DUE_DATE,
                 NKPR_GL_SCONTO,NKPR_GL_DANSC,NKPR_GL_REZ3,NKPR_GL_SHPCOD, NKPR_GL_SHPNME, NKPR_GL_SHPRO, NKPR_GL_SHPA1, 
-                NKPR_GL_SHPZIP, NKPR_GL_SHPCTY,NKPR_GL_SHPST, NKPR_GL_UGOVOR,NKPR_GL_CUSCOD,
+                NKPR_GL_SHPZIP, NKPR_GL_SHPCTY,NKPR_GL_SHPST, NKPR_GL_UGOVOR,NKPR_GL_CUSCOD,NKPR_GL_RNALOG,
                 SUBSTRING(NKSP_AD_REZ,37,13) as NKSP_AD_GLN,
                 NKSC_SOP, NKSC_POSREDNIK, NKSC_REZ10,NKSC_TAX_DN,
                 PKKU_PP_OPIS
@@ -234,12 +234,13 @@ function GenerateUBLXml() {
     NKPR_GL_SHPST = hdrRes[1][40].trim();
     NKPR_GL_UGOVOR = hdrRes[1][41].trim();
     NKPR_GL_CUSCOD = hdrRes[1][42].trim();
-    NKPR_AD_GLN = hdrRes[1][43].trim();
-    NKSC_SOP = hdrRes[1][44].trim(); // Customer GLN
-    NKSC_POSREDNIK = hdrRes[1][45].trim().Upper(); // Intermediary GLN
-    NKSC_REZ10 = hdrRes[1][46].trim().Upper(); // P - šalji na server / F = spremi file na disk / E - šalji na E-mail(NIJE U FUNKCIJI)
-    NKSC_TAX_DN = hdrRes[1][47].trim().Upper(); // F - kupac po fakturiranoj realizaciji/ N = po naplaćenoj realizaciji / X - nije u sustavu PDV-a
-    PKKU_PP_OPIS = hdrRes[1][47].trim();
+    NKPR_GL_RNALOG = hdrRes[1][43].trim();
+    NKPR_AD_GLN = hdrRes[1][44].trim();
+    NKSC_SOP = hdrRes[1][45].trim(); // Customer GLN
+    NKSC_POSREDNIK = hdrRes[1][46].trim().Upper(); // Intermediary GLN
+    NKSC_REZ10 = hdrRes[1][47].trim().Upper(); // P - šalji na server / F = spremi file na disk / E - šalji na E-mail(NIJE U FUNKCIJI)
+    NKSC_TAX_DN = hdrRes[1][48].trim().Upper(); // F - kupac po fakturiranoj realizaciji/ N = po naplaćenoj realizaciji / X - nije u sustavu PDV-a
+    PKKU_PP_OPIS = hdrRes[1][49].trim();
 
     if(NKSC_REZ10 == "E"){
         MessageBox("Način slanja e-računa e-mailom(E) nije podržan! Partner " + NKSC_PARTCODE + ".");
@@ -412,38 +413,23 @@ function GenerateUBLXml() {
     //PKFK_TAX_POR1 - first tax code if compound code
     //PKFK_TAX_POR2 - second tax code if compound code
 
-    sql_tax = "SELECT SUM(NKPR_LN_POREZ) AS POREZ, SUM(NKPR_LN_AMT) AS OSNOVICA, NKPR_LN_PRNPR, PKFK_TAX_TARIFA , PKFK_TAX_DOBOPC, PKFK_TAX_TIP, PKFK_TAX_P_PORZ, PKFK_TAX_POR1, PKFK_TAX_POR2 " +
+    sql_tax = "SELECT SUM(NKPR_LN_POREZ) AS POREZ, SUM(NKPR_LN_AMT) AS OSNOVICA, NKPR_LN_PRNPR, PKFK_TAX_TARIFA , SUBSTRING(PKFK_TAX_DOBOPC,1,2) AS PKFK_TAX_DOBOPC,
+              PKFK_TAX_TIP PKFK_TAX_TIP, PKFK_TAX_P_PORZ, PKFK_TAX_POR1, PKFK_TAX_POR2 " +
               "FROM " + databaseName + ".dbo.NKPRINVL LEFT JOIN " + databaseName + ".dbo.PKFKPORZ ON PKFK_TAX_CODE = NKPR_LN_TXBLE " +
               "WHERE NKPR_LN_INVNM = @p1 AND NKPR_LN_TXBLE <> 0 " +
               "GROUP BY NKPR_LN_PRNPR, PKFK_TAX_TARIFA,
-              PKFK_TAX_DOBOPC, PKFK_TAX_TIP, PKFK_TAX_P_PORZ, PKFK_TAX_POR1, PKFK_TAX_POR2
+              SUBSTRING(PKFK_TAX_DOBOPC,1,2), PKFK_TAX_TIP, PKFK_TAX_P_PORZ, PKFK_TAX_POR1, PKFK_TAX_POR2
               ORDER BY NKPR_LN_PRNPR;";
     sqlParams = {};
     sqlParams.Add({"@p1", invNum});
     taxRes = sqlQuery(sql_tax, sqlParams);
 
-    totalPorez = 0;
-    totalOsnovica = 0;
-    TotaltaxOutOfScopeAmt = 0;
-
-    for (i = 1; i < Size(taxRes); i++) {
-        row = taxRes[i];
-        PKFK_TAX_P_PORZ = row[6].trim;
-        PKFK_TAX_TARIFA = row[3].trim();
-        if (PKFK_TAX_TARIFA == "POVNAK" || PKFK_TAX_TARIFA == "PP") // izvan PDV-a, stopa poreza je 0
-        {
-            TotaltaxOutOfScopeAmt += row[1];
-        }else{
-            totalPorez += row[0];
-            totalOsnovica += row[1];
-        }
-    }
     // -----------------------------------------------------------
     // Create taxRes2 - Refactor compound tax codes into individual codes
     // -----------------------------------------------------------
     
     // First, get individual tax rates for compound tax codes
-    sql_individual_taxes = "SELECT PKFK_TAX_CODE, PKFK_TAX_STOPA, PKFK_TAX_TARIFA, PKFK_TAX_P_PORZ " +
+    sql_individual_taxes = "SELECT PKFK_TAX_CODE, PKFK_TAX_STOPA, PKFK_TAX_TARIFA, PKFK_TAX_P_PORZ,SUBSTRING(PKFK_TAX_DOBOPC,1,2) AS PKFK_TAX_DOBOPC " +
                           "FROM " + databaseName + ".dbo.PKFKPORZ " +
                           "WHERE PKFK_TAX_TIP = '' OR PKFK_TAX_TIP IS NULL;";
     individualTaxRes = sqlQuery(sql_individual_taxes, {});
@@ -455,7 +441,8 @@ function GenerateUBLXml() {
         taxRate = individualTaxRes[i][1];
         taxCategory = individualTaxRes[i][2];
         taxType = individualTaxRes[i][3];
-        taxRateLookup[taxCode] = {"rate": taxRate, "category": taxCategory, "type": taxType};
+        taxExemptReason = individualTaxRes[i][4];
+        taxRateLookup[taxCode] = {"rate": taxRate, "category": taxCategory, "type": taxType, "exemptReason": taxExemptReason};
     }
     
     // Create taxRes2 structure - same as taxRes but with compound taxes split
@@ -515,7 +502,7 @@ function GenerateUBLXml() {
             newRow1.Add(OSNOVICA);                      // OSNOVICA (same base amount)
             newRow1.Add(rate1);                         // NKPR_LN_PRNPR
             newRow1.Add(tax1Info["category"]);          // PKFK_TAX_TARIFA
-            newRow1.Add(PKFK_TAX_DOBOPC);              // PKFK_TAX_DOBOPC
+            newRow1.Add(tax1Info["exemptReason"]);          // PKFK_TAX_DOBOPC);              // PKFK_TAX_DOBOPC
             newRow1.Add("");                            // PKFK_TAX_TIP (empty for individual)
             newRow1.Add(tax1Info["type"]);             // PKFK_TAX_P_PORZ
             newRow1.Add("");                            // PKFK_TAX_POR1 (empty for individual)
@@ -528,7 +515,7 @@ function GenerateUBLXml() {
             newRow2.Add(OSNOVICA);                      // OSNOVICA (same base amount)
             newRow2.Add(rate2);                         // NKPR_LN_PRNPR
             newRow2.Add(tax2Info["category"]);          // PKFK_TAX_TARIFA
-            newRow2.Add(PKFK_TAX_DOBOPC);              // PKFK_TAX_DOBOPC
+            newRow2.Add(tax2Info["exemptReason"]);          // PKFK_TAX_DOBOPC
             newRow2.Add("");                            // PKFK_TAX_TIP (empty for individual)
             newRow2.Add(tax2Info["type"]);             // PKFK_TAX_P_PORZ
             newRow2.Add("");                            // PKFK_TAX_POR1 (empty for individual)
@@ -568,7 +555,7 @@ function GenerateUBLXml() {
             newRow1.Add(baseForTax1);                   // OSNOVICA
             newRow1.Add(rate1);                         // NKPR_LN_PRNPR
             newRow1.Add(tax1Info["category"]);          // PKFK_TAX_TARIFA
-            newRow1.Add(PKFK_TAX_DOBOPC);              // PKFK_TAX_DOBOPC
+            newRow1.Add(tax1Info["exemptReason"]);          // PKFK_TAX_DOBOPC
             newRow1.Add("");                            // PKFK_TAX_TIP (empty for individual)
             newRow1.Add(tax1Info["type"]);             // PKFK_TAX_P_PORZ
             newRow1.Add("");                            // PKFK_TAX_POR1 (empty for individual)
@@ -581,7 +568,7 @@ function GenerateUBLXml() {
             newRow2.Add(baseForTax2);                   // OSNOVICA
             newRow2.Add(rate2);                         // NKPR_LN_PRNPR
             newRow2.Add(tax2Info["category"]);          // PKFK_TAX_TARIFA
-            newRow2.Add(PKFK_TAX_DOBOPC);              // PKFK_TAX_DOBOPC
+            newRow2.Add(tax2Info["exemptReason"]);          // PKFK_TAX_DOBOPC
             newRow2.Add("");                            // PKFK_TAX_TIP (empty for individual)
             newRow2.Add(tax2Info["type"]);             // PKFK_TAX_P_PORZ
             newRow2.Add("");                            // PKFK_TAX_POR1 (empty for individual)
@@ -593,6 +580,31 @@ function GenerateUBLXml() {
             taxRes2.Add(row);
         }
     }
+
+msg ("AAAA: " + taxRes2);
+    totalPorez = 0;
+    totalOsnovica = 0;
+    TotaltaxOutOfScopeAmt = 0;
+
+    for (i = 1; i < Size(taxRes2); i++) {
+        row = taxRes2[i];
+        //PKFK_TAX_P_PORZ = row[6].trim;
+        PKFK_TAX_TARIFA = row[3].trim();
+        if (PKFK_TAX_TARIFA == "POVNAK") // izvan PDV-a, stopa poreza je 0
+        {
+            TotaltaxOutOfScopeAmt += row[1]; //tu ide osnovica
+            totalPorez += row[0];
+            totalOsnovica += row[1];
+        }
+        elif (PKFK_TAX_TARIFA == "PP"){
+            TotaltaxOutOfScopeAmt += row[0]; //tu treba uzet iznos poreza
+        }
+        else{
+            totalPorez += row[0];
+            totalOsnovica += row[1];
+        }
+    }
+
     // -----------------------------------------------------------
     // 4. Start XML Builder
     // -----------------------------------------------------------
@@ -618,199 +630,220 @@ function GenerateUBLXml() {
     xml += "    xmlns:hrextac=\"urn:mfin.gov.hr:schema:xsd:HRExtensionAggregateComponents-1\">\n";
     
     // xml += "    xsi:schemaLocation=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2 ../xsd/ubl/maindoc/UBL-Invoice-2.1.xsd\">\n";
+    //REVERSE CHarge ne treba ovo; ako je ReverseCherge onda to mora bit jedina stavka na računu
+            taxOutOfScopeAmt = 0.00;
+            InvoiceLevelCharge= 0;
+            AllowChgMultiplierFactor = 0;
+            AllowChgAmount = 0;
+            AllowChgBaseAmount = 0;
+            AllowChgExemptReason = "";
+    if (NKPR_GL_RNALOG != "P") {
+        // BT-1..126 Extension point; 0..n // ???
+        xml += "<ext:UBLExtensions>\n";
+        xml += "  <ext:UBLExtension>\n";
+        xml += "    <ext:ExtensionContent>\n";
+        //OVO treba urediti prema HR zahtjevima, za sada je samo primjer
+        //potrebno je poreze potražit iz linija i sa for petljom popunit linije ispod
+        xml += "        <hrextac:HRFISK20Data>\n";
+        if (NKSC_TAX_DN == "N") {
+            xml += "        <hrextac:HRObracunPDVPoNaplati>Obračun prema naplaćenoj naknadi</hrextac:HRObracunPDVPoNaplati>\n";
+        }
+        xml += "            <hrextac:HRTaxTotal>\n";
+        xml += "                <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(totalPorez, 2, ".") + "</cbc:TaxAmount>\n";
+        for (i = 1; i < Size(taxRes2); i++) {
+            row = taxRes2[i];
 
-    // BT-1..126 Extension point; 0..n // ???
-    xml += "<ext:UBLExtensions>\n";
-    xml += "  <ext:UBLExtension>\n";
-    xml += "    <ext:ExtensionContent>\n";
-    //OVO treba urediti prema HR zahtjevima, za sada je samo primjer
-    //potrebno je poreze potražit iz linija i sa for petljom popunit linije ispod
-    xml += "        <hrextac:HRFISK20Data>\n";
-    if (NKSC_TAX_DN == "N") {
-        xml += "        <hrextac:HRObracunPDVPoNaplati>Obračun prema naplaćenoj naknadi</hrextac:HRObracunPDVPoNaplati>\n";
-    }
-    xml += "            <hrextac:HRTaxTotal>\n";
-    xml += "                <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(totalPorez, 2, ".") + "</cbc:TaxAmount>\n";
-    for (i = 1; i < Size(taxRes2); i++) {
-        row = taxRes2[i];
-
-        POREZ = row[0];
-        OSNOVICA = row[1];
-        NKPR_LN_PRNPR = row[2];
-        PKFK_TAX_TARIFA = row[3].trim();
-        PKFK_TAX_DOBOPC = Substring(row[4], 0, 2).trim(); //šifra izjave za oslobođenje od poreza
-        PKFK_TAX_P_PORZ = row[6]; // Get tax type (P=PDV, T=Consumption tax, etc.)
-        exemptReason = "";
-        if (pkfk_tax_dobopc != "" && nkpr_ln_prnpr == 0) {
-            //ovaj porez ima stopu 0 i ima izjavu koju treba unijet u polje u e-računu
-            //to su zapravo svi porezi koji su oslobođeni PDV-a, kategorije E,K,O,
-            sql_tax_exempt= "SELECT trim(KPSY_IZ_TEXT01)+' '+trim(KPSY_IZ_TEXT02)+' '+trim(KPSY_IZ_TEXT03)+' '+trim(KPSY_IZ_TEXT04)+' '+trim(KPSY_IZ_TEXT05)" +
-                      " FROM " + databaseName + ".dbo.KPSYIZKU " +
-                      " WHERE @p1 = KPSY_IZ_CODE;";
-            sqlParams = {};
-            sqlParams.Add({"@p1", PKFK_TAX_DOBOPC});
-            exemptQuery = sqlQuery(sql_tax_exempt, sqlParams);
-            if (Size(exemptQuery) > 1) {
-                exemptReason = exemptQuery[1][0].trim();
+            POREZ = row[0];
+            OSNOVICA = row[1];
+            NKPR_LN_PRNPR = row[2];
+            PKFK_TAX_TARIFA = row[3].trim();
+            PKFK_TAX_DOBOPC = Substring(row[4], 0, 2).trim(); //šifra izjave za oslobođenje od poreza
+            PKFK_TAX_P_PORZ = row[6]; // Get tax type (P=PDV, T=Consumption tax, etc.)
+            exemptReason = "";
+            //if (pkfk_tax_dobopc != "" && nkpr_ln_prnpr == 0) {
+            if (pkfk_tax_dobopc != "") {
+                //ovaj porez ima stopu 0 i ima izjavu koju treba unijet u polje u e-računu
+                //to su zapravo svi porezi koji su oslobođeni PDV-a, kategorije E,K,O,
+                sql_tax_exempt= "SELECT trim(KPSY_IZ_TEXT01)+' '+trim(KPSY_IZ_TEXT02)+' '+trim(KPSY_IZ_TEXT03)+' '+trim(KPSY_IZ_TEXT04)+' '+trim(KPSY_IZ_TEXT05)" +
+                        " FROM " + databaseName + ".dbo.KPSYIZKU " +
+                        " WHERE @p1 = KPSY_IZ_CODE;";
+                sqlParams = {};
+                sqlParams.Add({"@p1", PKFK_TAX_DOBOPC});
+                exemptQuery = sqlQuery(sql_tax_exempt, sqlParams);
+                if (Size(exemptQuery) > 1) {
+                    exemptReason = exemptQuery[1][0].trim();
+                }
             }
-        }
-        xml += "                <hrextac:HRTaxSubtotal>\n";
-        taxOutOfScopeAmt = 0.00;
-        taxName = "";
-        //if (PKFK_TAX_P_PORZ == "T") { 
-        if (PKFK_TAX_TARIFA == "PP") {
-        
-            //porez na potrošnju
-            taxName = "HR:PP"; // + FormatNum(NKPR_LN_PRNPR, 0, ".");
-            taxSchemeID = "LOC";
-            taxOutOfScopeAmt = FormatNum(POREZ, 2, ".");
-            xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + taxOutOfScopeAmt + "</cbc:TaxableAmount>\n";
-            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + 0 + "</cbc:TaxAmount>\n";
-            xml += "                    <hrextac:HRTaxCategory>\n";
-            xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
-            xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
-            if (exemptReason != ""){
-                xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
-            }   
-            xml += "                        <cbc:Percent>" + 0.00 + "</cbc:Percent>\n";
-            xml += "                        <hrextac:HRTaxScheme>\n";
-            xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
-            xml += "                        </hrextac:HRTaxScheme>\n";
-            xml += "                    </hrextac:HRTaxCategory>\n";
-           
-        } elif (PKFK_TAX_TARIFA == "O"){ 
-            //ostali porezi
-            taxName = "HR:OTH"; //tu nema poreza
-            taxSchemeID = "VAT";
-            xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
-            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + 0 + "</cbc:TaxAmount>\n";
-            //xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
-            xml += "                    <hrextac:HRTaxCategory>\n";
-            xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
-            xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
-            xml += "                        <cbc:Percent>" + 0.00 + "</cbc:Percent>\n";
-            xml += "                        <hrextac:HRTaxScheme>\n";
-            xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
-            xml += "                        </hrextac:HRTaxScheme>\n";
-            xml += "                    </hrextac:HRTaxCategory>\n";
-        }
-        elif (PKFK_TAX_TARIFA == "POVNAK"){ 
-            //Povratna naknada
-            taxName = "HR:POVNAK"; //nema poreza
-            taxSchemeID = "OTH";
-            xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
-            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + 0 + "</cbc:TaxAmount>\n";
-            //xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
-            xml += "                    <hrextac:HRTaxCategory>\n";
-            xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
-            xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
-            xml += "                        <cbc:Percent>" + 0.00 + "</cbc:Percent>\n";
-            xml += "                        <hrextac:HRTaxScheme>\n";
-            xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
-            xml += "                        </hrextac:HRTaxScheme>\n";
-            xml += "                    </hrextac:HRTaxCategory>\n";
-        }
-        elif (SUBSTRING(PKFK_TAX_TARIFA,0,3) == 'PDV'){
-            taxName = "HR:" + PKFK_TAX_TARIFA; //+ FormatNum(NKPR_LN_PRNPR, 0, ".");
-            taxSchemeID = "VAT";
-            xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
-            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
-            xml += "                    <hrextac:HRTaxCategory>\n";
-            xml += "                        <cbc:ID>S</cbc:ID>\n";
-            xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
-            xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
-            xml += "                        <hrextac:HRTaxScheme>\n";
-            xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
-            xml += "                        </hrextac:HRTaxScheme>\n";
-            xml += "                    </hrextac:HRTaxCategory>\n";
-        }
-        elif (PKFK_TAX_TARIFA == 'E'){  
-            taxName = "HR:E"; // poreza nema + FormatNum(NKPR_LN_PRNPR, 0, ".");
-            taxSchemeID = "VAT";
-            xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
-            if(porez != 0){
-                //ne bi trebalo imati poreza tu! kontrola kod unosa!
+            xml += "                <hrextac:HRTaxSubtotal>\n"; //HR-BG-2
+            taxName = "";
+
+            //if (PKFK_TAX_P_PORZ == "T") { 
+            if (PKFK_TAX_TARIFA == "PP") {
+            
+                //porez na potrošnju
+                taxName = "HR:PP"; // + FormatNum(NKPR_LN_PRNPR, 0, ".");
+                taxSchemeID = "LOC";
+                taxOutOfScopeAmt += POREZ;
+                InvoiceLevelCharge += POREZ;
+                xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(taxOutOfScopeAmt, 2, ".") + "</cbc:TaxableAmount>\n"; //HR-BT-16
+                xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" +0.00 + "</cbc:TaxAmount>\n"; //HR-BT-17
+                xml += "                    <hrextac:HRTaxCategory>\n";
+                xml += "                        <cbc:ID>" + "O" + "</cbc:ID>\n"; //HR-BT-18 1..1
+                xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n"; //HR-BT-22
+                xml += "                        <cbc:Percent>" + 0.00 + "</cbc:Percent>\n"; //HR-BT-19
+                if (exemptReason != ""){
+                    xml += "                        <cbc:TaxExemptionReason>#HR:PP#" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n"; //HR-BT-20
+                }   
+                xml += "                        <hrextac:HRTaxScheme>\n";
+                xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
+                xml += "                        </hrextac:HRTaxScheme>\n";
+                xml += "                    </hrextac:HRTaxCategory>\n";
+                //ovo ispod nam treba kod troškova na nivou dokumenta, koji u našem slučaju imamo samo kada je porez na potrošnju
+                AllowChgMultiplierFactor = NKPR_LN_PRNPR;
+                AllowChgAmount = taxOutOfScopeAmt;
+                AllowChgBaseAmount = osnovica;
+                AllowChgExemptReason = exemptReason;
+            
+            } elif (PKFK_TAX_TARIFA == "O"){ 
+                //ostali porezi
+                taxName = "HR:OTH"; //tu nema poreza
+                taxSchemeID = "VAT";
+                xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
+                xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + 0.00 + "</cbc:TaxAmount>\n";
+                //xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
+                xml += "                    <hrextac:HRTaxCategory>\n";
+                xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
+                xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
+                xml += "                        <cbc:Percent>" + 0.00 + "</cbc:Percent>\n";
+                if (exemptReason != ""){
+                    xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
+                }   
+                xml += "                        <hrextac:HRTaxScheme>\n";
+                xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
+                xml += "                        </hrextac:HRTaxScheme>\n";
+                xml += "                    </hrextac:HRTaxCategory>\n";
+            }
+            elif (PKFK_TAX_TARIFA == "POVNAK"){ 
+                //Povratna naknada
+                taxName = "HR:POVNAK"; //nema poreza
+                taxSchemeID = "OTH";
+                xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
+                xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + 0.00 + "</cbc:TaxAmount>\n";
+                //xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
+                xml += "                    <hrextac:HRTaxCategory>\n";
+                xml += "                        <cbc:ID>" + "O" + "</cbc:ID>\n";
+                xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
+                xml += "                        <cbc:Percent>" + 0.00 + "</cbc:Percent>\n";
+                if (exemptReason != ""){
+                    xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
+                }   
+                xml += "                        <hrextac:HRTaxScheme>\n";
+                xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
+                xml += "                        </hrextac:HRTaxScheme>\n";
+                xml += "                    </hrextac:HRTaxCategory>\n";
+            }
+            elif (SUBSTRING(PKFK_TAX_TARIFA,0,3) == 'PDV'){
+                taxName = "HR:" + PKFK_TAX_TARIFA; //+ FormatNum(NKPR_LN_PRNPR, 0, ".");
+                taxSchemeID = "VAT";
+                xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
                 xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
+                xml += "                    <hrextac:HRTaxCategory>\n";
+                xml += "                        <cbc:ID>S</cbc:ID>\n";
+                xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
+                xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
+                xml += "                        <hrextac:HRTaxScheme>\n";
+                xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
+                xml += "                        </hrextac:HRTaxScheme>\n";
+                xml += "                    </hrextac:HRTaxCategory>\n";
             }
-            xml += "                    <hrextac:HRTaxCategory>\n";
-            xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
-            xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
-            xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
-            if (exemptReason != ""){
-                xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
-            }   
-            xml += "                        <hrextac:HRTaxScheme>\n";
-            xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
-            xml += "                        </hrextac:HRTaxScheme>\n";
-            xml += "                    </hrextac:HRTaxCategory>\n";
-        } elif (PKFK_TAX_TARIFA == 'K'){   
-            taxName = "HR:K"; // poreza nema+ FormatNum(NKPR_LN_PRNPR, 0, ".");
-            taxSchemeID = "VAT";
-            xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
-            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
-            xml += "                    <hrextac:HRTaxCategory>\n";
-            xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
-            xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
-            xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
-            if (exemptReason != ""){
-                xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
-            }   
-            xml += "                        <hrextac:HRTaxScheme>\n";
-            xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
-            xml += "                        </hrextac:HRTaxScheme>\n";
-            xml += "                    </hrextac:HRTaxCategory>\n";
-        } elif (PKFK_TAX_TARIFA == 'O'){   
-            taxName = "HR:"+PKFK_TAX_TARIFA; //porez= 0
-            taxSchemeID = "VAT";
-            xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
-            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
-            xml += "                    <hrextac:HRTaxCategory>\n";
-            xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
-            xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
-            xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
-            if (exemptReason != ""){
-                xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
-            }   
-            xml += "                        <hrextac:HRTaxScheme>\n";
-            xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
-            xml += "                        </hrextac:HRTaxScheme>\n";
-            xml += "                    </hrextac:HRTaxCategory>\n";
-            }
-        else{   
-            taxName = "HR:"+PKFK_TAX_TARIFA;
-            taxSchemeID = "VAT";
-            xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
-            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
-            xml += "                    <hrextac:HRTaxCategory>\n";
-            xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
-            xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n"; //HR-BT-22
-            xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
-            if (exemptReason != ""){
-                xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n"; //HR-BT-20
-            }   
-            xml += "                        <hrextac:HRTaxScheme>\n";
-            xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n"; 
-            xml += "                        </hrextac:HRTaxScheme>\n";
-            xml += "                    </hrextac:HRTaxCategory>\n";
-            }
-        xml += "                </hrextac:HRTaxSubtotal>\n";
+            elif (PKFK_TAX_TARIFA == 'E'){  
+                taxName = "HR:E"; // poreza nema + FormatNum(NKPR_LN_PRNPR, 0, ".");
+                taxSchemeID = "VAT";
+                xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
+                if(porez != 0){
+                    //ne bi trebalo imati poreza tu! kontrola kod unosa!
+                    xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
+                }
+                xml += "                    <hrextac:HRTaxCategory>\n";
+                xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
+                xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
+                xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
+                if (exemptReason != ""){
+                    xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
+                }   
+                xml += "                        <hrextac:HRTaxScheme>\n";
+                xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
+                xml += "                        </hrextac:HRTaxScheme>\n";
+                xml += "                    </hrextac:HRTaxCategory>\n";
+            } elif (PKFK_TAX_TARIFA == 'K'){   
+                taxName = "HR:K"; // poreza nema+ FormatNum(NKPR_LN_PRNPR, 0, ".");
+                taxSchemeID = "VAT";
+                xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
+                xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
+                xml += "                    <hrextac:HRTaxCategory>\n";
+                xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
+                xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
+                xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
+                if (exemptReason != ""){
+                    xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
+                }   
+                xml += "                        <hrextac:HRTaxScheme>\n";
+                xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
+                xml += "                        </hrextac:HRTaxScheme>\n";
+                xml += "                    </hrextac:HRTaxCategory>\n";
+            } elif (PKFK_TAX_TARIFA == 'O'){   
+                taxName = "HR:"+PKFK_TAX_TARIFA; //porez= 0
+                taxSchemeID = "VAT";
+                xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
+                xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
+                xml += "                    <hrextac:HRTaxCategory>\n";
+                xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
+                xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
+                xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
+                if (exemptReason != ""){
+                    xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
+                }   
+                xml += "                        <hrextac:HRTaxScheme>\n";
+                xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
+                xml += "                        </hrextac:HRTaxScheme>\n";
+                xml += "                    </hrextac:HRTaxCategory>\n";
+                }
+            else{   
+                taxName = "HR:"+PKFK_TAX_TARIFA;
+                taxSchemeID = "VAT";
+                xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
+                xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
+                xml += "                    <hrextac:HRTaxCategory>\n";
+                xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
+                xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n"; //HR-BT-22
+                xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
+                if (exemptReason != ""){
+                    xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n"; //HR-BT-20
+                }   
+                xml += "                        <hrextac:HRTaxScheme>\n";
+                xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n"; 
+                xml += "                        </hrextac:HRTaxScheme>\n";
+                xml += "                    </hrextac:HRTaxCategory>\n";
+                }
+            xml += "                </hrextac:HRTaxSubtotal>\n";
+        }
+
+        xml += "            </hrextac:HRTaxTotal>\n";
+        xml += "            <hrextac:HRLegalMonetaryTotal>\n";
+        xml += "              <cbc:TaxExclusiveAmount currencyID=\"EUR\">" + FormatNum(TotalOSNOVICA, 2, ".") + "</cbc:TaxExclusiveAmount>\n"; //HR-BT-23
+        xml += "              <hrextac:OutOfScopeOfVATAmount currencyID=\"EUR\">" + FormatNum(TotaltaxOutOfScopeAmt, 2, ".") + "</hrextac:OutOfScopeOfVATAmount>\n"; //HR-BT-24 1..1
+        //xml += "              <hrextac:OutOfScopeOfVATAmount currencyID=\"EUR\">" + 0.00 + "</hrextac:OutOfScopeOfVATAmount>\n"; //HR-BT-24 1..1
+        xml += "            </hrextac:HRLegalMonetaryTotal>\n";
+        xml += "        </hrextac:HRFISK20Data>\n";
+
+        // xml += "      <sig:UBLDocumentSignatures>\n";
+        // xml += "        <sac:SignatureInformation></sac:SignatureInformation>\n";
+        // xml += "      </sig:UBLDocumentSignatures>\n";
+
+        xml += "    </ext:ExtensionContent>\n";
+        xml += "  </ext:UBLExtension>\n";
+        xml += "</ext:UBLExtensions>\n";
     }
-
-    xml += "            </hrextac:HRTaxTotal>\n";
-    xml += "            <hrextac:HRLegalMonetaryTotal>\n";
-    xml += "              <cbc:TaxExclusiveAmount currencyID=\"EUR\">" + FormatNum(TotalOSNOVICA, 2, ".") + "</cbc:TaxExclusiveAmount>\n"; //HR-BT-23
-    xml += "              <hrextac:OutOfScopeOfVATAmount currencyID=\"EUR\">" + FormatNum(TotaltaxOutOfScopeAmt, 2, ".") + "</hrextac:OutOfScopeOfVATAmount>\n"; //HR-BT-24 1..1
-    //xml += "              <hrextac:OutOfScopeOfVATAmount currencyID=\"EUR\">" + 0.00 + "</hrextac:OutOfScopeOfVATAmount>\n"; //HR-BT-24 1..1
-    xml += "            </hrextac:HRLegalMonetaryTotal>\n";
-    xml += "        </hrextac:HRFISK20Data>\n";
-
-    // xml += "      <sig:UBLDocumentSignatures>\n";
-    // xml += "        <sac:SignatureInformation></sac:SignatureInformation>\n";
-    // xml += "      </sig:UBLDocumentSignatures>\n";
-
-    xml += "    </ext:ExtensionContent>\n";
-    xml += "  </ext:UBLExtension>\n";
-    xml += "</ext:UBLExtensions>\n";
     xml += "<cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0#conformant#urn:mfin.gov.hr:ext-2025:1.0</cbc:CustomizationID>\n"; // BT-24; 1..1
     xml += "<cbc:ProfileID>" + profileID + "</cbc:ProfileID>\n"; // BT-23; 1..1
     // BT-1; Invoice number; 1..1
@@ -1347,7 +1380,7 @@ function GenerateUBLXml() {
     xml += "<cac:PaymentMeans>\n";
     xml += "  <cbc:PaymentMeansCode>" + payCode + "</cbc:PaymentMeansCode>\n";
     xml += "  <cbc:InstructionNote>" + EscapeForXml(KPKS_PL_OPIS) + "</cbc:InstructionNote>\n";
-    xml += "  <cbc:PaymentID>" + NKPR_GL_MODEL + " " + NKPR_GL_POZIV + "</cbc:PaymentID>\n";
+    xml += "  <cbc:PaymentID>HR" + NKPR_GL_MODEL + " " + NKPR_GL_POZIV + "</cbc:PaymentID>\n";
 
     sql_bank = "SELECT NKSC_ZR_KONTO, NKSC_ZR_NAZIV FROM " + databaseName + ".dbo.NKSCZIRO WHERE NKSC_ZR_BANKA = @p1;";
     sqlParams = {};
@@ -1364,6 +1397,32 @@ function GenerateUBLXml() {
     }
     xml += "</cac:PaymentMeans>\n";
 
+    //tu treba AllowanceCharge na nivou računa ako postoji rabat ili dodatni trošak na razini računa; rabat se u Knjigama ne koristi, samo trošak može
+    if (invoiceLevelCharge!= 0.00) {
+        xml += "<cac:AllowanceCharge>\n"; //BG-21
+        if (invoiceLevelCharge > 0) {
+            xml += "  <cbc:ChargeIndicator>true</cbc:ChargeIndicator>\n"; // true = charge, false = allowance
+            xml += "  <cbc:AllowanceChargeReason>#HR:PP#Poez na potrošnju</cbc:AllowanceChargeReason>\n"; //HR-BT-7
+            xml += "	<cbc:MultiplierFactorNumeric>" + AllowChgMultiplierFactor + "</cbc:MultiplierFactorNumeric>\n"; //BT-101
+            xml += "	<cbc:Amount currencyID=\"EUR\">" + FormatNum(AllowChgAmount, 2, ".") + "</cbc:Amount>\n"; //BT-99
+
+            xml += "	<cbc:BaseAmount currencyID=\"EUR\">" + FormatNum(AllowChgBaseAmount, 2, ".") + "</cbc:BaseAmount>\n"; //BT-100
+            xml += "	<cac:TaxCategory>\n";
+            xml += "		<cbc:ID>E</cbc:ID>\n"; //BT-102
+            xml += "		<cbc:Name>HR:PP</cbc:Name>\n"; //HR-BT-6
+            xml += "		<cbc:Percent>0.00</cbc:Percent>\n"; //BT-103
+            xml += "        <cbc:TaxExemptionReason>#"+EscapeForXml(AllowChgExemptReason)+"</cbc:TaxExemptionReason>\n"; 
+            xml += "		<cac:TaxScheme>\n";
+            xml += "			<cbc:ID>VAT</cbc:ID>\n";
+            xml += "		</cac:TaxScheme>\n";
+            xml += "	</cac:TaxCategory>\n";
+        } else {
+            xml += "  <cbc:ChargeIndicator>false</cbc:ChargeIndicator>\n"; // true = charge, false = allowance
+            xml += "  <cbc:AllowanceChargeReason>Discount at invoice level</cbc:AllowanceChargeReason>\n";
+            xml += "  <cbc:Amount currencyID=\"EUR\">" + FormatNum(Abs(invoiceLevelCharge), 2, ".") + "</cbc:Amount>\n";
+        }
+    xml += "</cac:AllowanceCharge>\n";
+    }   
     // FORMAT mora bit npr. 123.45, ne 123,45... i 123.00 ne 123 // ???
 
     xml += "            <cac:TaxTotal>\n";
@@ -1386,6 +1445,9 @@ function GenerateUBLXml() {
         categoryID = PKFK_TAX_TARIFA;
         if (SUBSTRING(PKFK_TAX_TARIFA, 0, 3) == 'PDV') {
             categoryID = "S"; // Standard rate for all PDV variants
+        }
+        elif (PKFK_TAX_TARIFA == 'POVNAK') {
+            categoryID = "E"; // Standard rate for all PDV variants
         }
 
         // Create unique key for grouping: categoryID + taxRate + exemptCode
@@ -1423,7 +1485,9 @@ function GenerateUBLXml() {
         totalTaxableAmount = group["totalTaxableAmount"];
         
         exemptReason = "";
-        if (exemptCode != "" && taxRate == 0) {
+        chargeTotAmt = 0.00;
+        //if (exemptCode != "" && taxRate == 0) {
+        if (exemptCode != "") {
             //ovaj porez ima stopu 0 i ima izjavu koju treba unijet u polje u e-računu
             //to su zapravo svi porezi koji su oslobođeni PDV-a, kategorije E,K,O,
             sql_tax_exempt= "SELECT trim(KPSY_IZ_TEXT01)+' '+trim(KPSY_IZ_TEXT02)+' '+trim(KPSY_IZ_TEXT03)+' '+trim(KPSY_IZ_TEXT04)+' '+trim(KPSY_IZ_TEXT05)" +
@@ -1433,10 +1497,9 @@ function GenerateUBLXml() {
             sqlParams.Add({"@p1", exemptCode});
             exemptQuery = sqlQuery(sql_tax_exempt, sqlParams);
             if (Size(exemptQuery) > 1) {
-                exemptReason = exemptQuery[1][0].trim();
+                exemptReason =exemptQuery[1][0].trim();
             }
         }
-        
         xml += "                <cac:TaxSubtotal>\n";
         taxOutOfScopeAmt = 0.00;
         taxName = "";
@@ -1445,31 +1508,35 @@ function GenerateUBLXml() {
         if (originalTarifa == "PP") {
             //porez na potrošnju
             taxName = "HR:PP"; 
-            taxSchemeID = "LOC";
+            taxSchemeID = "VAT";
             taxOutOfScopeAmt = FormatNum(totalTaxAmount, 2, ".");
-            xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(totalTaxableAmount, 2, ".") + "</cbc:TaxableAmount>\n"; // BT-116
-            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + taxOutOfScopeAmt + "</cbc:TaxAmount>\n";
+            xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(totalTaxAmount, 2, ".") + "</cbc:TaxableAmount>\n"; // BT-116
+            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + 0.00 + "</cbc:TaxAmount>\n";
             xml += "                    <cac:TaxCategory>\n";
-            xml += "                        <cbc:ID>" + "E" + "</cbc:ID>\n";
-            xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
-            if (exemptReason != ""){
-                xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n"; //BT-120
-            }   
+            xml += "                        <cbc:ID>" + "E" + "</cbc:ID>\n"; // BT-118
+            //xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
             xml += "                        <cbc:Percent>" + 0.00 + "</cbc:Percent>\n";
+            if (exemptReason != ""){
+                xml += "                        <cbc:TaxExemptionReason>#HR_PP#" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n"; //BT-120
+            }   
             xml += "                        <cac:TaxScheme>\n";
-            xml += "                            <cbc:ID>" + "VAT" + "</cbc:ID>\n";
+            xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
             xml += "                        </cac:TaxScheme>\n";
             xml += "                    </cac:TaxCategory>\n";
+            chargeTotAmt += totalTaxAmount;
            
         } elif (originalTarifa == "O"){ 
             //ostali porezi
             taxName = "HR:OTH"; //tu nema poreza
             xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(totalTaxableAmount, 2, ".") + "</cbc:TaxableAmount>\n";
-            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + 0 + "</cbc:TaxAmount>\n";
+            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + 0.00 + "</cbc:TaxAmount>\n";
             xml += "                    <cac:TaxCategory>\n";
             xml += "                        <cbc:ID>" + "E" + "</cbc:ID>\n";
-            xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
+            //xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
             xml += "                        <cbc:Percent>" + 0.00 + "</cbc:Percent>\n";
+            if (exemptReason != ""){
+                xml += "                        <cbc:TaxExemptionReason>" + taxName + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n"; //BT-120
+            }   
             xml += "                        <cac:TaxScheme>\n";
             xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
             xml += "                        </cac:TaxScheme>\n";
@@ -1479,13 +1546,13 @@ function GenerateUBLXml() {
             //Povratna naknada
             taxName = "HR:POVNAK"; //nema poreza
             xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(totalTaxableAmount, 2, ".") + "</cbc:TaxableAmount>\n";
-            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + 0 + "</cbc:TaxAmount>\n";
+            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + 0.00 + "</cbc:TaxAmount>\n";
             xml += "                    <cac:TaxCategory>\n";
             xml += "                        <cbc:ID>E</cbc:ID>\n";
-            xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
+            //xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
             xml += "                        <cbc:Percent>" + 0.00 + "</cbc:Percent>\n";
             if (exemptReason != ""){
-                xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
+                xml += "                        <cbc:TaxExemptionReason>" + "#" + taxName + "#" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
             }   
             xml += "                        <cac:TaxScheme>\n";
             xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
@@ -1498,7 +1565,7 @@ function GenerateUBLXml() {
             xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(totalTaxAmount, 2, ".") + "</cbc:TaxAmount>\n";
             xml += "                    <cac:TaxCategory>\n";
             xml += "                        <cbc:ID>S</cbc:ID>\n"; // All PDV variants use 'S' category
-            xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
+            //xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
             xml += "                        <cbc:Percent>" + FormatNum(taxRate, 0, ".") + "</cbc:Percent>\n";
             xml += "                        <cac:TaxScheme>\n";
             xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
@@ -1511,10 +1578,10 @@ function GenerateUBLXml() {
             xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(totalTaxAmount, 2, ".") + "</cbc:TaxAmount>\n";
             xml += "                    <cac:TaxCategory>\n";
             xml += "                        <cbc:ID>" + categoryID + "</cbc:ID>\n";
-            xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
+            //xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
             xml += "                        <cbc:Percent>" + FormatNum(taxRate, 0, ".") + "</cbc:Percent>\n";
             if (exemptReason != ""){
-                xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
+                xml += "                        <cbc:TaxExemptionReason>" + taxName + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
             }   
             xml += "                        <cac:TaxScheme>\n";
             xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
@@ -1526,7 +1593,7 @@ function GenerateUBLXml() {
             xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(totalTaxAmount, 2, ".") + "</cbc:TaxAmount>\n";
             xml += "                    <cac:TaxCategory>\n";
             xml += "                        <cbc:ID>" + "E" + "</cbc:ID>\n";
-            xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
+            //xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
             xml += "                        <cbc:Percent>" + FormatNum(taxRate, 0, ".") + "</cbc:Percent>\n";
             if (exemptReason != ""){
                 xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
@@ -1542,10 +1609,10 @@ function GenerateUBLXml() {
             xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(totalTaxAmount, 2, ".") + "</cbc:TaxAmount>\n";
             xml += "                    <cac:TaxCategory>\n";
             xml += "                        <cbc:ID>" + categoryID + "</cbc:ID>\n";
-            xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
+            //xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
             xml += "                        <cbc:Percent>" + FormatNum(taxRate, 0, ".") + "</cbc:Percent>\n";
             if (exemptReason != ""){
-                xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
+                xml += "                        <cbc:TaxExemptionReason>" + taxName + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
             }   
             xml += "                        <cac:TaxScheme>\n";
             xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
@@ -1568,6 +1635,7 @@ function GenerateUBLXml() {
     xml += "  <cbc:LineExtensionAmount currencyID=\"EUR\">" + FormatNum(totalOsnovica, 2, ".") + "</cbc:LineExtensionAmount>\n"; // BT-106
     xml += "  <cbc:TaxExclusiveAmount currencyID=\"EUR\">" + FormatNum(total - totalPorez, 2, ".") + "</cbc:TaxExclusiveAmount>\n"; // BT-109
     xml += "  <cbc:TaxInclusiveAmount currencyID=\"EUR\">" + FormatNum(total, 2, ".") + "</cbc:TaxInclusiveAmount>\n"; // BT-110
+    xml += "  <cbc:ChargeTotalAmount currencyID=\"EUR\">" + FormatNum(ChargeTotAmt, 2, ".") + "</cbc:ChargeTotalAmount>\n"; // BT-108
     if (prepaid > 0) { xml += "  <cbc:PrepaidAmount currencyID=\"EUR\">" + FormatNum(prepaid, 2, ".") + "</cbc:PrepaidAmount>\n"; } // BT-113
     if (payable > 0) { xml += "  <cbc:PayableAmount currencyID=\"EUR\">" + FormatNum(payable, 2, ".") + "</cbc:PayableAmount>\n"; } // BT-115
     // if (rounding != 0) { xml += "  <cbc:PayableRoundingAmount currencyID=\"EUR\">" + FormatNum(rounding, 2, ".") + "</cbc:PayableRoundingAmount>\n"; }
@@ -1758,7 +1826,7 @@ function GenerateUBLXml() {
             xml += "    </cac:CommodityClassification>\n";
         }
         // Tax
-        sql_taxc = "SELECT PKFK_TAX_TARIFA,pkfk_tax_p_porz FROM " + databaseName + ".dbo.PKFKPORZ WHERE PKFK_TAX_CODE = @p1;";
+        sql_taxc = "SELECT PKFK_TAX_TARIFA,pkfk_tax_p_porz,pkfk_tax_dobopc,PKFK_TAX_TIP,pkfk_tax_por1,pkfk_tax_por2 FROM " + databaseName + ".dbo.PKFKPORZ WHERE PKFK_TAX_CODE = @p1;";
         sqlParams = {};
         sqlParams.Add({"@p1", NKPR_LN_TXBLE});
         taxcRes = sqlQuery(sql_taxc, sqlParams);
@@ -1766,29 +1834,101 @@ function GenerateUBLXml() {
         if (Size(taxcRes) >= 2) {
             PKFK_TAX_TARIFA = taxcRes[1][0].trim();
             PKFK_TAX_P_PORZ = Substring(taxcRes[1][1], 0, 2).trim();
+            PKFK_TAX_DOBOPC = Substring(taxcRes[1][2], 0, 2).trim(); //šifra izjave za oslobođenje od poreza
+            PKFK_TAX_TIP = taxcRes[1][3].trim();
+            PKFK_TAX_POR1 = taxcRes[1][4].trim();
+            PKFK_TAX_POR2 = taxcRes[1][5].trim();
         }
-        if(SUBSTRING(PKFK_TAX_TARIFA, 0, 3) == "PDV") {
+        if (PKFK_TAX_TIP == ""){
+            if(SUBSTRING(PKFK_TAX_TARIFA, 0, 3) == "PDV") {
+                PKFK_TAX_TARIFA = "S";
+                taxName = "HR:PDV" + FormatNum(NKPR_LN_PRNPR, 0, ".");
+            }
+            elif (PKFK_TAX_TARIFA == "AE") {
+                taxName = "HR:"+PKFK_TAX_TARIFA;
+            }    
+            else{
+                PKFK_TAX_TARIFA = "E";
+                taxName = "HR:"+PKFK_TAX_TARIFA;
+            }    
+            exemptReason = "";
+            if (PKFK_TAX_DOBOPC != "" && nkpr_ln_prnpr == 0) {
+                //ovaj porez ima stopu 0 i ima izjavu koju treba unijet u polje u e-računu
+                //to su zapravo svi porezi koji su oslobođeni PDV-a, kategorije E,K,O,
+                sql_tax_exempt= "SELECT trim(KPSY_IZ_TEXT01)+' '+trim(KPSY_IZ_TEXT02)+' '+trim(KPSY_IZ_TEXT03)+' '+trim(KPSY_IZ_TEXT04)+' '+trim(KPSY_IZ_TEXT05)" +
+                        " FROM " + databaseName + ".dbo.KPSYIZKU " +
+                        " WHERE @p1 = KPSY_IZ_CODE;";
+                sqlParams = {};
+                sqlParams.Add({"@p1", PKFK_TAX_DOBOPC});
+                exemptQuery = sqlQuery(sql_tax_exempt, sqlParams);
+                if (Size(exemptQuery) > 1) {
+                    exemptReason =exemptQuery[1][0].trim();
+                }
+            }
+            
+            xml += "    <cac:ClassifiedTaxCategory>\n";
+            xml += "      <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n"; //BT-151
+            xml += "      <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
+            xml += "      <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
+            if (exemptReason != ""){
+                xml += "                        <cbc:TaxExemptionReason>" + "#" + taxName +"#"+ EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n"; //BT-120
+            }   
+            taxSchemeID = "VAT";
+            xml += "      <cac:TaxScheme><cbc:ID>" + taxSchemeID + "</cbc:ID></cac:TaxScheme>\n";
+            xml += "    </cac:ClassifiedTaxCategory>\n";
+        }elif (PKFK_TAX_TIP == "S" && PKFK_TAX_POR1 != 0 && PKFK_TAX_POR2 != 0) {
+            //ovo je primjer kada imamo sastavljeni porez, neki standardni i dodano je porez na potrošnju PP
+            //sme mora biti unutar istog itema!!!
+            sql_taxc = "SELECT PKFK_TAX_TARIFA,pkfk_tax_p_porz,pkfk_tax_dobopc,PKFK_TAX_STOPA FROM " + databaseName + ".dbo.PKFKPORZ WHERE PKFK_TAX_CODE = @p1;";
+            sqlParams = {};
+            sqlParams.Add({"@p1", PKFK_TAX_POR1});
+            taxcRes = sqlQuery(sql_taxc, sqlParams);
+            if (Size(taxcRes) >= 2) {
+                PKFK_TAX_TARIFA = taxcRes[1][0].trim();
+                PKFK_TAX_P_PORZ = Substring(taxcRes[1][1], 0, 2).trim();
+                PKFK_TAX_DOBOPC = Substring(taxcRes[1][2], 0, 2).trim(); //šifra izjave za oslobođenje od poreza
+                PKFK_TAX_STOPA = taxcRes[1][3]; //porezna stopa
+            }
+            if(SUBSTRING(PKFK_TAX_TARIFA, 0, 3) == "PDV") {
+                PKFK_TAX_TARIFA = "S";
+                taxName = "HR:PDV" + FormatNum(PKFK_TAX_STOPA, 0, ".");
+            }
+            xml += "    <cac:ClassifiedTaxCategory>\n";
+            xml += "      <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n"; //BT-151
+            xml += "      <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
+            xml += "      <cbc:Percent>" + FormatNum(PKFK_TAX_STOPA, 0, ".") + "</cbc:Percent>\n";
+            taxSchemeID = "VAT";
+            xml += "      <cac:TaxScheme><cbc:ID>" + taxSchemeID + "</cbc:ID></cac:TaxScheme>\n";
+            xml += "    </cac:ClassifiedTaxCategory>\n";
+            /*
+            sql_taxc = "SELECT PKFK_TAX_TARIFA,pkfk_tax_p_porz,pkfk_tax_dobopc,PKFK_TAX_STOPA FROM " + databaseName + ".dbo.PKFKPORZ WHERE PKFK_TAX_CODE = @p1;";
+            sqlParams = {};
+            sqlParams.Add({"@p1", PKFK_TAX_POR2});
+            taxcRes = sqlQuery(sql_taxc, sqlParams);
+            if (Size(taxcRes) >= 2) {
+                PKFK_TAX_TARIFA = taxcRes[1][0].trim();
+                PKFK_TAX_P_PORZ = Substring(taxcRes[1][1], 0, 2).trim();
+                PKFK_TAX_DOBOPC = Substring(taxcRes[1][2], 0, 2).trim(); //šifra izjave za oslobođenje od poreza
+                PKFK_TAX_STOPA = taxcRes[1][3]; //porezna stopa
+            }
             PKFK_TAX_TARIFA = "S";
-            //taxName = "HR:PDV" + FormatNum(NKPR_LN_PRNPR, 0, ".");
-        }
-        xml += "    <cac:ClassifiedTaxCategory>\n";
-        xml += "      <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n"; //BT-151
-        xml += "      <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".") + "</cbc:Percent>\n";
-        taxSchemeID = "VAT";
-        if (PKFK_TAX_TARIFA == "POVNAK"){
-            taxSchemeID = "OTH";
-        }elif (PKFK_TAX_TARIFA == "PP"){
+            taxName = "PP";
+            xml += "    <cac:ClassifiedTaxCategory>\n";
+            xml += "      <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n"; //BT-151
+            xml += "      <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
+            xml += "      <cbc:Percent>" + FormatNum(PKFK_TAX_STOPA, 0, ".") + "</cbc:Percent>\n";
             taxSchemeID = "LOC";
+            xml += "      <cac:TaxScheme><cbc:ID>" + taxSchemeID + "</cbc:ID></cac:TaxScheme>\n";
+            xml += "    </cac:ClassifiedTaxCategory>\n";
+            */
         }
-        xml += "      <cac:TaxScheme><cbc:ID>" + taxSchemeID + "</cbc:ID></cac:TaxScheme>\n";
-        xml += "    </cac:ClassifiedTaxCategory>\n";
 
         xml += "  </cac:Item>\n";
 
         // Price
         xml += "  <cac:Price>\n";
         xml += "    <cbc:PriceAmount currencyID=\"EUR\">" + FormatNum(NKPR_LN_PPRCE, 4, ".") + "</cbc:PriceAmount>\n";
-        xml += "    <cbc:BaseQuantity unitCode=\"" + GetUNUnitCode(NKPR_LN_JEDMJ) + "\">1</cbc:BaseQuantity>\n";
+        xml += "    <cbc:BaseQuantity unitCode=\"" + GetUNUnitCode(NKPR_LN_JEDMJ) + "\">1.00</cbc:BaseQuantity>\n";
         xml += "  </cac:Price>\n";
 
         if (profileID == "P9") {
@@ -1862,7 +2002,7 @@ function GenerateUBLXml() {
     } else {
         xsdFiles.Add(SCHEMASPATH + "xsd\\maindoc\\UBL-Invoice-2.1.xsd");
     }
-    
+
     if (!ValidateXsd(xml, xsdFiles, xsdValidationResultOutputFile)) {
         // LogError("XSD_FAIL", "Validation failed for " + invNum, validationErrors);
         MessageBox("XML nije prošao XSD validaciju\n\nProvjerite _XSD.err datoteku za detalje.");
@@ -1879,41 +2019,15 @@ function GenerateUBLXml() {
     // -----------------------------------------------------------
     // 8.3. SCH VALIDATION 
     // -----------------------------------------------------------
+    
     schFiles = {};
     schFiles.Add(SCHEMASPATH + "schematron\\HR-CIUS-EXT-EN16931-UBL.sch");
-    // schFiles.Add(SCHEMASPATH + "schematron\\preprocessed\\EN16931-UBL-validation-preprocessed.sch");
-    // if(!ValidateSch(xml, schFiles, SCHEMASPATH + "schematron\\transpile.xsl", schValidationResultOutputFile)){
-    //     MessageBox("xml FAILED SCH validation\n\nSee _SCH.err file for details.");
-    //     return false;
-    // }
-
-
-
-
-
-
-    /// POTPISIVANJE XML-A
-    /// 
-    /// 
-    // MSG(SignXml(xmlFileName, "C:\\Users\\User\\Documents\\__ERACUN_FISKALIZACIJA_2.0\\cert\\p12_aurasoft_demo.p12", "Aurasoft1", xmlFileName + ".sig.xml"));
-
-
-
-
-
-
-
-
-    // schFiles = {};
-    // // schFiles.Add(SchemasPath + "schematron\\EN16931-UBL-validation.sch");
-    // schFiles.Add(SchemasPath + "schematron\\preprocessed\\EN16931-UBL-validation-preprocessed.sch");
-
-    // if(!ValidateSch(xml, schFiles, SchemasPath + "schematron\\transpile.xsl", schValidationResultOutputFile)){
-    //     MessageBox("xml FAILED SCH validation\n\nSee _SCH.err file for details.");
-    //     return false;
-    // }
-
-
+    //  schFiles.Add(SCHEMASPATH + "schematron\\preprocessed\\EN16931-UBL-validation-preprocessed.sch");
+    if(!ValidateSch(xml, schFiles, SCHEMASPATH + "schematron\\transpile.xsl", schValidationResultOutputFile)){
+        MessageBox("xml FAILED SCH validation\n\nSee _SCH.err file for details.");
+        return false;
+    }
+     
 
     // //ako je sve prošlo bez greške, XML fajl je validiran, potpisan i poslat - u NKSYELOG treba upisati zapis o slanju, najprije status A pa konačno C
     // sql_ins = "INSERT INTO " + databaseName + ".dbo.NKSYELOG (sy_elog_date, sy_elog_num, sy_elog_status, sy_elog_person, sy_elog_estring, sy_elog_type, sy_elog_time,sy_elog_desc, sy_elog_rez3) " +
@@ -2483,8 +2597,10 @@ function SendToFINA() {
             invoiceOrCreditNote, // itemType -> Invoice ili CreditNote
             xmlFileName // unsignedXmlPath
         );
-         MSG("ack = " + ack);
-        
+        MSG("ack = " + ack);
+        responseCode= 'AAQQ';
+        LogResponse(responseCode, ack);
+ 
         if(ack["AckStatusCode"] == 10){
             // MessageBox("Uspješno poslan RAČUN prema FINA-i!");
 

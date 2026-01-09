@@ -21,6 +21,9 @@ namespace WpfCSCS.Fiskalizacija2.FINA.Incoming
                                 string messageId,
                                 string buyerId,
 
+                                DateTime? dateFrom = null,
+                                DateTime? dateTo = null,
+
                                 string additionalBuyerId = null,
                                 string messageAttributes = null,
 
@@ -47,12 +50,24 @@ namespace WpfCSCS.Fiskalizacija2.FINA.Incoming
             B2BIncomingInvoiceList.DocumentCurrencyCodeSpecified = documentCurrencyCode;
 
 
-            
             // !!! FILTER 
+            object[] filters;
+            if(dateFrom != null && dateTo != null)
+            {
+                var fromDateTime = ((DateTime)dateFrom).Date;
+                var toDateTime = ((DateTime)dateTo).Date.AddHours(23).AddMinutes(59).AddSeconds(59);
+
+                filters = new object[] { new DateRangeType() { From = fromDateTime, To = toDateTime } };
+            }
+            else
+            {
+                filters = new object[] { new InvoiceStatusType() { StatusCode = InvoiceStatusTypeStatusCode.RECEIVED } };
+            }
+            
             B2BIncomingInvoiceList.Item = new FilterType()
             {
                 //Items = new object[] { new status }
-                Items = new object[] { new InvoiceStatusType() { StatusCode = InvoiceStatusTypeStatusCode.RECEIVED } }
+                Items = filters
             };
 
 

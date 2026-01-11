@@ -490,45 +490,481 @@ function startImport(){
     cd(FILESPATH + "UR\\");
     listOfXmls = FindFiles("*.xml");
 
-    // MSG(listOfXmls);
+     //MSG("LIST: " + listOfXmls);
     // MSG(Size(listOfXmls));
 
-    for(i = 0; i < Size(listOfXmls); i++){
-        ImportXml(listOfXmls[i]);
+    for(i = 0; i < 1; i++){
+    // for(i = 0; i < Size(listOfXmls); i++){
+msg ("IMPORTING: " + listOfXmls[i]);
+        MemoX = ""; //memo u kojega spremamo one podatke iz xml računa koje želimo prikazati korisniku prilikom uvoza
+        importUBLXmlFromDict(ReadAllText(listOfXmls[i]));
     }
 }
+
+// New main import function using XmlToDict
+//function importUBLXmlFromDict(xmlContent, xmlFilePath = "") {
+function importUBLXmlFromDict(xmlContent) {
+    try {
+        // Convert XML to Dictionary
+        invoiceDict = XmlToDict(xmlContent);
+    //msg ("DICT : " + invoiceDict);    
+        if (invoiceDict == null || Size(invoiceDict) == 0) {
+            MessageBox("Greška prilikom parsiranja XML-a u Dictionary");
+            return false;
+        }
+        // Determine document type from dictionary structure
+        docType = GetDocumentTypeFromDict(invoiceDict);
+   msg ("DOCTYPE: " + docType);     
+        if (docType == "") {
+            MessageBox("Nepoznat tip dokumenta u XML datoteci");
+            return false;
+        }
+        
+        // Extract header information from dictionary
+        headerData = ExtractHeaderDataFromDict(invoiceDict, docType);
+    msg ("HEADER DATA: " + headerData);    
+        if (headerData == null) {
+            MessageBox("Greška prilikom izvlačenja podataka zaglavlja");
+            return false;
+        }
+        msg ("ESD DATE: " + headerData["NKPR_GL_ESD"]);
+        // Validate fiscal year before proceeding
+        if (!ValidateFiscalYear(headerData["NKPR_GL_ESD"])) {
+            MessageBox("Račun se ne može importirati jer datum ESD (" + headerData["NKPR_GL_ESD"] + ") ne pripada fiskalnoj godini " + KPSY_FISCAL_YR + ". Račun će biti premješten u arhivu.");
+            return "FISCAL_YEAR_MISMATCH";
+        }
+        
+        // Extract line items from dictionary
+        lineItems = ExtractLineItemsFromDict(invoiceDict, docType);
+     msg ("LINE ITEMS: " + lineItems);   
+        if (lineItems == null) {
+            MessageBox("Greška prilikom izvlačenja stavki računa");
+            return false;
+        }
+   return;     
+        // Begin database transaction
+        BeginTransaction();
+        
+        try {
+            // Import header data to NKNAERGL table
+            invNum = ImportHeaderDataToERGL(headerData, docType);
+            if (invNum == 0) {
+                throw "Greška prilikom unosa zaglavlja računa";
+            }
+            
+            // Import line items to NKNAERLN table
+            if (!ImportLineItemsToERLN(invNum, lineItems)) {
+                throw "Greška prilikom unosa stavki računa";
+            }
+            
+            // Log to NKSYELOG
+            LogToNKSYELOG(invNum, xmlFilePath, "IMPORT_SUCCESS");
+            
+            // Commit transaction
+            CommitTransaction();
+            
+            MessageBox("UBL XML račun je uspješno uvezen!\nBroj računa: " + invNum);
+            return invNum;
+            
+        } catch (error) {
+            // Rollback transaction on error
+            RollbackTransaction();
+            LogToNKSYELOG(0, xmlFilePath, "IMPORT_FAILURE: " + error);
+            MessageBox("Greška prilikom unosa u bazu podataka: " + error);
+            return false;
+        }
+        
+    } catch (error) {
+        MessageBox("Greška prilikom uvoza XML datoteke: " + error);
+        return false;
+    }
+}
+
+// Determine document type from Dictionary structure
+function GetDocumentTypeFromDict(invoiceDict) {
+    // Check which root element exists in dictionary
+    if (Contains(invoiceDict, "Invoice")) { return "S"; }
+    if (Contains(invoiceDict, "CreditNote")) { return "O"; }
+    if (Contains(invoiceDict, "DebitNote")) { return "T"; }
+    
+    // Check if we have direct access to elements (flat structure)
+    if (Contains(invoiceDict, "ID") && Contains(invoiceDict, "InvoiceTypeCode")) { return "S"; }
+    if (Contains(invoiceDict, "ID") && Contains(invoiceDict, "CreditNoteTypeCode")) { return "O"; }
+    if (Contains(invoiceDict, "ID") && Contains(invoiceDict, "DebitNoteTypeCode")) { return "T"; }
+    
+    return "";
+}
+
+// Extract header data from Dictionary
+function ExtractHeaderDataFromDict(invoiceDict, docType) {
+    try {
+        headerData = {};
+        
+        // Get the root document data (handle nested or flat structure)
+        docData = invoiceDict;
+        if (docType == "S" && Contains(invoiceDict, "Invoice")) {
+            docData = invoiceDict["Invoice"];
+        } elif (docType == "O" && Contains(invoiceDict, "CreditNote")) {
+            docData = invoiceDict["CreditNote"];
+        } elif (docType == "T" && Contains(invoiceDict, "DebitNote")) {
+            docData = invoiceDict["DebitNote"];
+        }
+        
+        // Basic invoice information
+        headerData["NKPR_GL_DESC"] = docData["ID"];
+        headerData["NKPR_GL_OZNAKA"] = docType;
+        headerData["NKPR_GL_INVDTE"] = docData["IssueDate"];
+        headerData["NKPR_GL_TIMECR"] = docData["IssueTime"];
+        if (Contains(docData, "DueDate")){
+            //tu staviti matematiku za datum dospijeća: duedate-issuedate=nokam kao broj dana, a dvo je isti kao i datum issuedate
+            headerData["NKPR_GL_DVO"] = docData["IssueDate"];
+            headerData["NKPR_GL_NOKAM"] = 30; // !!! hardcoded 30 days for now, TREBA POPRAVITI!!!
+        }
+        // headerData["NKPR_GL_DUE_DATE"] = docData["DueDate"]; // !!!
+        if (Contains(docData, "TaxPointDate")) {
+            headerData["NKPR_GL_ESD"] = docData["TaxPointDate"];
+        }else{
+            headerData["NKPR_GL_ESD"] = docData["IssueDate"];
+        }
+        
+        
+        // // Document type code
+        // if (docType == "O") {
+        //     headerData["NKPR_GL_OZNAKA"] = ;
+        // } elif (docType == "T") {
+        //     headerData["NKPR_GL_OZNAKA"] = docData["DebitNoteTypeCode"];
+        // } else {
+        //     headerData["NKPR_GL_OZNAKA"] = docData["InvoiceTypeCode"];
+        // }
+        
+        // Currency
+        headerData["NKPR_GL_SIFDVZ"] = docData["DocumentCurrencyCode"];
+        headerData["NKPR_GL_OZNAKA"] = docType;
+        
+        // Supplier information from AccountingSupplierParty
+        suppParty = docData["AccountingSupplierParty"];
+        if (suppParty != null && suppParty != "") {
+            suppPartyData = suppParty;
+            if (Contains(suppParty, "Party")) {
+                suppPartyData = suppParty["Party"];
+            }
+            
+            // Supplier OIB/GLN
+            OIBSupp = "";
+            GLNSupp = "";
+            companyIDEndpointID = suppPartyData["EndpointID"]; // npr 12345678903
+            companyIDPartyIdentificationID = suppPartyData["PartyIdentification"]["ID"]; // npr.: OIB 9934:12345678903 ili možda GLN 0088:12345678
+            //refNumbers = Split(companyIDPartyIdentificationID, ":");
+            refNumbers = companyIDPartyIdentificationID.split(":");
+            //refIdx = 0;
+            refNum = refNumbers[0].trim();
+            refOIB = refNumbers[1].trim();
+            // Supplier name
+            suppName= "";
+            if (Contains(suppParty, "PartyName")) {
+                suppName = suppPartyData["PartyName"]["Name"];
+            } else {
+                //suppName = suppPartyData["PartyLegalEntity"]["CompanyName"];
+                //find name from NKSCPART
+            }
+            if (suppName != "") {
+                headerData["NKPR_GL_CUSNME"] = suppName;
+            }  
+            // Supplier address
+            if (Contains(suppParty, "PostalAddress")) { 
+                suppAddress = suppPartyData["PostalAddress"];
+                if (suppAddress != null && suppAddress != "") {
+                    if (Contains(suppParty, "StreetName")) {headerData["NKPR_GL_CUSA1"] = suppAddress["StreetName"]};
+                    if (Contains(suppParty, "CityName")) {headerData["NKPR_GL_CUSCTY"] = suppAddress["CityName"]};
+                    if (Contains(suppParty, "PostalZone")) {headerData["NKPR_GL_CUSZIP"] = suppAddress["PostalZone"]};
+                    if (Contains(suppParty, "Country")) {headerData["NKPR_GL_CUSST"] = suppAddress["Country"]["IdentificationCode"]};
+                    if (Contains(suppParty, "Country")) {headerData["NKPR_GL_DRZAVA"] = suppAddress["Country"]["IdentificationCode"]};
+                }
+            }
+        }
+
+            if (refNum == "9934") { 
+                // OIB
+                OIBSupp = refOIB;
+                // NKSCPART - nađi dobavljača po OIB-u/GLN-u i uzmi šifru dobavljača
+                // ako ne postoji, kreiraj novog dobavljača
+                sqlQueryString = "select NKSC_PARTCODE, NKSC_PARTNAME, NKSC_RO, NKSC_ADD1, NKSC_CITY, NKSC_ZIP, NKSC_drzava, NKSC_SIFRA  from " + strtrim(databaseName) + ".dbo.NKSCPART WHERE NKSC_SIFRA = '" + OIBSupp + "'";
+                try
+                {
+                    sqlPartner = sqlQuery(sqlQueryString);
+                }
+                catch(ex)
+                {
+                    MessageBox("Greška čitanja NKSCPART:\n" + ex);
+                    // Ovo je novi dobavljač, treba ga unijeti ili prekinuti unos ovog računa i dati poruku na ekranu
+                    //exit;
+                }
+            } elif (refNum == "0088") { // GLN
+                GLNSupp = refOIB;
+                // NKSCPART - nađi dobavljača po OIB-u/GLN-u i uzmi šifru dobavljača
+                // ako ne postoji, kreiraj novog dobavljača
+                sqlQueryString = "select NKSC_PARTCODE, NKSC_PARTNAME, NKSC_RO, NKSC_ADD1, NKSC_CITY, NKSC_ZIP, NKSC_drzava, NKSC_SIFRA  from " + strtrim(databaseName) + ".dbo.NKSCPART WHERE NKSC_SOP = '" + GLNSupp + "'";
+                try
+                {
+                    sqlPartner = sqlQuery(sqlQueryString);
+                }
+                catch(ex)
+                {
+                    MessageBox("Greška čitanja NKSCPART:\n" + ex);
+                    // Ovo je novi dobavljač, treba ga unijeti ili prekinuti unos ovog računa i dati poruku na ekranu
+                    //exit;
+                }
+            } else {
+                //Ovo je nepodržano za sada, staviti poruku i prekinuti unos ovog računa
+                MessageBox("Nepodržani identifikator dobavljača: " + companyIDPartyIdentificationID + ". Račun neće biti uvezen.");
+                return;
+            }
+                if (size(sqlPartner) > 1)
+                {
+                    headerData["NKPR_GL_CUSCOD"] =  sqlPartner[1][0].trim(); //     NKSC_PARTCODE
+                    headerData["NKPR_GL_CUSNME"] =  sqlPartner[1][1].trim(); //     NKSC_PARTNAME
+                    headerData["NKPR_GL_ro"] =  sqlPartner[1][2].trim(); //     NKSC_ro
+                    headerData["NKPR_GL_CUSA1"] = sqlPartner[1][3].trim(); //  NKSC_ADD1
+                    headerData["NKPR_GL_CUSCTY"]= sqlPartner[1][4].trim(); // NKSC_CITY
+                    headerData["NKPR_GL_CUSZIP"] = sqlPartner[1][5].trim(); // NKSC_ZIP
+                    headerData["NKPR_GL_DRZAVA"] =sqlPartner[1][6].trim(); // NKSC_drzava
+                    headerData["NKPR_GL_JMBG"]  =sqlPartner[1][7].trim(); // NKSC_sifra
+                    NKPR_GL_CUSCOD = sqlPartner[1][0].trim();
+
+                }else{
+                    msg( "Ovo je novi partner! Molim da ga otvorite u matičnim podacima partnera:\n" + 
+                    /*
+                    headerData["NKPR_GL_CUSNME"] + "\n" +
+                    headerData["NKPR_GL_ro"] + "\n" +
+                    headerData["NKPR_GL_CUSA1"] + "\n" +
+                    headerData["NKPR_GL_CUSCTY"] + "\n" +
+                    headerData["NKPR_GL_CUSZIP"] + "\n" +
+                    headerData["NKPR_GL_DRZAVA"] + "\n" +
+                    */
+                    "OIB/GLN: " + companyIDPartyIdentificationID
+                    );
+                    return;
+                }   
+            if (OIBSupp != "") {
+                headerData["NKPR_GL_JMBG"] = OIBSupp;
+            } elif (GLNSupp != "") {
+                MemoX += "GLN: " + GLNSupp + "\n";
+            }else {
+               return;
+            }
+            //headerData["NKPR_GL_JMBG"] = OIBSupp; // companyIDEndpointID;
+       //msg("CCCC: " + headerData["NKPR_GL_JMBG"]);     
+
+        // Customer information from AccountingCustomerParty
+        //this is own company data
+        custParty = docData["AccountingCustomerParty"];
+        if (custParty != null && custParty != "") {
+            custPartyData = custParty;
+            if (Contains(custParty, "Party")) {
+                custPartyData = custParty["Party"];
+            }
+            // Customer OIB/GLN
+            custCompanyID = custPartyData["PartyIdentification"]["ID"];
+            refNumbers = custCompanyID.split(":");
+            //refIdx = 0;
+            refNum = refNumbers[0].trim();
+            refOIB = refNumbers[1].trim();
+            if (refNum == "9934") { 
+                // OIB
+                if (CompanyOIB != refOIB){
+                    MessageBox("OIB kupca u računu (" + refOIB + ") ne odgovara OIB-u naše tvrtke (" + CompanyOIB + "). Račun neće biti uvezen.");
+                    return;
+                }
+            }            
+            if (custCompanyID == "") {
+                custCompanyID = custPartyData["PartyLegalEntity"]["CompanyID"];
+            }
+            //headerData["NKPR_GL_CUSTOIB"] = custCompanyID; // we don't need to store own OIB here, may be used to check validity
+        }
+        
+        // Delivery information
+        if (Contains(docData, "Delivery")) {
+            delivery = docData["Delivery"];
+        msg("DELIVERY: " + delivery);    
+            if (delivery != null && delivery != "") {
+                if (Contains(delivery, "DeliveryLocation")) {
+               msg ("1111: " + headerData);     
+                    deliveryLocation = delivery["DeliveryLocation"];
+                    if (deliveryLocation != null && deliveryLocation != "") {
+                        if (Contains(deliveryLocation, "ID")) {
+                            deliveryID = deliveryLocation["ID"];
+                        } else {
+                            deliveryID = "";
+                        }
+                  msg ("2222: " + headerData);      
+                        if (deliveryID != "") {
+                            // Check if it's GLN (13 characters) or internal code
+                            if (deliveryID.length == 13) {
+                                //tu trebamo provjerit samo da li je to mjesto isporuke predviđeno kod nas u NKSPADRS!!!!
+                                //headerData["NKPR_AD_GLN"] = deliveryID;
+                            } else {
+                                headerData["NKPR_GL_SHPCOD"] = deliveryID;
+                            }
+                        }
+                    msg ("3333: " + headerData);    
+                        // Delivery address
+                        if (Contains(deliveryLocation, "Address")) {
+                            deliveryAddr = deliveryLocation["Address"];
+                        } else {
+                            deliveryAddr = {};
+                        }
+                        if (deliveryAddr != null && deliveryAddr != "") {
+                            if (Contains(deliveryAddr, "StreetName")) {headerData["NKPR_GL_SHPADD1"] = deliveryAddr["StreetName"]};
+                            if (Contains(deliveryAddr, "CityName")) {headerData["NKPR_GL_SHPCTY"] = deliveryAddr["CityName"]};
+                            if (Contains(deliveryAddr, "PostalZone")) {headerData["NKPR_GL_SHPZIP"] = deliveryAddr["PostalZone"]};
+                            if (Contains(deliveryAddr, "Country")) {headerData["NKPR_GL_SHPST"] = deliveryAddr["Country"]["IdentificationCode"]};
+                        }
+                        msg ("4444: " + headerData);
+                    }
+                }
+            
+                msg ("5555: " + headerData);
+                // Delivery party
+                if (Contains(delivery, "DeliveryParty")) {
+                    deliveryParty = delivery["DeliveryParty"];
+                    if (deliveryParty != null && deliveryParty != "") {
+                        headerData["NKPR_GL_SHPNME"] = deliveryParty["PartyName"]["Name"];
+                    }
+                } else {
+                    deliveryParty = {};
+                }
+                msg ("6666: " + headerData);
+            }
+        }
+     msg ("AAAA: " + headerData);   
+        // Payment information
+        paymentMeans = docData["PaymentMeans"];
+        if (paymentMeans != null && paymentMeans != "") {
+            headerData["NKPR_GL_SIF_PL"] = paymentMeans["PaymentMeansCode"];
+            sql_bank = "SELECT NKSC_ZR_KONTO, NKSC_ZR_NAZIV, NKSC_ZR_BANKA FROM " + databaseName + ".dbo.NKSCZIRO WHERE NKSC_ZR_CODE = @p1;";
+            sqlParams = {};
+            sqlParams.Add({"@p1", NKPR_GL_CUSCOD});
+            bankRes = sqlQuery(sql_bank, sqlParams);
+            if (Size(bankRes) >= 2) {
+                NKSC_ZR_KONTO = bankRes[1][0].trim();
+                NKSC_ZR_NAZIV = bankRes[1][1].trim();
+                NKSC_ZR_BANKA = bankRes[1][2].trim();
+                if (contains(paymentMeans,"PayeeFinancialAccount")) {
+                    paymentAccount = paymentMeans["PayeeFinancialAccount"];
+                } else {
+                    paymentAccount = {};
+                }
+                if (NKSC_ZR_KONTO == paymentAccount["ID"]) {
+                    HeaderData["NKPR_GL_RZRVA1"] = NKSC_ZR_BANKA;
+                }
+            }
+        msg  ("BBBB: " + headerData); 
+            if (Contains(paymentMeans, "PaymentID")) {
+                paymentID = paymentMeans["PaymentID"];
+                if (Contains(paymentID, " ")) {
+                    paymentParts = paymentID.split(" ");
+                    headerData["NKPR_GL_MODEL"] = paymentParts[0];
+                    if (Size(paymentParts) > 1) {
+                        headerData["NKPR_GL_POZIV"] = paymentParts[1];
+                    }
+                }
+            }
+        }
+     msg ("BBBB: " + headerData);   
+        // Monetary totals
+        legalMonTotal = docData["LegalMonetaryTotal"];
+        if (legalMonTotal != null && legalMonTotal != "") {
+            //headerData["NKPR_GL_LINETOTAL"] = ParseDecimal(legalMonTotal["LineExtensionAmount"]);
+            headerData["NKPR_GL_SUBTOT"] = ParseDecimal(legalMonTotal["TaxExclusiveAmount"]);
+            headerData["NKPR_GL_TOTAL"] = ParseDecimal(legalMonTotal["TaxInclusiveAmount"]);
+            headerData["NKPR_GL_TAXAMT"] = headerData["NKPR_GL_TOTAL"]-headerData["NKPR_GL_SUBTOT"];
+        }
+     msg ("CCCC: " + headerData);   
+        // Notes
+        if (Contains(docData, "Note")) {
+            note = docData["Note"];
+            if (note != "") {
+                /*
+                // Parse referenced invoices from note, za slučaj kada dobavljač šalje račun koji je napravljen sa našim programom Asconto ERP
+                refStartPos = IndexOf(note, "#REF(");
+                if (refStartPos >= 0) {
+                    refEndPos = IndexOf(note, ")", refStartPos);
+                    if (refEndPos >= 0) {
+                        refContent = Substring(note, refStartPos + 5, refEndPos - refStartPos - 5);
+                        refNumbers = refContent.Split(","); // Split by comma 
+                        if (Size(refNumbers) == 1) {
+                            headerData["NKPR_GL_REZ3"] = refNumbers[1].trim();
+                        } elif (Size(refNumbers) > 1){
+                            //put all data to MEMO field separated by comma
+                            MemoX += "Referencirani računi: ";
+                        } else {
+                            //no valid ref found
+                        }
+                    }
+                }
+                */
+                //tu sad treba spremit cijeli note u MemoH ili MemoF ili u linije ili negdje drugdje ako treba
+            }
+        }
+      msg ("DDDD: " + headerData);  
+        // Billing references
+        if (Contains(docData, "BillingReference")) {
+            billingRef = docData["BillingReference"];
+            billingRefID = billingRef["InvoiceDocumentReference.ID"];
+            if (billingRefID != "" && headerData["NKPR_GL_REZ3"] == "") {
+                headerData["NKPR_GL_REZ3"] = ParseInvoiceNumber(billingRefID);
+            }
+        } else {
+            billingRef = {};
+        }
+        
+    msg ('FINAL HEADER DATA: ' + headerData);  
+        return headerData;
+        
+    } catch (error) {
+        MessageBox("Greška prilikom izvlačenja podataka zaglavlja: " + error);
+        return null;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
 
 function ImportXml(xmlFilePath){
     try{
         // MSG("Importing XML file: " + xmlFilePath);
             
         xmlDict = XmlToDict(ReadAllText(xmlFilePath));
-        
-            // MSG(xmlDict.Keys);
-            
-            // if(Contains(xmlDict, "Invoice")){
-            //     mainNode = xmlDict["Invoice"];
-            // }elif(Contains(xmlDict, "CreditNote")){
-            //     mainNode = xmlDict["CreditNote"];
-            // }else{
-            //     MessageBox("Nepoznat tip XML datoteke: " + xmlFilePath);
-            //     continue;
-            // }
-            
-            // if(Contains(xmlDict, "Invoice")){
-            //     mainNode = xmlDict["Invoice"];
-            // }elif(Contains(xmlDict, "CreditNote")){
-            //     mainNode = xmlDict["CreditNote"];
-            // }else{
-            //     MessageBox("Nepoznat tip XML datoteke: " + xmlFilePath);
-            //     continue;
-            // }
 
+        //here is import to data tables NKNAERGL AND NKNAERLN
+        
+             MSG(xmlDict+"..."+xmlFilePath);
+            //ima GREŠKU - ne vraća keyeve iz glavnog noda kao Invoice ili CreditNote
+            /*
+             if(Contains(xmlDict, "Invoice")){
+                 mainNode = xmlDict["Invoice"];
+             }elif(Contains(xmlDict, "CreditNote")){
+                 mainNode = xmlDict["CreditNote"];
+             }else{
+                 MessageBox("Nepoznat tip XML datoteke: " + xmlFilePath);
+                 continue;
+             }
+             */
+
+       msg("AAAA: " + xmlDict.mainNode.Keys);     
             // if(Contains(mainNode, "AdditionalDocumentReference")){
             //     adr = mainNode["AdditionalDocumentReference"];
             //     MSG(adr);
             // }
-
+/*
         if(Contains(xmlDict, "AdditionalDocumentReference")){
             adr = xmlDict["AdditionalDocumentReference"];
 
@@ -537,10 +973,12 @@ function ImportXml(xmlFilePath){
                 if(Contains(att, "EmbeddedDocumentBinaryObject")){
                     edbo = att["EmbeddedDocumentBinaryObject"];
                     
-                    Base642File(edbo, "C:\\test\\" + parsefile(xmlFilePath, "pfName") + "_attachment" + ".pdf");
+                    Base64ToFile(edbo, "C:\\test\\" + parsefile(xmlFilePath, "pfName") + "_attachment" + ".pdf");
+            msg 'Saved attachment to C:\\test\\' + parsefile(xmlFilePath, "pfName") + '_attachment.pdf';   
                 }
             }
         }
+*/        
     }catch(ex){
         MessageBox("Greška pri importu XML datoteke " + xmlFilePath + ":\n" + ex);
         // LogException(ex); // !!!
@@ -1514,275 +1952,6 @@ function ProcessSingleInvoiceFromServer(invoiceData) {
     } catch (error) {
         MessageBox("Greška prilikom procesiranja računa " + invoiceId + ": " + error);
         return "";
-    }
-}
-
-// New main import function using XmlToDict
-function importUBLXmlFromDict(xmlContent, xmlFilePath = "") {
-    try {
-        // Convert XML to Dictionary
-        invoiceDict = XmlToDict(xmlContent);
-        
-        if (invoiceDict == null || Size(invoiceDict) == 0) {
-            MessageBox("Greška prilikom parsiranja XML-a u Dictionary");
-            return false;
-        }
-        
-        // Determine document type from dictionary structure
-        docType = GetDocumentTypeFromDict(invoiceDict);
-        if (docType == "") {
-            MessageBox("Nepoznat tip dokumenta u XML datoteci");
-            return false;
-        }
-        
-        // Extract header information from dictionary
-        headerData = ExtractHeaderDataFromDict(invoiceDict, docType);
-        if (headerData == null) {
-            MessageBox("Greška prilikom izvlačenja podataka zaglavlja");
-            return false;
-        }
-        
-        // Validate fiscal year before proceeding
-        if (!ValidateFiscalYear(headerData["NKPR_GL_ESD"])) {
-            MessageBox("Račun se ne može importirati jer datum ESD (" + headerData["NKPR_GL_ESD"] + ") ne pripada fiskalnoj godini " + KPSY_FISCAL_YR + ". Račun će biti premješten u arhivu.");
-            return "FISCAL_YEAR_MISMATCH";
-        }
-        
-        // Extract line items from dictionary
-        lineItems = ExtractLineItemsFromDict(invoiceDict, docType);
-        if (lineItems == null) {
-            MessageBox("Greška prilikom izvlačenja stavki računa");
-            return false;
-        }
-        
-        // Begin database transaction
-        BeginTransaction();
-        
-        try {
-            // Import header data to NKNAERGL table
-            invNum = ImportHeaderDataToERGL(headerData, docType);
-            if (invNum == 0) {
-                throw "Greška prilikom unosa zaglavlja računa";
-            }
-            
-            // Import line items to NKNAERLN table
-            if (!ImportLineItemsToERLN(invNum, lineItems)) {
-                throw "Greška prilikom unosa stavki računa";
-            }
-            
-            // Log to NKSYELOG
-            LogToNKSYELOG(invNum, xmlFilePath, "IMPORT_SUCCESS");
-            
-            // Commit transaction
-            CommitTransaction();
-            
-            MessageBox("UBL XML račun je uspješno uvezen!\nBroj računa: " + invNum);
-            return invNum;
-            
-        } catch (error) {
-            // Rollback transaction on error
-            RollbackTransaction();
-            LogToNKSYELOG(0, xmlFilePath, "IMPORT_FAILURE: " + error);
-            MessageBox("Greška prilikom unosa u bazu podataka: " + error);
-            return false;
-        }
-        
-    } catch (error) {
-        MessageBox("Greška prilikom uvoza XML datoteke: " + error);
-        return false;
-    }
-}
-
-// Determine document type from Dictionary structure
-function GetDocumentTypeFromDict(invoiceDict) {
-    // Check which root element exists in dictionary
-    if (Contains(invoiceDict, "Invoice")) { return "S"; }
-    if (Contains(invoiceDict, "CreditNote")) { return "O"; }
-    if (Contains(invoiceDict, "DebitNote")) { return "T"; }
-    
-    // Check if we have direct access to elements (flat structure)
-    if (Contains(invoiceDict, "ID") && Contains(invoiceDict, "InvoiceTypeCode")) { return "S"; }
-    if (Contains(invoiceDict, "ID") && Contains(invoiceDict, "CreditNoteTypeCode")) { return "O"; }
-    if (Contains(invoiceDict, "ID") && Contains(invoiceDict, "DebitNoteTypeCode")) { return "T"; }
-    
-    return "";
-}
-
-// Extract header data from Dictionary
-function ExtractHeaderDataFromDict(invoiceDict, docType) {
-    try {
-        headerData = {};
-        
-        // Get the root document data (handle nested or flat structure)
-        docData = invoiceDict;
-        if (docType == "S" && Contains(invoiceDict, "Invoice")) {
-            docData = invoiceDict["Invoice"];
-        } elif (docType == "O" && Contains(invoiceDict, "CreditNote")) {
-            docData = invoiceDict["CreditNote"];
-        } elif (docType == "T" && Contains(invoiceDict, "DebitNote")) {
-            docData = invoiceDict["DebitNote"];
-        }
-        
-        // Basic invoice information
-        headerData["NKPR_GL_DESC"] = docData["ID"];
-        headerData["NKPR_GL_OZNAKA"] = docType;
-        headerData["NKPR_GL_INVDTE"] = docData["IssueDate"];
-        headerData["NKPR_GL_TIMECR"] = docData["IssueTime"];
-        // headerData["NKPR_GL_DUE_DATE"] = docData["DueDate"]; // !!!
-        headerData["NKPR_GL_ESD"] = docData["TaxPointDate"];
-        
-        // // Document type code
-        // if (docType == "O") {
-        //     headerData["NKPR_GL_"] = docData["CreditNoteTypeCode"];
-        // } elif (docType == "T") {
-        //     headerData["NKPR_GL_"] = docData["DebitNoteTypeCode"];
-        // } else {
-        //     headerData["NKPR_GL_"] = docData["InvoiceTypeCode"];
-        // }
-        
-        // Currency
-        headerData["NKPR_GL_VALUTA"] = docData["DocumentCurrencyCode"];
-        
-        // Customer information from AccountingCustomerParty
-        custParty = docData["AccountingCustomerParty"];
-        if (custParty != null && custParty != "") {
-            custPartyData = custParty;
-            if (/*IsString(custParty) == false && */ Contains(custParty, "Party")) {
-                custPartyData = custParty["Party"];
-            }
-            
-            // Customer OIB/GLN
-            companyIDEndpointID = custPartyData["EndpointID"]; // npr 12345678903
-            companyIDPartyIdentificationID = custPartyData["PartyIdentification"]["ID"]; // npr.: OIB 9934:12345678903 ili možda GLN 0088:12345678
-            if (companyIDEndpointID == "") {
-                headerData["NKPR_GL_JMBG"] = custPartyData["PartyLegalEntity"]["CompanyID"];
-            }
-            headerData["NKPR_GL_JMBG"] = companyIDEndpointID;
-            // i 9934:123456... spremit u bazu
-            
-            // Customer name
-            custName = custPartyData["PartyName"]["Name"];
-            if (custName == "") {
-                custName = custPartyData["PartyLegalEntity"]["RegistrationName"];
-            }
-            headerData["NKPR_GL_CUSNME"] = custName;
-            
-            // Customer address
-            custAddress = custPartyData["PostalAddress"];
-            if (custAddress != null && custAddress != "") {
-                headerData["NKPR_GL_CUSA1"] = custAddress["StreetName"];
-                headerData["NKPR_GL_CUSCTY"] = custAddress["CityName"];
-                headerData["NKPR_GL_CUSZIP"] = custAddress["PostalZone"];
-                headerData["NKPR_GL_CUSST"] = custAddress["Country"]["IdentificationCode"];
-                headerData["NKPR_GL_DRZAVA"] = custAddress["Country"]["IdentificationCode"];
-            }
-        }
-        
-        // Supplier information from AccountingSupplierParty
-        suppParty = docData["AccountingSupplierParty"];
-        if (suppParty != null && suppParty != "") {
-            suppPartyData = suppParty;
-            if (IsString(suppParty) == false && Contains(suppParty, "Party")) {
-                suppPartyData = suppParty["Party"];
-            }
-            
-            // Supplier OIB/GLN
-            suppCompanyID = suppPartyData["PartyIdentification"]["ID"];
-            if (suppCompanyID == "") {
-                suppCompanyID = suppPartyData["PartyLegalEntity"]["CompanyID"];
-            }
-            headerData["NKPR_GL_SUPPOIB"] = suppCompanyID;
-        }
-        
-        // Delivery information
-        delivery = docData["Delivery"];
-        if (delivery != null && delivery != "") {
-            deliveryLocation = delivery["DeliveryLocation"];
-            if (deliveryLocation != null && deliveryLocation != "") {
-                deliveryID = deliveryLocation["ID"];
-                if (deliveryID != "") {
-                    // Check if it's GLN (13 characters) or internal code
-                    if (deliveryID.length == 13) {
-                        headerData["NKPR_AD_GLN"] = deliveryID;
-                    } else {
-                        headerData["NKPR_GL_SHPCOD"] = deliveryID;
-                    }
-                }
-                
-                // Delivery address
-                deliveryAddr = deliveryLocation["Address"];
-                if (deliveryAddr != null && deliveryAddr != "") {
-                    headerData["NKPR_GL_SHPADD1"] = deliveryAddr["StreetName"];
-                    headerData["NKPR_GL_SHPCTY"] = deliveryAddr["CityName"];
-                    headerData["NKPR_GL_SHPZIP"] = deliveryAddr["PostalZone"];
-                    headerData["NKPR_GL_SHPST"] = deliveryAddr["Country"]["IdentificationCode"];
-                }
-            }
-            
-            // Delivery party
-            deliveryParty = delivery["DeliveryParty"]   ;
-            if (deliveryParty != null && deliveryParty != "") {
-                headerData["NKPR_GL_SHPNME"] = deliveryParty["PartyName"]["Name"];
-            }
-        }
-        
-        // Payment information
-        paymentMeans = docData["PaymentMeans"];
-        if (paymentMeans != null && paymentMeans != "") {
-            headerData["NKPR_GL_PAYMNT"] = paymentMeans["PaymentMeansCode"];
-            
-            paymentID = paymentMeans["PaymentID"];
-            if (Contains(paymentID, " ")) {
-                paymentParts = Split(paymentID, " ");
-                headerData["NKPR_GL_MODEL"] = paymentParts[0];
-                if (Size(paymentParts) > 1) {
-                    headerData["NKPR_GL_POZIV"] = paymentParts[1];
-                }
-            }
-        }
-        
-        // Monetary totals
-        legalMonTotal = docData["LegalMonetaryTotal"];
-        if (legalMonTotal != null && legalMonTotal != "") {
-            headerData["NKPR_GL_LINETOTAL"] = ParseDecimal(legalMonTotal["LineExtensionAmount"]);
-            headerData["NKPR_GL_TAXTOTAL"] = ParseDecimal(legalMonTotal["TaxExclusiveAmount"]);
-            headerData["NKPR_GL_TOTAL"] = ParseDecimal(legalMonTotal["TaxInclusiveAmount"]);
-            headerData["NKPR_GL_PAYABLE"] = ParseDecimal(legalMonTotal["PayableAmount"]);
-        }
-        
-        // Notes
-        note = docData["Note"];
-        if (note != "") {
-            headerData["NKPR_GL_NOTE"] = note;
-            
-            // Parse referenced invoices from note
-            refStartPos = IndexOf(note, "#REF(");
-            if (refStartPos >= 0) {
-                refEndPos = IndexOf(note, ")", refStartPos);
-                if (refEndPos >= 0) {
-                    refContent = Substring(note, refStartPos + 5, refEndPos - refStartPos - 5);
-                    refNumbers = Split(refContent, ",");
-                    if (Size(refNumbers) > 0) {
-                        headerData["NKPR_GL_REZ3"] = refNumbers[0].trim();
-                    }
-                }
-            }
-        }
-        
-        // Billing references
-        billingRef = docData["BillingReference"];
-        if (billingRef != null && billingRef != "") {
-            billingRefID = billingRef["InvoiceDocumentReference.ID"];
-            if (billingRefID != "" && headerData["NKPR_GL_REZ3"] == "") {
-                headerData["NKPR_GL_REZ3"] = ParseInvoiceNumber(billingRefID);
-            }
-        }
-        
-        return headerData;
-        
-    } catch (error) {
-        MessageBox("Greška prilikom izvlačenja podataka zaglavlja: " + error);
-        return null;
     }
 }
 

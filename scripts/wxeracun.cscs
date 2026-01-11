@@ -1386,7 +1386,7 @@ msg ("AAAA: " + taxRes2);
     sqlParams = {};
     sqlParams.Add({"@p1", NKPR_GL_RZRVA1});
     bankRes = sqlQuery(sql_bank, sqlParams);
-    if (Size(bankRes) >= 2) {
+    if (Size(bankRes) >= 1) {
         NKSC_ZR_KONTO = bankRes[1][0].trim();
         NKSC_ZR_NAZIV = bankRes[1][1].trim();
         xml += "  <cac:PayeeFinancialAccount>\n";

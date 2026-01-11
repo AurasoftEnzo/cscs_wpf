@@ -20,6 +20,13 @@ namespace WpfControlsLibrary
     public class ASDateEditer : DatePicker
     {
         string textBeforeChange;
+        private string _dateSeparator;
+
+        public ASDateEditer()
+        {
+            // Get the date separator from current culture settings
+            _dateSeparator = CultureInfo.CurrentCulture.DateTimeFormat.DateSeparator;
+        }
 
         public override void OnApplyTemplate()
         {
@@ -261,10 +268,11 @@ namespace WpfControlsLibrary
 
             if (string.IsNullOrEmpty(dptb.Text))
             {
+                // Use the date separator from regional settings
                 if (DisplaySize == 8)
-                    dptb.Text = "00/00/00";
+                    dptb.Text = $"00{_dateSeparator}00{_dateSeparator}00";
                 else if (DisplaySize == 10)
-                    dptb.Text = "00/00/0000";
+                    dptb.Text = $"00{_dateSeparator}00{_dateSeparator}0000";
 
                 dptb.SelectionStart = 0;
                 dptb.SelectionLength = 1;
@@ -326,7 +334,7 @@ namespace WpfControlsLibrary
             }
             else if (e.Key == Key.OemPlus || e.Key == Key.Add)
             {
-                if(DateTime.TryParseExact(dptb.Text, GetPattern(), CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime result))
+                if(DateTime.TryParseExact(dptb.Text, GetPattern(), CultureInfo.CurrentCulture, DateTimeStyles.None, out DateTime result))
                 {
                     result = result.AddDays(1);
                     dptb.Text = result.ToString(GetPattern());
@@ -334,7 +342,7 @@ namespace WpfControlsLibrary
             }
             else if (e.Key == Key.OemMinus || e.Key == Key.Subtract)
             {
-                if (DateTime.TryParseExact(dptb.Text, GetPattern(), CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime result))
+                if (DateTime.TryParseExact(dptb.Text, GetPattern(), CultureInfo.CurrentCulture, DateTimeStyles.None, out DateTime result))
                 {
                     result = result.AddDays(-1);
                     dptb.Text = result.ToString(GetPattern());
@@ -371,7 +379,7 @@ namespace WpfControlsLibrary
 
             var text = dptb.Text;
 
-            if (!DateTime.TryParseExact(text, GetPattern(), CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime res))
+            if (!DateTime.TryParseExact(text, GetPattern(), CultureInfo.CurrentCulture, DateTimeStyles.None, out DateTime res))
             {
                 var selStart = dptb.SelectionStart;
                 dptb.Text = textBeforeChange;
@@ -382,13 +390,14 @@ namespace WpfControlsLibrary
 
         private string GetPattern()
         {
+            // Use the date separator from current culture instead of hardcoded "/"
             if (DisplaySize == 8)
             {
-                return "dd/MM/yy";
+                return $"dd{_dateSeparator}MM{_dateSeparator}yy";
             }
             else if (DisplaySize == 10)
             {
-                return "dd/MM/yyyy";
+                return $"dd{_dateSeparator}MM{_dateSeparator}yyyy";
             }
             else return "";
         }

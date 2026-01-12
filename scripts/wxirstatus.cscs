@@ -443,6 +443,7 @@ function btnPrikazi@clicked(){
     cntr1 = 0;
     Rbr = 0;
     cursor("wait");
+    DisplayArray("datagridListaRacuna", "close");
     SetWidgetOptions("btnPrikazi", "IsEnabled", "false");
     SetWidgetOptions("StatusLabel", "Content", "Dohvaćanje liste izlaznih e-računa");
     SetWidgetOptions("StatusLabel2", "Content", "Pričekajte...");
@@ -474,8 +475,9 @@ function startGetLista(){
 
 function end(){
     cursor("dflt");
-    DisplayArray("datagridListaRacuna", "close");
-    DisplayArraySetup("datagridListaRacuna", counterFld: cntr1, activeElements: Rbr, maxElements: Rbr);
+    if(Rbr != 0){
+        DisplayArraySetup("datagridListaRacuna", counterFld: cntr1, activeElements: Rbr, maxElements: 10000);
+    }
     SetWidgetOptions("btnPrikazi", "IsEnabled", "true");
     SetWidgetOptions("StatusLabel", "Content", "");
     SetWidgetOptions("StatusLabel2", "Content", "");

@@ -1,0 +1,111 @@
+MessageBox("...Testing testdatenewwithoutDEFINE...");
+
+/*
+DEFINE date1 type D size 10;
+DEFINE date2 type D size 8;
+
+DEFINE date3 type D size 10;
+
+DEFINE date1B type D size 10;
+DEFINE date1C type D size 10;
+DEFINE date1D type D size 10;
+
+DEFINE date4 type D size 10;
+DEFINE date5 type D size 8;
+
+DEFINE date6 type D size 10;
+DEFINE date7 type D size 10;
+DEFINE date8 type D size 8;
+
+DEFINE date9 type D size 10;
+DEFINE date10 type D size 8;
+DEFINE date11 type D size 8;
+*/
+
+/*
+date1 = "2025-05-15";
+date2 = "1415-05-16";
+//date3 = "ABCDEFGHIJ"; //Exception
+
+MSG("date1 = " + date1);		//OK 2025-05-15
+MSG("date2 = " + date2);		//OK 1415-05-16
+//MSG(date3);
+
+MSG("date1.ToString(\"dd.MM.yyyy\") = " + date1.ToString("dd.MM.yyyy"));	//OK	15.05.2025
+MSG("date1.ToString(\"dd.MM.yy\") = " + date1.ToString("dd.MM.yy"));		//OK	15.05.25
+MSG("date1.ToString() = " + date1.ToString());								//OK	15/05/25 0:00:00 this depends upon computer setup 
+MSG("date2.ToString(\"dd.MM.yyyy\") = " + date2.ToString("dd.MM.yyyy"));	//OK	16.05.1415
+MSG("date2.ToString(\"dd.MM.yy\") = " + date2.ToString("dd.MM.yy"));		//OK	16.05.15
+MSG("date2.ToString() = " + date2.ToString());								//OK	16/05/15 0:00:00 this depends upon computer setup
+
+date1B = date1;
+MSG("date1B = " + date1B);			//OK	2025-05-15 
+date1B += 1;
+MSG("date1B + 1 = " + date1B);		//OK	2025-05-16
+
+date1C = date1;
+MSG("date1C = " + date1C);			//OK	2025-05-15	
+date1C -= 1;
+MSG("date1C - 1 = " + date1C);		//OK	2025-05-14
+
+date1D = date1;
+MSG("date1D = " + date1D);			//OK	2025-05-15
+date1D -= 150;
+MSG("date1D - 150 = " + date1D);	//OK	2024-12-16
+*/
+
+
+
+//date4 = CTOD("15/05/2025");		//OK
+//date4 = CTOD("15.05.2025");		//Exception
+date4 = CTOD("2025-05-15");			//Exception
+MSG("date4 = " + date4);														//OK	2025-05-15
+MSG("date4.ToString() = " + date4.ToString());									//OK	15/05/25 0:00:00 this depends upon computer setup
+MSG("date4.ToString(\"dd.MM.yyyy\") = " + date4.ToString("dd.MM.yyyy"));		//OK	15.05.2025
+
+exit;
+
+date5 = CTOD("15/05/25");
+MSG("date5 = " + date5);														//OK	2025-05-15
+MSG("date5.ToString() = " + date5.ToString());									//OK	15/05/25 0:00:00 this depends upon computer setup
+MSG("date5.ToString(\"dd.MM.yyyy\") = " + date5.ToString("dd.MM.yyyy"));		//OK	15.05.2025
+
+
+
+date6 = DateTime();		//Current date and time
+MSG("date6 = " + date6);													//OK	2026-01-13
+MSG("date6.ToString() = " + date6.ToString());								//OK	13/01/26 0:00:00 this depends upon computer setup
+MSG("date6.ToString(\"dd.MM.yyyy\") = " + date6.ToString("dd.MM.yyyy"));	//OK	13.01.2026
+
+date7 = DateTime("13.01.2026", "dd.MM.yyyy");		//Any date and time
+MSG("date7 = " + date7);													//OK	2026-01-13
+MSG("date7.ToString() = " + date7.ToString());								//OK	13/01/26 0:00:00 this depends upon computer setup
+MSG("date7.ToString(\"dd.MM.yyyy\") = " + date7.ToString("dd.MM.yyyy"));	//OK	13.01.2026
+
+date8 = DateTime("13.01.2026", "dd.MM.yyyy");		//Any date and time
+MSG("date8 = " + date8);													//OK	2026-01-13
+MSG("date8.ToString() = " + date8.ToString());								//OK	13/01/26 0:00:00 this depends upon computer setup
+MSG("date8.ToString(\"dd.MM.yyyy\") = " + date8.ToString("dd.MM.yyyy"));	//OK	13.01.2026
+
+
+
+
+date9 = Now("dd/MM/yyyy");				//Current date and time
+MSG("date9 = " + date9);													//OK	2026-01-13
+MSG("date9.ToString() = " + date9.ToString());								//OK	13/01/26 0:00:00 this depends upon computer setup
+MSG("date9.ToString(\"dd.MM.yyyy\") = " + date9.ToString("dd.MM.yyyy"));	//OK	13.01.2026
+
+date10 = Now("dd/MM/yyyy");				//Current date and time
+MSG("date10 = " + date10);													//OK	2026-01-13
+MSG("date10.ToString() = " + date10.ToString());							//OK	13/01/26 0:00:00 this depends upon computer setup
+MSG("date10.ToString(\"dd.MM.yyyy\") = " + date10.ToString("dd.MM.yyyy"));	//OK	13.01.2026
+
+date11 = Now("dd/MM/yy");				//Current date and time
+MSG("date11 = " + date11);													//OK	2026-01-13
+MSG("date11.ToString() = " + date11.ToString());							//OK	13/01/26 0:00:00 this depends upon computer setup
+MSG("date11.ToString(\"dd.MM.yyyy\") = " + date11.ToString("dd.MM.yyyy"));	//OK	13.01.2026
+
+
+
+
+exit;

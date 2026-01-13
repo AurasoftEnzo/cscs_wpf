@@ -1071,14 +1071,15 @@ namespace WpfCSCS
                 // get time on that worksheet in specific cell
                 DateTime dateValue = DateTime.Parse(sheet.Cells[Row, Column].Text);
 
-                // return values
-                return new Variable(dateValue.ToString("dd/MM/yyyy"));
+                // return values in internal format (yyyy-MM-dd)
+                return new Variable(dateValue.ToString("yyyy-MM-dd"));
             }
             catch (Exception e)
             {
                 MessageBox.Show("[TAS2XLSX] Error:" + e.Message, "CellReadDate");
                 Excel.errorNumber = 1;
-                return new Variable(new DateTime().ToString("dd/MM/yyyy"));
+                // Return null date in internal format
+                return new Variable("1900-01-01");
             }
         }
     }

@@ -4261,7 +4261,16 @@ namespace WpfCSCS
 			{
 				var dateEditer = widget as ASDateEditer;
 				var dateStr = ProcessDateStr(text);
-				var format = dateStr.Length == 10 ? "dd/MM/yyyy" : dateStr.Length == 8 ? "dd/MM/yy" : "yyyy/MM/dd hh:mm:ss";
+				// Check if date is in internal format (yyyy-MM-dd) or display format
+				string format;
+				if (dateStr.Length == 10 && dateStr[4] == '-' && dateStr[7] == '-')
+				{
+					format = "yyyy-MM-dd"; // Internal format
+				}
+				else
+				{
+					format = dateStr.Length == 10 ? CSCS_GUI.DateFormat10 : dateStr.Length == 8 ? CSCS_GUI.DateFormat8 : "yyyy/MM/dd hh:mm:ss";
+				}
 				dispatcher.Invoke(new Action(() =>
 				{
 					dateEditer.SelectedDate = DateTime.ParseExact(dateStr, format, CultureInfo.InvariantCulture);
@@ -4271,7 +4280,16 @@ namespace WpfCSCS
 			{
 				var dateEditer = widget as ASDateEditer2;
 				var dateStr = ProcessDateStr(text);
-				var format = dateStr.Length == 10 ? "dd/MM/yyyy" : dateStr.Length == 8 ? "dd/MM/yy" : "yyyy/MM/dd hh:mm:ss";
+				// Check if date is in internal format (yyyy-MM-dd) or display format
+				string format;
+				if (dateStr.Length == 10 && dateStr[4] == '-' && dateStr[7] == '-')
+				{
+					format = "yyyy-MM-dd"; // Internal format
+				}
+				else
+				{
+					format = dateStr.Length == 10 ? CSCS_GUI.DateFormat10 : dateStr.Length == 8 ? CSCS_GUI.DateFormat8 : "yyyy/MM/dd hh:mm:ss";
+				}
 				dispatcher.Invoke(new Action(() =>
 				{
 					dateEditer.TempDate = DateTime.ParseExact(dateStr, format, CultureInfo.InvariantCulture);
@@ -4280,8 +4298,17 @@ namespace WpfCSCS
 			else if (widget is DatePicker && !string.IsNullOrWhiteSpace(text))
 			{
 				var datePicker = widget as DatePicker;
-				var format = text.Length == 10 ? "dd/MM/yyyy" : text.Length == 8 ? "hh:mm:ss" :
-					   text.Length == 12 ? "hh:mm:ss.fff" : "yyyy/MM/dd hh:mm:ss";
+				// Check if date is in internal format (yyyy-MM-dd) or display format
+				string format;
+				if (text.Length == 10 && text[4] == '-' && text[7] == '-')
+				{
+					format = "yyyy-MM-dd"; // Internal format
+				}
+				else
+				{
+					format = text.Length == 10 ? CSCS_GUI.DateFormat10 : text.Length == 8 ? "hh:mm:ss" :
+						   text.Length == 12 ? "hh:mm:ss.fff" : "yyyy/MM/dd hh:mm:ss";
+				}
 				dispatcher.Invoke(new Action(() =>
 				{
 					datePicker.SelectedDate = DateTime.ParseExact(text, format, CultureInfo.InvariantCulture);
@@ -5057,7 +5084,32 @@ namespace WpfCSCS
 			Utils.CheckArgs(args.Count, 1, m_name);
 			CultureInfo provider = CultureInfo.InvariantCulture;
 			var dateVariable = Utils.GetSafeVariable(args, 0);
-			DateTime datum = DateTime.ParseExact(dateVariable.String, "dd/MM/yy", provider);
+			
+			// Use DateTime property if available, otherwise parse the string
+			DateTime datum;
+			if (dateVariable.Type == Variable.VarType.DATETIME)
+			{
+				datum = dateVariable.DateTime;
+			}
+			else
+			{
+				var dateStr = dateVariable.String;
+				// Try internal format first (yyyy-MM-dd)
+				if (dateStr.Length == 10 && dateStr[4] == '-' && dateStr[7] == '-')
+				{
+					datum = DateTime.ParseExact(dateStr, "yyyy-MM-dd", provider);
+				}
+				// Fall back to display formats
+				else if (dateStr.Length == 10)
+				{
+					datum = DateTime.ParseExact(dateStr, "dd/MM/yyyy", provider);
+				}
+				else
+				{
+					datum = DateTime.ParseExact(dateStr, "dd/MM/yy", provider);
+				}
+			}
+			
 			var GODINA = datum.Year;
 			return new Variable(GODINA);
 		}
@@ -5069,8 +5121,38 @@ namespace WpfCSCS
 			List<Variable> args = script.GetFunctionArgs();
 			Utils.CheckArgs(args.Count, 1, m_name);
 			var dateVariable = Utils.GetSafeVariable(args, 0);
-			var rezultat = dateVariable.String.Substring(0, 2);
-			return new Variable(rezultat);
+			
+			// Use DateTime property if available, otherwise parse the string
+			DateTime datum;
+			if (dateVariable.Type == Variable.VarType.DATETIME)
+			{
+				datum = dateVariable.DateTime;
+			}
+			else
+			{
+				var dateStr = dateVariable.String;
+				// Try internal format first (yyyy-MM-dd)
+				if (dateStr.Length == 10 && dateStr[4] == '-' && dateStr[7] == '-')
+				{
+					datum = DateTime.ParseExact(dateStr, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+				}
+				// Fall back to display formats
+				else if (dateStr.Length == 10)
+				{
+					datum = DateTime.ParseExact(dateStr, "dd/MM/yyyy", CultureInfo.InvariantCulture);
+				}
+				else if (dateStr.Length == 8)
+				{
+					datum = DateTime.ParseExact(dateStr, "dd/MM/yy", CultureInfo.InvariantCulture);
+				}
+				else
+				{
+					// Return first 2 chars as fallback for legacy behavior
+					return new Variable(dateStr.Length >= 2 ? dateStr.Substring(0, 2) : "00");
+				}
+			}
+			
+			return new Variable(datum.Day);
 		}
 	}
 	public class DOWFunction : ParserFunction
@@ -5081,7 +5163,32 @@ namespace WpfCSCS
 			Utils.CheckArgs(args.Count, 1, m_name);
 			CultureInfo provider = CultureInfo.InvariantCulture;
 			var dateVariable = Utils.GetSafeVariable(args, 0);
-			DateTime datum = DateTime.ParseExact(dateVariable.String, "dd/MM/yy", provider);
+			
+			// Use DateTime property if available, otherwise parse the string
+			DateTime datum;
+			if (dateVariable.Type == Variable.VarType.DATETIME)
+			{
+				datum = dateVariable.DateTime;
+			}
+			else
+			{
+				var dateStr = dateVariable.String;
+				// Try internal format first (yyyy-MM-dd)
+				if (dateStr.Length == 10 && dateStr[4] == '-' && dateStr[7] == '-')
+				{
+					datum = DateTime.ParseExact(dateStr, "yyyy-MM-dd", provider);
+				}
+				// Fall back to display formats
+				else if (dateStr.Length == 10)
+				{
+					datum = DateTime.ParseExact(dateStr, "dd/MM/yyyy", provider);
+				}
+				else
+				{
+					datum = DateTime.ParseExact(dateStr, "dd/MM/yy", provider);
+				}
+			}
+			
 			var danTjedan = datum.DayOfWeek;
 			var rezultat = danTjedan;
 			return new Variable(rezultat);

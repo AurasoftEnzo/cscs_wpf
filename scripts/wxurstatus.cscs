@@ -27,8 +27,8 @@ dtNow = DateTime();
 
 doubleToday = Math.Trunc(DateTimeToDouble(dtNow));
 
-FilterDateFrom = DoubleToDateTime(doubleToday - 30).ToString("dd/MM/yyyy");
-FilterDateTo = DoubleToDateTime(doubleToday + 7).ToString("dd/MM/yyyy");
+FilterDateFrom = DoubleToDateTime(doubleToday - 30).ToString("yyyy-MM-dd");
+FilterDateTo = DoubleToDateTime(doubleToday + 7).ToString("yyyy-MM-dd");
 
 
 // savedXmlFilesList = {};
@@ -259,9 +259,9 @@ function GetListFINA(){
                 // invoiceId = ack["InvoiceList"][i]["InvoiceID"];
 
                 datumIzdavanja = ack["InvoiceList"][i]["InvoiceIssueDate"];
-                datumIzdavanja = Substring(datumIzdavanja, 0, 8);
+                // datumIzdavanja = Substring(datumIzdavanja, 0, 8);
                 datumPdva = ack["InvoiceList"][i]["InvoiceDate"];
-                datumPdva = Substring(datumPdva, 0, 8);
+                // datumPdva = Substring(datumPdva, 0, 8);
 
                 supplierInvoiceId = ack["InvoiceList"][i]["SupplierInvoiceID"];
 
@@ -373,8 +373,8 @@ function AddRacunToArrays(supplierName, supplierId, statusRacuna, datumIzdavanja
     arrayDobavljac[Rbr] = supplierName;
     arrayOibDobavljaca[Rbr] = supplierId;
     arrayStatusRacuna[Rbr] = statusRacuna;
-    arrayDatumIzdavanja[Rbr] = datumIzdavanja;
-    arrayDatumPDVa[Rbr] = datumPdva;
+    arrayDatumIzdavanja[Rbr] = datumIzdavanja.ToString("dd/MM/yy");
+    arrayDatumPDVa[Rbr] = datumPdva.ToString("dd/MM/yy");
     arrayBrojRacuna[Rbr] = supplierInvoiceId;
     
 
@@ -396,6 +396,8 @@ function AddRacunToArrays(supplierName, supplierId, statusRacuna, datumIzdavanja
 function btnPrikazi@clicked(){
     cntr1 = 0;
     Rbr = 0;
+    DisplayArray("datagridListaRacuna", "close");
+
     cursor("wait");
     SetWidgetOptions("btnPrikazi", "IsEnabled", "false");
     SetWidgetOptions("StatusLabel", "Content", "Dohvaćanje liste ulaznih e-računa");
@@ -428,8 +430,10 @@ function startGetLista(){
 
 function end(){
     cursor("dflt");
-    DisplayArray("datagridListaRacuna", "close");
-    DisplayArraySetup("datagridListaRacuna", counterFld: cntr1, activeElements: Rbr, maxElements: Rbr);
+    if(Rbr != 0){
+        DisplayArraySetup("datagridListaRacuna", counterFld: cntr1, activeElements: Rbr, maxElements: 10000);
+    }
+    
     SetWidgetOptions("btnPrikazi", "IsEnabled", "true");
     SetWidgetOptions("StatusLabel", "Content", "");
     SetWidgetOptions("StatusLabel2", "Content", "");

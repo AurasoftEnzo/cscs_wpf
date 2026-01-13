@@ -32,6 +32,145 @@ namespace WpfControlsLibrary
         {
             // Get date configuration from App.config settings
             LoadDateConfiguration();
+            
+            // Subscribe to SelectedDateChanged to reformat text with configured format
+            this.SelectedDateChanged += ASDateEditer_SelectedDateChanged;
+            
+            // Subscribe to CalendarClosed to reformat after calendar popup closes
+            this.CalendarClosed += ASDateEditer_CalendarClosed;
+            
+            // Handle date validation errors to parse with custom format
+            this.DateValidationError += ASDateEditer_DateValidationError;
+            
+            // Subscribe to Loaded to reformat after the control is fully initialized
+            this.Loaded += ASDateEditer_Loaded;
+        }
+
+        private void ASDateEditer_Loaded(object sender, RoutedEventArgs e)
+        {
+            // Reload configuration to ensure we have the latest values from App.config
+            LoadDateConfiguration();
+            
+            // Reformat the textbox when the control is first loaded
+            ReformatTextBox();
+        }
+
+        private void ASDateEditer_CalendarClosed(object sender, RoutedEventArgs e)
+        {
+            // When calendar closes, reformat the text using configured format
+            ReformatTextBox();
+        }
+
+        private void ASDateEditer_DateValidationError(object sender, DatePickerDateValidationErrorEventArgs e)
+        {
+            // Try to parse the text using our custom format
+            if (!string.IsNullOrEmpty(e.Text))
+            {
+                string text = e.Text;
+                string nullDisplay = GetNullDateDisplay();
+                
+                if (text == nullDisplay || IsAllZeros(text))
+                {
+                    // It's a null date - don't treat as error
+                    e.ThrowException = false;
+                    return;
+                }
+                
+                // Try parsing with our configured format
+                if (DateTime.TryParseExact(text, GetPattern(), CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime result))
+                {
+                    this.SelectedDate = result;
+                    e.ThrowException = false;
+                }
+            }
+        }
+
+        private void ReformatTextBox()
+        {
+            // Use Dispatcher.BeginInvoke to ensure our text update happens AFTER
+            // the base class's internal text update
+            this.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (this.Template == null)
+                    return;
+                    
+                var textBox = this.Template.FindName("PART_TextBox", this) as DatePickerTextBox;
+                if (textBox != null)
+                {
+                    if (this.SelectedDate.HasValue)
+                    {
+                        var dt = this.SelectedDate.Value;
+                        if (IsNullDate(dt))
+                        {
+                            textBox.Text = GetNullDateDisplay();
+                        }
+                        else
+                        {
+                            textBox.Text = dt.ToString(GetPattern(), CultureInfo.InvariantCulture);
+                        }
+                    }
+                    else
+                    {
+                        // No selected date - check if there's existing text to parse
+                        if (!string.IsNullOrEmpty(textBox.Text))
+                        {
+                            // Try to parse existing text with multiple formats
+                            DateTime? parsedDate = TryParseDate(textBox.Text);
+                            if (parsedDate.HasValue && !IsNullDate(parsedDate.Value))
+                            {
+                                textBox.Text = parsedDate.Value.ToString(GetPattern(), CultureInfo.InvariantCulture);
+                            }
+                            else
+                            {
+                                textBox.Text = GetNullDateDisplay();
+                            }
+                        }
+                        else
+                        {
+                            textBox.Text = GetNullDateDisplay();
+                        }
+                    }
+                }
+            }), System.Windows.Threading.DispatcherPriority.Input);
+        }
+
+        /// <summary>
+        /// Attempts to parse a date string using multiple formats (configured format, system format, etc.)
+        /// </summary>
+        private DateTime? TryParseDate(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return null;
+                
+            // First try configured format
+            if (DateTime.TryParseExact(text, GetPattern(), CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime result))
+                return result;
+            
+            // Try the other configured format (8 vs 10)
+            string altPattern = DisplaySize == 8 ? _displayFormat10 : _displayFormat8;
+            if (DateTime.TryParseExact(text, altPattern, CultureInfo.InvariantCulture, DateTimeStyles.None, out result))
+                return result;
+            
+            // Try common formats that regional settings might use
+            string[] commonFormats = { "dd.MM.yyyy", "dd.MM.yy", "dd/MM/yyyy", "dd/MM/yy", "MM/dd/yyyy", "MM/dd/yy", "yyyy-MM-dd" };
+            foreach (var format in commonFormats)
+            {
+                if (DateTime.TryParseExact(text, format, CultureInfo.InvariantCulture, DateTimeStyles.None, out result))
+                    return result;
+            }
+            
+            // Finally try system culture parse
+            if (DateTime.TryParse(text, CultureInfo.CurrentCulture, DateTimeStyles.None, out result))
+                return result;
+                
+            return null;
+        }
+
+        private void ASDateEditer_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // When a date is selected (e.g., from calendar popup), reformat the text
+            // using the configured date format instead of the system culture format.
+            ReformatTextBox();
         }
 
         private void LoadDateConfiguration()
@@ -438,7 +577,7 @@ namespace WpfControlsLibrary
                 if (dptb.SelectionLength == DisplaySize)
                 {
                     var date111 = new DateTime(1, 1, 1);
-                    dptb.Text = date111.ToString(GetPattern());
+                    dptb.Text = date111.ToString(GetPattern(), CultureInfo.InvariantCulture);
                 }
                 else
                 {
@@ -452,18 +591,18 @@ namespace WpfControlsLibrary
             }
             else if (e.Key == Key.OemPlus || e.Key == Key.Add)
             {
-                if(DateTime.TryParseExact(dptb.Text, GetPattern(), CultureInfo.CurrentCulture, DateTimeStyles.None, out DateTime result))
+                if(DateTime.TryParseExact(dptb.Text, GetPattern(), CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime result))
                 {
                     result = result.AddDays(1);
-                    dptb.Text = result.ToString(GetPattern());
+                    dptb.Text = result.ToString(GetPattern(), CultureInfo.InvariantCulture);
                 }
             }
             else if (e.Key == Key.OemMinus || e.Key == Key.Subtract)
             {
-                if (DateTime.TryParseExact(dptb.Text, GetPattern(), CultureInfo.CurrentCulture, DateTimeStyles.None, out DateTime result))
+                if (DateTime.TryParseExact(dptb.Text, GetPattern(), CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime result))
                 {
                     result = result.AddDays(-1);
-                    dptb.Text = result.ToString(GetPattern());
+                    dptb.Text = result.ToString(GetPattern(), CultureInfo.InvariantCulture);
                 }
             }
 
@@ -505,12 +644,35 @@ namespace WpfControlsLibrary
                 return;
             }
 
-            if (!DateTime.TryParseExact(text, GetPattern(), CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime res))
+            // Try to parse with configured format first, then fall back to TryParseDate
+            DateTime? parsedDate = TryParseDate(text);
+            if (!parsedDate.HasValue)
             {
                 var selStart = dptb.SelectionStart;
                 dptb.Text = textBeforeChange;
                 var newPosition = selStart - 1;
                 dptb.SelectionStart = (newPosition < 0) ? 0 : newPosition;
+            }
+            else
+            {
+                var res = parsedDate.Value;
+                // Successfully parsed - update the SelectedDate and ensure text format is preserved
+                // Use Dispatcher.BeginInvoke to reformat after base class processing
+                this.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    var textBox = this.Template.FindName("PART_TextBox", this) as DatePickerTextBox;
+                    if (textBox != null)
+                    {
+                        if (IsNullDate(res))
+                        {
+                            textBox.Text = nullDisplay;
+                        }
+                        else
+                        {
+                            textBox.Text = res.ToString(GetPattern(), CultureInfo.InvariantCulture);
+                        }
+                    }
+                }), System.Windows.Threading.DispatcherPriority.Input);
             }
         }
 

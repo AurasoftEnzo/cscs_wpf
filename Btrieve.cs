@@ -2653,7 +2653,7 @@ N'{paramsDeclaration}', ";
                                                     break;
                                                 case "t":
                                                     var time = (TimeSpan)reader[currentColumnName];
-                                                    Gui.DEFINES[loweredCurrentColumnName].DateTime = new DateTime(1, 1, 1, time.Hours, time.Minutes, time.Seconds);
+                                                    Gui.DEFINES[loweredCurrentColumnName].DateTime = new DateTime(1899, 12, 30, time.Hours, time.Minutes, time.Seconds);
                                                     break;
                                                 default:
                                                     break;

@@ -5306,8 +5306,8 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             var filterDateFrom = Utils.GetSafeString(args, 7);
             var filterDateTo = Utils.GetSafeString(args, 8);
 
-            DateTime.TryParseExact(filterDateFrom, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateFrom);
-            DateTime.TryParseExact(filterDateTo, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTo);
+            DateTime.TryParseExact(filterDateFrom, DateConfiguration.InternalFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateFrom);
+            DateTime.TryParseExact(filterDateTo, DateConfiguration.InternalFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTo);
 
             Variable resVar = new Fiskalizacija2.FINA.B2BIncoming.GetIncomingInvoiceList().Send(
                 endpoint,
@@ -5475,8 +5475,8 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             var filterDateFrom = Utils.GetSafeString(args, 7);
             var filterDateTo = Utils.GetSafeString(args, 8);
 
-            DateTime.TryParseExact(filterDateFrom, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateFrom);
-            DateTime.TryParseExact(filterDateTo, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTo);
+            DateTime.TryParseExact(filterDateFrom, DateConfiguration.InternalFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateFrom);
+            DateTime.TryParseExact(filterDateTo, DateConfiguration.InternalFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTo);
 
             Variable resVar = new Fiskalizacija2.FINA.B2BIncoming.GetOutgoingInvoiceList().Send(
                 endpoint,
@@ -5519,8 +5519,8 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             var filterDateFrom = Utils.GetSafeString(args, 7);
             var filterDateTo = Utils.GetSafeString(args, 8);
 
-            DateTime.TryParseExact(filterDateFrom, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateFrom);
-            DateTime.TryParseExact(filterDateTo, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTo);
+            DateTime.TryParseExact(filterDateFrom, DateConfiguration.InternalFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateFrom);
+            DateTime.TryParseExact(filterDateTo, DateConfiguration.InternalFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTo);
 
             Variable resVar = new Fiskalizacija2.FINA.B2GIncoming.GetOutgoingInvoiceList().Send(
                 endpoint,

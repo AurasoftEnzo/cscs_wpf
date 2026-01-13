@@ -21,8 +21,8 @@ DEFINE FilterDateFrom type d size 10;
 DEFINE FilterDateTo type d size 10;
 
 
-FilterDateFrom = Now("dd/MM/yyyy");
-FilterDateTo = Now("dd/MM/yyyy");
+FilterDateFrom = Now("yyyy-MM-dd");
+FilterDateTo = Now("yyyy-MM-dd");
 
 // savedXmlFilesList = {};
 
@@ -254,9 +254,9 @@ function GetListFINA_B2B(){
                 statusCode = ack["InvoiceList"][i]["StatusCode"];
 
                 datumIzdavanja = ack["InvoiceList"][i]["InvoiceIssueDate"];
-                datumIzdavanja = Substring(datumIzdavanja, 0, 8);
+                // datumIzdavanja = Substring(datumIzdavanja, 0, 8);
                 datumKnjizenja = ack["InvoiceList"][i]["InvoiceDate"];
-                datumKnjizenja = Substring(datumKnjizenja, 0, 8);
+                // datumKnjizenja = Substring(datumKnjizenja, 0, 8);
 
                 AddRacunToArrays(buyerName, buyerId, datumIzdavanja, datumKnjizenja, aurasoftFormatSupplierInvoiceId, invoiceId, statusCode);
             }
@@ -419,8 +419,8 @@ function AddRacunToArrays(supplierName, supplierId, datumIzdavanja, datumKnjizen
     arrayKupac[Rbr] = supplierName;
     arrayOibKupca[Rbr] = supplierId;
     arrayStatusRacuna[Rbr] = statusRacuna;
-    arrayDatumIzdavanja[Rbr] = datumIzdavanja;
-    arrayDatumKnjizenja[Rbr] = datumKnjizenja;
+    arrayDatumIzdavanja[Rbr] = datumIzdavanja.ToString("dd/MM/yy");
+    arrayDatumKnjizenja[Rbr] = datumKnjizenja.ToString("dd/MM/yy");
     arrayBrojRacuna[Rbr] = supplierInvoiceId;
     
 

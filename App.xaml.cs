@@ -23,6 +23,9 @@ namespace WpfCSCS
     {
         protected override void OnStartup(StartupEventArgs e)
         {
+            // Initialize date configuration from App.config
+            DateConfiguration.Initialize();
+
             EventManager.RegisterClassHandler(typeof(ASEnterBox), TextBox.KeyDownEvent, new KeyEventHandler(Generic_KeyDown));
             EventManager.RegisterClassHandler(typeof(RadioButton), CheckBox.KeyDownEvent, new KeyEventHandler(Generic_KeyDown));
             EventManager.RegisterClassHandler(typeof(CheckBox), CheckBox.KeyDownEvent, new KeyEventHandler(Generic_KeyDown));

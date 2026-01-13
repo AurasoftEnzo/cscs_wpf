@@ -1380,18 +1380,25 @@ namespace WpfCSCS
 						}
 						break;
 
-					case "d":
+				case "d":
 						if (DateTime.TryParseExact(text.AsString(), defVar.GetDateFormat(), CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dt))
 						{
-							UpdateVariable(widget2, text/*new Variable(dt)*/);
+							// Convert to internal format (yyyy-MM-dd) before updating variable
+							UpdateVariable(widget2, new Variable(dt.ToString("yyyy-MM-dd")));
 						}
-						else if (text.AsString() == "00/00/00")
+						else if (text.AsString() == "00/00/00" || text.AsString() == "00/00/0000")
 						{
-							UpdateVariable(widget2, new Variable("01/01/00"));
+							// Use internal null date format
+							UpdateVariable(widget2, new Variable("1900-01-01"));
 						}
-						else if (text.AsString() == "00/00/0000")
+						else
 						{
-							UpdateVariable(widget2, new Variable("01/01/1900"));
+							// Check if all zeros in any format
+							var digitsOnly = text.AsString().Replace("/", "").Replace("-", "").Replace(".", "");
+							if (!string.IsNullOrEmpty(digitsOnly) && digitsOnly.All(c => c == '0'))
+							{
+								UpdateVariable(widget2, new Variable("1900-01-01"));
+							}
 						}
 						break;
 					case "t":
@@ -2085,11 +2092,28 @@ namespace WpfCSCS
 						//}
 						break;
 
-					case "d":
+				case "d":
 						var variableName = GetWidgetBindingName(widget).ToLower();
 						if (DEFINES.TryGetValue(variableName, out DefineVariable defVar2))
 						{
-							UpdateVariable(widget, new Variable(text?.ToString(defVar2.GetDateFormat())));
+							// Always use internal format (yyyy-MM-dd)
+							if (text.HasValue)
+							{
+								var dt = text.Value;
+								// Check if null date (1900-01-01 or earlier)
+								if (dt.Year <= 1900 && dt.Month == 1 && dt.Day == 1)
+								{
+									UpdateVariable(widget, new Variable("1900-01-01"));
+								}
+								else
+								{
+									UpdateVariable(widget, new Variable(dt.ToString("yyyy-MM-dd")));
+								}
+							}
+							else
+							{
+								UpdateVariable(widget, new Variable("1900-01-01"));
+							}
 						}
 						break;
 					case "t":
@@ -8315,6 +8339,23 @@ namespace WpfCSCS
 
 		public string GetDateFormat()
 		{
+			return GetDateFormat(false);
+		}
+
+		/// <summary>
+		/// Gets the date format pattern.
+		/// </summary>
+		/// <param name="forDisplay">If true, returns display format; if false, returns internal format (yyyy-MM-dd) for storage.</param>
+		/// <returns>Date format pattern string.</returns>
+		public string GetDateFormat(bool forDisplay)
+		{
+			// For internal format (scripts, database), always return yyyy-MM-dd
+			if (!forDisplay)
+			{
+				return "yyyy-MM-dd";
+			}
+
+			// For display format
 			if (!string.IsNullOrWhiteSpace(Format))
 			{
 				return Format;
@@ -8406,9 +8447,17 @@ namespace WpfCSCS
 			}
 
 			var strValue = val.AsString();
+			
+			// First try to parse internal format (yyyy-MM-dd)
+			if (DefType == "d" && strValue.Length == 10 && 
+				DateTime.TryParseExact(strValue, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out dt))
+			{
+				return dt;
+			}
+			
 			var format = DefType == "d" ? (strValue.Length == 8 ? CSCS_GUI.DateFormat8 :
 										  strValue.Length == 10 ? CSCS_GUI.DateFormat10 :
-										  GetDateFormat()) : GetTimeFormat();
+										  GetDateFormat(true)) : GetTimeFormat();
 			var theValue = val.Type == VarType.DATETIME ? val.DateTime.ToString(format) : strValue;
 			if (DefType == "d")
 			{
@@ -8465,7 +8514,8 @@ namespace WpfCSCS
 			}
 			if (DefType == "d")
 			{
-				return DateTime.ToString(GetDateFormat());
+				// Always return internal format (yyyy-MM-dd) for script/storage operations
+				return DateTime.ToString("yyyy-MM-dd");
 			}
 			if (DefType == "t")
 			{
@@ -8490,6 +8540,18 @@ namespace WpfCSCS
 				return m_string;
 			}
 			return BaseAsString(isList, sameLine, maxCount);
+		}
+
+		/// <summary>
+		/// Returns date as display format string (for UI display purposes).
+		/// </summary>
+		public string AsDisplayString()
+		{
+			if (DefType == "d")
+			{
+				return DateTime.ToString(GetDateFormat(true));
+			}
+			return AsString();
 		}
 
 		string BaseAsString(bool isList = true,

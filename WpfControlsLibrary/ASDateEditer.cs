@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -21,11 +22,52 @@ namespace WpfControlsLibrary
     {
         string textBeforeChange;
         private string _dateSeparator;
+        private string _displayFormat10;
+        private string _displayFormat8;
+        private string _nullDateDisplay10;
+        private string _nullDateDisplay8;
+        private string _nullDateInternal;
 
         public ASDateEditer()
         {
-            // Get the date separator from current culture settings
-            _dateSeparator = CultureInfo.CurrentCulture.DateTimeFormat.DateSeparator;
+            // Get date configuration from App.config settings
+            LoadDateConfiguration();
+        }
+
+        private void LoadDateConfiguration()
+        {
+            try
+            {
+                _dateSeparator = GetConfigValue("DateSeparator", "/");
+                _displayFormat10 = GetConfigValue("DateFormat", "dd/MM/yyyy");
+                _displayFormat8 = GetConfigValue("DateFormat8", "dd/MM/yy");
+                _nullDateInternal = GetConfigValue("NullDateInternal", "1900-01-01");
+                _nullDateDisplay10 = GetConfigValue("NullDateDisplay", $"00{_dateSeparator}00{_dateSeparator}0000");
+                _nullDateDisplay8 = GetConfigValue("NullDateDisplay8", $"00{_dateSeparator}00{_dateSeparator}00");
+            }
+            catch
+            {
+                // Fallback defaults
+                _dateSeparator = "/";
+                _displayFormat10 = "dd/MM/yyyy";
+                _displayFormat8 = "dd/MM/yy";
+                _nullDateInternal = "1900-01-01";
+                _nullDateDisplay10 = "00/00/0000";
+                _nullDateDisplay8 = "00/00/00";
+            }
+        }
+
+        private string GetConfigValue(string key, string defaultValue)
+        {
+            try
+            {
+                var value = ConfigurationManager.AppSettings[key];
+                return string.IsNullOrEmpty(value) ? defaultValue : value;
+            }
+            catch
+            {
+                return defaultValue;
+            }
         }
 
         public override void OnApplyTemplate()
@@ -230,6 +272,85 @@ namespace WpfControlsLibrary
             }
         }
 
+        /// <summary>
+        /// Gets or sets the date in internal format (yyyy-MM-dd).
+        /// This is the format used for CSCS scripts and database operations.
+        /// </summary>
+        public string InternalDate
+        {
+            get
+            {
+                if (SelectedDate.HasValue)
+                {
+                    var dt = SelectedDate.Value;
+                    // Check if it's a null date
+                    if (IsNullDate(dt))
+                    {
+                        return _nullDateInternal;
+                    }
+                    return dt.ToString("yyyy-MM-dd");
+                }
+                return _nullDateInternal;
+            }
+            set
+            {
+                if (string.IsNullOrEmpty(value) || value == _nullDateInternal)
+                {
+                    SelectedDate = null;
+                    // Set display to null date format
+                    var textBox = GetTemplateChild("PART_TextBox") as DatePickerTextBox;
+                    if (textBox != null)
+                    {
+                        textBox.Text = GetNullDateDisplay();
+                    }
+                }
+                else if (DateTime.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dt))
+                {
+                    if (IsNullDate(dt))
+                    {
+                        SelectedDate = null;
+                        var textBox = GetTemplateChild("PART_TextBox") as DatePickerTextBox;
+                        if (textBox != null)
+                        {
+                            textBox.Text = GetNullDateDisplay();
+                        }
+                    }
+                    else
+                    {
+                        SelectedDate = dt;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the current display text.
+        /// </summary>
+        public string DisplayText
+        {
+            get
+            {
+                var textBox = GetTemplateChild("PART_TextBox") as DatePickerTextBox;
+                return textBox?.Text ?? GetNullDateDisplay();
+            }
+        }
+
+        /// <summary>
+        /// Checks if a DateTime represents a null/empty date (1900-01-01 or earlier).
+        /// </summary>
+        private bool IsNullDate(DateTime dt)
+        {
+            return dt.Year <= 1900 && dt.Month == 1 && dt.Day == 1;
+        }
+
+        /// <summary>
+        /// Gets the null date display string based on DisplaySize.
+        /// </summary>
+        private string GetNullDateDisplay()
+        {
+            return DisplaySize == 8 ? _nullDateDisplay8 : _nullDateDisplay10;
+        }
+
         private void Dptb_PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
             var dptb = (e.Source as DatePickerTextBox);
@@ -268,11 +389,8 @@ namespace WpfControlsLibrary
 
             if (string.IsNullOrEmpty(dptb.Text))
             {
-                // Use the date separator from regional settings
-                if (DisplaySize == 8)
-                    dptb.Text = $"00{_dateSeparator}00{_dateSeparator}00";
-                else if (DisplaySize == 10)
-                    dptb.Text = $"00{_dateSeparator}00{_dateSeparator}0000";
+                // Use configured null date display format
+                dptb.Text = GetNullDateDisplay();
 
                 dptb.SelectionStart = 0;
                 dptb.SelectionLength = 1;
@@ -379,7 +497,15 @@ namespace WpfControlsLibrary
 
             var text = dptb.Text;
 
-            if (!DateTime.TryParseExact(text, GetPattern(), CultureInfo.CurrentCulture, DateTimeStyles.None, out DateTime res))
+            // Check if it's a null date display (all zeros)
+            string nullDisplay = GetNullDateDisplay();
+            if (text == nullDisplay || IsAllZeros(text))
+            {
+                dptb.Text = nullDisplay;
+                return;
+            }
+
+            if (!DateTime.TryParseExact(text, GetPattern(), CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime res))
             {
                 var selStart = dptb.SelectionStart;
                 dptb.Text = textBeforeChange;
@@ -388,18 +514,29 @@ namespace WpfControlsLibrary
             }
         }
 
+        /// <summary>
+        /// Checks if a date display string is all zeros (null date).
+        /// </summary>
+        private bool IsAllZeros(string displayDate)
+        {
+            if (string.IsNullOrEmpty(displayDate))
+                return true;
+            var digitsOnly = displayDate.Replace(_dateSeparator, "").Replace("/", "").Replace("-", "").Replace(".", "");
+            return !string.IsNullOrEmpty(digitsOnly) && digitsOnly.All(c => c == '0');
+        }
+
         private string GetPattern()
         {
-            // Use the date separator from current culture instead of hardcoded "/"
+            // Use configured display format from App.config
             if (DisplaySize == 8)
             {
-                return $"dd{_dateSeparator}MM{_dateSeparator}yy";
+                return _displayFormat8;
             }
             else if (DisplaySize == 10)
             {
-                return $"dd{_dateSeparator}MM{_dateSeparator}yyyy";
+                return _displayFormat10;
             }
-            else return "";
+            else return _displayFormat10;
         }
 
     }

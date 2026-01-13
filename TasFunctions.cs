@@ -1058,10 +1058,17 @@ namespace WpfCSCS
 
             DateTime newDateTime = new DateTime();
 
-            if (dateString.Length == 10)
+            // Try internal format first (yyyy-MM-dd)
+            if (dateString.Length == 10 && dateString[4] == '-' && dateString[7] == '-')
+            {
+                newDateTime = DateTime.ParseExact(dateString, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+            }
+            // Then try display format with 4-digit year
+            else if (dateString.Length == 10)
             {
                 newDateTime = DateTime.ParseExact(dateString, $"dd{dateSeparator}MM{dateSeparator}yyyy", CultureInfo.InvariantCulture);
             }
+            // Finally try display format with 2-digit year
             else if(dateString.Length == 8)
             {
                 newDateTime = DateTime.ParseExact(dateString, $"dd{dateSeparator}MM{dateSeparator}yy", CultureInfo.InvariantCulture);

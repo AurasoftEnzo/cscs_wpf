@@ -1,0 +1,98 @@
+#MAINMENU;
+
+CreateWindow(strtrim(tpath()) + "wxmmenu.xaml");
+
+//StartDebugger(13337, true, "*");
+
+
+define mainMenuRazvojniDC type a;
+
+
+function runScript(sender, load)
+{
+    //MessageBox("sender = " + sender + ", load = "  + load);    
+
+    CHAIN strTrim(tpath())+strTrim(sender);
+}
+
+
+function wxmmenu_OnDisplay()
+{
+    RemoveMenu("mainMenuRazvojniDC");
+    AddMenuItem("mainMenuRazvojniDC", "ScriptsDC", "Scripts");
+    AddMenuItem("mainMenuRazvojniDC", "SourceEditorDC", "Source editor");
+    AddMenuItem("mainMenuRazvojniDC", "XAMLEditorDC", "XAML editor");
+    AddMenuItem("mainMenuRazvojniDC", "ReportDesignerDC", "Report designer");
+    AddMenuItem("mainMenuRazvojniDC", "DatabaseEditorDC", "Database editor");
+    AddMenuItem("mainMenuRazvojniDC", "RunScriptDC", "Run script");
+    AddMenuItem("mainMenuRazvojniDC", "UtilityMenuDC", "Utility menu");
+
+    AddMenuItem("ScriptsDC", "defaultWindow2.cscs", "Default window 2", "runScript"); 
+    AddMenuSeparator("ScriptsDC");
+
+    AddMenuItem("SourceEditorDC", "VSCode.cscs", "VSCode", "funcVSCode"); 
+    AddMenuItem("SourceEditorDC", "Notepad.cscs", "Notepad", "funcNotepad"); 
+    AddMenuItem("SourceEditorDC", "Notepadplusplus.cscs", "Notepad++", "funcNotepadPlusPlus"); 
+    AddMenuSeparator("SourceEditorDC");
+
+    AddMenuItem("XAMLEditorDC", "MSVisualStudio.cscs", "MS Visual Studio", "runScript"); 
+    AddMenuItem("XAMLEditorDC", "XAMLIO.cscs", "XAML.IO", "funcXAMLIO"); 
+    AddMenuSeparator("XAMLEditorDC");
+
+    AddMenuItem("DatabaseEditorDC", "MSManagementStudio.cscs", "MS Management Studio", "runScript"); 
+    AddMenuItem("DatabaseEditorDC", "HeidiSQL.cscs", "HeidiSQL", "runScript"); 
+    AddMenuItem("DatabaseEditorDC", "MSAzureStudio.cscs", "MS Azure Studio", "runScript"); 
+    AddMenuSeparator("DatabaseEditorDC");
+        
+}
+
+function funcVSCode()
+{    
+    try
+    {
+        processID = run("Code");
+    }
+    catch (ex)
+    {
+        MessageBox("GREŠKA: \n" + ex);
+    }
+}
+
+function funcNotepad()
+{    
+    try
+    {
+        processID = run("notepad");
+    }
+    catch (ex)
+    {
+        MessageBox("GREŠKA: \n" + ex);
+    }
+}
+
+function funcNotepadPlusPlus()
+{    
+    try
+    {
+        processID = run("notepad++");
+    }
+    catch (ex)
+    {
+        MessageBox("GREŠKA: \n" + ex);
+    }
+}
+
+function funcXAMLIO()
+{    
+    try
+    {       
+        InitFile = strtrim(tpath()) + "wxmmenu_browser.cscs";
+        CHAIN InitFile;
+    }
+    catch (ex)
+    {
+        MessageBox("GREŠKA: \n" + ex);
+    }
+}
+
+

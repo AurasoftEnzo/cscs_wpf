@@ -514,7 +514,7 @@ function importUBLXmlFromDict(xmlContent) {
         }
         // Determine document type from dictionary structure
         docType = GetDocumentTypeFromDict(invoiceDict);
-   msg ("DOCTYPE: " + docType);     
+ //  msg ("DOCTYPE: " + docType);     
         if (docType == "") {
             MessageBox("Nepoznat tip dokumenta u XML datoteci");
             return false;
@@ -527,9 +527,12 @@ function importUBLXmlFromDict(xmlContent) {
             MessageBox("Greška prilikom izvlačenja podataka zaglavlja");
             return false;
         }
-        msg ("ESD DATE: " + headerData["NKPR_GL_ESD"]);
+     //msg ("AAA ESD DATE); //: " + headerData["NKPR_GL_ESD"]);   
+     //   if (headerData["NKPR_GL_ESD"] == "") {headerData["NKPR_GL_ESD"] = headerData["NKPR_GL_INVDTE"];} 
+        msg ("ESD DATE: " + gl_esd);
         // Validate fiscal year before proceeding
-        if (!ValidateFiscalYear(headerData["NKPR_GL_ESD"])) {
+        //if (!ValidateFiscalYear(headerData["NKPR_GL_ESD"])) {
+        if (!ValidateFiscalYear(GL_ESD)) {
             MessageBox("Račun se ne može importirati jer datum ESD (" + headerData["NKPR_GL_ESD"] + ") ne pripada fiskalnoj godini " + KPSY_FISCAL_YR + ". Račun će biti premješten u arhivu.");
             return "FISCAL_YEAR_MISMATCH";
         }
@@ -541,9 +544,10 @@ function importUBLXmlFromDict(xmlContent) {
             MessageBox("Greška prilikom izvlačenja stavki računa");
             return false;
         }
-   return;     
+   //return;   
+    
         // Begin database transaction
-        BeginTransaction();
+        //BeginTransaction();
         
         try {
             // Import header data to NKNAERGL table
@@ -556,19 +560,19 @@ function importUBLXmlFromDict(xmlContent) {
             if (!ImportLineItemsToERLN(invNum, lineItems)) {
                 throw "Greška prilikom unosa stavki računa";
             }
-            
+    
             // Log to NKSYELOG
             LogToNKSYELOG(invNum, xmlFilePath, "IMPORT_SUCCESS");
             
             // Commit transaction
-            CommitTransaction();
+            //CommitTransaction();
             
             MessageBox("UBL XML račun je uspješno uvezen!\nBroj računa: " + invNum);
             return invNum;
             
         } catch (error) {
             // Rollback transaction on error
-            RollbackTransaction();
+            //RollbackTransaction();
             LogToNKSYELOG(0, xmlFilePath, "IMPORT_FAILURE: " + error);
             MessageBox("Greška prilikom unosa u bazu podataka: " + error);
             return false;
@@ -623,8 +627,10 @@ function ExtractHeaderDataFromDict(invoiceDict, docType) {
         // headerData["NKPR_GL_DUE_DATE"] = docData["DueDate"]; // !!!
         if (Contains(docData, "TaxPointDate")) {
             headerData["NKPR_GL_ESD"] = docData["TaxPointDate"];
+            GL_ESD = docData["TaxPointDate"];
         }else{
             headerData["NKPR_GL_ESD"] = docData["IssueDate"];
+            GL_ESD = docData["IssueDate"];
         }
         
         
@@ -785,10 +791,10 @@ function ExtractHeaderDataFromDict(invoiceDict, docType) {
         // Delivery information
         if (Contains(docData, "Delivery")) {
             delivery = docData["Delivery"];
-        msg("DELIVERY: " + delivery);    
+       // msg("DELIVERY: " + delivery);    
             if (delivery != null && delivery != "") {
                 if (Contains(delivery, "DeliveryLocation")) {
-               msg ("1111: " + headerData);     
+         //      msg ("1111: " + headerData);     
                     deliveryLocation = delivery["DeliveryLocation"];
                     if (deliveryLocation != null && deliveryLocation != "") {
                         if (Contains(deliveryLocation, "ID")) {
@@ -796,7 +802,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType) {
                         } else {
                             deliveryID = "";
                         }
-                  msg ("2222: " + headerData);      
+                  //  msg ("2222: " + headerData);      
                         if (deliveryID != "") {
                             // Check if it's GLN (13 characters) or internal code
                             if (deliveryID.length == 13) {
@@ -806,7 +812,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType) {
                                 headerData["NKPR_GL_SHPCOD"] = deliveryID;
                             }
                         }
-                    msg ("3333: " + headerData);    
+                   // msg ("3333: " + headerData);    
                         // Delivery address
                         if (Contains(deliveryLocation, "Address")) {
                             deliveryAddr = deliveryLocation["Address"];
@@ -819,11 +825,11 @@ function ExtractHeaderDataFromDict(invoiceDict, docType) {
                             if (Contains(deliveryAddr, "PostalZone")) {headerData["NKPR_GL_SHPZIP"] = deliveryAddr["PostalZone"]};
                             if (Contains(deliveryAddr, "Country")) {headerData["NKPR_GL_SHPST"] = deliveryAddr["Country"]["IdentificationCode"]};
                         }
-                        msg ("4444: " + headerData);
+                     //   msg ("4444: " + headerData);
                     }
                 }
             
-                msg ("5555: " + headerData);
+                //msg ("5555: " + headerData);
                 // Delivery party
                 if (Contains(delivery, "DeliveryParty")) {
                     deliveryParty = delivery["DeliveryParty"];
@@ -833,10 +839,10 @@ function ExtractHeaderDataFromDict(invoiceDict, docType) {
                 } else {
                     deliveryParty = {};
                 }
-                msg ("6666: " + headerData);
+                //msg ("6666: " + headerData);
             }
         }
-     msg ("AAAA: " + headerData);   
+     //msg ("AAAA: " + headerData);   
         // Payment information
         paymentMeans = docData["PaymentMeans"];
         if (paymentMeans != null && paymentMeans != "") {
@@ -858,7 +864,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType) {
                     HeaderData["NKPR_GL_RZRVA1"] = NKSC_ZR_BANKA;
                 }
             }
-        msg  ("BBBB: " + headerData); 
+        //msg  ("BBBB: " + headerData); 
             if (Contains(paymentMeans, "PaymentID")) {
                 paymentID = paymentMeans["PaymentID"];
                 if (Contains(paymentID, " ")) {
@@ -870,7 +876,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType) {
                 }
             }
         }
-     msg ("BBBB: " + headerData);   
+     //msg ("BBBB: " + headerData);   
         // Monetary totals
         legalMonTotal = docData["LegalMonetaryTotal"];
         if (legalMonTotal != null && legalMonTotal != "") {
@@ -879,7 +885,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType) {
             headerData["NKPR_GL_TOTAL"] = ParseDecimal(legalMonTotal["TaxInclusiveAmount"]);
             headerData["NKPR_GL_TAXAMT"] = headerData["NKPR_GL_TOTAL"]-headerData["NKPR_GL_SUBTOT"];
         }
-     msg ("CCCC: " + headerData);   
+     //msg ("CCCC: " + headerData);   
         // Notes
         if (Contains(docData, "Note")) {
             note = docData["Note"];
@@ -906,7 +912,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType) {
                 //tu sad treba spremit cijeli note u MemoH ili MemoF ili u linije ili negdje drugdje ako treba
             }
         }
-      msg ("DDDD: " + headerData);  
+      //  msg ("DDDD: " + headerData);  
         // Billing references
         if (Contains(docData, "BillingReference")) {
             billingRef = docData["BillingReference"];
@@ -927,6 +933,172 @@ function ExtractHeaderDataFromDict(invoiceDict, docType) {
     }
 }
 
+// Extract line items from Dictionary
+function ExtractLineItemsFromDict(invoiceDict, docType) {
+    try {
+        lineItems = {};
+        
+        // Get the root document data
+        docData = invoiceDict;
+        if (docType == "S" && invoiceDict.Contains("Invoice")) {
+            docData = invoiceDict["Invoice"];
+        } elif (docType == "R" && invoiceDict.Contains("CreditNote")) {
+            docData = invoiceDict["CreditNote"];
+        } elif (docType == "T" && invoiceDict.Contains("DebitNote")) {
+            docData = invoiceDict["DebitNote"];
+        }
+        
+        // Determine line element name based on document type
+        lineElementName = "";
+        quantityElementName = "";
+        if (docType == "S") {
+            lineElementName = "InvoiceLine";
+            quantityElementName = "InvoicedQuantity";
+        } elif (docType == "R") {
+            lineElementName = "CreditNoteLine";
+            quantityElementName = "CreditedQuantity";
+        } elif (docType == "T") {
+            lineElementName = "DebitNoteLine";
+            quantityElementName = "DebitedQuantity";
+        }
+        
+        // Get line items array
+        linesArray = GetDictValue(docData, lineElementName);
+        if (linesArray == null || linesArray == "") {
+            return {}; // Return empty array if no lines found
+        }
+        
+        // Handle both single line (object) and multiple lines (array)
+        if (IsArray(linesArray)) {
+            // Multiple lines
+            for (i = 0; i < Size(linesArray); i++) {
+                lineData = ExtractSingleLineFromDict(linesArray[i], quantityElementName);
+                if (lineData != null) {
+                    lineItems.Add(lineData);
+                }
+            }
+        } else {
+            // Single line
+            lineData = ExtractSingleLineFromDict(linesArray, quantityElementName);
+            if (lineData != null) {
+                lineItems.Add(lineData);
+            }
+        }
+        
+        return lineItems;
+        
+    } catch (error) {
+        MessageBox("Greška prilikom izvlačenja stavki: " + error);
+        return null;
+    }
+}
+
+// Extract single line item data from Dictionary
+function ExtractSingleLineFromDict(lineDict, quantityElementName) {
+    try {
+        lineData = {};
+        
+        // Basic line information
+        lineData["NKPR_LN_BR_LN"] = GetDictValue(lineDict, "ID");
+        
+        // Quantity and unit
+        quantity = GetDictValue(lineDict, quantityElementName);
+        if (quantity != "") {
+            lineData["NKPR_LN_PQTY"] = ParseDecimal(quantity);
+            
+            // Unit code (might be in attributes - handle as needed)
+            unitCode = GetDictValue(lineDict, quantityElementName + ".unitCode");
+            if (unitCode == "") {
+                // Try alternative structure
+                unitCode = GetDictValue(lineDict, quantityElementName + ".@unitCode");
+            }
+            lineData["NKPR_LN_JEDMJ"] = GetUnitCodeFromUN(unitCode);
+        }
+        
+        // Line amount
+        lineData["NKPR_LN_AMT"] = ParseDecimal(GetDictValue(lineDict, "LineExtensionAmount"));
+        
+        // Item information
+        item = GetDictValue(lineDict, "Item");
+        if (item != null && item != "") {
+            lineData["NKPR_LN_PDESC"] = GetDictValue(item, "Name");
+            
+            // Product code - try different locations
+            productCode = GetDictValue(item, "BuyersItemIdentification.ID");
+            if (productCode == "") {
+                productCode = GetDictValue(item, "StandardItemIdentification.ID");
+            }
+            if (productCode == "") {
+                productCode = GetDictValue(item, "SellersItemIdentification.ID");
+            }
+            lineData["NKPR_LN_PCODE"] = productCode;
+            
+            // Tax information
+            taxCategory = GetDictValue(item, "ClassifiedTaxCategory");
+            if (taxCategory != null && taxCategory != "") {
+                taxPercent = ParseDecimal(GetDictValue(taxCategory, "Percent"));
+                lineData["NKPR_LN_PRNPR"] = taxPercent;
+                //lineData["NKPR_LN_TXBLE"] = (taxPercent > 0) ? "Y" : "N";
+            }
+        }
+        
+        // Price information
+        price = GetDictValue(lineDict, "Price");
+        if (price != null && price != "") {
+            lineData["NKPR_LN_PPRCE"] = ParseDecimal(GetDictValue(price, "PriceAmount"));
+        }
+        
+        // Allowances and charges
+        allowanceCharge = GetDictValue(lineDict, "AllowanceCharge");
+        if (allowanceCharge != null && allowanceCharge != "") {
+            // Handle both single and multiple allowance/charge entries
+            if (IsArray(allowanceCharge)) {
+                for (i = 0; i < Size(allowanceCharge); i++) {
+                    ProcessAllowanceCharge(allowanceCharge[i], lineData);
+                }
+            } else {
+                ProcessAllowanceCharge(allowanceCharge, lineData);
+            }
+        }
+        
+        // Notes
+        lineNote = GetDictValue(lineDict, "Note");
+        if (lineNote != "") {
+            lineData["NKPR_LN_NOTE"] = lineNote;
+        }
+        
+        return lineData;
+        
+    } catch (error) {
+        MessageBox("Greška prilikom izvlačenja stavke: " + error);
+        return null;
+    }
+}
+
+// Process allowance/charge for line item
+function ProcessAllowanceCharge(allowanceChargeDict, lineData) {
+    chargeIndicator = GetDictValue(allowanceChargeDict, "ChargeIndicator");
+    amount = ParseDecimal(GetDictValue(allowanceChargeDict, "Amount"));
+    
+    if (chargeIndicator == "false" && amount > 0) {
+        // This is an allowance (discount)
+        lineData["NKPR_LN_POPL"] = amount;
+        
+        // Calculate discount percentage
+        grossAmount = lineData["NKPR_LN_PQTY"] * lineData["NKPR_LN_PPRCE"];
+        if (grossAmount > 0) {
+            lineData["NKPR_LN_PDISC"] = (amount / grossAmount) * 100;
+        }
+    } elif (chargeIndicator == "true" && amount > 0) {
+        // This is a charge - handle as negative discount
+        lineData["NKPR_LN_POPL"] = -amount;
+        
+        grossAmount = lineData["NKPR_LN_PQTY"] * lineData["NKPR_LN_PPRCE"];
+        if (grossAmount > 0) {
+            lineData["NKPR_LN_PDISC"] = -(amount / grossAmount) * 100;
+        }
+    }
+}
 
 
 
@@ -946,7 +1118,7 @@ function ImportXml(xmlFilePath){
 
         //here is import to data tables NKNAERGL AND NKNAERLN
         
-             MSG(xmlDict+"..."+xmlFilePath);
+      //       MSG(xmlDict+"..."+xmlFilePath);
             //ima GREŠKU - ne vraća keyeve iz glavnog noda kao Invoice ili CreditNote
             /*
              if(Contains(xmlDict, "Invoice")){
@@ -959,7 +1131,7 @@ function ImportXml(xmlFilePath){
              }
              */
 
-       msg("AAAA: " + xmlDict.mainNode.Keys);     
+   //    msg("AAAA: " + xmlDict.mainNode.Keys);     
             // if(Contains(mainNode, "AdditionalDocumentReference")){
             //     adr = mainNode["AdditionalDocumentReference"];
             //     MSG(adr);
@@ -2012,173 +2184,6 @@ function ParseDecimal(value) {
     return Double(value);
 }
  
-// Extract line items from Dictionary
-function ExtractLineItemsFromDict(invoiceDict, docType) {
-    try {
-        lineItems = {};
-        
-        // Get the root document data
-        docData = invoiceDict;
-        if (docType == "S" && invoiceDict.ContainsKey("Invoice")) {
-            docData = invoiceDict["Invoice"];
-        } elif (docType == "R" && invoiceDict.ContainsKey("CreditNote")) {
-            docData = invoiceDict["CreditNote"];
-        } elif (docType == "T" && invoiceDict.ContainsKey("DebitNote")) {
-            docData = invoiceDict["DebitNote"];
-        }
-        
-        // Determine line element name based on document type
-        lineElementName = "";
-        quantityElementName = "";
-        if (docType == "S") {
-            lineElementName = "InvoiceLine";
-            quantityElementName = "InvoicedQuantity";
-        } elif (docType == "R") {
-            lineElementName = "CreditNoteLine";
-            quantityElementName = "CreditedQuantity";
-        } elif (docType == "T") {
-            lineElementName = "DebitNoteLine";
-            quantityElementName = "DebitedQuantity";
-        }
-        
-        // Get line items array
-        linesArray = GetDictValue(docData, lineElementName);
-        if (linesArray == null || linesArray == "") {
-            return {}; // Return empty array if no lines found
-        }
-        
-        // Handle both single line (object) and multiple lines (array)
-        if (IsArray(linesArray)) {
-            // Multiple lines
-            for (i = 0; i < Size(linesArray); i++) {
-                lineData = ExtractSingleLineFromDict(linesArray[i], quantityElementName);
-                if (lineData != null) {
-                    lineItems.Add(lineData);
-                }
-            }
-        } else {
-            // Single line
-            lineData = ExtractSingleLineFromDict(linesArray, quantityElementName);
-            if (lineData != null) {
-                lineItems.Add(lineData);
-            }
-        }
-        
-        return lineItems;
-        
-    } catch (error) {
-        MessageBox("Greška prilikom izvlačenja stavki: " + error);
-        return null;
-    }
-}
-
-// Extract single line item data from Dictionary
-function ExtractSingleLineFromDict(lineDict, quantityElementName) {
-    try {
-        lineData = {};
-        
-        // Basic line information
-        lineData["NKPR_LN_BR_LN"] = GetDictValue(lineDict, "ID");
-        
-        // Quantity and unit
-        quantity = GetDictValue(lineDict, quantityElementName);
-        if (quantity != "") {
-            lineData["NKPR_LN_PQTY"] = ParseDecimal(quantity);
-            
-            // Unit code (might be in attributes - handle as needed)
-            unitCode = GetDictValue(lineDict, quantityElementName + ".unitCode");
-            if (unitCode == "") {
-                // Try alternative structure
-                unitCode = GetDictValue(lineDict, quantityElementName + ".@unitCode");
-            }
-            lineData["NKPR_LN_JEDMJ"] = GetUnitCodeFromUN(unitCode);
-        }
-        
-        // Line amount
-        lineData["NKPR_LN_AMT"] = ParseDecimal(GetDictValue(lineDict, "LineExtensionAmount"));
-        
-        // Item information
-        item = GetDictValue(lineDict, "Item");
-        if (item != null && item != "") {
-            lineData["NKPR_LN_PDESC"] = GetDictValue(item, "Name");
-            
-            // Product code - try different locations
-            productCode = GetDictValue(item, "SellersItemIdentification.ID");
-            if (productCode == "") {
-                productCode = GetDictValue(item, "StandardItemIdentification.ID");
-            }
-            if (productCode == "") {
-                productCode = GetDictValue(item, "BuyersItemIdentification.ID");
-            }
-            lineData["NKPR_LN_PCODE"] = productCode;
-            
-            // Tax information
-            taxCategory = GetDictValue(item, "ClassifiedTaxCategory");
-            if (taxCategory != null && taxCategory != "") {
-                taxPercent = ParseDecimal(GetDictValue(taxCategory, "Percent"));
-                lineData["NKPR_LN_PRNPR"] = taxPercent;
-                lineData["NKPR_LN_TXBLE"] = (taxPercent > 0) ? "Y" : "N";
-            }
-        }
-        
-        // Price information
-        price = GetDictValue(lineDict, "Price");
-        if (price != null && price != "") {
-            lineData["NKPR_LN_PPRCE"] = ParseDecimal(GetDictValue(price, "PriceAmount"));
-        }
-        
-        // Allowances and charges
-        allowanceCharge = GetDictValue(lineDict, "AllowanceCharge");
-        if (allowanceCharge != null && allowanceCharge != "") {
-            // Handle both single and multiple allowance/charge entries
-            if (IsArray(allowanceCharge)) {
-                for (i = 0; i < Size(allowanceCharge); i++) {
-                    ProcessAllowanceCharge(allowanceCharge[i], lineData);
-                }
-            } else {
-                ProcessAllowanceCharge(allowanceCharge, lineData);
-            }
-        }
-        
-        // Notes
-        lineNote = GetDictValue(lineDict, "Note");
-        if (lineNote != "") {
-            lineData["NKPR_LN_NOTE"] = lineNote;
-        }
-        
-        return lineData;
-        
-    } catch (error) {
-        MessageBox("Greška prilikom izvlačenja stavke: " + error);
-        return null;
-    }
-}
-
-// Process allowance/charge for line item
-function ProcessAllowanceCharge(allowanceChargeDict, lineData) {
-    chargeIndicator = GetDictValue(allowanceChargeDict, "ChargeIndicator");
-    amount = ParseDecimal(GetDictValue(allowanceChargeDict, "Amount"));
-    
-    if (chargeIndicator == "false" && amount > 0) {
-        // This is an allowance (discount)
-        lineData["NKPR_LN_POPL"] = amount;
-        
-        // Calculate discount percentage
-        grossAmount = lineData["NKPR_LN_PQTY"] * lineData["NKPR_LN_PPRCE"];
-        if (grossAmount > 0) {
-            lineData["NKPR_LN_PDISC"] = (amount / grossAmount) * 100;
-        }
-    } elif (chargeIndicator == "true" && amount > 0) {
-        // This is a charge - handle as negative discount
-        lineData["NKPR_LN_POPL"] = -amount;
-        
-        grossAmount = lineData["NKPR_LN_PQTY"] * lineData["NKPR_LN_PPRCE"];
-        if (grossAmount > 0) {
-            lineData["NKPR_LN_PDISC"] = -(amount / grossAmount) * 100;
-        }
-    }
-}
-
 // Helper function to safely get value from dictionary with dot notation support
 function GetDictValue(dict, key) {
     if (dict == null || IsString(dict)) {
@@ -2223,17 +2228,17 @@ function ImportHeaderDataToERGL(headerData, docType) {
         
         // Prepare SQL insert statement for NKNAERGL table
         sql_insert = "INSERT INTO " + databaseName + ".dbo.NKNAERGL (";
-        sql_insert += "NKNA_ER_ID, NKNA_ER_INVNUM, NKNA_ER_OZNAKA, NKNA_ER_INVDTE, NKNA_ER_TIMECR, ";
-        sql_insert += "NKNA_ER_DUE_DATE, NKNA_ER_ESD, NKNA_ER_TYPECODE, NKNA_ER_CURRENCY, ";
-        sql_insert += "NKNA_ER_CUSTOIB, NKNA_ER_CUSTNME, NKNA_ER_CUSTADD, NKNA_ER_CUSTCTY, ";
-        sql_insert += "NKNA_ER_CUSTZIP, NKNA_ER_CUSTST, NKNA_ER_SUPPOIB, ";
-        sql_insert += "NKNA_ER_SHPCOD, NKNA_ER_SHPNME, NKNA_ER_SHPADD1, NKNA_ER_SHPCTY, ";
-        sql_insert += "NKNA_ER_SHPZIP, NKNA_ER_SHPST, NKNA_ER_GLN, ";
-        sql_insert += "NKNA_ER_PAYMNT, NKNA_ER_MODEL, NKNA_ER_POZIV, ";
-        sql_insert += "NKNA_ER_LINETOTAL, NKNA_ER_TAXTOTAL, NKNA_ER_TOTAL, NKNA_ER_PAYABLE, ";
-        sql_insert += "NKNA_ER_NOTE, NKNA_ER_REZ3, NKNA_ER_CREATED, NKNA_ER_STATUS";
+        sql_insert += "NKNA_GL_NUM, NKNA_GL_OZNAKA, NKNA_GL_INVDTE, NKNA_GL_TIMECR, ";
+        sql_insert += "NKNA_GL_DUE_DATE, NKNA_GL_ESD, NKNA_GL_TYPECODE, NKNA_GL_CURRENCY, ";
+        sql_insert += "NKNA_GL_CUSTOIB, NKNA_GL_CUSTNME, NKNA_GL_CUSTADD, NKNA_GL_CUSTCTY, ";
+        sql_insert += "NKNA_GL_CUSTZIP, NKNA_GL_CUSTST, NKNA_GL_SUPPOIB, ";
+        sql_insert += "NKNA_GL_SHPCOD, NKNA_GL_SHPNME, NKNA_GL_SHPADD1, NKNA_GL_SHPCTY, ";
+        sql_insert += "NKNA_GL_SHPZIP, NKNA_GL_SHPST, NKNA_GL_GLN, ";
+        sql_insert += "NKNA_GL_PAYMNT, NKNA_GL_MODEL, NKNA_GL_POZIV, ";
+        sql_insert += "NKNA_GL_LINETOTAL, NKNA_GL_TAXTOTAL, NKNA_GL_TOTAL, NKNA_GL_PAYABLE, ";
+        sql_insert += "NKNA_GL_NOTE, NKNA_GL_REZ3, NKNA_GL_CREATED, NKNA_GL_STATUS";
         sql_insert += ") VALUES (";
-        sql_insert += "@recordId, @invNum, @docType, @invDate, @timeCreated, ";
+        sql_insert += "@invNum, @docType, @invDate, @timeCreated, ";
         sql_insert += "@dueDate, @taxPointDate, @typeCode, @currency, ";
         sql_insert += "@custOIB, @custName, @custAddress, @custCity, ";
         sql_insert += "@custZip, @custState, @suppOIB, ";
@@ -2246,7 +2251,6 @@ function ImportHeaderDataToERGL(headerData, docType) {
         
         // Prepare parameters
         sqlParams = {};
-        sqlParams.Add({"@recordId", newRecordId});
         sqlParams.Add({"@invNum", headerData["NKPR_GL_NUM"]});
         sqlParams.Add({"@docType", docType});
         sqlParams.Add({"@invDate", headerData["NKPR_GL_INVDTE"]});
@@ -2302,7 +2306,7 @@ function ImportLineItemsToERLN(recordId, lineItems) {
             lineData = lineItems[i];
             
             sql_insert = "INSERT INTO " + databaseName + ".dbo.NKNAERLN (";
-            sql_insert += "NKNA_LN_ERID, NKNA_LN_BR_LN, NKNA_LN_PQTY, NKNA_LN_AMT, ";
+            sql_insert += "NKNA_LN_INVNM, NKNA_LN_BR_LN, NKNA_LN_PQTY, NKNA_LN_AMT, ";
             sql_insert += "NKNA_LN_PCODE, NKNA_LN_PDESC, NKNA_LN_JEDMJ, ";
             sql_insert += "NKNA_LN_PPRCE, NKNA_LN_PRNPR, NKNA_LN_TXBLE, ";
             sql_insert += "NKNA_LN_POPL, NKNA_LN_PDISC, NKNA_LN_NOTE";
@@ -2314,7 +2318,7 @@ function ImportLineItemsToERLN(recordId, lineItems) {
             sql_insert += ");";
             
             sqlParams = {};
-            sqlParams.Add({"@recordId", recordId});
+            sqlParams.Add({"@recordId", headerData["NKPR_GL_NUM"]});
             sqlParams.Add({"@lineNum", lineData["NKPR_LN_BR_LN"]});
             sqlParams.Add({"@qty", lineData["NKPR_LN_PQTY"]});
             sqlParams.Add({"@amount", lineData["NKPR_LN_AMT"]});
@@ -2369,7 +2373,7 @@ function LogToNKSYELOG(recordId, xmlFilePath, status) {
 
 // Helper function to get next record ID
 function GetNextRecordId(tableName) {
-    sql_max = "SELECT MAX(NKNA_ER_ID) FROM " + databaseName + ".dbo." + tableName;
+    sql_max = "SELECT MAX(NKNA_GL_NUM) FROM " + databaseName + ".dbo." + tableName;
     
     result = sqlQuery(sql_max);
     if (Size(result) >= 2 && result[1][0] != null) {
@@ -2407,32 +2411,18 @@ function GetUnitCodeFromUN(unCode) {
 // }
 
 // Validate if invoice ESD date belongs to current fiscal year
-function ValidateFiscalYear(esdDate) {
+function ValidateFiscalYear() {
+    return true; // Temporarily disable fiscal year check
     try {
-        if (esdDate == "" || esdDate == null) {
-            return false; // No ESD date provided
-        }
+        //if (esdDate == "" || esdDate == null) {
+        //    return false; // No ESD date provided
+        //}
         
         // Parse fiscal year from KPSY_FISCAL_YR (format: YYYY-MM-DD or similar)
-        fiscalYear = "";
-        if (KPSY_FISCAL_YR != "" && KPSY_FISCAL_YR != null) {
-            if (Contains(KPSY_FISCAL_YR, "-")) {
-                fiscalYear = Substring(KPSY_FISCAL_YR, 0, 4); // Extract year part
-            } else {
-                fiscalYear = KPSY_FISCAL_YR; // Assume it's already a year
-            }
-        } else {
-            fiscalYear = FormatDate(Now(), "yyyy"); // Use current year as fallback
-        }
+        fiscalYear = year(KPSY_FISCAL_YR);
         
         // Parse year from ESD date (format: YYYY-MM-DD)
-        esdYear = "";
-        if (Contains(esdDate, "-")) {
-            esdYear = Substring(esdDate, 0, 4); // Extract year part
-        } else {
-            esdYear = esdDate; // Assume it's already a year
-        }
-        
+        esdYear =  year(gl_esd);
         // Compare years
         return (esdYear == fiscalYear);
         

@@ -1,0 +1,222 @@
+Import(strTrim(mpath()) + "CSCS.Math.dll");
+
+// Global variables
+SCHEMASPATH = "";
+companyCode = "";
+databaseName = "";
+
+// Get arguments from command line or UI
+args = CommandLineArgs(); 
+if(Size(args) > 1){
+    companyCode = args[2]; // e.g. Y3
+    if(companyCode != ""){  
+        CoSet(companyCode);
+    }else{
+        MessageBox("Nedostaje šifra tvrtke u argumentima.");
+        exit;
+    }    
+}
+
+// Initialize company settings if available
+if(companyCode != ""){
+    // Read NKSYCCYR for database name
+    sqlQueryString = "select SY_CC_USER, SY_CC_DBASE from " + strtrim(CommonDBGet()) + ".dbo.NKSYCCYR WHERE SY_CC_CODE = '" + companyCode + "'";
+    try
+    {
+        sqlResult = sqlQuery(sqlQueryString);
+    }
+    catch(exc)
+    {
+        MessageBox("NKSYCCYR reading error: " + exc);
+        exit;
+    }
+    if (size(sqlResult) > 1)
+    {
+        databaseName = sqlResult[1][1].trim(); // database name
+    }
+
+    // Read NKSYSYCO for SCHEMASPATH
+    sqlQueryString = "select SY_SY_CODE,SY_SY_VALUE from " + databaseName + ".dbo.NKSYSYCO";
+    try
+    {
+        sqlResult = sqlQuery(sqlQueryString);
+    }
+    catch(exc)
+    {
+        MessageBox("NKSYSYCO reading error: " + exc);
+        exit;
+    }
+    if (size(sqlResult) > 1)
+    {
+        for(i = 1; i < Size(sqlResult); i++){
+            if(sqlResult[i][0].trim() == "SCHEMASPATH")
+            {
+                SCHEMASPATH = sqlResult[i][1].trim();
+            }
+        }
+    }
+}
+
+// If SCHEMASPATH is not set, try to set a default or prompt user
+if(SCHEMASPATH == ""){
+    // Try common locations
+    if(Exists("C:\\UBL\\schemas\\")){
+        SCHEMASPATH = "C:\\UBL\\schemas\\";
+    }elif(Exists("C:\\eRacun\\schemas\\")){
+        SCHEMASPATH = "C:\\eRacun\\schemas\\";
+    }else{
+        // SCHEMASPATH will be prompted in UI
+    }
+}
+
+// Open the verification window
+AddXaml("WxUBLVerify.xaml");
+
+//-----------------------------------------------------------
+// VERIFICATION FUNCTION
+//-----------------------------------------------------------
+function VerifyUBLXml(xmlFilePath) {
+    
+    if(xmlFilePath == "" || !Exists(xmlFilePath)){
+        MessageBox("Molimo unesite valjanu putanju do XML datoteke.");
+        return false;
+    }
+
+    // Check if SCHEMASPATH is set
+    if(SCHEMASPATH == ""){
+        schemasPath = GetTextFromUI("schemasPathTextBox");
+        if(schemasPath != "" && Exists(schemasPath)){
+            SCHEMASPATH = schemasPath;
+            if(!EndsWith(SCHEMASPATH, "\\")){
+                SCHEMASPATH = SCHEMASPATH + "\\";
+            }
+        }else{
+            MessageBox("Molimo unesite valjanu putanju do schema direktorija.");
+            return false;
+        }
+    }
+
+    // Read XML file
+    xml = "";
+    try {
+        xml = ReadFile(xmlFilePath);
+    }
+    catch(exc) {
+        MessageBox("Greška pri čitanju XML datoteke: " + exc);
+        return false;
+    }
+
+    if(xml == ""){
+        MessageBox("XML datoteka je prazna.");
+        return false;
+    }
+
+    // Prepare output file paths for validation results
+    xmlFileDir = ParseFile(xmlFilePath, "pPath");
+    xmlFileNameNoExt = ParseFile(xmlFilePath, "pfName");
+    xsdValidationResultOutputFile = xmlFileDir + xmlFileNameNoExt + "_XSD.err";
+    schValidationResultOutputFile = xmlFileDir + xmlFileNameNoExt + "_SCH.err";
+
+    // Delete older validation output files (if exist)
+    if(Exists(xsdValidationResultOutputFile)){
+        Delete(xsdValidationResultOutputFile);
+    }
+    
+    if(Exists(schValidationResultOutputFile)){
+        Delete(schValidationResultOutputFile);
+    }
+
+    // Determine document type (Invoice or CreditNote)
+    docType = "Invoice";
+    if(Contains(xml, "<CreditNote") || Contains(xml, ":CreditNote")){
+        docType = "CreditNote";
+    }elif(Contains(xml, "<DebitNote") || Contains(xml, ":DebitNote")){
+        docType = "DebitNote";
+    }
+
+    // -----------------------------------------------------------
+    // XSD VALIDATION 
+    // -----------------------------------------------------------
+    xsdFiles = {};
+    if (docType == "CreditNote") {
+        xsdFiles.Add(SCHEMASPATH + "xsd\\maindoc\\UBL-CreditNote-2.1.xsd");
+    }elif(docType == "DebitNote"){
+        xsdFiles.Add(SCHEMASPATH + "xsd\\maindoc\\UBL-DebitNote-2.1.xsd");
+    }else {
+        xsdFiles.Add(SCHEMASPATH + "xsd\\maindoc\\UBL-Invoice-2.1.xsd");
+    }
+
+    // Check if XSD file exists
+    if(!Exists(xsdFiles[0])){
+        MessageBox("XSD datoteka ne postoji:\n" + xsdFiles[0] + "\n\nProvjerite SCHEMASPATH postavke.");
+        return false;
+    }
+
+    SetTextInUI("statusTextBlock", "Provjeravam XSD validaciju...");
+    
+    if (!ValidateXsd(xml, xsdFiles, xsdValidationResultOutputFile)) {
+        SetTextInUI("statusTextBlock", "XML nije prošao XSD validaciju!");
+        MessageBox("XML nije prošao XSD validaciju!\n\nProvjerite datoteku:\n" + xsdValidationResultOutputFile);
+        return false;
+    }
+
+    SetTextInUI("statusTextBlock", "XSD validacija uspješna. Provjeravam Schematron validaciju...");
+
+    // -----------------------------------------------------------
+    // SCHEMATRON VALIDATION 
+    // -----------------------------------------------------------
+    
+    schFiles = {};
+    schFiles.Add(SCHEMASPATH + "schematron\\HR-CIUS-EXT-EN16931-UBL.sch");
+    
+    // Check if Schematron file exists
+    if(!Exists(schFiles[0])){
+        MessageBox("Schematron datoteka ne postoji:\n" + schFiles[0] + "\n\nProvjerite SCHEMASPATH postavke.");
+        return false;
+    }
+
+    // Check if transpile.xsl exists
+    transpileXsl = SCHEMASPATH + "schematron\\transpile.xsl";
+    if(!Exists(transpileXsl)){
+        MessageBox("transpile.xsl datoteka ne postoji:\n" + transpileXsl + "\n\nProvjerite SCHEMASPATH postavke.");
+        return false;
+    }
+
+    if(!ValidateSch(xml, schFiles, transpileXsl, schValidationResultOutputFile)){
+        SetTextInUI("statusTextBlock", "XML nije prošao Schematron validaciju!");
+        MessageBox("XML nije prošao Schematron validaciju!\n\nProvjerite datoteku:\n" + schValidationResultOutputFile);
+        return false;
+    }
+
+    SetTextInUI("statusTextBlock", "Validacija uspješna! XML je valjan prema UBL 2.1 standardu.");
+    MessageBox("Uspjeh!\n\nXML je uspješno prošao XSD i Schematron validaciju.\n\nDatoteka: " + xmlFilePath);
+    return true;
+}
+
+//-----------------------------------------------------------
+// UI EVENT HANDLERS
+//-----------------------------------------------------------
+
+function OnVerifyButtonClick(sender, e) {
+    xmlFilePath = GetTextFromUI("xmlFilePathTextBox");
+    VerifyUBLXml(xmlFilePath);
+}
+
+function OnBrowseButtonClick(sender, e) {
+    filter = "XML Files (*.xml)|*.xml|All Files (*.*)|*.*";
+    xmlFilePath = BrowseForFile(filter, "Odaberite UBL XML datoteku");
+    if(xmlFilePath != ""){
+        SetTextInUI("xmlFilePathTextBox", xmlFilePath);
+    }
+}
+
+function OnBrowseSchemasButtonClick(sender, e) {
+    schemasPath = BrowseForFolder("Odaberite direktorij sa shemama");
+    if(schemasPath != ""){
+        SetTextInUI("schemasPathTextBox", schemasPath);
+        SCHEMASPATH = schemasPath;
+        if(!EndsWith(SCHEMASPATH, "\\")){
+            SCHEMASPATH = SCHEMASPATH + "\\";
+        }
+    }
+}

@@ -199,8 +199,6 @@ function getList(){
 
         if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
             // !!!
-            MessageBox("NIJE IMPLEMENTIRANO!");
-            exit;
             GetListMER();
         } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
             GetListFINA_B2B();
@@ -257,6 +255,8 @@ function GetListFINA_B2B(){
                 // datumIzdavanja = Substring(datumIzdavanja, 0, 8);
                 datumKnjizenja = ack["InvoiceList"][i]["InvoiceDate"];
                 // datumKnjizenja = Substring(datumKnjizenja, 0, 8);
+                // MSG(datumIzdavanja);
+                // MSG(datumIzdavanja.ToString("dd/MM/yyyy") + " ... " + datumKnjizenja.ToString("dd/MM/yyyy"));
 
                 AddRacunToArrays(buyerName, buyerId, datumIzdavanja, datumKnjizenja, aurasoftFormatSupplierInvoiceId, invoiceId, statusCode);
             }
@@ -308,9 +308,9 @@ function GetListFINA_B2G(){
                 statusCode = ack["InvoiceList"][i]["StatusCode"];
 
                 datumIzdavanja = ack["InvoiceList"][i]["InvoiceIssueDate"];
-                datumIzdavanja = Substring(datumIzdavanja, 0, 8);
+                // datumIzdavanja = Substring(datumIzdavanja, 0, 8);
                 datumKnjizenja = ack["InvoiceList"][i]["InvoiceDate"];
-                datumKnjizenja = Substring(datumKnjizenja, 0, 8);
+                // datumKnjizenja = Substring(datumKnjizenja, 0, 8);
 
                 AddRacunToArrays(buyerName, buyerId, datumIzdavanja, datumKnjizenja, aurasoftFormatSupplierInvoiceId, invoiceId, statusCode);
             }
@@ -326,21 +326,27 @@ function GetListFINA_B2G(){
 
 // 123-90-1 -> 90100123
 function TransformInvoiceNumberToAurasoftFormat(supplierInvoiceId){
-    parts = supplierInvoiceId.Split("-");
-    
-    part0 = parts[0];
-    part1 = parts[1];
-    part2 = parts[2];
+    try{
+        parts = supplierInvoiceId.Split("-");
+        
+        part0 = parts[0];
+        part1 = parts[1];
+        part2 = parts[2];
 
 
-    parts0Length = part0.length;
-
-    while(parts0Length < 5){
-        part0 = "0" + part0;
         parts0Length = part0.length;
+
+        while(parts0Length < 5){
+            part0 = "0" + part0;
+            parts0Length = part0.length;
+        }
+        
+        final = part1 + part2 + part0;
+
+        return final;
+    }catch(ex){
+        return supplierInvoiceId;
     }
-    
-    final = part1 + part2 + part0;
 }
 
 function GetListMER(){
@@ -350,11 +356,13 @@ function GetListMER(){
                     '", "Password": "' + ERAC_PASS + 
                     '", "CompanyId": "' + companyOIB + 
                     '", "SoftwareId": "' + ERAC_DESC + 
-                    '", "StatusId": "' + statusId + 
+                    // '", "StatusId": "' + statusId + // not mandatory
+                    '", "From": "' + FilterDateFrom.ToString("yyyy-MM-dd") + 
+                    '", "To": "' + FilterDateTo.ToString("yyyy-MM-dd") + 
                     '"}';
             
     try {
-        apiUrl = ERAC_SERVER + "apis/v2/queryinbox";
+        apiUrl = ERAC_SERVER + "apis/v2/queryoutbox";
         jsonResponse = WebRequest("POST", apiUrl, jsonPayload, "", "GetListMERSuccess", "GetListMERFailure", "application/json", null, 1000 * 20, false);
     } catch (ex) {
         MessageBox("Greška prilikom API poziva: " + ex);
@@ -383,14 +391,23 @@ function GetListMERSuccess(trackingId, responseCode, res) {
             }
 
             racunObject = DeserializeJson(resParts[i]);
-            
+            /*
+                supplierName, 
+                supplierId,
+                datumIzdavanja,
+                datumKnjizenja, 
+                supplierInvoiceId,
+                eRacunBrojRacuna,
+                statusRacuna
+            */
             AddRacunToArrays(
-                racunObject["SenderBusinessName"],
-                racunObject["SenderBusinessNumber"],
+                racunObject["RecipientBusinessName"],
+                racunObject["RecipientBusinessNumber"],
                 "2025-01-01", // !!!
                 "2025-01-01", // !!!
-                racunObject["DocumentNr"],
-                racunObject["ElectronicId"]
+                TransformInvoiceNumberToAurasoftFormat(racunObject["DocumentNr"]),
+                racunObject["ElectronicId"],
+                racunObject["StatusName"] + "(" + racunObject["StatusId"] + ")"// mozda bolje StatusId
             );
         }
     }
@@ -1083,11 +1100,11 @@ function DownloadNewInvoicesFromMeR() {
 
 
 function LogResponse(responseCode, response) {
-    if(!DIR_EXISTS(FILESPATH + "UR\\" + "responses\\")){
-        MAKE_DIR(FILESPATH + "UR\\" + "responses\\");
+    if(!DIR_EXISTS(FILESPATH + "IRStatus\\" + "responses\\")){
+        MAKE_DIR(FILESPATH + "IRStatus\\" + "responses\\");
     }
 
-    logFilePath = FILESPATH + "UR\\" + "responses\\" + "queryinbox" + ".response";
+    logFilePath = FILESPATH + "IRStatus\\" + "responses\\" + "queryinbox" + ".response";
     appendText = Now("yyyy-MM-dd HH:mm:ss") + " -----------------------------------\n\n" + "StatusCode = " + responseCode + "\n\n" + "Response:\n" + response + "\n\n";
     try {
         SaveFile(appendText, logFilePath, "a");        

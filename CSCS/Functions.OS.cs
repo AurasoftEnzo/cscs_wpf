@@ -459,7 +459,7 @@ namespace SplitAndMerge
 
             if (m_stringVersion)
             {
-                return new Variable(DateTime.Now.ToString(strFormat));
+                return new Variable(DateTime.Now.ToString(strFormat, CultureInfo.InvariantCulture));
             }
 
             var date = DateTime.Now;

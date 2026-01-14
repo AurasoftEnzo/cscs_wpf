@@ -2012,8 +2012,15 @@ namespace SplitAndMerge
                         };
                         tempStr = AsDouble().ToString(format, customFormat);                       
                         break;
-                    case VarType.DATETIME:                         
-                        tempStr = AsDateTime().ToString(format);
+                    case VarType.DATETIME:
+                        if (string.IsNullOrEmpty(format))
+                        {
+                            tempStr = AsDateTime().ToString(format, CultureInfo.CurrentCulture);
+                        }
+                        else
+                        {
+                            tempStr = AsDateTime().ToString(format, CultureInfo.InvariantCulture);
+                        }
                         break;
                     case VarType.OBJECT:                         
                         tempStr = Object != null ? Object.ToString() : "null";

@@ -551,16 +551,17 @@ function importUBLXmlFromDict(xmlContent) {
         
         try {
             // Import header data to NKNAERGL table
+       msg ("AAAA");     
             invNum = ImportHeaderDataToERGL(headerData, docType);
             if (invNum == 0) {
                 throw "Greška prilikom unosa zaglavlja računa";
             }
-            
+     msg ("BBBB");       
             // Import line items to NKNAERLN table
             if (!ImportLineItemsToERLN(invNum, lineItems)) {
                 throw "Greška prilikom unosa stavki računa";
             }
-    
+    msg ("CCCC");
             // Log to NKSYELOG
             LogToNKSYELOG(invNum, xmlFilePath, "IMPORT_SUCCESS");
             
@@ -573,6 +574,7 @@ function importUBLXmlFromDict(xmlContent) {
         } catch (error) {
             // Rollback transaction on error
             //RollbackTransaction();
+     msg("xmlFilePath: " + xmlFilePath + " ERROR: " + error);       
             LogToNKSYELOG(0, xmlFilePath, "IMPORT_FAILURE: " + error);
             MessageBox("Greška prilikom unosa u bazu podataka: " + error);
             return false;
@@ -962,17 +964,19 @@ function ExtractLineItemsFromDict(invoiceDict, docType) {
             quantityElementName = "DebitedQuantity";
         }
         
+     msg ("LINE ELEMENT NAME: " + lineElementName);   
         // Get line items array
         linesArray = GetDictValue(docData, lineElementName);
         if (linesArray == null || linesArray == "") {
             return {}; // Return empty array if no lines found
         }
         
-        // Handle both single line (object) and multiple lines (array)
+      msg ("LINES ARRAY TYPE: " + (IsArray(linesArray) ? "Array" : "Single Object"));   
         if (IsArray(linesArray)) {
             // Multiple lines
             for (i = 0; i < Size(linesArray); i++) {
                 lineData = ExtractSingleLineFromDict(linesArray[i], quantityElementName);
+    msg ("LINE DATA: " + lineData);
                 if (lineData != null) {
                     lineItems.Add(lineData);
                 }
@@ -985,6 +989,7 @@ function ExtractLineItemsFromDict(invoiceDict, docType) {
             }
         }
         
+  msg ("FINAL LINE ITEMS: " + lineItems);      
         return lineItems;
         
     } catch (error) {
@@ -2225,28 +2230,28 @@ function ImportHeaderDataToERGL(headerData, docType) {
     try {
         // Generate new record ID
         newRecordId = GetNextRecordId("NKNAERGL");
-        
+    msg("New Record ID: " + newRecordId);     
         // Prepare SQL insert statement for NKNAERGL table
         sql_insert = "INSERT INTO " + databaseName + ".dbo.NKNAERGL (";
-        sql_insert += "NKNA_GL_NUM, NKNA_GL_OZNAKA, NKNA_GL_INVDTE, NKNA_GL_TIMECR, ";
-        sql_insert += "NKNA_GL_DUE_DATE, NKNA_GL_ESD, NKNA_GL_TYPECODE, NKNA_GL_CURRENCY, ";
-        sql_insert += "NKNA_GL_CUSTOIB, NKNA_GL_CUSTNME, NKNA_GL_CUSTADD, NKNA_GL_CUSTCTY, ";
-        sql_insert += "NKNA_GL_CUSTZIP, NKNA_GL_CUSTST, NKNA_GL_SUPPOIB, ";
-        sql_insert += "NKNA_GL_SHPCOD, NKNA_GL_SHPNME, NKNA_GL_SHPADD1, NKNA_GL_SHPCTY, ";
-        sql_insert += "NKNA_GL_SHPZIP, NKNA_GL_SHPST, NKNA_GL_GLN, ";
-        sql_insert += "NKNA_GL_PAYMNT, NKNA_GL_MODEL, NKNA_GL_POZIV, ";
-        sql_insert += "NKNA_GL_LINETOTAL, NKNA_GL_TAXTOTAL, NKNA_GL_TOTAL, NKNA_GL_PAYABLE, ";
-        sql_insert += "NKNA_GL_NOTE, NKNA_GL_REZ3, NKNA_GL_CREATED, NKNA_GL_STATUS";
+        sql_insert += "NKPR_GL_NUM, NKPR_GL_OZNAKA, NKPR_GL_INVDTE, NKPR_GL_TIMECR, ";
+        sql_insert += "NKPR_GL_DVO, NKPR_GL_ESD, NKPR_GL_OZNAKA, NKPR_GL_SIFVAL, ";
+        sql_insert += "NKPR_GL_JMBG, NKPR_GL_CUSNME, NKPR_GL_CUSA1, NKPR_GL_CUSCTY, ";
+        sql_insert += "NKPR_GL_CUSZIP, NKPR_GL_CUSST, ";
+        sql_insert += "NKPR_GL_SHPCOD, NKPR_GL_SHPNME, NKPR_GL_SHPADD1, NKPR_GL_SHPCTY, ";
+        sql_insert += "NKPR_GL_SHPZIP, NKPR_GL_SHPST,";
+        sql_insert += "NKPR_GL_PAYMNT, NKPR_GL_MODEL, NKPR_GL_POZIV, ";
+        sql_insert += " NKPR_GL_TAXTOT, NKPR_GL_TOTAL, ";
+        sql_insert += "NKPR_GL_BROPIS1, NKPR_GL_REZ3, NKPR_GL_DATCR, NKPR_GL_DRZAVA";
         sql_insert += ") VALUES (";
         sql_insert += "@invNum, @docType, @invDate, @timeCreated, ";
         sql_insert += "@dueDate, @taxPointDate, @typeCode, @currency, ";
         sql_insert += "@custOIB, @custName, @custAddress, @custCity, ";
-        sql_insert += "@custZip, @custState, @suppOIB, ";
+        sql_insert += "@custZip, @custState, ";
         sql_insert += "@shpCode, @shpName, @shpAddress, @shpCity, ";
-        sql_insert += "@shpZip, @shpState, @shpGLN, ";
+        sql_insert += "@shpZip, @shpState, ";
         sql_insert += "@payment, @model, @poziv, ";
-        sql_insert += "@lineTotal, @taxTotal, @total, @payable, ";
-        sql_insert += "@note, @rez3, @created, @status";
+        sql_insert += "@taxTotal, @total, ";
+        sql_insert += "@note, @rez3, @created,@country";
         sql_insert += ");";
         
         // Prepare parameters
@@ -2265,7 +2270,7 @@ function ImportHeaderDataToERGL(headerData, docType) {
         sqlParams.Add({"@custCity", headerData["NKPR_GL_CUSTCTY"]});
         sqlParams.Add({"@custZip", headerData["NKPR_GL_CUSTZIP"]});
         sqlParams.Add({"@custState", headerData["NKPR_GL_CUSTST"]});
-        sqlParams.Add({"@suppOIB", headerData["NKPR_GL_SUPPOIB"]});
+        //sqlParams.Add({"@suppOIB", headerData["NKPR_GL_SUPPOIB"]});
         sqlParams.Add({"@shpCode", headerData["NKPR_GL_SHPCOD"]});
         sqlParams.Add({"@shpName", headerData["NKPR_GL_SHPNME"]});
         sqlParams.Add({"@shpAddress", headerData["NKPR_GL_SHPADD1"]});
@@ -2282,9 +2287,8 @@ function ImportHeaderDataToERGL(headerData, docType) {
         sqlParams.Add({"@payable", headerData["NKPR_GL_PAYABLE"]});
         sqlParams.Add({"@note", headerData["NKPR_GL_NOTE"]});
         sqlParams.Add({"@rez3", headerData["NKPR_GL_REZ3"]});
-        sqlParams.Add({"@created", FormatDate(Now(), "yyyy-MM-dd HH:mm:ss")});
-        sqlParams.Add({"@status", "IMPORTED"});
-        
+        sqlParams.Add({"@created", FormatDate(Now(), "yyyy-MM-dd")}); //????
+        sqlParams.Add({"@country", headerData["NKPR_GL_DRZAVA"]});        
         // Execute insert
         result = sqlExec(sql_insert, sqlParams);
         
@@ -2306,10 +2310,10 @@ function ImportLineItemsToERLN(recordId, lineItems) {
             lineData = lineItems[i];
             
             sql_insert = "INSERT INTO " + databaseName + ".dbo.NKNAERLN (";
-            sql_insert += "NKNA_LN_INVNM, NKNA_LN_BR_LN, NKNA_LN_PQTY, NKNA_LN_AMT, ";
-            sql_insert += "NKNA_LN_PCODE, NKNA_LN_PDESC, NKNA_LN_JEDMJ, ";
-            sql_insert += "NKNA_LN_PPRCE, NKNA_LN_PRNPR, NKNA_LN_TXBLE, ";
-            sql_insert += "NKNA_LN_POPL, NKNA_LN_PDISC, NKNA_LN_NOTE";
+            sql_insert += "NKPR_LN_INVNM, NKPR_LN_BR_LN, NKPR_LN_PQTY, NKPR_LN_AMT, ";
+            sql_insert += "NKPR_LN_PCODE, NKPR_LN_PDESC, NKPR_LN_JEDMJ, ";
+            sql_insert += "NKPR_LN_PPRCE, NKPR_LN_PRNPR, NKPR_LN_TXBLE, ";
+            sql_insert += "NKPR_LN_POPL, NKPR_LN_PDISC, NKPR_LN_BROPI";
             sql_insert += ") VALUES (";
             sql_insert += "@recordId, @lineNum, @qty, @amount, ";
             sql_insert += "@productCode, @description, @unit, ";
@@ -2330,7 +2334,7 @@ function ImportLineItemsToERLN(recordId, lineItems) {
             sqlParams.Add({"@taxable", lineData["NKPR_LN_TXBLE"]});
             sqlParams.Add({"@discount", lineData["NKPR_LN_POPL"]});
             sqlParams.Add({"@discountPercent", lineData["NKPR_LN_PDISC"]});
-            sqlParams.Add({"@note", lineData["NKPR_LN_NOTE"]});
+            sqlParams.Add({"@note", lineData["NKPR_LN_BROPI"]});
             
             result = sqlExec(sql_insert, sqlParams);
             if (result == 0) {
@@ -2373,7 +2377,7 @@ function LogToNKSYELOG(recordId, xmlFilePath, status) {
 
 // Helper function to get next record ID
 function GetNextRecordId(tableName) {
-    sql_max = "SELECT MAX(NKNA_GL_NUM) FROM " + databaseName + ".dbo." + tableName;
+    sql_max = "SELECT MAX(NKPR_GL_NUM) FROM " + databaseName + ".dbo." + tableName;
     
     result = sqlQuery(sql_max);
     if (Size(result) >= 2 && result[1][0] != null) {

@@ -235,8 +235,8 @@ function GenerateUBLXml() {
     NKPR_GL_UGOVOR = hdrRes[1][41].trim();
     NKPR_GL_CUSCOD = hdrRes[1][42].trim();
     NKPR_GL_RNALOG = hdrRes[1][43].trim();
-    NKPR_AD_GLN = hdrRes[1][44].trim();
-    NKPR_AD_OBJED = hdrRes[1][45].trim();
+    NKSP_AD_GLN = hdrRes[1][44].trim();
+    NKSP_AD_OBJED = hdrRes[1][45].trim();
     NKSC_SOP = hdrRes[1][46].trim(); // Customer GLN
     NKSC_POSREDNIK = hdrRes[1][47].trim().Upper(); // Intermediary GLN
     NKSC_REZ10 = hdrRes[1][48].trim().Upper(); // P - šalji na server / F = spremi file na disk / E - šalji na E-mail(NIJE U FUNKCIJI)
@@ -1288,17 +1288,17 @@ msg ("AAAA: " + taxRes2);
          xml += "<cac:Delivery>\n";
          xml += "  <cac:DeliveryLocation>\n";
      
-         // Determine delivery location ID - preference: NKPR_AD_GLN (13 chars) > NKPR_GL_SHPCOD > 'ZZZZ'
+         // Determine delivery location ID - preference: NKSP_AD_GLN (13 chars) > NKPR_GL_SHPCOD > 'ZZZZ'
          deliveryLocationID = "";
          deliverySchemeID = "";
       
-         if (NKPR_AD_GLN != "") {
+         if (NKSP_AD_GLN != "") {
              // GLN number has preference (13 characters)
-             if (NKPR_AD_GLN.Length == 13) {
-                 deliveryLocationID = NKPR_AD_GLN;
+             if (NKSP_AD_GLN.Length == 13) {
+                 deliveryLocationID = NKSP_AD_GLN;
                  deliverySchemeID = "0088"; // GLN scheme
              } else{
-                 deliveryLocationID = NKPR_AD_GLN;
+                 deliveryLocationID = NKSP_AD_GLN;
                  deliverySchemeID = "INTERNAL"; // GLN scheme
              }
              xml += "    <cbc:ID schemeID=\"" + deliverySchemeID + "\">" + deliveryLocationID + "</cbc:ID>\n";

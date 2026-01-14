@@ -1,0 +1,60 @@
+MessageBox("...Testing variable.ToString  -  2nd script...");
+
+DEFINE date1 type D size 10;
+DEFINE time1 type T size 8;
+
+date1 = "15/05/2025";
+time1 = "20:11:22";
+
+MessageBox("date1 is " + date1.ToString());					//15/05/25 0:00:00 (Current Culture)
+MessageBox("date1 is " + date1.ToString("dd.MM.yyyy"));		//15.05.2025
+MessageBox("date1 is " + date1.ToString("dd.MM.yy"));		//15.05.25
+MessageBox("date1 is " + date1.ToString("dd/MM/yyyy"));		//15/05/2025
+MessageBox("date1 is " + date1.ToString("dd/MM/yy"));		//15/05/25
+MessageBox("date1 is " + date1.ToString("yyyy-MM-dd"));		//2025-05-15
+MessageBox("date1 is " + date1.ToString("yyyyMMdd"));		//20250515
+MessageBox("date1 is " + date1.ToString("MM/yy"));			//05/25
+
+MessageBox("time1 is " + time1.ToString());					//01/01/01 20:11:22 (Current Culture)
+MessageBox("time1 is " + time1.ToString("HH:mm:ss"));		//20:11:22
+MessageBox("time1 is " + time1.ToString("HH:mm"));			//20:11
+MessageBox("time1 is " + time1.ToString("HHmmss"));			//201122
+
+//DATE PARTS
+MessageBox("date1 is " + date1.ToString("dd"));			//15
+MessageBox("date1 is " + date1.ToString("MM"));			//05
+MessageBox("date1 is " + date1.ToString("yyyy"));		//2025
+MessageBox("date1 is " + date1.ToString("yy"));			//25
+
+//TIME PARTS
+MessageBox("time1 is " + time1.ToString("HH"));			//20
+MessageBox("time1 is " + time1.ToString("mm"));			//11
+MessageBox("time1 is " + time1.ToString("ss"));			//22
+
+//*************************************************************************************
+
+//WITHOUT DEFINE
+Messagebox("WITHOUT DEFINE");
+
+datetime1 = DateTime(); //current date and time
+
+MessageBox("datetime1 is " + datetime1.ToString());					//14/11/25 8:25:06 (Current Culture)
+MessageBox("datetime1 is " + datetime1.ToString("dd.MM.yyyy"));		//14.11.2025 
+MessageBox("datetime1 is " + datetime1.ToString("dd.MM.yy"));		//14.11.25 
+MessageBox("datetime1 is " + datetime1.ToString("dd/MM/yyyy"));		//14/11/2025
+MessageBox("datetime1 is " + datetime1.ToString("dd/MM/yy"));		//14/11/25
+MessageBox("datetime1 is " + datetime1.ToString("yyyy-MM-dd"));		//2025-11-14
+MessageBox("datetime1 is " + datetime1.ToString("yyyyMMdd"));		//20251114
+MessageBox("datetime1 is " + datetime1.ToString("HH:mm:ss"));		//08:25:43
+MessageBox("datetime1 is " + datetime1.ToString("HH:mm"));			//08:25 
+
+//DATE PARTS
+MessageBox("datetime1 is " + datetime1.ToString("dd"));			//14 
+MessageBox("datetime1 is " + datetime1.ToString("MM"));			//01 
+MessageBox("datetime1 is " + datetime1.ToString("yyyy"));		//2026 
+MessageBox("datetime1 is " + datetime1.ToString("yy"));			//26 
+
+//TIME PARTS
+MessageBox("datetime1 is " + datetime1.ToString("HH"));			//08 
+MessageBox("datetime1 is " + datetime1.ToString("mm"));			//25 
+MessageBox("datetime1 is " + datetime1.ToString("ss"));			//43 

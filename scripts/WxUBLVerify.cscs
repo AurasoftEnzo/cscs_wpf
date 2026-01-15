@@ -1,11 +1,5 @@
-Import(strTrim(mpath()) + "CSCS.Math.dll");
+﻿Import(strTrim(mpath()) + "CSCS.Math.dll");
 
-// Global variables
-SCHEMASPATH = "";
-companyCode = "";
-databaseName = "";
-
-// Get arguments from command line or UI
 args = CommandLineArgs(); 
 if(Size(args) > 1){
     companyCode = args[2]; // e.g. Y3
@@ -14,209 +8,187 @@ if(Size(args) > 1){
     }else{
         MessageBox("Nedostaje šifra tvrtke u argumentima.");
         exit;
-    }    
+    }
+}else{
+    MessageBox("Nedostaju argumenti komandne linije.");
+    exit;
 }
 
-// Initialize company settings if available
-if(companyCode != ""){
-    // Read NKSYCCYR for database name
-    sqlQueryString = "select SY_CC_USER, SY_CC_DBASE from " + strtrim(CommonDBGet()) + ".dbo.NKSYCCYR WHERE SY_CC_CODE = '" + companyCode + "'";
-    try
-    {
-        sqlResult = sqlQuery(sqlQueryString);
-    }
-    catch(exc)
-    {
-        MessageBox("NKSYCCYR reading error: " + exc);
-        exit;
-    }
-    if (size(sqlResult) > 1)
-    {
-        databaseName = sqlResult[1][1].trim(); // database name
-    }
+// NKSYCCYR
+sqlQueryString = "select SY_CC_USER, SY_CC_DBASE from " + strtrim(CommonDBGet()) + ".dbo.NKSYCCYR WHERE SY_CC_CODE = '" + companyCode + "'";
+try
+{
+    sqlResult = sqlQuery(sqlQueryString);
+}
+catch(exc)
+{
+    MessageBox("NKSYCCYR reading error: " + exc);
+    exit;
+}
+if (size(sqlResult) > 1)
+{
+    // imeFirme = sqlResult[1][0].trim(); // KAMEND
+    // ovagod_h = sqlResult[1][1].trim(); // 2022
+    SY_CC_USER = sqlResult[1][0].trim(); // KAMEND
+    databaseName = sqlResult[1][1].trim(); // ime baze
+}    
+  
 
-    // Read NKSYSYCO for SCHEMASPATH
-    sqlQueryString = "select SY_SY_CODE,SY_SY_VALUE from " + databaseName + ".dbo.NKSYSYCO";
-    try
-    {
-        sqlResult = sqlQuery(sqlQueryString);
-    }
-    catch(exc)
-    {
-        MessageBox("NKSYSYCO reading error: " + exc);
-        exit;
-    }
-    if (size(sqlResult) > 1)
-    {
-        for(i = 1; i < Size(sqlResult); i++){
-            if(sqlResult[i][0].trim() == "SCHEMASPATH")
-            {
-                SCHEMASPATH = sqlResult[i][1].trim();
-            }
+
+// // KPSYMSTR
+// sqlQueryString = " SELECT TOP 1 KPSY_REZERVA, KPSY_COMP_NAME, KPSY_COMP_ADD1, KPSY_GL_RETEARN, KPSY_COMP_CSZ, KPSY_COMP_ZIP,
+//                 KPSY_COMP_JMBFI, KPSY_COMP_PHONE, KPSY_COMP_EMAIL, KPSY_PO_FREIGHT, KPSY_REZERVAX,KPSY_PR_R1_R2
+//                     FROM " + databaseName + ".dbo.KPSYMSTR";
+// try
+// {
+//     sqlResult = sqlQuery(sqlQueryString);
+// }
+// catch(exc)
+// {
+//     MessageBox("KPSYMSTR reading error: " + exc);
+//     exit;
+// }
+// if (size(sqlResult) > 1)
+// {
+//     // proslaGodina = (int(ovagod_h) - 1);
+//     // nazivFirme = sqlResult[1][0].trim();
+//     // kpsy_po_freight= sqlResult[1][1].trim();
+//     // fiscal_yr = sqlResult[1][2];
+//     // local = sqlResult[1][3];
+
+//     KPSY_REZERVA = sqlResult[1][0].trim();
+//     KPSY_COMP_NAME = sqlResult[1][1].trim();
+//     KPSY_COMP_ADD1 = sqlResult[1][2].trim();
+//     KPSY_GL_RETEARN = sqlResult[1][3].trim();
+//     KPSY_COMP_CSZ = sqlResult[1][4].trim();
+//     KPSY_COMP_ZIP = sqlResult[1][5];
+//     KPSY_COMP_JMBFI = sqlResult[1][6].trim();
+//     KPSY_COMP_PHONE = sqlResult[1][7].trim();
+//     KPSY_COMP_EMAIL = sqlResult[1][8].trim();
+//     KPSY_PO_FREIGHT = substring(sqlResult[1][9], 0, 2).trim();
+//     KPSY_REZERVAX = sqlResult[1][10].trim(); // Supplier GLN
+//     KPSY_REZERVAX = sqlResult[1][10].trim(); // Supplier GLN
+//     KPSY_PR_R1_R2 = sqlResult[1][11].trim(); // PDV ID za R1/R2 izvještaje
+//     supOIB = Substring(KPSY_REZERVA, 0, 11); // ??? a ča ne 11(OIB) znakova ?? ili 13(JMBG) + trim() ??
+//     //supOIBParts = supOIB.split(" ");
+//     //supOIB = supOIBParts[0].trim();
+// } 
+
+
+
+// NKSYSYCO
+sqlQueryString = " SELECT NKSYS_FIELD, NKSYS_VALUE 
+    FROM " + databaseName + ".dbo.NKSYSYCO 
+    WHERE NKSYS_MODUL = 'WKSY'
+    AND NKSYS_GRUP = 'ERACUN'";
+try
+{
+    sqlResult = sqlQuery(sqlQueryString);
+}
+catch(exc)
+{
+    MessageBox("NKSYSYCO reading error: " + exc);
+    exit;
+}
+if (size(sqlResult) > 1)
+{
+    for(i = 1; i < Size(sqlResult); i++){
+        if(sqlResult[i][0].trim() == "FILESPATH"){
+            FILESPATH = sqlResult[i][1].trim();
+        }
+        elif(sqlResult[i][0].trim() == "PROVIDER")
+        {
+            PROVIDER = sqlResult[i][1].trim().Upper();
+        }elif(sqlResult[i][0].trim() == "SCHEMASPATH")
+        {
+            SCHEMASPATH = sqlResult[i][1].trim();
         }
     }
+} 
+
+
+
+
+CreateWindow(strtrim(tpath())+"WxUBLVerify.xaml");
+
+
+function btnPretrazi@clicked(){
+    xmlfilePath = GET_FILE("xml", FILESPATH, "Odaberite XML datoteku za provjeru", "XML datoteke (*.xml)|*.xml|Sve datoteke (*.*)|*.*");
 }
 
-// If SCHEMASPATH is not set, try to set a default or prompt user
-if(SCHEMASPATH == ""){
-    // Try common locations
-    if(Exists("C:\\UBL\\schemas\\")){
-        SCHEMASPATH = "C:\\UBL\\schemas\\";
-    }elif(Exists("C:\\eRacun\\schemas\\")){
-        SCHEMASPATH = "C:\\eRacun\\schemas\\";
-    }else{
-        // SCHEMASPATH will be prompted in UI
+function btnProvjeri@clicked(){
+    validateXML();
+}
+
+
+
+function LogException(exText) 
+{
+    if(!DIR_EXISTS(FILESPATH + "IR\\" + "responses\\"))
+    {
+        MAKE_DIR(FILESPATH + "IR\\" + "responses\\");
     }
-}
-
-// Open the verification window
-AddXaml("WxUBLVerify.xaml");
-
-//-----------------------------------------------------------
-// VERIFICATION FUNCTION
-//-----------------------------------------------------------
-function VerifyUBLXml(xmlFilePath) {
+    logFilePath = FILESPATH + "IR\\" + "responses\\" + parsefile(attachmentPdfPath, "pfName") + ".response"; //FILESPATH + "responses\\" + parsefile(attachmentPdfPath, "pfName") + ".response";
+    // messageBox("Logging response to file: " + logFilePath);
     
-    if(xmlFilePath == "" || !Exists(xmlFilePath)){
-        MessageBox("Molimo unesite valjanu putanju do XML datoteke.");
-        return false;
-    }
-
-    // Check if SCHEMASPATH is set
-    if(SCHEMASPATH == ""){
-        schemasPath = GetTextFromUI("schemasPathTextBox");
-        if(schemasPath != "" && Exists(schemasPath)){
-            SCHEMASPATH = schemasPath;
-            if(!EndsWith(SCHEMASPATH, "\\")){
-                SCHEMASPATH = SCHEMASPATH + "\\";
-            }
-        }else{
-            MessageBox("Molimo unesite valjanu putanju do schema direktorija.");
-            return false;
-        }
-    }
-
-    // Read XML file
-    xml = "";
+    appendText = Now("yyyy-MM-dd HH:mm:ss") + " -----------------------------------\n\n" + "Exception = " + exText + "\n\n";
+    // messageBox("Log text: " + appendText);
     try {
-        xml = ReadFile(xmlFilePath);
+        SaveFile(appendText, logFilePath, "a");        
+    } catch (ex) {
+        MessageBox("CRITICAL: Cannot write to log file: " + logFilePath + "\nError: " + ex);
     }
-    catch(exc) {
-        MessageBox("Greška pri čitanju XML datoteke: " + exc);
-        return false;
+}
+
+
+
+
+function validateXML(){
+    validatorDirPath = FILESPATH + "UblValidator\\";
+    if (!Exists(validatorDirPath)) {
+        MkDir(validatorDirPath);
     }
 
-    if(xml == ""){
-        MessageBox("XML datoteka je prazna.");
-        return false;
-    }
+    xsdValidationResultOutputFile = FILESPATH + "UblValidator\\" + parsefile(xmlfilePath, "pfName") + "_XSD.err";
+    schValidationResultOutputFile = FILESPATH + "UblValidator\\" + parsefile(xmlfilePath, "pfName") + "_SCH.err";
 
-    // Prepare output file paths for validation results
-    xmlFileDir = ParseFile(xmlFilePath, "pPath");
-    xmlFileNameNoExt = ParseFile(xmlFilePath, "pfName");
-    xsdValidationResultOutputFile = xmlFileDir + xmlFileNameNoExt + "_XSD.err";
-    schValidationResultOutputFile = xmlFileDir + xmlFileNameNoExt + "_SCH.err";
+    xml = ReadAllText(xmlfilePath);
+    // lines = ReadFile(xmlfilePath);
+    // tempString = Substring(lines[1], 0, 10);
 
-    // Delete older validation output files (if exist)
-    if(Exists(xsdValidationResultOutputFile)){
-        Delete(xsdValidationResultOutputFile);
-    }
+    index1 = xml.indexOf("?>");
     
-    if(Exists(schValidationResultOutputFile)){
-        Delete(schValidationResultOutputFile);
-    }
+    tempString = substring(xml, index1 + 2, 20).trim();
+    
 
-    // Determine document type (Invoice or CreditNote)
-    docType = "Invoice";
-    if(Contains(xml, "<CreditNote") || Contains(xml, ":CreditNote")){
-        docType = "CreditNote";
-    }elif(Contains(xml, "<DebitNote") || Contains(xml, ":DebitNote")){
-        docType = "DebitNote";
-    }
 
-    // -----------------------------------------------------------
-    // XSD VALIDATION 
-    // -----------------------------------------------------------
     xsdFiles = {};
-    if (docType == "CreditNote") {
-        xsdFiles.Add(SCHEMASPATH + "xsd\\maindoc\\UBL-CreditNote-2.1.xsd");
-    }elif(docType == "DebitNote"){
-        xsdFiles.Add(SCHEMASPATH + "xsd\\maindoc\\UBL-DebitNote-2.1.xsd");
-    }else {
-        xsdFiles.Add(SCHEMASPATH + "xsd\\maindoc\\UBL-Invoice-2.1.xsd");
-    }
-
-    // Check if XSD file exists
-    if(!Exists(xsdFiles[0])){
-        MessageBox("XSD datoteka ne postoji:\n" + xsdFiles[0] + "\n\nProvjerite SCHEMASPATH postavke.");
-        return false;
-    }
-
-    SetTextInUI("statusTextBlock", "Provjeravam XSD validaciju...");
-    
-    if (!ValidateXsd(xml, xsdFiles, xsdValidationResultOutputFile)) {
-        SetTextInUI("statusTextBlock", "XML nije prošao XSD validaciju!");
-        MessageBox("XML nije prošao XSD validaciju!\n\nProvjerite datoteku:\n" + xsdValidationResultOutputFile);
-        return false;
-    }
-
-    SetTextInUI("statusTextBlock", "XSD validacija uspješna. Provjeravam Schematron validaciju...");
-
-    // -----------------------------------------------------------
-    // SCHEMATRON VALIDATION 
-    // -----------------------------------------------------------
-    
     schFiles = {};
+
+    if(tempString.trim().StartsWith("<Invoice")){
+        xsdFiles.Add(SCHEMASPATH + "xsd\\maindoc\\UBL-Invoice-2.1.xsd");
+    }elif(tempString.trim().StartsWith("<CreditNote")){
+        xsdFiles.Add(SCHEMASPATH + "xsd\\maindoc\\UBL-CreditNote-2.1.xsd");
+    }else{
+        MessageBox("Odabrana datoteka nije valjani UBL Invoice ili CreditNote XML dokument.");
+        return false;
+    }
     schFiles.Add(SCHEMASPATH + "schematron\\HR-CIUS-EXT-EN16931-UBL.sch");
+
     
-    // Check if Schematron file exists
-    if(!Exists(schFiles[0])){
-        MessageBox("Schematron datoteka ne postoji:\n" + schFiles[0] + "\n\nProvjerite SCHEMASPATH postavke.");
-        return false;
+
+    hasErrors = false;
+    if (!ValidateXsd(xml, xsdFiles, xsdValidationResultOutputFile)) {
+        MessageBox("XML nije prošao XSD validaciju\n\nDetalji se nalaze na lokaciji: " + xsdValidationResultOutputFile);
+        hasErrors = true;
     }
 
-    // Check if transpile.xsl exists
-    transpileXsl = SCHEMASPATH + "schematron\\transpile.xsl";
-    if(!Exists(transpileXsl)){
-        MessageBox("transpile.xsl datoteka ne postoji:\n" + transpileXsl + "\n\nProvjerite SCHEMASPATH postavke.");
-        return false;
-    }
+    if(!ValidateSch(xml, schFiles, SCHEMASPATH + "schematron\\transpile.xsl", schValidationResultOutputFile)){
+        MessageBox("XML NIJE prošao SCH validaciju\n\nDetalji se nalaze na lokaciji: " + schValidationResultOutputFile);
+        hasErrors = true;
+    }   
 
-    if(!ValidateSch(xml, schFiles, transpileXsl, schValidationResultOutputFile)){
-        SetTextInUI("statusTextBlock", "XML nije prošao Schematron validaciju!");
-        MessageBox("XML nije prošao Schematron validaciju!\n\nProvjerite datoteku:\n" + schValidationResultOutputFile);
-        return false;
-    }
-
-    SetTextInUI("statusTextBlock", "Validacija uspješna! XML je valjan prema UBL 2.1 standardu.");
-    MessageBox("Uspjeh!\n\nXML je uspješno prošao XSD i Schematron validaciju.\n\nDatoteka: " + xmlFilePath);
-    return true;
-}
-
-//-----------------------------------------------------------
-// UI EVENT HANDLERS
-//-----------------------------------------------------------
-
-function OnVerifyButtonClick(sender, e) {
-    xmlFilePath = GetTextFromUI("xmlFilePathTextBox");
-    VerifyUBLXml(xmlFilePath);
-}
-
-function OnBrowseButtonClick(sender, e) {
-    filter = "XML Files (*.xml)|*.xml|All Files (*.*)|*.*";
-    xmlFilePath = BrowseForFile(filter, "Odaberite UBL XML datoteku");
-    if(xmlFilePath != ""){
-        SetTextInUI("xmlFilePathTextBox", xmlFilePath);
-    }
-}
-
-function OnBrowseSchemasButtonClick(sender, e) {
-    schemasPath = BrowseForFolder("Odaberite direktorij sa shemama");
-    if(schemasPath != ""){
-        SetTextInUI("schemasPathTextBox", schemasPath);
-        SCHEMASPATH = schemasPath;
-        if(!EndsWith(SCHEMASPATH, "\\")){
-            SCHEMASPATH = SCHEMASPATH + "\\";
-        }
+    if(!hasErrors){
+        MessageBox("XML je uspješno prošao XSD i SCH validaciju.");
     }
 }

@@ -198,7 +198,6 @@ function getList(){
         companyOIB = substring(KPSY_REZERVA, 0, 11).trim();
 
         if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
-            // !!!
             GetListMER();
         } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
             GetListFINA_B2B();
@@ -351,15 +350,16 @@ function TransformInvoiceNumberToAurasoftFormat(supplierInvoiceId){
 
 function GetListMER(){
     // statusId = 40; // sent(and received)
-    statusId = 30; // sent(not received)
+    // statusId = 30; // sent(not received)
     jsonPayload = '{"Username": "' + ERAC_USER + 
                     '", "Password": "' + ERAC_PASS + 
                     '", "CompanyId": "' + companyOIB + 
                     '", "SoftwareId": "' + ERAC_DESC + 
                     // '", "StatusId": "' + statusId + // not mandatory
                     '", "From": "' + FilterDateFrom.ToString("yyyy-MM-dd") + 
-                    '", "To": "' + FilterDateTo.ToString("yyyy-MM-dd") + 
+                    '", "To": "' + FilterDateTo.ToString("yyyy-MM-dd") + 'T23:59:59' +
                     '"}';
+                    // MSG(jsonPayload);
             
     try {
         apiUrl = ERAC_SERVER + "apis/v2/queryoutbox";
@@ -372,7 +372,7 @@ function GetListMER(){
 }
 
 function GetListMERSuccess(trackingId, responseCode, res) {
-    MSG("MERSuccess"); // REMOVE
+    // MSG("MERSuccess"); // REMOVE
 
     try{
         LogResponse(responseCode, res);     
@@ -395,11 +395,11 @@ function GetListMERSuccess(trackingId, responseCode, res) {
             AddRacunToArrays(
                 racunObject["RecipientBusinessName"],
                 racunObject["RecipientBusinessNumber"],
-                racunObject["Issued"],
-                "?", // racunObject["Sent"], // !!!
+                Substring(racunObject["Issued"], 0, 10), // datum
+                "", // racunObject["Sent"], // datum
                 TransformInvoiceNumberToAurasoftFormat(racunObject["DocumentNr"]),
                 racunObject["ElectronicId"],
-                racunObject["StatusName"] + "(" + racunObject["StatusId"] + ")"// mozda bolje StatusId
+                racunObject["StatusName"] + "(" + racunObject["StatusId"] + ")"
             );
         }
     }

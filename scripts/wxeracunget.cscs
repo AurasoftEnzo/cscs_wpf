@@ -507,14 +507,12 @@ function importUBLXmlFromDict(xmlContent) {
     try {
         // Convert XML to Dictionary
         invoiceDict = XmlToDict(xmlContent);
-    //msg ("DICT : " + invoiceDict);    
         if (invoiceDict == null || Size(invoiceDict) == 0) {
             MessageBox("Greška prilikom parsiranja XML-a u Dictionary");
             return false;
         }
         // Determine document type from dictionary structure
         docType = GetDocumentTypeFromDict(invoiceDict);
- //  msg ("DOCTYPE: " + docType);     
         if (docType == "") {
             MessageBox("Nepoznat tip dokumenta u XML datoteci");
             return false;
@@ -522,14 +520,11 @@ function importUBLXmlFromDict(xmlContent) {
         
         // Extract header information from dictionary
         headerData = ExtractHeaderDataFromDict(invoiceDict, docType);
-    msg ("HEADER DATA: " + headerData);    
         if (headerData == null) {
             MessageBox("Greška prilikom izvlačenja podataka zaglavlja");
             return false;
         }
-     //msg ("AAA ESD DATE); //: " + headerData["NKPR_GL_ESD"]);   
-     //   if (headerData["NKPR_GL_ESD"] == "") {headerData["NKPR_GL_ESD"] = headerData["NKPR_GL_INVDTE"];} 
-        msg ("ESD DATE: " + gl_esd);
+        //   if (headerData["NKPR_GL_ESD"] == "") {headerData["NKPR_GL_ESD"] = headerData["NKPR_GL_INVDTE"];} 
         // Validate fiscal year before proceeding
         //if (!ValidateFiscalYear(headerData["NKPR_GL_ESD"])) {
         if (!ValidateFiscalYear(GL_ESD)) {
@@ -539,29 +534,26 @@ function importUBLXmlFromDict(xmlContent) {
         
         // Extract line items from dictionary
         lineItems = ExtractLineItemsFromDict(invoiceDict, docType);
-     msg ("LINE ITEMS: " + lineItems);   
         if (lineItems == null) {
             MessageBox("Greška prilikom izvlačenja stavki računa");
             return false;
         }
-   //return;   
+        //return;   
     
         // Begin database transaction
         //BeginTransaction();
         
         try {
             // Import header data to NKNAERGL table
-       msg ("AAAA");     
             invNum = ImportHeaderDataToERGL(headerData, docType);
+            msg ("1111: INVNUM: " + invNum);        
             if (invNum == 0) {
                 throw "Greška prilikom unosa zaglavlja računa";
             }
-     msg ("BBBB");       
             // Import line items to NKNAERLN table
             if (!ImportLineItemsToERLN(invNum, lineItems)) {
                 throw "Greška prilikom unosa stavki računa";
             }
-    msg ("CCCC");
             // Log to NKSYELOG
             LogToNKSYELOG(invNum, xmlFilePath, "IMPORT_SUCCESS");
             
@@ -574,7 +566,7 @@ function importUBLXmlFromDict(xmlContent) {
         } catch (error) {
             // Rollback transaction on error
             //RollbackTransaction();
-     msg("xmlFilePath: " + xmlFilePath + " ERROR: " + error);       
+     msg("4444: xmlFilePath: " + xmlFilePath + " ERROR: " + error);       
             LogToNKSYELOG(0, xmlFilePath, "IMPORT_FAILURE: " + error);
             MessageBox("Greška prilikom unosa u bazu podataka: " + error);
             return false;
@@ -602,39 +594,49 @@ function GetDocumentTypeFromDict(invoiceDict) {
 }
 
 // Extract header data from Dictionary
-function ExtractHeaderDataFromDict(invoiceDict, docType) {
-    try {
-        headerData = {};
-        
-        // Get the root document data (handle nested or flat structure)
-        docData = invoiceDict;
-        if (docType == "S" && Contains(invoiceDict, "Invoice")) {
-            docData = invoiceDict["Invoice"];
-        } elif (docType == "O" && Contains(invoiceDict, "CreditNote")) {
-            docData = invoiceDict["CreditNote"];
-        } elif (docType == "T" && Contains(invoiceDict, "DebitNote")) {
-            docData = invoiceDict["DebitNote"];
-        }
-        
-        // Basic invoice information
-        headerData["NKPR_GL_DESC"] = docData["ID"];
-        headerData["NKPR_GL_OZNAKA"] = docType;
-        headerData["NKPR_GL_INVDTE"] = docData["IssueDate"];
-        headerData["NKPR_GL_TIMECR"] = docData["IssueTime"];
-        if (Contains(docData, "DueDate")){
-            //tu staviti matematiku za datum dospijeća: duedate-issuedate=nokam kao broj dana, a dvo je isti kao i datum issuedate
-            headerData["NKPR_GL_DVO"] = docData["IssueDate"];
-            headerData["NKPR_GL_NOKAM"] = 30; // !!! hardcoded 30 days for now, TREBA POPRAVITI!!!
-        }
-        // headerData["NKPR_GL_DUE_DATE"] = docData["DueDate"]; // !!!
-        if (Contains(docData, "TaxPointDate")) {
-            headerData["NKPR_GL_ESD"] = docData["TaxPointDate"];
-            GL_ESD = docData["TaxPointDate"];
-        }else{
-            headerData["NKPR_GL_ESD"] = docData["IssueDate"];
-            GL_ESD = docData["IssueDate"];
-        }
-        
+function ExtractHeaderDataFromDict(invoiceDict, docType) 
+{
+    try 
+    {
+            headerData = {};
+            
+            // Get the root document data (handle nested or flat structure)
+            docData = invoiceDict;
+            if (docType == "S" && Contains(invoiceDict, "Invoice")) {
+                docData = invoiceDict["Invoice"];
+            } elif (docType == "O" && Contains(invoiceDict, "CreditNote")) {
+                docData = invoiceDict["CreditNote"];
+            } elif (docType == "T" && Contains(invoiceDict, "DebitNote")) {
+                docData = invoiceDict["DebitNote"];
+            }
+            
+            // Basic invoice information
+            headerData["NKPR_GL_DESC"] = docData["ID"];
+            headerData["NKPR_GL_OZNAKA"] = docType;
+            headerData["NKPR_GL_DATPRI"] = docData["IssueDate"];
+            issueDate = docData["IssueDate"].toString();
+            //headerData["NKPR_GL_TIMECR"] = docData["IssueTime"];
+            if (Contains(docData, "DueDate")){
+                //tu staviti matematiku za datum dospijeća: duedate-issuedate=nokam kao broj dana, a dvo je isti kao i datum issuedate
+                headerData["NKPR_GL_DVO"] = docData["DueDate"].toString();
+                headerData["NKPR_GL_NOKAM"] = 30; // !!! hardcoded 30 days for now, TREBA POPRAVITI!!!
+       msg("KKKK DueDate: " + headerData["NKPR_GL_DVO"]+ " IssueDate: " + docData["IssueDate"]);         
+            } else{
+                headerData["NKPR_GL_DVO"] = docData["IssueDate"].toString();
+                headerData["NKPR_GL_NOKAM"] = 0;
+       msg("LLLL DueDate: " + docData["DueDate"] + " IssueDate: " + docData["IssueDate"]);         
+            }   
+            DueDate = docData["DueDate"].toString();
+            
+            // headerData["NKPR_GL_DUE_DATE"] = docData["DueDate"]; // !!!
+            if (Contains(docData, "TaxPointDate")) {
+                headerData["NKPR_GL_ESD"] = docData["TaxPointDate"];
+                GL_ESD = docData["TaxPointDate"].toString();
+            }else{
+                headerData["NKPR_GL_ESD"] = docData["IssueDate"];
+                GL_ESD = docData["IssueDate"].toString();
+            }
+    msg("1111: "+headerdata)    
         
         // // Document type code
         // if (docType == "O") {
@@ -647,6 +649,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType) {
         
         // Currency
         headerData["NKPR_GL_SIFDVZ"] = docData["DocumentCurrencyCode"];
+        sifdvz = docData["DocumentCurrencyCode"].toString();
         headerData["NKPR_GL_OZNAKA"] = docType;
         
         // Supplier information from AccountingSupplierParty
@@ -667,9 +670,10 @@ function ExtractHeaderDataFromDict(invoiceDict, docType) {
             //refIdx = 0;
             refNum = refNumbers[0].trim();
             refOIB = refNumbers[1].trim();
+         msg 'zz11: '+companyIDPartyIdentificationID+' refNum: '+refNum+' refOIB: '+refOIB;
             // Supplier name
             suppName= "";
-            if (Contains(suppParty, "PartyName")) {
+            if (Contains(suppPartyData, "PartyName")) {
                 suppName = suppPartyData["PartyName"]["Name"];
             } else {
                 //suppName = suppPartyData["PartyLegalEntity"]["CompanyName"];
@@ -679,17 +683,22 @@ function ExtractHeaderDataFromDict(invoiceDict, docType) {
                 headerData["NKPR_GL_CUSNME"] = suppName;
             }  
             // Supplier address
-            if (Contains(suppParty, "PostalAddress")) { 
+            if (Contains(suppPartyData, "PostalAddress")) { 
+                
                 suppAddress = suppPartyData["PostalAddress"];
                 if (suppAddress != null && suppAddress != "") {
-                    if (Contains(suppParty, "StreetName")) {headerData["NKPR_GL_CUSA1"] = suppAddress["StreetName"]};
-                    if (Contains(suppParty, "CityName")) {headerData["NKPR_GL_CUSCTY"] = suppAddress["CityName"]};
-                    if (Contains(suppParty, "PostalZone")) {headerData["NKPR_GL_CUSZIP"] = suppAddress["PostalZone"]};
-                    if (Contains(suppParty, "Country")) {headerData["NKPR_GL_CUSST"] = suppAddress["Country"]["IdentificationCode"]};
-                    if (Contains(suppParty, "Country")) {headerData["NKPR_GL_DRZAVA"] = suppAddress["Country"]["IdentificationCode"]};
+                    if (Contains(suppAddress, "StreetName")) {headerData["NKPR_GL_CUSA1"] = suppAddress["StreetName"]};
+                    if (Contains(suppAddress, "CityName")) {headerData["NKPR_GL_CUSCTY"] = suppAddress["CityName"]};
+                    if (Contains(suppAddress, "PostalZone")) {headerData["NKPR_GL_CUSZIP"] = suppAddress["PostalZone"]};
+                    if (Contains(suppAddress, "Country")) {headerData["NKPR_GL_CUSST"] = suppAddress["Country"]["IdentificationCode"]};
+                    if (Contains(suppAddress, "Country")) {headerData["NKPR_GL_DRZAVA"] = suppAddress["Country"]["IdentificationCode"]};
+    msg("zz22: "+headerData)    
                 }
+    msg("zz33: "+headerData)    
             }
+    msg("zz44: "+headerData)    
         }
+    msg("2222: "+headerData)    
 
             if (refNum == "9934") { 
                 // OIB
@@ -727,6 +736,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType) {
                 MessageBox("Nepodržani identifikator dobavljača: " + companyIDPartyIdentificationID + ". Račun neće biti uvezen.");
                 return;
             }
+    msg("22221: "+headerData)    
                 if (size(sqlPartner) > 1)
                 {
                     headerData["NKPR_GL_CUSCOD"] =  sqlPartner[1][0].trim(); //     NKSC_PARTCODE
@@ -753,6 +763,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType) {
                     );
                     return;
                 }   
+    msg("22223: "+headerdata)    
             if (OIBSupp != "") {
                 headerData["NKPR_GL_JMBG"] = OIBSupp;
             } elif (GLNSupp != "") {
@@ -761,7 +772,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType) {
                return;
             }
             //headerData["NKPR_GL_JMBG"] = OIBSupp; // companyIDEndpointID;
-       //msg("CCCC: " + headerData["NKPR_GL_JMBG"]);     
+     msg("3333: "+headerData)    
 
         // Customer information from AccountingCustomerParty
         //this is own company data
@@ -789,11 +800,12 @@ function ExtractHeaderDataFromDict(invoiceDict, docType) {
             }
             //headerData["NKPR_GL_CUSTOIB"] = custCompanyID; // we don't need to store own OIB here, may be used to check validity
         }
+    msg("4444: "+headerData)    
         
         // Delivery information
         if (Contains(docData, "Delivery")) {
             delivery = docData["Delivery"];
-       // msg("DELIVERY: " + delivery);    
+            // msg("DELIVERY: " + delivery);    
             if (delivery != null && delivery != "") {
                 if (Contains(delivery, "DeliveryLocation")) {
          //      msg ("1111: " + headerData);     
@@ -844,8 +856,8 @@ function ExtractHeaderDataFromDict(invoiceDict, docType) {
                 //msg ("6666: " + headerData);
             }
         }
-     //msg ("AAAA: " + headerData);   
-        // Payment information
+            msg ("AAAA: " + headerData);   
+            // Payment information
         paymentMeans = docData["PaymentMeans"];
         if (paymentMeans != null && paymentMeans != "") {
             headerData["NKPR_GL_SIF_PL"] = paymentMeans["PaymentMeansCode"];
@@ -866,7 +878,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType) {
                     HeaderData["NKPR_GL_RZRVA1"] = NKSC_ZR_BANKA;
                 }
             }
-        //msg  ("BBBB: " + headerData); 
+            msg  ("BBBB: " + headerData); 
             if (Contains(paymentMeans, "PaymentID")) {
                 paymentID = paymentMeans["PaymentID"];
                 if (Contains(paymentID, " ")) {
@@ -878,7 +890,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType) {
                 }
             }
         }
-     //msg ("BBBB: " + headerData);   
+            //msg ("BBBB: " + headerData);   
         // Monetary totals
         legalMonTotal = docData["LegalMonetaryTotal"];
         if (legalMonTotal != null && legalMonTotal != "") {
@@ -887,7 +899,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType) {
             headerData["NKPR_GL_TOTAL"] = ParseDecimal(legalMonTotal["TaxInclusiveAmount"]);
             headerData["NKPR_GL_TAXAMT"] = headerData["NKPR_GL_TOTAL"]-headerData["NKPR_GL_SUBTOT"];
         }
-     //msg ("CCCC: " + headerData);   
+     msg ("CCCC: " + headerData);   
         // Notes
         if (Contains(docData, "Note")) {
             note = docData["Note"];
@@ -914,7 +926,6 @@ function ExtractHeaderDataFromDict(invoiceDict, docType) {
                 //tu sad treba spremit cijeli note u MemoH ili MemoF ili u linije ili negdje drugdje ako treba
             }
         }
-      //  msg ("DDDD: " + headerData);  
         // Billing references
         if (Contains(docData, "BillingReference")) {
             billingRef = docData["BillingReference"];
@@ -926,7 +937,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType) {
             billingRef = {};
         }
         
-    msg ('FINAL HEADER DATA: ' + headerData);  
+        msg ('FINAL HEADER DATA: ' + headerData);  
         return headerData;
         
     } catch (error) {
@@ -964,19 +975,19 @@ function ExtractLineItemsFromDict(invoiceDict, docType) {
             quantityElementName = "DebitedQuantity";
         }
         
-     msg ("LINE ELEMENT NAME: " + lineElementName);   
+     //msg ("LINE ELEMENT NAME: " + lineElementName);   
         // Get line items array
         linesArray = GetDictValue(docData, lineElementName);
         if (linesArray == null || linesArray == "") {
             return {}; // Return empty array if no lines found
         }
         
-      msg ("LINES ARRAY TYPE: " + (IsArray(linesArray) ? "Array" : "Single Object"));   
+    //  msg ("LINES ARRAY TYPE: " + (IsArray(linesArray) ? "Array" : "Single Object"));   
         if (IsArray(linesArray)) {
             // Multiple lines
             for (i = 0; i < Size(linesArray); i++) {
                 lineData = ExtractSingleLineFromDict(linesArray[i], quantityElementName);
-    msg ("LINE DATA: " + lineData);
+    //msg ("LINE DATA: " + lineData);
                 if (lineData != null) {
                     lineItems.Add(lineData);
                 }
@@ -989,7 +1000,7 @@ function ExtractLineItemsFromDict(invoiceDict, docType) {
             }
         }
         
-  msg ("FINAL LINE ITEMS: " + lineItems);      
+  //msg ("FINAL LINE ITEMS: " + lineItems);      
         return lineItems;
         
     } catch (error) {
@@ -2230,46 +2241,78 @@ function ImportHeaderDataToERGL(headerData, docType) {
     try {
         // Generate new record ID
         newRecordId = GetNextRecordId("NKNAERGL");
+        invDate = now("yyyy-MM-dd").toString();
+        timeCreated = now("HH:mm:ss").toString();
+        headerData["NKPR_GL_INVDTE"] = invDate;
+        headerData["NKPR_GL_DVO"] = dueDate;
+        headerData["NKPR_GL_ESD"] = gl_esd;
+        headerData["NKPR_GL_DATPRI"] = issueDate;
+        headerData["NKPR_GL_TIMECR"] = timeCreated;
+        headerData["NKPR_GL_NUM"] = newRecordId;
+        headerData["NKPR_GL_OZNAKA"] = docType;
+        headerData["NKPR_GL_SIFDVZ"] = sifdvz;
     msg("New Record ID: " + newRecordId);     
         // Prepare SQL insert statement for NKNAERGL table
         sql_insert = "INSERT INTO " + databaseName + ".dbo.NKNAERGL (";
         sql_insert += "NKPR_GL_NUM, NKPR_GL_OZNAKA, NKPR_GL_INVDTE, NKPR_GL_TIMECR, ";
-        sql_insert += "NKPR_GL_DVO, NKPR_GL_ESD, NKPR_GL_OZNAKA, NKPR_GL_SIFVAL, ";
+    msg ("KKKK1: " );    
+        sql_insert += "NKPR_GL_DVO, NKPR_GL_ESD,  NKPR_GL_SIFDVZ, ";
         sql_insert += "NKPR_GL_JMBG, NKPR_GL_CUSNME, NKPR_GL_CUSA1, NKPR_GL_CUSCTY, ";
         sql_insert += "NKPR_GL_CUSZIP, NKPR_GL_CUSST, ";
         sql_insert += "NKPR_GL_SHPCOD, NKPR_GL_SHPNME, NKPR_GL_SHPADD1, NKPR_GL_SHPCTY, ";
         sql_insert += "NKPR_GL_SHPZIP, NKPR_GL_SHPST,";
-        sql_insert += "NKPR_GL_PAYMNT, NKPR_GL_MODEL, NKPR_GL_POZIV, ";
-        sql_insert += " NKPR_GL_TAXTOT, NKPR_GL_TOTAL, ";
+    msg ("KKKK2: " );    
+        sql_insert += "NKPR_GL_SIF_PL, NKPR_GL_MODEL, NKPR_GL_POZIV, NKPR_GL_DATPRI, ";
+        sql_insert += "NKPR_GL_TAXAMT, NKPR_GL_TOTAL, ";
         sql_insert += "NKPR_GL_BROPIS1, NKPR_GL_REZ3, NKPR_GL_DATCR, NKPR_GL_DRZAVA";
+    msg ("KKKK3: " );    
         sql_insert += ") VALUES (";
+    msg ("KKKK4");    
         sql_insert += "@invNum, @docType, @invDate, @timeCreated, ";
-        sql_insert += "@dueDate, @taxPointDate, @typeCode, @currency, ";
+        sql_insert += "@dueDate, @taxPointDate, @currency, ";
         sql_insert += "@custOIB, @custName, @custAddress, @custCity, ";
         sql_insert += "@custZip, @custState, ";
+    msg ("KKKK5");    
         sql_insert += "@shpCode, @shpName, @shpAddress, @shpCity, ";
         sql_insert += "@shpZip, @shpState, ";
-        sql_insert += "@payment, @model, @poziv, ";
+        sql_insert += "@payment, @model, @poziv, @datpri, ";
         sql_insert += "@taxTotal, @total, ";
-        sql_insert += "@note, @rez3, @created,@country";
+       msg ("KKKK6");    
+     sql_insert += "@note, @rez3, @created, @country";
         sql_insert += ");";
-        
+
+//saveFile("KKKK sql_insert.txt", sql_insert);
         // Prepare parameters
+   //msg ("KKKK6.1: " + invDate + " " + timeCreated + " " + docType);     
         sqlParams = {};
+    msg ("KKKK7");    
         sqlParams.Add({"@invNum", headerData["NKPR_GL_NUM"]});
-        sqlParams.Add({"@docType", docType});
+        //sqlParams.Add({"@invNum", newRecordId});
+msg ("KKKK8");    
+        sqlParams.Add({"@docType", headerData["NKPR_GL_OZNAKA"]});
+msg ("KKKK9");    
         sqlParams.Add({"@invDate", headerData["NKPR_GL_INVDTE"]});
+msg ("KKKK10");    
         sqlParams.Add({"@timeCreated", headerData["NKPR_GL_TIMECR"]});
-        sqlParams.Add({"@dueDate", headerData["NKPR_GL_DUE_DATE"]});
+msg ("KKKK11 :"+ headerData["NKPR_GL_DVO"]);    
+        sqlParams.Add({"@dueDate", headerData["NKPR_GL_DVO"]});
+  msg ("KKKK12");    
         sqlParams.Add({"@taxPointDate", headerData["NKPR_GL_ESD"]});
-        sqlParams.Add({"@typeCode", headerData["NKPR_GL_TYPECODE"]});
-        sqlParams.Add({"@currency", headerData["NKPR_GL_CURRENCY"]});
-        sqlParams.Add({"@custOIB", headerData["NKPR_GL_CUSTOIB"]});
-        sqlParams.Add({"@custName", headerData["NKPR_GL_CUSTNME"]});
-        sqlParams.Add({"@custAddress", headerData["NKPR_GL_CUSTADD"]});
-        sqlParams.Add({"@custCity", headerData["NKPR_GL_CUSTCTY"]});
-        sqlParams.Add({"@custZip", headerData["NKPR_GL_CUSTZIP"]});
-        sqlParams.Add({"@custState", headerData["NKPR_GL_CUSTST"]});
+  msg ("KKKK121");    
+        //sqlParams.Add({"@typeCode", headerData["NKPR_GL_OZNAKA"]});
+        //sqlParams.Add({"@typeCode", docType});
+  msg ("KKKK13");    
+
+        sqlParams.Add({"@currency", headerData["NKPR_GL_SIFDVZ"]});
+  msg ("KKKK131");    
+        sqlParams.Add({"@custOIB", headerData["NKPR_GL_JMBG"]});
+  msg ("KKKK132");    
+        sqlParams.Add({"@custName", headerData["NKPR_GL_CUSNME"]});
+  msg ("KKKK133");    
+        sqlParams.Add({"@custAddress", headerData["NKPR_GL_CUSA1"]});
+        sqlParams.Add({"@custCity", headerData["NKPR_GL_CUSCTY"]});
+        sqlParams.Add({"@custZip", headerData["NKPR_GL_CUSZIP"]});
+        sqlParams.Add({"@custState", headerData["NKPR_GL_CUSST"]});
         //sqlParams.Add({"@suppOIB", headerData["NKPR_GL_SUPPOIB"]});
         sqlParams.Add({"@shpCode", headerData["NKPR_GL_SHPCOD"]});
         sqlParams.Add({"@shpName", headerData["NKPR_GL_SHPNME"]});
@@ -2277,19 +2320,26 @@ function ImportHeaderDataToERGL(headerData, docType) {
         sqlParams.Add({"@shpCity", headerData["NKPR_GL_SHPCTY"]});
         sqlParams.Add({"@shpZip", headerData["NKPR_GL_SHPZIP"]});
         sqlParams.Add({"@shpState", headerData["NKPR_GL_SHPST"]});
-        sqlParams.Add({"@shpGLN", headerData["NKPR_AD_GLN"]});
-        sqlParams.Add({"@payment", headerData["NKPR_GL_PAYMNT"]});
+//sqlParams.Add({"@shpGLN", headerData["NKPR_AD_GLN"]});
+  msg ("KKKK134");    
+        sqlParams.Add({"@payment", headerData["NKPR_GL_SIF_PL"]});
         sqlParams.Add({"@model", headerData["NKPR_GL_MODEL"]});
         sqlParams.Add({"@poziv", headerData["NKPR_GL_POZIV"]});
-        sqlParams.Add({"@lineTotal", headerData["NKPR_GL_LINETOTAL"]});
-        sqlParams.Add({"@taxTotal", headerData["NKPR_GL_TAXTOTAL"]});
+  msg ("KKKK135");    
+      
+        sqlParams.Add({"@datpri", headerData["NKPR_GL_DATPRI"]});
+        //sqlParams.Add({"@lineTotal", headerData["NKPR_GL_LINETOTAL"]});
+        sqlParams.Add({"@taxTotal", headerData["NKPR_GL_TAXAMT"]});
         sqlParams.Add({"@total", headerData["NKPR_GL_TOTAL"]});
-        sqlParams.Add({"@payable", headerData["NKPR_GL_PAYABLE"]});
-        sqlParams.Add({"@note", headerData["NKPR_GL_NOTE"]});
+        //sqlParams.Add({"@payable", headerData["NKPR_GL_PAYABLE"]});
+msg ("KKKK14");    
+        sqlParams.Add({"@note", headerData["NKPR_GL_BROPIS1"]});
         sqlParams.Add({"@rez3", headerData["NKPR_GL_REZ3"]});
-        sqlParams.Add({"@created", FormatDate(Now(), "yyyy-MM-dd")}); //????
+        sqlParams.Add({"@created", headerData["NKPR_GL_INVDTE"]}); //????
         sqlParams.Add({"@country", headerData["NKPR_GL_DRZAVA"]});        
         // Execute insert
+saveFile(sql_insert,"sql_insert.txt");
+
         result = sqlExec(sql_insert, sqlParams);
         
         if (result > 0) {
@@ -2305,6 +2355,7 @@ function ImportHeaderDataToERGL(headerData, docType) {
 
 // Import line items into NKNAERLN table
 function ImportLineItemsToERLN(recordId, lineItems) {
+  msg("Importing line items for Record ID: " + recordId);      
     try {
         for (i = 0; i < Size(lineItems); i++) {
             lineData = lineItems[i];
@@ -2335,7 +2386,7 @@ function ImportLineItemsToERLN(recordId, lineItems) {
             sqlParams.Add({"@discount", lineData["NKPR_LN_POPL"]});
             sqlParams.Add({"@discountPercent", lineData["NKPR_LN_PDISC"]});
             sqlParams.Add({"@note", lineData["NKPR_LN_BROPI"]});
-            
+    msg("1111");        
             result = sqlExec(sql_insert, sqlParams);
             if (result == 0) {
                 throw "Greška prilikom unosa stavke " + (i + 1);
@@ -2377,12 +2428,12 @@ function LogToNKSYELOG(recordId, xmlFilePath, status) {
 
 // Helper function to get next record ID
 function GetNextRecordId(tableName) {
-    sql_max = "SELECT MAX(NKPR_GL_NUM) FROM " + databaseName + ".dbo." + tableName;
-    
+    sql_max = "SELECT MAX(NKPR_GL_NUM) AS lastNum FROM " + databaseName + ".dbo." + tableName;
     result = sqlQuery(sql_max);
-    if (Size(result) >= 2 && result[1][0] != null) {
+    if (Size(result) >= 2 && result[1][0] != 0) {
         return result[1][0] + 1;
     } else {
+        // First record
         return 1; // Starting ID
     }
 }

@@ -391,20 +391,12 @@ function GetListMERSuccess(trackingId, responseCode, res) {
             }
 
             racunObject = DeserializeJson(resParts[i]);
-            /*
-                supplierName, 
-                supplierId,
-                datumIzdavanja,
-                datumKnjizenja, 
-                supplierInvoiceId,
-                eRacunBrojRacuna,
-                statusRacuna
-            */
+            
             AddRacunToArrays(
                 racunObject["RecipientBusinessName"],
                 racunObject["RecipientBusinessNumber"],
-                "2025-01-01", // !!!
-                "2025-01-01", // !!!
+                racunObject["Issued"],
+                "?", // racunObject["Sent"], // !!!
                 TransformInvoiceNumberToAurasoftFormat(racunObject["DocumentNr"]),
                 racunObject["ElectronicId"],
                 racunObject["StatusName"] + "(" + racunObject["StatusId"] + ")"// mozda bolje StatusId

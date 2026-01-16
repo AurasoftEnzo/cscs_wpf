@@ -495,7 +495,9 @@ function startImport(){
 
     for(i = 0; i < 1; i++){
     // for(i = 0; i < Size(listOfXmls); i++){
-msg ("IMPORTING: " + listOfXmls[i]);
+
+    msg ("IMPORTING: " + listOfXmls[i]);
+    xmlFilePath = listOfXmls[i];
         MemoX = ""; //memo u kojega spremamo one podatke iz xml računa koje želimo prikazati korisniku prilikom uvoza
         importUBLXmlFromDict(ReadAllText(listOfXmls[i]));
     }
@@ -507,10 +509,14 @@ function importUBLXmlFromDict(xmlContent) {
     try {
         // Convert XML to Dictionary
         invoiceDict = XmlToDict(xmlContent);
+        
+        MSG(invoiceDict);
+
         if (invoiceDict == null || Size(invoiceDict) == 0) {
             MessageBox("Greška prilikom parsiranja XML-a u Dictionary");
             return false;
         }
+        
         // Determine document type from dictionary structure
         docType = GetDocumentTypeFromDict(invoiceDict);
         if (docType == "") {
@@ -544,7 +550,7 @@ function importUBLXmlFromDict(xmlContent) {
         
         try {
             // Import header data to NKNAERGL table
-         //msg ("0000: xmlFilePath: " + xmlFilePath);   
+            //msg ("0000: xmlFilePath: " + xmlFilePath);   
             invNum = ImportHeaderDataToERGL(docType);
             msg ("1111: INVNUM: " + invNum);        
             if (invNum == 0) {
@@ -555,8 +561,8 @@ function importUBLXmlFromDict(xmlContent) {
                 throw "Greška prilikom unosa stavki računa";
             }
             // Log to NKSYELOG
-        //msg("2222: xmlFilePath: " + xmlFilePath);    
-            LogToNKSYELOG(invNum, xmlFilePath, "IMPORT_SUCCESS");
+            //msg("2222: xmlFilePath: " + xmlFilePath);    
+            // LogToNKSYELOG(invNum, xmlFilePath, "IMPORT_SUCCESS");
             
             // Commit transaction
             //CommitTransaction();
@@ -567,8 +573,8 @@ function importUBLXmlFromDict(xmlContent) {
         } catch (error) {
             // Rollback transaction on error
             //RollbackTransaction();
-     //msg("4444: xmlFilePath: " + xmlFilePath + " ERROR: " + error);       
-            LogToNKSYELOG(0, xmlFilePath, "IMPORT_FAILURE: " + error);
+            //msg("4444: xmlFilePath: " + xmlFilePath + " ERROR: " + error);       
+            // LogToNKSYELOG(0, xmlFilePath, "IMPORT_FAILURE: " + error);
             MessageBox("Greška prilikom unosa u bazu podataka: " + error);
             return false;
         }
@@ -599,7 +605,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
 {
     try 
     {
-        NKPR_GL_SHPADD1 = "";
+        NKPR_GL_SHPA1 = "";
         NKPR_GL_SHPCOD = "";
         NKPR_GL_SHPCTY = "";
         NKPR_GL_SHPZIP = "";
@@ -648,8 +654,15 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
         //NKPR_GL_TIMECR"] = docData["IssueTime"];
         if (Contains(docData, "DueDate")){
             //tu staviti matematiku za datum dospijeća: duedate-issuedate=nokam kao broj dana, a dvo je isti kao i datum issuedate
-            NKPR_GL_DVO = docData["DueDate"].toString();
-            NKPR_GL_NOKAM = 30; // !!! hardcoded 30 days for now, TREBA POPRAVITI!!!
+            NKPR_GL_DVO = NKPR_GL_DATPRI;
+            dueDate = docData["DueDate"];
+            
+            dueDateDateTime = DateTime(dueDate, "yyyy-MM-dd");
+            datpriDateTime = DateTime(NKPR_GL_DATPRI, "yyyy-MM-dd");
+            dateDiff = Math.Trunc(DateTimeToDouble(dueDateDateTime)) - Math.Trunc(DateTimeToDouble(datpriDateTime));
+
+            NKPR_GL_NOKAM = dateDiff; // !!! hardcoded 30 days for now, TREBA POPRAVITI!!!
+            // MSG("NKPR_GL_NOKAM: " + NKPR_GL_NOKAM);
        //msg("KKKK DueDate: " + NKPR_GL_DVO + " IssueDate: " + docData["IssueDate"]);         
         } else{
             NKPR_GL_DVO = docData["IssueDate"].toString();
@@ -669,7 +682,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
         // Currency
         NKPR_GL_SIFDVZ = docData["DocumentCurrencyCode"];
         //sifdvz = docData["DocumentCurrencyCode"].toString();
-7        
+        
         // Supplier information from AccountingSupplierParty
         suppParty = docData["AccountingSupplierParty"];
         if (suppParty != null && suppParty != "") {
@@ -677,7 +690,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
             if (Contains(suppParty, "Party")) {
                 suppPartyData = suppParty["Party"];
             }
-7            // Supplier OIB/GLN
+            // Supplier OIB/GLN
             OIBSupp = "";
             GLNSupp = "";
             companyIDEndpointID = suppPartyData["EndpointID"]; // npr 12345678903
@@ -846,7 +859,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
                             deliveryAddr = {};
                         }
                         if (deliveryAddr != null && deliveryAddr != "") {
-                            if (Contains(deliveryAddr, "StreetName")) {NKPR_GL_SHPADD1 = deliveryAddr["StreetName"]};
+                            if (Contains(deliveryAddr, "StreetName")) {NKPR_GL_SHPA1 = deliveryAddr["StreetName"]};
                             if (Contains(deliveryAddr, "CityName")) {NKPR_GL_SHPCTY = deliveryAddr["CityName"]};
                             if (Contains(deliveryAddr, "PostalZone")) {NKPR_GL_SHPZIP = deliveryAddr["PostalZone"]};
                             if (Contains(deliveryAddr, "Country")) {NKPR_GL_SHPST = deliveryAddr["Country"]["IdentificationCode"]};
@@ -978,7 +991,18 @@ function ExtractLineItemsFromDict(invoiceDict, docType) {
         }
         
         // Get line items array
-        linesArray = GetDictValue(docData, lineElementName); 
+       
+        // MSG("docData:\n" + docData);
+        // MSG("lineElementName:\n" + lineElementName);
+
+        // msg("docData:\n" + docData);
+        // msg("lineelementName:\n" + lineelementName);
+        linesArray = docData[lineElementName]; 
+        // MSG(linesarray);
+        // linesArray = GetDictValue(docData, lineElementName); 
+
+        // MSG("linesArray:\n" + linesArray); 
+
         if (linesArray == null || linesArray == "") {
             return {}; // Return empty array if no lines found
         }
@@ -1160,7 +1184,7 @@ function GetDictValue(dict, key) {
     
     if (!Contains(key, ".")) {
         // Simple key
-        if (dict.ContainsKey(key)) {
+        if (Contains(dict, key)) {
             return dict[key];
         } else {
             return "";
@@ -1177,7 +1201,7 @@ function GetDictValue(dict, key) {
                 return "";
             }
             
-            if (currentDict.ContainsKey(currentKey)) {
+            if (Contains(currentDict, currentKey)) {
                 currentDict = currentDict[currentKey];
             } else {
                 return "";
@@ -1193,22 +1217,23 @@ function ImportHeaderDataToERGL(docType) {
     try {
         // Generate new record ID
         newRecordId = GetNextRecordId("NKNAERGL");
+        NKPR_GL_NUM = newRecordId;
         //invDate = now("yyyy-MM-dd").toString();
         //timeCreated = now("HH:mm:ss").toString();
         // Prepare SQL insert statement for NKNAERGL table
         sql_insert = "INSERT INTO " + databaseName + ".dbo.NKNAERGL (";
         sql_insert += "NKPR_GL_NUM, NKPR_GL_OZNAKA, NKPR_GL_INVDTE, NKPR_GL_TIMECR, ";
-        sql_insert += "NKPR_GL_DVO, NKPR_GL_ESD,  NKPR_GL_SIFDVZ, ";
+        sql_insert += "NKPR_GL_DVO, NKPR_GL_NOKAM, NKPR_GL_ESD,  NKPR_GL_SIFDVZ, ";
         sql_insert += "NKPR_GL_JMBG, NKPR_GL_CUSNME, NKPR_GL_CUSA1, NKPR_GL_CUSCTY, ";
         sql_insert += "NKPR_GL_CUSZIP, NKPR_GL_CUSST, ";
-        sql_insert += "NKPR_GL_SHPCOD, NKPR_GL_SHPNME, NKPR_GL_SHPADD1, NKPR_GL_SHPCTY, ";
+        sql_insert += "NKPR_GL_SHPCOD, NKPR_GL_SHPNME, NKPR_GL_SHPA1, NKPR_GL_SHPCTY, ";
         sql_insert += "NKPR_GL_SHPZIP, NKPR_GL_SHPST,";
         sql_insert += "NKPR_GL_SIF_PL, NKPR_GL_MODEL, NKPR_GL_POZIV, NKPR_GL_DATPRI, ";
         sql_insert += "NKPR_GL_TAXAMT, NKPR_GL_TOTAL, ";
-        sql_insert += "NKPR_GL_BROPIS1, NKPR_GL_REZ3, NKPR_GL_DATCR, NKPR_GL_DRZAVA";
+        sql_insert += "NKPR_GL_BROPIS1, NKPR_GL_REZ3, NKPR_GL_DATECR, NKPR_GL_DRZAVA";
         sql_insert += ") VALUES (";
         sql_insert += "@invNum, @docType, @invDate, @timeCreated, ";
-        sql_insert += "@dueDate, @taxPointDate, @currency, ";
+        sql_insert += "@dvo, @nokam, @taxPointDate, @currency, ";
         sql_insert += "@custOIB, @custName, @custAddress, @custCity, ";
         sql_insert += "@custZip, @custState, ";
         sql_insert += "@shpCode, @shpName, @shpAddress, @shpCity, ";
@@ -1217,17 +1242,19 @@ function ImportHeaderDataToERGL(docType) {
         sql_insert += "@taxTotal, @total, ";
         sql_insert += "@note, @rez3, @created, @country";
         sql_insert += ");";
-
+        
         // Prepare parameters
         sqlParams = {};
-        sqlParams.Add({"@invNum", NKPR_GL_NUM});
-        //sqlParams.Add({"@invNum", newRecordId});
+        // sqlParams.Add({"@invNum", NKPR_GL_NUM});
+        sqlParams.Add({"@invNum", newRecordId});
         sqlParams.Add({"@docType", NKPR_GL_OZNAKA});
         sqlParams.Add({"@invDate", NKPR_GL_INVDTE});
         sqlParams.Add({"@timeCreated", NKPR_GL_TIMECR});
-        //sqlParams.Add({"@taxPointDate", NKPR_GL_ESD});
-        //sqlParams.Add({"@typeCode", NKPR_GL_OZNAKA});
-        //sqlParams.Add({"@typeCode", docType});
+        
+        sqlParams.Add({"@dvo", NKPR_GL_INVDTE});
+        sqlParams.Add({"@nokam", NKPR_GL_NOKAM});
+        
+        sqlParams.Add({"@taxPointDate", NKPR_GL_ESD});
 
         sqlParams.Add({"@currency", NKPR_GL_SIFDVZ});
         sqlParams.Add({"@custOIB", NKPR_GL_JMBG});
@@ -1239,7 +1266,7 @@ function ImportHeaderDataToERGL(docType) {
         //sqlParams.Add({"@suppOIB", NKPR_GL_SUPPOIB});
         sqlParams.Add({"@shpCode", NKPR_GL_SHPCOD});
         sqlParams.Add({"@shpName", NKPR_GL_SHPNME});
-        sqlParams.Add({"@shpAddress", NKPR_GL_SHPADD1});
+        sqlParams.Add({"@shpAddress", NKPR_GL_SHPA1});
         sqlParams.Add({"@shpCity", NKPR_GL_SHPCTY});
         sqlParams.Add({"@shpZip", NKPR_GL_SHPZIP});
         sqlParams.Add({"@shpState", NKPR_GL_SHPST});
@@ -1253,13 +1280,16 @@ function ImportHeaderDataToERGL(docType) {
         sqlParams.Add({"@taxTotal", NKPR_GL_TAXAMT});
         sqlParams.Add({"@total", NKPR_GL_TOTAL});
         //sqlParams.Add({"@payable", NKPR_GL_PAYABLE});
-        sqlParams.Add({"@note", NKPR_GL_BROPIS1});
+        
+        // sqlParams.Add({"@note", NKPR_GL_BROPIS1});
+        sqlParams.Add({"@note", 0});
+
         sqlParams.Add({"@rez3", NKPR_GL_REZ3});
         sqlParams.Add({"@created", NKPR_GL_INVDTE}); //????
         sqlParams.Add({"@country", NKPR_GL_DRZAVA});        
         // Execute insert
 
-        result = sqlExec(sql_insert, sqlParams);
+        result = SqlNonQuery(sql_insert, sqlParams);
         
         if (result > 0) {
             return newRecordId;
@@ -1279,7 +1309,7 @@ function ImportLineItemsToERLN(recordId, lineItems) {
     try {
         for (i = 0; i < Size(lineItems); i++) {
             lineData = lineItems[i];
-            
+            // msg(lineitems[i]);
             sql_insert = "INSERT INTO " + databaseName + ".dbo.NKNAERLN (";
             sql_insert += "NKPR_LN_INVNM, NKPR_LN_BR_LN, NKPR_LN_PQTY, NKPR_LN_AMT, ";
             sql_insert += "NKPR_LN_PCODE, NKPR_LN_PDESC, NKPR_LN_JEDMJ, ";
@@ -1294,7 +1324,8 @@ function ImportLineItemsToERLN(recordId, lineItems) {
             
             sqlParams = {};
             sqlParams.Add({"@recordId", NKPR_GL_NUM});
-            sqlParams.Add({"@lineNum", lineData["NKPR_LN_BR_LN"]});
+            
+            sqlParams.Add({"@lineNum", i + 1});
             sqlParams.Add({"@qty", lineData["NKPR_LN_PQTY"]});
             sqlParams.Add({"@amount", lineData["NKPR_LN_AMT"]});
             sqlParams.Add({"@productCode", lineData["NKPR_LN_PCODE"]});
@@ -1307,7 +1338,7 @@ function ImportLineItemsToERLN(recordId, lineItems) {
             sqlParams.Add({"@discountPercent", lineData["NKPR_LN_PDISC"]});
             sqlParams.Add({"@note", lineData["NKPR_LN_BROPI"]});
     //msg("1111");        
-            result = sqlExec(sql_insert, sqlParams);
+            result = SqlNonQuery(sql_insert, sqlParams);
             if (result == 0) {
                 throw "Greška prilikom unosa stavke " + (i + 1);
             }
@@ -1324,21 +1355,21 @@ function ImportLineItemsToERLN(recordId, lineItems) {
 function LogToNKSYELOG(recordId, xmlFilePath, status) {
     try {
         sql_log = "INSERT INTO " + databaseName + ".dbo.NKSYELOG (";
-        sql_log += "NKSY_LOG_DATE, NKSY_LOG_USER, NKSY_LOG_PROGRAM, NKSY_LOG_MESSAGE, ";
-        sql_log += "NKSY_LOG_RECORDID, NKSY_LOG_STATUS";
+        sql_log += "SY_ELOG_DATE, SY_ELOG_PERSON, SY_ELOG_PROGRAM, SY_ELOG_MESSAGE, ";
+        sql_log += "SY_ELOG_RECORDID, SY_ELOG_STATUS";
         sql_log += ") VALUES (";
         sql_log += "@logDate, @logUser, @logProgram, @logMessage, @recordId, @status";
         sql_log += ");";
         
         sqlParams = {};
-        sqlParams.Add({"@logDate", FormatDate(Now(), "yyyy-MM-dd HH:mm:ss")});
+        sqlParams.Add({"@logDate", Now("yyyy-MM-dd")});
         sqlParams.Add({"@logUser", userCode});
         sqlParams.Add({"@logProgram", "WxEracunGet"});
         sqlParams.Add({"@logMessage", "XML Invoice Import: " + xmlFilePath});
         sqlParams.Add({"@recordId", recordId});
         sqlParams.Add({"@status", status});
         
-        sqlExec(sql_log, sqlParams);
+        SqlNonQuery(sql_log, sqlParams);
         
     } catch (error) {
         // Don't throw error for logging issues

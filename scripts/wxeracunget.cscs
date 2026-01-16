@@ -997,27 +997,33 @@ function ExtractLineItemsFromDict(invoiceDict, docType) {
 
         // msg("docData:\n" + docData);
         // msg("lineelementName:\n" + lineelementName);
-        linesArray = docData[lineElementName]; 
-        // MSG(linesarray);
-        // linesArray = GetDictValue(docData, lineElementName); 
-
-        // MSG("linesArray:\n" + linesArray); 
-
+        //linesArray = docData[lineElementName]; 
+        linesArray = GetDictValue2(docData, lineElementName); 
+    //msg ("LINES ARRAY: " + linesArray);    
         if (linesArray == null || linesArray == "") {
             return {}; // Return empty array if no lines found
         }
+        linArrType = linesArray.type()
+
+        //Msg("linArrType: " + linArrType);
         //OVO TREBA RIJEŠIT - NE VRAĆA BROJ LINIJA KAKO TREBA, pa ne odradi sve linije i tu negdje pada u grešku
-      //msg ("LINES ARRAY: " + linesArray);
-        if (IsArray(linesArray)) {
+        if (linArrType == "ARRAY") {
+            //msg ("MULTIPLE LINES DETECTED");
+            // Handle multiple lines
+            lineItems = {};
+            
             // Multiple lines
-            for (i = 0; i < Size(linesArray); i++) {
+            for (i = 0; i < linesArray.size(); i++) {
+                //MSG("AAAA: " + quantityElementName+" LINE DATA: " + linesArray[i]);
                 lineData = ExtractSingleLineFromDict(linesArray[i], quantityElementName);
+                //MSG("Processing line " + i + ": " + lineData);
                 if (lineData != null) {
                     lineItems.Add(lineData);
                 }
             }
         } else {
             // Single line
+        //MSG("Processing single line: " + lineData);    
             lineData = ExtractSingleLineFromDict(linesArray, quantityElementName);
             if (lineData != null) {
                 lineItems.Add(lineData);
@@ -1040,7 +1046,7 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
         
         // Basic line information
         lineData["NKPR_LN_BR_LN"] = GetDictValue(lineDict, "ID");
-    //msg ("LINE ID: " + lineData["NKPR_LN_BR_LN"]);    
+    msg ("LINE ID: " + lineData["NKPR_LN_BR_LN"]);    
         // Quantity and unit
         quantity = GetDictValue(lineDict, quantityElementName);
         if (quantity != "") {
@@ -1056,6 +1062,7 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
         }
         
         // Line amount
+        //lineData["NKPR_LN_AMT"] = ParseDecimal(GetDictValue(lineDict, "LineExtensionAmount"));
         lineData["NKPR_LN_AMT"] = ParseDecimal(GetDictValue(lineDict, "LineExtensionAmount"));
     //msg ("LINE AMT: " + lineData["NKPR_LN_AMT"]);    
         // Item information
@@ -1072,6 +1079,7 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
                 productCode = GetDictValue(item, "SellersItemIdentification.ID");
             }
             lineData["NKPR_LN_PCODE"] = productCode;
+    msg ("LINE Product: " + lineData["NKPR_LN_PCODE"]+ " DESC: " + lineData["NKPR_LN_PDESC"]);    
             
             // Tax information
             taxCategory = GetDictValue(item, "ClassifiedTaxCategory");
@@ -1105,7 +1113,7 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
         // Notes
         lineNote = GetDictValue(lineDict, "Note");
         if (lineNote != "") {
-            lineData["NKPR_LN_NOTE"] = lineNote;
+            //lineData["NKPR_LN_NOTE"] = lineNote;
         }
     //msg ("FINAL LINE DATA: " + lineData);    
         return lineData;
@@ -1150,36 +1158,64 @@ function end(){
 
 // Helper function to check if value is an array
 function IsArray(value) {
-    return (value != null && typeof(value) == "object" && value.Length != undefined);
+    return (value != null && value.type() == "object" && value.Length != undefined);
 }
 
 // Helper function to check if value is a string
 function IsString(value) {
-    return (typeof(value) == "string");
+//msg ("HHHH Value: " + value+" TYPE: " + value.type());    
+    return (value.type() == "STRING");
+}
+
+// Helper function to check if value is a primitive (leaf) value (not a dictionary/object)
+// Primitive types include: STRING, INTEGER, DOUBLE, BOOLEAN, etc.
+// Non-primitive types: OBJECT (dictionaries), ARRAY
+function IsPrimitiveValue(value) {
+    if (value == null || value == "") {
+        return true; // Treat null/empty as primitive
+    }
+    
+    valueType = value.type();
+    
+    // Check if it's NOT a complex type (object/dictionary or array)
+    // Primitive types: STRING, INTEGER, DOUBLE, BOOLEAN, etc.
+    if (valueType == "OBJECT" || valueType == "ARRAY") {
+        return false; // Complex type
+    }
+    
+    return true; // It's a primitive type (string, number, boolean, etc.)
 }
 
 // Helper function to parse decimal values (enhanced)
 function ParseDecimal(value) {
     if (value == "" || value == null) {
-        return 0;
+        return 0.00;
     }
     
-    // Handle dictionary/object values
-    if (!IsString(value)) {
-        if (value.ContainsKey("#text")) {
-            value = value["#text"];
-        } else {
-            value = String(value);
+    // If it's already a primitive value (number or string), convert directly
+    if (IsPrimitiveValue(value)) {
+        // Check if it's already numeric
+        valueType = value.type();
+        if (valueType == "DOUBLE" || valueType == "INTEGER") {
+            return Double(value); // Already a number, just ensure it's double
         }
+        // It's a string or other primitive, convert to double
+        return Double(value);
     }
     
-    return Double(value);
+    // Handle dictionary/object values with #text element
+    if (value.Contains("#text")) {
+        return Double(value["#text"]);
+    }
+    
+    // Fallback: try to convert to string then to double
+    return Double(String(value));
 }
 
 // Helper function to safely get value from dictionary with dot notation support
 function GetDictValue(dict, key) {
-    if (dict == null || IsString(dict)) {
-        return dict; // Return the string value directly if it's already a string
+    if (dict == null || IsPrimitiveValue(dict)) {
+        return dict; // Return the primitive value directly (string, number, boolean, etc.)
     }
     
     if (!Contains(key, ".")) {
@@ -1197,8 +1233,44 @@ function GetDictValue(dict, key) {
         for (i = 0; i < Size(keys); i++) {
             currentKey = keys[i];
             
-            if (currentDict == null || IsString(currentDict)) {
+            if (currentDict == null || IsPrimitiveValue(currentDict)) {
+                return ""; // Hit a primitive value before reaching the end of the key path
+            }
+            
+            if (Contains(currentDict, currentKey)) {
+                currentDict = currentDict[currentKey];
+            } else {
                 return "";
+            }
+        }
+        
+        return currentDict;
+    }
+}
+// Helper function to safely get value from dictionary with dot notation support
+function GetDictValue2(dict, key) {
+    if (dict == null || IsPrimitiveValue(dict)) {
+        return dict; // Return the primitive value directly (string, number, boolean, etc.)
+    }
+msg("KKKK DICT: " + dict+" KEY: " + key);    
+    if (!Contains(key, ".")) {
+        // Simple key
+        if (Contains(dict, key)) {
+   msg("JJJJ VALUE: " + dict[key]);         
+            return dict[key];
+        } else {
+            return "";
+        }
+    } else {
+        // Nested key with dot notation (e.g., "Item.Name")
+        keys = key.Split(".");
+        currentDict = dict;
+        
+        for (i = 0; i < keys.size(); i++) {
+            currentKey = keys[i];
+            
+            if (currentDict == null || IsPrimitiveValue(currentDict)) {
+                return ""; // Hit a primitive value before reaching the end of the key path
             }
             
             if (Contains(currentDict, currentKey)) {

@@ -9,8 +9,6 @@
 // Global variables for database connection
 //databaseName = "your_database_name"; // Update with actual database name
 
-
-
 Import(strTrim(mpath()) + "CSCS.Math.dll");
 
 CreateWindow(strTrim(tpath()) + "wxeracunget.xaml");
@@ -370,7 +368,8 @@ function btnPreuzmi@clicked(){
     SetWidgetOptions("btnPreuzmi", "IsEnabled", "false");
     SetWidgetOptions("StatusLabel", "Content", "Preuzimanje...");
 
-    AsyncCall("startDownload", "startImportCall");   
+    // AsyncCall("startDownload", "startImportCall");   
+    AsyncCall("startImport", "end");
 }
 
 function startDownload(){
@@ -490,16 +489,16 @@ function startImport(){
     cd(FILESPATH + "UR\\");
     listOfXmls = FindFiles("*.xml");
 
-     //MSG("LIST: " + listOfXmls);
+    //MSG("LIST: " + listOfXmls);
     // MSG(Size(listOfXmls));
 
-    for(i = 0; i < 1; i++){
-    // for(i = 0; i < Size(listOfXmls); i++){
+    // for(i = 0; i < 1; i++){
+    for(xmlCounter = 0; xmlCounter < Size(listOfXmls); xmlCounter++){
 
-    msg ("IMPORTING: " + listOfXmls[i]);
-    xmlFilePath = listOfXmls[i];
+        msg ("IMPORTING: " + listOfXmls[xmlCounter]);
+        xmlFilePath = listOfXmls[xmlCounter];
         MemoX = ""; //memo u kojega spremamo one podatke iz xml računa koje želimo prikazati korisniku prilikom uvoza
-        importUBLXmlFromDict(ReadAllText(listOfXmls[i]));
+        importUBLXmlFromDict(ReadAllText(listOfXmls[xmlCounter]));
     }
 }
 
@@ -507,10 +506,27 @@ function startImport(){
 //function importUBLXmlFromDict(xmlContent, xmlFilePath = "") {
 function importUBLXmlFromDict(xmlContent) {
     try {
-        // Convert XML to Dictionary
-        invoiceDict = XmlToDict(xmlContent);
+        documentDict = XmlToDict(xmlContent);
         
-        MSG(invoiceDict);
+        documentKeys = documentDict.Keys;
+        documentType = documentKeys[0];
+
+        invoiceDict = documentDict[documentType];
+
+
+        // // //************
+        // MSG(documentDict[documentType]["InvoiceLine"]); 
+
+
+        // linesArray = documentDict[documentType]["InvoiceLine"];
+        // MSG(linesArray);
+
+
+        // MSG(documentDict[documentType]["InvoiceLine"]); 
+        // // //************
+
+
+        // MSG(documentDict["Invoice"]["InvoiceLine"]);
 
         if (invoiceDict == null || Size(invoiceDict) == 0) {
             MessageBox("Greška prilikom parsiranja XML-a u Dictionary");
@@ -538,13 +554,16 @@ function importUBLXmlFromDict(xmlContent) {
         }
         //msg ("ESD: " + NKPR_GL_ESD + " FISCAL YR: " + KPSY_FISCAL_YR);
         // Extract line items from dictionary
-        lineItems = ExtractLineItemsFromDict(invoiceDict, docType);
+        // lineItems = ExtractLineItemsFromDict(invoiceDict, docType);
+        ExtractLineItemsFromDict(invoiceDict, docType);
         if (lineItems == null) {
             MessageBox("Greška prilikom izvlačenja stavki računa");
             return false;
         }
         //return;   
     
+        // MSG("99999999" + lineItems);
+
         // Begin database transaction
         //BeginTransaction();
         
@@ -998,40 +1017,90 @@ function ExtractLineItemsFromDict(invoiceDict, docType) {
         // msg("docData:\n" + docData);
         // msg("lineelementName:\n" + lineelementName);
         //linesArray = docData[lineElementName]; 
-        linesArray = GetDictValue2(docData, lineElementName); 
-    //msg ("LINES ARRAY: " + linesArray);    
-        if (linesArray == null || linesArray == "") {
-            return {}; // Return empty array if no lines found
-        }
-        linArrType = linesArray.type()
+        
+        // linesArray = GetDictValue2(docData, lineElementName); 
+        // linesArray = docData["InvoiceLine"]; 
 
-        //Msg("linArrType: " + linArrType);
-        //OVO TREBA RIJEŠIT - NE VRAĆA BROJ LINIJA KAKO TREBA, pa ne odradi sve linije i tu negdje pada u grešku
-        if (linArrType == "ARRAY") {
-            //msg ("MULTIPLE LINES DETECTED");
-            // Handle multiple lines
-            lineItems = {};
-            
-            // Multiple lines
-            for (i = 0; i < linesArray.size(); i++) {
+        if(ArrayOrDict(documentDict[documentType][lineElementName]) == "array"){
+            msg("It's an array");
+            for(mmm = 0; mmm < Size(documentDict[documentType][lineElementName]); mmm++){
+                // msg("LINE " + mmm + ": " + documentDict[documentType][lineElementName][mmm]);
+                // lin = documentDict[documentType][lineElementName][mmm];
+                // MSG("LIN: " + lin);
+                
                 //MSG("AAAA: " + quantityElementName+" LINE DATA: " + linesArray[i]);
-                lineData = ExtractSingleLineFromDict(linesArray[i], quantityElementName);
+                lineData = ExtractSingleLineFromDict(documentDict[documentType][lineElementName][mmm], quantityElementName);
                 //MSG("Processing line " + i + ": " + lineData);
                 if (lineData != null) {
+                    // MSG(lineData);
+                    // MSG(lineItems);
                     lineItems.Add(lineData);
+                    // MSG(lineItems);
                 }
-            }
-        } else {
-            // Single line
-        //MSG("Processing single line: " + lineData);    
-            lineData = ExtractSingleLineFromDict(linesArray, quantityElementName);
+            }                
+        }else{
+            msg("It's a dict");
+            // MSG("DICT: " + documentDict[documentType][lineElementName]);
+
+            lineData = ExtractSingleLineFromDict(documentDict[documentType][lineElementName], quantityElementName);
             if (lineData != null) {
                 lineItems.Add(lineData);
             }
         }
+
+
+
+        // MSG(documentDict[documentType][lineElementName]); 
         
-      //msg ("FINAL LINE ITEMS: " + lineItems);      
-        return lineItems;
+        // linesArray = documentDict[documentType][lineElementName];
+        // MSG(linesArray);
+
+        // MSG(documentDict[documentType][lineElementName]); 
+        
+
+        //msg ("LINES ARRAY: " + linesArray);    
+        // if (linesArray == null || linesArray == "") {
+        //     return {}; // Return empty array if no lines found
+        // }
+        // linArrType = linesArray.type()
+
+        //Msg("linArrType: " + linArrType);
+        //OVO TREBA RIJEŠIT - NE VRAĆA BROJ LINIJA KAKO TREBA, pa ne odradi sve linije i tu negdje pada u grešku
+        // if (linArrType == "ARRAY") {
+        //     //msg ("MULTIPLE LINES DETECTED");
+        //     // Handle multiple lines
+        //     lineItems = {};
+            
+        //     // Multiple lines
+        //     for (i = 0; i < linesArray.size(); i++) {
+        //         //MSG("AAAA: " + quantityElementName+" LINE DATA: " + linesArray[i]);
+        //         lineData = ExtractSingleLineFromDict(linesArray[i], quantityElementName);
+        //         //MSG("Processing line " + i + ": " + lineData);
+        //         if (lineData != null) {
+        //             lineItems.Add(lineData);
+        //         }
+        //     }
+        // } else {
+        //     // Single line
+        // //MSG("Processing single line: " + lineData);    
+        //     lineData = ExtractSingleLineFromDict(linesArray, quantityElementName);
+        //     if (lineData != null) {
+        //         lineItems.Add(lineData);
+        //     }
+        // }
+        
+      //msg ("FINAL LINE ITEMS: " + lineItems);   
+
+        // MSG("LINE ITEMS:\n" + lineItems);
+
+        // x123123 =  lineItems;
+        // msg("x123123:\n" + x123123);
+
+        // MSG("LINE ITEMS:\n" + lineItems);
+
+
+        // return lineItems;
+        return;
         
     } catch (error) {
         MessageBox("Greška prilikom izvlačenja stavki: " + error);
@@ -1044,77 +1113,128 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
     try {
         lineData = {};
         
+        // LINE DICT JE JEDNA LINIJA
+
+        // MSG(lineDict);
+
+        // MSG("ID:\n\n" + lineDict["ID"]);
+
+
         // Basic line information
-        lineData["NKPR_LN_BR_LN"] = GetDictValue(lineDict, "ID");
-    msg ("LINE ID: " + lineData["NKPR_LN_BR_LN"]);    
+        // lineData["NKPR_LN_BR_LN"] = GetDictValue(lineDict, "ID");
+
+        lineData["NKPR_LN_BR_LN"] = lineDict["ID"];
+
+    // msg ("LINE ID: " + lineData["NKPR_LN_BR_LN"]);
+
         // Quantity and unit
-        quantity = GetDictValue(lineDict, quantityElementName);
+        // quantity = GetDictValue(lineDict, quantityElementName);
+        quantity = lineDict[quantityElementName]["@text"];
         if (quantity != "") {
             lineData["NKPR_LN_PQTY"] = ParseDecimal(quantity);
             
             // Unit code (might be in attributes - handle as needed)
-            unitCode = GetDictValue(lineDict, quantityElementName + ".unitCode");
-            if (unitCode == "") {
-                // Try alternative structure
-                unitCode = GetDictValue(lineDict, quantityElementName + ".@unitCode");
-            }
+            // unitCode = GetDictValue(lineDict, quantityElementName + ".unitCode");
+            unitCode = lineDict[quantityElementName]["@attributes"]["unitCode"];
+            // MSG("UNIT CODE RAW: " + unitCode);
             lineData["NKPR_LN_JEDMJ"] = GetUnitCodeFromUN(unitCode);
         }
         
         // Line amount
         //lineData["NKPR_LN_AMT"] = ParseDecimal(GetDictValue(lineDict, "LineExtensionAmount"));
-        lineData["NKPR_LN_AMT"] = ParseDecimal(GetDictValue(lineDict, "LineExtensionAmount"));
+        // lineData["NKPR_LN_AMT"] = ParseDecimal(GetDictValue(lineDict, "LineExtensionAmount"));
+        lineData["NKPR_LN_AMT"] = ParseDecimal(lineDict["LineExtensionAmount"]["@text"]);
+        // MSG("LINE AMT RAW: " + lineData["NKPR_LN_AMT"]);
+
     //msg ("LINE AMT: " + lineData["NKPR_LN_AMT"]);    
         // Item information
-        item = GetDictValue(lineDict, "Item");
+        // item = GetDictValue(lineDict, "Item");
+        item = lineDict["Item"];
+        // MSG("ITEM RAW: " + item);
+
         if (item != null && item != "") {
-            lineData["NKPR_LN_PDESC"] = GetDictValue(item, "Name");
+            lineData["NKPR_LN_PDESC"] = item["Name"];
+            // msg("LINE DESC: " + lineData["NKPR_LN_PDESC"]);
             
             // Product code - try different locations
-            productCode = GetDictValue(item, "BuyersItemIdentification.ID");
-            if (productCode == "") {
-                productCode = GetDictValue(item, "StandardItemIdentification.ID");
-            }
-            if (productCode == "") {
-                productCode = GetDictValue(item, "SellersItemIdentification.ID");
-            }
-            lineData["NKPR_LN_PCODE"] = productCode;
-    msg ("LINE Product: " + lineData["NKPR_LN_PCODE"]+ " DESC: " + lineData["NKPR_LN_PDESC"]);    
+            // productCode = GetDictValue(item, "BuyersItemIdentification.ID");
+            if(Contains(item, "BuyersItemIdentification")){
+                MSG("25561: NEEDS TESTING !!!");
+                bii = item["BuyersItemIdentification"];
+                biiId = bii["ID"];    
+                lineData["NKPR_LN_PCODE"] = biiId;       
+            }           
+           
+            if(Contains(item, "StandardItemIdentification")){
+                MSG("25562: NEEDS TESTING !!!");
+                sii = item["StandardItemIdentification"];
+                siiId = sii["ID"];    
+                lineData["NKPR_LN_BARCODE"] = siiId;       
+            }           
+                       
+
+            // if (productCode == "") {
+            //     productCode = GetDictValue(item, "SellersItemIdentification.ID");
+            // }
+            // lineData["NKPR_LN_PCODE"] = productCode;
+
+
+            // msg ("LINE Product: " + lineData["NKPR_LN_PCODE"]+ " DESC: " + lineData["NKPR_LN_PDESC"]);    
             
             // Tax information
-            taxCategory = GetDictValue(item, "ClassifiedTaxCategory");
-            if (taxCategory != null && taxCategory != "") {
-                taxPercent = ParseDecimal(GetDictValue(taxCategory, "Percent"));
-                lineData["NKPR_LN_PRNPR"] = taxPercent;
-                //lineData["NKPR_LN_TXBLE"] = (taxPercent > 0) ? "Y" : "N";
-            }
-    //msg ("TAX PERCENT: " + lineData["NKPR_LN_PRNPR"]);        
+            // taxCategory = GetDictValue(item, "ClassifiedTaxCategory");
+            taxCategory = item["ClassifiedTaxCategory"];
+            // MSG("TAX CATEGORY RAW: " + taxCategory);
+            taxPercent = taxCategory["Percent"];
+            lineData["NKPR_LN_PRNPR"] = taxPercent;
+            // MSG("percent RAW: " + percent);
+            // if (taxCategory != null && taxCategory != "") {
+            //     taxPercent = ParseDecimal(GetDictValue(taxCategory, "Percent"));
+            //     lineData["NKPR_LN_PRNPR"] = taxPercent;
+            //     //lineData["NKPR_LN_TXBLE"] = (taxPercent > 0) ? "Y" : "N";
+            // }
+            //msg ("TAX PERCENT: " + lineData["NKPR_LN_PRNPR"]);        
         }
         
         // Price information
-        price = GetDictValue(lineDict, "Price");
-        if (price != null && price != "") {
-            lineData["NKPR_LN_PPRCE"] = ParseDecimal(GetDictValue(price, "PriceAmount"));
-        }
+        // price = GetDictValue(lineDict, "Price");
+        price = lineDict["Price"];
+        // Msg("PRICE RAW: " + price);
+
+        // if (price != null && price != "") {
+        lineData["NKPR_LN_PPRCE"] = ParseDecimal(price["PriceAmount"]["@text"]);
+        // msg("LINE PRICE: " + lineData["NKPR_LN_PPRCE"]);
+        // }
         
         // Allowances and charges
-        allowanceCharge = GetDictValue(lineDict, "AllowanceCharge");
-        if (allowanceCharge != null && allowanceCharge != "") {
-            // Handle both single and multiple allowance/charge entries
-            if (IsArray(allowanceCharge)) {
-                for (i = 0; i < Size(allowanceCharge); i++) {
-                    ProcessAllowanceCharge(allowanceCharge[i], lineData);
-                }
-            } else {
-                ProcessAllowanceCharge(allowanceCharge, lineData);
-            }
+        // allowanceCharge = GetDictValue(lineDict, "AllowanceCharge");
+        
+        if(Contains(lineDict, "AllowanceCharge")){
+            MSG("25563: NEEDS IMPLEMENTATION !!!");
+            allowanceCharge = lineDict["AllowanceCharge"];
+            MSG("ALLOWANCE CHARGE RAW: " + allowanceCharge);
+            // IMPLEMENT
         }
-     //msg ("LINE PRICE: " + lineData["NKPR_LN_PPRCE"]);   
+        // allowanceCharge = GetDictValue(lineDict, "AllowanceCharge");
+        // if (allowanceCharge != null && allowanceCharge != "") {
+        //     // Handle both single and multiple allowance/charge entries
+        //     if (IsArray(allowanceCharge)) {
+        //         for (i = 0; i < Size(allowanceCharge); i++) {
+        //             ProcessAllowanceCharge(allowanceCharge[i], lineData);
+        //         }
+        //     } else {
+        //         ProcessAllowanceCharge(allowanceCharge, lineData);
+        //     }
+        // }
+
+
+        //msg ("LINE PRICE: " + lineData["NKPR_LN_PPRCE"]);   
         // Notes
-        lineNote = GetDictValue(lineDict, "Note");
-        if (lineNote != "") {
-            //lineData["NKPR_LN_NOTE"] = lineNote;
-        }
+        // lineNote = GetDictValue(lineDict, "Note");
+        // lineNote = GetDictValue(lineDict, "Note");
+        // if (lineNote != "") {
+        //     //lineData["NKPR_LN_NOTE"] = lineNote;
+        // }
     //msg ("FINAL LINE DATA: " + lineData);    
         return lineData;
         
@@ -1379,9 +1499,37 @@ function ImportHeaderDataToERGL(docType) {
 function ImportLineItemsToERLN(recordId, lineItems) {
   //msg("Importing line items for Record ID: " + recordId);      
     try {
+
+        // msg("lineItems: " + lineItems);
+
         for (i = 0; i < Size(lineItems); i++) {
             lineData = lineItems[i];
-            // msg(lineitems[i]);
+            
+            // msg(lineData);
+
+            if(!Contains(lineData, "NKPR_LN_PCODE"))
+            {
+                lineData["NKPR_LN_PCODE"] = "";
+            }
+            if(!Contains(lineData, "NKPR_LN_TXBLE"))
+            {
+                lineData["NKPR_LN_TXBLE"] = 0;
+            }
+            if(!Contains(lineData, "NKPR_LN_POPL"))
+            {
+                lineData["NKPR_LN_POPL"] = 0;
+            }
+            if(!Contains(lineData, "NKPR_LN_PDISC"))
+            {
+                lineData["NKPR_LN_PDISC"] = 0;
+            }
+            if(!Contains(lineData, "NKPR_LN_BROPI"))
+            {
+                lineData["NKPR_LN_BROPI"] = 0;
+            }
+
+            // msg(lineData);
+    
             sql_insert = "INSERT INTO " + databaseName + ".dbo.NKNAERLN (";
             sql_insert += "NKPR_LN_INVNM, NKPR_LN_BR_LN, NKPR_LN_PQTY, NKPR_LN_AMT, ";
             sql_insert += "NKPR_LN_PCODE, NKPR_LN_PDESC, NKPR_LN_JEDMJ, ";
@@ -1409,7 +1557,7 @@ function ImportLineItemsToERLN(recordId, lineItems) {
             sqlParams.Add({"@discount", lineData["NKPR_LN_POPL"]});
             sqlParams.Add({"@discountPercent", lineData["NKPR_LN_PDISC"]});
             sqlParams.Add({"@note", lineData["NKPR_LN_BROPI"]});
-    //msg("1111");        
+         //msg("1111");        
             result = SqlNonQuery(sql_insert, sqlParams);
             if (result == 0) {
                 throw "Greška prilikom unosa stavke " + (i + 1);

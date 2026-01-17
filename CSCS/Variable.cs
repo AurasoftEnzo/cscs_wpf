@@ -79,7 +79,9 @@ namespace SplitAndMerge
             List<Variable> tuple = new List<Variable>(a.Count);
             for (int i = 0; i < a.Count; i++)
             {
-                tuple.Add(new Variable(a[i]));
+                var son = new Variable(a[i]);
+                son.Parent = this;
+                tuple.Add(son);
             }
             this.Tuple = tuple;
             Original = OriginalType.ARRAY;
@@ -89,7 +91,9 @@ namespace SplitAndMerge
             List<Variable> tuple = new List<Variable>(a.Count);
             for (int i = 0; i < a.Count; i++)
             {
-                tuple.Add(new Variable(a[i]));
+                var son = new Variable(a[i]);
+                son.Parent = this;
+                tuple.Add(son);
             }
             this.Tuple = tuple;
             Original = OriginalType.ARRAY;
@@ -102,7 +106,9 @@ namespace SplitAndMerge
                 string lower = key.ToLower();
                 m_keyMappings[lower] = key;
                 m_dictionary[lower] = tuple.Count;
-                tuple.Add(new Variable(a[key]));
+                var son = new Variable(a[key]);
+                son.Parent = this;
+                tuple.Add(son);
             }
             this.Tuple = tuple;
             Original = OriginalType.ARRAY;
@@ -115,7 +121,9 @@ namespace SplitAndMerge
                 string lower = key.ToLower();
                 m_keyMappings[lower] = key;
                 m_dictionary[lower] = tuple.Count;
-                tuple.Add(new Variable(a[key]));
+                var son = new Variable(a[key]);
+                son.Parent = this;
+                tuple.Add(son);
             }
             this.Tuple = tuple;
             Original = OriginalType.ARRAY;
@@ -142,7 +150,9 @@ namespace SplitAndMerge
                 List<Variable> newTuple = new List<Variable>();
                 foreach (var item in m_tuple)
                 {
-                    newTuple.Add(item.DeepClone());
+                    var son = item.DeepClone();
+                    son.Parent = newVar;
+                    newTuple.Add(son);
                 }
 
                 newVar.Tuple = newTuple;
@@ -289,6 +299,7 @@ namespace SplitAndMerge
             else
             {
                 listVar = new Variable(VarType.ARRAY);
+                listVar.Parent = this;
                 m_tuple.Add(listVar);
 
                 m_keyMappings[lower] = hash;
@@ -329,6 +340,7 @@ namespace SplitAndMerge
         public int SetHashVariable(string hash, Variable var)
         {
             SetAsArray();
+            var.Parent = this;
             int retValue;
             string lower = hash.ToLower();
             if (m_dictionary.TryGetValue(lower, out retValue))
@@ -368,6 +380,7 @@ namespace SplitAndMerge
 
                 current.m_dictionary.Clear();
                 m_tuple[i] = current.m_tuple[0];
+                m_tuple[i].Parent = this;
             }
         }
 
@@ -419,8 +432,7 @@ namespace SplitAndMerge
             string hash = indexVar.AsString();
             string lower = hash.ToLower();
             int ptr = m_tuple.Count;
-            if (m_dictionary.TryGetValue(lower, out ptr) &&
-                ptr < m_tuple.Count)
+            if (m_dictionary.TryGetValue(lower, out ptr) && ptr < m_tuple.Count)
             {
                 return ptr;
             }
@@ -431,13 +443,58 @@ namespace SplitAndMerge
             {
                 return result;
             }
-
+            if (m_dictionary.TryGetValue(lower, out ptr) && ptr < m_tuple.Count)
+            {
+                return ptr;
+            }
             return -1;
+        }
+
+        public bool ResetHashArrays()
+        {
+            if ((m_dictionary != null && m_dictionary.Count > 0) || Type != VarType.ARRAY || Tuple == null)
+            {
+                return false;
+            }
+            bool result = false;
+            // reassign map links from children to the parent
+            m_dictionary = new Dictionary<string, int>();
+            m_keyMappings = new Dictionary<string, string>();
+            for (int i = 0; i < Tuple.Count; i++)
+            {
+                Variable arg = Tuple[i];
+                if (arg.m_dictionary == null || arg.m_dictionary.Count == 0)
+                {
+                    continue;
+                }
+                result = true;
+                foreach (var kvp in arg.m_dictionary)
+                {
+                    m_dictionary[kvp.Key] = i;
+                }
+                foreach (var kvp in arg.m_keyMappings)
+                {
+                    m_keyMappings[kvp.Key] = kvp.Value;
+                }
+                if (arg.Type == VarType.ARRAY && arg.Tuple != null && arg.Tuple.Count == 1)
+                {
+                    arg = arg.Tuple[0];
+                    Tuple[i] = arg;
+                    Tuple[i].Parent = this;
+                }
+            }
+            for (int i = 0; i < Tuple.Count; i++)
+            {
+                Variable arg = Tuple[i];
+                result = arg.ResetHashArrays() || result;
+            }
+            return result;
         }
 
         public void AddVariable(Variable v, int index = -1)
         {
             SetAsArray();
+            v.Parent = this;
             if (index < 0 || m_tuple.Count <= index)
             {
                 m_tuple.Add(v);
@@ -876,6 +933,7 @@ namespace SplitAndMerge
                         else
                         {
                             var child = UnmarshalVariable(propType, propData);
+                            child.Parent = result;
                             result.Tuple.Add(child);
                         }
                     }
@@ -1201,7 +1259,14 @@ namespace SplitAndMerge
                 }
             }
 
-            return GetCoreProperty(propName, script);
+            (string purePropName, string rest) = Utils.Extract(propName);
+            var propValue = GetCoreProperty(purePropName, script);
+            if (!string.IsNullOrWhiteSpace(rest))
+            {
+                var arrayIndices = Utils.GetArrayIndices(script, propName);
+                propValue = Utils.ExtractArrayElement(propValue, arrayIndices, script);
+            }
+            return propValue;
         }
 
         List<Variable> GetArgs(ParsingScript script)
@@ -1597,7 +1662,14 @@ namespace SplitAndMerge
                 }
             }
 
-            return GetCoreProperty(propName, script);
+            (string purePropName, string rest) = Utils.Extract(propName);
+            var propValue = GetCoreProperty(purePropName, script);
+            if (!string.IsNullOrWhiteSpace(rest))
+            {
+                var arrayIndices = Utils.GetArrayIndices(script, propName);
+                propValue = Utils.ExtractArrayElement(propValue, arrayIndices, script);
+            }
+            return propValue;
         }
 
         bool ProcessForEach(ParsingScript script)
@@ -1753,8 +1825,11 @@ namespace SplitAndMerge
                 string sep = Utils.GetSafeString(args, 0, " ");
                 var option = Utils.GetSafeString(args, 1);
                 var max = Utils.GetSafeInt(args, 2, int.MaxValue - 1);
-
-                return TokenizeFunction.Tokenize(AsString(), sep, option, max);
+                
+                var data = AsString();
+                var candidate = TokenizeFunction.Tokenize(data, sep, option, max);
+                var splitResult = Interpreter.TryExtractArray(candidate, data, script);
+                return splitResult;
             }
             else if (script != null && propName.Equals(Constants.JOIN, StringComparison.OrdinalIgnoreCase))
             {
@@ -1775,9 +1850,12 @@ namespace SplitAndMerge
 
                 Variable var = Utils.GetSafeVariable(args, 0);
                 int index = Utils.GetSafeInt(args, 1, -1);
+                
+                var reset = var.ResetHashArrays();
 
                 if (Tuple != null)
                 {
+                    var.Parent = this;
                     if (index >= 0)
                     {
                         Tuple.Insert(index, var);
@@ -1814,6 +1892,7 @@ namespace SplitAndMerge
 
                 if (!containsItem)
                 {
+                    var.Parent = this;
                     if (index >= 0)
                     {
                         m_tuple.Insert(index, var);
@@ -2192,11 +2271,15 @@ namespace SplitAndMerge
 
             for (int i = 0; i < numbers.Count; i++)
             {
-                newTuple.Add(new Variable(numbers[i]));
+                var v = new Variable(numbers[i]);
+                v.Parent = this;
+                newTuple.Add(v);
             }
             for (int i = 0; i < strings.Count; i++)
             {
-                newTuple.Add(new Variable(strings[i]));
+                var v = new Variable(strings[i]);
+                v.Parent = this;
+                newTuple.Add(v);
             }
             Tuple = newTuple;
         }
@@ -2366,6 +2449,8 @@ namespace SplitAndMerge
 
         Dictionary<string, Variable> m_propertyMap = new Dictionary<string, Variable>();
         Dictionary<int, string> m_enumMap;
+        
+        public Variable Parent { get; private set; }
 
         //Dictionary<string, Func<ParsingScript, Variable, string, Variable>> m_properties = new Dictionary<string, Func<ParsingScript, Variable, string, Variable>>();
     }

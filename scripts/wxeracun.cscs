@@ -632,7 +632,7 @@ msg ("AAAA: " + taxRes2);
     
     // xml += "    xsi:schemaLocation=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2 ../xsd/ubl/maindoc/UBL-Invoice-2.1.xsd\">\n";
     //REVERSE CHarge ne treba ovo; ako je ReverseCherge onda to mora bit jedina stavka na računu
-            taxOutOfScopeAmt = 0.00;
+            taxOutOfScopeAmt = 0;
             InvoiceLevelCharge= 0;
             AllowChgMultiplierFactor = 0;
             AllowChgAmount = 0;
@@ -687,11 +687,11 @@ msg ("AAAA: " + taxRes2);
                 taxOutOfScopeAmt += POREZ;
                 InvoiceLevelCharge += POREZ;
                 xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(taxOutOfScopeAmt, 2, ".") + "</cbc:TaxableAmount>\n"; //HR-BT-16
-                xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" +0.00 + "</cbc:TaxAmount>\n"; //HR-BT-17
+                xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + "0.00" + "</cbc:TaxAmount>\n"; //HR-BT-17
                 xml += "                    <hrextac:HRTaxCategory>\n";
                 xml += "                        <cbc:ID>" + "O" + "</cbc:ID>\n"; //HR-BT-18 1..1
                 xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n"; //HR-BT-22
-                xml += "                        <cbc:Percent>" + 0.00 + "</cbc:Percent>\n"; //HR-BT-19
+                xml += "                        <cbc:Percent>" + "0.00" + "</cbc:Percent>\n"; //HR-BT-19
                 if (exemptReason != ""){
                     xml += "                        <cbc:TaxExemptionReason>#HR:PP#" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n"; //HR-BT-20
                 }   
@@ -710,12 +710,12 @@ msg ("AAAA: " + taxRes2);
                 taxName = "HR:OTH"; //tu nema poreza
                 taxSchemeID = "VAT";
                 xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
-                xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + 0.00 + "</cbc:TaxAmount>\n";
+                xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + "0.00" + "</cbc:TaxAmount>\n";
                 //xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
                 xml += "                    <hrextac:HRTaxCategory>\n";
                 xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
                 xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
-                xml += "                        <cbc:Percent>" + 0.00 + "</cbc:Percent>\n";
+                xml += "                        <cbc:Percent>" + "0.00" + "</cbc:Percent>\n";
                 if (exemptReason != ""){
                     xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
                 }   
@@ -729,12 +729,12 @@ msg ("AAAA: " + taxRes2);
                 taxName = "HR:POVNAK"; //nema poreza
                 taxSchemeID = "OTH";
                 xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".") + "</cbc:TaxableAmount>\n";
-                xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + 0.00 + "</cbc:TaxAmount>\n";
+                xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + "0.00" + "</cbc:TaxAmount>\n";
                 //xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".") + "</cbc:TaxAmount>\n";
                 xml += "                    <hrextac:HRTaxCategory>\n";
                 xml += "                        <cbc:ID>" + "O" + "</cbc:ID>\n";
                 xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
-                xml += "                        <cbc:Percent>" + 0.00 + "</cbc:Percent>\n";
+                xml += "                        <cbc:Percent>" + "0.00" + "</cbc:Percent>\n";
                 if (exemptReason != ""){
                     xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
                 }   
@@ -833,7 +833,7 @@ msg ("AAAA: " + taxRes2);
         xml += "            <hrextac:HRLegalMonetaryTotal>\n";
         xml += "              <cbc:TaxExclusiveAmount currencyID=\"EUR\">" + FormatNum(TotalOSNOVICA, 2, ".") + "</cbc:TaxExclusiveAmount>\n"; //HR-BT-23
         xml += "              <hrextac:OutOfScopeOfVATAmount currencyID=\"EUR\">" + FormatNum(TotaltaxOutOfScopeAmt, 2, ".") + "</hrextac:OutOfScopeOfVATAmount>\n"; //HR-BT-24 1..1
-        //xml += "              <hrextac:OutOfScopeOfVATAmount currencyID=\"EUR\">" + 0.00 + "</hrextac:OutOfScopeOfVATAmount>\n"; //HR-BT-24 1..1
+        //xml += "              <hrextac:OutOfScopeOfVATAmount currencyID=\"EUR\">" + "0.00" + "</hrextac:OutOfScopeOfVATAmount>\n"; //HR-BT-24 1..1
         xml += "            </hrextac:HRLegalMonetaryTotal>\n";
         xml += "        </hrextac:HRFISK20Data>\n";
 
@@ -1405,7 +1405,7 @@ msg ("AAAA: " + taxRes2);
     xml += "</cac:PaymentMeans>\n";
 
     //tu treba AllowanceCharge na nivou računa ako postoji rabat ili dodatni trošak na razini računa; rabat se u Knjigama ne koristi, samo trošak može
-    if (invoiceLevelCharge!= 0.00) {
+    if (invoiceLevelCharge != 0) {
         xml += "<cac:AllowanceCharge>\n"; //BG-21
         if (invoiceLevelCharge > 0) {
             xml += "  <cbc:ChargeIndicator>true</cbc:ChargeIndicator>\n"; // true = charge, false = allowance
@@ -1492,7 +1492,7 @@ msg ("AAAA: " + taxRes2);
         totalTaxableAmount = group["totalTaxableAmount"];
         
         exemptReason = "";
-        chargeTotAmt = 0.00;
+        chargeTotAmt = 0;
         //if (exemptCode != "" && taxRate == 0) {
         if (exemptCode != "") {
             //ovaj porez ima stopu 0 i ima izjavu koju treba unijet u polje u e-računu
@@ -1508,7 +1508,7 @@ msg ("AAAA: " + taxRes2);
             }
         }
         xml += "                <cac:TaxSubtotal>\n";
-        taxOutOfScopeAmt = 0.00;
+        taxOutOfScopeAmt = 0;
         taxName = "";
         taxSchemeID = "VAT";
         
@@ -1518,11 +1518,11 @@ msg ("AAAA: " + taxRes2);
             taxSchemeID = "VAT";
             taxOutOfScopeAmt = FormatNum(totalTaxAmount, 2, ".");
             xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(totalTaxAmount, 2, ".") + "</cbc:TaxableAmount>\n"; // BT-116
-            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + 0.00 + "</cbc:TaxAmount>\n";
+            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + "0.00" + "</cbc:TaxAmount>\n";
             xml += "                    <cac:TaxCategory>\n";
             xml += "                        <cbc:ID>" + "E" + "</cbc:ID>\n"; // BT-118
             //xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
-            xml += "                        <cbc:Percent>" + 0.00 + "</cbc:Percent>\n";
+            xml += "                        <cbc:Percent>" + "0.00" + "</cbc:Percent>\n";
             if (exemptReason != ""){
                 xml += "                        <cbc:TaxExemptionReason>#HR_PP#" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n"; //BT-120
             }   
@@ -1536,11 +1536,11 @@ msg ("AAAA: " + taxRes2);
             //ostali porezi
             taxName = "HR:OTH"; //tu nema poreza
             xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(totalTaxableAmount, 2, ".") + "</cbc:TaxableAmount>\n";
-            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + 0.00 + "</cbc:TaxAmount>\n";
+            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + "0.00" + "</cbc:TaxAmount>\n";
             xml += "                    <cac:TaxCategory>\n";
             xml += "                        <cbc:ID>" + "E" + "</cbc:ID>\n";
             //xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
-            xml += "                        <cbc:Percent>" + 0.00 + "</cbc:Percent>\n";
+            xml += "                        <cbc:Percent>" + "0.00" + "</cbc:Percent>\n";
             if (exemptReason != ""){
                 xml += "                        <cbc:TaxExemptionReason>" + taxName + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n"; //BT-120
             }   
@@ -1553,11 +1553,11 @@ msg ("AAAA: " + taxRes2);
             //Povratna naknada
             taxName = "HR:POVNAK"; //nema poreza
             xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(totalTaxableAmount, 2, ".") + "</cbc:TaxableAmount>\n";
-            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + 0.00 + "</cbc:TaxAmount>\n";
+            xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + "0.00" + "</cbc:TaxAmount>\n";
             xml += "                    <cac:TaxCategory>\n";
             xml += "                        <cbc:ID>E</cbc:ID>\n";
             //xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
-            xml += "                        <cbc:Percent>" + 0.00 + "</cbc:Percent>\n";
+            xml += "                        <cbc:Percent>" + "0.00" + "</cbc:Percent>\n";
             if (exemptReason != ""){
                 xml += "                        <cbc:TaxExemptionReason>" + "#" + taxName + "#" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
             }   

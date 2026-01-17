@@ -638,12 +638,12 @@ function setLast10InvoicesDataGrid()
 	if (t10datrac)
 	{
 		//za sada ne koristimo ovo!
-		sql_str =  "SELECT TOP 10 nkpr_gl_num , nkpr_gl_cusnme , CONVERT(char(8) ,  nkpr_gl_invdte , 3) AS datecr , convert(char(8) , nkpr_gl_timecr , 20) as nkpr_gl_timecr ,  ";
+		sql_str =  "SELECT TOP 10 nkpr_gl_num , nkpr_gl_cusnme , CONVERT(char(8) ,  nkpr_gl_invdte , 23) AS datecr , convert(char(8) , nkpr_gl_timecr , 20) as nkpr_gl_timecr ,  ";
 		//sql_str += " CAST( CASE WHEN nkpr_gl_dviza =  'D' THEN nkpr_gl_tecaj * nkpr_gl_total ELSE nkpr_gl_total END as decimal (10,2))  AS nkpr_gl_total " ;
 	}
 	else 
 	{
-		sql_str =  "SELECT TOP 10 nkpr_gl_num , nkpr_gl_cusnme , CONVERT(char(8) ,  nkpr_gl_datecr , 3) AS datecr , convert(char(8) , nkpr_gl_timecr , 20) as nkpr_gl_timecr ,  ";
+		sql_str =  "SELECT TOP 10 nkpr_gl_num , nkpr_gl_cusnme , CONVERT(char(8) ,  nkpr_gl_datecr , 23) AS datecr , convert(char(8) , nkpr_gl_timecr , 20) as nkpr_gl_timecr ,  ";
 		//sql_str += " CAST( CASE WHEN nkpr_gl_dviza =  'D' THEN nkpr_gl_tecaj * nkpr_gl_total ELSE nkpr_gl_total END as decimal (10,2))  AS nkpr_gl_total " ;
 	}
     if (neto_dn)
@@ -759,7 +759,7 @@ function setTop10InvoicesDataGrid()
 	}
     */
     
-	sql_str =  "SELECT TOP 10 nkpr_gl_num , nkpr_gl_cusnme , CONVERT(char(8) ,  nkpr_gl_invdte , 3) AS datecr , ";
+	sql_str =  "SELECT TOP 10 nkpr_gl_num , nkpr_gl_cusnme , CONVERT(char(8) ,  nkpr_gl_invdte , 23) AS datecr , ";
     if (neto_dn)
 	{
         sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_gl_dviza= 'D' THEN nkpr_gl_tecaj*nkpr_ln_amt ELSE nkpr_ln_amt END),2), 0)";

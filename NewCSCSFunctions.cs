@@ -130,6 +130,11 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.FDATE, new FDATEFunction());
             interpreter.RegisterFunction(Constants.DateTimeToDouble, new DateTimeToDoubleFunction());
             interpreter.RegisterFunction(Constants.DoubleToDateTime, new DoubleToDateTimeFunction());
+            
+            
+            
+            
+            interpreter.RegisterFunction(Constants.ArrayOrDict, new ArrayOrDictFunction());
 
 
 
@@ -215,6 +220,9 @@ namespace WpfCSCS
             public const string FDATE = "FDATE";
             public const string DateTimeToDouble = "DateTimeToDouble";
             public const string DoubleToDateTime = "DoubleToDateTime";
+            
+            
+            public const string ArrayOrDict = "ArrayOrDict";
         }
     }
 
@@ -1641,7 +1649,7 @@ namespace WpfCSCS
         }
     }
 
-    public class XmlToDictFunction : ParserFunction
+    public class XmlToDictOldFunction : ParserFunction
     {
         // Glavni namespace-i za UBL 2.1 (HR standard)
         private static readonly Dictionary<string, XNamespace> UblNamespaces = new Dictionary<string, XNamespace>
@@ -1744,6 +1752,157 @@ namespace WpfCSCS
             }
 
             return dict;
+        }
+    }
+
+    public class XmlToDictFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+
+            string xmlText = args[0].AsString();
+            bool includeAttributes = Utils.GetSafeInt(args, 1, 1) == 1; // Default: include attributes
+
+            if (string.IsNullOrWhiteSpace(xmlText))
+            {
+                return new Variable(Variable.VarType.ARRAY);
+            }
+
+            try
+            {
+                XmlDocument doc = new XmlDocument();
+                doc.LoadXml(xmlText);
+
+                // Wrap the result with the root element's name (without namespace prefix)
+                Variable result = new Variable(Variable.VarType.ARRAY);
+                result.SetHashVariable(doc.DocumentElement.LocalName, ParseXmlNode(doc.DocumentElement, includeAttributes));
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new ArgumentException("Invalid XML: " + ex.Message);
+            }
+        }
+
+        private Variable ParseXmlNode(XmlNode node, bool includeAttributes)
+        {
+            if (node == null)
+            {
+                return new Variable(Variable.VarType.UNDEFINED);
+            }
+
+            Variable result = new Variable(Variable.VarType.ARRAY);
+
+            // Add attributes if requested
+            if (includeAttributes && node.Attributes != null && node.Attributes.Count > 0)
+            //if (true)
+            {
+                Variable attrsVar = new Variable(Variable.VarType.ARRAY);
+                foreach (XmlAttribute attr in node.Attributes)
+                {
+                    attrsVar.SetHashVariable(attr.LocalName, new Variable(attr.Value));
+                }
+                result.SetHashVariable("@attributes", attrsVar);
+            }
+
+            // Check if node has only text content (no child elements)
+            if (node.ChildNodes.Count == 1 && node.FirstChild.NodeType == XmlNodeType.Text)
+            {
+                string textValue = node.InnerText.Trim();
+
+                // If there are no attributes, return just the text value
+                if (!includeAttributes || node.Attributes == null || node.Attributes.Count == 0)
+                {
+                    // Try to parse as number
+                    if (double.TryParse(textValue, NumberStyles.Any, CultureInfo.InvariantCulture, out double numValue))
+                    {
+                        return new Variable(numValue);
+                    }
+                    // Try to parse as boolean
+                    if (textValue.ToLower() == "true")
+                    {
+                        return new Variable(true);
+                    }
+                    if (textValue.ToLower() == "false")
+                    {
+                        return new Variable(false);
+                    }
+                    return new Variable(textValue);
+                }
+                else
+                {
+                    // Has attributes, store text in @text key
+                    result.SetHashVariable("@text", new Variable(textValue));
+                    return result;
+                }
+            }
+
+            // Check if node has no children (empty element)
+            if (node.ChildNodes.Count == 0)
+            {
+                if (!includeAttributes || node.Attributes == null || node.Attributes.Count == 0)
+                {
+                    return new Variable("");
+                }
+                return result;
+            }
+
+            // Group child elements by name to detect arrays
+            Dictionary<string, List<XmlNode>> childGroups = new Dictionary<string, List<XmlNode>>();
+            bool hasTextContent = false;
+            string textContent = "";
+
+            foreach (XmlNode child in node.ChildNodes)
+            {
+                if (child.NodeType == XmlNodeType.Element)
+                {
+                    if (!childGroups.ContainsKey(child.LocalName))
+                    {
+                        childGroups[child.LocalName] = new List<XmlNode>();
+                    }
+                    childGroups[child.LocalName].Add(child);
+                }
+                else if (child.NodeType == XmlNodeType.Text || child.NodeType == XmlNodeType.CDATA)
+                {
+                    string trimmed = child.Value?.Trim();
+                    if (!string.IsNullOrEmpty(trimmed))
+                    {
+                        hasTextContent = true;
+                        textContent += trimmed;
+                    }
+                }
+            }
+
+            // Add text content if present alongside elements
+            if (hasTextContent && !string.IsNullOrEmpty(textContent))
+            {
+                result.SetHashVariable("@text", new Variable(textContent));
+            }
+
+            // Process child elements
+            foreach (var group in childGroups)
+            {
+                if (group.Value.Count == 1)
+                //if (false)
+                {
+                    // Single element - add as property
+                    result.SetHashVariable(group.Key, ParseXmlNode(group.Value[0], includeAttributes));
+                }
+                else
+                {
+                    // Multiple elements with same name - create array
+                    Variable arrayVar = new Variable(Variable.VarType.ARRAY);
+                    foreach (XmlNode childNode in group.Value)
+                    {
+                        arrayVar.AddVariable(ParseXmlNode(childNode, includeAttributes));
+                    }
+                    result.SetHashVariable(group.Key, arrayVar);
+                }
+            }
+
+            return result;
         }
     }
 
@@ -5054,6 +5213,31 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             DateTime datetime = DateTime.FromOADate(dd); //OLE Automation Date
             
             return new Variable(datetime);
+        }
+    }
+    
+    
+    class ArrayOrDictFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+
+            var variable = Utils.GetSafeVariable(args, 0);
+
+            if(variable.GetKeys().Count == variable.GetSize() && variable.GetKeys().Count > 0)
+            {
+                return new Variable("dictionary");
+            }
+            else if (variable.GetTypeString() == "ARRAY")
+            {
+                return new Variable("array");
+            }
+            else
+            {
+                return new Variable("else");
+            }
         }
     }
 

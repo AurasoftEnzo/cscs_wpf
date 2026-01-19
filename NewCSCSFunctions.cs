@@ -1649,6 +1649,7 @@ namespace WpfCSCS
         }
     }
 
+    // only for UBL 2.1 xml
     public class XmlToDictOldFunction : ParserFunction
     {
         // Glavni namespace-i za UBL 2.1 (HR standard)

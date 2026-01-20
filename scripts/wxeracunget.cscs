@@ -368,8 +368,8 @@ function btnPreuzmi@clicked(){
     SetWidgetOptions("btnPreuzmi", "IsEnabled", "false");
     SetWidgetOptions("StatusLabel", "Content", "Preuzimanje...");
 
-    // AsyncCall("startDownload", "startImportCall");   
-    AsyncCall("startImport", "end");
+    AsyncCall("startDownload", "startImportCall");   
+    // AsyncCall("startImport", "end");
 }
 
 function startDownload(){
@@ -424,6 +424,36 @@ function GetRacuniFINA(){
 
             // NKSYELOG
             // !!! za FINA-u moramo postavit status računa na RECEIVING_CONFIRMED !!!
+
+            // SET incoming invoice RECEIVING_CONFIRMED
+            try{
+                // MSG("Postavljam STATUS ulaznog računa " + invoiceId + " kod FINA-e putem WSDL-a!");
+
+                ack = FINA_CHANGE_B2B_INCOMING_INVOICE_STATUS(
+                    ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
+                    ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
+                    ERAC_USERT, // servisni certifikat
+                    ERAC_PASST, // p12 certifikat (klijentski)
+                    ERAC_PASS, // password za p12 certifikat
+
+                    UUID(), // messageId
+                    "9934:" + companyOIB, // OIB primatelja (VLASTITI) // !!! stavit pravi OIB iz baze
+                    invoiceId, // invoiceId
+                    "RECEIVING_CONFIRMED"//, // newStatusCodeString
+                    // "", // codeReasonString
+                    // "" // note
+                );
+
+                // MSG("ack = " + ack);
+            
+                // MSG("ack[\"AckStatusCode\"] = " + ack["AckStatusCode"]);
+                // MSG("ack[\"AckStatusText\"] = " + ack["AckStatusText"]);
+
+
+            }catch(ex){
+                MessageBox("Promjena statusa računa - Nepoznata greška:\n" + ex);
+                LogException(ex);
+            }
         }catch(ex){
             MessageBox("Račun " + invoiceId + "\nNepoznata greška:\n" + ex);
             LogException(ex); // !!! 

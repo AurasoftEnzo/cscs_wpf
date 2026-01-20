@@ -1,0 +1,47 @@
+MessageBox("...Testing testdatecomparison...");
+
+//Example1
+
+dateA = DateTime("2025-06-10" , "yyyy-MM-dd");
+dateB = DateTime("2025-06-15" , "yyyy-MM-dd");
+
+if ((dateA - dateB) > 0)
+{
+	MessageBox("dateA is bigger than dateB");
+}
+elif ((dateA - dateB) < 0)
+{
+	MessageBox("dateA is smaller than dateB");
+}
+else
+{
+	MessageBox("dateA is equal to dateB");
+}
+
+Difference = dateA - dateB;
+MessageBox("Difference between dateA and dateB is: " + Difference.ToString() + " days");
+
+//**************************************************
+
+//Example2
+
+dateC = DateTime("2025-06-10" , "yyyy-MM-dd");
+dateD = DateTime("2025-06-15" , "yyyy-MM-dd");
+
+ddC = DateTimeToDouble(dateC);
+ddD = DateTimeToDouble(dateD);
+
+if (ddC > ddD)
+{
+	MessageBox("dateC is bigger than dateD");
+}
+elif (ddC < ddD)
+{
+	MessageBox("dateC is smaller than dateD");
+}
+else
+{
+	MessageBox("dateC is equal to dateD");
+}
+
+exit;

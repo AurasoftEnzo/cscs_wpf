@@ -1,110 +1,158 @@
 MessageBox("...Testing testdatenewwithoutDEFINE...");
 
+//LEGENDA
+//OK/ ili BUG/   - With system date setting dd/MM/yy
+//OK. ili BUG.   - With system date setting dd.MM.yy
+
+
+
+
+//*****************************************************************
+//NOVI TEST
+MSG("NOVI TEST");
+
+//DATE VARIABLE HAS NO DEFINE
 /*
-DEFINE date1 type D size 10;
-DEFINE date2 type D size 8;
+date19A = "2025-05-15";
+MSG("date19A.ToString(\"dd.MM.yy\") = " + date19A.ToString("dd.MM.yy"));		//BUG/	BUG.
+MSG("date19A.ToString(\"dd/MM/yy\") = " + date19A.ToString("dd/MM/yy"));		//BUG/	BUG.
 
-DEFINE date3 type D size 10;
+date20A = "15/05/2025";
+MSG("date20A.ToString(\"dd.MM.yy\") = " + date20A.ToString("dd.MM.yy"));		//BUG/	BUG.
+MSG("date20A.ToString(\"dd/MM/yy\") = " + date20A.ToString("dd/MM/yy"));		//BUG/	BUG.
 
-DEFINE date1B type D size 10;
-DEFINE date1C type D size 10;
-DEFINE date1D type D size 10;
+date21A = "15/05/25";															
+MSG("date21A.ToString(\"dd.MM.yy\") = " + date21A.ToString("dd.MM.yy"));		//BUG/	BUG.
+MSG("date21A.ToString(\"dd/MM/yy\") = " + date21A.ToString("dd/MM/yy"));		//OK/	OK.
 
-DEFINE date4 type D size 10;
-DEFINE date5 type D size 8;
+date22A = "15.05.2025";														
+MSG("date22A.ToString(\"dd.MM.yy\") = " + date22A.ToString("dd.MM.yy"));		//BUG/	BUG.
+MSG("date22A.ToString(\"dd/MM/yy\") = " + date22A.ToString("dd/MM/yy"));		//BUG/	BUG.
 
-DEFINE date6 type D size 10;
-DEFINE date7 type D size 10;
-DEFINE date8 type D size 8;
+date23A = "15.05.25";															
+MSG("date23A.ToString(\"dd.MM.yy\") = " + date23A.ToString("dd.MM.yy"));		//OK/	OK.
+MSG("date23A.ToString(\"dd/MM/yy\") = " + date23A.ToString("dd/MM/yy"));		//BUG/	BUG.
 
-DEFINE date9 type D size 10;
-DEFINE date10 type D size 8;
-DEFINE date11 type D size 8;
-*/
-
-/*
-date1 = "2025-05-15";
-date2 = "1415-05-16";
-//date3 = "ABCDEFGHIJ"; //Exception
-
-MSG("date1 = " + date1);		//OK 2025-05-15
-MSG("date2 = " + date2);		//OK 1415-05-16
-//MSG(date3);
-
-MSG("date1.ToString(\"dd.MM.yyyy\") = " + date1.ToString("dd.MM.yyyy"));	//OK	15.05.2025
-MSG("date1.ToString(\"dd.MM.yy\") = " + date1.ToString("dd.MM.yy"));		//OK	15.05.25
-MSG("date1.ToString() = " + date1.ToString());								//OK	15/05/25 0:00:00 this depends upon computer setup 
-MSG("date2.ToString(\"dd.MM.yyyy\") = " + date2.ToString("dd.MM.yyyy"));	//OK	16.05.1415
-MSG("date2.ToString(\"dd.MM.yy\") = " + date2.ToString("dd.MM.yy"));		//OK	16.05.15
-MSG("date2.ToString() = " + date2.ToString());								//OK	16/05/15 0:00:00 this depends upon computer setup
-
-date1B = date1;
-MSG("date1B = " + date1B);			//OK	2025-05-15 
-date1B += 1;
-MSG("date1B + 1 = " + date1B);		//OK	2025-05-16
-
-date1C = date1;
-MSG("date1C = " + date1C);			//OK	2025-05-15	
-date1C -= 1;
-MSG("date1C - 1 = " + date1C);		//OK	2025-05-14
-
-date1D = date1;
-MSG("date1D = " + date1D);			//OK	2025-05-15
-date1D -= 150;
-MSG("date1D - 150 = " + date1D);	//OK	2024-12-16
+date24A = "20250515";															
+MSG("date24A.ToString(\"dd.MM.yy\") = " + date24A.ToString("dd.MM.yy"));		//BUG/	BUG.
+MSG("date24A.ToString(\"dd/MM/yy\") = " + date24A.ToString("dd/MM/yy"));		//BUG/	BUG.
 */
 
 
 
-//date4 = CTOD("15/05/2025");		//OK
-//date4 = CTOD("15.05.2025");		//Exception
-date4 = CTOD("2025-05-15");			//Exception
-MSG("date4 = " + date4);														//OK	2025-05-15
-MSG("date4.ToString() = " + date4.ToString());									//OK	15/05/25 0:00:00 this depends upon computer setup
-MSG("date4.ToString(\"dd.MM.yyyy\") = " + date4.ToString("dd.MM.yyyy"));		//OK	15.05.2025
-
-exit;
-
-date5 = CTOD("15/05/25");
-MSG("date5 = " + date5);														//OK	2025-05-15
-MSG("date5.ToString() = " + date5.ToString());									//OK	15/05/25 0:00:00 this depends upon computer setup
-MSG("date5.ToString(\"dd.MM.yyyy\") = " + date5.ToString("dd.MM.yyyy"));		//OK	15.05.2025
 
 
+//******************************************************************
+//CTOD
 
-date6 = DateTime();		//Current date and time
-MSG("date6 = " + date6);													//OK	2026-01-13
-MSG("date6.ToString() = " + date6.ToString());								//OK	13/01/26 0:00:00 this depends upon computer setup
-MSG("date6.ToString(\"dd.MM.yyyy\") = " + date6.ToString("dd.MM.yyyy"));	//OK	13.01.2026
+//DATE VARIABLE HAS SIZE 10
+/*
+date25A = CTOD("2025-05-15");													//OK/	OK.
+MSG("date25A.ToString(\"dd.MM.yy\") = " + date25A.ToString("dd.MM.yy"));		//OK/	OK.
+MSG("date25A.ToString(\"dd/MM/yy\") = " + date25A.ToString("dd/MM/yy"));		//OK/	OK.
 
-date7 = DateTime("13.01.2026", "dd.MM.yyyy");		//Any date and time
-MSG("date7 = " + date7);													//OK	2026-01-13
-MSG("date7.ToString() = " + date7.ToString());								//OK	13/01/26 0:00:00 this depends upon computer setup
-MSG("date7.ToString(\"dd.MM.yyyy\") = " + date7.ToString("dd.MM.yyyy"));	//OK	13.01.2026
+//date26A = CTOD("15/05/2025");													//OK/	BUG.
+//MSG("date26A.ToString(\"dd.MM.yy\") = " + date26A.ToString("dd.MM.yy"));		//OK/	
+//MSG("date26A.ToString(\"dd/MM/yy\") = " + date26A.ToString("dd/MM/yy"));		//OK/
 
-date8 = DateTime("13.01.2026", "dd.MM.yyyy");		//Any date and time
-MSG("date8 = " + date8);													//OK	2026-01-13
-MSG("date8.ToString() = " + date8.ToString());								//OK	13/01/26 0:00:00 this depends upon computer setup
-MSG("date8.ToString(\"dd.MM.yyyy\") = " + date8.ToString("dd.MM.yyyy"));	//OK	13.01.2026
+date27A = CTOD("15/05/25");														//OK/	BUG.
+MSG("date27A.ToString(\"dd.MM.yy\") = " + date27A.ToString("dd.MM.yy"));		//OK/
+MSG("date27A.ToString(\"dd/MM/yy\") = " + date27A.ToString("dd/MM/yy"));		//OK/
+
+date28A = CTOD("15.05.2025");													//BUG/	OK.
+MSG("date28A.ToString(\"dd.MM.yy\") = " + date28A.ToString("dd.MM.yy"));		//		OK.
+MSG("date28A.ToString(\"dd/MM/yy\") = " + date28A.ToString("dd/MM/yy"));		//		OK.
+
+date29A = CTOD("15.05.25");														//BUG/	OK.
+MSG("date29A.ToString(\"dd.MM.yy\") = " + date29A.ToString("dd.MM.yy"));		//		OK.
+MSG("date29A.ToString(\"dd/MM/yy\") = " + date29A.ToString("dd/MM/yy"));		//		OK.
+
+//date30A = CTOD("20250515");													//BUG/	BUG.
+//MSG("date30A.ToString(\"dd.MM.yy\") = " + date30A.ToString("dd.MM.yy"));		//
+//MSG("date30A.ToString(\"dd/MM/yy\") = " + date30A.ToString("dd/MM/yy"));		//
+*/
 
 
 
 
-date9 = Now("dd/MM/yyyy");				//Current date and time
-MSG("date9 = " + date9);													//OK	2026-01-13
-MSG("date9.ToString() = " + date9.ToString());								//OK	13/01/26 0:00:00 this depends upon computer setup
-MSG("date9.ToString(\"dd.MM.yyyy\") = " + date9.ToString("dd.MM.yyyy"));	//OK	13.01.2026
+//*****************************************************************
+//DATETIME
 
-date10 = Now("dd/MM/yyyy");				//Current date and time
-MSG("date10 = " + date10);													//OK	2026-01-13
-MSG("date10.ToString() = " + date10.ToString());							//OK	13/01/26 0:00:00 this depends upon computer setup
-MSG("date10.ToString(\"dd.MM.yyyy\") = " + date10.ToString("dd.MM.yyyy"));	//OK	13.01.2026
+//DATE VARIABLE HAS SIZE 10
+/*
+date31A = DateTime();															//OK/	OK.
+MSG("date31A.ToString(\"dd.MM.yy\") = " + date31A.ToString("dd.MM.yy"));
+MSG("date31A.ToString(\"dd/MM/yy\") = " + date31A.ToString("dd/MM/yy"));
 
-date11 = Now("dd/MM/yy");				//Current date and time
-MSG("date11 = " + date11);													//OK	2026-01-13
-MSG("date11.ToString() = " + date11.ToString());							//OK	13/01/26 0:00:00 this depends upon computer setup
-MSG("date11.ToString(\"dd.MM.yyyy\") = " + date11.ToString("dd.MM.yyyy"));	//OK	13.01.2026
+date32A = DateTime("2025-05-15", "yyyy-MM-dd");									//OK/	OK.
+MSG("date32A.ToString(\"dd.MM.yy\") = " + date32A.ToString("dd.MM.yy"));		
+MSG("date32A.ToString(\"dd/MM/yy\") = " + date32A.ToString("dd/MM/yy"));		
 
+date33A = DateTime("15/05/2025", "dd/MM/yyyy");									//OK/	OK.		
+MSG("date33A.ToString(\"dd.MM.yy\") = " + date33A.ToString("dd.MM.yy"));			
+MSG("date33A.ToString(\"dd/MM/yy\") = " + date33A.ToString("dd/MM/yy"));		
+
+date34A = DateTime("15/05/25", "dd/MM/yy");										//OK/	OK.
+MSG("date34A.ToString(\"dd.MM.yy\") = " + date34A.ToString("dd.MM.yy"));		
+MSG("date34A.ToString(\"dd/MM/yy\") = " + date34A.ToString("dd/MM/yy"));		
+
+date35A = DateTime("15.05.2025", "dd.MM.yyyy");									//OK/	OK.
+MSG("date35A.ToString(\"dd.MM.yy\") = " + date35A.ToString("dd.MM.yy"));		
+MSG("date35A.ToString(\"dd/MM/yy\") = " + date35A.ToString("dd/MM/yy"));		
+
+date36A = DateTime("15.05.25", "dd.MM.yy");										//OK/	OK.
+MSG("date36A.ToString(\"dd.MM.yy\") = " + date36A.ToString("dd.MM.yy"));		
+MSG("date36A.ToString(\"dd/MM/yy\") = " + date36A.ToString("dd/MM/yy"));		
+
+date37A = DateTime("20250515", "yyyyMMdd");										//OK/	OK.
+MSG("date37A.ToString(\"dd.MM.yy\") = " + date37A.ToString("dd.MM.yy"));		
+MSG("date37A.ToString(\"dd/MM/yy\") = " + date37A.ToString("dd/MM/yy"));
+*/
+
+
+
+
+
+//*****************************************************************
+//NOW
+
+//DATE VARIABLE HAS SIZE 10
+/*
+MSG("38A)   " + Now());		//it returns time part as string					//OK/	OK.
+date38A = Now();																//OK/	OK.
+MSG("date38A.ToString(\"dd.MM.yy\") = " + date38A.ToString("dd.MM.yy"));		//BUG/	BUG.
+MSG("date38A.ToString(\"dd/MM/yy\") = " + date38A.ToString("dd/MM/yy"));		//BUG/	BUG.
+
+MSG("39A)   " + Now("yyyy-MM-dd"));												//OK/	OK.
+date39A = Now("yyyy-MM-dd");													//OK/	OK.
+MSG("date39A.ToString(\"dd.MM.yy\") = " + date39A.ToString("dd.MM.yy"));		//BUG/	BUG.
+MSG("date39A.ToString(\"dd/MM/yy\") = " + date39A.ToString("dd/MM/yy"));		//BUG/	BUG.
+
+MSG("40A)   " + Now("dd/MM/yyyy"));												//OK/	OK.
+date40A = Now("dd/MM/yyyy");													//OK/	OK.
+MSG("date40A.ToString(\"dd.MM.yy\") = " + date40A.ToString("dd.MM.yy"));		//BUG/	BUG.
+MSG("date40A.ToString(\"dd/MM/yy\") = " + date40A.ToString("dd/MM/yy"));		//BUG/	BUG.
+
+MSG("41A)   " + Now("dd/MM/yy"));												//OK/	OK.
+date41A = Now("dd/MM/yy");														//OK/	OK.
+MSG("date41A.ToString(\"dd.MM.yy\") = " + date41A.ToString("dd.MM.yy"));		//BUG/	BUG.
+MSG("date41A.ToString(\"dd/MM/yy\") = " + date41A.ToString("dd/MM/yy"));		//OK/	OK.
+
+MSG("42A)   " + Now("dd.MM.yyyy"));												//OK/	OK.
+date42A = Now("dd.MM.yyyy");													//OK/	OK.
+MSG("date42A.ToString(\"dd.MM.yy\") = " + date42A.ToString("dd.MM.yy"));		//BUG/	BUG.
+MSG("date42A.ToString(\"dd/MM/yy\") = " + date42A.ToString("dd/MM/yy"));		//BUG/	BUG.
+
+MSG("43A)   " + Now("dd.MM.yy"));												//OK/	OK.
+date43A = Now("dd.MM.yy");														//OK/	OK.
+MSG("date43A.ToString(\"dd.MM.yy\") = " + date43A.ToString("dd.MM.yy"));		//OK/	OK.
+MSG("date43A.ToString(\"dd/MM/yy\") = " + date43A.ToString("dd/MM/yy"));		//BUG/	BUG.
+
+MSG("44A)   " + Now("yyyyMMdd"));												//OK/	OK.
+date44A = Now("yyyyMMdd");														//OK/	OK.
+MSG("date44A.ToString(\"dd.MM.yy\") = " + date44A.ToString("dd.MM.yy"));		//BUG/	BUG.
+MSG("date44A.ToString(\"dd/MM/yy\") = " + date44A.ToString("dd/MM/yy"));		//BUG/	BUG.
+*/
 
 
 

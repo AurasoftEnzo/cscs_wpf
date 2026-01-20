@@ -1,12 +1,29 @@
 MessageBox("...Testing ctod...");
 
 DEFINE date1 type D size 10;
-DEFINE date2 type D size 8;
+DEFINE date2 type D size 10;
+DEFINE date3 type D size 8;
+DEFINE date4 type D size 10;
+DEFINE date5 type D size 8;
 
-date1 = ctod("15/05/2025");
-date2 = ctod("15/05/25");
-
+//this always works
+date1 = ctod("2025-05-15");
 MSG(date1);
+
+/*
+//when system date format is "dd/mm/yyyy" or "dd/mm/yy"
+date2 = ctod("15/05/2025");
+date3 = ctod("15/05/25");
 MSG(date2);
+MSG(date3);
+*/
+
+/*
+//when system date format is "dd.mm.yyyy" or "dd.mm.yy"
+date4 = ctod("15.05.2025");
+date5 = ctod("15.05.25");
+MSG(date4);
+MSG(date5);
+*/
 
 quit;

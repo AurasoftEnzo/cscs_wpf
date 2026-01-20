@@ -1,0 +1,81 @@
+﻿MessageBox("...Testing testdateinitialization...");
+
+/*
+//WITH DEFINE
+DEFINE date1 type D size 10;
+date1 = "2025-04-11";
+msg(date1.ToString("dd.MM.yyyy"));
+
+DEFINE date2 type D size 10;
+date2 = DateTime("2025-04-11" , "yyyy-MM-dd");
+msg(date2.ToString("dd.MM.yyyy"));
+
+DEFINE date3 type D size 10;
+date3 = CTOD("2025-04-11");
+msg(date3.ToString("dd.MM.yyyy"));
+
+DEFINE date4 type D size 10;
+date4 = DateTime(Now("yyyy-MM-dd") , "yyyy-MM-dd"); 	//current date
+msg(date4.ToString("dd.MM.yyyy"));
+
+DEFINE date5 type D size 10;
+date5 = DateTime();			//current date and time
+msg(date5.ToString("dd.MM.yyyy"));
+msg(date5);
+msg(date5.ToString("dd.MM.yyyy HH:mm:ss"));
+*/
+/*
+DEFINE date6 type D size 10;
+date6 = Now("yyyy-MM-dd");
+msg(date6);
+msg(date6.ToString("dd.MM.yyyy"));
+msg(date6.ToString("dd.MM.yy"));
+msg(date6.ToString("dd/MM/yy"));
+*/
+/*
+DEFINE date7 type D size 10;
+date7 = DateTime("2025-04-11" , "yyyy-MM-dd");
+msg(date7);
+msg(date7.ToString("dd.MM.yyyy"));
+msg(date7.ToString("dd.MM.yy"));
+msg(date7.ToString("dd/MM/yy"));
+*/
+
+DEFINE date8 type D size 8;
+date8 = CTOD("2025-04-11");
+msg(date8);
+msg(date8.ToString("dd.MM.yyyy"));
+msg(date8.ToString("dd.MM.yy"));
+msg(date8.ToString("dd/MM/yy"));
+
+//WITHOUT DEFINE
+
+//NE RADI
+/*
+MSG("39A)   " + Now("yyyy-MM-dd"));												//OK/	OK.
+date39A = Now("yyyy-MM-dd");													//OK/	OK.
+MSG("date39A.ToString(\"dd.MM.yy\") = " + date39A.ToString("dd.MM.yy"));		//BUG/	BUG.
+MSG("date39A.ToString(\"dd/MM/yy\") = " + date39A.ToString("dd/MM/yy"));		//BUG/	BUG.
+*/
+/*
+//RADI
+date25A = CTOD("2025-05-15");													//OK/	OK.
+MSG("date25A.ToString(\"dd.MM.yy\") = " + date25A.ToString("dd.MM.yy"));		//OK/	OK.
+MSG("date25A.ToString(\"dd/MM/yy\") = " + date25A.ToString("dd/MM/yy"));		//OK/	OK.
+*/
+
+//RADI
+date31A = DateTime();															//OK/	OK.
+MSG("date31A.ToString(\"dd.MM.yy\") = " + date31A.ToString("dd.MM.yy"));
+MSG("date31A.ToString(\"dd/MM/yy\") = " + date31A.ToString("dd/MM/yy"));
+MSG(date31A);
+
+//RADI
+date32A = DateTime("2025-05-15", "yyyy-MM-dd");									//OK/	OK.
+MSG("date32A.ToString(\"dd.MM.yy\") = " + date32A.ToString("dd.MM.yy"));		
+MSG("date32A.ToString(\"dd/MM/yy\") = " + date32A.ToString("dd/MM/yy"));
+
+//RADI
+date100 = DateTime(Now("yyyy-MM-dd"), "yyyy-MM-dd");
+MSG("date100.ToString(\"dd.MM.yy\") = " + date100.ToString("dd.MM.yy"));		//OK/	OK.
+MSG("date100.ToString(\"dd/MM/yy\") = " + date100.ToString("dd/MM/yy"));		//OK/	OK.

@@ -1,0 +1,24 @@
+MessageBox(".....testing testtimemathematics.....");
+
+
+DEFINE time1 type T size 10;
+
+time1 = "12:34:56";
+
+time1.Add("1h");
+time1.Add("2m");
+time1.Add("3s");
+
+MessageBox(time1);							//EXPECTED: 13:36:59
+MessageBox(time1.ToString("HH:mm"));		//EXPECTED: 13:36
+
+
+time2 = DateTime("12:34:56", "HH:mm:ss");
+
+time2.Add("-1h");
+time2.Add("-2m");
+time2.Add("-3s");
+
+MessageBox(time2);							//EXPECTED: 01/01/01 11:32:53
+MessageBox(time2.ToString("HH:mm"));		//EXPECTED: 11:32
+

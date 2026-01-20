@@ -1,0 +1,24 @@
+MessageBox("...Testing testnow...");
+
+//WITH DEFINE
+DEFINE s type a size 10;
+DEFINE date1 type D size 10;
+s = Now("yyyy-MM-dd");
+MSG(s);
+date1 = s;
+MSG(date1.ToString("dd/MM/yyyy"));
+
+DEFINE ss type a size 8;
+DEFINE time1 type t size 8;
+ss = Now("HH:mm:ss");
+MSG(ss);
+time1 = ss;
+MSG(time1.ToString("HH:mm"));
+
+
+//WITHOUT DEFINE
+date2 = DateTime(Now("yyyy-MM-dd"), "yyyy-MM-dd");
+MSG(date2.ToString("yyyy-MM-dd HH:mm:ss"));
+
+time2 = DateTime(Now("HH:mm:ss"), "HH:mm:ss");
+MSG(time2.ToString("yyyy-MM-dd HH:mm:ss"));

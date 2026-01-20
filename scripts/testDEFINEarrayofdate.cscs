@@ -1,18 +1,19 @@
 MessageBox("...Testing DEFINE array of date...");
 
+
 DEFINE arrDate type D size 10 array 20;
-arrDate[0] = "15/05/2025";
-arrDate[1] = "16/05/2025";
-arrDate[2] = "17/05/2025";
-MSG(arrDate[0]); //this prints "15/05/2025";
+arrDate[0] = DateTime("2025-05-15", "yyyy-MM-dd");
+arrDate[1] = DateTime("2025-05-16", "yyyy-MM-dd");
+arrDate[2] = DateTime("2025-05-17", "yyyy-MM-dd");
+MSG(arrDate[0].ToString("dd.MM.yyyy")); //this prints "15.05.2025";
 MSG(size(arrDate)); //this prints 20
 
 
 DEFINE arrDate2 type D size 8 array 20;
-arrDate2[0] = "15/05/25";
-arrDate2[1] = "16/05/25";
-arrDate2[2] = "17/05/25";
-MSG(arrDate2[0]); //this prints "15/05/25"
+arrDate2[0] = DateTime("2025-05-15", "yyyy-MM-dd");
+arrDate2[1] = DateTime("2025-05-16", "yyyy-MM-dd");
+arrDate2[2] = DateTime("2025-05-17", "yyyy-MM-dd");
+MSG(arrDate2[0].ToString("dd.MM.yy")); //this prints "15.05.25";
 MSG(size(arrDate2)); //this prints 20
 
 quit;

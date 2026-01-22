@@ -356,7 +356,11 @@ function GenerateUBLXml() {
     if (NKPR_GL_OZNAKA == "S") {
         if (NKPR_GL_BROTP != 0) {
             profileID = "P7";
-            invType = "Račun s referencama na otpremnicu";
+            invType = "Račun s referencom na otpremnicu"; //samo jedna otpremnica po računu je moguća!
+        } elif (NKPR_GL_CUSORD != "") {
+            //u tom polju je referenca na narudžbenicu kupca
+            profileID = "P3";
+            invType = "Račun sa referencom na narudžbenicu kupca"; //samo jedna narudžbenica po računu je moguća!
         } elif (NKPR_GL_REZ1 != 0) {
             //u REZ1 je referenca na prethodni račun
             profileID = "P11";

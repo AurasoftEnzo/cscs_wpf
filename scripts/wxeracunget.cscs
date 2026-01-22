@@ -697,6 +697,15 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
             
         // Basic invoice information
         NKPR_GL_DESC = docData["ID"]; //broj računa od dobavljača
+        if (docData["ID"].length > 50) {
+            memoX = "Broj računa dobavljača je predug (" + docData["ID"].length + " znakova). Maksimalno dozvoljeno je 50 znakova.\nSkraćeni broj računa: " + Substring(docData["ID"], 0, 50);
+        }
+        //provjeriti kasnije kad imamo i OIB dobavljača, u NKNAERGL da li je taj broj već unesen/preuzet
+        //sada još uzmimo copyIndictIndicator iz računa ako postoji
+        copyIndicator = "";
+        if (Contains(docData, "CopyIndicator")) {
+            copyIndicator = docData["CopyIndicator"];
+        }
         NKPR_GL_OZNAKA = docType;
         NKPR_GL_DATPRI = docData["IssueDate"];
         //issueDate = docData["IssueDate"].toString();
@@ -762,6 +771,30 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
             if (suppName != "") {
                 NKPR_GL_CUSNME = suppName;
             }  
+            //odrediti OIB dobavljača iz /Invoice/cac:AccountingSupplierParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID
+            if (Contains(suppPartyData, "PartyTaxScheme")) {
+                partyTaxScheme = suppPartyData["PartyTaxScheme"];
+                if (Contains(partyTaxScheme, "CompanyID")) {
+                    OIBSupp = partyTaxScheme["CompanyID"];
+                }
+            }
+            //tu sad imamo OIB dobavljača i broj računa dobavljača; sada provjeriti da li je taj račun već unesen za tog dobavljača
+                sqlQueryString = "select NKPR_GL_JMBG, NKPR_GL_DESC from " + strtrim(databaseName) + ".dbo.NKNAERGL WHERE NKPR_GL_JMBG = '" + OIBSupp + "' AND NKPR_GL_DESC = '" + NKPR_GL_DESC + "'";
+                try
+                {
+                    sqlOIBInvoicenum = sqlQuery(sqlQueryString);
+                }
+            if (size(sqlOIBInvoicenum) > 1)
+            {
+                if(copyIndicator != "true"){
+                    //ako je copyIndicator ne postoji ili je false, onda je to kopija računa i dozvoliti unos
+                    //ako nije, onda javiti da je račun već unesen
+                }else{
+                    //tu bisada trebalo u originalni račun pod tim brojem spremiti u MemoX da je taj račun dobio kopiju i koji je broj te kopije
+                    memoX = "Račun s OIB-om dobavljača " + OIBSupp + " i brojem računa dobavljača " + NKPR_GL_DESC + " je već unesen u bazu pod brojem računa: " + sqlOIBInvoicenum[1][1].trim() + " Došla je kopija računa.\n";
+                    return;
+                }                    
+            }
             // Supplier address
             if (Contains(suppPartyData, "PostalAddress")) { 
                 suppAddress = suppPartyData["PostalAddress"];
@@ -777,7 +810,9 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
         //msg("11121: "+companyIDPartyIdentificationID);
             if (refNum == "9934") { 
                 // OIB
-                OIBSupp = refOIB;
+                if (OIBSupp == "") {
+                    OIBSupp = refOIB;
+                }
                 // NKSCPART - nađi dobavljača po OIB-u/GLN-u i uzmi šifru dobavljača
                 // ako ne postoji, kreiraj novog dobavljača
                 sqlQueryString = "select NKSC_PARTCODE, NKSC_PARTNAME, NKSC_RO, NKSC_ADD1, NKSC_CITY, NKSC_ZIP, NKSC_drzava, NKSC_SIFRA  from " + strtrim(databaseName) + ".dbo.NKSCPART WHERE NKSC_SIFRA = '" + OIBSupp + "'";

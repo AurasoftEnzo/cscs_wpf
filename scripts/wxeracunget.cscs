@@ -390,11 +390,11 @@ function startDownload(){
 }
 
 function GetRacuniFINA(){
-    for(i = 0; i < Rbr; i++) {
+    for(f = 0; f < Rbr; f++) {
         try{
             // MSG("Dohvaćam 1 ULAZNI račun preko FINA-e putem WSDL-a!");
 
-            invoiceId = arrayBrojRacunaFina[i];
+            invoiceId = arrayBrojRacunaFina[f];
             xmlFilePath = FILESPATH + "UR\\" + "FINA_UR_" + invoiceId + ".xml";
 
             ack = FINA_GET_B2B_INCOMING_INVOICE(
@@ -462,12 +462,11 @@ function GetRacuniFINA(){
 }
 
 function GetRacuniMER(){
-    for(i = 0; i < Rbr; i++) {
+    for(h = 0; h < Rbr; h++) {
         try{
             // MSG("Dohvaćam 1 ULAZNI račun preko FINA-e putem WSDL-a!");
 
-            invoiceId = arrayBrojRacunaMer[i];
-
+            invoiceId = arrayBrojRacunaMer[h];
             // trackingId = "MER_UR_" + racunObject["ElectronicId"] + "_" + racunObject["DocumentNr"] + "_" + racunObject["SenderBusinessNumber"]; // + "_" + racunObject["SenderBusinessName"];
             trackingId = "MER_UR_" + invoiceId;
 
@@ -522,8 +521,8 @@ function startImport(){
     //MSG("LIST: " + listOfXmls);
     // MSG(Size(listOfXmls));
 
-    // for(i = 0; i < 1; i++){
-    for(xmlCounter = 0; xmlCounter < Size(listOfXmls); xmlCounter++){
+    ///for(xmlCounter = 0; xmlCounter < Size(listOfXmls); xmlCounter++){
+    for(xmlCounter = 0; xmlCounter < 1; xmlCounter++){
 
         msg ("IMPORTING: " + listOfXmls[xmlCounter]);
         xmlFilePath = listOfXmls[xmlCounter];
@@ -696,7 +695,8 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
             docData = invoiceDict["DebitNote"];            }
             
         // Basic invoice information
-        NKPR_GL_DESC = docData["ID"]; //broj računa od dobavljača
+        glDesc = docData["ID"]; //broj računa od dobavljača
+        NKPR_GL_DESC = glDesc;
         if (docData["ID"].length > 50) {
             memoX = "Broj računa dobavljača je predug (" + docData["ID"].length + " znakova). Maksimalno dozvoljeno je 50 znakova.\nSkraćeni broj računa: " + Substring(docData["ID"], 0, 50);
         }
@@ -780,10 +780,14 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
             }
             //tu sad imamo OIB dobavljača i broj računa dobavljača; sada provjeriti da li je taj račun već unesen za tog dobavljača
                 sqlQueryString = "select NKPR_GL_JMBG, NKPR_GL_DESC from " + strtrim(databaseName) + ".dbo.NKNAERGL WHERE NKPR_GL_JMBG = '" + OIBSupp + "' AND NKPR_GL_DESC = '" + NKPR_GL_DESC + "'";
-                try
-                {
+                //try
+                //{
                     sqlOIBInvoicenum = sqlQuery(sqlQueryString);
-                }
+                //}
+                //catch(ex)
+                //{
+                //}
+                
             if (size(sqlOIBInvoicenum) > 1)
             {
                 if(copyIndicator != "true"){
@@ -808,6 +812,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
             }
         }
         //msg("11121: "+companyIDPartyIdentificationID);
+        NKPR_GL_CUSCOD = "";
             if (refNum == "9934") { 
                 // OIB
                 if (OIBSupp == "") {
@@ -846,7 +851,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
                 MessageBox("Nepodržani identifikator dobavljača: " + companyIDPartyIdentificationID + ". Račun neće biti uvezen.");
                 return;
             }
-    //msg("22221: "+size(sqlPartner));  
+    msg("22221: "+size(sqlPartner));  
                 if (size(sqlPartner) > 1)
                 {
                  /*   cuscod = sqlPartner[1][0].trim(); //     NKSC_PARTCODE
@@ -870,18 +875,8 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
                     NKPR_GL_JMBG  = sqlPartner[1][7].trim(); // NKSC_sifra
 
                 }else{
-                    msg( "Ovo je novi partner! Molim da ga otvorite u matičnim podacima partnera:\n" + 
-                    /*
-                    NKPR_GL_CUSNME + "\n" +
-                    NKPR_GL_ro + "\n" +
-                    NKPR_GL_CUSA1 + "\n" +
-                    NKPR_GL_CUSCTY + "\n" +
-                    NKPR_GL_CUSZIP + "\n" +
-                    NKPR_GL_DRZAVA + "\n" +
-                    */
-                    "OIB/GLN: " + companyIDPartyIdentificationID
-                    );
-                    return;
+                    //msg( "Ovo je novi partner! Molim da ga otvorite u matičnim podacima partnera:\n" + 
+                    //return;
                 }   
             if (OIBSupp != "") {
                 NKPR_GL_JMBG = OIBSupp;
@@ -966,22 +961,34 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
         paymentMeans = docData["PaymentMeans"];
         if (paymentMeans != null && paymentMeans != "") {
             NKPR_GL_SIF_PL = paymentMeans["PaymentMeansCode"];
-            sql_bank = "SELECT NKSC_ZR_KONTO, NKSC_ZR_NAZIV, NKSC_ZR_BANKA FROM " + databaseName + ".dbo.NKSCZIRO WHERE NKSC_ZR_CODE = @p1;";
-            sqlParams = {};
-            sqlParams.Add({"@p1", NKPR_GL_CUSCOD});
-            bankRes = sqlQuery(sql_bank, sqlParams);
-            if (Size(bankRes) >= 2) {
-                NKSC_ZR_KONTO = bankRes[1][0].trim();
-                NKSC_ZR_NAZIV = bankRes[1][1].trim();
-                NKSC_ZR_BANKA = bankRes[1][2].trim();
-                if (contains(paymentMeans,"PayeeFinancialAccount")) {
-                    paymentAccount = paymentMeans["PayeeFinancialAccount"];
-                } else {
-                    paymentAccount = {};
+            if (NKPR_GL_CUSCOD != "") {
+                sql_bank = "SELECT NKSC_ZR_KONTO, NKSC_ZR_NAZIV, NKSC_ZR_BANKA FROM " + databaseName + ".dbo.NKSCZIRO WHERE NKSC_ZR_CODE = @p1;";
+                sqlParams = {};
+                sqlParams.Add({"@p1", NKPR_GL_CUSCOD});
+                bankRes = sqlQuery(sql_bank, sqlParams);
+                if (Size(bankRes) >= 2) {
+                    NKSC_ZR_KONTO = bankRes[1][0].trim();
+                    NKSC_ZR_NAZIV = bankRes[1][1].trim();
+                    NKSC_ZR_BANKA = bankRes[1][2].trim();
+                    if (contains(paymentMeans,"PayeeFinancialAccount")) {
+                        paymentAccount = paymentMeans["PayeeFinancialAccount"];
+                    } else {
+                        paymentAccount = {};
+                    }
+                    if (NKSC_ZR_KONTO == paymentAccount["ID"]) {
+                        NKPR_GL_RZRVA1 = NKSC_ZR_BANKA;
+                    }
                 }
-                if (NKSC_ZR_KONTO == paymentAccount["ID"]) {
-                    NKPR_GL_RZRVA1 = NKSC_ZR_BANKA;
-                }
+            } else {
+                    if (contains(paymentMeans,"PayeeFinancialAccount")) {
+                        paymentAccount = paymentMeans["PayeeFinancialAccount"];
+                        NKPR_GL_SIGNATU = paymentAccount["ID"];
+                    } else {
+                        paymentAccount = {};
+                    }
+                    //NKSC_ZR_KONTO = "";
+                    //NKSC_ZR_NAZIV = "";
+                    //NKSC_ZR_BANKA = "";
             }
             if (Contains(paymentMeans, "PaymentID")) {
                 paymentID = paymentMeans["PaymentID"];
@@ -1028,6 +1035,11 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
                 //tu sad treba spremit cijeli note u MemoH ili MemoF ili u linije ili negdje drugdje ako treba
             }
         }
+
+        // Extract and save notes to NKNAOPIS table
+       ExtractAndSaveNotes(docData);
+
+
         // Billing references
         if (Contains(docData, "BillingReference")) {
             billingRef = docData["BillingReference"];
@@ -1043,6 +1055,159 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
     } catch (error) {
         MessageBox("Greška prilikom izvlačenja podataka zaglavlja: " + error);
         return null;
+    }
+}
+
+// Add this function after ExtractHeaderDataFromDict function
+
+// -----------------------------------------------------------
+// Save note to NKNAOPIS table and return reference number
+// -----------------------------------------------------------
+function SaveNoteToNKNAOPIS(noteText) {
+    try {
+        if (noteText == "" || noteText == null) {
+            return 0;
+        }
+        
+        // Get next available KPPR_OP_BROJ
+        sql_max_note = "SELECT ISNULL(MAX(KPPR_OP_BROJ), 0) AS maxNum FROM " + databaseName + ".dbo.NKNAOPIS";
+        maxRes = sqlQuery(sql_max_note);
+        
+        nextNoteNum = 1;
+        if (Size(maxRes) >= 2) {
+            nextNoteNum = maxRes[1][0] + 1;
+        }
+        
+        // Split note text into chunks of 75 characters
+        noteLength = noteText.length;
+        chunkSize = 75;
+        lineNum = 1;
+        startPos = 0;
+        
+        while (startPos < noteLength) {
+            // Calculate chunk length (75 chars or remaining text if less)
+            remainingLength = noteLength - startPos;
+            currentChunkSize = (remainingLength > chunkSize) ? chunkSize : remainingLength;
+            
+            // Extract chunk
+            chunk = Substring(noteText, startPos, currentChunkSize);
+            
+            // Insert chunk into KPPROPIS
+            sql_insert_note = "INSERT INTO " + databaseName + ".dbo.NKNAOPIS (KPPR_OP_BROJ, KPPR_OP_LIN, KPPR_OP_TEXT) " +
+                            "VALUES (@p1, @p2, @p3);";
+            sqlParams = {};
+            sqlParams.Add({"@p1", nextNoteNum});
+            sqlParams.Add({"@p2", lineNum});
+            sqlParams.Add({"@p3", chunk});
+            
+            result = SqlNonQuery(sql_insert_note, sqlParams);
+            
+            if (result == 0) {
+                throw "Failed to insert note chunk at line " + lineNum;
+            }
+            
+            // Move to next chunk
+            startPos += chunkSize;
+            lineNum++;
+        }
+        
+        msg("Note saved with reference number: " + nextNoteNum + " (" + (lineNum - 1) + " lines)");
+        return nextNoteNum;
+        
+    } catch (error) {
+        MessageBox("Greška pri spremanju napomene: " + error);
+        return 0;
+    }
+}
+
+// -----------------------------------------------------------
+// Extract and save notes from document
+// -----------------------------------------------------------
+function ExtractAndSaveNotes(docData) {
+    try {
+        NKPR_GL_BROPIS = 0;
+        NKPR_GL_BROPIS1 = 0;
+        
+        // Check if Note element exists
+        if (!Contains(docData, "Note")) {
+            return; // No notes to process
+        }
+        
+        noteValue = docData["Note"];
+        
+        if (noteValue == null || noteValue == "") {
+            return; // Empty note
+        }
+        
+        msg("=== PROCESSING NOTES ===");
+        msg("Note type: " + noteValue.type());
+        
+        // Handle single note (STRING or OBJECT)
+        if (noteValue.type() == "STRING") {
+            // Single note as simple string
+            NKPR_GL_BROPIS = SaveNoteToNKNAOPIS(noteValue);
+            msg("Saved first note with reference: " + NKPR_GL_BROPIS);
+        }
+        elif (noteValue.type() == "OBJECT" && !IsArray(noteValue)) {
+            // Single note as object (might have #text)
+            noteText = "";
+            if (Contains(noteValue, "#text")) {
+                noteText = noteValue["#text"];
+            } else {
+                noteText = String(noteValue);
+            }
+            NKPR_GL_BROPIS = SaveNoteToNKNAOPIS(noteText);
+            msg("Saved first note with reference: " + NKPR_GL_BROPIS);
+        }
+        elif (noteValue.type() == "ARRAY") {
+            // Multiple notes as array
+            if (noteValue.size() > 0) {
+                // First note
+                firstNote = noteValue[0];
+                firstNoteText = "";
+                
+                if (firstNote.type() == "STRING") {
+                    firstNoteText = firstNote;
+                } elif (Contains(firstNote, "#text")) {
+                    firstNoteText = firstNote["#text"];
+                } else {
+                    firstNoteText = String(firstNote);
+                }
+                
+                NKPR_GL_BROPIS = SaveNoteToNKNAOPIS(firstNoteText);
+                msg("Saved first note with reference: " + NKPR_GL_BROPIS);
+            }
+            
+            if (noteValue.size() > 1) {
+                // Second note
+                secondNote = noteValue[1];
+                secondNoteText = "";
+                
+                if (secondNote.type() == "STRING") {
+                    secondNoteText = secondNote;
+                } elif (Contains(secondNote, "#text")) {
+                    secondNoteText = secondNote["#text"];
+                } else {
+                    secondNoteText = String(secondNote);
+                }
+                
+                NKPR_GL_BROPIS1 = SaveNoteToNKNAOPIS(secondNoteText);
+                msg("Saved second note with reference: " + NKPR_GL_BROPIS1);
+            }
+            
+            // If there are more than 2 notes, log a warning
+            if (noteValue.size() > 2) {
+                //ako ima više od va notesa, treba ih spremiti u istu tablu NKNAOPIS i na isti način, ali svaki notes treba otvorit novu liniju u NKNAERLN i referenti broj spremiti u NKNA_LN_BROPI
+                msg("WARNING: Document contains " + noteValue.size() + " notes, but only first 2 were saved");
+            }
+        }
+        
+        msg("=== NOTES PROCESSING COMPLETE ===");
+        msg("NKPR_GL_BROPIS: " + NKPR_GL_BROPIS);
+        msg("NKPR_GL_BROPIS1: " + NKPR_GL_BROPIS1);
+        
+    } catch (error) {
+        MessageBox("Greška pri obradi napomena: " + error);
     }
 }
 
@@ -1474,36 +1639,36 @@ function ImportHeaderDataToERGL(docType) {
     try {
         // Generate new record ID
         newRecordId = GetNextRecordId("NKNAERGL");
-        NKPR_GL_NUM = newRecordId;
+        NKPR_GL_BRPON = newRecordId;
         //invDate = now("yyyy-MM-dd").toString();
         //timeCreated = now("HH:mm:ss").toString();
         // Prepare SQL insert statement for NKNAERGL table
         sql_insert = "INSERT INTO " + databaseName + ".dbo.NKNAERGL (";
-        sql_insert += "NKPR_GL_NUM, NKPR_GL_OZNAKA, NKPR_GL_INVDTE, NKPR_GL_TIMECR, ";
+        sql_insert += "NKPR_GL_BRPON, NKPR_GL_OZNAKA, NKPR_GL_INVDTE, NKPR_GL_TIMECR, ";
         sql_insert += "NKPR_GL_DVO, NKPR_GL_NOKAM, NKPR_GL_ESD,  NKPR_GL_SIFDVZ, ";
         sql_insert += "NKPR_GL_JMBG, NKPR_GL_CUSNME, NKPR_GL_CUSA1, NKPR_GL_CUSCTY, ";
         sql_insert += "NKPR_GL_CUSZIP, NKPR_GL_CUSST, ";
         sql_insert += "NKPR_GL_SHPCOD, NKPR_GL_SHPNME, NKPR_GL_SHPA1, NKPR_GL_SHPCTY, ";
         sql_insert += "NKPR_GL_SHPZIP, NKPR_GL_SHPST,";
         sql_insert += "NKPR_GL_SIF_PL, NKPR_GL_MODEL, NKPR_GL_POZIV, NKPR_GL_DATPRI, ";
-        sql_insert += "NKPR_GL_TAXAMT, NKPR_GL_TOTAL, ";
+        sql_insert += "NKPR_GL_TAXAMT, NKPR_GL_TOTAL, NKPR_GL_DESC,";
         sql_insert += "NKPR_GL_BROPIS1, NKPR_GL_REZ3, NKPR_GL_DATECR, NKPR_GL_DRZAVA";
         sql_insert += ") VALUES (";
-        sql_insert += "@invNum, @docType, @invDate, @timeCreated, ";
+        sql_insert += "@brpon, @docType, @invDate, @timeCreated, ";
         sql_insert += "@dvo, @nokam, @taxPointDate, @currency, ";
         sql_insert += "@custOIB, @custName, @custAddress, @custCity, ";
         sql_insert += "@custZip, @custState, ";
         sql_insert += "@shpCode, @shpName, @shpAddress, @shpCity, ";
         sql_insert += "@shpZip, @shpState, ";
         sql_insert += "@payment, @model, @poziv, @datpri, ";
-        sql_insert += "@taxTotal, @total, ";
+        sql_insert += "@taxTotal, @total, @glDesc, ";
         sql_insert += "@note, @rez3, @created, @country";
         sql_insert += ");";
         
         // Prepare parameters
         sqlParams = {};
         // sqlParams.Add({"@invNum", NKPR_GL_NUM});
-        sqlParams.Add({"@invNum", newRecordId});
+        sqlParams.Add({"@brpon", newRecordId});
         sqlParams.Add({"@docType", NKPR_GL_OZNAKA});
         sqlParams.Add({"@invDate", NKPR_GL_INVDTE});
         sqlParams.Add({"@timeCreated", NKPR_GL_TIMECR});
@@ -1608,7 +1773,7 @@ function ImportLineItemsToERLN(recordId, lineItems) {
             sql_insert += ");";
             
             sqlParams = {};
-            sqlParams.Add({"@recordId", NKPR_GL_NUM});
+            sqlParams.Add({"@recordId", NKPR_GL_BRPON});
             
             sqlParams.Add({"@lineNum", i + 1});
             sqlParams.Add({"@qty", lineData["NKPR_LN_PQTY"]});
@@ -1664,7 +1829,7 @@ function LogToNKSYELOG(recordId, xmlFilePath, status) {
 
 // Helper function to get next record ID
 function GetNextRecordId(tableName) {
-    sql_max = "SELECT isnull(MAX(NKPR_GL_NUM),0) AS lastNum FROM " + databaseName + ".dbo." + tableName;
+    sql_max = "SELECT isnull(MAX(NKPR_GL_BRPON),0) AS lastNum FROM " + databaseName + ".dbo." + tableName;
     result = sqlQuery(sql_max);
     if (Size(result) >= 2 && result[1][0] != 0) {
         return result[1][0] + 1;

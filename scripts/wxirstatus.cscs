@@ -17,6 +17,10 @@ DEFINE arrayBrojRacuna type a size 50 array 10000;
 DEFINE arrayBrojRacunaFina type a size 50 array 10000;
 DEFINE arrayBrojRacunaMer type a size 50 array 10000;
 
+DEFINE arrayIdRacunaPosrednika type a size 50 array 10000;
+DEFINE arrayStatusFiskalizacije type a size 50 array 10000;
+DEFINE arrayReportPaymentStatus type a size 50 array 10000;
+
 DEFINE FilterDateFrom type d size 10;
 DEFINE FilterDateTo type d size 10;
 
@@ -257,7 +261,36 @@ function GetListFINA_B2B(){
                 // MSG(datumIzdavanja);
                 // MSG(datumIzdavanja.ToString("dd/MM/yyyy") + " ... " + datumKnjizenja.ToString("dd/MM/yyyy"));
 
-                AddRacunToArrays(buyerName, buyerId, datumIzdavanja, datumKnjizenja, aurasoftFormatSupplierInvoiceId, invoiceId, statusCode);
+                fiskStatusAck = FINA_GET_B2B_OUTGOING_INVOICE_FISK_STATUS(
+                    ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
+                    ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
+                    ERAC_USERT, // servisni certifikat
+                    ERAC_PASST, // p12 certifikat (klijentski)
+                    ERAC_PASS, // password za p12 certifikat
+
+                    UUID(), // messageId
+                    "9934:" + companyOIB, // OIB primatelja (VLASTITI) // !!! stavit pravi OIB iz baze
+                    invoiceId
+                );
+
+                if(Contains(fiskStatusAck, "ErrorCode")){
+                    fiskStatus = fiskStatusAck["ErrorMessage"];
+                    reportPaymentStatus = "";
+                }else{
+                    if(Contains(fiskStatusAck, "FiskStatus")){
+                        fiskStatus = fiskStatusAck["FiskStatus"];
+                    }else{
+                        fiskStatus = "";
+                    }
+
+                    if(Contains(fiskStatusAck, "ReportPaymentStatus")){
+                        reportPaymentStatus = fiskStatusAck["ReportPaymentStatus"];
+                    }else{
+                        reportPaymentStatus = "";
+                    }
+                }
+
+                AddRacunToArrays(buyerName, buyerId, datumIzdavanja, datumKnjizenja, aurasoftFormatSupplierInvoiceId, invoiceId, statusCode, fiskStatus, reportPaymentStatus);
             }
         }else{
             MessageBox("ack[\"ErrorCode\"] = " + ack["ErrorCode"] + "\nack[\"ErrorText\"] = " + ack["ErrorText"] + "\nack[\"ErrorMessage\"] = " + ack["ErrorMessage"]);
@@ -311,7 +344,38 @@ function GetListFINA_B2G(){
                 datumKnjizenja = ack["InvoiceList"][i]["InvoiceDate"];
                 // datumKnjizenja = Substring(datumKnjizenja, 0, 8);
 
-                AddRacunToArrays(buyerName, buyerId, datumIzdavanja, datumKnjizenja, aurasoftFormatSupplierInvoiceId, invoiceId, statusCode);
+
+                fiskStatusAck = FINA_GET_B2G_OUTGOING_INVOICE_FISK_STATUS(
+                    ERAC_SERVER + "B2GFinaInvoiceWebService/services/B2GFinaInvoiceWebService",
+                    ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
+                    ERAC_USERT, // servisni certifikat
+                    ERAC_PASST, // p12 certifikat (klijentski)
+                    ERAC_PASS, // password za p12 certifikat
+
+                    UUID(), // messageId
+                    "9934:" + companyOIB, // OIB primatelja (VLASTITI) // !!! stavit pravi OIB iz baze
+                    invoiceId
+                );
+
+                if(Contains(fiskStatusAck, "ErrorCode")){
+                    fiskStatus = fiskStatusAck["ErrorMessage"];
+                    reportPaymentStatus = "";
+                }else{
+                    if(Contains(fiskStatusAck, "FiskStatus")){
+                        fiskStatus = fiskStatusAck["FiskStatus"];
+                    }else{
+                        fiskStatus = "";
+                    }
+
+                    if(Contains(fiskStatusAck, "ReportPaymentStatus")){
+                        reportPaymentStatus = fiskStatusAck["ReportPaymentStatus"];
+                    }else{
+                        reportPaymentStatus = "";
+                    }
+                }
+
+
+                AddRacunToArrays(buyerName, buyerId, datumIzdavanja, datumKnjizenja, aurasoftFormatSupplierInvoiceId, invoiceId, statusCode, fiskStatus, reportPaymentStatus);
             }
         }else{
             MessageBox("ack[\"ErrorCode\"] = " + ack["ErrorCode"] + "\nack[\"ErrorText\"] = " + ack["ErrorText"] + "\nack[\"ErrorMessage\"] = " + ack["ErrorMessage"]);
@@ -399,7 +463,9 @@ function GetListMERSuccess(trackingId, responseCode, res) {
                 "", // racunObject["Sent"], // datum
                 TransformInvoiceNumberToAurasoftFormat(racunObject["DocumentNr"]),
                 racunObject["ElectronicId"],
-                racunObject["StatusName"] + "(" + racunObject["StatusId"] + ")"
+                racunObject["StatusName"] + "(" + racunObject["StatusId"] + ")",
+                "", // fiskStatus
+                "" // reportPaymentStatus
             );
         }
     }
@@ -424,7 +490,7 @@ function GetListMERFailure(trackingId, responseCode, res) {
 }
 
 
-function AddRacunToArrays(supplierName, supplierId, datumIzdavanja, datumKnjizenja, supplierInvoiceId, eRacunBrojRacuna, statusRacuna){
+function AddRacunToArrays(supplierName, supplierId, datumIzdavanja, datumKnjizenja, supplierInvoiceId, eRacunBrojRacuna, statusRacuna, fiskStatus, reportPaymentStatus){
     arrayKupac[Rbr] = supplierName;
     arrayOibKupca[Rbr] = supplierId;
     arrayStatusRacuna[Rbr] = statusRacuna;
@@ -432,7 +498,11 @@ function AddRacunToArrays(supplierName, supplierId, datumIzdavanja, datumKnjizen
     arrayDatumKnjizenja[Rbr] = datumKnjizenja.ToString("dd/MM/yy");
     arrayBrojRacuna[Rbr] = supplierInvoiceId;
     
+    arrayIdRacunaPosrednika[Rbr] = eRacunBrojRacuna;
 
+    arrayStatusFiskalizacije[Rbr] = fiskStatus;
+    arrayReportPaymentStatus[Rbr] = reportPaymentStatus;
+    
     if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
         arrayBrojRacunaMer[Rbr] = eRacunBrojRacuna;
     } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {

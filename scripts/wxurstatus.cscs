@@ -17,6 +17,10 @@ DEFINE arrayBrojRacuna type a size 50 array 10000;
 DEFINE arrayBrojRacunaFina type a size 50 array 10000;
 DEFINE arrayBrojRacunaMer type a size 50 array 10000;
 
+DEFINE arrayIdRacunaPosrednika type a size 50 array 10000;
+DEFINE arrayStatusFiskalizacije type a size 50 array 10000;
+DEFINE arrayReportPaymentStatus type a size 50 array 10000;
+
 DEFINE FilterDateFrom type d size 10;
 DEFINE FilterDateTo type d size 10;
 
@@ -253,7 +257,7 @@ function GetListFINA(){
                 statusCode = ack["InvoiceList"][i]["StatusCode"];
                 
                 // !!! datumi (2)
-                // invoiceId = ack["InvoiceList"][i]["InvoiceID"];
+                invoiceId = ack["InvoiceList"][i]["InvoiceID"];
 
                 datumIzdavanja = ack["InvoiceList"][i]["InvoiceIssueDate"];
                 // datumIzdavanja = Substring(datumIzdavanja, 0, 8);
@@ -262,7 +266,7 @@ function GetListFINA(){
 
                 supplierInvoiceId = ack["InvoiceList"][i]["SupplierInvoiceID"];
 
-                AddRacunToArrays(supplierName, supplierId, statusCode, datumIzdavanja, datumPdva, supplierInvoiceId);
+                AddRacunToArrays(supplierName, supplierId, statusCode, datumIzdavanja, datumPdva, supplierInvoiceId, invoiceId, "N.I." /*fiskStatus*/, "N.I." /*reportPaymentStatus*/);
             }
         }else{
             MessageBox("ack[\"ErrorCode\"]" + ack["ErrorCode"] + "\nack[\"ErrorText\"]" + ack["ErrorText"] + "\nack[\"ErrorMessage\"]" + ack["ErrorMessage"]);
@@ -345,7 +349,9 @@ function GetListMERSuccess(trackingId, responseCode, res) {
                 Substring(racunObject["Sent"], 0, 10), // datum
                 "", // datum
                 racunObject["DocumentNr"]
-                // racunObject["ElectronicId"],
+                racunObject["ElectronicId"],
+                "", // fiskStatus
+                "" // reportPaymentStatus
             );
         }
     }
@@ -370,7 +376,7 @@ function GetListMERFailure(trackingId, responseCode, res) {
 }
 
 
-function AddRacunToArrays(supplierName, supplierId, statusRacuna, datumIzdavanja, datumPdva, supplierInvoiceId){
+function AddRacunToArrays(supplierName, supplierId, statusRacuna, datumIzdavanja, datumPdva, supplierInvoiceId, eRacunBrojRacuna, fiskStatus, reportPaymentStatus){
     
     arrayDobavljac[Rbr] = supplierName;
     arrayOibDobavljaca[Rbr] = supplierId;
@@ -379,6 +385,10 @@ function AddRacunToArrays(supplierName, supplierId, statusRacuna, datumIzdavanja
     arrayDatumPDVa[Rbr] = datumPdva.ToString("dd/MM/yy");
     arrayBrojRacuna[Rbr] = supplierInvoiceId;
     
+    arrayIdRacunaPosrednika[Rbr] = eRacunBrojRacuna;
+    
+    arrayStatusFiskalizacije[Rbr] = fiskStatus;
+    arrayReportPaymentStatus[Rbr] = reportPaymentStatus;
 
     // if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
     //     arrayBrojRacunaMer[Rbr] = eRacunBrojRacuna;

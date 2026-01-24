@@ -174,7 +174,7 @@ function GenerateUBLXml() {
                 NKPR_GL_SCONTO,NKPR_GL_DANSC,NKPR_GL_REZ3,NKPR_GL_SHPCOD, NKPR_GL_SHPNME, NKPR_GL_SHPRO, NKPR_GL_SHPA1, 
                 NKPR_GL_SHPZIP, NKPR_GL_SHPCTY,NKPR_GL_SHPST, NKPR_GL_UGOVOR,NKPR_GL_CUSCOD,NKPR_GL_RNALOG,
                 SUBSTRING(NKSP_AD_REZ,37,13) as NKSP_AD_GLN,SUBSTRING(NKSP_AD_REZ,51,20) as NKSP_AD_OBJED, 
-                NKSC_SOP, NKSC_POSREDNIK, NKSC_REZ10,NKSC_TAX_DN,
+                NKSC_SOP, NKSC_POSREDNIK, NKSC_REZ10, NKSC_TAX_DN, substring(NKSC_REZ, 42, 10) as POSREDNIK,
                 PKKU_PP_OPIS
                 FROM " + databaseName + ".dbo.NKPRINV LEFT JOIN " + databaseName + ".dbo.NKSCPART ON NKPR_GL_CUSCOD = NKSC_PARTCODE
                     LEFT JOIN " + databaseName + ".dbo.NKSPADRS ON nkpr_gl_cuscod= nksp_ad_code AND nkpr_gl_shpcod= nksp_ad_codeint
@@ -241,7 +241,8 @@ function GenerateUBLXml() {
     NKSC_POSREDNIK = hdrRes[1][47].trim().Upper(); // Intermediary GLN
     NKSC_REZ10 = hdrRes[1][48].trim().Upper(); // P - šalji na server / F = spremi file na disk / E - šalji na E-mail(NIJE U FUNKCIJI)
     NKSC_TAX_DN = hdrRes[1][49].trim().Upper(); // F - kupac po fakturiranoj realizaciji/ N = po naplaćenoj realizaciji / X - nije u sustavu PDV-a
-    PKKU_PP_OPIS = hdrRes[1][50].trim();
+    POSREDNIK = hdrRes[1][50].trim();
+    PKKU_PP_OPIS = hdrRes[1][51].trim();
 
     if(NKSC_REZ10 == "E"){
         MessageBox("Način slanja e-računa e-mailom(E) nije podržan! Partner " + NKSC_PARTCODE + ".");
@@ -250,11 +251,15 @@ function GenerateUBLXml() {
         MessageBox("Neispravno konfiguriran način slanja e-računa(" + NKSC_REZ10 + ") za partnera " + NKSC_PARTCODE + "!");
         exit;
     }
-    if(NKSC_POSREDNIK != ""){    
-        PROVIDER = NKSC_POSREDNIK;
+    // NKSC_POSERDNIK SE KORISTI ISKLJUČIVO ZA MEGGLE EDITEL, OMNIZON, ...
+    // if(NKSC_POSREDNIK != ""){    
+    //     PROVIDER = NKSC_POSREDNIK;
+    // }
+    if(POSREDNIK != ""){    
+        PROVIDER = POSREDNIK;
     }
 
-// msg("CCC Slanje eRačuna putem posrednika: " + PROVIDER);
+    // msg("CCC Slanje eRačuna putem posrednika: " + PROVIDER);
     sql_erac = "SELECT
                 ERAC_REZ1, ERAC_SERVER, ERAC_SERVERT, ERAC_USER, ERAC_PASS, ERAC_USERT, ERAC_PASST, ERAC_DESC,ERAC_CODE 
                 FROM " + databaseName + ".dbo.NKSYERAC WHERE ERAC_CODE = @p1;";
@@ -263,7 +268,7 @@ function GenerateUBLXml() {
     
     eracRes = sqlQuery(sql_erac, sqlParams);
     if (Size(eracRes) < 2) {
-        MessageBox("Nema podataka o posredniku " + NKSC_POSREDNIK + "!");
+        MessageBox("Nema podataka o posredniku " + PROVIDER + "!");
         return false;
     }
 
@@ -276,7 +281,7 @@ function GenerateUBLXml() {
     ERAC_PASST = eracRes[1][6].trim(); // p12 certificate
     ERAC_DESC = eracRes[1][7].trim();
     ERAC_CODE = eracRes[1][8].trim();
-//MessageBox("Slanje eRačuna putem posrednika: " + PROVIDER + " (" + ERAC_PASST + ")");
+    //MessageBox("Slanje eRačuna putem posrednika: " + PROVIDER + " (" + ERAC_PASST + ")");
 
     // -----------------------------------------------------------
     // 2. Load Lines
@@ -586,7 +591,7 @@ function GenerateUBLXml() {
         }
     }
 
-msg ("AAAA: " + taxRes2);
+    // msg ("AAAA: " + taxRes2);
     totalPorez = 0;
     totalOsnovica = 0;
     TotaltaxOutOfScopeAmt = 0;
@@ -1648,7 +1653,7 @@ msg ("AAAA: " + taxRes2);
     xml += "  <cbc:TaxInclusiveAmount currencyID=\"EUR\">" + FormatNum(total, 2, ".") + "</cbc:TaxInclusiveAmount>\n"; // BT-110
     xml += "  <cbc:ChargeTotalAmount currencyID=\"EUR\">" + FormatNum(ChargeTotAmt, 2, ".") + "</cbc:ChargeTotalAmount>\n"; // BT-108
     if (prepaid > 0) { xml += "  <cbc:PrepaidAmount currencyID=\"EUR\">" + FormatNum(prepaid, 2, ".") + "</cbc:PrepaidAmount>\n"; } // BT-113
-    if (payable > 0) { xml += "  <cbc:PayableAmount currencyID=\"EUR\">" + FormatNum(payable, 2, ".") + "</cbc:PayableAmount>\n"; } // BT-115
+    xml += "  <cbc:PayableAmount currencyID=\"EUR\">" + FormatNum(payable, 2, ".") + "</cbc:PayableAmount>\n"; // BT-115
     // if (rounding != 0) { xml += "  <cbc:PayableRoundingAmount currencyID=\"EUR\">" + FormatNum(rounding, 2, ".") + "</cbc:PayableRoundingAmount>\n"; }
     xml += "</cac:LegalMonetaryTotal>\n";
     
@@ -2438,14 +2443,14 @@ function SendToFINA_2() {
     soapEnvelope += "  </SOAP-ENV:Body>\n";
     soapEnvelope += "</SOAP-ENV:Envelope>";
 
-    MSG("AAAA: SOAP Envelope prepared for FINA:\n\n" + soapEnvelope);
+    // MSG("AAAA: SOAP Envelope prepared for FINA:\n\n" + soapEnvelope);
     //Test99();
     //exit;
 
 
     // Sign SOAP with client certificate (WS-Security)
     signedSoap = SignSoapWithCert(soapEnvelope, ERAC_PASST, ERAC_PASS);
-    MSG("BBBB: Signed SOAP for FINA:\n\n" + signedSoap);
+    // MSG("BBBB: Signed SOAP for FINA:\n\n" + signedSoap);
 
     // if (signedSoap == "") {
     //     LogError("FINA_SIGN_FAIL", "SOAP signing failed", "");

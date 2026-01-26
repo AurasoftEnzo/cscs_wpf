@@ -19,7 +19,7 @@ DEFINE arrayBrojRacunaMer type a size 50 array 10000;
 
 DEFINE arrayIdRacunaPosrednika type a size 50 array 10000;
 DEFINE arrayStatusFiskalizacije type a size 50 array 10000;
-DEFINE arrayReportPaymentStatus type a size 50 array 10000;
+DEFINE arrayReportRejectionStatus type a size 50 array 10000;
 
 DEFINE FilterDateFrom type d size 10;
 DEFINE FilterDateTo type d size 10;
@@ -266,7 +266,36 @@ function GetListFINA(){
 
                 supplierInvoiceId = ack["InvoiceList"][i]["SupplierInvoiceID"];
 
-                AddRacunToArrays(supplierName, supplierId, statusCode, datumIzdavanja, datumPdva, supplierInvoiceId, invoiceId, "N.I." /*fiskStatus*/, "N.I." /*reportPaymentStatus*/);
+                fiskStatusAck = FINA_GET_B2B_INCOMING_INVOICE_FISK_STATUS(
+                    ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
+                    ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
+                    ERAC_USERT, // servisni certifikat
+                    ERAC_PASST, // p12 certifikat (klijentski)
+                    ERAC_PASS, // password za p12 certifikat
+
+                    UUID(), // messageId
+                    "9934:" + companyOIB,
+                    invoiceId
+                );
+
+                if(Contains(fiskStatusAck, "ErrorCode")){
+                    fiskStatus = fiskStatusAck["ErrorMessage"];
+                    reportRejectionStatus = "";
+                }else{
+                    if(Contains(fiskStatusAck, "FiskStatus")){
+                        fiskStatus = fiskStatusAck["FiskStatus"];
+                    }else{
+                        fiskStatus = "";
+                    }
+
+                    if(Contains(fiskStatusAck, "ReportRejectionStatus")){
+                        reportRejectionStatus = fiskStatusAck["ReportRejectionStatus"];
+                    }else{
+                        reportRejectionStatus = "";
+                    }
+                }
+
+                AddRacunToArrays(supplierName, supplierId, statusCode, datumIzdavanja, datumPdva, supplierInvoiceId, invoiceId, fiskStatus, reportRejectionStatus);
             }
         }else{
             MessageBox("ack[\"ErrorCode\"]" + ack["ErrorCode"] + "\nack[\"ErrorText\"]" + ack["ErrorText"] + "\nack[\"ErrorMessage\"]" + ack["ErrorMessage"]);
@@ -376,7 +405,7 @@ function GetListMERFailure(trackingId, responseCode, res) {
 }
 
 
-function AddRacunToArrays(supplierName, supplierId, statusRacuna, datumIzdavanja, datumPdva, supplierInvoiceId, eRacunBrojRacuna, fiskStatus, reportPaymentStatus){
+function AddRacunToArrays(supplierName, supplierId, statusRacuna, datumIzdavanja, datumPdva, supplierInvoiceId, eRacunBrojRacuna, fiskStatus, reportRejectionStatus){
     
     arrayDobavljac[Rbr] = supplierName;
     arrayOibDobavljaca[Rbr] = supplierId;
@@ -388,7 +417,7 @@ function AddRacunToArrays(supplierName, supplierId, statusRacuna, datumIzdavanja
     arrayIdRacunaPosrednika[Rbr] = eRacunBrojRacuna;
     
     arrayStatusFiskalizacije[Rbr] = fiskStatus;
-    arrayReportPaymentStatus[Rbr] = reportPaymentStatus;
+    arrayReportRejectionStatus[Rbr] = reportRejectionStatus;
 
     // if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
     //     arrayBrojRacunaMer[Rbr] = eRacunBrojRacuna;

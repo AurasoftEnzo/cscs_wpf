@@ -151,6 +151,9 @@ namespace WpfCSCS
             interpreter.RegisterFunction("FINA_CHANGE_B2B_INCOMING_INVOICE_STATUS", new FINA_CHANGE_B2B_INCOMING_INVOICE_STATUSFunction());
             interpreter.RegisterFunction("FINA_GET_B2B_OUTGOING_INVOICE_LIST", new FINA_GET_B2B_OUTGOING_INVOICE_LISTFunction());
 
+            interpreter.RegisterFunction("FINA_GET_B2B_OUTGOING_INVOICE_FISK_STATUS", new FINA_GET_B2B_OUTGOING_INVOICE_FISK_STATUSFunction());
+            interpreter.RegisterFunction("FINA_GET_B2B_INCOMING_INVOICE_FISK_STATUS", new FINA_GET_B2B_INCOMING_INVOICE_FISK_STATUSFunction());
+
             // FINA B2G OUTGOING
             //interpreter.RegisterFunction("FINA_B2G_ECHO", new FINA_B2G_ECHOFunction());
             //interpreter.RegisterFunction("FINA_SEND_B2G_OUTGOING_INVOICE", new FINA_SEND_B2G_OUTGOING_INVOICEFunction());
@@ -163,9 +166,10 @@ namespace WpfCSCS
             //interpreter.RegisterFunction("FINA_GET_B2G_INCOMING_INVOICE", new FINA_GET_B2G_INCOMING_INVOICEFunction());
             //interpreter.RegisterFunction("FINA_CHANGE_B2G_INCOMING_INVOICE_STATUS", new FINA_CHANGE_B2G_INCOMING_INVOICE_STATUSFunction());
             interpreter.RegisterFunction("FINA_GET_B2G_OUTGOING_INVOICE_LIST", new FINA_GET_B2G_OUTGOING_INVOICE_LISTFunction());
+            interpreter.RegisterFunction("FINA_GET_B2G_OUTGOING_INVOICE_FISK_STATUS", new FINA_GET_B2G_OUTGOING_INVOICE_FISK_STATUSFunction());
 
-            //FINA FISK STATUS
-            interpreter.RegisterFunction("FINA_GET_B2B_OUTGOING_INVOICE_FISK_STATUS", new FINA_GET_B2B_OUTGOING_INVOICE_FISK_STATUSFunction());
+
+
         }
         public partial class Constants
         {
@@ -5681,13 +5685,77 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             return resVar;
         }
     }
+
+
+    class FINA_GET_B2B_OUTGOING_INVOICE_FISK_STATUSFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 8, m_name);
+
+            var endpoint = Utils.GetSafeString(args, 0);
+            var dnsIdentity = Utils.GetSafeString(args, 1);
+            var serviceCertificatePath = Utils.GetSafeString(args, 2);
+            var clientCertificatePath = Utils.GetSafeString(args, 3);
+            var clientCertificatePassword = Utils.GetSafeString(args, 4);
+
+            var messageId = Utils.GetSafeString(args, 5);
+            var supplierId = Utils.GetSafeString(args, 6);
+
+            var invoiceId = Utils.GetSafeString(args, 7);
+
+            Variable resVar = new Fiskalizacija2.FINA.B2BIncoming.GetOutgoingInvoiceFiskStatus().Send(
+                endpoint,
+                dnsIdentity,
+                serviceCertificatePath,
+                clientCertificatePath,
+                clientCertificatePassword,
+
+                messageId,
+                supplierId,
+                invoiceId);
+
+            return resVar;
+        }
+    }
     
-    
-    
-    
-    
-    
-    
+    class FINA_GET_B2B_INCOMING_INVOICE_FISK_STATUSFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 8, m_name);
+
+            var endpoint = Utils.GetSafeString(args, 0);
+            var dnsIdentity = Utils.GetSafeString(args, 1);
+            var serviceCertificatePath = Utils.GetSafeString(args, 2);
+            var clientCertificatePath = Utils.GetSafeString(args, 3);
+            var clientCertificatePassword = Utils.GetSafeString(args, 4);
+
+            var messageId = Utils.GetSafeString(args, 5);
+            var buyerId = Utils.GetSafeString(args, 6);
+
+            var invoiceId = Utils.GetSafeString(args, 7);
+
+            Variable resVar = new Fiskalizacija2.FINA.B2BIncoming.GetIncomingInvoiceFiskStatus().Send(
+                endpoint,
+                dnsIdentity,
+                serviceCertificatePath,
+                clientCertificatePath,
+                clientCertificatePassword,
+
+                messageId,
+                buyerId,
+                invoiceId);
+
+            return resVar;
+        }
+    }
+
+
+
+
     class FINA_GET_B2G_OUTGOING_INVOICE_LISTFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -5725,9 +5793,9 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             return resVar;
         }
     }
-    
-    
-    class FINA_GET_B2B_OUTGOING_INVOICE_FISK_STATUSFunction : ParserFunction
+
+
+    class FINA_GET_B2G_OUTGOING_INVOICE_FISK_STATUSFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
         {
@@ -5742,10 +5810,10 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
 
             var messageId = Utils.GetSafeString(args, 5);
             var supplierId = Utils.GetSafeString(args, 6);
-            
+
             var invoiceId = Utils.GetSafeString(args, 7);
-            
-            Variable resVar = new Fiskalizacija2.FINA.B2BIncoming.GetOutgoingInvoiceFiskStatus().Send(
+
+            Variable resVar = new Fiskalizacija2.FINA.B2GIncoming.GetOutgoingInvoiceFiskStatus().Send(
                 endpoint,
                 dnsIdentity,
                 serviceCertificatePath,

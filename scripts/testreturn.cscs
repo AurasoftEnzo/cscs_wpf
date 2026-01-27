@@ -1,0 +1,82 @@
+MessageBox("...Testing return...");
+
+//FOR LOOP
+function MyForLoop()
+{
+	arr = [10, 20, 30, 40, 50];
+	MessageBox("Size(arr) = " + Size(arr));
+
+	for(i = 0; i < Size(arr); i++)
+	{
+		MessageBox("arr[" + i + "] = " + arr[i]);
+
+		if (i==2)
+		{
+			MSG("i = 2");
+			return 100;
+			MSG("101");
+		}
+		MSG("102");
+	}
+	MSG("103");
+	return 200;
+}
+
+//FOREACH
+function MyForeachLoop()
+{
+	arr = [10, 20, 30, 40, 50];
+	MessageBox("Size(arr) = " + Size(arr));
+
+	for(item:arr)
+	{
+		MessageBox("item = " + item);
+		return 100;
+		MSG("101");
+	}
+	MSG("102");
+
+	return 200;
+}
+
+//WHILE
+function MyWhileLoop()
+{
+	counter = 5;
+	while (counter>0) 
+	{
+		MSG(counter.ToString());
+		if (counter == 3)
+		{
+			return 100;
+		}
+		MSG("101");
+		counter--;
+	}
+	MSG("102");
+	return 200;
+}
+
+//DO WHILE
+function MyDoWhileLoop()
+{
+	counter = 5;
+	do
+	{
+		MSG(counter.ToString());
+		if (counter == 3)
+		{
+			return 100;
+		}
+		MSG("101");
+		counter--;
+	} while (counter>0);
+
+	MSG("102");
+	return 200;
+}
+
+//MSG(MyForLoop());
+//MSG(MyForeachLoop());
+//MSG(MyWhileLoop());
+MSG(MyDoWhileLoop());

@@ -1,0 +1,129 @@
+MessageBox("...Testing razno3...");
+
+sqlconnectionstring("Server=localhost;Database=testdb;User Id=sa;Password=aura;");
+
+//***********************
+/*
+define formatDate type a size 10;
+formatDatuma = "dd/MM/yy";
+MessageBox(DateTime().ToString(formatDatuma) + "*");
+*/
+/*
+define datum1, datum2 type d size 10;
+datum1 = "25/23/2025";
+datum2 = "10/01/2026";
+razlika = datum2 - datum1;
+msg(razlika);
+*/
+
+define ddd type a size 10; 
+ddd = Now("dd/MM/yyyy");
+MessageBox("Today is: " + ddd);
+exit;
+
+//***********************
+define studentid_ar type R array 10;
+define studentname_ar type a size 30 array 10;
+define studentgender_ar type a size 10 array 10;
+define studentamount_ar type N size 14 dec 2 array 10;
+define studentfinished_ar type L array 10;
+define studentdate_ar type a size 8 array 10;
+define studenttime_ar type a size 8 array 10;
+define studentcity_ar type a size 20 array 10;
+define studentdatum_ar type d size 8 array 10;
+define studentdatum2_ar type a size 8 array 10;
+define studentdatum3_ar type d size 8 array 10;
+define studentvrijeme_ar type t size 8 array 10;
+define studentdatum4_ar type d size 8 array 10;
+
+define cntr type R;
+
+//DATAGRID ROW SINGLE-CLICK
+function dgStudents@move()
+{	
+	datarow = GetSelectedGridRow("dgStudents");
+	
+	if (Size(datarow)>0)
+	{
+	  SetText("labelID", datarow[0]);
+	  SetText("labelname", datarow[1]);
+	  SetText("labelgender", datarow[2]);
+	  SetText("labelamount", datarow[3]);
+	  SetText("labelfinished", datarow[4]);
+	  SetText("labeldate", datarow[5]);
+	  SetText("labeltime", datarow[6]);
+	  SetText("labelcity", datarow[7]);
+	}	
+}
+
+//BUTTON CLICK
+function fetchdata@Clicked(sender, load) 
+{
+	cntr = 0;
+
+	try	
+	{		
+		sqlResult = sqlquery("SELECT TOP 3 tblstudents.id, name, gender, amount, finished, CONVERT(char(8),  datein, 3) AS datein, CONVERT(char(8), timein, 20) as timein, city, CONVERT(char(10),  datein, 23) AS datum, CONVERT(char(10),  datein, 23) AS datum2, '20/01/24' as datum3 , '08:01:02' as vrijeme, datein as datum4 FROM tblstudents LEFT JOIN tblcities ON tblstudents.id = tblcities.studentid");		 
+	}
+	catch(exc)
+	{
+		MessageBox(exc);
+	}
+
+	//MessageBox("Size(sqlResult) = " + Size(sqlResult));
+
+	if (Size(sqlResult) < 2) {
+		MessageBox("No records found.");
+		quit;
+	}
+
+	for(i = 1; i < Size(sqlResult); i++)
+	{
+		id = sqlResult[i][0];
+		name = sqlResult[i][1];
+		gender = sqlResult[i][2];
+		amount = sqlResult[i][3];
+		finished = sqlResult[i][4];
+		datein = sqlResult[i][5];
+		timein = sqlResult[i][6];
+		city = sqlResult[i][7];
+		datum = DateTime(sqlResult[i][8], "yyyy-MM-dd").ToString("dd/MM/yy");
+		datum2 = sqlResult[i][9];
+		datum3 = sqlResult[i][10];
+		vrijeme = sqlResult[i][11];
+		datum4 = sqlResult[i][12];
+
+		//MessageBox("id = " + id + "\n" + "name = " + name + "\n" + "gender = " + gender + "\n" + "amount = " + amount + "\n" + "finished = " + finished + "\n" + "datein = " + datein + "\n" + "timein = " + timein + "\n" + "city = " + city);
+		//MessageBox("datum string = " + datum);
+		//MessageBox("datum  = " + datum);
+		//MessageBox("datum.ToString("dd.MM.yyyy")  = " + datum.ToString("dd.MM.yyyy"));
+	}
+
+	//******************************
+
+	//FILL THE ARRAYS WITH DATA
+	for ( i = 1; i < Size(sqlResult); i++ )
+    {
+	
+		studentid_ar[i - 1] = sqlResult[i][0];			//id
+		studentname_ar[i - 1] = sqlResult[i][1];		//name
+		studentgender_ar[i - 1] = sqlResult[i][2];		//gender
+		studentamount_ar[i - 1] = sqlResult[i][3];		//amount
+		studentfinished_ar[i - 1] = sqlResult[i][4];	//finished
+		studentdate_ar[i - 1] = sqlResult[i][5];		//datein
+		studenttime_ar[i - 1] = sqlResult[i][6];		//timein
+		studentcity_ar[i - 1] = sqlResult[i][7];		//city					
+		studentdatum_ar[i - 1] = DateTime(sqlResult[i][8], "yyyy-MM-dd").ToString("dd/MM/yy");		//datum		
+		studentdatum2_ar[i - 1] = DateTime(sqlResult[i][9], "yyyy-MM-dd").ToString("dd.MM.yyyy");
+		studentdatum3_ar[i - 1] = sqlResult[i][10];   //DateTime(sqlResult[i][10], "dd/MM/yy").ToString("dd/MM/yy");
+		studentvrijeme_ar[i - 1] = sqlResult[i][11];
+		studentdatum4_ar[i - 1] = sqlResult[i][12];		//datein as date
+	}
+
+	//INITIALIZE DATAGRID dgStudents
+	Format("studentamount_ar", "nofd"); //"no fixed decimals" (suppress trailing zero decimals) and enable thousands-separators when the value is rendered
+    DisplayArray("dgStudents", "close");
+    DisplayArraySetup("dgStudents", counterFld: cntr, activeElements: Size(sqlResult) - 1, maxElements: 10);
+}
+
+win = CreateWindow("../../scripts/testrazno3.xaml");

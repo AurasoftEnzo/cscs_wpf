@@ -247,7 +247,7 @@ function setChartByDaysOfMonthOdliv()
 
 function setLast10InvoicesDataGridOdliv()
 {
-    sql_str = "SELECT TOP 10 kdib_gl_num, kpsy_bnk_ime, REPLACE(SUBSTRING(kdib_gl_rez , 2, 8), '.', '/') , SUBSTRING(kdib_gl_rez , 10, 8), kdib_gl_datum, sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END) as odliv"; // sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END) as odliv"; 
+    sql_str = "SELECT TOP 10 kdib_gl_num, kpsy_bnk_ime, REPLACE(SUBSTRING(kdib_gl_rez , 2, 8), '.', '/') , SUBSTRING(kdib_gl_rez , 10, 8), CONVERT(varchar(10), kdib_gl_datum, 23), sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END) as odliv"; // sum(CASE WHEN kdib_ln_dp='D' THEN kdib_ln_iznos ELSE 0 END) as odliv"; 
     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
    	sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON kdib_ln_partner = nksc_partcode";
@@ -285,16 +285,16 @@ function setLast10InvoicesDataGridOdliv()
         t10Namez_ar[i - 1] =  sqlResult2[i][1]; //naziv banke;
         t10Iznosz_ar[i - 1] =  sqlResult2[i][5]; //iznos priliva;
         t10Cntrz_ar[i - 1] =  i;
-        t10Datumz_ar[i - 1] =  sqlResult2[i][2]; //datum spremanja;
+        t10Datumz_ar[i - 1] =  DateTime(sqlResult2[i][2], "dd/MM/yy").ToString(formatDatuma); //datum spremanja;
         t10Racunz_ar[i - 1] =  sqlResult2[i][0]; //kdib_gl_num; 
         t10Timez_ar[i - 1] =  sqlResult2[i][3]; //sat;
-        T10DATUMDOKZ_AR[i - 1] =  sqlResult2[i][4]; //sat;
+        T10DATUMDOKZ_AR[i - 1] =  DateTime(sqlResult2[i][4], "yyyy-MM-dd").ToString(formatDatuma); //sat;
     }
 }
 
 function setTop10InvoicesDataGridOdliv()
 {
-	sql_str =  "SELECT TOP 10 CASE WHEN kdib_ln_racun > 0 THEN kdib_ln_racun ELSE kdib_ln_uplata END as brdok , CASE WHEN kdib_ln_partner<> '' THEN nksc_partname ELSE kdib_ln_opis END as opis, CONVERT(char(8) ,  kdib_gl_datum , 3) AS datecr , ";
+	sql_str =  "SELECT TOP 10 CASE WHEN kdib_ln_racun > 0 THEN kdib_ln_racun ELSE kdib_ln_uplata END as brdok , CASE WHEN kdib_ln_partner<> '' THEN nksc_partname ELSE kdib_ln_opis END as opis, CONVERT(char(10) ,  kdib_gl_datum , 23) AS datecr , ";
     sql_str += " ISNULL(ROUND(SUM(CASE WHEN kdib_ln_dp = 'D' THEN kdib_ln_iznos ELSE 0 END),2), 0) as iznos";
     sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.kpkdibgl";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.kpkdibln ON kdib_gl_num = kdib_ln_num";
@@ -324,7 +324,7 @@ function setTop10InvoicesDataGridOdliv()
         t10NameMj_ar[i - 1] =  sqlResult[i][1]; //nkpr_gl_cusnme;
 		t10IznosMj_ar[i - 1] =  sqlResult[i][3]; //nkpr_gl_total;
 		t10CntrMj_ar[i - 1] =  i;
-		t10DatumMj_ar[i - 1] =  sqlResult[i][2]; //nkpr_gl_invdte;
+		t10DatumMj_ar[i - 1] =  DateTime(sqlResult[i][2], "yyyy-MM-dd").ToString(formatDatuma); //nkpr_gl_invdte;
 		t10RacunMj_ar[i - 1] =  sqlResult[i][0]; //nkpr_gl_num;
 	}        
 	return;

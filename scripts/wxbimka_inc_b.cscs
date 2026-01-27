@@ -397,7 +397,7 @@ function setNewProductsDataGrid()
     sql_str += " )";
 
 	sql_str += " SELECT TOP 100";
-	sql_str += " ARTI_ARTIKL, ARTI_NAZIV, CONVERT(varchar, ARTI_DAT_PRVI, 3)";
+	sql_str += " ARTI_ARTIKL, ARTI_NAZIV, CONVERT(varchar, ARTI_DAT_PRVI, 23)";
 	sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKMKARTI";
 	sql_str += " WHERE 1 = 1";
 	if (sklad_str != "")
@@ -440,7 +440,7 @@ function setNewProductsDataGrid1(){
 			top100_novi_Rbr_ar[i - 1] =  i;
 			top100_novi_sifraArtikla_ar[i - 1] =  sqlResult[i][0];
 			top100_novi_nazivArtikla_ar[i - 1] =  sqlResult[i][1];
-			top100_novi_prviUlaz_ar[i - 1] = sqlResult[i][2];
+			top100_novi_prviUlaz_ar[i - 1] = DateTime(sqlResult[i][2], "yyyy-MM-dd").ToString(formatDatuma);
 		} 
 	}
 

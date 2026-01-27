@@ -134,8 +134,8 @@ function setTop100NekurentniArtikli()
 
     sql_str += " SELECT TOP 100";
     sql_str += " ci.rmpr_artikl, arti_naziv, ci.currentInventory,";
-    sql_str += " arti_jed_mjere,";
-    sql_str += " convert(varchar(8), ci.LastInputDate, 3)";
+    sql_str += " arti_jed_mjere,";    
+    sql_str += " convert(varchar(10), ci.LastInputDate, 23)";
     sql_str += " FROM CurrentInventory ci";
     sql_str += " LEFT JOIN OutputAfterLastInput oali ON ci.rmpr_artikl = oali.rmpr_artikl";
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkmkarti ON arti_artikl=  ci.rmpr_artikl";
@@ -177,8 +177,8 @@ function top100NekurentniArtikli(){
 			top100_nekurentni_sifraArtikla_ar[i - 1] =  sqlResult[i][0];
 			top100_nekurentni_nazivArtikla_ar[i - 1] =  sqlResult[i][1];
 			top100_nekurentni_zalihe_ar[i - 1] =  sqlResult[i][2];
-			top100_nekurentni_jedMjere_ar[i - 1] =  sqlResult[i][3];
-			top100_nekurentni_NemaIzlazaOd_ar[i - 1] =  sqlResult[i][4];
+			top100_nekurentni_jedMjere_ar[i - 1] =  sqlResult[i][3];            			
+            top100_nekurentni_NemaIzlazaOd_ar[i - 1] =  DateTime(sqlResult[i][4], "yyyy-MM-dd").ToString(formatDatuma);
 		} 
 	}
 

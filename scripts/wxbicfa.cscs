@@ -139,7 +139,8 @@ function Wxbicfa_onDisplay()
     sqlNaDan = ovagod_h + "-12-31";
     sqlOdDana = string(int(ovagod_h) - 1) + "-01-01";
     //danas_chr= Now("dd/MM/yyyy");
-    danas_h = Now("dd/MM/yyyy");
+    //danas_h = Now("dd/MM/yyyy");
+    danas_h = Now("yyyy-MM-dd");
     //danas_h= danas_chr;
     if (now("yyyy") > ovagod_h)
     {
@@ -188,6 +189,8 @@ function Wxbicfa_onDisplay()
     cbKontoPoslAkt = true;
     cbKontoFinancAkt = true;
     cbKontoInvestAkt = true;
+
+    formatDatuma = "dd/MM/yy";
 }
 
 function DisableButtons(){
@@ -947,7 +950,9 @@ function setWeekComparison()
     RunOnMain("setWeekComparison1");
 
 	//danas = "20" + substring(danas_h, 6, 2) + "-" + substring(danas_h, 3,2) + "-" + substring(danas_h, 0, 2);//("yyyy-MM-dd");
-    danas = substring(danas_h, 6, 4) + "-" + substring(danas_h, 3,2) + "-" + substring(danas_h, 0, 2);//("yyyy-MM-dd");
+    
+    //danas = substring(danas_h, 6, 4) + "-" + substring(danas_h, 3,2) + "-" + substring(danas_h, 0, 2);//("yyyy-MM-dd");
+    
     //MessageBox(danas_h);
     //MessageBox("aaaa: "+danas+"  "+danas_h);    
 	sql_str = "SELECT TOP 2 CONVERT(char(10), wk_firstofWeek,103) as prviutjednu,";
@@ -965,7 +970,7 @@ function setWeekComparison()
     elif (eu_dn  ){ sql_str += " AND nksc_drzava IN ("+eucountries+")";}
     elif (izvoz_dn  ){ sql_str += " AND nksc_drzava <> '"+kpsy_po_freight+"' AND NOT nksc_drzava IN ("+eucountries+")";}
 
-	sql_str  += " AND ((wk_ISOWeek = datepart(ISO_week , '" + danas +"')) OR (wk_ISOWeek = datepart(ISO_week , '" + danas+"')-1)) AND year('"+danas+"') = wk_year";
+	sql_str  += " AND ((wk_ISOWeek = datepart(ISO_week , '" + danas_h.ToString("yyyy-MM-dd") +"')) OR (wk_ISOWeek = datepart(ISO_week , '" + danas_h.ToString("yyyy-MM-dd") + "')-1)) AND year('"+danas_h.ToString("yyyy-MM-dd")+"') = wk_year";
 	sql_str  += " GROUP BY [wk_FirstOfWeek]";
 	sql_str  += " ORDER BY [wk_FirstOfWeek] DESC";
     //SaveFile(sql_str);

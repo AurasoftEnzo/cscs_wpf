@@ -638,12 +638,12 @@ function setLast10InvoicesDataGrid()
 	if (t10datrac)
 	{
 		//za sada ne koristimo ovo!
-		sql_str =  "SELECT TOP 10 nkpr_gl_num , nkpr_gl_cusnme , CONVERT(char(8) ,  nkpr_gl_invdte , 23) AS datecr , convert(char(8) , nkpr_gl_timecr , 20) as nkpr_gl_timecr ,  ";
+		sql_str =  "SELECT TOP 10 nkpr_gl_num , nkpr_gl_cusnme , CONVERT(char(10) ,  nkpr_gl_invdte , 23) AS datecr , convert(char(8) , nkpr_gl_timecr , 20) as nkpr_gl_timecr ,  ";
 		//sql_str += " CAST( CASE WHEN nkpr_gl_dviza =  'D' THEN nkpr_gl_tecaj * nkpr_gl_total ELSE nkpr_gl_total END as decimal (10,2))  AS nkpr_gl_total " ;
 	}
 	else 
 	{
-		sql_str =  "SELECT TOP 10 nkpr_gl_num , nkpr_gl_cusnme , CONVERT(char(8) ,  nkpr_gl_datecr , 23) AS datecr , convert(char(8) , nkpr_gl_timecr , 20) as nkpr_gl_timecr ,  ";
+		sql_str =  "SELECT TOP 10 nkpr_gl_num , nkpr_gl_cusnme , CONVERT(char(10) ,  nkpr_gl_datecr , 23) AS datecr , convert(char(8) , nkpr_gl_timecr , 20) as nkpr_gl_timecr ,  ";
 		//sql_str += " CAST( CASE WHEN nkpr_gl_dviza =  'D' THEN nkpr_gl_tecaj * nkpr_gl_total ELSE nkpr_gl_total END as decimal (10,2))  AS nkpr_gl_total " ;
 	}
     if (neto_dn)
@@ -723,7 +723,7 @@ function setLast10InvoicesDataGrid()
         t10Namez_ar[i - 1] =  sqlResult2[i][1]; //nkpr_gl_cusnme;
         t10Iznosz_ar[i - 1] =  sqlResult2[i][4]; //nkpr_gl_total;
         t10Cntrz_ar[i - 1] =  i;
-        t10Datumz_ar[i - 1] =  sqlResult2[i][2]; //datecr;
+        t10Datumz_ar[i - 1] =  DateTime(sqlResult2[i][2], "yyyy-MM-dd").ToString(formatDatuma); //datecr;
         t10Racunz_ar[i - 1] =  sqlResult2[i][0]; //nkpr_gl_num; 
         t10Timez_ar[i - 1] =  sqlResult2[i][3]; //nkpr_gl_timecr;
     }
@@ -759,7 +759,7 @@ function setTop10InvoicesDataGrid()
 	}
     */
     
-	sql_str =  "SELECT TOP 10 nkpr_gl_num , nkpr_gl_cusnme , CONVERT(char(8) ,  nkpr_gl_invdte , 23) AS datecr , ";
+	sql_str =  "SELECT TOP 10 nkpr_gl_num , nkpr_gl_cusnme , CONVERT(char(10) ,  nkpr_gl_invdte , 23) AS datecr , ";
     if (neto_dn)
 	{
         sql_str += " ISNULL(ROUND(SUM(CASE WHEN nkpr_gl_dviza= 'D' THEN nkpr_gl_tecaj*nkpr_ln_amt ELSE nkpr_ln_amt END),2), 0)";
@@ -828,7 +828,7 @@ function setTop10InvoicesDataGrid()
 		t10NameMj_ar[i - 1] =  sqlResult[i][1]; //nkpr_gl_cusnme;
 		t10IznosMj_ar[i - 1] =  sqlResult[i][3]; //nkpr_gl_total;
 		t10CntrMj_ar[i - 1] =  i;
-		t10DatumMj_ar[i - 1] =  sqlResult[i][2]; //nkpr_gl_invdte;
+		t10DatumMj_ar[i - 1] =  DateTime(sqlResult[i][2], "yyyy-MM-dd").ToString(formatDatuma); //nkpr_gl_invdte;
 		t10RacunMj_ar[i - 1] =  sqlResult[i][0]; //nkpr_gl_num;
 	}        
 	return;

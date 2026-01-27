@@ -284,7 +284,7 @@ function DisplayPaymentCodesPieChart(){
 //-------------------------------------------------------
 
 function setTop30Nofisc(){
-	sql_str =  "SELECT TOP 30 KS_IG_RACUN, KS_OSB_IME, CONVERT(char(8) ,  KS_IG_DATUM , 3) AS datecr , convert(char(8) , KS_IG_SAT , 20) as KS_IG_SAT, KS_IG_TOTAL ";
+	sql_str =  "SELECT TOP 30 KS_IG_RACUN, KS_OSB_IME, CONVERT(char(10) ,  KS_IG_DATUM , 23) AS datecr , convert(char(8) , KS_IG_SAT , 20) as KS_IG_SAT, KS_IG_TOTAL ";
 	
 	sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKKSINVG" ;
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza+".dbo.NKKSOSOB ON KS_IG_OSOBA = KS_OSB_SIFRA";
@@ -318,7 +318,7 @@ function setTop30Nofisc(){
         T30SELLER_AR[i - 1] =  sqlResult2[i][1];
         T30IZNOS_AR[i - 1] =  sqlResult2[i][4];
         T30RBR_AR[i - 1] =  i;
-        T30DATUM_AR[i - 1] =  sqlResult2[i][2];
+        T30DATUM_AR[i - 1] =  DateTime(sqlResult2[i][2], "yyyy-MM-dd").ToString(formatDatuma);
         T30RACUN_AR[i - 1] =  sqlResult2[i][0];
         T30TIMEZ_AR[i - 1] =  sqlResult2[i][3];
     }

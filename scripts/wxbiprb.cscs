@@ -126,7 +126,8 @@ function Wxbiprb_onDisplay()
     sqlNaDan = ovagod_h + "-12-31";
     sqlOdDana = string(int(ovagod_h) - 1) + "-01-01";
     //danas_chr= Now("dd/MM/yyyy");
-    danas_h = Now("dd/MM/yyyy");
+    //danas_h = Now("dd/MM/yyyy");
+    danas_h = Now("yyyy-MM-dd");
     //danas_h= danas_chr;
     if (now("yyyy") > ovagod_h)
     {
@@ -169,6 +170,8 @@ function Wxbiprb_onDisplay()
     }
 
     pripremljeno = false;
+
+    formatDatuma = "dd/MM/yy";
 }
 
 function DisableButtons(){
@@ -998,7 +1001,7 @@ function setWeekComparison()
 		sql_str  += " AND b.nkpr_gl_cuscod = '" + partner + "'";
 	}
     */
-	sql_str  += " AND ((wk_ISOWeek = datepart(ISO_week , '" + danas_h +"')) OR (wk_ISOWeek = datepart(ISO_week , '" + danas_h+"')-1)) AND year('"+danas_h+"') = wk_year";
+	sql_str  += " AND ((wk_ISOWeek = datepart(ISO_week , '" + danas_h.ToString("yyyy-MM-dd") +"')) OR (wk_ISOWeek = datepart(ISO_week , '" + danas_h.ToString("yyyy-MM-dd")+"')-1)) AND year('"+danas_h.ToString("yyyy-MM-dd")+"') = wk_year";
 	sql_str  += " GROUP BY [wk_FirstOfWeek]";
 	sql_str  += " ORDER BY [wk_FirstOfWeek] DESC";
     // SaveFile(sql_str);

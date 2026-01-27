@@ -837,7 +837,7 @@ function setLast10InvoicesDataGrid()
     sql_str += " )";
 
     sql_str += " SELECT TOP 10";
-    sql_str += " modul, broj_racuna, naziv_dobavljaca, CONVERT(char(8), datecr, 3) AS datecr2, CONVERT(char(8), timecr, 20) AS timecr2, vrijednost";
+    sql_str += " modul, broj_racuna, naziv_dobavljaca, CONVERT(char(10), datecr, 23) AS datecr2, CONVERT(char(8), timecr, 20) AS timecr2, vrijednost";
     sql_str += " from cte ORDER BY datecr DESC, timecr DESC";
 	
     //SaveFile(sql_str);
@@ -861,7 +861,7 @@ function setLast10InvoicesDataGrid()
         t10Namez_ar[i - 1] =  sqlResult2[i][2]; //nkpr_gl_cusnme;
         t10Iznosz_ar[i - 1] =  sqlResult2[i][5]; //nkpr_gl_total;
         t10Cntrz_ar[i - 1] =  i;
-        t10Datumz_ar[i - 1] =  sqlResult2[i][3]; //datecr;
+        t10Datumz_ar[i - 1] =  DateTime(sqlResult2[i][3], "yyyy-MM-dd").ToString(formatDatuma); //datecr;
         t10Racunz_ar[i - 1] =  sqlResult2[i][1]; //nkpr_gl_num; 
         t10Timez_ar[i - 1] =  sqlResult2[i][4]; //nkpr_gl_timecr;
     }
@@ -972,7 +972,7 @@ function setTop10InvoicesDataGrid()
     sql_str += " )";
 
     sql_str += " SELECT TOP 10";
-    sql_str += " modul, broj_racuna, naziv_dobavljaca, CONVERT(char(8), datecr, 3) AS datecr2, vrijednost";
+    sql_str += " modul, broj_racuna, naziv_dobavljaca, CONVERT(char(10), datecr, 23) AS datecr2, vrijednost";
     sql_str += " from cte ORDER BY vrijednost DESC";
 	
     //SaveFile(sql_str);
@@ -994,7 +994,7 @@ function setTop10InvoicesDataGrid()
 		t10NameMj_ar[i - 1] =  sqlResult[i][2]; //nkpr_gl_cusnme;
 		t10IznosMj_ar[i - 1] =  sqlResult[i][4]; //nkpr_gl_total;
 		t10CntrMj_ar[i - 1] =  i;
-		t10DatumMj_ar[i - 1] =  sqlResult[i][3]; //nkpr_gl_invdte;
+		t10DatumMj_ar[i - 1] =  DateTime(sqlResult[i][3], "yyyy-MM-dd").ToString(formatDatuma); //nkpr_gl_invdte;
 		t10RacunMj_ar[i - 1] =  sqlResult[i][1]; //nkpr_gl_num;
 	}        
     

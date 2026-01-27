@@ -180,7 +180,8 @@ function wxbioda_onDisplay()
     sqlNaDan = ovagod_h + "-12-31";
     sqlOdDana = string(int(ovagod_h) - 1) + "-01-01";
     //danas_chr= Now("dd/MM/yyyy");
-    danas_h = Now("dd/MM/yyyy");
+    //danas_h = Now("dd/MM/yyyy");
+    danas_h = Now("yyyy-MM-dd");
     //danas_h= danas_chr;
     if (now("yyyy") > ovagod_h)
     {
@@ -280,6 +281,8 @@ function wxbioda_onDisplay()
     SetWidgetOptions("comboBoxPrekovremeni", "SelectedIndex", 0);
 
     cursor("dflt");
+
+    formatDatuma = "dd/MM/yy";
 }
 
 function DisableButtons(){

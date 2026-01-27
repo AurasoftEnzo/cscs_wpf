@@ -156,6 +156,8 @@ function wxbinaa_onDisplay()
     }
 
     pripremljeno = false;
+
+    formatDatuma = "dd/MM/yy";
 }
 
 function DisableButtons(){
@@ -1193,7 +1195,7 @@ function setWeekComparison()
     RunOnMain("setWeekComparison1");
     
 	//danas = "20" + substring(danas_h, 6, 2) + "-" + substring(danas_h, 3,2) + "-" + substring(danas_h, 0, 2);//("yyyy-MM-dd");
-    danas = substring(danas_h, 6, 4) + "-" + substring(danas_h, 3,2) + "-" + substring(danas_h, 0, 2);//("yyyy-MM-dd");
+    //danas = substring(danas_h, 6, 4) + "-" + substring(danas_h, 3,2) + "-" + substring(danas_h, 0, 2);//("yyyy-MM-dd");
     //MessageBox(danas_h);
     //MessageBox("aaaa: "+danas+"  "+danas_h);    
 	sql_str = "SELECT TOP 2 CONVERT(char(10), wk_firstofWeek,103) as prviutjednu,";
@@ -1271,7 +1273,7 @@ function setWeekComparison()
 		sql_str  += " AND b.nkpr_gl_cuscod = '" + partner + "'";
 	}
     */
-	sql_str  += " AND ((wk_ISOWeek = datepart(ISO_week , '" + danas +"')) OR (wk_ISOWeek = datepart(ISO_week , '" + danas+"')-1)) AND year('"+danas+"') = wk_year";
+	sql_str  += " AND ((wk_ISOWeek = datepart(ISO_week , '" + danas_h.ToString("yyyy-MM-dd") +"')) OR (wk_ISOWeek = datepart(ISO_week , '" + danas_h.ToString("yyyy-MM-dd")+"')-1)) AND year('"+danas_h.ToString("yyyy-MM-dd")+"') = wk_year";
 	sql_str  += " GROUP BY [wk_FirstOfWeek]";
 	sql_str  += " ORDER BY [wk_FirstOfWeek] DESC";
     //SaveFile(sql_str);
@@ -1337,7 +1339,7 @@ function setWeekComparison()
 		sql_str  += " AND b.nkpr_gl_cuscod = '" + partner + "'";
 	}
     */
-	sql_str  += " AND ((wk_ISOWeek = datepart(ISO_week , '" + danas +"')) OR (wk_ISOWeek = datepart(ISO_week , '" + danas+"')-1)) AND year('"+danas+"') = wk_year";
+	sql_str  += " AND ((wk_ISOWeek = datepart(ISO_week , '" + danas_h.ToString("yyyy-MM-dd") +"')) OR (wk_ISOWeek = datepart(ISO_week , '" + danas_h.ToString("yyyy-MM-dd")+"')-1)) AND year('"+danas_h.ToString("yyyy-MM-dd")+"') = wk_year";
 	sql_str  += " GROUP BY [wk_FirstOfWeek]";
 	sql_str  += " ORDER BY [wk_FirstOfWeek] DESC";
     //SaveFile(sql_str);

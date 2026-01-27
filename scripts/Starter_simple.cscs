@@ -1,0 +1,59 @@
+// ========================================================================
+// Using Simplified Starter Template
+// ========================================================================
+
+// Report data using implicit variables
+reportTitle = "Sales Report";
+reportDate = Now("dd/MM/yyyy");
+logoPath = "C:\Logos\company.png";
+
+// Validate template
+/*
+errors = ValidateReportTemplate(tpath() + "\starter_simple.repx",  "field1,field2,field3,amount");
+
+if (Size(errors) > 0) {
+    MSG("Validation errors found!");
+    for (i = 0; i < Size(errors); i++) {
+        MSG("  - " + errors[i]);
+    }
+    exit;
+}
+*/
+
+// Setup report
+reportHandle = SetupReport(tpath() + "templates\starter_simple.repx");
+
+// Configure
+ConfigureReportOutput(reportHandle, "PageSize", "A4");
+SetReportParameter(reportHandle, "ReportTitle", reportTitle);
+SetReportParameter(reportHandle, "LogoPath", logoPath);
+
+// Add data rows
+field1 = "PROD-001";
+field2 = "Laptop HP ProBook 450";
+field3 = "Electronics";
+amount = 5499.99;
+OutputReport(reportHandle);
+
+field1 = "PROD-002";
+field2 = "Monitor Dell 24 inch";
+field3 = "Electronics";
+amount = 899.00;
+OutputReport(reportHandle);
+
+field1 = "PROD-003";
+field2 = "Office Chair Ergonomic";
+field3 = "Furniture";
+amount = 1299.00;
+OutputReport(reportHandle);
+
+// Export
+ExportReport(reportHandle, "PDF", "C:\cscs_wpf\sales_report.pdf");
+
+// Print
+PrintReport(reportHandle);
+
+// Cleanup
+DisposeReport(reportHandle);
+
+MSG("Report generated successfully!");

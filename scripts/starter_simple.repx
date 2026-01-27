@@ -1,0 +1,133 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<XtraReportsLayoutSerializer SerializerVersion="18.2.3.0" Ref="1" ControlType="DevExpress.XtraReports.UI.XtraReport, DevExpress.XtraReports.v18.2, Version=18.2.3.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" Name="starter_simple" Margins="100, 100, 100, 100" PaperKind="A4" PageWidth="827" PageHeight="1169" Version="18.2" DataMember="Table1">
+	<Bands>
+		<!-- Top Margin -->
+		<Item1 Ref="2" ControlType="TopMarginBand" Name="TopMargin" HeightF="100" />
+
+		<!-- Report Header (Title) -->
+		<Item2 Ref="3" ControlType="ReportHeaderBand" Name="ReportHeader" HeightF="120">
+			<Controls>
+				<!-- Company Logo -->
+				<Item1 Ref="4" ControlType="XRPictureBox" Name="companyLogo" SizeF="150,80" LocationFloat="0, 0" Sizing="ZoomImage" Tag="logoPath">
+					<Scripts OnBeforePrint="// Load image from variable&#xD;&#xA;// this.ImageUrl = GetCurrentColumnValue(&quot;logoPath&quot;);" />
+				</Item1>
+
+				<!-- Report Title -->
+				<Item2 Ref="5" ControlType="XRLabel" Name="reportTitle" Text="Report Title" Font="Arial, 18pt, style=Bold" TextAlignment="TopCenter" SizeF="627,40" LocationFloat="0, 40" ForeColor="0, 0, 139" Tag="reportTitle">
+					<ExpressionBindings>
+						<Item1 Ref="6" EventName="BeforePrint" PropertyName="Text" Expression="[reportTitle]" />
+					</ExpressionBindings>
+				</Item2>
+
+				<!-- Report Date -->
+				<Item3 Ref="7" ControlType="XRLabel" Name="reportDate" Font="Arial, 10pt" TextAlignment="TopCenter" SizeF="627,20" LocationFloat="0, 85" Tag="reportDate">
+					<ExpressionBindings>
+						<Item1 Ref="8" EventName="BeforePrint" PropertyName="Text" Expression="'Date: ' + [reportDate]" />
+					</ExpressionBindings>
+				</Item3>
+			</Controls>
+		</Item2>
+
+		<!-- Page Header (Column Headers) -->
+		<Item3 Ref="9" ControlType="PageHeaderBand" Name="PageHeader" HeightF="40">
+			<Controls>
+				<Item1 Ref="10" ControlType="XRPanel" Name="headerPanel" SizeF="627,40" LocationFloat="0, 0" BackColor="70, 130, 180" Borders="All" BorderWidth="1">
+					<Controls>
+						<!-- Column 1 Header -->
+						<Item1 Ref="11" ControlType="XRLabel" Name="hdrColumn1" Text="Column 1" Font="Arial, 10pt, style=Bold" TextAlignment="MiddleLeft" SizeF="150,40" LocationFloat="5, 0" ForeColor="White" Padding="5,0,0,0" />
+
+						<!-- Column 2 Header -->
+						<Item2 Ref="12" ControlType="XRLabel" Name="hdrColumn2" Text="Column 2" Font="Arial, 10pt, style=Bold" TextAlignment="MiddleLeft" SizeF="200,40" LocationFloat="160, 0" ForeColor="White" Padding="5,0,0,0" />
+
+						<!-- Column 3 Header -->
+						<Item3 Ref="13" ControlType="XRLabel" Name="hdrColumn3" Text="Column 3" Font="Arial, 10pt, style=Bold" TextAlignment="MiddleRight" SizeF="150,40" LocationFloat="365, 0" ForeColor="White" Padding="0,0,5,0" />
+
+						<!-- Column 4 Header -->
+						<Item4 Ref="14" ControlType="XRLabel" Name="hdrColumn4" Text="Amount" Font="Arial, 10pt, style=Bold" TextAlignment="MiddleRight" SizeF="100,40" LocationFloat="520, 0" ForeColor="White" Padding="0,0,5,0" />
+					</Controls>
+				</Item1>
+			</Controls>
+		</Item3>
+
+		<!-- Detail Band (Data Rows) -->
+		<Item4 Ref="15" ControlType="DetailBand" Name="Detail" HeightF="30">
+			<Controls>
+				<!-- Column 1 Data -->
+				<Item1 Ref="16" ControlType="XRLabel" Name="column1" Font="Arial, 9pt" TextAlignment="MiddleLeft" SizeF="150,30" LocationFloat="5, 0" Padding="5,0,0,0" Tag="field1" Borders="Bottom" BorderWidth="1" BorderColor="LightGray">
+					<ExpressionBindings>
+						<Item1 Ref="17" EventName="BeforePrint" PropertyName="Text" Expression="[field1]" />
+					</ExpressionBindings>
+				</Item1>
+
+				<!-- Column 2 Data -->
+				<Item2 Ref="18" ControlType="XRLabel" Name="column2" Font="Arial, 9pt" TextAlignment="MiddleLeft" SizeF="200,30" LocationFloat="160, 0" Padding="5,0,0,0" Tag="field2" Borders="Bottom" BorderWidth="1" BorderColor="LightGray" CanGrow="true">
+					<ExpressionBindings>
+						<Item1 Ref="19" EventName="BeforePrint" PropertyName="Text" Expression="[field2]" />
+					</ExpressionBindings>
+				</Item2>
+
+				<!-- Column 3 Data -->
+				<Item3 Ref="20" ControlType="XRLabel" Name="column3" Font="Arial, 9pt" TextAlignment="MiddleRight" SizeF="150,30" LocationFloat="365, 0" Padding="0,0,5,0" Tag="field3" Borders="Bottom" BorderWidth="1" BorderColor="LightGray">
+					<ExpressionBindings>
+						<Item1 Ref="21" EventName="BeforePrint" PropertyName="Text" Expression="[field3]" />
+					</ExpressionBindings>
+				</Item3>
+
+				<!-- Column 4 Data (Numeric) -->
+				<Item4 Ref="22" ControlType="XRLabel" Name="amount" Font="Arial, 9pt, style=Bold" TextAlignment="MiddleRight" SizeF="100,30" LocationFloat="520, 0" Padding="0,0,5,0" Tag="amount" Borders="Bottom" BorderWidth="1" BorderColor="LightGray" TextFormatString="{0:N2}">
+					<ExpressionBindings>
+						<Item1 Ref="23" EventName="BeforePrint" PropertyName="Text" Expression="[amount]" />
+					</ExpressionBindings>
+				</Item4>
+			</Controls>
+
+			<!-- Alternating row color -->
+			<EvenStyleName>EvenStyle</EvenStyleName>
+		</Item4>
+
+		<!-- Report Footer (Summary) -->
+		<Item5 Ref="24" ControlType="ReportFooterBand" Name="ReportFooter" HeightF="60">
+			<Controls>
+				<Item1 Ref="25" ControlType="XRPanel" Name="footerPanel" SizeF="627,60" LocationFloat="0, 0" BackColor="245, 245, 245" Borders="All" BorderWidth="1">
+					<Controls>
+						<!-- Total Label -->
+						<Item1 Ref="26" ControlType="XRLabel" Name="lblTotal" Text="TOTAL:" Font="Arial, 12pt, style=Bold" TextAlignment="MiddleLeft" SizeF="200,40" LocationFloat="320, 10" Padding="10,0,0,0" />
+
+						<!-- Total Amount -->
+						<Item2 Ref="27" ControlType="XRLabel" Name="totalAmount" Font="Arial, 14pt, style=Bold" TextAlignment="MiddleRight" SizeF="100,40" LocationFloat="520, 10" Padding="0,0,5,0" ForeColor="0, 0, 139" TextFormatString="{0:N2}">
+							<Summary Ref="28" Running="Report" Func="Sum" />
+							<ExpressionBindings>
+								<Item1 Ref="29" EventName="BeforePrint" PropertyName="Text" Expression="sumSum([amount])" />
+							</ExpressionBindings>
+						</Item2>
+					</Controls>
+				</Item1>
+			</Controls>
+		</Item5>
+
+		<!-- Page Footer -->
+		<Item6 Ref="30" ControlType="PageFooterBand" Name="PageFooter" HeightF="40">
+			<Controls>
+				<!-- Print Date/Time -->
+				<Item1 Ref="31" ControlType="XRPageInfo" Name="printDate" PageInfo="DateTime" Format="{0:dd.MM.yyyy HH:mm}" Font="Arial, 8pt" SizeF="200,20" LocationFloat="0, 10" />
+
+				<!-- Page Number -->
+				<Item2 Ref="32" ControlType="XRPageInfo" Name="pageNumber" PageInfo="NumberOfTotal" Format="Page {0} of {1}" Font="Arial, 8pt" TextAlignment="TopRight" SizeF="200,20" LocationFloat="427, 10" />
+			</Controls>
+		</Item6>
+
+		<!-- Bottom Margin -->
+		<Item7 Ref="33" ControlType="BottomMarginBand" Name="BottomMargin" HeightF="100" />
+	</Bands>
+
+	<!-- Style Sheet -->
+	<StyleSheet>
+		<Item1 Ref="34" Name="EvenStyle" BackColor="250, 250, 255" />
+	</StyleSheet>
+
+	<!-- Parameters -->
+	<Parameters>
+		<Item1 Ref="35" Description="Report Title" Name="ReportTitle" Type="System.String" Visible="false" />
+		<Item2 Ref="36" Description="Company Logo Path" Name="LogoPath" Type="System.String" Visible="false" />
+	</Parameters>
+</XtraReportsLayoutSerializer>

@@ -1010,6 +1010,22 @@ namespace WpfCSCS
             var value = Utils.GetSafeDouble(args, 0);
             var decimalPlaces = Utils.GetSafeInt(args, 1);
             var decimalSeparator = Utils.GetSafeString(args, 2);
+            var option = Utils.GetSafeString(args, 3, "").ToLower();
+
+            switch (option)
+            {
+                case "abs":
+                    value = Math.Abs(value);
+                    break;
+                case "neg":
+                    value = -1 * Math.Abs(value);
+                    break;
+                case "inv":
+                    value = -1 * value;
+                    break;
+                default:
+                    break;
+            }
 
             string resultString = value.ToString("F" + decimalPlaces.ToString());
 

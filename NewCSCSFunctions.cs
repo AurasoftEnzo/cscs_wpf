@@ -20,7 +20,9 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Reflection;
 using System.Runtime.ConstrainedExecution;
+using System.Security;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
@@ -38,11 +40,15 @@ using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Schema;
 using System.Xml.Xsl;
+//using Windows.Data.Xml.Dom;
+using Windows.UI.Notifications;
 using WpfCSCS.ServiceReference1_SendB2BOutgoingInvoicePKIWebService;
 using WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService;
 using static System.Net.WebRequestMethods;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 using static WpfCSCS.TEST1Function;
+//using IWshRuntimeLibrary;
+
 
 namespace WpfCSCS
 {
@@ -135,6 +141,8 @@ namespace WpfCSCS
             
             
             interpreter.RegisterFunction(Constants.ArrayOrDict, new ArrayOrDictFunction());
+            
+            interpreter.RegisterFunction(Constants.Notification, new NotificationFunction());
 
 
 
@@ -230,6 +238,8 @@ namespace WpfCSCS
             
             
             public const string ArrayOrDict = "ArrayOrDict";
+
+            public const string Notification = "Notification";
         }
     }
 
@@ -5263,6 +5273,73 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
                 return new Variable("else");
             }
         }
+    }
+    
+    class NotificationFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 2, m_name);
+
+            var titleText = Utils.GetSafeString(args, 0);
+            var messageText = Utils.GetSafeString(args, 1);
+            var imagePath = Utils.GetSafeString(args, 2, "");
+
+            //var toastXml = ToastNotificationManager.GetTemplateContent(ToastTemplateType.ToastText02);
+
+            //var stringElements = toastXml.GetElementsByTagName("text");
+            //stringElements[0].AppendChild(toastXml.CreateTextNode(titleText));
+            //stringElements[1].AppendChild(toastXml.CreateTextNode(messageText));
+
+            //ToastNotification toast = new ToastNotification(toastXml);
+            //// here you set your icon
+            //toast.visual.icon = new ToastImageSource("path to your image");
+            //ToastNotificationManager.CreateToastNotifier(titleText).Show(toast);
+
+
+            var xml = $@"<?xml version=""1.0""?>
+                <toast>
+                    <visual>
+                        <binding template=""ToastImageAndText01"">
+                            <text id=""1"">
+                                {messageText}
+                            </text>"
+                            + (imagePath != "" ? $"<image id=\"1\" src=\"file://{imagePath}\" />" : "") + $@"
+                        </binding>
+                    </visual>
+                </toast>";
+            var toastXml = new Windows.Data.Xml.Dom.XmlDocument();
+            toastXml.LoadXml(xml);
+            var toast = new ToastNotification(toastXml);
+            ToastNotificationManager.CreateToastNotifier(titleText).Show(toast);
+
+
+
+            //ShowToast(titleText, messageText);
+
+            return Variable.EmptyInstance;
+        }
+
+//        public static void ShowToast(string title, string message)
+//        {
+//            string xml =
+//        $@"
+//<toast>
+//  <visual>
+//    <binding template='ToastGeneric'>
+//      <text>{SecurityElement.Escape(title)}</text>
+//      <text>{SecurityElement.Escape(message)}</text>
+//    </binding>
+//  </visual>
+//</toast>";
+
+//            var doc = new Windows.Data.Xml.Dom.XmlDocument();
+//            doc.LoadXml(xml);
+
+//            var toast = new ToastNotification(doc);
+//            ToastNotificationManager.CreateToastNotifier("com.aurasoft.cscs").Show(toast);
+//        }
     }
 
     #endregion

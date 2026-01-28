@@ -1,5 +1,8 @@
 Import(strTrim(mpath()) + "CSCS.Math.dll");
 
+okImage = strtrim(ipath())+"eRacunOk.png";
+errorImage = strtrim(ipath())+"eRacunError.png";
+
 args = CommandLineArgs(); 
 if(Size(args) > 1){
     companyCode = args[2]; // e.g. Y3
@@ -132,7 +135,7 @@ xmlFileName = "";
 
 // generate xml
 if(!GenerateUBLXml()){
-    MessageBox("Greška pri generiranju UBL XML-a za račun " + invNum + "!");    
+    // MessageBox("Greška pri generiranju UBL XML-a za račun " + invNum + "!");    
     exit;
 }elif(NKSC_REZ10 == "P"){
     //LogNKSYELOG("A");
@@ -2033,7 +2036,9 @@ function GenerateUBLXml() {
 
     if (!ValidateXsd(xml, xsdFiles, xsdValidationResultOutputFile)) {
         // LogError("XSD_FAIL", "Validation failed for " + invNum, validationErrors);
-        MessageBox("XML nije prošao XSD validaciju\n\nProvjerite _XSD.err datoteku za detalje.");
+        // MessageBox("XML nije prošao XSD validaciju\n\nProvjerite _XSD.err datoteku za detalje.");
+        Notification("Slanje eRačuna", "Interna GREŠKA u računu broj:\n" + invNum + " - " + NKPR_GL_CUSNME + "\n" + "Ispravite račun i pokušajte ponovo.", errorImage);
+        LogException("XSD_VALIDATION_FAILED");
         return false;
     }
 
@@ -2052,7 +2057,9 @@ function GenerateUBLXml() {
     schFiles.Add(SCHEMASPATH + "schematron\\HR-CIUS-EXT-EN16931-UBL.sch");
     //  schFiles.Add(SCHEMASPATH + "schematron\\preprocessed\\EN16931-UBL-validation-preprocessed.sch");
     if(!ValidateSch(xml, schFiles, SCHEMASPATH + "schematron\\transpile.xsl", schValidationResultOutputFile)){
-        MessageBox("xml FAILED SCH validation\n\nSee _SCH.err file for details.");
+        // MessageBox("xml FAILED SCH validation\n\nSee _SCH.err file for details.");
+        Notification("Slanje eRačuna", "Interna GREŠKA u računu broj:\n" + invNum + " - " + NKPR_GL_CUSNME + "\n" + "Ispravite račun i pokušajte ponovo.", errorImage);
+        LogException("SCH_VALIDATION_FAILED");
         return false;
     }
      
@@ -2293,10 +2300,15 @@ function MERSuccess(_invID, responseCode, res) {
             LogNKSYELOG("A");
             LogNKSYELOG("C");
 
-            MessageBox("Dokument poslan.");
+            UpdateNKPRINVWithStatus();
+
+            // MessageBox("Dokument poslan.");
+            Notification("Slanje eRačuna", "Uspješno poslan račun broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, okImage);
         }
         else{
-            MessageBox("GREŠKA slanja dokumenta.");
+            Notification("Slanje eRačuna", "GREŠKA slanja računa broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, errorImage);
+            // MessageBox("GREŠKA slanja dokumenta.");
+            LogException("GREŠKA slanja dokumenta.");
 
             // LogNKSYELOG("B", 'Debug: NEPOZNATA GREŠKA'); // !!!
         }
@@ -2320,19 +2332,20 @@ function MERSuccess(_invID, responseCode, res) {
         // MessageBox("Delivered = " + resObject["Delivered"]);        
     }
     catch(ex){
-        MessageBox("MERSuccessException - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        // MessageBox("MERSuccessException - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        LogException("MERSuccessException - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
         // LogNKSYELOG();
     }
     
 }
 
 function MERFailure(_invID, responseCode, res) {
-    MSG("MERFailure");
+    // MSG("MERFailure");
 
     try{
-        LogResponse(responseCode, res);
-
-        MSG("Slanje računa broj " + _invID + " NEUSPJEŠNO!");
+        LogException("ResponseCode: " + responseCode + "\nresponse: " + res);
+        Notification("Slanje eRačuna", "GREŠKA slanja računa broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, errorImage);
+        // MSG("Slanje računa broj " + _invID + " NEUSPJEŠNO!");
 
         // MessageBox("SendingFailure.ResponseCode = " + responseCode);
 
@@ -2356,7 +2369,8 @@ function MERFailure(_invID, responseCode, res) {
         // MessageBox("Delivered = " + resObject["Delivered"]);        
     }
     catch(ex){
-        MessageBox("MERFailureException - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        // MessageBox("MERFailureException - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        LogException("MERFailureException - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
     }
 }
 
@@ -2641,19 +2655,26 @@ function SendToFINA() {
                 LogNKSYELOG("C");
 
                 // ako TAS ne čeka odgovor onda CSCS mora upisat status i datum u NKPRINV !!
+                UpdateNKPRINVWithStatus();
 
-                MSG("Uspješno poslan dokument.\n" + "Šifra računa kod FINA-e (ack[\"InvoiceID\"]) = " + ack["InvoiceID"]);
+                // MSG("Uspješno poslan dokument.\n" + "Šifra računa kod FINA-e (ack[\"InvoiceID\"]) = " + ack["InvoiceID"]);
+                Notification("Slanje eRačuna", "Uspješno poslan račun broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, okImage);
             }else{
-                MSG("ack[\"ErrorCode\"] = " + ack["ErrorCode"]);
-                MSG("ack[\"ErrorMessage\"] = " + ack["ErrorMessage"]);
+                Notification("Slanje eRačuna", "GREŠKA slanja računa broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, errorImage);
+                LogException("ErrorCode: " + ack["ErrorCode"] + "\nErrorMessage: " + ack["ErrorMessage"]);
+                // MSG("ack[\"ErrorCode\"] = " + ack["ErrorCode"]);
+                // MSG("ack[\"ErrorMessage\"] = " + ack["ErrorMessage"]);
             }
         }else{
-            MessageBox("AckStatusText = " + ack["AckStatusText"]);
+            Notification("Slanje eRačuna", "GREŠKA slanja računa broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, errorImage);
+            LogException("AckStatus: " + ack["AckStatus"] + "\nAckStatusCode: " + ack["AckStatusCode"] + "\nAckStatusText: " + ack["AckStatusText"]);
+            // MessageBox("AckStatusText = " + ack["AckStatusText"]);
             // MessageBox("NEUSPJEŠNO poslan RAČUN prema FINA-i!");
         }
     }catch(ex){
-        MessageBox("Nepoznata greška:\n" + ex);
-        LogException(ex);
+        Notification("Slanje eRačuna", "GREŠKA slanja računa broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, errorImage);
+        // MessageBox("Nepoznata greška:\n" + ex);
+        LogException("Nepoznata greška:\n" + ex);
     }
     
 
@@ -3054,3 +3075,8 @@ function LogNKSYELOG(elogStatusCode, description = ""){
 
 
 
+function UpdateNKPRINVWithStatus(){
+    sql_string = "UPDATE " + databaseName + ".dbo.NKPRINV SET NKPR_GL_RTS = 'E', NKPR_GL_DATPRI = getdate() WHERE nkpr_gl_num = '" + invNum + "'";    
+    sqlResult = sqlNonQuery(sql_string);
+    return;
+}

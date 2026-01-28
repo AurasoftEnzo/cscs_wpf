@@ -61,7 +61,7 @@ namespace WpfCSCS.Fiskalizacija2.FINA.B2BOutgoing
 
             B2BOutgoingInvoiceEnvelope.ItemElementName = itemChoiceType;
 
-            byte[] signedInvoiceXml = GetSignedUBLXml(unsignedInvoiceXMLPath, clientCertificatePath, clientCertificatePassword);
+            byte[] signedInvoiceXml = GetSignedUBLXml(unsignedInvoiceXMLPath, clientCertificatePath, clientCertificatePassword, itemChoiceType);
             B2BOutgoingInvoiceEnvelope.Item = signedInvoiceXml;
 
             data.B2BOutgoingInvoiceEnvelope = B2BOutgoingInvoiceEnvelope;
@@ -120,11 +120,25 @@ namespace WpfCSCS.Fiskalizacija2.FINA.B2BOutgoing
             return retVar;
         }
 
-        private byte[] GetSignedUBLXml(string inputFilePath, string clientCertificatePath, string clientCertificatePassword)
+        private byte[] GetSignedUBLXml(string inputFilePath, string clientCertificatePath, string clientCertificatePassword, ItemChoiceType itemChoiceType)
         {
             byte[] inputByteArray = File.ReadAllBytes(inputFilePath);
 
-            UBLSigner ublSigner = new UBLSigner(clientCertificatePath, clientCertificatePassword, "Invoice");
+            string tagName = "";
+            switch (itemChoiceType)
+            {
+                case ItemChoiceType.CreditNoteEnvelope:
+                    tagName = "CreditNote";
+                    break;
+                case ItemChoiceType.InvoiceEnvelope:
+                    tagName = "Invoice";
+                    break;
+                default:
+                    tagName = "";
+                    break;
+            }
+
+            UBLSigner ublSigner = new UBLSigner(clientCertificatePath, clientCertificatePassword, tagName);
             byte[] signedXML = ublSigner.signUBLDocument(inputByteArray);
 
             return signedXML;

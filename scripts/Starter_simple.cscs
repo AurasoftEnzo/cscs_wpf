@@ -1,3 +1,6 @@
+msg("...Testing starter_simple...");
+msg(tpath() + "starter_simple.repx");
+
 // ========================================================================
 // Using Simplified Starter Template
 // ========================================================================
@@ -9,7 +12,7 @@ logoPath = "C:\Logos\company.png";
 
 // Validate template
 /*
-errors = ValidateReportTemplate(tpath() + "\starter_simple.repx",  "field1,field2,field3,amount");
+errors = ValidateReportTemplate(tpath() + "starter_simple.repx",  "field1,field2,field3,amount");
 
 if (Size(errors) > 0) {
     MSG("Validation errors found!");
@@ -21,7 +24,8 @@ if (Size(errors) > 0) {
 */
 
 // Setup report
-reportHandle = SetupReport(tpath() + "templates\starter_simple.repx");
+//reportHandle = SetupReport(tpath() + "templates\starter_simple.repx");
+reportHandle = SetupReport(tpath() + "starter_simple.repx");
 
 // Configure
 ConfigureReportOutput(reportHandle, "PageSize", "A4");
@@ -48,12 +52,15 @@ amount = 1299.00;
 OutputReport(reportHandle);
 
 // Export
-ExportReport(reportHandle, "PDF", "C:\cscs_wpf\sales_report.pdf");
+//ExportReport(reportHandle, "PDF", "C:\cscs_wpf\sales_report.pdf");
+ExportReport(reportHandle, "PDF", "D:\sales_report.pdf");
 
 // Print
-PrintReport(reportHandle);
+PrintReport(reportHandle, 0); //0 je za modalni prozor
 
 // Cleanup
 DisposeReport(reportHandle);
 
 MSG("Report generated successfully!");
+
+quit;

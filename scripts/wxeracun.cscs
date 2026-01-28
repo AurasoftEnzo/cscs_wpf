@@ -3076,7 +3076,7 @@ function LogNKSYELOG(elogStatusCode, description = ""){
 
 
 function UpdateNKPRINVWithStatus(){
-    sql_string = "UPDATE " + databaseName + ".dbo.NKPRINV SET NKPR_GL_RTS = 'E', NKPR_GL_DATPRI = getdate(),  WHERE nkpr_gl_num = '" + invNum + "'";    
+    sql_string = "UPDATE " + databaseName + ".dbo.NKPRINV SET NKPR_GL_RTS = 'E', NKPR_GL_DATPRI = getdate() WHERE nkpr_gl_num = '" + invNum + "'";    
     sqlResult = sqlNonQuery(sql_string);
     return;
 }

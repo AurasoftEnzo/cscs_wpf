@@ -23,13 +23,15 @@ if(Size(args) > 1){
     }    
     rejectCode = args[5]; // Rejection code
     if (rejectCode != ""){     
-    }else{
+    }
+    else{
         MessageBox("Nedostaje šifra odbijanja u argumentima.");
         exit;
     }
     rejectNote = args[6]; // Rejection note/reason
     if (rejectNote != ""){     
-    }else{
+    }
+    else{
         rejectNote = ""; // Optional, can be empty
     }
 }else{
@@ -130,9 +132,9 @@ NKSC_SOP = hdrRes[1][6].trim(); // Customer GLN
 NKSC_POSREDNIK = hdrRes[1][7].trim().Upper(); // Intermediary GLN
 NKSC_REZ10 = hdrRes[1][8].trim().Upper(); // P - send to server / F = save file to disk
 
-if(NKSC_POSREDNIK != ""){    
-    PROVIDER = NKSC_POSREDNIK;
-}
+// if(NKSC_POSREDNIK != ""){    
+//     PROVIDER = NKSC_POSREDNIK;
+// }
 
 // Load provider configuration
 sql_erac = "SELECT
@@ -357,20 +359,19 @@ function SendRejectFINA() {
         MSG("Slanje odbijanja računa na FINA-u putem WSDL-a...");
         
         // Prepare rejection parameters
-        ack = FINA_REJECT_B2B_INCOMING_INVOICE(
-            ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",
+        ack = FINA_CHANGE_B2B_INCOMING_INVOICE_STATUS(
+            ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
             ERAC_DESC, // Software ID
             ERAC_USERT, // Service certificate
             ERAC_PASST, // P12 certificate (client)
             ERAC_PASS, // Password for p12 certificate
-            "9500095", // ERPID
 
             UUID(), // messageId
             "9934:" + supOIB, // buyerId (receiver of original invoice, now rejecting)
-            "9934:" + NKPR_GL_JMBG, // supplierId (sender of original invoice)
-            invNum, // invoiceId
-            rejectCode, // rejectCode
-            rejectNote // rejectNote
+            invNum, // invoiceId (FINA-in)
+            newStatus, // new StatusCode
+            codeReason, // CodeReason
+            note // Note
         );
         
         MSG("ack = " + ack);

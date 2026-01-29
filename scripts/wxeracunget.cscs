@@ -424,7 +424,6 @@ function GetRacuniFINA(){
 
             // NKSYELOG
             // !!! za FINA-u moramo postavit status računa na RECEIVING_CONFIRMED !!!
-
             // SET incoming invoice RECEIVING_CONFIRMED
             try{
                 // MSG("Postavljam STATUS ulaznog računa " + invoiceId + " kod FINA-e putem WSDL-a!");
@@ -448,7 +447,6 @@ function GetRacuniFINA(){
             
                 // MSG("ack[\"AckStatusCode\"] = " + ack["AckStatusCode"]);
                 // MSG("ack[\"AckStatusText\"] = " + ack["AckStatusText"]);
-
 
             }catch(ex){
                 MessageBox("Promjena statusa računa - Nepoznata greška:\n" + ex);
@@ -523,8 +521,7 @@ function startImport(){
 
     ///for(xmlCounter = 0; xmlCounter < Size(listOfXmls); xmlCounter++){
     for(xmlCounter = 0; xmlCounter < 1; xmlCounter++){
-
-        msg ("IMPORTING: " + listOfXmls[xmlCounter]);
+        msg("IMPORTING: " + listOfXmls[xmlCounter]);
         xmlFilePath = listOfXmls[xmlCounter];
         MemoX = ""; //memo u kojega spremamo one podatke iz xml računa koje želimo prikazati korisniku prilikom uvoza
         importUBLXmlFromDict(ReadAllText(listOfXmls[xmlCounter]));
@@ -616,6 +613,10 @@ function importUBLXmlFromDict(xmlContent) {
             //CommitTransaction();
             
             MessageBox("UBL XML račun je uspješno uvezen!\nBroj računa: " + invNum);
+
+
+            // LogNKSYELOG("P", invNum, currentInvoiceId);
+
             return invNum;
             
         } catch (error) {
@@ -1852,7 +1853,7 @@ function GetUnitCodeFromUN(unCode) {
     if (unCode == "DAY") { return "DAN"; }
     if (unCode == "MTR") { return "MET"; }
     if (unCode == "XCT") { return "KAR"; }
-    if (unCode == "XPB") { return "PAL"); }
+    if (unCode == "XPB") { return "PAL"; }
     if (unCode == "C62") { return "JED"; }
     return "KOM"; // Default
 }
@@ -1904,3 +1905,24 @@ Fiscal Year Validation:
 - Only invoices with ESD date matching KPSY_FISCAL_YR are imported
 - Mismatched invoices are moved to archive without import
 */
+
+
+function LogNKSYELOG(elogStatusCode, _invoiceId, description = ""){
+    sqlQueryString = "INSERT INTO " + databaseName + ".dbo.NKSYELOG 
+    (sy_elog_num, sy_elog_date, sy_elog_status, sy_elog_person, sy_elog_estring, sy_elog_type, sy_elog_time, sy_elog_desc, sy_elog_rez3, sy_elog_rez)
+    VALUES (@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10);";
+
+    sqlParams = {};
+    sqlParams.Add({"@p1", NKPR_GL_NUM});
+    sqlParams.Add({"@p2", NKPR_GL_INVDTE});
+    sqlParams.Add({"@p3", elogStatusCode.Upper()});
+    sqlParams.Add({"@p4", userCode});
+    sqlParams.Add({"@p5", "" });
+    sqlParams.Add({"@p6", "IR"});
+    sqlParams.Add({"@p7", Now("HH:mm:ss")});
+    sqlParams.Add({"@p8", description});
+    sqlParams.Add({"@p9", Now("yyyy-MM-dd")});
+    sqlParams.Add({"@p10", _invoiceId});
+    sqlQuery(sqlQueryString, sqlParams);
+    return;
+}

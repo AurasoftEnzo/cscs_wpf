@@ -868,7 +868,6 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
                 MessageBox("Nepodržani identifikator dobavljača: " + companyIDPartyIdentificationID + ". Račun neće biti uvezen.");
                 return;
             }
-    msg("22221: "+size(sqlPartner));  
                 if (size(sqlPartner) > 1)
                 {
                  /*   cuscod = sqlPartner[1][0].trim(); //     NKSC_PARTCODE
@@ -1056,6 +1055,8 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
         // Extract and save notes to NKNAOPIS table
        ExtractAndSaveNotes(docData);
 
+        // Extract and save attachments to disk and NKSYPICT table
+        ExtractAndSaveAttachments(invoiceDict, docType);
 
         // Billing references
         if (Contains(docData, "BillingReference")) {
@@ -1482,6 +1483,17 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
         // if (lineNote != "") {
         //     //lineData["NKPR_LN_NOTE"] = lineNote;
         // }
+        
+        // Extract line item attachment if present
+        lineAttachmentNum = ExtractLineItemAttachments(lineDict, lineData["NKPR_LN_BR_LN"]);
+        if (lineAttachmentNum > 0) {
+            lineData["NKNA_LN_SASTAV"] = lineAttachmentNum;
+        } else {
+            if(!Contains(lineData, "NKNA_LN_SASTAV")) {
+                lineData["NKNA_LN_SASTAV"] = 0;
+            }
+        }
+        
     //msg ("FINAL LINE DATA: " + lineData);    
         return lineData;
         
@@ -1782,12 +1794,12 @@ function ImportLineItemsToERLN(recordId, lineItems) {
             sql_insert += "NKPR_LN_INVNM, NKPR_LN_BR_LN, NKPR_LN_PQTY, NKPR_LN_AMT, ";
             sql_insert += "NKPR_LN_PCODE, NKPR_LN_PDESC, NKPR_LN_JEDMJ, ";
             sql_insert += "NKPR_LN_PPRCE, NKPR_LN_PRNPR, NKPR_LN_TXBLE, ";
-            sql_insert += "NKPR_LN_POPL, NKPR_LN_PDISC, NKPR_LN_BROPI";
+            sql_insert += "NKPR_LN_POPL, NKPR_LN_PDISC, NKPR_LN_BROPI, NKNA_LN_SASTAV";
             sql_insert += ") VALUES (";
             sql_insert += "@recordId, @lineNum, @qty, @amount, ";
             sql_insert += "@productCode, @description, @unit, ";
             sql_insert += "@price, @taxPercent, @taxable, ";
-            sql_insert += "@discount, @discountPercent, @note";
+            sql_insert += "@discount, @discountPercent, @note, @attachmentId";
             sql_insert += ");";
             
             sqlParams = {};
@@ -1805,6 +1817,13 @@ function ImportLineItemsToERLN(recordId, lineItems) {
             sqlParams.Add({"@discount", lineData["NKPR_LN_POPL"]});
             sqlParams.Add({"@discountPercent", lineData["NKPR_LN_PDISC"]});
             sqlParams.Add({"@note", lineData["NKPR_LN_BROPI"]});
+            
+            // Add line item attachment ID if present
+            lineAttachmentId = 0;
+            if (Contains(lineData, "NKNA_LN_SASTAV")) {
+                lineAttachmentId = lineData["NKNA_LN_SASTAV"];
+            }
+            sqlParams.Add({"@attachmentId", lineAttachmentId});
          //msg("1111");        
             result = SqlNonQuery(sql_insert, sqlParams);
             if (result == 0) {
@@ -1942,4 +1961,330 @@ function LogNKSYELOG(elogStatusCode, _invoiceId, description = ""){
     sqlParams.Add({"@p10", _invoiceId});
     sqlQuery(sqlQueryString, sqlParams);
     return;
+}
+
+// -----------------------------------------------------------
+// Extract attachments from UBL XML and save to disk
+// Reverse process from wxeracun.cscs
+// -----------------------------------------------------------
+function ExtractAndSaveAttachments(invoiceDict, docType) {
+    try {
+        msg("=== ATTACHMENT EXTRACTION STARTING ===");
+        
+        // Get the root document data
+        docData = invoiceDict;
+        if (docType == "S" && Contains(invoiceDict, "Invoice")) {
+            docData = invoiceDict["Invoice"];
+        } elif (docType == "R" && Contains(invoiceDict, "CreditNote")) {
+            docData = invoiceDict["CreditNote"];
+        } elif (docType == "T" && Contains(invoiceDict, "DebitNote")) {
+            docData = invoiceDict["DebitNote"];
+        }
+        
+        // Initialize attachment counters
+        NKPR_GL_PICTHDR = 0;  // Header attachment
+        NKPR_GL_PICTFTR = 0;  // Footer attachment
+        attachmentCounter = 0;
+        
+        // Process AdditionalDocumentReference elements (contains attachments)
+        if (Contains(docData, "AdditionalDocumentReference")) {
+            additionalDocs = docData["AdditionalDocumentReference"];
+            
+            // Handle both single attachment and multiple attachments
+            if (additionalDocs.type() == "ARRAY") {
+                for (i = 0; i < Size(additionalDocs); i++) {
+                    ProcessSingleAttachment(additionalDocs[i], i);
+                }
+            } else {
+                ProcessSingleAttachment(additionalDocs, 0);
+            }
+        }
+        
+        // Extract and save main PDF attachment if present
+        if (Contains(docData, "Attachment")) {
+            mainAttachment = docData["Attachment"];
+            if (Contains(mainAttachment, "EmbeddedDocumentBinaryObject")) {
+                ProcessMainPdfAttachment(mainAttachment);
+            }
+        }
+        
+        msg("=== ATTACHMENT EXTRACTION COMPLETE ===");
+        msg("Header Attachment ID (NKPR_GL_PICTHDR): " + NKPR_GL_PICTHDR);
+        msg("Footer Attachment ID (NKPR_GL_PICTFTR): " + NKPR_GL_PICTFTR);
+        
+        return true;
+        
+    } catch (error) {
+        MessageBox("Greška pri extraction attachments: " + error);
+        return false;
+    }
+}
+
+// -----------------------------------------------------------
+// Process single attachment from AdditionalDocumentReference
+// -----------------------------------------------------------
+function ProcessSingleAttachment(attachmentRef, attachmentIndex) {
+    try {
+        // Get attachment ID
+        attachmentID = "";
+        if (Contains(attachmentRef, "ID")) {
+            attachmentID = attachmentRef["ID"];
+        }
+        
+        // Get attachment description
+        attachmentDesc = "";
+        if (Contains(attachmentRef, "DocumentDescription")) {
+            attachmentDesc = attachmentRef["DocumentDescription"];
+        }
+        
+        // Extract embedded binary object
+        if (Contains(attachmentRef, "Attachment")) {
+            attachment = attachmentRef["Attachment"];
+            if (Contains(attachment, "EmbeddedDocumentBinaryObject")) {
+                embeddedObj = attachment["EmbeddedDocumentBinaryObject"];
+                
+                // Get MIME type and filename
+                mimeCode = "";
+                filename = "";
+                base64Content = "";
+                
+                if (Contains(embeddedObj, "@attributes")) {
+                    attrs = embeddedObj["@attributes"];
+                    if (Contains(attrs, "mimeCode")) {
+                        mimeCode = attrs["mimeCode"];
+                    }
+                    if (Contains(attrs, "filename")) {
+                        filename = attrs["filename"];
+                    }
+                }
+                
+                // Get base64 content
+                if (Contains(embeddedObj, "@text")) {
+                    base64Content = embeddedObj["@text"];
+                } else {
+                    base64Content = embeddedObj;
+                }
+                
+                if (base64Content != "" && filename != "") {
+                    // Save attachment to disk and get reference number
+                    attachmentNum = SaveAttachmentToDisk(base64Content, filename, attachmentDesc, attachmentID);
+                    
+                    if (attachmentNum > 0) {
+                        // Determine attachment type (Header, Footer, or Line item)
+                        if (attachmentIndex == 0 && NKPR_GL_PICTHDR == 0) {
+                            NKPR_GL_PICTHDR = attachmentNum;
+                            msg("Saved Header attachment: " + filename + " with ID: " + attachmentNum);
+                        } elif (attachmentIndex == 1 && NKPR_GL_PICTFTR == 0) {
+                            NKPR_GL_PICTFTR = attachmentNum;
+                            msg("Saved Footer attachment: " + filename + " with ID: " + attachmentNum);
+                        } else {
+                            // Line item attachment - would need to store in NKNAERLN reference
+                            // Store in temporary array for later processing with line items
+                            msg("Saved Line attachment: " + filename + " with ID: " + attachmentNum);
+                        }
+                    }
+                }
+            }
+        }
+        
+    } catch (error) {
+        msg("Greška pri obradi attachment: " + error);
+    }
+}
+
+// -----------------------------------------------------------
+// Process main PDF attachment (AdditionalDocumentReference with ID=X7)
+// -----------------------------------------------------------
+function ProcessMainPdfAttachment(attachmentRef) {
+    try {
+        if (Contains(attachmentRef, "EmbeddedDocumentBinaryObject")) {
+            embeddedObj = attachmentRef["EmbeddedDocumentBinaryObject"];
+            
+            // Get MIME type and filename
+            mimeCode = "";
+            filename = "";
+            base64Content = "";
+            
+            if (Contains(embeddedObj, "@attributes")) {
+                attrs = embeddedObj["@attributes"];
+                if (Contains(attrs, "mimeCode")) {
+                    mimeCode = attrs["mimeCode"];
+                }
+                if (Contains(attrs, "filename")) {
+                    filename = attrs["filename"];
+                }
+            }
+            
+            // Get base64 content
+            if (Contains(embeddedObj, "@text")) {
+                base64Content = embeddedObj["@text"];
+            } else {
+                base64Content = embeddedObj;
+            }
+            
+            if (base64Content != "" && filename != "") {
+                // Save main PDF attachment
+                attachmentNum = SaveAttachmentToDisk(base64Content, filename, "Main PDF Attachment", "X7");
+                if (attachmentNum > 0) {
+                    msg("Saved Main PDF attachment: " + filename + " with ID: " + attachmentNum);
+                }
+            }
+        }
+        
+    } catch (error) {
+        msg("Greška pri obradi main PDF attachment: " + error);
+    }
+}
+
+// -----------------------------------------------------------
+// Save attachment to disk and register in NKSYPICT table
+// Returns the NKSYPICT reference number (SY_SL_NUM)
+// -----------------------------------------------------------
+function SaveAttachmentToDisk(base64Content, filename, description, attachmentID) {
+    try {
+        // Validate inputs
+        if (base64Content == "" || filename == "") {
+            msg("Preskakanje praznog attachment ili filename");
+            return 0;
+        }
+        
+        // Create attachment directory if needed
+        attachmentDir = FILESPATH + "Attachments\\";
+        if (!Exists(attachmentDir)) {
+            CreateDirectory(attachmentDir);
+        }
+        
+        // Generate unique filename with timestamp
+        fileExtension = ParseFile(filename, "pfExt");
+        fileNameOnly = ParseFile(filename, "pfName");
+        timestamp = Now("yyyyMMdd_HHmmss");
+        uniqueFilename = fileNameOnly + "_" + NKPR_GL_NUM + "_" + timestamp + fileExtension;
+        fullFilePath = attachmentDir + uniqueFilename;
+        
+        msg("Saving attachment to: " + fullFilePath);
+        
+        // Convert Base64 to file
+        if (!Base642File(base64Content, fullFilePath)) {
+            msg("Greška pri spremanju attachment datoteke: " + fullFilePath);
+            return 0;
+        }
+        
+        msg("Attachment saved successfully: " + fullFilePath);
+        
+        // Get next available NKSYPICT number
+        sql_max_pic = "SELECT ISNULL(MAX(SY_SL_NUM), 0) AS maxNum FROM " + databaseName + ".dbo.NKSYPICT";
+        maxRes = sqlQuery(sql_max_pic);
+        
+        nextPicNum = 1;
+        if (Size(maxRes) >= 2) {
+            nextPicNum = maxRes[1][0] + 1;
+        }
+        
+        // Insert into NKSYPICT table
+        sql_insert_pic = "INSERT INTO " + databaseName + ".dbo.NKSYPICT 
+            (SY_SL_NUM, SY_SL_PATH, SY_SL_OPIS, SY_SL_DATCR, SY_SL_TIMECR, SY_SL_REZ)
+            VALUES (@p1, @p2, @p3, @p4, @p5, @p6);";
+        
+        sqlParams = {};
+        sqlParams.Add({"@p1", nextPicNum});
+        sqlParams.Add({"@p2", fullFilePath});
+        sqlParams.Add({"@p3", description + " | XmlID: " + attachmentID});
+        sqlParams.Add({"@p4", Now("yyyy-MM-dd")});
+        sqlParams.Add({"@p5", Now("HH:mm:ss")});
+        sqlParams.Add({"@p6", attachmentID});
+        
+        sqlQuery(sql_insert_pic, sqlParams);
+        msg("Registered attachment in NKSYPICT with ID: " + nextPicNum);
+        
+        return nextPicNum;
+        
+    } catch (error) {
+        MessageBox("Greška pri spasavanju attachment: " + error);
+        return 0;
+    }
+}
+
+// -----------------------------------------------------------
+// Extract and save line item attachments
+// Stores attachment ID in NKNAERLN.NKNA_LN_SASTAV field
+// -----------------------------------------------------------
+function ExtractLineItemAttachments(lineDict, lineNumber) {
+    try {
+        lineAttachmentID = 0;
+        
+        // Check if line has AttachmentReference or similar structure
+        if (Contains(lineDict, "AdditionalDocumentReference")) {
+            lineRef = lineDict["AdditionalDocumentReference"];
+            
+            // Handle both single and multiple references
+            refsToProcess = {};
+            if (lineRef.type() == "ARRAY") {
+                refsToProcess = lineRef;
+            } else {
+                refsToProcess = {lineRef};
+            }
+            
+            for (i = 0; i < Size(refsToProcess); i++) {
+                ref = refsToProcess[i];
+                
+                // Get attachment ID
+                attachmentID = "";
+                if (Contains(ref, "ID")) {
+                    attachmentID = ref["ID"];
+                }
+                
+                // Get description
+                attachmentDesc = "Line " + lineNumber + " attachment";
+                if (Contains(ref, "DocumentDescription")) {
+                    attachmentDesc = "Line " + lineNumber + ": " + ref["DocumentDescription"];
+                }
+                
+                // Extract embedded binary object
+                if (Contains(ref, "Attachment")) {
+                    attachment = ref["Attachment"];
+                    if (Contains(attachment, "EmbeddedDocumentBinaryObject")) {
+                        embeddedObj = attachment["EmbeddedDocumentBinaryObject"];
+                        
+                        // Get MIME type and filename
+                        mimeCode = "";
+                        filename = "";
+                        base64Content = "";
+                        
+                        if (Contains(embeddedObj, "@attributes")) {
+                            attrs = embeddedObj["@attributes"];
+                            if (Contains(attrs, "mimeCode")) {
+                                mimeCode = attrs["mimeCode"];
+                            }
+                            if (Contains(attrs, "filename")) {
+                                filename = attrs["filename"];
+                            }
+                        }
+                        
+                        // Get base64 content
+                        if (Contains(embeddedObj, "@text")) {
+                            base64Content = embeddedObj["@text"];
+                        } else {
+                            base64Content = embeddedObj;
+                        }
+                        
+                        if (base64Content != "" && filename != "") {
+                            // Save attachment to disk
+                            lineAttachmentID = SaveAttachmentToDisk(base64Content, filename, attachmentDesc, attachmentID);
+                            if (lineAttachmentID > 0) {
+                                msg("Saved Line " + lineNumber + " attachment: " + filename + " with ID: " + lineAttachmentID);
+                                // Return first attachment ID found for this line
+                                return lineAttachmentID;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return lineAttachmentID;
+        
+    } catch (error) {
+        msg("Greška pri extraction line item attachments: " + error);
+        return 0;
+    }
 }

@@ -1,0 +1,80 @@
+// ========================================================================
+// Example 4: Multi-Chart Dashboard
+// ========================================================================
+
+dashboardTitle = "Executive Sales Dashboard - Q1 2025";
+
+// Chart 1: Sales by Category (Bar)
+//chart_sales_by_category_args = ["Electronics", "Office", "Furniture", "Software"];
+//chart_sales_by_category_val_1 = [325000, 145000, 228000, 96000];
+chart_sales_by_category_Val_1 = {};
+chart_sales_by_category_Val_1.Add(325000);
+chart_sales_by_category_Val_1.Add(145000);
+chart_sales_by_category_Val_1.Add(228000);
+chart_sales_by_category_Val_1.Add(96000);
+
+chart_sales_by_category_Args = {};
+chart_sales_by_category_Args.Add("Electronics");
+chart_sales_by_category_Args.Add("Office");
+chart_sales_by_category_Args.Add("Furniture");
+chart_sales_by_category_Args.Add("Software");
+/*
+// Chart 2: Market Distribution (Pie)
+chart_market_distribution_args = ["North", "South", "East", "West"];
+chart_market_distribution_val_1 = [285000, 198000, 156000, 155000];
+
+// Chart 3: Monthly Trend (Line)
+chart_monthly_trend_args = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
+chart_monthly_trend_val_1 = [125000, 142000, 138000, 155000, 148000, 162000];
+
+// Chart 4: Quarterly Comparison (Area)
+chart_quarterly_comparison_args = ["Q1 2024", "Q2 2024", "Q3 2024", "Q4 2024", "Q1 2025"];
+chart_quarterly_comparison_val_1 = [380000, 425000, 468000, 512000, 405000];
+*/
+// Setup dashboard report
+reportHandle = SetupReport("chart_dashboard.repx");
+
+// Set parameter
+//SetReportParameter(reportHandle, "dashboardTitle", dashboardTitle);
+
+// Configure for landscape
+//ConfigureReportOutput(reportHandle, "PageSize", "A4");
+//ConfigureReportOutput(reportHandle, "Orientation", "Landscape");
+
+// Add data (all charts in one row)
+OutputReport(reportHandle);
+
+// Export
+//ExportReport(reportHandle, "PDF", "D:\Executive_Dashboard.pdf");
+//MSG("Dashboard exported to PDF");
+
+// Also export to Excel for interactive analysis
+//ExportReport(reportHandle, "XLSX", "D:\Executive_Dashboard.xlsx");
+//MSG("Dashboard exported to Excel");
+
+// Print preview
+//PrintReport(reportHandle, 0); //modal
+PrintReport(reportHandle);
+
+// Cleanup
+//DisposeReport(reportHandle);
+
+//MSG("==========================================");
+//MSG("Dashboard Summary:");
+//MSG("==========================================");
+//MSG("Total Sales by Category: " + Sum(chart_sales_by_category_val_1).ToString("N2"));
+//MSG("Total Regional Sales: " + Sum(chart_market_distribution_val_1).ToString("N2"));
+//MSG("==========================================");
+
+
+
+// Helper function to sum array
+function Sum(arr) {
+    total = 0;
+    for (i = 0; i < Size(arr); i++) {
+        total = total + arr[i];
+    }
+    return total;
+}
+
+//exit();

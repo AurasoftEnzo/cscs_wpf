@@ -2,6 +2,7 @@ Import(strTrim(mpath()) + "CSCS.Math.dll");
 
 args = CommandLineArgs(); 
 if(Size(args) > 1){
+
     companyCode = args[2]; // e.g. Y3
     if(companyCode != ""){  
         CoSet(companyCode);
@@ -9,33 +10,54 @@ if(Size(args) > 1){
         MessageBox("Nedostaje šifra tvrtke u argumentima.");
         exit;
     }    
+    
     userCode = args[3]; // e.g. ANA
     if(userCode != ""){  
     }else{  
         MessageBox("Nedostaje šifra korisnika u argumentima.");
         exit;
     }    
-    invNum = args[4]; // e.g. 90100002
+    
+    invNum = args[4]; // e.g. 90100002 // aurasoft invoice number
     if(invNum != 0){  
     }else{  
         MessageBox("Nedostaje broj računa u argumentima.");
         exit;
-    }    
-    rejectCode = args[5]; // Rejection code
-    if (rejectCode != ""){     
+    }
+
+    newRejectStatus = args[5]; // new status code -> APPROVE/REJECT
+    if (newRejectStatus != ""){     
+        newRejectStatus = newRejectStatus.Upper();
+        if(newRejectStatus != "APPROVED" && newRejectStatus != "REJECTED"){
+            MessageBox("Novi status odbijanja/prihvaćanja nije ispravan. Dozvoljene vrijednosti su: APPROVED ili REJECTED.");
+            exit;
+        }
     }
     else{
-        MessageBox("Nedostaje šifra odbijanja u argumentima.");
+        MessageBox("Nedostaje novi status odbijanja/prihvaćanja u argumentima.");
         exit;
     }
-    rejectNote = args[6]; // Rejection note/reason
-    if (rejectNote != ""){     
+
+    rejectReason = args[6]; // Rejection reason -> VAT_REASON/NOT_VAT_REASON/OTHER_REASON
+    if (rejectReason != ""){
+        rejectReason = rejectReason.Upper();
+        if(rejectReason != "VAT_REASON" && rejectReason != "NOT_VAT_REASON" && rejectReason != "OTHER_REASON"){
+            MessageBox("Razlog odbijanja nije ispravan. Dozvoljene vrijednosti su: VAT_REASON, NOT_VAT_REASON ili OTHER_REASON.");
+            exit;
+        }
     }
     else{
-        rejectNote = ""; // Optional, can be empty
+        rejectReason = "OTHER_REASON"; //!!! default value is?
+        exit;
     }
+
+    rejectNote = args[7]; // Rejection note
+    if (rejectNote == ""){
+        rejectNote = ""; // Optional, empty by default
+    }
+
 }else{
-    MessageBox("Nedostaju argumenti komandne linije.\nKorištenje: WXEracunReject.cscs <companyCode> <userCode> <invNum> <rejectCode> <rejectNote>");
+    MessageBox("Nedostaju argumenti komandne linije.\nKorištenje: wxeracunreject.cscs <companyCode> <userCode> <invNum> <newRejectStatus> <rejectReason> <rejectNote>");
     exit;
 }   
 
@@ -161,7 +183,7 @@ ERAC_CODE = eracRes[1][8].trim();
 
 // Send rejection
 if(!SendRejectERacun()){
-    MessageBox("Greška pri slanju odbijanja e-računa " + invNum + "!");    
+    MessageBox("Greška pri promjeni statusa e-računa " + invNum + "!");    
     exit;
 }
 
@@ -347,12 +369,35 @@ function EPOSRejectFailure(_invID, responseCode, res) {
     }
 }
 
+function GetInvoiceId(aurasoftInvoiceNumber) {
+    // sqlString = "SELECT TOP 1 SY_ELOG_REZ FROM " + databaseName + ".dbo.NKSYELOG 
+    //             WHERE 
+    //             SY_ELOG_NUM = @p1 
+    //             AND SY_ELOG_TYPE = 'UR'
+    //             AND SY_ELOG_STATUS = 'P' 
+    //             ORDER BY SY_ELOG_DATE DESC, SY_ELOG_TIME DESC;"; //!!!
+    sqlString = "SELECT TOP 1 NKPR_GL_POSRED FROM " + databaseName + ".dbo.NKPRINV 
+                WHERE
+                NKPR_GL_NUM = @p1 "; //!!!
+    sqlParams = {};
+    sqlParams.Add({"@p1", aurasoftInvoiceNumber});
+    sqlResult = sqlQuery(sqlString, sqlParams);
+    if (Size(sqlResult) > 1) {
+        return sqlResult[1][0].trim();
+    } else {
+        MessageBox("Ne mogu pronaći invoiceId za račun " + aurasoftInvoiceNumber + " u NKSYELOG.");
+        exit;
+    }
+}
+
 //-----------------------------------------------------------
 // FINA REJECTION
 //-----------------------------------------------------------
 
 function SendRejectFINA() {
     try {
+        invoiceId = GetInvoiceId(invNum);
+
         // FINA uses SOAP/WSDL for rejection
         // The rejection is sent using FINA_B2B_INCOMING_INVOICE_ACTION or similar method
         
@@ -368,36 +413,44 @@ function SendRejectFINA() {
 
             UUID(), // messageId
             "9934:" + supOIB, // buyerId (receiver of original invoice, now rejecting)
-            invNum, // invoiceId (FINA-in)
-            newStatus, // new StatusCode
-            codeReason, // CodeReason
-            note // Note
+            invoiceId, // invoiceId (FINA-in)
+            newRejectStatus, // new StatusCode
+            rejectReason, // CodeReason
+            rejectNote // Note
         );
         
-        MSG("ack = " + ack);
-        responseCode = "FREJ";
+        MSG("ack:\n" + ack);
+
+        responseCode = "FINA_CHANGE_INCOIMING_INVOICE_STATUS";
         LogResponse(responseCode, ack);
  
         if(ack["AckStatusCode"] == 10){
-            if(ack["Correct"]){
-                MSG("Odbijanje dokumenta uspješno poslano na FINA-u.");
-                LogNKSYELOG("R", "FINA Rejection sent: Code=" + rejectCode + ", Note=" + rejectNote);
-                return true;
-            }else{
-                MSG("ack[\"ErrorCode\"] = " + ack["ErrorCode"]);
-                MSG("ack[\"ErrorMessage\"] = " + ack["ErrorMessage"]);
-                LogNKSYELOG("B", "FINA Reject error: " + ack["ErrorMessage"]);
-                return false;
-            }
+            
+            return true;
+
+            // treba negdi upisat da je rejected/approved ??? //!!!
+
+            // if(ack["Correct"]){
+            //     MSG("Odbijanje dokumenta uspješno poslano na FINA-u.");
+            //     LogNKSYELOG("R", "FINA Rejection sent: Code=" + rejectCode + ", Note=" + rejectNote);
+            //     return true;
+            // }else{
+            //     MSG("ack[\"ErrorCode\"] = " + ack["ErrorCode"]);
+            //     MSG("ack[\"ErrorMessage\"] = " + ack["ErrorMessage"]);
+            //     LogNKSYELOG("B", "FINA Reject error: " + ack["ErrorMessage"]);
+            //     return false;
+            // }
         }else{
-            MessageBox("AckStatusText = " + ack["AckStatusText"]);
-            LogNKSYELOG("B", "FINA Reject failed: " + ack["AckStatusText"]);
+            // MessageBox("AckStatusText = " + ack["AckStatusText"]);
+            // LogNKSYELOG("B", "FINA Reject failed: " + ack["AckStatusText"]);
+            
             return false;
         }
     }catch(ex){
-        MessageBox("Nepoznata greška pri slanju odbijanja na FINA-u:\n" + ex);
+        MessageBox("Nepoznata greška pri promjeni statusa računa na FINA-i:\n" + ex);
         LogException(ex);
-        LogNKSYELOG("B", "FINA Reject exception: " + ex);
+
+        // LogNKSYELOG("B", "FINA Reject exception: " + ex);
         return false;
     }
 }
@@ -407,20 +460,46 @@ function SendRejectFINA() {
 //-----------------------------------------------------------
 
 function LogResponse(responseCode, response) {
+    if(!DIR_EXISTS(FILESPATH + "ErecunReject\\" + "responses\\")){
+        MAKE_DIR(FILESPATH + "ErecunReject\\" + "responses\\");
+    }
+
+    // logPath = FILESPATH + "ErecunReject\\" + "responses\\" + invNum + ".response";
+    // timestamp = Now("yyyy-MM-dd HH:mm:ss");
+    // logLine = timestamp + " | Invoice: " + invNum + " | Code: " + responseCode + " | Response: " + response + "\r\n";
+    
+    // // Append to log file
+    // currentLog = "";
+    // if(FileExists(logPath)){
+    //     currentLog = ReadFile(logPath);
+    // }
+    // SaveFile(currentLog + logLine, logPath);
+
+    logFilePath = FILESPATH + "ErecunReject\\" + "responses\\" + invNum + ".response"; 
+
+    appendText = Now("yyyy-MM-dd HH:mm:ss") + " -----------------------------------\n\n" + "StatusCode = " + responseCode + "\n\n" + "Response:\n" + response + "\n\n";
+
     try {
-        logPath = FILESPATH + "reject_response_log.txt";
-        timestamp = Now("yyyy-MM-dd HH:mm:ss");
-        logLine = timestamp + " | Invoice: " + invNum + " | Code: " + responseCode + " | Response: " + response + "\r\n";
-        
-        // Append to log file
-        currentLog = "";
-        if(FileExists(logPath)){
-            currentLog = ReadFile(logPath);
-        }
-        SaveFile(currentLog + logLine, logPath);
+        SaveFile(appendText, logFilePath, "a");        
     } catch (ex) {
-        // Non-critical, don't interrupt
-        MSG("Log response error: " + ex);
+        MessageBox("CRITICAL: Cannot write to log file: " + logFilePath + "\nError: " + ex);
+    }
+}
+
+function LogException(exText) 
+{
+    if(!DIR_EXISTS(FILESPATH + "ErecunReject\\" + "responses\\"))
+    {
+        MAKE_DIR(FILESPATH + "ErecunReject\\" + "responses\\");
+    }
+    logFilePath = FILESPATH + "ErecunReject\\" + "responses\\" + invNum + ".response";
+        
+    appendText = Now("yyyy-MM-dd HH:mm:ss") + " -----------------------------------\n\n" + "Exception = " + exText + "\n\n";
+    
+    try {
+        SaveFile(appendText, logFilePath, "a");        
+    } catch (ex) {
+        MessageBox("CRITICAL: Cannot write to log file: " + logFilePath + "\nError: " + ex);
     }
 }
 
@@ -448,21 +527,26 @@ function LogNKSYELOG(elogStatusCode, description = ""){
     return;
 }
 
-function LogException(ex) {
-    try {
-        logPath = FILESPATH + "reject_exceptions.log";
-        timestamp = Now("yyyy-MM-dd HH:mm:ss");
-        logLine = timestamp + " | Invoice: " + invNum + " | Exception: " + ex + "\r\n";
+// function LogException(ex) { //NI DOBRO OVAKO
+//     try {
+//         if(!DIR_EXISTS(FILESPATH + "ErecunReject\\" + "responses\\")){
+//             MAKE_DIR(FILESPATH + "ErecunReject\\" + "responses\\");
+//         }
+
+//         logPath = FILESPATH + "ErecunReject\\" + "responses\\" + invNum + ".response";
+//         timestamp = Now("yyyy-MM-dd HH:mm:ss");
+//         logLine = timestamp + " | Invoice: " + invNum + " | Exception: " + ex + "\r\n";
         
-        currentLog = "";
-        if(FileExists(logPath)){
-            currentLog = ReadFile(logPath);
-        }
-        SaveFile(currentLog + logLine, logPath);
-    } catch (logEx) {
-        MSG("Exception logging error: " + logEx);
-    }
-}
+//         currentLog = "";
+//         if(FileExists(logPath)){
+//             currentLog = ReadFile(logPath);
+//         }
+//         SaveFile(currentLog + logLine, logPath);
+//     } catch (logEx) {
+//         MSG("Exception logging error: " + logEx);
+//     }
+// }
+
 
 /*
 

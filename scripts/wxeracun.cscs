@@ -94,7 +94,11 @@ if (size(sqlResult) > 1)
     KPSY_PO_FREIGHT = substring(sqlResult[1][9], 0, 2).trim();
     KPSY_REZERVAX = sqlResult[1][10].trim(); // Supplier GLN
     KPSY_PR_R1_R2 = sqlResult[1][11].trim(); // PDV ID za R1/R2 izvještaje
-    supOIB = Substring(KPSY_REZERVA, 0, 11); // ??? a ča ne 11(OIB) znakova ?? ili 13(JMBG) + trim() ??
+    supOIB = Substring(KPSY_REZERVA, 0, 11).trim(); // ??? a ča ne 11(OIB) znakova ?? ili 13(JMBG) + trim() ??
+    if(supOIB.Length != 11){
+        MessageBox("OIB tvrtke nije ispravan: " + supOIB);
+        exit;
+    }
     //supOIBParts = supOIB.split(" ");
     //supOIB = supOIBParts[0].trim();
 } 
@@ -1209,9 +1213,9 @@ function GenerateUBLXml() {
 
     xml += "    <cac:PartyLegalEntity>\n";
     xml += "      <cbc:RegistrationName>" + EscapeForXml(RegistrationName) + "</cbc:RegistrationName>\n";
-    if (KPSY_COMP_JMBFI != "") {
+    if (supOIB != "") {
         // xml += "      <cbc:CompanyID schemeID=\"MBS\">" + KPSY_COMP_JMBFI + "</cbc:CompanyID>\n";
-        xml += "      <cbc:CompanyID>" + KPSY_COMP_JMBFI + "</cbc:CompanyID>\n";
+        xml += "      <cbc:CompanyID>" + supOIB + "</cbc:CompanyID>\n";
     }
     xml += "    </cac:PartyLegalEntity>\n";
 
@@ -1413,18 +1417,23 @@ function GenerateUBLXml() {
     xml += "  <cbc:InstructionNote>" + EscapeForXml(KPKS_PL_OPIS) + "</cbc:InstructionNote>\n";
     xml += "  <cbc:PaymentID>HR" + NKPR_GL_MODEL + " " + NKPR_GL_POZIV + "</cbc:PaymentID>\n";
 
-    sql_bank = "SELECT NKSC_ZR_KONTO, NKSC_ZR_NAZIV FROM " + databaseName + ".dbo.NKSCZIRO WHERE NKSC_ZR_BANKA = @p1;";
+    // sql_bank = "SELECT NKSC_ZR_KONTO, NKSC_ZR_NAZIV FROM " + databaseName + ".dbo.NKSCZIRO WHERE NKSC_ZR_BANKA = @p1;";
+    sql_bank = "SELECT KPSY_BNK_ZIRO, KPSY_BNK_IME FROM " + databaseName + ".dbo.KPSYBANK WHERE KPSY_BNK_CODE = @p1 AND KPSY_BNK_VLASTT != 'D';";
     sqlParams = {};
     sqlParams.Add({"@p1", NKPR_GL_RZRVA1});
     bankRes = sqlQuery(sql_bank, sqlParams);
-    if (Size(bankRes) >= 1) {
-        NKSC_ZR_KONTO = bankRes[1][0].trim();
-        NKSC_ZR_NAZIV = bankRes[1][1].trim();
+    if (Size(bankRes) > 1) {
+        KPSY_BNK_ZIRO = bankRes[1][0].trim();
+        KPSY_BNK_IME = bankRes[1][1].trim();
         xml += "  <cac:PayeeFinancialAccount>\n";
-        xml += "    <cbc:ID>" + NKSC_ZR_KONTO + "</cbc:ID>\n";
+        xml += "    <cbc:ID>" + KPSY_BNK_ZIRO + "</cbc:ID>\n";
         // xml += "    <cbc:AccountType>TRAN</cbc:AccountType>\n";
-        xml += "    <cbc:Name>" + EscapeForXml(NKSC_ZR_NAZIV) + "</cbc:Name>\n";
+        xml += "    <cbc:Name>" + EscapeForXml(KPSY_BNK_IME) + "</cbc:Name>\n";
         xml += "  </cac:PayeeFinancialAccount>\n";
+    }
+    else{
+        MessageBox("Ne postoji žiro račun u šifarniku banaka za banku s šifrom: " + NKPR_GL_RZRVA1);
+        exit;
     }
     xml += "</cac:PaymentMeans>\n";
 

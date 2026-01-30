@@ -524,13 +524,23 @@ function startImport(){
         msg("IMPORTING: " + listOfXmls[xmlCounter]);
         xmlFilePath = listOfXmls[xmlCounter];
         MemoX = ""; //memo u kojega spremamo one podatke iz xml računa koje želimo prikazati korisniku prilikom uvoza
-        importUBLXmlFromDict(ReadAllText(listOfXmls[xmlCounter]));
+
+        xmlFilenameWithoutExtension = parsefile(xmlFilePath, "pfName");
+        if(xmlFilenameWithoutExtension.StartsWith("FINA_UR_")){
+            currentInvoiceId = xmlFilenameWithoutExtension.Replace("FINA_UR_", "");
+        }elif(xmlFilenameWithoutExtension.StartsWith("MER_UR_")){
+            currentInvoiceId = xmlFilenameWithoutExtension.Replace("MER_UR_", "");
+        }else{
+            currentInvoiceId = "";
+        }
+
+        importUBLXmlFromDict(ReadAllText(listOfXmls[xmlCounter]), currentInvoiceId);
     }
 }
 
 // New main import function using XmlToDict
 //function importUBLXmlFromDict(xmlContent, xmlFilePath = "") {
-function importUBLXmlFromDict(xmlContent) {
+function importUBLXmlFromDict(xmlContent, _invoiceId = "") {
     try {
         documentDict = XmlToDict(xmlContent);
         
@@ -540,6 +550,8 @@ function importUBLXmlFromDict(xmlContent) {
         invoiceDict = documentDict[documentType];
 
 
+        NKPR_GL_POSRED = _invoiceId;
+        
         // // //************
         // MSG(documentDict[documentType]["InvoiceLine"]); 
 
@@ -612,6 +624,10 @@ function importUBLXmlFromDict(xmlContent) {
             // Commit transaction
             //CommitTransaction();
             
+
+            
+
+
             MessageBox("UBL XML račun je uspješno uvezen!\nBroj računa: " + invNum);
 
 
@@ -1653,7 +1669,8 @@ function ImportHeaderDataToERGL(docType) {
         sql_insert += "NKPR_GL_SHPZIP, NKPR_GL_SHPST,";
         sql_insert += "NKPR_GL_SIF_PL, NKPR_GL_MODEL, NKPR_GL_POZIV, NKPR_GL_DATPRI, ";
         sql_insert += "NKPR_GL_TAXAMT, NKPR_GL_TOTAL, NKPR_GL_DESC,";
-        sql_insert += "NKPR_GL_BROPIS1, NKPR_GL_REZ3, NKPR_GL_DATECR, NKPR_GL_DRZAVA";
+        sql_insert += "NKPR_GL_BROPIS1, NKPR_GL_REZ3, NKPR_GL_DATECR, NKPR_GL_DRZAVA, ";
+        sql_insert += "NKPR_GL_POSRED";
         sql_insert += ") VALUES (";
         sql_insert += "@brpon, @docType, @invDate, @timeCreated, ";
         sql_insert += "@dvo, @nokam, @taxPointDate, @currency, ";
@@ -1663,7 +1680,7 @@ function ImportHeaderDataToERGL(docType) {
         sql_insert += "@shpZip, @shpState, ";
         sql_insert += "@payment, @model, @poziv, @datpri, ";
         sql_insert += "@taxTotal, @total, @glDesc, ";
-        sql_insert += "@note, @rez3, @created, @country";
+        sql_insert += "@note, @rez3, @created, @country, @posred";
         sql_insert += ");";
         
         // Prepare parameters
@@ -1710,8 +1727,8 @@ function ImportHeaderDataToERGL(docType) {
         sqlParams.Add({"@rez3", NKPR_GL_REZ3});
         sqlParams.Add({"@created", NKPR_GL_INVDTE}); //????
         sqlParams.Add({"@country", NKPR_GL_DRZAVA});        
-        // Execute insert
-
+        sqlParams.Add({"@posred", NKPR_GL_POSRED}); // invoiceId
+        // Execute SQL insert
         result = SqlNonQuery(sql_insert, sqlParams);
         
         if (result > 0) {

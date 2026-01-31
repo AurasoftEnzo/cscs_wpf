@@ -131,6 +131,8 @@ if (size(sqlResult) > 1)
         }elif(sqlResult[i][0].trim() == "SCHEMASPATH")
         {
             SCHEMASPATH = sqlResult[i][1].trim();
+        }elif(sqlResult[i][0].trim() == "CERTPATH"){
+            CERTPATH = sqlResult[i][1].trim();
         }
     }
 } 
@@ -909,6 +911,8 @@ function GenerateUBLXml() {
             }
         }
     }
+
+    note = note.Replace("$$", "\n");
 
     if (profileID == "P9") { // credit note
         if (NKPR_GL_ESD != NKPR_GL_INVDTE){
@@ -1729,6 +1733,8 @@ function GenerateUBLXml() {
             }    
         }
 
+        noteText = noteText.Replace("$$", "\n");
+
         if (profileID == "P9") {
             xml += "<cac:CreditNoteLine>\n";
             xml += "  <cbc:ID>" + NKPR_LN_BR_LN + "</cbc:ID>\n";
@@ -2309,7 +2315,7 @@ function MERSuccess(_invID, responseCode, res) {
             LogNKSYELOG("A");
             LogNKSYELOG("C");
 
-            UpdateNKPRINVWithStatus();
+            UpdateNKPRINVWithStatus(resObject["ElectronicId"]);
 
             // MessageBox("Dokument poslan.");
             Notification("Slanje eRačuna", "Uspješno poslan račun broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, okImage);
@@ -2639,8 +2645,8 @@ function SendToFINA() {
         ack = FINA_SEND_B2B_OUTGOING_INVOICE(
             ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",
             ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
-            ERAC_USERT, // servisni certifikat
-            ERAC_PASST, // p12 certifikat (klijentski)
+            CERTPATH + ERAC_USERT, // servisni certifikat
+            CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
             ERAC_PASS, // password za p12 certifikat
             "9500095", // ERPID
 
@@ -2663,8 +2669,8 @@ function SendToFINA() {
                 LogNKSYELOG("A");
                 LogNKSYELOG("C");
 
-                // ako TAS ne čeka odgovor onda CSCS mora upisat status i datum u NKPRINV !!
-                UpdateNKPRINVWithStatus();
+                // ako TAS ne čeka odgovor onda CSCS mora upisat status, datum i invoiceId u NKPRINV !!
+                UpdateNKPRINVWithStatus(ack["InvoiceID"]);
 
                 // MSG("Uspješno poslan dokument.\n" + "Šifra računa kod FINA-e (ack[\"InvoiceID\"]) = " + ack["InvoiceID"]);
                 Notification("Slanje eRačuna", "Uspješno poslan račun broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, okImage);
@@ -2694,8 +2700,8 @@ function SendToFINA() {
     //         ack = FINA_GET_B2B_OUTGOING_INVOICE_STATUS(
     //         ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",
     //         ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
-    //         ERAC_USERT, // servisni certifikat
-    //         ERAC_PASST, // p12 certifikat (klijentski)
+    //         CERTPATH + ERAC_USERT, // servisni certifikat
+    //         CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
     //         ERAC_PASS, // password za p12 certifikat
     //         "9500095", // ERPID
 
@@ -2729,8 +2735,8 @@ function SendToFINA() {
     //     //     ack = FINA_SEND_B2B_OUTGOING_INVOICE_REPORTING(
     //     //     ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",
     //     //     ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
-    //     //     ERAC_USERT, // servisni certifikat
-    //     //     ERAC_PASST, // p12 certifikat (klijentski)
+    //     //     CERTPATH + ERAC_USERT, // servisni certifikat
+    //     //     CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
     //     //     ERAC_PASS, // password za p12 certifikat
             
     //     //     UUID(),
@@ -3084,8 +3090,8 @@ function LogNKSYELOG(elogStatusCode, description = ""){
 
 
 
-function UpdateNKPRINVWithStatus(){
-    sql_string = "UPDATE " + databaseName + ".dbo.NKPRINV SET NKPR_GL_RTS = 'E', NKPR_GL_DATPRI = getdate() WHERE nkpr_gl_num = '" + invNum + "'";    
+function UpdateNKPRINVWithStatus(_invoiceId){
+    sql_string = "UPDATE " + databaseName + ".dbo.NKPRINV SET NKPR_GL_RTS = 'E', NKPR_GL_DATPRI = getdate(), NKPR_GL_POSRED = '" + _invoiceId + "' WHERE nkpr_gl_num = '" + invNum + "'";    
     sqlResult = sqlNonQuery(sql_string);
     return;
 }

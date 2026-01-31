@@ -120,13 +120,11 @@ function init(){
             elif(sqlResult[i][0].trim() == "SCHEMASPATH")
             {
                 SCHEMASPATH = sqlResult[i][1].trim();
+            }elif(sqlResult[i][0].trim() == "CERTPATH"){
+                CERTPATH = sqlResult[i][1].trim();
             }
+            
         }
-    }
-
-    logFolder = FILESPATH + "UR\\" + "log\\";
-    if (!Exists(logFolder)) {
-        MkDir(logFolder);
     }
 
 
@@ -221,8 +219,8 @@ function GetListFINA(){
         ack = FINA_GET_B2B_INCOMING_INVOICE_LIST(
             ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
             ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
-            ERAC_USERT, // servisni certifikat
-            ERAC_PASST, // p12 certifikat (klijentski)
+            CERTPATH + ERAC_USERT, // servisni certifikat
+            CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
             ERAC_PASS, // password za p12 certifikat
 
             UUID(), // messageId
@@ -373,10 +371,11 @@ function btnPreuzmi@clicked(){
 }
 
 function startDownload(){
+
     // Create incoming folder if it doesn't exist
-    incomingFolder = FILESPATH + "UR\\";
-    if (!Exists(incomingFolder)) {
-        MkDir(incomingFolder);
+    UR_NEW_DirectoryPath = FILESPATH + "UR\\" + "NEW\\";
+    if (!Exists(UR_NEW_DirectoryPath)) {
+        MkDir(UR_NEW_DirectoryPath);
     }
 
     if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
@@ -395,13 +394,13 @@ function GetRacuniFINA(){
             // MSG("Dohvaćam 1 ULAZNI račun preko FINA-e putem WSDL-a!");
 
             invoiceId = arrayBrojRacunaFina[f];
-            xmlFilePath = FILESPATH + "UR\\" + "FINA_UR_" + invoiceId + ".xml";
+            xmlFilePath = UR_NEW_DirectoryPath + "FINA_UR_" + invoiceId + ".xml";
 
             ack = FINA_GET_B2B_INCOMING_INVOICE(
                 ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
                 ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
-                ERAC_USERT, // servisni certifikat
-                ERAC_PASST, // p12 certifikat (klijentski)
+                CERTPATH + ERAC_USERT, // servisni certifikat
+                CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
                 ERAC_PASS, // password za p12 certifikat
 
                 UUID(), // messageId
@@ -420,7 +419,7 @@ function GetRacuniFINA(){
             // savedXmlFilesList.Add(xmlFilePath);
 
             // Save PDF
-            Base642File(ack["Base64PdfDocumentString"], FILESPATH + "UR\\" + "FINA_UR_" + invoiceId + ".pdf");
+            Base642File(ack["Base64PdfDocumentString"], UR_NEW_DirectoryPath + "FINA_UR_" + invoiceId + ".pdf");
 
             // NKSYELOG
             // !!! za FINA-u moramo postavit status računa na RECEIVING_CONFIRMED !!!
@@ -431,8 +430,8 @@ function GetRacuniFINA(){
                 ack = FINA_CHANGE_B2B_INCOMING_INVOICE_STATUS(
                     ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
                     ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
-                    ERAC_USERT, // servisni certifikat
-                    ERAC_PASST, // p12 certifikat (klijentski)
+                    CERTPATH + ERAC_USERT, // servisni certifikat
+                    CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
                     ERAC_PASS, // password za p12 certifikat
 
                     UUID(), // messageId
@@ -484,7 +483,7 @@ function MERReceiveRacunSuccess(trackingId, responseCode, res) {
     try{
         LogResponse(responseCode, res);
 
-        xmlFilePath = FILESPATH + "UR\\" + trackingId + ".xml";
+        xmlFilePath = UR_NEW_DirectoryPath + trackingId + ".xml";
         SaveFile(res, xmlFilePath);
         // savedXmlFilesList.Add(xmlFilePath);
     }catch(ex){
@@ -513,7 +512,7 @@ function startImportCall(){
 }
 
 function startImport(){
-    cd(FILESPATH + "UR\\");
+    cd(UR_NEW_DirectoryPath);
     listOfXmls = FindFiles("*.xml");
 
     //MSG("LIST: " + listOfXmls);
@@ -534,13 +533,13 @@ function startImport(){
             currentInvoiceId = "";
         }
 
-        importUBLXmlFromDict(ReadAllText(listOfXmls[xmlCounter]), currentInvoiceId);
+        importUBLXmlFromDict(ReadAllText(listOfXmls[xmlCounter]), currentInvoiceId, xmlFilenameWithoutExtension);
     }
 }
 
 // New main import function using XmlToDict
 //function importUBLXmlFromDict(xmlContent, xmlFilePath = "") {
-function importUBLXmlFromDict(xmlContent, _invoiceId = "") {
+function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtension) {
     try {
         documentDict = XmlToDict(xmlContent);
         
@@ -625,8 +624,20 @@ function importUBLXmlFromDict(xmlContent, _invoiceId = "") {
             //CommitTransaction();
             
 
-            
 
+            // Create incoming folder if it doesn't exist
+            UR_IMPORTED_DirectoryPath = FILESPATH + "UR\\" + "IMPORTED\\" + xmlFilenameWithoutExtension + "\\";
+            if (!Exists(UR_IMPORTED_DirectoryPath)) {
+                MkDir(UR_IMPORTED_DirectoryPath);
+            }
+
+            // Move XML to IMPORTED folder
+            Move(UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".xml", UR_IMPORTED_DirectoryPath + xmlFilenameWithoutExtension + ".xml");
+            //move pdf (if exists) to IMPORTED folder
+            if(Exists(UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".pdf")){
+                Move(UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".pdf", UR_IMPORTED_DirectoryPath + xmlFilenameWithoutExtension + ".pdf");
+            }
+            
 
             MessageBox("UBL XML račun je uspješno uvezen!\nBroj računa: " + invNum);
 
@@ -775,11 +786,12 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
             //refIdx = 0;
             refNum = refNumbers[0].trim();
             refOIB = refNumbers[1].trim();
-      //   msg 'zz11: '+companyIDPartyIdentificationID+' refNum: '+refNum+' refOIB: '+refOIB;
+            //   msg 'zz11: '+companyIDPartyIdentificationID+' refNum: '+refNum+' refOIB: '+refOIB;
+            
             // Supplier name
             suppName= "";
-            if (Contains(suppPartyData, "PartyName")) {
-                suppName = suppPartyData["PartyName"]["Name"];
+            if (Contains(suppPartyData, "PartyLegalEntity")) {
+                suppName = suppPartyData["PartyLegalEntity"]["RegistrationName"];
             } else {
                 //suppName = suppPartyData["PartyLegalEntity"]["CompanyName"];
                 //find name from NKSCPART
@@ -788,6 +800,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
             if (suppName != "") {
                 NKPR_GL_CUSNME = suppName;
             }  
+
             //odrediti OIB dobavljača iz /Invoice/cac:AccountingSupplierParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID
             if (Contains(suppPartyData, "PartyTaxScheme")) {
                 partyTaxScheme = suppPartyData["PartyTaxScheme"];
@@ -1215,7 +1228,7 @@ function ExtractAndSaveNotes(docData) {
             
             // If there are more than 2 notes, log a warning
             if (noteValue.size() > 2) {
-                //ako ima više od va notesa, treba ih spremiti u istu tablu NKNAOPIS i na isti način, ali svaki notes treba otvorit novu liniju u NKNAERLN i referenti broj spremiti u NKNA_LN_BROPI
+                //ako ima više od va notesa, treba ih spremiti u istu tablu NKNAOPIS i na isti način, ali svaki notes treba otvorit novu liniju u NKNAERLN i referenti broj spremiti u NKPR_LN_BROPI
                 msg("WARNING: Document contains " + noteValue.size() + " notes, but only first 2 were saved");
             }
         }
@@ -1487,10 +1500,10 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
         // Extract line item attachment if present
         lineAttachmentNum = ExtractLineItemAttachments(lineDict, lineData["NKPR_LN_BR_LN"]);
         if (lineAttachmentNum > 0) {
-            lineData["NKNA_LN_SASTAV"] = lineAttachmentNum;
+            lineData["NKPR_LN_SASTAV"] = lineAttachmentNum;
         } else {
-            if(!Contains(lineData, "NKNA_LN_SASTAV")) {
-                lineData["NKNA_LN_SASTAV"] = 0;
+            if(!Contains(lineData, "NKPR_LN_SASTAV")) {
+                lineData["NKPR_LN_SASTAV"] = 0;
             }
         }
         
@@ -1733,6 +1746,8 @@ function ImportHeaderDataToERGL(docType) {
         sqlParams.Add({"@total", NKPR_GL_TOTAL});
         //sqlParams.Add({"@payable", NKPR_GL_PAYABLE});
         
+        sqlParams.Add({"@glDesc", NKPR_GL_DESC});
+        
         // sqlParams.Add({"@note", NKPR_GL_BROPIS1});
         sqlParams.Add({"@note", 0});
 
@@ -1794,7 +1809,7 @@ function ImportLineItemsToERLN(recordId, lineItems) {
             sql_insert += "NKPR_LN_INVNM, NKPR_LN_BR_LN, NKPR_LN_PQTY, NKPR_LN_AMT, ";
             sql_insert += "NKPR_LN_PCODE, NKPR_LN_PDESC, NKPR_LN_JEDMJ, ";
             sql_insert += "NKPR_LN_PPRCE, NKPR_LN_PRNPR, NKPR_LN_TXBLE, ";
-            sql_insert += "NKPR_LN_POPL, NKPR_LN_PDISC, NKPR_LN_BROPI, NKNA_LN_SASTAV";
+            sql_insert += "NKPR_LN_POPL, NKPR_LN_PDISC, NKPR_LN_BROPI, NKPR_LN_SASTAV";
             sql_insert += ") VALUES (";
             sql_insert += "@recordId, @lineNum, @qty, @amount, ";
             sql_insert += "@productCode, @description, @unit, ";
@@ -1820,8 +1835,8 @@ function ImportLineItemsToERLN(recordId, lineItems) {
             
             // Add line item attachment ID if present
             lineAttachmentId = 0;
-            if (Contains(lineData, "NKNA_LN_SASTAV")) {
-                lineAttachmentId = lineData["NKNA_LN_SASTAV"];
+            if (Contains(lineData, "NKPR_LN_SASTAV")) {
+                lineAttachmentId = lineData["NKPR_LN_SASTAV"];
             }
             sqlParams.Add({"@attachmentId", lineAttachmentId});
          //msg("1111");        
@@ -2149,7 +2164,7 @@ function SaveAttachmentToDisk(base64Content, filename, description, attachmentID
         }
         
         // Create attachment directory if needed
-        attachmentDir = FILESPATH + "Attachments\\";
+        attachmentDir = FILESPATH + "Attachments\\"; // !!!
         if (!Exists(attachmentDir)) {
             CreateDirectory(attachmentDir);
         }
@@ -2206,7 +2221,7 @@ function SaveAttachmentToDisk(base64Content, filename, description, attachmentID
 
 // -----------------------------------------------------------
 // Extract and save line item attachments
-// Stores attachment ID in NKNAERLN.NKNA_LN_SASTAV field
+// Stores attachment ID in NKNAERLN.NKPR_LN_SASTAV field
 // -----------------------------------------------------------
 function ExtractLineItemAttachments(lineDict, lineNumber) {
     try {

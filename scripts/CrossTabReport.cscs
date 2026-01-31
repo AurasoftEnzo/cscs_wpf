@@ -1,0 +1,107 @@
+MSG("...Testing CrossTabReport...");
+// ========================================================================
+// Example 9: Cross-Tab (Matrix) Report with Subreports
+// Shows sales by Product Category (rows) and Month (columns)
+// ========================================================================
+
+// Report configuration
+reportTitle = "Product Sales Matrix - 2025";
+reportYear = "2025";
+
+// -------------------- MAIN REPORT SETUP --------------------
+
+mainReport = SetupReport("crosstab_main.repx");
+
+ConfigureReportOutput(mainReport, "PageSize", "A4");
+ConfigureReportOutput(mainReport, "Orientation", "Landscape");
+
+SetReportParameter(mainReport, "reportTitle", reportTitle);
+SetReportParameter(mainReport, "reportYear", reportYear);
+
+// -------------------- MONTHLY SALES SUBREPORT --------------------
+
+monthlyReport = SetupReport("crosstab_monthly.repx", mainReport);
+
+// -------------------- CATEGORY DATA --------------------
+
+// Define product categories
+categories = ["Electronics", "Office Supplies", "Furniture", "Software"];
+
+// Monthly sales data: [Category, Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec]
+salesMatrix = [
+    ["Electronics", 125000, 142000, 138000, 155000, 148000, 162000, 171000, 165000, 159000, 178000, 192000, 215000],
+    ["Office Supplies", 45000, 48000, 52000, 49000, 51000, 53000, 55000, 54000, 56000, 58000, 61000, 67000],
+    ["Furniture", 78000, 82000, 85000, 88000, 91000, 94000, 97000, 95000, 98000, 102000, 108000, 115000],
+    ["Software", 32000, 35000, 38000, 41000, 39000, 42000, 44000, 46000, 48000, 50000, 53000, 58000]
+];
+
+monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+
+// -------------------- PROCESS CROSS-TAB DATA --------------------
+
+grandTotalAmount = 0.0;
+
+for (catIdx = 0; catIdx < Size(categories); catIdx++) {    
+
+    categoryName = categories[catIdx];
+    categoryTotal = 0.0;    
+
+    // Calculate category total
+    for (monthIdx = 1; monthIdx <= 12; monthIdx++) {
+        categoryTotal = categoryTotal + salesMatrix[catIdx][monthIdx];
+    }  
+
+    grandTotalAmount = grandTotalAmount + categoryTotal;
+    
+    // Add category header to main report
+    OutputReport(mainReport);
+    
+
+    // Add monthly data to subreport (5 rows per category)
+    for (monthIdx = 0; monthIdx < 5; monthIdx++) {                
+
+        //monthName = monthNames[monthIdx];
+        monthNum = monthIdx + 1;
+        salesAmount = salesMatrix[catIdx][monthIdx];
+        
+    
+        // Add monthly value
+        OutputReport(monthlyReport);        
+    }
+}
+
+
+// -------------------- EXPORT & PRINT --------------------
+
+pdfPath = "D:\Sales_Matrix_2025.pdf";
+ExportReport(mainReport, "PDF", pdfPath);
+MSG("Cross-tab report exported to PDF: " + pdfPath);
+
+excelPath = "D:\Sales_Matrix_2025.xlsx";
+ExportReport(mainReport, "XLSX", excelPath);
+MSG("Cross-tab report exported to Excel: " + excelPath);
+
+
+//PrintReport(mainReport, 1); //original od nevija
+PrintReport(mainReport, 0);
+
+
+// -------------------- CLEANUP --------------------
+
+DisposeReport(monthlyReport);
+DisposeReport(mainReport);
+
+
+// -------------------- ANALYSIS --------------------
+
+//MSG("==========================================");
+//MSG("Cross-Tab Report Summary");
+//MSG("==========================================");
+//MSG("Total Categories: " + Size(categories));
+//MSG("Grand Total: " + FormatNum(grandTotalAmount, 2) + " EUR");
+//MSG("Average per Category: " + FormatNum(grandTotalAmount / Size(categories), 2));
+//MSG("Average per Month: " + FormatNum(grandTotalAmount / 12, 2));
+//MSG("==========================================");
+
+quit;

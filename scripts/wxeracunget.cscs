@@ -1215,7 +1215,7 @@ function ExtractAndSaveNotes(docData) {
             
             // If there are more than 2 notes, log a warning
             if (noteValue.size() > 2) {
-                //ako ima više od va notesa, treba ih spremiti u istu tablu NKNAOPIS i na isti način, ali svaki notes treba otvorit novu liniju u NKNAERLN i referenti broj spremiti u NKNA_LN_BROPI
+                //ako ima više od va notesa, treba ih spremiti u istu tablu NKNAOPIS i na isti način, ali svaki notes treba otvorit novu liniju u NKNAERLN i referenti broj spremiti u NKPR_LN_BROPI
                 msg("WARNING: Document contains " + noteValue.size() + " notes, but only first 2 were saved");
             }
         }
@@ -1487,10 +1487,10 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
         // Extract line item attachment if present
         lineAttachmentNum = ExtractLineItemAttachments(lineDict, lineData["NKPR_LN_BR_LN"]);
         if (lineAttachmentNum > 0) {
-            lineData["NKNA_LN_SASTAV"] = lineAttachmentNum;
+            lineData["NKPR_LN_SASTAV"] = lineAttachmentNum;
         } else {
-            if(!Contains(lineData, "NKNA_LN_SASTAV")) {
-                lineData["NKNA_LN_SASTAV"] = 0;
+            if(!Contains(lineData, "NKPR_LN_SASTAV")) {
+                lineData["NKPR_LN_SASTAV"] = 0;
             }
         }
         
@@ -1796,7 +1796,7 @@ function ImportLineItemsToERLN(recordId, lineItems) {
             sql_insert += "NKPR_LN_INVNM, NKPR_LN_BR_LN, NKPR_LN_PQTY, NKPR_LN_AMT, ";
             sql_insert += "NKPR_LN_PCODE, NKPR_LN_PDESC, NKPR_LN_JEDMJ, ";
             sql_insert += "NKPR_LN_PPRCE, NKPR_LN_PRNPR, NKPR_LN_TXBLE, ";
-            sql_insert += "NKPR_LN_POPL, NKPR_LN_PDISC, NKPR_LN_BROPI, NKNA_LN_SASTAV";
+            sql_insert += "NKPR_LN_POPL, NKPR_LN_PDISC, NKPR_LN_BROPI, NKPR_LN_SASTAV";
             sql_insert += ") VALUES (";
             sql_insert += "@recordId, @lineNum, @qty, @amount, ";
             sql_insert += "@productCode, @description, @unit, ";
@@ -1822,8 +1822,8 @@ function ImportLineItemsToERLN(recordId, lineItems) {
             
             // Add line item attachment ID if present
             lineAttachmentId = 0;
-            if (Contains(lineData, "NKNA_LN_SASTAV")) {
-                lineAttachmentId = lineData["NKNA_LN_SASTAV"];
+            if (Contains(lineData, "NKPR_LN_SASTAV")) {
+                lineAttachmentId = lineData["NKPR_LN_SASTAV"];
             }
             sqlParams.Add({"@attachmentId", lineAttachmentId});
          //msg("1111");        
@@ -2208,7 +2208,7 @@ function SaveAttachmentToDisk(base64Content, filename, description, attachmentID
 
 // -----------------------------------------------------------
 // Extract and save line item attachments
-// Stores attachment ID in NKNAERLN.NKNA_LN_SASTAV field
+// Stores attachment ID in NKNAERLN.NKPR_LN_SASTAV field
 // -----------------------------------------------------------
 function ExtractLineItemAttachments(lineDict, lineNumber) {
     try {

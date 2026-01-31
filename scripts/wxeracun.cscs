@@ -910,6 +910,8 @@ function GenerateUBLXml() {
         }
     }
 
+    note = note.Replace("$$", "\n");
+
     if (profileID == "P9") { // credit note
         if (NKPR_GL_ESD != NKPR_GL_INVDTE){
             //ako je datum oporezivanja različit od datuma računa, treba ga unijeti; PROVJERI MATEMATIKU SA DATUMIMA!!!!
@@ -1728,6 +1730,8 @@ function GenerateUBLXml() {
                 }
             }    
         }
+
+        noteText = noteText.Replace("$$", "\n");
 
         if (profileID == "P9") {
             xml += "<cac:CreditNoteLine>\n";

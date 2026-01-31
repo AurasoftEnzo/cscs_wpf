@@ -775,11 +775,12 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
             //refIdx = 0;
             refNum = refNumbers[0].trim();
             refOIB = refNumbers[1].trim();
-      //   msg 'zz11: '+companyIDPartyIdentificationID+' refNum: '+refNum+' refOIB: '+refOIB;
+            //   msg 'zz11: '+companyIDPartyIdentificationID+' refNum: '+refNum+' refOIB: '+refOIB;
+            
             // Supplier name
             suppName= "";
-            if (Contains(suppPartyData, "PartyName")) {
-                suppName = suppPartyData["PartyName"]["Name"];
+            if (Contains(suppPartyData, "PartyLegalEntity")) {
+                suppName = suppPartyData["PartyLegalEntity"]["RegistrationName"];
             } else {
                 //suppName = suppPartyData["PartyLegalEntity"]["CompanyName"];
                 //find name from NKSCPART
@@ -788,6 +789,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
             if (suppName != "") {
                 NKPR_GL_CUSNME = suppName;
             }  
+
             //odrediti OIB dobavljača iz /Invoice/cac:AccountingSupplierParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID
             if (Contains(suppPartyData, "PartyTaxScheme")) {
                 partyTaxScheme = suppPartyData["PartyTaxScheme"];

@@ -120,13 +120,11 @@ function init(){
             elif(sqlResult[i][0].trim() == "SCHEMASPATH")
             {
                 SCHEMASPATH = sqlResult[i][1].trim();
+            }elif(sqlResult[i][0].trim() == "CERTPATH"){
+                CERTPATH = sqlResult[i][1].trim();
             }
+            
         }
-    }
-
-    logFolder = FILESPATH + "UR\\" + "log\\";
-    if (!Exists(logFolder)) {
-        MkDir(logFolder);
     }
 
 
@@ -221,8 +219,8 @@ function GetListFINA(){
         ack = FINA_GET_B2B_INCOMING_INVOICE_LIST(
             ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
             ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
-            ERAC_USERT, // servisni certifikat
-            ERAC_PASST, // p12 certifikat (klijentski)
+            CERTPATH + ERAC_USERT, // servisni certifikat
+            CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
             ERAC_PASS, // password za p12 certifikat
 
             UUID(), // messageId
@@ -373,10 +371,11 @@ function btnPreuzmi@clicked(){
 }
 
 function startDownload(){
+
     // Create incoming folder if it doesn't exist
-    incomingFolder = FILESPATH + "UR\\";
-    if (!Exists(incomingFolder)) {
-        MkDir(incomingFolder);
+    UR_NEW_DirectoryPath = FILESPATH + "UR\\" + "NEW\\";
+    if (!Exists(UR_NEW_DirectoryPath)) {
+        MkDir(UR_NEW_DirectoryPath);
     }
 
     if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
@@ -395,13 +394,13 @@ function GetRacuniFINA(){
             // MSG("Dohvaćam 1 ULAZNI račun preko FINA-e putem WSDL-a!");
 
             invoiceId = arrayBrojRacunaFina[f];
-            xmlFilePath = FILESPATH + "UR\\" + "FINA_UR_" + invoiceId + ".xml";
+            xmlFilePath = UR_NEW_DirectoryPath + "FINA_UR_" + invoiceId + ".xml";
 
             ack = FINA_GET_B2B_INCOMING_INVOICE(
                 ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
                 ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
-                ERAC_USERT, // servisni certifikat
-                ERAC_PASST, // p12 certifikat (klijentski)
+                CERTPATH + ERAC_USERT, // servisni certifikat
+                CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
                 ERAC_PASS, // password za p12 certifikat
 
                 UUID(), // messageId
@@ -420,7 +419,7 @@ function GetRacuniFINA(){
             // savedXmlFilesList.Add(xmlFilePath);
 
             // Save PDF
-            Base642File(ack["Base64PdfDocumentString"], FILESPATH + "UR\\" + "FINA_UR_" + invoiceId + ".pdf");
+            Base642File(ack["Base64PdfDocumentString"], UR_NEW_DirectoryPath + "FINA_UR_" + invoiceId + ".pdf");
 
             // NKSYELOG
             // !!! za FINA-u moramo postavit status računa na RECEIVING_CONFIRMED !!!
@@ -431,8 +430,8 @@ function GetRacuniFINA(){
                 ack = FINA_CHANGE_B2B_INCOMING_INVOICE_STATUS(
                     ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
                     ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
-                    ERAC_USERT, // servisni certifikat
-                    ERAC_PASST, // p12 certifikat (klijentski)
+                    CERTPATH + ERAC_USERT, // servisni certifikat
+                    CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
                     ERAC_PASS, // password za p12 certifikat
 
                     UUID(), // messageId
@@ -484,7 +483,7 @@ function MERReceiveRacunSuccess(trackingId, responseCode, res) {
     try{
         LogResponse(responseCode, res);
 
-        xmlFilePath = FILESPATH + "UR\\" + trackingId + ".xml";
+        xmlFilePath = UR_NEW_DirectoryPath + trackingId + ".xml";
         SaveFile(res, xmlFilePath);
         // savedXmlFilesList.Add(xmlFilePath);
     }catch(ex){
@@ -513,7 +512,7 @@ function startImportCall(){
 }
 
 function startImport(){
-    cd(FILESPATH + "UR\\");
+    cd(UR_NEW_DirectoryPath);
     listOfXmls = FindFiles("*.xml");
 
     //MSG("LIST: " + listOfXmls);
@@ -534,13 +533,13 @@ function startImport(){
             currentInvoiceId = "";
         }
 
-        importUBLXmlFromDict(ReadAllText(listOfXmls[xmlCounter]), currentInvoiceId);
+        importUBLXmlFromDict(ReadAllText(listOfXmls[xmlCounter]), currentInvoiceId, xmlFilenameWithoutExtension);
     }
 }
 
 // New main import function using XmlToDict
 //function importUBLXmlFromDict(xmlContent, xmlFilePath = "") {
-function importUBLXmlFromDict(xmlContent, _invoiceId = "") {
+function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtension) {
     try {
         documentDict = XmlToDict(xmlContent);
         
@@ -625,8 +624,20 @@ function importUBLXmlFromDict(xmlContent, _invoiceId = "") {
             //CommitTransaction();
             
 
-            
 
+            // Create incoming folder if it doesn't exist
+            UR_IMPORTED_DirectoryPath = FILESPATH + "UR\\" + "IMPORTED\\" + xmlFilenameWithoutExtension + "\\";
+            if (!Exists(UR_IMPORTED_DirectoryPath)) {
+                MkDir(UR_IMPORTED_DirectoryPath);
+            }
+
+            // Move XML to IMPORTED folder
+            Move(UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".xml", UR_IMPORTED_DirectoryPath + xmlFilenameWithoutExtension + ".xml");
+            //move pdf (if exists) to IMPORTED folder
+            if(Exists(UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".pdf")){
+                Move(UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".pdf", UR_IMPORTED_DirectoryPath + xmlFilenameWithoutExtension + ".pdf");
+            }
+            
 
             MessageBox("UBL XML račun je uspješno uvezen!\nBroj računa: " + invNum);
 
@@ -2153,7 +2164,7 @@ function SaveAttachmentToDisk(base64Content, filename, description, attachmentID
         }
         
         // Create attachment directory if needed
-        attachmentDir = FILESPATH + "Attachments\\";
+        attachmentDir = FILESPATH + "Attachments\\"; // !!!
         if (!Exists(attachmentDir)) {
             CreateDirectory(attachmentDir);
         }

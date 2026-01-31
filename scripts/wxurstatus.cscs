@@ -127,6 +127,8 @@ function init(){
             elif(sqlResult[i][0].trim() == "SCHEMASPATH")
             {
                 SCHEMASPATH = sqlResult[i][1].trim();
+            }elif(sqlResult[i][0].trim() == "CERTPATH"){
+                CERTPATH = sqlResult[i][1].trim();
             }
         }
     }
@@ -231,8 +233,8 @@ function GetListFINA(){
         ack = FINA_GET_B2B_INCOMING_INVOICE_LIST(
             ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
             ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
-            ERAC_USERT, // servisni certifikat
-            ERAC_PASST, // p12 certifikat (klijentski)
+            CERTPATH + ERAC_USERT, // servisni certifikat
+            CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
             ERAC_PASS, // password za p12 certifikat
 
             UUID(), // messageId
@@ -269,8 +271,8 @@ function GetListFINA(){
                 fiskStatusAck = FINA_GET_B2B_INCOMING_INVOICE_FISK_STATUS(
                     ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
                     ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
-                    ERAC_USERT, // servisni certifikat
-                    ERAC_PASST, // p12 certifikat (klijentski)
+                    CERTPATH + ERAC_USERT, // servisni certifikat
+                    CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
                     ERAC_PASS, // password za p12 certifikat
 
                     UUID(), // messageId
@@ -492,8 +494,8 @@ function GetRacuniFINA(){
             ack = FINA_GET_B2B_INCOMING_INVOICE(
                 ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
                 ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
-                ERAC_USERT, // servisni certifikat
-                ERAC_PASST, // p12 certifikat (klijentski)
+                CERTPATH + ERAC_USERT, // servisni certifikat
+                CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
                 ERAC_PASS, // password za p12 certifikat
 
                 UUID(), // messageId
@@ -689,8 +691,8 @@ function ImportXml(xmlFilePath){
     //     ack = FINA_B2B_ECHO_BUYER(
     //         ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
     //         ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
-    //         ERAC_USERT, // servisni certifikat
-    //         ERAC_PASST, // p12 certifikat (klijentski)
+    //         CERTPATH + ERAC_USERT, // servisni certifikat
+    //         CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
     //         ERAC_PASS, // password za p12 certifikat
 
     //         UUID(), // messageId
@@ -719,8 +721,8 @@ function ImportXml(xmlFilePath){
     //     ack = FINA_GET_B2B_INCOMING_INVOICE_LIST(
     //         ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
     //         ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
-    //         ERAC_USERT, // servisni certifikat
-    //         ERAC_PASST, // p12 certifikat (klijentski)
+    //         CERTPATH + ERAC_USERT, // servisni certifikat
+    //         CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
     //         ERAC_PASS, // password za p12 certifikat
 
     //         UUID(), // messageId
@@ -759,8 +761,8 @@ function ImportXml(xmlFilePath){
     //     ack = FINA_GET_B2B_INCOMING_INVOICE(
     //         ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
     //         ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
-    //         ERAC_USERT, // servisni certifikat
-    //         ERAC_PASST, // p12 certifikat (klijentski)
+    //         CERTPATH + ERAC_USERT, // servisni certifikat
+    //         CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
     //         ERAC_PASS, // password za p12 certifikat
 
     //         UUID(), // messageId
@@ -798,8 +800,8 @@ function ImportXml(xmlFilePath){
     //     ack = FINA_CHANGE_B2B_INCOMING_INVOICE_STATUS(
     //         ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
     //         ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
-    //         ERAC_USERT, // servisni certifikat
-    //         ERAC_PASST, // p12 certifikat (klijentski)
+    //         CERTPATH + ERAC_USERT, // servisni certifikat
+    //         CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
     //         ERAC_PASS, // password za p12 certifikat
 
     //         UUID(), // messageId

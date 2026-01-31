@@ -131,6 +131,8 @@ if (size(sqlResult) > 1)
         }elif(sqlResult[i][0].trim() == "SCHEMASPATH")
         {
             SCHEMASPATH = sqlResult[i][1].trim();
+        }elif(sqlResult[i][0].trim() == "CERTPATH"){
+            CERTPATH = sqlResult[i][1].trim();
         }
     }
 } 
@@ -2643,8 +2645,8 @@ function SendToFINA() {
         ack = FINA_SEND_B2B_OUTGOING_INVOICE(
             ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",
             ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
-            ERAC_USERT, // servisni certifikat
-            ERAC_PASST, // p12 certifikat (klijentski)
+            CERTPATH + ERAC_USERT, // servisni certifikat
+            CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
             ERAC_PASS, // password za p12 certifikat
             "9500095", // ERPID
 
@@ -2698,8 +2700,8 @@ function SendToFINA() {
     //         ack = FINA_GET_B2B_OUTGOING_INVOICE_STATUS(
     //         ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",
     //         ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
-    //         ERAC_USERT, // servisni certifikat
-    //         ERAC_PASST, // p12 certifikat (klijentski)
+    //         CERTPATH + ERAC_USERT, // servisni certifikat
+    //         CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
     //         ERAC_PASS, // password za p12 certifikat
     //         "9500095", // ERPID
 
@@ -2733,8 +2735,8 @@ function SendToFINA() {
     //     //     ack = FINA_SEND_B2B_OUTGOING_INVOICE_REPORTING(
     //     //     ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",
     //     //     ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
-    //     //     ERAC_USERT, // servisni certifikat
-    //     //     ERAC_PASST, // p12 certifikat (klijentski)
+    //     //     CERTPATH + ERAC_USERT, // servisni certifikat
+    //     //     CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
     //     //     ERAC_PASS, // password za p12 certifikat
             
     //     //     UUID(),

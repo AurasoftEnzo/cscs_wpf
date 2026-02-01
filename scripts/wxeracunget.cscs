@@ -344,8 +344,6 @@ function AddRacunToArrays(supplierName, supplierId, datumIzdavanja, datumPdva, s
     arrayDatumIzdavanja[Rbr] = datumIzdavanja;
     arrayDatumPDVa[Rbr] = datumPdva;
     arrayBrojRacuna[Rbr] = supplierInvoiceId;
-    
-
     if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
         arrayBrojRacunaMer[Rbr] = eRacunBrojRacuna;
     } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
@@ -377,7 +375,6 @@ function startDownload(){
     if (!Exists(UR_NEW_DirectoryPath)) {
         MkDir(UR_NEW_DirectoryPath);
     }
-
     if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
         GetRacuniMER();
     } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
@@ -395,7 +392,7 @@ function GetRacuniFINA(){
 
             invoiceId = arrayBrojRacunaFina[f];
             xmlFilePath = UR_NEW_DirectoryPath + "FINA_UR_" + invoiceId + ".xml";
-
+//msg ("Preuzimam račun FINA ID: " + invoiceId + "..." + xmlFilePath);
             ack = FINA_GET_B2B_INCOMING_INVOICE(
                 ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
                 ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
@@ -408,7 +405,7 @@ function GetRacuniFINA(){
                 invoiceId // invoiceId
             );
 
-            // MSG("ack = " + ack);
+ // MSG("ack = " + ack);
 
             // MSG("ack[\"AckStatusCode\"] = " + ack["AckStatusCode"]);
             // MSG("ack[\"AckStatusText\"] = " + ack["AckStatusText"]);
@@ -442,7 +439,7 @@ function GetRacuniFINA(){
                     // "" // note
                 );
 
-                // MSG("ack = " + ack);
+                 //MSG("ackStatus = " + ack);
             
                 // MSG("ack[\"AckStatusCode\"] = " + ack["AckStatusCode"]);
                 // MSG("ack[\"AckStatusText\"] = " + ack["AckStatusText"]);
@@ -535,6 +532,7 @@ function startImport(){
 
         importUBLXmlFromDict(ReadAllText(listOfXmls[xmlCounter]), currentInvoiceId, xmlFilenameWithoutExtension);
     }
+    msg("Broj preuzetih XML računa sa servera posrednika: " + rBr +"\nBroj importiranih računa u bazu: " + xmlCounter);
 }
 
 // New main import function using XmlToDict
@@ -701,6 +699,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
         NKPR_GL_ROKPL = 0;
         NKPR_GL_ESD = "1900-01-01";
         NKPR_GL_SIFDVZ = "";
+        NKPR_GL_CUSCOD = "";
         NKPR_GL_CUSNME = "";
         NKPR_GL_CUSA1 = "";
         NKPR_GL_CUSCTY = "";
@@ -725,8 +724,8 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
         // Basic invoice information
         glDesc = docData["ID"]; //broj računa od dobavljača
         NKPR_GL_DESC = glDesc;
-        if (docData["ID"].length > 50) {
-            memoX = "Broj računa dobavljača je predug (" + docData["ID"].length + " znakova). Maksimalno dozvoljeno je 50 znakova.\nSkraćeni broj računa: " + Substring(docData["ID"], 0, 50);
+        if (docData["ID"].length > 40) {
+            memoX = "Broj računa dobavljača je predug (" + docData["ID"].length + " znakova). Maksimalno dozvoljeno je 40 znakova.\nSkraćeni broj računa: " + Substring(docData["ID"], 0, 50);
         }
         //provjeriti kasnije kad imamo i OIB dobavljača, u NKNAERGL da li je taj broj već unesen/preuzet
         //sada još uzmimo copyIndictIndicator iz računa ako postoji
@@ -740,24 +739,21 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
         //NKPR_GL_TIMECR"] = docData["IssueTime"];
         if (Contains(docData, "DueDate")){
             //tu staviti matematiku za datum dospijeća: duedate-issuedate=nokam kao broj dana, a dvo je isti kao i datum issuedate
-            NKPR_GL_DVO = NKPR_GL_DATPRI;
             dueDate = docData["DueDate"];
-            
             dueDateDateTime = DateTime(dueDate, "yyyy-MM-dd");
             datpriDateTime = DateTime(NKPR_GL_DATPRI, "yyyy-MM-dd");
             dateDiff = Math.Trunc(DateTimeToDouble(dueDateDateTime)) - Math.Trunc(DateTimeToDouble(datpriDateTime));
-
             NKPR_GL_NOKAM = dateDiff; // !!! hardcoded 30 days for now, TREBA POPRAVITI!!!
+            NKPR_GL_DVO = NKPR_GL_DATPRI //dueDate - dateDiff;
             // MSG("NKPR_GL_NOKAM: " + NKPR_GL_NOKAM);
        //msg("KKKK DueDate: " + NKPR_GL_DVO + " IssueDate: " + docData["IssueDate"]);         
         } else{
             NKPR_GL_DVO = docData["IssueDate"].toString();
-            NKPR_GL_NOKAM = 0;
+            NKPR_GL_NOKAM = 30;
        //msg("LLLL DueDate: " + docData["DueDate"] + " IssueDate: " + docData["IssueDate"]);         
         }   
         //DueDate = docData["DueDate"].toString();
             
-        // NKPR_GL_DUE_DATE"] = docData["DueDate"]; // !!!
         if (Contains(docData, "TaxPointDate")) {
             NKPR_GL_ESD = docData["TaxPointDate"];
             //GL_ESD = docData["TaxPointDate"].toString();
@@ -768,7 +764,6 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
         // Currency
         NKPR_GL_SIFDVZ = docData["DocumentCurrencyCode"];
         //sifdvz = docData["DocumentCurrencyCode"].toString();
-        
         // Supplier information from AccountingSupplierParty
         suppParty = docData["AccountingSupplierParty"];
         if (suppParty != null && suppParty != "") {
@@ -806,10 +801,13 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
                 partyTaxScheme = suppPartyData["PartyTaxScheme"];
                 if (Contains(partyTaxScheme, "CompanyID")) {
                     OIBSupp = partyTaxScheme["CompanyID"];
+                    if (OIBSupp.length > 11) {
+                        OIBSupp = Substring(OIBSupp, OIBSupp.length - 11, 11); //uzeti zadnjih 11 znakova
+                    }
                 }
             }
             //tu sad imamo OIB dobavljača i broj računa dobavljača; sada provjeriti da li je taj račun već unesen za tog dobavljača
-                sqlQueryString = "select NKPR_GL_JMBG, NKPR_GL_DESC from " + strtrim(databaseName) + ".dbo.NKNAERGL WHERE NKPR_GL_JMBG = '" + OIBSupp + "' AND NKPR_GL_DESC = '" + NKPR_GL_DESC + "'";
+                sqlQueryString = "select NKPR_GL_JMBG, NKPR_GL_DESC from " + strtrim(databaseName) + ".dbo.NKNAERGL WHERE NKPR_GL_JMBG = '" + OIBSupp + "' AND NKPR_GL_DESC = '" + glDesc + "'";
                 //try
                 //{
                     sqlOIBInvoicenum = sqlQuery(sqlQueryString);
@@ -988,8 +986,38 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
         }
             // Payment information
         paymentMeans = docData["PaymentMeans"];
+        xmlPaymentMeansCode = "";
         if (paymentMeans != null && paymentMeans != "") {
-            NKPR_GL_SIF_PL = paymentMeans["PaymentMeansCode"];
+            // Get PaymentMeansCode from XML (e.g., "30", "42", etc.)
+        //    xmlPaymentMeansCode = paymentMeans["PaymentMeansCode"]; //[#text]; POPRAVITI!!!
+            if (Contains(paymentMeans, "PaymentMeansCode")) {
+                paymentMeansCodeData = paymentMeans["PaymentMeansCode"];
+                if (typeof(paymentMeansCodeData) == "dictionary") {
+                    xmlPaymentMeansCode = paymentMeansCodeData["#text"];
+                } else {
+                    xmlPaymentMeansCode = paymentMeansCodeData;
+                }
+            }
+            xmlPaymentMeansCode = "";
+            // Convert XML PaymentMeansCode to internal KPKSVRPL code
+            // Reverse process from wxeracun.cscs
+            NKPR_GL_SIF_PL = "";
+            if (xmlPaymentMeansCode != "") {
+                // Query KPKSVRPL table to find matching internal code
+                // KPKS_PL_NAZIV2 contains the UBL code (e.g., "30", "42")
+                sql_payment = "SELECT KPKS_PL_SIF_PL FROM " + databaseName + ".dbo.KPKSVRPL WHERE SUBSTRING(KPKS_PL_NAZIV2,1, 2) = @p1;";
+                sqlParams = {};
+                sqlParams.Add({"@p1", xmlPaymentMeansCode});
+                paymentRes = sqlQuery(sql_payment, sqlParams);
+                if (Size(paymentRes) >= 2) {
+                    NKPR_GL_SIF_PL = paymentRes[1][0].trim();
+                    msg("Payment means code converted: XML=" + xmlPaymentMeansCode + " -> Internal=" + NKPR_GL_SIF_PL);
+                } else {
+                    // If no match found, use default or log warning
+                    msg("WARNING: No matching payment means code found in KPKSVRPL for XML code: " + xmlPaymentMeansCode);
+                    NKPR_GL_SIF_PL = ""; // Or set a default value
+                }
+            }
             if (NKPR_GL_CUSCOD != "") {
                 sql_bank = "SELECT NKSC_ZR_KONTO, NKSC_ZR_NAZIV, NKSC_ZR_BANKA FROM " + databaseName + ".dbo.NKSCZIRO WHERE NKSC_ZR_CODE = @p1;";
                 sqlParams = {};
@@ -1009,6 +1037,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
                     }
                 }
             } else {
+
                     if (contains(paymentMeans,"PayeeFinancialAccount")) {
                         paymentAccount = paymentMeans["PayeeFinancialAccount"];
                         NKPR_GL_SIGNATU = paymentAccount["ID"];
@@ -1019,6 +1048,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
                     //NKSC_ZR_NAZIV = "";
                     //NKSC_ZR_BANKA = "";
             }
+
             if (Contains(paymentMeans, "PaymentID")) {
                 paymentID = paymentMeans["PaymentID"];
                 if (Contains(paymentID, " ")) {
@@ -1067,10 +1097,8 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
 
         // Extract and save notes to NKNAOPIS table
        ExtractAndSaveNotes(docData);
-
         // Extract and save attachments to disk and NKSYPICT table
         ExtractAndSaveAttachments(invoiceDict, docType);
-
         // Billing references
         if (Contains(docData, "BillingReference")) {
             billingRef = docData["BillingReference"];
@@ -1170,8 +1198,8 @@ function ExtractAndSaveNotes(docData) {
             return; // Empty note
         }
         
-        msg("=== PROCESSING NOTES ===");
-        msg("Note type: " + noteValue.type());
+       // msg("=== PROCESSING NOTES ===");
+        //msg("Note type: " + noteValue.type());
         
         // Handle single note (STRING or OBJECT)
         if (noteValue.type() == "STRING") {
@@ -1233,9 +1261,9 @@ function ExtractAndSaveNotes(docData) {
             }
         }
         
-        msg("=== NOTES PROCESSING COMPLETE ===");
-        msg("NKPR_GL_BROPIS: " + NKPR_GL_BROPIS);
-        msg("NKPR_GL_BROPIS1: " + NKPR_GL_BROPIS1);
+        //msg("=== NOTES PROCESSING COMPLETE ===");
+        //msg("NKPR_GL_BROPIS: " + NKPR_GL_BROPIS);
+        //msg("NKPR_GL_BROPIS1: " + NKPR_GL_BROPIS1);
         
     } catch (error) {
         MessageBox("Greška pri obradi napomena: " + error);
@@ -1283,7 +1311,6 @@ function ExtractLineItemsFromDict(invoiceDict, docType) {
         // linesArray = docData["InvoiceLine"]; 
 
         if(ArrayOrDict(documentDict[documentType][lineElementName]) == "array"){
-            msg("It's an array");
             for(mmm = 0; mmm < Size(documentDict[documentType][lineElementName]); mmm++){
                 // msg("LINE " + mmm + ": " + documentDict[documentType][lineElementName][mmm]);
                 // lin = documentDict[documentType][lineElementName][mmm];
@@ -1296,11 +1323,11 @@ function ExtractLineItemsFromDict(invoiceDict, docType) {
                     // MSG(lineData);
                     // MSG(lineItems);
                     lineItems.Add(lineData);
-                    // MSG(lineItems);
+                     //MSG("HHHH: " + lineItems);
                 }
             }                
         }else{
-            msg("It's a dict");
+            //msg("It's a dict");
             // MSG("DICT: " + documentDict[documentType][lineElementName]);
 
             lineData = ExtractSingleLineFromDict(documentDict[documentType][lineElementName], quantityElementName);
@@ -1420,17 +1447,20 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
             // Product code - try different locations
             // productCode = GetDictValue(item, "BuyersItemIdentification.ID");
             if(Contains(item, "BuyersItemIdentification")){
-                MSG("25561: NEEDS TESTING !!!");
+                //MSG("25561: NEEDS TESTING !!!");
                 bii = item["BuyersItemIdentification"];
                 biiId = bii["ID"];    
                 lineData["NKPR_LN_PCODE"] = biiId;       
             }           
            
             if(Contains(item, "StandardItemIdentification")){
-                MSG("25562: NEEDS TESTING !!!");
+                //MSG("25562: NEEDS TESTING !!!");
                 sii = item["StandardItemIdentification"];
                 siiId = sii["ID"];    
-                lineData["NKPR_LN_BARCODE"] = siiId;       
+                lineData["NKPR_LN_BARCODE"] = siiId; 
+                if (siiId == "") {
+                    lineData["NKPR_LN_PCODE"] = siiId;       
+                }     
             }           
                        
 
@@ -1442,19 +1472,43 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
 
             // msg ("LINE Product: " + lineData["NKPR_LN_PCODE"]+ " DESC: " + lineData["NKPR_LN_PDESC"]);    
             
-            // Tax information
+            // Tax information - Convert XML tax category to internal PKFK_TAX_CODE
+            // Reverse process from wxeracun.cscs
             // taxCategory = GetDictValue(item, "ClassifiedTaxCategory");
             taxCategory = item["ClassifiedTaxCategory"];
             // MSG("TAX CATEGORY RAW: " + taxCategory);
-            taxPercent = taxCategory["Percent"];
-            lineData["NKPR_LN_PRNPR"] = taxPercent;
-            // MSG("percent RAW: " + percent);
-            // if (taxCategory != null && taxCategory != "") {
-            //     taxPercent = ParseDecimal(GetDictValue(taxCategory, "Percent"));
-            //     lineData["NKPR_LN_PRNPR"] = taxPercent;
-            //     //lineData["NKPR_LN_TXBLE"] = (taxPercent > 0) ? "Y" : "N";
-            // }
-            //msg ("TAX PERCENT: " + lineData["NKPR_LN_PRNPR"]);        
+            
+            xmlTaxCategoryID = "";
+            xmlTaxPercent = 0;
+            
+            if(Contains(taxCategory, "Percent")){
+                xmlTaxPercent = ParseDecimal(taxCategory["Percent"]);
+                lineData["NKPR_LN_PRNPR"] = xmlTaxPercent;
+            }else{
+                Msg("Stopa poreza nije unesena u liniji " + lineData["NKPR_LN_BR_LN"] + ", račun nije validan!")    
+            }
+         
+            if(Contains(taxCategory, "ID")){
+                taxCategoryIDData = taxCategory["ID"];
+                if (typeof(taxCategoryIDData) == "dictionary") {
+                    xmlTaxCategoryID = taxCategoryIDData["#text"];
+                } else {
+                    xmlTaxCategoryID = taxCategoryIDData;
+                }
+            }else{
+                Msg("Kategorija poreza nije unesena u liniji " + lineData["NKPR_LN_BR_LN"] + ", račun nije validan!")    
+            }
+      msg ("TAX Category ID: " + xmlTaxCategoryID + " Percent: " + xmlTaxPercent);      
+            // Look up internal tax code from PKFKPORZ table
+            // Match by PKFK_TAX_TARIFA (category) and PKFK_TAX_STOPA (percent)
+            internalTaxCode = LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent);
+            if (internalTaxCode > 0) {
+                lineData["NKPR_LN_TXBLE"] = internalTaxCode;
+                msg("Tax code converted: Category=" + xmlTaxCategoryID + ", Percent=" + xmlTaxPercent + " -> Internal Code=" + internalTaxCode);
+            } else {
+                msg("WARNING: No matching tax code found in PKFKPORZ for Category=" + xmlTaxCategoryID + ", Percent=" + xmlTaxPercent);
+                lineData["NKPR_LN_TXBLE"] = 0;
+            }
         }
         
         // Price information
@@ -1689,7 +1743,7 @@ function ImportHeaderDataToERGL(docType) {
         sql_insert += "NKPR_GL_BRPON, NKPR_GL_OZNAKA, NKPR_GL_INVDTE, NKPR_GL_TIMECR, ";
         sql_insert += "NKPR_GL_DVO, NKPR_GL_NOKAM, NKPR_GL_ESD,  NKPR_GL_SIFDVZ, ";
         sql_insert += "NKPR_GL_JMBG, NKPR_GL_CUSNME, NKPR_GL_CUSA1, NKPR_GL_CUSCTY, ";
-        sql_insert += "NKPR_GL_CUSZIP, NKPR_GL_CUSST, ";
+        sql_insert += "NKPR_GL_CUSZIP, NKPR_GL_CUSST,NKPR_GL_CUSCOD, ";
         sql_insert += "NKPR_GL_SHPCOD, NKPR_GL_SHPNME, NKPR_GL_SHPA1, NKPR_GL_SHPCTY, ";
         sql_insert += "NKPR_GL_SHPZIP, NKPR_GL_SHPST,";
         sql_insert += "NKPR_GL_SIF_PL, NKPR_GL_MODEL, NKPR_GL_POZIV, NKPR_GL_DATPRI, ";
@@ -1700,7 +1754,7 @@ function ImportHeaderDataToERGL(docType) {
         sql_insert += "@brpon, @docType, @invDate, @timeCreated, ";
         sql_insert += "@dvo, @nokam, @taxPointDate, @currency, ";
         sql_insert += "@custOIB, @custName, @custAddress, @custCity, ";
-        sql_insert += "@custZip, @custState, ";
+        sql_insert += "@custZip, @custState, @custCode, ";
         sql_insert += "@shpCode, @shpName, @shpAddress, @shpCity, ";
         sql_insert += "@shpZip, @shpState, ";
         sql_insert += "@payment, @model, @poziv, @datpri, ";
@@ -1728,7 +1782,7 @@ function ImportHeaderDataToERGL(docType) {
         sqlParams.Add({"@custCity", NKPR_GL_CUSCTY});
         sqlParams.Add({"@custZip", NKPR_GL_CUSZIP});
         sqlParams.Add({"@custState", NKPR_GL_CUSST});
-        //sqlParams.Add({"@suppOIB", NKPR_GL_SUPPOIB});
+        sqlParams.Add({"@custCode", NKPR_GL_CUSCOD});
         sqlParams.Add({"@shpCode", NKPR_GL_SHPCOD});
         sqlParams.Add({"@shpName", NKPR_GL_SHPNME});
         sqlParams.Add({"@shpAddress", NKPR_GL_SHPA1});
@@ -1794,6 +1848,10 @@ function ImportLineItemsToERLN(recordId, lineItems) {
             {
                 lineData["NKPR_LN_POPL"] = 0;
             }
+            if(!Contains(lineData, "NKPR_LN_PRNPR"))
+            {
+                lineData["NKPR_LN_PRNPR"] = 0;
+            }
             if(!Contains(lineData, "NKPR_LN_PDISC"))
             {
                 lineData["NKPR_LN_PDISC"] = 0;
@@ -1803,7 +1861,7 @@ function ImportLineItemsToERLN(recordId, lineItems) {
                 lineData["NKPR_LN_BROPI"] = 0;
             }
 
-            // msg(lineData);
+             msg("XXXX: Linedata: " + lineData);
     
             sql_insert = "INSERT INTO " + databaseName + ".dbo.NKNAERLN (";
             sql_insert += "NKPR_LN_INVNM, NKPR_LN_BR_LN, NKPR_LN_PQTY, NKPR_LN_AMT, ";
@@ -1964,12 +2022,12 @@ function LogNKSYELOG(elogStatusCode, _invoiceId, description = ""){
     VALUES (@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10);";
 
     sqlParams = {};
-    sqlParams.Add({"@p1", NKPR_GL_NUM});
+    sqlParams.Add({"@p1", NKPR_GL_BRPON});
     sqlParams.Add({"@p2", NKPR_GL_INVDTE});
     sqlParams.Add({"@p3", elogStatusCode.Upper()});
     sqlParams.Add({"@p4", userCode});
     sqlParams.Add({"@p5", "" });
-    sqlParams.Add({"@p6", "IR"});
+    sqlParams.Add({"@p6", "UR"});
     sqlParams.Add({"@p7", Now("HH:mm:ss")});
     sqlParams.Add({"@p8", description});
     sqlParams.Add({"@p9", Now("yyyy-MM-dd")});
@@ -2159,21 +2217,21 @@ function SaveAttachmentToDisk(base64Content, filename, description, attachmentID
     try {
         // Validate inputs
         if (base64Content == "" || filename == "") {
-            msg("Preskakanje praznog attachment ili filename");
+            //msg("Preskakanje praznog attachment ili filename");
             return 0;
         }
         
         // Create attachment directory if needed
         attachmentDir = FILESPATH + "Attachments\\"; // !!!
         if (!Exists(attachmentDir)) {
-            CreateDirectory(attachmentDir);
+            MkDir(attachmentDir);
         }
         
         // Generate unique filename with timestamp
         fileExtension = ParseFile(filename, "pfExt");
         fileNameOnly = ParseFile(filename, "pfName");
         timestamp = Now("yyyyMMdd_HHmmss");
-        uniqueFilename = fileNameOnly + "_" + NKPR_GL_NUM + "_" + timestamp + fileExtension;
+        uniqueFilename = fileNameOnly + "_" + NKPR_GL_POSRED + "_" + timestamp + fileExtension;
         fullFilePath = attachmentDir + uniqueFilename;
         
         msg("Saving attachment to: " + fullFilePath);
@@ -2184,7 +2242,7 @@ function SaveAttachmentToDisk(base64Content, filename, description, attachmentID
             return 0;
         }
         
-        msg("Attachment saved successfully: " + fullFilePath);
+        //msg("Attachment saved successfully: " + fullFilePath);
         
         // Get next available NKSYPICT number
         sql_max_pic = "SELECT ISNULL(MAX(SY_SL_NUM), 0) AS maxNum FROM " + databaseName + ".dbo.NKSYPICT";
@@ -2197,16 +2255,16 @@ function SaveAttachmentToDisk(base64Content, filename, description, attachmentID
         
         // Insert into NKSYPICT table
         sql_insert_pic = "INSERT INTO " + databaseName + ".dbo.NKSYPICT 
-            (SY_SL_NUM, SY_SL_PATH, SY_SL_OPIS, SY_SL_DATCR, SY_SL_TIMECR, SY_SL_REZ)
-            VALUES (@p1, @p2, @p3, @p4, @p5, @p6);";
+            (SY_SL_NUM, SY_SL_PATH, SY_SL_OPIS, SY_SL_REZ)
+            VALUES (@p1, @p2, @p3, @p4);";
         
         sqlParams = {};
         sqlParams.Add({"@p1", nextPicNum});
         sqlParams.Add({"@p2", fullFilePath});
         sqlParams.Add({"@p3", description + " | XmlID: " + attachmentID});
-        sqlParams.Add({"@p4", Now("yyyy-MM-dd")});
-        sqlParams.Add({"@p5", Now("HH:mm:ss")});
-        sqlParams.Add({"@p6", attachmentID});
+        //sqlParams.Add({"@p4", Now("yyyy-MM-dd")});
+        //sqlParams.Add({"@p5", Now("HH:mm:ss")});
+        sqlParams.Add({"@p4", attachmentID});
         
         sqlQuery(sql_insert_pic, sqlParams);
         msg("Registered attachment in NKSYPICT with ID: " + nextPicNum);
@@ -2300,6 +2358,78 @@ function ExtractLineItemAttachments(lineDict, lineNumber) {
         
     } catch (error) {
         msg("Greška pri extraction line item attachments: " + error);
+        return 0;
+    }
+}
+
+// -----------------------------------------------------------
+// Look up internal tax code (PKFK_TAX_CODE) from PKFKPORZ table
+// Based on XML tax category ID and tax percent
+// Reverse process from wxeracun.cscs
+// -----------------------------------------------------------
+function LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent) {
+    try {
+        if (xmlTaxCategoryID == "" || xmlTaxCategoryID == null) {
+            msg("WARNING: xmlTaxCategoryID is empty");
+            return 0;
+        }
+        
+        // Convert XML tax category to PKFK_TAX_TARIFA format
+        // XML categories: S (standard), E (exempt), K (special), O (zero-rated), AE (reverse charge), etc.
+        // Internal PKFK_TAX_TARIFA: PDV25, PDV13, PDV5, E, K, O, AE, etc.
+        
+        pkfkTaxTarifa = xmlTaxCategoryID;
+        
+        // If category is 'S' (standard VAT), need to convert to PDV format with rate
+        if (xmlTaxCategoryID == "S") {
+            // Standard VAT - combine with percent to create PKFK_TAX_TARIFA like "PDV25", "PDV13", "PDV5"
+            pkfkTaxTarifa = "PDV" + String(int(xmlTaxPercent));
+        }
+        
+        // Query PKFKPORZ table to find matching tax code
+        // For compound tax codes (PKFK_TAX_TIP = 'S'), need to find individual codes
+        // For simple tax codes (PKFK_TAX_TIP = '' or NULL), match directly
+        
+        sql_tax_lookup = "SELECT PKFK_TAX_CODE FROM " + databaseName + ".dbo.PKFKPORZ " +
+                        "WHERE (PKFK_TAX_TIP = '' OR PKFK_TAX_TIP IS NULL) " +
+                        "AND (PKFK_TAX_TARIFA = @p1 OR PKFK_TAX_TARIFA LIKE @p1 + '%') " +
+                        "AND PKFK_TAX_STOPA = @p2;";
+        
+        sqlParams = {};
+        sqlParams.Add({"@p1", pkfkTaxTarifa});
+        sqlParams.Add({"@p2", xmlTaxPercent});
+        
+        taxResult = sqlQuery(sql_tax_lookup, sqlParams);
+        
+        if (Size(taxResult) >= 2) {
+            taxCode = taxResult[1][0];
+            msg("Found tax code: " + taxCode + " for Category=" + xmlTaxCategoryID + " (" + pkfkTaxTarifa + "), Percent=" + xmlTaxPercent);
+            return taxCode;
+        }
+        
+        // If no exact match found, try to find by category only (for special cases)
+        if (xmlTaxCategoryID != "S") {
+            sql_tax_lookup2 = "SELECT TOP 1 PKFK_TAX_CODE FROM " + databaseName + ".dbo.PKFKPORZ " +
+                            "WHERE (PKFK_TAX_TIP = '' OR PKFK_TAX_TIP IS NULL) " +
+                            "AND PKFK_TAX_TARIFA = @p1;";
+            
+            sqlParams2 = {};
+            sqlParams2.Add({"@p1", xmlTaxCategoryID});
+            
+            taxResult2 = sqlQuery(sql_tax_lookup2, sqlParams2);
+            
+            if (Size(taxResult2) >= 2) {
+                taxCode = taxResult2[1][0];
+                msg("Found tax code by category only: " + taxCode + " for Category=" + xmlTaxCategoryID);
+                return taxCode;
+            }
+        }
+        
+        msg("WARNING: No tax code found for Category=" + xmlTaxCategoryID + " (" + pkfkTaxTarifa + "), Percent=" + xmlTaxPercent);
+        return 0;
+        
+    } catch (error) {
+        msg("Greška pri traženju tax code: " + error);
         return 0;
     }
 }

@@ -539,6 +539,14 @@ function startImport(){
 //function importUBLXmlFromDict(xmlContent, xmlFilePath = "") {
 function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtension) {
     try {
+
+        // Create incoming folder if it doesn't exist
+        UR_IMPORTED_DirectoryPath = FILESPATH + "UR\\" + "IMPORTED\\" + xmlFilenameWithoutExtension + "\\";
+        if (!Exists(UR_IMPORTED_DirectoryPath)) {
+            MkDir(UR_IMPORTED_DirectoryPath);
+        }
+
+        
         documentDict = XmlToDict(xmlContent);
         
         documentKeys = documentDict.Keys;
@@ -590,11 +598,14 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
         //msg ("ESD: " + NKPR_GL_ESD + " FISCAL YR: " + KPSY_FISCAL_YR);
         // Extract line items from dictionary
         // lineItems = ExtractLineItemsFromDict(invoiceDict, docType);
+
         ExtractLineItemsFromDict(invoiceDict, docType);
         if (lineItems == null) {
             MessageBox("Greška prilikom izvlačenja stavki računa");
             return false;
         }
+        
+        
         //return;   
     
         // MSG("99999999" + lineItems);
@@ -604,9 +615,10 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
         
         try {
             // Import header data to NKNAERGL table
-            //msg ("0000: xmlFilePath: " + xmlFilePath);   
+            //msg ("0000: xmlFilePath: " + xmlFilePath); 
             invNum = ImportHeaderDataToERGL(docType);
-            msg ("1111: INVNUM: " + invNum);        
+            MSG(44444);
+            msg("1111: INVNUM: " + invNum);        
             if (invNum == 0) {
                 throw "Greška prilikom unosa zaglavlja računa";
             }
@@ -622,18 +634,17 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
             //CommitTransaction();
             
 
-
-            // Create incoming folder if it doesn't exist
-            UR_IMPORTED_DirectoryPath = FILESPATH + "UR\\" + "IMPORTED\\" + xmlFilenameWithoutExtension + "\\";
-            if (!Exists(UR_IMPORTED_DirectoryPath)) {
-                MkDir(UR_IMPORTED_DirectoryPath);
-            }
-
+            MSG("MOVING files from NEW to IMPORTED...");
             // Move XML to IMPORTED folder
             Move(UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".xml", UR_IMPORTED_DirectoryPath + xmlFilenameWithoutExtension + ".xml");
             //move pdf (if exists) to IMPORTED folder
             if(Exists(UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".pdf")){
-                Move(UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".pdf", UR_IMPORTED_DirectoryPath + xmlFilenameWithoutExtension + ".pdf");
+                try{
+                    Move(UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".pdf", UR_IMPORTED_DirectoryPath + xmlFilenameWithoutExtension + ".pdf");
+                }
+                catch(aa){
+                    MSG("Greška prilikom premještanja PDF datoteke: " + aa);
+                }
             }
             
 
@@ -675,8 +686,7 @@ function GetDocumentTypeFromDict(invoiceDict) {
 }
 
 // Extract header data from Dictionary
-function ExtractHeaderDataFromDict(invoiceDict, docType) 
-{
+function ExtractHeaderDataFromDict(invoiceDict, docType){
     try 
     {
         NKPR_GL_SHPA1 = "";
@@ -723,10 +733,14 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
             
         // Basic invoice information
         glDesc = docData["ID"]; //broj računa od dobavljača
-        NKPR_GL_DESC = glDesc;
-        if (docData["ID"].length > 40) {
-            memoX = "Broj računa dobavljača je predug (" + docData["ID"].length + " znakova). Maksimalno dozvoljeno je 40 znakova.\nSkraćeni broj računa: " + Substring(docData["ID"], 0, 50);
+        
+        if(glDesc.length > 40){
+            NKPR_GL_DESC = Substring(glDesc, 0, 40);
+            memoX += "Originalni broj računa dobavljača: " + glDesc + "\n";
+        }else{
+            NKPR_GL_DESC = glDesc;
         }
+            
         //provjeriti kasnije kad imamo i OIB dobavljača, u NKNAERGL da li je taj broj već unesen/preuzet
         //sada još uzmimo copyIndictIndicator iz računa ako postoji
         copyIndicator = "";
@@ -762,7 +776,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
             //GL_ESD = docData["IssueDate"].toString();
         }
         // Currency
-        NKPR_GL_SIFDVZ = docData["DocumentCurrencyCode"];
+        NKPR_GL_SIFDVZ = docData["DocumentCurrencyCode"]["@text"];
         //sifdvz = docData["DocumentCurrencyCode"].toString();
         // Supplier information from AccountingSupplierParty
         suppParty = docData["AccountingSupplierParty"];
@@ -806,27 +820,22 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
                     }
                 }
             }
+            
             //tu sad imamo OIB dobavljača i broj računa dobavljača; sada provjeriti da li je taj račun već unesen za tog dobavljača
-                sqlQueryString = "select NKPR_GL_JMBG, NKPR_GL_DESC from " + strtrim(databaseName) + ".dbo.NKNAERGL WHERE NKPR_GL_JMBG = '" + OIBSupp + "' AND NKPR_GL_DESC = '" + glDesc + "'";
-                //try
-                //{
-                    sqlOIBInvoicenum = sqlQuery(sqlQueryString);
-                //}
-                //catch(ex)
-                //{
-                //}
-                
+            sqlQueryString = "select NKPR_GL_JMBG, NKPR_GL_DESC from " + strtrim(databaseName) + ".dbo.NKNAERGL WHERE NKPR_GL_JMBG = '" + OIBSupp + "' AND NKPR_GL_DESC = '" + NKPR_GL_DESC + "'";
+            sqlOIBInvoicenum = sqlQuery(sqlQueryString);
             if (size(sqlOIBInvoicenum) > 1)
             {
                 if(copyIndicator != "true"){
                     //ako je copyIndicator ne postoji ili je false, onda je to kopija računa i dozvoliti unos
                     //ako nije, onda javiti da je račun već unesen
                 }else{
-                    //tu bisada trebalo u originalni račun pod tim brojem spremiti u MemoX da je taj račun dobio kopiju i koji je broj te kopije
-                    memoX = "Račun s OIB-om dobavljača " + OIBSupp + " i brojem računa dobavljača " + NKPR_GL_DESC + " je već unesen u bazu pod brojem računa: " + sqlOIBInvoicenum[1][1].trim() + " Došla je kopija računa.\n";
+                    //tu bi sada trebalo u originalni račun pod tim brojem spremiti u MemoX da je taj račun dobio kopiju i koji je broj te kopije
+                    memoX += "Račun s OIB-om dobavljača " + OIBSupp + " i brojem računa dobavljača " + glDesc + " je već unesen u bazu pod brojem računa: " + sqlOIBInvoicenum[1][0].trim() + ". Došla je kopija računa.\n";
                     return;
-                }                    
+                }
             }
+
             // Supplier address
             if (Contains(suppPartyData, "PostalAddress")) { 
                 suppAddress = suppPartyData["PostalAddress"];
@@ -834,8 +843,8 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
                     if (Contains(suppAddress, "StreetName")) {NKPR_GL_CUSA1 = suppAddress["StreetName"]};
                     if (Contains(suppAddress, "CityName")) {NKPR_GL_CUSCTY = suppAddress["CityName"]};
                     if (Contains(suppAddress, "PostalZone")) {NKPR_GL_CUSZIP = suppAddress["PostalZone"]};
-                    if (Contains(suppAddress, "Country")) {NKPR_GL_CUSST = suppAddress["Country"]["IdentificationCode"]};
-                    if (Contains(suppAddress, "Country")) {NKPR_GL_DRZAVA = suppAddress["Country"]["IdentificationCode"]};
+                    if (Contains(suppAddress, "Country")) {NKPR_GL_CUSST = suppAddress["Country"]["IdentificationCode"]["@text"]};
+                    if (Contains(suppAddress, "Country")) {NKPR_GL_DRZAVA = suppAddress["Country"]["IdentificationCode"]["@text"];};
                 }
             }
         }
@@ -1096,7 +1105,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType)
         }
 
         // Extract and save notes to NKNAOPIS table
-       ExtractAndSaveNotes(docData);
+        ExtractAndSaveNotes(docData);
         // Extract and save attachments to disk and NKSYPICT table
         ExtractAndSaveAttachments(invoiceDict, docType);
         // Billing references
@@ -1490,11 +1499,9 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
          
             if(Contains(taxCategory, "ID")){
                 taxCategoryIDData = taxCategory["ID"];
-                if (typeof(taxCategoryIDData) == "dictionary") {
-                    xmlTaxCategoryID = taxCategoryIDData["#text"];
-                } else {
-                    xmlTaxCategoryID = taxCategoryIDData;
-                }
+                
+                xmlTaxCategoryID = taxCategoryIDData["@text"];
+                
             }else{
                 Msg("Kategorija poreza nije unesena u liniji " + lineData["NKPR_LN_BR_LN"] + ", račun nije validan!")    
             }
@@ -1524,23 +1531,27 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
         // Allowances and charges
         // allowanceCharge = GetDictValue(lineDict, "AllowanceCharge");
         
-        if(Contains(lineDict, "AllowanceCharge")){
-            MSG("25563: NEEDS IMPLEMENTATION !!!");
-            allowanceCharge = lineDict["AllowanceCharge"];
-            MSG("ALLOWANCE CHARGE RAW: " + allowanceCharge);
-            // IMPLEMENT
+
+        if(Contains(price, "AllowanceCharge")){
+            allowanceCharge = price["AllowanceCharge"];
+
+            discountAmount = (lineData["NKPR_LN_PQTY"] * lineData["NKPR_LN_PPRCE"]) - lineData["NKPR_LN_AMT"];
+            postotak = (discountAmount / (lineData["NKPR_LN_PQTY"] * lineData["NKPR_LN_PPRCE"])) * 100;
+
+            MSG("discountAmount: " + discountAmount);
+            MSG("postotak: " + postotak);
+
+            // if (allowanceCharge != null && allowanceCharge != "") {
+            //     // Handle both single and multiple allowance/charge entries
+            //     if (ArrayOrDict(allowanceCharge) == "array") {
+            //         for (i = 0; i < Size(allowanceCharge); i++) {
+            //             ProcessAllowanceCharge(allowanceCharge[i]);
+            //         }
+            //     } else {
+            //         ProcessAllowanceCharge(allowanceCharge);
+            //     }
+            // }
         }
-        // allowanceCharge = GetDictValue(lineDict, "AllowanceCharge");
-        // if (allowanceCharge != null && allowanceCharge != "") {
-        //     // Handle both single and multiple allowance/charge entries
-        //     if (IsArray(allowanceCharge)) {
-        //         for (i = 0; i < Size(allowanceCharge); i++) {
-        //             ProcessAllowanceCharge(allowanceCharge[i], lineData);
-        //         }
-        //     } else {
-        //         ProcessAllowanceCharge(allowanceCharge, lineData);
-        //     }
-        // }
 
 
         //msg ("LINE PRICE: " + lineData["NKPR_LN_PPRCE"]);   
@@ -1551,17 +1562,17 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
         //     //lineData["NKPR_LN_NOTE"] = lineNote;
         // }
         
-        // Extract line item attachment if present
-        lineAttachmentNum = ExtractLineItemAttachments(lineDict, lineData["NKPR_LN_BR_LN"]);
-        if (lineAttachmentNum > 0) {
-            lineData["NKPR_LN_SASTAV"] = lineAttachmentNum;
-        } else {
-            if(!Contains(lineData, "NKPR_LN_SASTAV")) {
-                lineData["NKPR_LN_SASTAV"] = 0;
-            }
-        }
+        // // Extract line item attachment if present
+        // lineAttachmentNum = ExtractLineItemAttachments(lineDict, lineData["NKPR_LN_BR_LN"]);
+        // if (lineAttachmentNum > 0) {
+        //     lineData["NKPR_LN_SASTAV"] = lineAttachmentNum;
+        // } else {
+        //     if(!Contains(lineData, "NKPR_LN_SASTAV")) {
+        //         lineData["NKPR_LN_SASTAV"] = 0;
+        //     }
+        // }
         
-    //msg ("FINAL LINE DATA: " + lineData);    
+        //msg ("FINAL LINE DATA: " + lineData);    
         return lineData;
         
     } catch (error) {
@@ -1572,8 +1583,8 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
 
 // Process allowance/charge for line item
 function ProcessAllowanceCharge(allowanceChargeDict, lineData) {
-    chargeIndicator = GetDictValue(allowanceChargeDict, "ChargeIndicator");
-    amount = ParseDecimal(GetDictValue(allowanceChargeDict, "Amount"));
+    chargeIndicator = allowanceChargeDict["ChargeIndicator"];
+    // amount = ParseDecimal(allowanceChargeDict["Amount"]["@text"]);
     
     if (chargeIndicator == "false" && amount > 0) {
         // This is an allowance (discount)
@@ -1775,13 +1786,13 @@ function ImportHeaderDataToERGL(docType) {
         
         sqlParams.Add({"@taxPointDate", NKPR_GL_ESD});
 
-        sqlParams.Add({"@currency", NKPR_GL_SIFDVZ});
+        sqlParams.Add({"@currency", NKPR_GL_SIFDVZ});////////
         sqlParams.Add({"@custOIB", NKPR_GL_JMBG});
         sqlParams.Add({"@custName", NKPR_GL_CUSNME});
         sqlParams.Add({"@custAddress", NKPR_GL_CUSA1});
         sqlParams.Add({"@custCity", NKPR_GL_CUSCTY});
         sqlParams.Add({"@custZip", NKPR_GL_CUSZIP});
-        sqlParams.Add({"@custState", NKPR_GL_CUSST});
+        sqlParams.Add({"@custState", NKPR_GL_CUSST});///////
         sqlParams.Add({"@custCode", NKPR_GL_CUSCOD});
         sqlParams.Add({"@shpCode", NKPR_GL_SHPCOD});
         sqlParams.Add({"@shpName", NKPR_GL_SHPNME});
@@ -1809,6 +1820,9 @@ function ImportHeaderDataToERGL(docType) {
         sqlParams.Add({"@created", NKPR_GL_INVDTE}); //????
         sqlParams.Add({"@country", NKPR_GL_DRZAVA});        
         sqlParams.Add({"@posred", NKPR_GL_POSRED}); // invoiceId
+        
+        
+
         // Execute SQL insert
         result = SqlNonQuery(sql_insert, sqlParams);
         
@@ -1942,7 +1956,7 @@ function GetNextRecordId(tableName) {
     sql_max = "SELECT isnull(MAX(NKPR_GL_BRPON),0) AS lastNum FROM " + databaseName + ".dbo." + tableName;
     result = sqlQuery(sql_max);
     if (Size(result) >= 2 && result[1][0] != 0) {
-        return result[1][0] + 1;
+        return (result[1][0] + 1);
     } else {
         // First record
         return 1; // Starting ID
@@ -2043,16 +2057,19 @@ function LogNKSYELOG(elogStatusCode, _invoiceId, description = ""){
 function ExtractAndSaveAttachments(invoiceDict, docType) {
     try {
         msg("=== ATTACHMENT EXTRACTION STARTING ===");
-        
+
+        MSG("KEYS of dict:\n" + invoiceDict.Keys);
+
         // Get the root document data
         docData = invoiceDict;
-        if (docType == "S" && Contains(invoiceDict, "Invoice")) {
-            docData = invoiceDict["Invoice"];
-        } elif (docType == "R" && Contains(invoiceDict, "CreditNote")) {
-            docData = invoiceDict["CreditNote"];
-        } elif (docType == "T" && Contains(invoiceDict, "DebitNote")) {
-            docData = invoiceDict["DebitNote"];
-        }
+        // if (docType == "S" && Contains(invoiceDict, "Invoice")) {
+        //     docData = invoiceDict["Invoice"];
+        // } elif (docType == "O" && Contains(invoiceDict, "CreditNote")) {
+        //     docData = invoiceDict["CreditNote"];
+        // } elif (docType == "T" && Contains(invoiceDict, "DebitNote")) {
+        //     docData = invoiceDict["DebitNote"];
+        // }
+
         
         // Initialize attachment counters
         NKPR_GL_PICTHDR = 0;  // Header attachment
@@ -2064,7 +2081,15 @@ function ExtractAndSaveAttachments(invoiceDict, docType) {
             additionalDocs = docData["AdditionalDocumentReference"];
             
             // Handle both single attachment and multiple attachments
-            if (additionalDocs.type() == "ARRAY") {
+            // if (additionalDocs.type() == "ARRAY") {
+            //     for (i = 0; i < Size(additionalDocs); i++) {
+            //         ProcessSingleAttachment(additionalDocs[i], i);
+            //     }
+            // } else {
+            //     ProcessSingleAttachment(additionalDocs, 0);
+            // }
+
+            if (ArrayOrDict(additionalDocs) == "array") {
                 for (i = 0; i < Size(additionalDocs); i++) {
                     ProcessSingleAttachment(additionalDocs[i], i);
                 }
@@ -2073,13 +2098,13 @@ function ExtractAndSaveAttachments(invoiceDict, docType) {
             }
         }
         
-        // Extract and save main PDF attachment if present
-        if (Contains(docData, "Attachment")) {
-            mainAttachment = docData["Attachment"];
-            if (Contains(mainAttachment, "EmbeddedDocumentBinaryObject")) {
-                ProcessMainPdfAttachment(mainAttachment);
-            }
-        }
+        // // Extract and save main PDF attachment if present
+        // if (Contains(docData, "Attachment")) {
+        //     mainAttachment = docData["Attachment"];
+        //     if (Contains(mainAttachment, "EmbeddedDocumentBinaryObject")) {
+        //         ProcessMainPdfAttachment(mainAttachment);
+        //     }
+        // }
         
         msg("=== ATTACHMENT EXTRACTION COMPLETE ===");
         msg("Header Attachment ID (NKPR_GL_PICTHDR): " + NKPR_GL_PICTHDR);
@@ -2123,10 +2148,10 @@ function ProcessSingleAttachment(attachmentRef, attachmentIndex) {
                 
                 if (Contains(embeddedObj, "@attributes")) {
                     attrs = embeddedObj["@attributes"];
-                    if (Contains(attrs, "mimeCode")) {
+                    if(Contains(attrs, "mimeCode")) {
                         mimeCode = attrs["mimeCode"];
                     }
-                    if (Contains(attrs, "filename")) {
+                    if(Contains(attrs, "filename")) {
                         filename = attrs["filename"];
                     }
                 }
@@ -2146,14 +2171,14 @@ function ProcessSingleAttachment(attachmentRef, attachmentIndex) {
                         // Determine attachment type (Header, Footer, or Line item)
                         if (attachmentIndex == 0 && NKPR_GL_PICTHDR == 0) {
                             NKPR_GL_PICTHDR = attachmentNum;
-                            msg("Saved Header attachment: " + filename + " with ID: " + attachmentNum);
+                            msg("Saved Header attachment with num: " + attachmentNum);
                         } elif (attachmentIndex == 1 && NKPR_GL_PICTFTR == 0) {
                             NKPR_GL_PICTFTR = attachmentNum;
-                            msg("Saved Footer attachment: " + filename + " with ID: " + attachmentNum);
+                            msg("Saved Footer attachment with num: " + attachmentNum);
                         } else {
                             // Line item attachment - would need to store in NKNAERLN reference
                             // Store in temporary array for later processing with line items
-                            msg("Saved Line attachment: " + filename + " with ID: " + attachmentNum);
+                            msg("Saved Line attachment with num: " + attachmentNum);
                         }
                     }
                 }
@@ -2165,49 +2190,49 @@ function ProcessSingleAttachment(attachmentRef, attachmentIndex) {
     }
 }
 
-// -----------------------------------------------------------
-// Process main PDF attachment (AdditionalDocumentReference with ID=X7)
-// -----------------------------------------------------------
-function ProcessMainPdfAttachment(attachmentRef) {
-    try {
-        if (Contains(attachmentRef, "EmbeddedDocumentBinaryObject")) {
-            embeddedObj = attachmentRef["EmbeddedDocumentBinaryObject"];
+// // -----------------------------------------------------------
+// // Process main PDF attachment (AdditionalDocumentReference with ID=X7)
+// // -----------------------------------------------------------
+// function ProcessMainPdfAttachment(attachmentRef) {
+//     try {
+//         if (Contains(attachmentRef, "EmbeddedDocumentBinaryObject")) {
+//             embeddedObj = attachmentRef["EmbeddedDocumentBinaryObject"];
             
-            // Get MIME type and filename
-            mimeCode = "";
-            filename = "";
-            base64Content = "";
+//             // Get MIME type and filename
+//             mimeCode = "";
+//             filename = "";
+//             base64Content = "";
             
-            if (Contains(embeddedObj, "@attributes")) {
-                attrs = embeddedObj["@attributes"];
-                if (Contains(attrs, "mimeCode")) {
-                    mimeCode = attrs["mimeCode"];
-                }
-                if (Contains(attrs, "filename")) {
-                    filename = attrs["filename"];
-                }
-            }
+//             if (Contains(embeddedObj, "@attributes")) {
+//                 attrs = embeddedObj["@attributes"];
+//                 if (Contains(attrs, "mimeCode")) {
+//                     mimeCode = attrs["mimeCode"];
+//                 }
+//                 if (Contains(attrs, "filename")) {
+//                     filename = attrs["filename"];
+//                 }
+//             }
             
-            // Get base64 content
-            if (Contains(embeddedObj, "@text")) {
-                base64Content = embeddedObj["@text"];
-            } else {
-                base64Content = embeddedObj;
-            }
+//             // Get base64 content
+//             if (Contains(embeddedObj, "@text")) {
+//                 base64Content = embeddedObj["@text"];
+//             } else {
+//                 base64Content = embeddedObj;
+//             }
             
-            if (base64Content != "" && filename != "") {
-                // Save main PDF attachment
-                attachmentNum = SaveAttachmentToDisk(base64Content, filename, "Main PDF Attachment", "X7");
-                if (attachmentNum > 0) {
-                    msg("Saved Main PDF attachment: " + filename + " with ID: " + attachmentNum);
-                }
-            }
-        }
+//             if (base64Content != "" && filename != "") {
+//                 // Save main PDF attachment
+//                 attachmentNum = SaveAttachmentToDisk(base64Content, filename, "Main PDF Attachment", "X7");
+//                 if (attachmentNum > 0) {
+//                     msg("Saved Main PDF attachment: " + filename + " with ID: " + attachmentNum);
+//                 }
+//             }
+//         }
         
-    } catch (error) {
-        msg("Greška pri obradi main PDF attachment: " + error);
-    }
-}
+//     } catch (error) {
+//         msg("Greška pri obradi main PDF attachment: " + error);
+//     }
+// }
 
 // -----------------------------------------------------------
 // Save attachment to disk and register in NKSYPICT table
@@ -2222,17 +2247,17 @@ function SaveAttachmentToDisk(base64Content, filename, description, attachmentID
         }
         
         // Create attachment directory if needed
-        attachmentDir = FILESPATH + "Attachments\\"; // !!!
+        attachmentDir = UR_IMPORTED_DirectoryPath;
         if (!Exists(attachmentDir)) {
             MkDir(attachmentDir);
         }
         
-        // Generate unique filename with timestamp
+        // // Generate unique filename with timestamp
         fileExtension = ParseFile(filename, "pfExt");
-        fileNameOnly = ParseFile(filename, "pfName");
-        timestamp = Now("yyyyMMdd_HHmmss");
-        uniqueFilename = fileNameOnly + "_" + NKPR_GL_POSRED + "_" + timestamp + fileExtension;
-        fullFilePath = attachmentDir + uniqueFilename;
+        // fileNameOnly = ParseFile(filename, "pfName");
+        // timestamp = Now("yyyyMMdd_HHmmss");
+        // uniqueFilename = fileNameOnly + "_" + NKPR_GL_POSRED + "_" + timestamp + fileExtension;
+        fullFilePath = attachmentDir + ( attachmentCounter + 1 ) + fileExtension;
         
         msg("Saving attachment to: " + fullFilePath);
         
@@ -2242,8 +2267,10 @@ function SaveAttachmentToDisk(base64Content, filename, description, attachmentID
             return 0;
         }
         
-        //msg("Attachment saved successfully: " + fullFilePath);
+        msg("Attachment saved successfully: " + fullFilePath);
+        attachmentCounter++;
         
+
         // Get next available NKSYPICT number
         sql_max_pic = "SELECT ISNULL(MAX(SY_SL_NUM), 0) AS maxNum FROM " + databaseName + ".dbo.NKSYPICT";
         maxRes = sqlQuery(sql_max_pic);
@@ -2255,24 +2282,33 @@ function SaveAttachmentToDisk(base64Content, filename, description, attachmentID
         
         // Insert into NKSYPICT table
         sql_insert_pic = "INSERT INTO " + databaseName + ".dbo.NKSYPICT 
-            (SY_SL_NUM, SY_SL_PATH, SY_SL_OPIS, SY_SL_REZ)
-            VALUES (@p1, @p2, @p3, @p4);";
+            (SY_SL_NUM, SY_SL_PATH, SY_SL_OPIS, SY_SL_REZ5, SY_SL_CODE, SY_SL_TIP)
+            VALUES (@p1, @p2, @p3, @p4, @p5, @p6);";
         
         sqlParams = {};
         sqlParams.Add({"@p1", nextPicNum});
         sqlParams.Add({"@p2", fullFilePath});
-        sqlParams.Add({"@p3", description + " | XmlID: " + attachmentID});
+        if(description.length > 50){
+            description = Substring(description, 0, 50);
+        }
+        sqlParams.Add({"@p3", description});
         //sqlParams.Add({"@p4", Now("yyyy-MM-dd")});
         //sqlParams.Add({"@p5", Now("HH:mm:ss")});
-        sqlParams.Add({"@p4", attachmentID});
+        slikaIliDokument = "D"; // Document
+        if(fileExtension.Lower() == ".png" || fileExtension.Lower() == ".jpg" || fileExtension.Lower() == ".jpeg"){
+            slikaIliDokument = ""; // Slika (Image)
+        }
+        sqlParams.Add({"@p4", slikaIliDokument});
+        sqlParams.Add({"@p5", NKPR_GL_CUSCOD}); //$$$
+        sqlParams.Add({"@p6", "UR"}); // ulazni račun
         
-        sqlQuery(sql_insert_pic, sqlParams);
+        sqlNonQuery(sql_insert_pic, sqlParams);
         msg("Registered attachment in NKSYPICT with ID: " + nextPicNum);
         
         return nextPicNum;
         
     } catch (error) {
-        MessageBox("Greška pri spasavanju attachment: " + error);
+        MessageBox("Greška pri spremanju attachmenta: " + error);
         return 0;
     }
 }
@@ -2392,6 +2428,7 @@ function LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent) {
         
         sql_tax_lookup = "SELECT PKFK_TAX_CODE FROM " + databaseName + ".dbo.PKFKPORZ " +
                         "WHERE (PKFK_TAX_TIP = '' OR PKFK_TAX_TIP IS NULL) " +
+                        "AND PKFK_TAX_P_PORZ IN ('R', 'T', 'O')" +
                         "AND (PKFK_TAX_TARIFA = @p1 OR PKFK_TAX_TARIFA LIKE @p1 + '%') " +
                         "AND PKFK_TAX_STOPA = @p2;";
         
@@ -2432,4 +2469,10 @@ function LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent) {
         msg("Greška pri traženju tax code: " + error);
         return 0;
     }
+}
+
+
+function UnescapeFromXml(inputString){
+    // return inputString.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;").Replace("'", "&apos;");
+    return inputString.Replace("&amp;", "&").Replace("&lt;", "<").Replace("&gt;", ">");
 }

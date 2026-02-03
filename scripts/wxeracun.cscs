@@ -1689,7 +1689,9 @@ function GenerateUBLXml() {
     // Invoice Lines
     // -----------------------------------------------------------
     for (j = 1; j < Size(linRes); j++) {
-
+        IF(nkpr_ln_pqty == 0 || nkpr_ln_amt == 0 || nkpr_ln_pprce == 0){
+            CONTINUE;
+        }
         fillInvoiceLine(j);
 
         grossAmount = NKPR_LN_PQTY * NKPR_LN_PPRCE;

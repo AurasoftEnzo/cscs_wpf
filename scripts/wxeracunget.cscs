@@ -532,7 +532,7 @@ function startImport(){
 
         importUBLXmlFromDict(ReadAllText(listOfXmls[xmlCounter]), currentInvoiceId, xmlFilenameWithoutExtension);
     }
-    msg("Broj preuzetih XML računa sa servera posrednika: " + rBr +"\nBroj importiranih računa u bazu: " + xmlCounter);
+    msg("Broj preuzetih XML računa sa servera posrednika: " + rBr +"\n\nBroj importiranih računa u bazu: " + xmlCounter);
 }
 
 // New main import function using XmlToDict
@@ -617,8 +617,6 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
             // Import header data to NKNAERGL table
             //msg ("0000: xmlFilePath: " + xmlFilePath); 
             invNum = ImportHeaderDataToERGL(docType);
-            MSG(44444);
-            msg("1111: INVNUM: " + invNum);        
             if (invNum == 0) {
                 throw "Greška prilikom unosa zaglavlja računa";
             }
@@ -633,13 +631,12 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
             // Commit transaction
             //CommitTransaction();
             
-
-            MSG("MOVING files from NEW to IMPORTED...");
             // Move XML to IMPORTED folder
             Move(UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".xml", UR_IMPORTED_DirectoryPath + xmlFilenameWithoutExtension + ".xml");
             //move pdf (if exists) to IMPORTED folder
-            if(Exists(UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".pdf")){
+            if(Exists(UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".pdf") == true){
                 try{
+
                     Move(UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".pdf", UR_IMPORTED_DirectoryPath + xmlFilenameWithoutExtension + ".pdf");
                 }
                 catch(aa){
@@ -647,8 +644,7 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
                 }
             }
             
-
-            MessageBox("UBL XML račun je uspješno uvezen!\nBroj računa: " + invNum);
+            //MessageBox("UBL XML račun je uspješno uvezen!\nBroj računa: " + invNum);
 
 
             // LogNKSYELOG("P", invNum, currentInvoiceId);
@@ -1020,11 +1016,11 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                 paymentRes = sqlQuery(sql_payment, sqlParams);
                 if (Size(paymentRes) >= 2) {
                     NKPR_GL_SIF_PL = paymentRes[1][0].trim();
-                    msg("Payment means code converted: XML=" + xmlPaymentMeansCode + " -> Internal=" + NKPR_GL_SIF_PL);
+                    //msg("Payment means code converted: XML=" + xmlPaymentMeansCode + " -> Internal=" + NKPR_GL_SIF_PL);
                 } else {
                     // If no match found, use default or log warning
-                    msg("WARNING: No matching payment means code found in KPKSVRPL for XML code: " + xmlPaymentMeansCode);
-                    NKPR_GL_SIF_PL = ""; // Or set a default value
+                    //msg("WARNING: No matching payment means code found in KPKSVRPL for XML code: " + xmlPaymentMeansCode);
+                    NKPR_GL_SIF_PL = xmlPaymentMeansCode; // Or set a value from XML directly
                 }
             }
             if (NKPR_GL_CUSCOD != "") {

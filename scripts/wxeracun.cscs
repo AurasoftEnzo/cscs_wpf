@@ -162,7 +162,6 @@ exit;
 //-----------------------------------------------------------
 
 function GenerateUBLXml() {
-  
     // -----------------------------------------------------------
     // 1. Load Header
     // -----------------------------------------------------------
@@ -197,7 +196,6 @@ function GenerateUBLXml() {
         MessageBox("Ne postoji račun " + invNum + "!");
         return false;
     }
-
 
     NKPR_GL_NUM = hdrRes[1][0];
     NKPR_GL_OZNAKA = hdrRes[1][1].trim();
@@ -430,7 +428,6 @@ function GenerateUBLXml() {
         formatNumOption = "";
     }
      
-
     // -----------------------------------------------------------
     // Tax Calculation
     // -----------------------------------------------------------
@@ -608,7 +605,6 @@ function GenerateUBLXml() {
         }
     }
 
-    // msg ("AAAA: " + taxRes2);
     totalPorez = 0;
     totalOsnovica = 0;
     TotaltaxOutOfScopeAmt = 0;
@@ -635,7 +631,6 @@ function GenerateUBLXml() {
     // -----------------------------------------------------------
     // 4. Start XML Builder
     // -----------------------------------------------------------
-
     xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
 
     if (profileID == "P9") {
@@ -885,7 +880,6 @@ function GenerateUBLXml() {
     }
     xml += "<cbc:IssueDate>" + NKPR_GL_INVDTE + "</cbc:IssueDate>\n"; // BT-2; 1..1
     xml += "<cbc:IssueTime>" + NKPR_GL_TIMECR + "</cbc:IssueTime>\n"; // HR-BT-2; 1..1
-
     note = "";
     if (NKPR_GL_BROPIS != "") {
         note = "\n";
@@ -1034,8 +1028,6 @@ function GenerateUBLXml() {
         xml += "</cac:DespatchDocumentReference>";
     }
 
-    
-
 
     // if (profileID != "P4") {
     //     ptDesc = "Rok plaćanja je " + NKPR_GL_NOKAM + " dana";
@@ -1050,15 +1042,13 @@ function GenerateUBLXml() {
     //     // xml += "  <cbc:SettlementPeriodMeasure unitCode=\"DAY\">" + NKPR_GL_NOKAM + NKPR_GL_ROKPL + "</cbc:SettlementPeriodMeasure>\n";
     //     // xml += "</cac:PaymentTerms>\n";
     // }
-    
-
 
     // -----------------------------------------------------------
     // main Račun pdf Attachment
     // -----------------------------------------------------------
     if (ERAC_REZ1 == 'D') { // !!!
         opis = "pdf dokumenta";
-        if (Exists(attachmentPdfPath)) {
+        if (Exists(attachmentPdfPath) == true) {
             mime = GetMimeType(attachmentPdfPath);
             b64 = File2Base64(attachmentPdfPath);
             xml += "<cac:AdditionalDocumentReference>\n";
@@ -1072,7 +1062,6 @@ function GenerateUBLXml() {
             xml += "</cac:AdditionalDocumentReference>\n";
         }
     }
-    
     // -----------------------------------------------------------
     // Header Attachments
     // -----------------------------------------------------------
@@ -1081,23 +1070,24 @@ function GenerateUBLXml() {
         sqlParams = {};
         sqlParams.Add({"@p1", NKPR_GL_PICTHDR});
         picRes = sqlQuery(sql_pic, sqlParams);
-        SY_SL_PATH = picRes[1][0].trim();
-        SY_SL_OPIS = picRes[1][1].trim();
-        if (Size(picRes) >= 2 && Exists(SY_SL_PATH)) {
-            mime = GetMimeType(SY_SL_PATH);
-            b64 = File2Base64(SY_SL_PATH);
-            xml += "<cac:AdditionalDocumentReference>\n";
-            xml += "  <cbc:ID>" + NKPR_GL_PICTHDR + "</cbc:ID>\n"; 
-            // xml += "  <cbc:DocumentTypeCode>130</cbc:DocumentTypeCode>\n"; //130 must be used for INVOICE type document
-            xml += "  <cbc:DocumentDescription>" + EscapeForXml(SY_SL_OPIS) + "</cbc:DocumentDescription>\n";
-            xml += "  <cac:Attachment>\n";
-            xml += "    <cbc:EmbeddedDocumentBinaryObject mimeCode=\"" + mime + "\" filename=\"" + ParseFile(SY_SL_PATH, "pfName") + ParseFile(SY_SL_PATH, "pfExt") + "\">" + b64 + "</cbc:EmbeddedDocumentBinaryObject>\n";
-            xml += "  </cac:Attachment>\n";
-            // xml += "  <hrextac:DocumentValidationRef>" + NKPR_GL_PICTHDR + "</hrextac:DocumentValidationRef>\n";
-            xml += "</cac:AdditionalDocumentReference>\n";
+        if (Size(picRes) >= 2) {
+            SY_SL_PATH = picRes[1][0].trim();
+            SY_SL_OPIS = picRes[1][1].trim();
+            if(Exists(SY_SL_PATH)){
+                mime = GetMimeType(SY_SL_PATH);
+                b64 = File2Base64(SY_SL_PATH);
+                xml += "<cac:AdditionalDocumentReference>\n";
+                xml += "  <cbc:ID>" + NKPR_GL_PICTHDR + "</cbc:ID>\n"; 
+                // xml += "  <cbc:DocumentTypeCode>130</cbc:DocumentTypeCode>\n"; //130 must be used for INVOICE type document
+                xml += "  <cbc:DocumentDescription>" + EscapeForXml(SY_SL_OPIS) + "</cbc:DocumentDescription>\n";
+                xml += "  <cac:Attachment>\n";
+                xml += "    <cbc:EmbeddedDocumentBinaryObject mimeCode=\"" + mime + "\" filename=\"" + ParseFile(SY_SL_PATH, "pfName") + ParseFile(SY_SL_PATH, "pfExt") + "\">" + b64 + "</cbc:EmbeddedDocumentBinaryObject>\n";
+                xml += "  </cac:Attachment>\n";
+                // xml += "  <hrextac:DocumentValidationRef>" + NKPR_GL_PICTHDR + "</hrextac:DocumentValidationRef>\n";
+                xml += "</cac:AdditionalDocumentReference>\n";
+            }   
         }
     }
-
     // -----------------------------------------------------------
     // Footer Attachments
     // -----------------------------------------------------------
@@ -1106,49 +1096,50 @@ function GenerateUBLXml() {
         sqlParams = {};
         sqlParams.Add({"@p1", NKPR_GL_PICTFTR});
         picRes = sqlQuery(sql_pic, sqlParams);
-        SY_SL_PATH = picRes[1][0].trim();
-        SY_SL_OPIS = picRes[1][1].trim();
-        if (Size(picRes) >= 2 && Exists(SY_SL_PATH)) {
-            mime = GetMimeType(SY_SL_PATH);
-            b64 = File2Base64(SY_SL_PATH);
-            xml += "<cac:AdditionalDocumentReference>\n";
-            xml += "  <cbc:ID>" + NKPR_GL_PICTFTR + "</cbc:ID>\n";
-            // xml += "  <cbc:DocumentTypeCode>130</cbc:DocumentTypeCode>\n";
-            xml += "  <cbc:DocumentDescription>" + EscapeForXml(SY_SL_OPIS) + "</cbc:DocumentDescription>\n";
-            xml += "  <cac:Attachment>\n";
-            xml += "    <cbc:EmbeddedDocumentBinaryObject mimeCode=\"" + mime + "\" filename=\"" + ParseFile(SY_SL_PATH, "pfName") + ParseFile(SY_SL_PATH, "pfExt") + "\">" + b64 + "</cbc:EmbeddedDocumentBinaryObject>\n";
-            xml += "  </cac:Attachment>\n";
-            // xml += "  <hrextac:DocumentValidationRef>" + NKPR_GL_PICTFTR + "</hrextac:DocumentValidationRef>\n";
-            xml += "</cac:AdditionalDocumentReference>\n";
+        if (Size(picRes) >= 2) {
+            SY_SL_PATH = picRes[1][0].trim();
+            SY_SL_OPIS = picRes[1][1].trim();
+            if(Exists(SY_SL_PATH)){
+                mime = GetMimeType(SY_SL_PATH);
+                b64 = File2Base64(SY_SL_PATH);
+                xml += "<cac:AdditionalDocumentReference>\n";
+                xml += "  <cbc:ID>" + NKPR_GL_PICTFTR + "</cbc:ID>\n";
+                // xml += "  <cbc:DocumentTypeCode>130</cbc:DocumentTypeCode>\n";
+                xml += "  <cbc:DocumentDescription>" + EscapeForXml(SY_SL_OPIS) + "</cbc:DocumentDescription>\n";
+                xml += "  <cac:Attachment>\n";
+                xml += "    <cbc:EmbeddedDocumentBinaryObject mimeCode=\"" + mime + "\" filename=\"" + ParseFile(SY_SL_PATH, "pfName") + ParseFile(SY_SL_PATH, "pfExt") + "\">" + b64 + "</cbc:EmbeddedDocumentBinaryObject>\n";
+                xml += "  </cac:Attachment>\n";
+                // xml += "  <hrextac:DocumentValidationRef>" + NKPR_GL_PICTFTR + "</hrextac:DocumentValidationRef>\n";
+                xml += "</cac:AdditionalDocumentReference>\n";
+            }   
         }
     }
 
-
     for (j = 1; j < Size(linRes); j++) {
-
         fillInvoiceLine(j);
-
         if (NKPR_LN_SASTAV != 0) {
             sql_pic = "SELECT SY_SL_PATH, SY_SL_OPIS FROM " + databaseName + ".dbo.NKSYPICT WHERE SY_SL_NUM = @p1;";
             sqlParams = {};
             sqlParams.Add({"@p1", NKPR_LN_SASTAV});
             picRes = sqlQuery(sql_pic, sqlParams);
-            SY_SL_PATH = picRes[1][0].trim();
-            SY_SL_OPIS = picRes[1][1].trim();
-            if (Size(picRes) >= 2 && Exists(SY_SL_PATH)) {
-                mime = GetMimeType(SY_SL_PATH);
-                b64 = File2Base64(SY_SL_PATH);
-                xml += "<cac:AdditionalDocumentReference>\n";
-                xml += "  <cbc:ID>" + NKPR_LN_SASTAV + "</cbc:ID>\n";
-                // xml += "  <cbc:DocumentTypeCode>130</cbc:DocumentTypeCode>\n";
-                xml += "  <cbc:DocumentDescription>" + "Linija " + NKPR_LN_BR_LN + ".: " + EscapeForXml(SY_SL_OPIS) + "</cbc:DocumentDescription>\n";
-                xml += "  <cac:Attachment>\n";
-                xml += "    <cbc:EmbeddedDocumentBinaryObject mimeCode=\"" + mime + "\" filename=\"" + ParseFile(SY_SL_PATH, "pfName") + ParseFile(SY_SL_PATH, "pfExt") + "\">" + b64 + "</cbc:EmbeddedDocumentBinaryObject>\n";
-                xml += "  </cac:Attachment>\n";
-                // xml += "  <hrextac:DocumentValidationRef>" + NKPR_LN_SASTAV + "</hrextac:DocumentValidationRef>\n";
-                xml += "</cac:AdditionalDocumentReference>\n";
+            if (Size(picRes) >= 2) {
+                SY_SL_PATH = picRes[1][0].trim();
+                SY_SL_OPIS = picRes[1][1].trim();
+                if(Exists(SY_SL_PATH)){
+                    mime = GetMimeType(SY_SL_PATH);
+                    b64 = File2Base64(SY_SL_PATH);
+                    xml += "<cac:AdditionalDocumentReference>\n";
+                    xml += "  <cbc:ID>" + NKPR_LN_SASTAV + "</cbc:ID>\n";
+                    // xml += "  <cbc:DocumentTypeCode>130</cbc:DocumentTypeCode>\n";
+                    xml += "  <cbc:DocumentDescription>" + "Linija " + NKPR_LN_BR_LN + ".: " + EscapeForXml(SY_SL_OPIS) + "</cbc:DocumentDescription>\n";
+                    xml += "  <cac:Attachment>\n";
+                    xml += "    <cbc:EmbeddedDocumentBinaryObject mimeCode=\"" + mime + "\" filename=\"" + ParseFile(SY_SL_PATH, "pfName") + ParseFile(SY_SL_PATH, "pfExt") + "\">" + b64 + "</cbc:EmbeddedDocumentBinaryObject>\n";
+                    xml += "  </cac:Attachment>\n";
+                    // xml += "  <hrextac:DocumentValidationRef>" + NKPR_LN_SASTAV + "</hrextac:DocumentValidationRef>\n";
+                    xml += "</cac:AdditionalDocumentReference>\n";
+                }
             }
-        }
+        }    
     }
 
     // -----------------------------------------------------------

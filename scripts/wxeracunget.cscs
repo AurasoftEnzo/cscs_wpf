@@ -546,6 +546,28 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
             MkDir(UR_IMPORTED_DirectoryPath);
         }
 
+
+        // msg("moving pdf");
+
+        // // Move XML to IMPORTED folder
+        // // Move(UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".xml", UR_IMPORTED_DirectoryPath + xmlFilenameWithoutExtension + ".xml");
+        // //move pdf (if exists) to IMPORTED folder
+        // if(Exists(UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".pdf") == true){
+        //     try{
+        //         Move(UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".pdf", UR_IMPORTED_DirectoryPath + xmlFilenameWithoutExtension + ".pdf");
+        //     }
+        //     catch(aa){
+        //         MSG("Greška prilikom premještanja PDF datoteke: " + aa);
+        //     }
+        // }
+
+        // msg("EXITTTTT");
+        // exit;
+
+
+        
+
+
         
         documentDict = XmlToDict(xmlContent);
         
@@ -631,12 +653,12 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
             // Commit transaction
             //CommitTransaction();
             
+
             // Move XML to IMPORTED folder
             Move(UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".xml", UR_IMPORTED_DirectoryPath + xmlFilenameWithoutExtension + ".xml");
             //move pdf (if exists) to IMPORTED folder
             if(Exists(UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".pdf") == true){
                 try{
-
                     Move(UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".pdf", UR_IMPORTED_DirectoryPath + xmlFilenameWithoutExtension + ".pdf");
                 }
                 catch(aa){
@@ -756,11 +778,11 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             NKPR_GL_NOKAM = dateDiff; // !!! hardcoded 30 days for now, TREBA POPRAVITI!!!
             NKPR_GL_DVO = NKPR_GL_DATPRI //dueDate - dateDiff;
             // MSG("NKPR_GL_NOKAM: " + NKPR_GL_NOKAM);
-       //msg("KKKK DueDate: " + NKPR_GL_DVO + " IssueDate: " + docData["IssueDate"]);         
+            //msg("KKKK DueDate: " + NKPR_GL_DVO + " IssueDate: " + docData["IssueDate"]);         
         } else{
             NKPR_GL_DVO = docData["IssueDate"].toString();
             NKPR_GL_NOKAM = 30;
-       //msg("LLLL DueDate: " + docData["DueDate"] + " IssueDate: " + docData["IssueDate"]);         
+            //msg("LLLL DueDate: " + docData["DueDate"] + " IssueDate: " + docData["IssueDate"]);         
         }   
         //DueDate = docData["DueDate"].toString();
             
@@ -771,6 +793,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             NKPR_GL_ESD = docData["IssueDate"];
             //GL_ESD = docData["IssueDate"].toString();
         }
+
         // Currency
         NKPR_GL_SIFDVZ = docData["DocumentCurrencyCode"]["@text"];
         //sifdvz = docData["DocumentCurrencyCode"].toString();
@@ -844,6 +867,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                 }
             }
         }
+
         //msg("11121: "+companyIDPartyIdentificationID);
         NKPR_GL_CUSCOD = "";
             if (refNum == "9934") { 
@@ -886,14 +910,15 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             }
                 if (size(sqlPartner) > 1)
                 {
-                 /*   cuscod = sqlPartner[1][0].trim(); //     NKSC_PARTCODE
-                    partname = sqlPartner[1][1].trim(); //     NKSC_PARTNAME
-                    ro = sqlPartner[1][2].trim(); //     NKSC_ro    
-                    cusa1 = sqlPartner[1][3].trim(); //  NKSC_ADD1
-                    cuscty = sqlPartner[1][4].trim(); // NKSC_CITY
-                    cuszip = sqlPartner[1][5]; // NKSC_ZIP
-                    drzava = sqlPartner[1][6].trim(); // NKSC_drzava
-                    jmbg = sqlPartner[1][7].trim(); // NKSC_sifra
+                    /*  
+                        cuscod = sqlPartner[1][0].trim(); //     NKSC_PARTCODE
+                        partname = sqlPartner[1][1].trim(); //     NKSC_PARTNAME
+                        ro = sqlPartner[1][2].trim(); //     NKSC_ro    
+                        cusa1 = sqlPartner[1][3].trim(); //  NKSC_ADD1
+                        cuscty = sqlPartner[1][4].trim(); // NKSC_CITY
+                        cuszip = sqlPartner[1][5]; // NKSC_ZIP
+                        drzava = sqlPartner[1][6].trim(); // NKSC_drzava
+                        jmbg = sqlPartner[1][7].trim(); // NKSC_sifra
                     */
                     //Izgleda bug u CSCS_WPF - ako preuzme vrijednosti iz sqlPartner resultseta, izbriše cijeli dictionary headerData???
                     //Rješenje je da ih prvo spremimo u varijable, pa onda iz njih u headerData
@@ -1102,8 +1127,10 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
 
         // Extract and save notes to NKNAOPIS table
         ExtractAndSaveNotes(docData);
+
         // Extract and save attachments to disk and NKSYPICT table
         ExtractAndSaveAttachments(invoiceDict, docType);
+
         // Billing references
         if (Contains(docData, "BillingReference")) {
             billingRef = docData["BillingReference"];
@@ -1756,7 +1783,7 @@ function ImportHeaderDataToERGL(docType) {
         sql_insert += "NKPR_GL_SIF_PL, NKPR_GL_MODEL, NKPR_GL_POZIV, NKPR_GL_DATPRI, ";
         sql_insert += "NKPR_GL_TAXAMT, NKPR_GL_TOTAL, NKPR_GL_DESC,";
         sql_insert += "NKPR_GL_BROPIS1, NKPR_GL_REZ3, NKPR_GL_DATECR, NKPR_GL_DRZAVA, ";
-        sql_insert += "NKPR_GL_POSRED";
+        sql_insert += "NKPR_GL_POSRED, NKPR_GL_PICTHDR, NKPR_GL_PICTFTR";
         sql_insert += ") VALUES (";
         sql_insert += "@brpon, @docType, @invDate, @timeCreated, ";
         sql_insert += "@dvo, @nokam, @taxPointDate, @currency, ";
@@ -1766,7 +1793,8 @@ function ImportHeaderDataToERGL(docType) {
         sql_insert += "@shpZip, @shpState, ";
         sql_insert += "@payment, @model, @poziv, @datpri, ";
         sql_insert += "@taxTotal, @total, @glDesc, ";
-        sql_insert += "@note, @rez3, @created, @country, @posred";
+        sql_insert += "@note, @rez3, @created, @country, @posred, ";
+        sql_insert += "@pictHdr, @pictFtr ";
         sql_insert += ");";
         
         // Prepare parameters
@@ -1817,7 +1845,8 @@ function ImportHeaderDataToERGL(docType) {
         sqlParams.Add({"@country", NKPR_GL_DRZAVA});        
         sqlParams.Add({"@posred", NKPR_GL_POSRED}); // invoiceId
         
-        
+        sqlParams.Add({"@pictHdr", NKPR_GL_PICTHDR});
+        sqlParams.Add({"@pictFtr", NKPR_GL_PICTFTR});
 
         // Execute SQL insert
         result = SqlNonQuery(sql_insert, sqlParams);
@@ -2283,18 +2312,19 @@ function SaveAttachmentToDisk(base64Content, filename, description, attachmentID
         
         sqlParams = {};
         sqlParams.Add({"@p1", nextPicNum});
+
         sqlParams.Add({"@p2", fullFilePath});
         if(description.length > 50){
             description = Substring(description, 0, 50);
         }
         sqlParams.Add({"@p3", description});
-        //sqlParams.Add({"@p4", Now("yyyy-MM-dd")});
-        //sqlParams.Add({"@p5", Now("HH:mm:ss")});
+
         slikaIliDokument = "D"; // Document
         if(fileExtension.Lower() == ".png" || fileExtension.Lower() == ".jpg" || fileExtension.Lower() == ".jpeg"){
             slikaIliDokument = ""; // Slika (Image)
         }
         sqlParams.Add({"@p4", slikaIliDokument});
+
         sqlParams.Add({"@p5", NKPR_GL_CUSCOD}); //$$$
         sqlParams.Add({"@p6", "UR"}); // ulazni račun
         

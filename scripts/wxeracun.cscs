@@ -1263,11 +1263,14 @@ function GenerateUBLXml() {
     }else  {
         xml += "    <cac:PartyIdentification><cbc:ID>" + cusPartyID + "</cbc:ID></cac:PartyIdentification>\n";
     }
-    xml += "    <cac:PartyName><cbc:Name>" + EscapeForXml(NKPR_GL_CUSNME) + "</cbc:Name></cac:PartyName>\n";
-    xml += "    <cac:PostalAddress>\n";
-    gl_ro = (NKPR_GL_RO != "" ? " " + NKPR_GL_RO : "");
-    StreetName = NKPR_GL_CUSA1 + gl_ro;
 
+    fullName = NKPR_GL_CUSNME.trim();
+    fullName += (NKPR_GL_RO != "" ? " " + NKPR_GL_RO : "");
+
+    xml += "    <cac:PartyName><cbc:Name>" + EscapeForXml(fullName) + "</cbc:Name></cac:PartyName>\n";
+    xml += "    <cac:PostalAddress>\n";
+    
+    StreetName = NKPR_GL_CUSA1;
     xml += "      <cbc:StreetName>" + EscapeForXml(StreetName) + "</cbc:StreetName>\n";
     // xml += "      <cbc:AdditionalStreetName>***put 6***</cbc:AdditionalStreetName>\n";
     xml += "      <cbc:CityName>" + EscapeForXml(NKPR_GL_CUSCTY) + "</cbc:CityName>\n";
@@ -1288,7 +1291,7 @@ function GenerateUBLXml() {
 
     // ??? PartyLegalEntity
     xml += "    <cac:PartyLegalEntity>\n";
-    xml += "      <cbc:RegistrationName>" + EscapeForXml(NKPR_GL_CUSNME) + "</cbc:RegistrationName>\n"; 
+    xml += "      <cbc:RegistrationName>" + EscapeForXml(fullName) + "</cbc:RegistrationName>\n"; 
     // if (KPSY_COMP_JMBFI != "") {
     //     // xml += "      <cbc:CompanyID schemeID=\"MBS\">" + KPSY_COMP_JMBFI + "</cbc:CompanyID>\n";
     //     // xml += "      <cbc:CompanyID>" +  + "</cbc:CompanyID>\n";
@@ -1365,28 +1368,31 @@ function GenerateUBLXml() {
         
          // Add delivery party information if name or province is available
          if (NKPR_GL_SHPNME != "" || NKPR_GL_SHPRO != "") {
-             xml += "  <cac:DeliveryParty>\n";
-            
-             if (NKPR_GL_SHPNME != "") {
-                 xml += "    <cac:PartyName>\n";
-                 xml += "      <cbc:Name>" + EscapeForXml(NKPR_GL_SHPNME) + "</cbc:Name>\n";
-                 xml += "    </cac:PartyName>\n";
-             }
-            
-             // If province is different from delivery address, add it as party location
-             if (NKPR_GL_SHPRO != "" && NKPR_GL_SHPRO != NKPR_GL_SHPST) {
-                 xml += "    <cac:PhysicalLocation>\n";
-                 xml += "      <cac:Address>\n";
-                 xml += "        <cbc:CountrySubentity>" + EscapeForXml(NKPR_GL_SHPRO) + "</cbc:CountrySubentity>\n";
-                 xml += "      </cac:Address>\n";
-                 xml += "    </cac:PhysicalLocation>\n";
-             }
-            
-             xml += "  </cac:DeliveryParty>\n";
-         }
+            fullShpNme = NKPR_GL_SHPNME.trim();
+            fullShpNme += (NKPR_GL_RO != "" ? " " + NKPR_GL_RO : "");
+
+            xml += "  <cac:DeliveryParty>\n";
         
-         xml += "</cac:Delivery>\n";
-     }
+            if (NKPR_GL_SHPNME != "") {
+                xml += "    <cac:PartyName>\n";
+                xml += "      <cbc:Name>" + EscapeForXml(fullShpNme) + "</cbc:Name>\n";
+                xml += "    </cac:PartyName>\n";
+            }
+            
+            // // If province is different from delivery address, add it as party location
+            // if (NKPR_GL_SHPRO != "" && NKPR_GL_SHPRO != NKPR_GL_SHPST) {
+            //     xml += "    <cac:PhysicalLocation>\n";
+            //     xml += "      <cac:Address>\n";
+            //     xml += "        <cbc:CountrySubentity>" + EscapeForXml(NKPR_GL_SHPRO) + "</cbc:CountrySubentity>\n";
+            //     xml += "      </cac:Address>\n";
+            //     xml += "    </cac:PhysicalLocation>\n";
+            // }
+            
+            xml += "  </cac:DeliveryParty>\n";
+        }
+        
+        xml += "</cac:Delivery>\n";
+    }
 
     // -----------------------------------------------------------
     // Payment Means
@@ -1682,11 +1688,11 @@ function GenerateUBLXml() {
     for (j = 1; j < Size(linRes); j++) {
         
         fillInvoiceLine(j);
-msg("amounts: NKPR_LN_PQTY=" + string(NKPR_LN_PQTY) + ", NKPR_LN_AMT=" + string(NKPR_LN_AMT) + ", NKPR_LN_PPRCE=" + string(NKPR_LN_PPRCE));
+        // msg("amounts: NKPR_LN_PQTY=" + string(NKPR_LN_PQTY) + ", NKPR_LN_AMT=" + string(NKPR_LN_AMT) + ", NKPR_LN_PPRCE=" + string(NKPR_LN_PPRCE));
          if(nkpr_ln_pqty == 0 || nkpr_ln_amt == 0 || nkpr_ln_pprce == 0){
              continue;
          }
-msg("Processing line " + string(j) + ": NKPR_LN_BR_LN=" + NKPR_LN_BR_LN);
+        // msg("Processing line " + string(j) + ": NKPR_LN_BR_LN=" + NKPR_LN_BR_LN);
         grossAmount = NKPR_LN_PQTY * NKPR_LN_PPRCE;
         netAmount = NKPR_LN_AMT;
         

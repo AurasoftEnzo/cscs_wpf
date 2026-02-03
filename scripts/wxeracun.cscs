@@ -1682,11 +1682,11 @@ function GenerateUBLXml() {
     for (j = 1; j < Size(linRes); j++) {
         
         fillInvoiceLine(j);
-
-        // if(nkpr_ln_pqty == 0 || nkpr_ln_amt == 0 || nkpr_ln_pprce == 0){
-        //     continue;
-        // }
-
+msg("amounts: NKPR_LN_PQTY=" + string(NKPR_LN_PQTY) + ", NKPR_LN_AMT=" + string(NKPR_LN_AMT) + ", NKPR_LN_PPRCE=" + string(NKPR_LN_PPRCE));
+         if(nkpr_ln_pqty == 0 || nkpr_ln_amt == 0 || nkpr_ln_pprce == 0){
+             continue;
+         }
+msg("Processing line " + string(j) + ": NKPR_LN_BR_LN=" + NKPR_LN_BR_LN);
         grossAmount = NKPR_LN_PQTY * NKPR_LN_PPRCE;
         netAmount = NKPR_LN_AMT;
         

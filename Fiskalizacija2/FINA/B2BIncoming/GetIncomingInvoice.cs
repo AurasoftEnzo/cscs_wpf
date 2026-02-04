@@ -111,7 +111,10 @@ namespace WpfCSCS.Fiskalizacija2.FINA.B2BIncoming
 
                 //string PdfDocumentContent = System.Text.Encoding.Default.GetString(incomingInvoice.IncomingInvoiceEnvelope.PdfDocument);
                 string Base64PdfDocumentString = Convert.ToBase64String(incomingInvoice.IncomingInvoiceEnvelope.PdfDocument);
-                retVar.SetHashVariable("Base64PdfDocumentString", new Variable(Base64PdfDocumentString));
+                if (!string.IsNullOrEmpty(Base64PdfDocumentString))
+                {
+                    retVar.SetHashVariable("Base64PdfDocumentString", new Variable(Base64PdfDocumentString));
+                }
             }
             else if (res.Item is ErrorType)
             {

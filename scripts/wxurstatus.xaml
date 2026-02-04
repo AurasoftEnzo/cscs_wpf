@@ -7,16 +7,17 @@
         mc:Ignorable="d"
         Title="Pregled statusa ulaznih e-računa"
         Height="670"
-        Width="800"
+        Width="1000"
         ResizeMode="CanMinimize"
         WindowStartupLocation="CenterScreen"
         Name="wxurstatusWindow">
     <Grid>
 
-        <DataGrid GridLinesVisibility="Horizontal"
+        <DataGrid GridLinesVisibility="All"
           HorizontalGridLinesBrush="#FFD7D6D6"
+                  VerticalGridLinesBrush="#FFD7D6D6"
           Background="White"
-          Margin="20,14,0,0"
+          Margin="0,14,0,0"
           IsReadOnly="true"
         RowHeight="22"
           FontSize="15"
@@ -26,12 +27,12 @@
           TabIndex="4" 
             BorderBrush="DarkGray"
             BorderThickness="1"
-         Height="410" Width="745"  VerticalAlignment="Top" HorizontalAlignment="Left"
+         Height="410" Width="960"  VerticalAlignment="Top" HorizontalAlignment="Center"
                   >
             <DataGrid.Resources>
                 <Style TargetType="{x:Type DataGridColumnHeader}">
                     <Setter Property="Background"
-                    Value="#FF006393" />
+                    Value="#FF355BB2" />
                     <Setter Property="Foreground"
                     Value="White" />
                     <Setter Property="FontSize" Value="17"/>
@@ -57,8 +58,8 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="OIB dobavljača"
-                    Width="160">
+                <DataGridTemplateColumn Header="OIB dobavlj."
+                    Width="100">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <wcl:ASGridCell FieldName="arrayOibDobavljaca" HorizontalContentAlignment="Center"/>
@@ -66,23 +67,23 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
                 <DataGridTemplateColumn Header="Status računa"
-    Width="130">
+    Width="160">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <wcl:ASGridCell FieldName="arrayStatusRacuna" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Dat. izdavanja"
-                Width="110">
+                <DataGridTemplateColumn Header="Dat. izdav."
+                Width="80">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <wcl:ASGridCell FieldName="arrayDatumIzdavanja" HorizontalContentAlignment="Center"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Dat. PDV-a"
-            Width="110">
+                <DataGridTemplateColumn Header="Dat. PDV"
+            Width="80">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <wcl:ASGridCell FieldName="arrayDatumPDVa" HorizontalContentAlignment="Center"/>
@@ -97,18 +98,9 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                
-                <DataGridTemplateColumn Header="ID računa posrednika"
-                Width="180">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <wcl:ASGridCell FieldName="arrayIdRacunaPosrednika"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
 
-                <DataGridTemplateColumn Header="Status fiskalizacije"
-    Width="180">
+                <DataGridTemplateColumn Header="Fiskaliziran?"
+    Width="160">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <wcl:ASGridCell FieldName="arrayStatusFiskalizacije" />
@@ -116,8 +108,8 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridTemplateColumn Header="Report rejection status"
-    Width="180">
+                <DataGridTemplateColumn Header="Status odbijanja"
+    Width="160">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <wcl:ASGridCell FieldName="arrayReportRejectionStatus" />
@@ -126,6 +118,15 @@
                 </DataGridTemplateColumn>
 
 
+                <DataGridTemplateColumn Header="ID računa"
+                Width="100">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <wcl:ASGridCell FieldName="arrayIdRacunaPosrednika"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                
                 <!--<DataGridTemplateColumn Header="R. br."
                                 Width="50">
                     <DataGridTemplateColumn.CellTemplate>
@@ -198,10 +199,10 @@
                 Name="btnPrikazi"
                 FontSize="35"
                 HorizontalAlignment="Left"
-                VerticalAlignment="Top" Margin="210,434,0,0" Width="385" Height="70" />
+                VerticalAlignment="Top" Margin="300,434,0,0" Width="385" Height="70" />
 
-        <Label Content="" Name="StatusLabel" FontSize="25" HorizontalContentAlignment="Center" Height="50" Width="570" Margin="110,534,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-        <Label Content="" Name="StatusLabel2" FontSize="25" HorizontalContentAlignment="Center" Height="45" Width="570" Margin="110,579,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+        <Label Content="" Name="StatusLabel" FontSize="25" HorizontalContentAlignment="Center" Height="50" Width="775" Margin="110,534,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+        <Label Content="" Name="StatusLabel2" FontSize="25" HorizontalContentAlignment="Center" Height="45" Width="780" Margin="0,579,0,0" VerticalAlignment="Top" HorizontalAlignment="Center"/>
 
         <Image x:Name="asImage" DataContext="Sat" Height="90" Width="100" Margin="680,534,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
         <wcl:ASDateEditer
@@ -214,7 +215,7 @@
             HorizontalAlignment="Left"
             VerticalAlignment="Top" Margin="70,434,0,0" Width="130" Height="30" />
         <Label Content="Od:" FontSize="20" HorizontalContentAlignment="Center" Height="35" Width="65" Margin="10,429,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-        
+
         <wcl:ASDateEditer
             DisplaySize="8"
             DisplayDate="01/01/26"

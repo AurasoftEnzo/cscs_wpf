@@ -24,9 +24,15 @@ DEFINE arrayReportPaymentStatus type a size 50 array 10000;
 DEFINE FilterDateFrom type d size 10;
 DEFINE FilterDateTo type d size 10;
 
+// FilterDateFrom = Now("dd/MM/yyyy");
+// FilterDateTo = Now("dd/MM/yyyy");
 
-FilterDateFrom = Now("yyyy-MM-dd");
-FilterDateTo = Now("yyyy-MM-dd");
+dtNow = DateTime();
+
+doubleToday = Math.Trunc(DateTimeToDouble(dtNow));
+
+FilterDateFrom = DoubleToDateTime(doubleToday - 30).ToString("yyyy-MM-dd");
+FilterDateTo = DoubleToDateTime(doubleToday + 7).ToString("yyyy-MM-dd");
 
 // savedXmlFilesList = {};
 
@@ -248,13 +254,25 @@ function GetListFINA_B2B(){
 
                 buyerName = ack["InvoiceList"][i]["BuyerRegistrationName"];
                 buyerId = ack["InvoiceList"][i]["BuyerId"];
-                // !!! datumi (2)
+                buyerId = buyerId.Replace("9934:", "");
+
+                // !!! datumi (2) ???
+
                 supplierInvoiceId = ack["InvoiceList"][i]["SupplierInvoiceID"];
                 aurasoftFormatSupplierInvoiceId = TransformInvoiceNumberToAurasoftFormat(supplierInvoiceId);
 
                 invoiceId = ack["InvoiceList"][i]["InvoiceID"];
 
                 statusCode = ack["InvoiceList"][i]["StatusCode"];
+                if(statusCode == "RECEIVED"){
+                    statusCode = "Zaprimljen";
+                }elif(statusCode == "RECEIVING_CONFIRMED"){
+                    statusCode = "Potvrđeno zaprimanje";
+                }elif(statusCode == "APPROVED"){
+                    statusCode = "Prihvaćen";
+                }elif(statusCode == "REJECTED"){
+                    statusCode = "Odbijen";
+                }
 
                 datumIzdavanja = ack["InvoiceList"][i]["InvoiceIssueDate"];
                 // datumIzdavanja = Substring(datumIzdavanja, 0, 8);
@@ -276,17 +294,29 @@ function GetListFINA_B2B(){
                 );
 
                 if(Contains(fiskStatusAck, "ErrorCode")){
-                    fiskStatus = fiskStatusAck["ErrorMessage"];
-                    reportPaymentStatus = "";
+                    // fiskStatus = fiskStatusAck["ErrorMessage"];
+                    // !!! spremit error u neki LOG
+                    fiskStatus = "?";
+                    reportPaymentStatus = "?";
                 }else{
                     if(Contains(fiskStatusAck, "FiskStatus")){
                         fiskStatus = fiskStatusAck["FiskStatus"];
+                        if(fiskStatus == "True"){
+                            fiskStatus = "Da (" + fiskStatusAck["FiskStatusTimestamp"] + ")";                         
+                        }elif(fiskStatus == "False"){
+                            fiskStatus = "NE! (" + fiskStatusAck["FiskStatusTimestamp"] + ")";
+                        }
                     }else{
                         fiskStatus = "";
                     }
 
                     if(Contains(fiskStatusAck, "ReportPaymentStatus")){
                         reportPaymentStatus = fiskStatusAck["ReportPaymentStatus"];
+                        if(reportPaymentStatus == "True"){
+                            reportPaymentStatus = "Da (" + fiskStatusAck["ReportPaymentStatusTimestamp"] + ")";
+                        }elif(reportPaymentStatus == "False"){
+                            reportPaymentStatus = "NE! (" + fiskStatusAck["ReportPaymentStatusTimestamp"] + ")";
+                        }
                     }else{
                         reportPaymentStatus = "";
                     }

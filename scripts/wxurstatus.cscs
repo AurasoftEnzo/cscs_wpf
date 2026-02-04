@@ -255,9 +255,19 @@ function GetListFINA(){
 
                 supplierName = ack["InvoiceList"][i]["SupplierRegistrationName"];
                 supplierId = ack["InvoiceList"][i]["SupplierID"];
+                supplierId = supplierId.Replace("9934:", "");
 
                 statusCode = ack["InvoiceList"][i]["StatusCode"];
-                
+                if(statusCode == "RECEIVED"){
+                    statusCode = "Zaprimljen";
+                }elif(statusCode == "RECEIVING_CONFIRMED"){
+                    statusCode = "Potvrđeno zaprimanje";
+                }elif(statusCode == "APPROVED"){
+                    statusCode = "Prihvaćen";
+                }elif(statusCode == "REJECTED"){
+                    statusCode = "Odbijen";
+                }
+
                 // !!! datumi (2)
                 invoiceId = ack["InvoiceList"][i]["InvoiceID"];
 
@@ -281,17 +291,29 @@ function GetListFINA(){
                 );
 
                 if(Contains(fiskStatusAck, "ErrorCode")){
-                    fiskStatus = fiskStatusAck["ErrorMessage"];
-                    reportRejectionStatus = "";
+                    // fiskStatus = fiskStatusAck["ErrorMessage"];
+                    // !!! spremit error u neki LOG
+                    fiskStatus = "?";
+                    reportRejectionStatus = "?";
                 }else{
                     if(Contains(fiskStatusAck, "FiskStatus")){
                         fiskStatus = fiskStatusAck["FiskStatus"];
+                        if(fiskStatus == "True"){
+                            fiskStatus = "Da (" + fiskStatusAck["FiskStatusTimestamp"] + ")";                         
+                        }elif(fiskStatus == "False"){
+                            fiskStatus = "NE! (" + fiskStatusAck["FiskStatusTimestamp"] + ")";
+                        }
                     }else{
                         fiskStatus = "";
                     }
 
                     if(Contains(fiskStatusAck, "ReportRejectionStatus")){
                         reportRejectionStatus = fiskStatusAck["ReportRejectionStatus"];
+                        if(reportRejectionStatus == "True"){
+                            reportRejectionStatus = "Da (" + fiskStatusAck["ReportRejectionStatusTimestamp"] + ")";
+                        }elif(reportRejectionStatus == "False"){
+                            reportRejectionStatus = "NE! (" + fiskStatusAck["ReportRejectionStatusTimestamp"] + ")";
+                        }
                     }else{
                         reportRejectionStatus = "";
                     }

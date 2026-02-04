@@ -105,7 +105,8 @@ namespace WpfCSCS.Fiskalizacija2.FINA.B2BIncoming
 
                 // IncomingInvoiceEnvelope 
                 retVar.SetHashVariable("ItemElementName", new Variable(incomingInvoice.IncomingInvoiceEnvelope.ItemElementName));
-                string ItemContent = System.Text.Encoding.Default.GetString(incomingInvoice.IncomingInvoiceEnvelope.Item);
+                string ItemContent = System.Text.Encoding.UTF8.GetString(incomingInvoice.IncomingInvoiceEnvelope.Item);
+                // // //string ItemContent = Convert.ToBase64String(incomingInvoice.IncomingInvoiceEnvelope.Item);
                 retVar.SetHashVariable("ItemContent", new Variable(ItemContent));
 
                 //string PdfDocumentContent = System.Text.Encoding.Default.GetString(incomingInvoice.IncomingInvoiceEnvelope.PdfDocument);

@@ -5590,11 +5590,31 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
 
             var filterDateFrom = Utils.GetSafeString(args, 7);
             var filterDateTo = Utils.GetSafeString(args, 8);
+            
+            
+            Variable resVar;
 
-            DateTime.TryParseExact(filterDateFrom, DateConfiguration.InternalFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateFrom);
-            DateTime.TryParseExact(filterDateTo, DateConfiguration.InternalFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTo);
+            if (string.IsNullOrEmpty(filterDateFrom))
+            {
+                resVar = new Fiskalizacija2.FINA.B2BIncoming.GetIncomingInvoiceList().Send(
+                endpoint,
+                dnsIdentity,
+                serviceCertificatePath,
+                clientCertificatePath,
+                clientCertificatePassword,
 
-            Variable resVar = new Fiskalizacija2.FINA.B2BIncoming.GetIncomingInvoiceList().Send(
+                messageId,
+                buyerId,
+
+                null,
+                null);
+            }
+            else
+            {
+                DateTime.TryParseExact(filterDateFrom, DateConfiguration.InternalFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateFrom);
+                DateTime.TryParseExact(filterDateTo, DateConfiguration.InternalFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTo);
+
+                resVar = new Fiskalizacija2.FINA.B2BIncoming.GetIncomingInvoiceList().Send(
                 endpoint,
                 dnsIdentity,
                 serviceCertificatePath,
@@ -5606,6 +5626,8 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
 
                 dateFrom,
                 dateTo);
+            }
+            
 
             return resVar;
         }

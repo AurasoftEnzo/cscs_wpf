@@ -43,7 +43,7 @@ namespace WpfCSCS.Fiskalizacija2.FINA
 
             HttpsTransportBindingElement htbe = new HttpsTransportBindingElement();
             htbe.RequireClientCertificate = true;
-            htbe.MaxReceivedMessageSize = 10485760;
+            htbe.MaxReceivedMessageSize = 104857600;
 
             binding.Elements.Add(htbe);
 

@@ -106,7 +106,6 @@ function init(){
         // ??? LOG? ne?
         exit;
     }
-
     if (size(sqlResult) > 1)
     {
         for(i = 1; i < Size(sqlResult); i++){
@@ -369,7 +368,6 @@ function btnPreuzmi@clicked(){
 }
 
 function startDownload(){
-
     // Create incoming folder if it doesn't exist
     UR_NEW_DirectoryPath = FILESPATH + "UR\\" + "NEW\\";
     if (!Exists(UR_NEW_DirectoryPath)) {
@@ -454,7 +452,6 @@ function GetRacuniFINA(){
         }
     }
 }
-
 function GetRacuniMER(){
     for(h = 0; h < Rbr; h++) {
         try{
@@ -531,6 +528,7 @@ function startImport(){
         }
 
         importUBLXmlFromDict(ReadAllText(listOfXmls[xmlCounter]), currentInvoiceId, xmlFilenameWithoutExtension);
+
     }
     msg("Broj preuzetih XML računa sa servera posrednika: " + rBr +"\n\nBroj importiranih računa u bazu: " + xmlCounter);
 }
@@ -795,7 +793,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         }
 
         // Currency
-        NKPR_GL_SIFDVZ = docData["DocumentCurrencyCode"]["@text"];
+        NKPR_GL_SIFDVZ = docData["DocumentCurrencyCode"]; //["@text"];
         //sifdvz = docData["DocumentCurrencyCode"].toString();
         // Supplier information from AccountingSupplierParty
         suppParty = docData["AccountingSupplierParty"];
@@ -862,8 +860,8 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                     if (Contains(suppAddress, "StreetName")) {NKPR_GL_CUSA1 = suppAddress["StreetName"]};
                     if (Contains(suppAddress, "CityName")) {NKPR_GL_CUSCTY = suppAddress["CityName"]};
                     if (Contains(suppAddress, "PostalZone")) {NKPR_GL_CUSZIP = suppAddress["PostalZone"]};
-                    if (Contains(suppAddress, "Country")) {NKPR_GL_CUSST = suppAddress["Country"]["IdentificationCode"]["@text"]};
-                    if (Contains(suppAddress, "Country")) {NKPR_GL_DRZAVA = suppAddress["Country"]["IdentificationCode"]["@text"];};
+                    if (Contains(suppAddress, "Country")) {NKPR_GL_CUSST = suppAddress["Country"]["IdentificationCode"]}; //["@text"]};
+                    if (Contains(suppAddress, "Country")) {NKPR_GL_DRZAVA = suppAddress["Country"]["IdentificationCode"]}; //["@text"];};
                 }
             }
         }
@@ -1449,7 +1447,7 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
 
         // Quantity and unit
         // quantity = GetDictValue(lineDict, quantityElementName);
-        quantity = lineDict[quantityElementName]["@text"];
+        quantity = lineDict[quantityElementName]; //["@text"];
         if (quantity != "") {
             lineData["NKPR_LN_PQTY"] = ParseDecimal(quantity);
             
@@ -1463,7 +1461,7 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
         // Line amount
         //lineData["NKPR_LN_AMT"] = ParseDecimal(GetDictValue(lineDict, "LineExtensionAmount"));
         // lineData["NKPR_LN_AMT"] = ParseDecimal(GetDictValue(lineDict, "LineExtensionAmount"));
-        lineData["NKPR_LN_AMT"] = ParseDecimal(lineDict["LineExtensionAmount"]["@text"]);
+        lineData["NKPR_LN_AMT"] = ParseDecimal(lineDict["LineExtensionAmount"]); //["@text"]);
         // MSG("LINE AMT RAW: " + lineData["NKPR_LN_AMT"]);
 
     //msg ("LINE AMT: " + lineData["NKPR_LN_AMT"]);    

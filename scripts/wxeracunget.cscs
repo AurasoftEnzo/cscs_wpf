@@ -756,8 +756,8 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         }
         NKPR_GL_OZNAKA = docType;
         NKPR_GL_DATPRI = docData["IssueDate"];
-        //issueDate = docData["IssueDate"].toString();
-        //NKPR_GL_TIMECR"] = docData["IssueTime"];
+        NKPR_GL_DVO = docData["IssueDate"];
+        NKPR_GL_NOKAM = 0;
         if (Contains(docData, "DueDate")){
             //tu staviti matematiku za datum dospijeća: duedate-issuedate=nokam kao broj dana, a dvo je isti kao i datum issuedate
             dueDate = docData["DueDate"];
@@ -765,16 +765,11 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             datpriDateTime = DateTime(NKPR_GL_DATPRI, "yyyy-MM-dd");
             dateDiff = Math.Trunc(DateTimeToDouble(dueDateDateTime)) - Math.Trunc(DateTimeToDouble(datpriDateTime));
             NKPR_GL_NOKAM = dateDiff; // !!! hardcoded 30 days for now, TREBA POPRAVITI!!!
-            NKPR_GL_DVO = NKPR_GL_DATPRI //dueDate - dateDiff;
-            // MSG("NKPR_GL_NOKAM: " + NKPR_GL_NOKAM);
-            //msg("KKKK DueDate: " + NKPR_GL_DVO + " IssueDate: " + docData["IssueDate"]);         
         } else{
             NKPR_GL_DVO = docData["IssueDate"].toString();
             NKPR_GL_NOKAM = 30;
-            //msg("LLLL DueDate: " + docData["DueDate"] + " IssueDate: " + docData["IssueDate"]);         
         }   
-        //DueDate = docData["DueDate"].toString();
-            
+           
         if (Contains(docData, "TaxPointDate")) {
             NKPR_GL_ESD = docData["TaxPointDate"];
             //GL_ESD = docData["TaxPointDate"].toString();
@@ -1143,12 +1138,14 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             if (Contains(paymentMeans, "PaymentID")) {
                 paymentID = paymentMeans["PaymentID"];
                 NKPR_GL_MODEL = Substring(paymentID, 2, 2);
-                if (Contains(paymentID, " ")) {
-                    paymentParts = paymentID.split(" ");
-                    if (Size(paymentParts) > 1) {
-                        NKPR_GL_POZIV = paymentParts[1];
-                    }
-                }
+                //if (Contains(paymentID, " ")) {
+                //    paymentParts = paymentID.split(" ");
+                //    if (Size(paymentParts) > 1) {
+
+                //        NKPR_GL_POZIV = paymentParts[2].trim();
+                //    }
+                //} else {
+                    NKPR_GL_POZIV = Substring(paymentID, 5, paymentID.length - 4);
             }
         }
         
@@ -1159,7 +1156,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             //NKPR_GL_LINETOTAL = ParseDecimal(legalMonTotal["LineExtensionAmount"]);
             NKPR_GL_SUBTOT = ParseDecimal(legalMonTotal["TaxExclusiveAmount"]);
             NKPR_GL_TOTAL = ParseDecimal(legalMonTotal["TaxInclusiveAmount"]);
-            NKPR_GL_TAXAMT = NKPR_GL_TOTAL-NKPR_GL_SUBTOT;
+            NKPR_GL_TAXAMT = NKPR_GL_TOTAL - NKPR_GL_SUBTOT;
         }
         
         
@@ -1592,7 +1589,7 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
                 Msg("Kategorija poreza nije unesena u liniji " + lineData["NKPR_LN_BR_LN"] + ", račun nije validan!")    
             }
 
-      msg ("TAX Category ID: " + xmlTaxCategoryID + " Percent: " + xmlTaxPercent);      
+      //msg ("TAX Category ID: " + xmlTaxCategoryID + " Percent: " + xmlTaxPercent);      
             // Look up internal tax code from PKFKPORZ table
             // Match by PKFK_TAX_TARIFA (category) and PKFK_TAX_STOPA (percent)
             internalTaxCode = LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent);
@@ -1696,7 +1693,7 @@ function ProcessAllowanceCharge(allowanceChargeDict, lineData) {
 
 function end(){
     cursor("dflt");
-    MessageBox("Kraj");
+    //MessageBox("Kraj");
     exit;
 }
 
@@ -1869,7 +1866,7 @@ function ImportHeaderDataToERGL(docType) {
         sqlParams.Add({"@invDate", NKPR_GL_INVDTE});
         sqlParams.Add({"@timeCreated", NKPR_GL_TIMECR});
         
-        sqlParams.Add({"@dvo", NKPR_GL_INVDTE});
+        sqlParams.Add({"@dvo", NKPR_GL_DVO});
         sqlParams.Add({"@nokam", NKPR_GL_NOKAM});
         
         sqlParams.Add({"@taxPointDate", NKPR_GL_ESD});

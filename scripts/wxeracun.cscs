@@ -1180,6 +1180,9 @@ function GenerateUBLXml() {
     supPartyTaxScheme = "VAT";
     if (KPSY_PR_R1_R2 == "XX" || KPSY_PR_R1_R2 == "") {
         supPartyTaxScheme = "FRE";
+        companyID = supOIB;
+    }else{
+        companyID =KPSY_PO_FREIGHT + supOIB;
     }
     // if (KPSY_REZERVAX != "" && KPSY_REZERVAX.length == 13) {
     //     supSchemeID = "0088";
@@ -1198,7 +1201,8 @@ function GenerateUBLXml() {
     xml += "      <cac:Country><cbc:IdentificationCode>" + EscapeForXml(supCountry) + "</cbc:IdentificationCode></cac:Country>\n";
     xml += "    </cac:PostalAddress>\n";
     
-    xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + KPSY_PO_FREIGHT + supOIB + "</cbc:CompanyID>\n"; //BT-31
+    //xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + KPSY_PO_FREIGHT + supOIB + "</cbc:CompanyID>\n"; //BT-31
+    xml += "    <cac:PartyTaxScheme><cbc:CompanyID>" + companyID + "</cbc:CompanyID>\n"; //BT-31
     xml += "      <cac:TaxScheme>\n";
     xml += "        <cbc:ID>" + supPartyTaxScheme + "</cbc:ID>\n";
     xml += "      </cac:TaxScheme>\n";
@@ -1318,17 +1322,17 @@ function GenerateUBLXml() {
          deliveryLocationID = "";
          deliverySchemeID = "";
       
-        //  if (NKSP_AD_GLN != "") {
-        //     // GLN number has preference (13 characters)
-        //     if (NKSP_AD_GLN.Length == 13) {
-        //         deliveryLocationID = NKSP_AD_GLN;
-        //         deliverySchemeID = "0088"; // GLN scheme
-        //     } else{
-        //         deliveryLocationID = NKSP_AD_GLN;
-        //         deliverySchemeID = "INTERNAL"; // GLN scheme
-        //     }
-        //     xml += "    <cbc:ID schemeID=\"" + deliverySchemeID + "\">" + deliveryLocationID + "</cbc:ID>\n";
-        // } el
+          if (NKSP_AD_GLN != "") {
+             // GLN number has preference (13 characters)
+             if (NKSP_AD_GLN.Length == 13) {
+                 deliveryLocationID = NKSP_AD_GLN;
+                 deliverySchemeID = "0088"; // GLN scheme
+             } else{
+                 //deliveryLocationID = NKSP_AD_GLN;
+                 //deliverySchemeID = "INTERNAL"; // GLN scheme
+             }
+             xml += "    <cbc:ID schemeID=\"" + deliverySchemeID + "\">" + deliveryLocationID + "</cbc:ID>\n";
+        } 
         /*
         if (NKPR_GL_SHPCOD != "") {
             // Internal delivery location code

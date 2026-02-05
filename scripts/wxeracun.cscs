@@ -1261,7 +1261,7 @@ function GenerateUBLXml() {
     
     xml += "    <cbc:EndpointID schemeID=\"" + cusSchemeID + "\">" + cusEndpointID + "</cbc:EndpointID>\n";
     if (NKSP_AD_OBJED != "") {
-        xml += "    <cac:PartyIdentification><cbc:ID>" + cusPartyID +"::HR99:" + EscapeForXml(NKSP_AD_OBJED) + "</cbc:ID></cac:PartyIdentification>\n"; 
+        xml += "    <cac:PartyIdentification><cbc:ID>" + cusPartyID + "::HR99:" + EscapeForXml(NKSP_AD_OBJED) + "</cbc:ID></cac:PartyIdentification>\n"; 
     }else  {
         xml += "    <cac:PartyIdentification><cbc:ID>" + cusPartyID + "</cbc:ID></cac:PartyIdentification>\n";
     }
@@ -2662,9 +2662,11 @@ function SendToFINA() {
             "9934:" + NKPR_GL_JMBG, // buyerId // "9934:" + "82113036885" FINA-in OIB
             invID, // supplierInvoiceId
             invoiceOrCreditNote, // itemType -> Invoice ili CreditNote
-            xmlFileName // unsignedXmlPath
+            xmlFileName, // unsignedXmlPath
+            "", // additionalSupplierId
+            (NKSP_AD_OBJED != "" ? "HR99:" + NKSP_AD_OBJED : "") // additionalBuyerId
         );
-   MSG("ack = " + ack);
+    // MSG("ack = " + ack);
         responseCode= 'AAQQ';
         LogResponse(responseCode, ack);
  

@@ -408,7 +408,7 @@ function GetRacuniFINA(){
             // MSG("ack[\"AckStatusCode\"] = " + ack["AckStatusCode"]);
             // MSG("ack[\"AckStatusText\"] = " + ack["AckStatusText"]);
 
-            if(ack["AckStatusCode"] != 10){
+            if(Contains(ack, "ErrorCode")){
                 MessageBox("Greška pri preuzimanju računa " + invoiceId + ":\n" + "ack:" + "\n" + ack);
                 continue;
             }

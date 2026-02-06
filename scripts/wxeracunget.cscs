@@ -519,8 +519,8 @@ function startImport(){
     //MSG("LIST: " + listOfXmls);
     // MSG(Size(listOfXmls));
 
-    // for(xmlCounter = 0; xmlCounter < Size(listOfXmls); xmlCounter++){
-    for(xmlCounter = 0; xmlCounter < 1; xmlCounter++){
+    for(xmlCounter = 0; xmlCounter < Size(listOfXmls); xmlCounter++){
+    // for(xmlCounter = 0; xmlCounter < 1; xmlCounter++){
         msg("IMPORTING: " + listOfXmls[xmlCounter]);
         xmlFilePath = listOfXmls[xmlCounter];
         MemoX = ""; //memo u kojega spremamo one podatke iz xml računa koje želimo prikazati korisniku prilikom uvoza
@@ -728,6 +728,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         NKPR_GL_TOTAL = 0;
         NKPR_GL_TAXAMT = 0;
         NKPR_GL_REZ3 = 0;
+        NKPR_GL_SIGNATU = "";
 
         // Get the root document data (handle nested or flat structure)
         docData = invoiceDict;
@@ -1074,7 +1075,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             if (xmlPaymentMeansCode != "") {
                 // Query KPKSVRPL table to find matching internal code
                 // KPKS_PL_NAZIV2 contains the UBL code (e.g., "30", "42")
-                sql_payment = "SELECT KPKS_PL_SIF_PL FROM " + databaseName + ".dbo.KPKSVRPL WHERE SUBSTRING(KPKS_PL_NAZIV2,1, 2) = @p1;";
+                sql_payment = "SELECT KPKS_PL_SIF_PL FROM " + databaseName + ".dbo.KPKSVRPL WHERE SUBSTRING(KPKS_PL_NAZIV2, 1, 2) = @p1;";
                 sqlParams = {};
                 sqlParams.Add({"@p1", xmlPaymentMeansCode});
                 paymentRes = sqlQuery(sql_payment, sqlParams);
@@ -1088,64 +1089,53 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                 }
             }
 
+            if (contains(paymentMeans,"PayeeFinancialAccount")) {
+                pfe = paymentMeans["PayeeFinancialAccount"];
+                pfeId = pfe["ID"];
+                if(Contains(pfeId, "@attributes")){
+                    pfeId = pfeId["@text"];
+                }
+                pfeId = pfeId.Replace(" ", "");
+            }
+
             ziroFound = false;
             if (NKPR_GL_CUSCOD != "") {
-                sql_bank = "SELECT NKSC_ZR_KONTO, NKSC_ZR_NAZIV, NKSC_ZR_BANKA FROM " + databaseName + ".dbo.NKSCZIRO WHERE NKSC_ZR_CODE = @p1;";
+                sql_bank = "SELECT NKSC_ZR_REZ, NKSC_ZR_NAZIV, NKSC_ZR_BANKA FROM " + databaseName + ".dbo.NKSCZIRO WHERE NKSC_ZR_CODE = @p1;";
                 sqlParams = {};
                 sqlParams.Add({"@p1", NKPR_GL_CUSCOD});
                 bankRes = sqlQuery(sql_bank, sqlParams);
-                if (Size(bankRes) >= 2) {
+                if (Size(bankRes) > 1) {
                     
                     for(bankResCounter = 0; bankResCounter < Size(bankRes); bankResCounter++){
-                        NKSC_ZR_KONTO = bankRes[bankResCounter][0].trim();
+                        NKSC_ZR_REZ = bankRes[bankResCounter][0].trim();
                         NKSC_ZR_NAZIV = bankRes[bankResCounter][1].trim();
                         NKSC_ZR_BANKA = bankRes[bankResCounter][2].trim();
-                        if (contains(paymentMeans,"PayeeFinancialAccount")) {
-                            pfe = paymentMeans["PayeeFinancialAccount"];
-                            pfeId = pfe["ID"];
-                            if(Contains(pfeId, "@attributes")){
-                                pfeId = pfeId["@text"];
-                            }else{
-                                // pfeId = pfeId;
-                            }
-
-                            if (NKSC_ZR_KONTO.Replace(" ", "") == pfeId.Replace(" ", "")) {
-                                NKPR_GL_RZRVA1 = NKSC_ZR_BANKA;
-                                ziroFound = true;
-                                break;
-                            }
+                        
+                        if (NKSC_ZR_REZ.Replace(" ", "") == pfeId) {
+                            NKPR_GL_RZRVA1 = NKSC_ZR_BANKA;
+                            ziroFound = true;
+                            break;
                         }
                     }
 
                     if(ziroFound == false){
-                        NKPR_GL_SIGNATU = pfeId.Replace(" ", "");
+                        NKPR_GL_SIGNATU = pfeId;
                     }
-                }
-            } else {
-                if (contains(paymentMeans,"PayeeFinancialAccount")) {
-                    paymentAccount = paymentMeans["PayeeFinancialAccount"];
-                    pfeId = paymentAccount["ID"];
-                    if(Contains(pfeId, "@attributes")){
-                        pfeId = pfeId["@text"];
-                    }
-                    // else{
-                    //     pfeId = pfeId;
-                    // }
+                }else{
                     NKPR_GL_SIGNATU = pfeId;
                 }
+            } else {
+                NKPR_GL_SIGNATU = pfeId;
             }
+            
 
             if (Contains(paymentMeans, "PaymentID")) {
                 paymentID = paymentMeans["PaymentID"];
                 NKPR_GL_MODEL = Substring(paymentID, 2, 2);
-                //if (Contains(paymentID, " ")) {
-                //    paymentParts = paymentID.split(" ");
-                //    if (Size(paymentParts) > 1) {
 
-                //        NKPR_GL_POZIV = paymentParts[2].trim();
-                //    }
-                //} else {
-                    NKPR_GL_POZIV = Substring(paymentID, 5, paymentID.length - 4);
+                if(paymentID.length > 4){
+                    NKPR_GL_POZIV = Substring(paymentID, 4, paymentID.length - 4).trim();
+                }
             }
         }
         
@@ -1157,7 +1147,6 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             NKPR_GL_SUBTOT = ParseDecimal(legalMonTotal["TaxExclusiveAmount"]["@text"]);
             NKPR_GL_TOTAL = ParseDecimal(legalMonTotal["TaxInclusiveAmount"]["@text"]);
             NKPR_GL_TAXAMT = NKPR_GL_TOTAL - NKPR_GL_SUBTOT;
-            msg("SUBTOT: " + NKPR_GL_SUBTOT + " TOTAL: " + NKPR_GL_TOTAL + " TAXAMT: " + NKPR_GL_TAXAMT);
         }
         
         
@@ -1588,15 +1577,15 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
                 Msg("Kategorija poreza nije unesena u liniji " + lineData["NKPR_LN_BR_LN"] + ", račun nije validan!")    
             }
 
-      msg ("TAX Category ID: " + xmlTaxCategoryID + " Percent: " + xmlTaxPercent);      
+      
             // Look up internal tax code from PKFKPORZ table
             // Match by PKFK_TAX_TARIFA (category) and PKFK_TAX_STOPA (percent)
             internalTaxCode = LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent);
             if (internalTaxCode > 0) {
                 lineData["NKPR_LN_TXBLE"] = internalTaxCode;
-                msg("Tax code converted: Category=" + xmlTaxCategoryID + ", Percent=" + xmlTaxPercent + " -> Internal Code=" + internalTaxCode);
+                // msg("Tax code converted: Category=" + xmlTaxCategoryID + ", Percent=" + xmlTaxPercent + " -> Internal Code=" + internalTaxCode);
             } else {
-                msg("WARNING: No matching tax code found in PKFKPORZ for Category=" + xmlTaxCategoryID + ", Percent=" + xmlTaxPercent);
+                MessageBox("WARNING: No matching tax code found in PKFKPORZ for Category=" + xmlTaxCategoryID + ", Percent=" + xmlTaxPercent);
                 lineData["NKPR_LN_TXBLE"] = 0;
             }
         }
@@ -2238,8 +2227,6 @@ function ExtractAndSaveAttachments(invoiceDict, docType) {
             sqlNonQuery(sql_insert_pic, sqlParams);
 
             NKPR_GL_PICTHDR = nextPicNum;
-
-            msg("Registered VANJSKI pdf attachment in NKSYPICT with ID: " + nextPicNum);
         }
 
 
@@ -2329,11 +2316,10 @@ function ProcessSingleAttachment(attachmentRef, attachmentIndex) {
                         // } el
                         if (attachmentIndex == 1 && NKPR_GL_PICTFTR == 0) {
                             NKPR_GL_PICTFTR = attachmentNum;
-                            msg("Saved Footer attachment with num: " + attachmentNum);
                         } else {
                             // Line item attachment - would need to store in NKNAERLN reference
                             // Store in temporary array for later processing with line items
-                            msg("Saved Line attachment with num: " + attachmentNum);
+                            // msg("Saved Line attachment with num: " + attachmentNum);
                         }
                     }
                 }
@@ -2463,7 +2449,6 @@ function SaveAttachmentToDisk(base64Content, filename, description, attachmentID
         sqlParams.Add({"@p6", "UR"}); // ulazni račun
         
         sqlNonQuery(sql_insert_pic, sqlParams);
-        msg("Registered attachment in NKSYPICT with ID: " + nextPicNum);
         
         return nextPicNum;
         
@@ -2600,7 +2585,6 @@ function LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent) {
         
         if (Size(taxResult) >= 2) {
             taxCode = taxResult[1][0];
-            msg("Found tax code: " + taxCode + " for Category=" + xmlTaxCategoryID + " (" + pkfkTaxTarifa + "), Percent=" + xmlTaxPercent);
             return taxCode;
         }
         

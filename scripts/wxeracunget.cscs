@@ -1154,9 +1154,10 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         legalMonTotal = docData["LegalMonetaryTotal"];
         if (legalMonTotal != null && legalMonTotal != "") {
             //NKPR_GL_LINETOTAL = ParseDecimal(legalMonTotal["LineExtensionAmount"]);
-            NKPR_GL_SUBTOT = ParseDecimal(legalMonTotal["TaxExclusiveAmount"]);
-            NKPR_GL_TOTAL = ParseDecimal(legalMonTotal["TaxInclusiveAmount"]);
+            NKPR_GL_SUBTOT = ParseDecimal(legalMonTotal["TaxExclusiveAmount"]["@text"]);
+            NKPR_GL_TOTAL = ParseDecimal(legalMonTotal["TaxInclusiveAmount"]["@text"]);
             NKPR_GL_TAXAMT = NKPR_GL_TOTAL - NKPR_GL_SUBTOT;
+            msg("SUBTOT: " + NKPR_GL_SUBTOT + " TOTAL: " + NKPR_GL_TOTAL + " TAXAMT: " + NKPR_GL_TAXAMT);
         }
         
         
@@ -1293,8 +1294,6 @@ function ExtractAndSaveNotes(docData) {
             return; // Empty note
         }
         
-       // msg("=== PROCESSING NOTES ===");
-        //msg("Note type: " + noteValue.type());
         
         // Handle single note (STRING or OBJECT)
         if (noteValue.type() == "STRING") {
@@ -1589,7 +1588,7 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
                 Msg("Kategorija poreza nije unesena u liniji " + lineData["NKPR_LN_BR_LN"] + ", račun nije validan!")    
             }
 
-      //msg ("TAX Category ID: " + xmlTaxCategoryID + " Percent: " + xmlTaxPercent);      
+      msg ("TAX Category ID: " + xmlTaxCategoryID + " Percent: " + xmlTaxPercent);      
             // Look up internal tax code from PKFKPORZ table
             // Match by PKFK_TAX_TARIFA (category) and PKFK_TAX_STOPA (percent)
             internalTaxCode = LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent);
@@ -1727,8 +1726,12 @@ function IsPrimitiveValue(value) {
     return true; // It's a primitive type (string, number, boolean, etc.)
 }
 
+function ParseDecimal(inputString) {
+    doubleVal = double(inputString);
+    return doubleVal;
+}
 // Helper function to parse decimal values (enhanced)
-function ParseDecimal(value) {
+function ParseDecimal_old(value) {
     if (value == "" || value == null) {
         return 0.00;
     }
@@ -2178,8 +2181,7 @@ function LogNKSYELOG(elogStatusCode, _invoiceId, description = ""){
 // -----------------------------------------------------------
 function ExtractAndSaveAttachments(invoiceDict, docType) {
     try {
-        msg("=== ATTACHMENT EXTRACTION STARTING ===");
-
+    
         // Get the root document data
         docData = invoiceDict;
         // if (docType == "S" && Contains(invoiceDict, "Invoice")) {
@@ -2262,21 +2264,8 @@ function ExtractAndSaveAttachments(invoiceDict, docType) {
                 ProcessSingleAttachment(additionalDocs, 1);
             }
         }
-        
-        // // Extract and save main PDF attachment if present
-        // if (Contains(docData, "Attachment")) {
-        //     mainAttachment = docData["Attachment"];
-        //     if (Contains(mainAttachment, "EmbeddedDocumentBinaryObject")) {
-        //         ProcessMainPdfAttachment(mainAttachment);
-        //     }
-        // }
-        
-        msg("=== ATTACHMENT EXTRACTION COMPLETE ===");
-        msg("Header Attachment ID (NKPR_GL_PICTHDR): " + NKPR_GL_PICTHDR);
-        msg("Footer Attachment ID (NKPR_GL_PICTFTR): " + NKPR_GL_PICTFTR);
-        
+
         return true;
-        
     } catch (error) {
         MessageBox("Greška pri extraction attachments: " + error);
         return false;

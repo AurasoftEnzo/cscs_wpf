@@ -564,8 +564,6 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
         }
         
 
-
-
         documentDict = XmlToDict(xmlContent);
         
         documentKeys = documentDict.Keys;
@@ -574,21 +572,8 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
         invoiceDict = documentDict[documentType];
 
 
-        NKPR_GL_POSRED = _invoiceId;
-        
-        // // //************
-        // MSG(documentDict[documentType]["InvoiceLine"]); 
+        NKPR_GL_POSRED = _invoiceId; // broj računa posrednika
 
-
-        // linesArray = documentDict[documentType]["InvoiceLine"];
-        // MSG(linesArray);
-
-
-        // MSG(documentDict[documentType]["InvoiceLine"]); 
-        // // //************
-
-
-        // MSG(documentDict["Invoice"]["InvoiceLine"]);
 
         if (invoiceDict == null || Size(invoiceDict) == 0) {
             MessageBox("Greška prilikom parsiranja XML-a u Dictionary");
@@ -624,10 +609,6 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
             return false;
         }
         
-        
-        //return;   
-    
-        // MSG("99999999" + lineItems);
 
         // Begin database transaction
         //BeginTransaction();
@@ -644,7 +625,6 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
                 throw "Greška prilikom unosa stavki računa";
             }
             // Log to NKSYELOG
-            //msg("2222: xmlFilePath: " + xmlFilePath);    
             // LogToNKSYELOG(invNum, xmlFilePath, "IMPORT_SUCCESS");
             
             // Commit transaction
@@ -665,12 +645,11 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
         } catch (error) {
             // Rollback transaction on error
             //RollbackTransaction();
-            //msg("4444: xmlFilePath: " + xmlFilePath + " ERROR: " + error);       
             // LogToNKSYELOG(0, xmlFilePath, "IMPORT_FAILURE: " + error);
             MessageBox("Greška prilikom unosa u bazu podataka: " + error);
             return false;
         }
-        
+
     } catch (error) {
         MessageBox("Greška prilikom uvoza XML datoteke: " + error);
         return false;
@@ -732,15 +711,15 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
 
         // Get the root document data (handle nested or flat structure)
         docData = invoiceDict;
-        if (docType == "S" && Contains(invoiceDict, "Invoice")) {
-            docData = invoiceDict["Invoice"];
-        } elif (docType == "O" && Contains(invoiceDict, "CreditNote")) {
-            docData = invoiceDict["CreditNote"];
-        } elif (docType == "T" && Contains(invoiceDict, "DebitNote")) {
-            docData = invoiceDict["DebitNote"];            }
+        // if (docType == "S" && Contains(invoiceDict, "Invoice")) {
+        //     docData = invoiceDict["Invoice"];
+        // } elif (docType == "O" && Contains(invoiceDict, "CreditNote")) {
+        //     docData = invoiceDict["CreditNote"];
+        // } elif (docType == "T" && Contains(invoiceDict, "DebitNote")) {
+        //     docData = invoiceDict["DebitNote"];            }
             
         // Basic invoice information
-        glDesc = docData["ID"]; //broj računa od dobavljača
+        glDesc = GetNodeText(docData["ID"]); //broj računa od dobavljača
         
         if(glDesc.length > 40){
             NKPR_GL_DESC = Substring(glDesc, 0, 40);
@@ -753,41 +732,39 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         //sada još uzmimo copyIndictIndicator iz računa ako postoji
         copyIndicator = "";
         if (Contains(docData, "CopyIndicator")) {
-            copyIndicator = docData["CopyIndicator"];
+            copyIndicator = GetNodeText(docData["CopyIndicator"]);
         }
         NKPR_GL_OZNAKA = docType;
-        NKPR_GL_DATPRI = docData["IssueDate"];
-        NKPR_GL_DVO = docData["IssueDate"];
+        NKPR_GL_DATPRI = GetNodeText(docData["IssueDate"]);
+        NKPR_GL_DVO = GetNodeText(docData["IssueDate"]);
         NKPR_GL_NOKAM = 0;
         if (Contains(docData, "DueDate")){
             //tu staviti matematiku za datum dospijeća: duedate-issuedate=nokam kao broj dana, a dvo je isti kao i datum issuedate
-            dueDate = docData["DueDate"];
+            dueDate = GetNodeText(docData["DueDate"]);
             dueDateDateTime = DateTime(dueDate, "yyyy-MM-dd");
             datpriDateTime = DateTime(NKPR_GL_DATPRI, "yyyy-MM-dd");
             dateDiff = Math.Trunc(DateTimeToDouble(dueDateDateTime)) - Math.Trunc(DateTimeToDouble(datpriDateTime));
             NKPR_GL_NOKAM = dateDiff; // !!! hardcoded 30 days for now, TREBA POPRAVITI!!!
         } else{
-            NKPR_GL_DVO = docData["IssueDate"].toString();
+            NKPR_GL_DVO = GetNodeText(docData["IssueDate"]);
             NKPR_GL_NOKAM = 30;
         }   
            
         if (Contains(docData, "TaxPointDate")) {
-            NKPR_GL_ESD = docData["TaxPointDate"];
-            //GL_ESD = docData["TaxPointDate"].toString();
+            NKPR_GL_ESD = GetNodeText(docData["TaxPointDate"]);
         }else{
-            NKPR_GL_ESD = docData["IssueDate"];
-            //GL_ESD = docData["IssueDate"].toString();
+            NKPR_GL_ESD = GetNodeText(docData["IssueDate"]);
         }
 
         // Currency
-        NKPR_GL_SIFDVZ = docData["DocumentCurrencyCode"];
+        NKPR_GL_SIFDVZ = GetNodeText(docData["DocumentCurrencyCode"]);
         //sifdvz = docData["DocumentCurrencyCode"].toString();
         // Supplier information from AccountingSupplierParty
-        suppParty = docData["AccountingSupplierParty"];
+        suppParty = GetNodeText(docData["AccountingSupplierParty"]);
         if (suppParty != null && suppParty != "") {
             suppPartyData = suppParty;
             if (Contains(suppParty, "Party")) {
-                suppPartyData = suppParty["Party"];
+                suppPartyData = GetNodeText(suppParty["Party"]);
             }
 
             // Supplier OIB/GLN
@@ -795,13 +772,15 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             GLNSupp = "";
 
             companyIDEndpointID = suppPartyData["EndpointID"]; // npr 12345678903
+
             if(companyIDEndpointID["@attributes"]["schemeID"] == "9934"){
-                OIBSupp = companyIDEndpointID["@text"];
+                OIBSupp = GetNodeText(companyIDEndpointID);
             } elif(companyIDEndpointID["@attributes"]["schemeID"] == "0088"){
-                GLNSupp = companyIDEndpointID["@text"];
+                GLNSupp = GetNodeText(companyIDEndpointID);
 
                 if(Contains(suppPartyData, "PartyIdentification")){// npr.: OIB 9934:12345678903 ili možda GLN 0088:12345678
-                    companyIDPartyIdentificationID = suppPartyData["PartyIdentification"]["ID"];
+                    suppPartyDataPI = GetNodeText(suppPartyData["PartyIdentification"]);
+                    companyIDPartyIdentificationID = GetNodeText(suppPartyDataPI["ID"]);
                     refNumbers = companyIDPartyIdentificationID.split(":");
                     refNum = refNumbers[0].trim();
                     refOIB = refNumbers[1].trim();
@@ -812,7 +791,8 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
 
                         if(OIBSupp == ""){
                             if(Contains(suppPartyData, "PartyTaxScheme")){
-                                compId = suppPartyData["PartyTaxScheme"]["CompanyID"]; // npr.: OIB 9934:12345678903 ili možda GLN 0088:12345678
+                                suppPartyDataPTS = GetNodeText(suppPartyData["PartyTaxScheme"]);
+                                compId = GetNodeText(suppPartyDataPTS["CompanyID"]); // npr.: OIB 9934:12345678903 ili možda GLN 0088:12345678
                                 OIBSupp = compId.Replace("HR", "");
                             }
                             else{
@@ -823,11 +803,11 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                 }
             }
 
-            
             // Supplier name
             suppName= "";
             if (Contains(suppPartyData, "PartyLegalEntity")) {
-                suppName = suppPartyData["PartyLegalEntity"]["RegistrationName"];
+                suppNamePLE = GetNodeText(suppPartyData["PartyLegalEntity"]);
+                suppName = GetNodeText(suppNamePLE["RegistrationName"]);
             } else {
                 //suppName = suppPartyData["PartyLegalEntity"]["CompanyName"];
                 //find name from NKSCPART
@@ -839,9 +819,9 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
 
             //odrediti OIB dobavljača iz /Invoice/cac:AccountingSupplierParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID
             if (Contains(suppPartyData, "PartyTaxScheme")) {
-                partyTaxScheme = suppPartyData["PartyTaxScheme"];
+                partyTaxScheme = GetNodeText(suppPartyData["PartyTaxScheme"]);
                 if (Contains(partyTaxScheme, "CompanyID")) {
-                    OIBSupp = partyTaxScheme["CompanyID"];
+                    OIBSupp = GetNodeText(partyTaxScheme["CompanyID"]);
                     if (OIBSupp.length > 11) {
                         OIBSupp = Substring(OIBSupp, OIBSupp.length - 11, 11); //uzeti zadnjih 11 znakova
                     }
@@ -849,29 +829,40 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             }
             
             //tu sad imamo OIB dobavljača i broj računa dobavljača; sada provjeriti da li je taj račun već unesen za tog dobavljača
-            sqlQueryString = "select NKPR_GL_JMBG, NKPR_GL_DESC from " + strtrim(databaseName) + ".dbo.NKNAERGL WHERE NKPR_GL_JMBG = '" + OIBSupp + "' AND NKPR_GL_DESC = '" + NKPR_GL_DESC + "'";
+            sqlQueryString = "select NKPR_GL_BRPON, NKPR_GL_JMBG, NKPR_GL_DESC from " + strtrim(databaseName) + ".dbo.NKNAERGL WHERE NKPR_GL_JMBG = '" + OIBSupp + "' AND NKPR_GL_DESC = '" + NKPR_GL_DESC + "'";
             sqlOIBInvoicenum = sqlQuery(sqlQueryString);
             if (size(sqlOIBInvoicenum) > 1)
             {
+                MessageBox("Račun s OIB-om dobavljača " + OIBSupp + " i brojem računa dobavljača " + glDesc + " je već unesen u registar eRačuna pod brojem: " + sqlOIBInvoicenum[1][0].trim() + ". Provjeravam da li je to kopija računa...");
+                return;
+                
+                
+                
                 if(copyIndicator != "true"){
                     //ako je copyIndicator ne postoji ili je false, onda je to kopija računa i dozvoliti unos
                     //ako nije, onda javiti da je račun već unesen
                 }else{
                     //tu bi sada trebalo u originalni račun pod tim brojem spremiti u MemoX da je taj račun dobio kopiju i koji je broj te kopije
-                    memoX += "Račun s OIB-om dobavljača " + OIBSupp + " i brojem računa dobavljača " + glDesc + " je već unesen u bazu pod brojem računa: " + sqlOIBInvoicenum[1][0].trim() + ". Došla je kopija računa.\n";
-                    return;
+                    // memoX += "Račun s OIB-om dobavljača " + OIBSupp + " i brojem računa dobavljača " + glDesc + " je već unesen u bazu pod brojem računa: " + sqlOIBInvoicenum[1][0].trim() + ". Došla je kopija računa.\n";
+                    // return;
                 }
+
+
+
             }
 
             // Supplier address
             if (Contains(suppPartyData, "PostalAddress")) { 
                 suppAddress = suppPartyData["PostalAddress"];
                 if (suppAddress != null && suppAddress != "") {
-                    if (Contains(suppAddress, "StreetName")) {NKPR_GL_CUSA1 = suppAddress["StreetName"]};
-                    if (Contains(suppAddress, "CityName")) {NKPR_GL_CUSCTY = suppAddress["CityName"]};
-                    if (Contains(suppAddress, "PostalZone")) {NKPR_GL_CUSZIP = suppAddress["PostalZone"]};
-                    if (Contains(suppAddress, "Country")) {NKPR_GL_CUSST = suppAddress["Country"]["IdentificationCode"]};
-                    if (Contains(suppAddress, "Country")) {NKPR_GL_DRZAVA = suppAddress["Country"]["IdentificationCode"]};
+                    if (Contains(suppAddress, "StreetName")) {NKPR_GL_CUSA1 = GetNodeText(suppAddress["StreetName"]);}
+                    if (Contains(suppAddress, "CityName")) {NKPR_GL_CUSCTY = GetNodeText(suppAddress["CityName"]);}
+                    if (Contains(suppAddress, "PostalZone")) {NKPR_GL_CUSZIP = GetNodeText(suppAddress["PostalZone"]);}
+                    if (Contains(suppAddress, "Country")) {
+                        suppAddressCountry = GetNodeText(suppAddress["Country"]);
+                        NKPR_GL_CUSST = GetNodeText(suppAddressCountry["IdentificationCode"]);
+                        NKPR_GL_DRZAVA = NKPR_GL_CUSST;
+                    }
                 }
             }
         }
@@ -951,11 +942,11 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
 
         // Customer information from AccountingCustomerParty
         //this is own company data
-        custParty = docData["AccountingCustomerParty"];
+        custParty = GetNodeText(docData["AccountingCustomerParty"]);
         if (custParty != null && custParty != "") {
             custPartyData = custParty;
             if (Contains(custParty, "Party")) {
-                custPartyData = custParty["Party"];
+                custPartyData = GetNodeText(custParty["Party"]);
             }
 
 
@@ -965,12 +956,13 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
 
             companyIDEndpointID = custPartyData["EndpointID"]; // npr 12345678903
             if(companyIDEndpointID["@attributes"]["schemeID"] == "9934"){
-                OIBCust = companyIDEndpointID["@text"];
+                OIBCust = GetNodeText(companyIDEndpointID);
             } elif(companyIDEndpointID["@attributes"]["schemeID"] == "0088"){
-                GLNCust = companyIDEndpointID["@text"];
+                GLNCust = GetNodeText(companyIDEndpointID);
 
                 if(Contains(custPartyData, "PartyIdentification")){// npr.: OIB 9934:12345678903 ili možda GLN 0088:12345678
-                    companyIDPartyIdentificationID = custPartyData["PartyIdentification"]["ID"];
+                    custPartyDataPartyIdentification = GetNodeText(custPartyData["PartyIdentification"]);
+                    companyIDPartyIdentificationID = GetNodeText(custPartyDataPartyIdentification["ID"]);
                     refNumbers = companyIDPartyIdentificationID.split(":");
                     refNum = refNumbers[0].trim();
                     refOIB = refNumbers[1].trim();
@@ -981,7 +973,8 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
 
                         if(OIBCust == ""){
                             if(Contains(custPartyData, "PartyTaxScheme")){
-                                compId = custPartyData["PartyTaxScheme"]["CompanyID"]; // npr.: OIB 9934:12345678903 ili možda GLN 0088:12345678
+                                custPartyDataPartyTaxScheme = GetNodeText(custPartyData["PartyTaxScheme"]);
+                                compId = GetNodeText(custPartyDataPartyTaxScheme["CompanyID"]); // npr.: OIB 9934:12345678903 ili možda GLN 0088:12345678
                                 OIBCust = compId.Replace("HR", "");
                             }
                             else{
@@ -1007,13 +1000,13 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
 
         // Delivery information
         if (Contains(docData, "Delivery")) {
-            delivery = docData["Delivery"];
+            delivery = GetNodeText(docData["Delivery"]);
             if (delivery != null && delivery != "") {
                 if (Contains(delivery, "DeliveryLocation")) {
-                    deliveryLocation = delivery["DeliveryLocation"];
+                    deliveryLocation = GetNodeText(delivery["DeliveryLocation"]);
                     if (deliveryLocation != null && deliveryLocation != "") {
                         if (Contains(deliveryLocation, "ID")) {
-                            deliveryID = deliveryLocation["ID"];
+                            deliveryID = GetNodeText(deliveryLocation["ID"]);
                         } else {
                             deliveryID = "";
                         }
@@ -1028,24 +1021,28 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                         }
                         // Delivery address
                         if (Contains(deliveryLocation, "Address")) {
-                            deliveryAddr = deliveryLocation["Address"];
+                            deliveryAddr = GetNodeText(deliveryLocation["Address"]);
                         } else {
                             deliveryAddr = {};
                         }
                         if (deliveryAddr != null && deliveryAddr != "") {
-                            if (Contains(deliveryAddr, "StreetName")) {NKPR_GL_SHPA1 = deliveryAddr["StreetName"]};
-                            if (Contains(deliveryAddr, "CityName")) {NKPR_GL_SHPCTY = deliveryAddr["CityName"]};
-                            if (Contains(deliveryAddr, "PostalZone")) {NKPR_GL_SHPZIP = deliveryAddr["PostalZone"]};
-                            if (Contains(deliveryAddr, "Country")) {NKPR_GL_SHPST = deliveryAddr["Country"]["IdentificationCode"]};
+                            if (Contains(deliveryAddr, "StreetName")) {NKPR_GL_SHPA1 = GetNodeText(deliveryAddr["StreetName"])};
+                            if (Contains(deliveryAddr, "CityName")) {NKPR_GL_SHPCTY = GetNodeText(deliveryAddr["CityName"])};
+                            if (Contains(deliveryAddr, "PostalZone")) {NKPR_GL_SHPZIP = GetNodeText(deliveryAddr["PostalZone"])};
+                            if (Contains(deliveryAddr, "Country")) {
+                                deliveryAddrCountry = GetNodeText(deliveryAddr["Country"]);
+                                NKPR_GL_SHPST = GetNodeText(deliveryAddrCountry["IdentificationCode"]);
+                            }
                         }
                     }
                 }
             
                 // Delivery party
                 if (Contains(delivery, "DeliveryParty")) {
-                    deliveryParty = delivery["DeliveryParty"];
+                    deliveryParty = GetNodeText(delivery["DeliveryParty"]);
                     if (deliveryParty != null && deliveryParty != "") {
-                        NKPR_GL_SHPNME = deliveryParty["PartyName"]["Name"];
+                        deliveryPartyPartyName = GetNodeText(deliveryParty["PartyName"]);
+                        NKPR_GL_SHPNME = GetNodeText(deliveryPartyPartyName["Name"]);
                     }
                 } else {
                     deliveryParty = {};
@@ -1055,20 +1052,15 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         
         
         // Payment information
-        paymentMeans = docData["PaymentMeans"];
+        paymentMeans = GetNodeText(docData["PaymentMeans"]);
         xmlPaymentMeansCode = "";
         if (paymentMeans != null && paymentMeans != "") {
             // Get PaymentMeansCode from XML (e.g., "30", "42", etc.)
-        //    xmlPaymentMeansCode = paymentMeans["PaymentMeansCode"]; //[#text]; POPRAVITI!!!
+            //    xmlPaymentMeansCode = paymentMeans["PaymentMeansCode"]; //[#text]; POPRAVITI!!!
             if (Contains(paymentMeans, "PaymentMeansCode")) {
-                paymentMeansCodeData = paymentMeans["PaymentMeansCode"];
-                if (typeof(paymentMeansCodeData) == "dictionary") {
-                    xmlPaymentMeansCode = paymentMeansCodeData["#text"];
-                } else {
-                    xmlPaymentMeansCode = paymentMeansCodeData;
-                }
+                xmlPaymentMeansCode = GetNodeText(paymentMeans["PaymentMeansCode"]);
             }
-            xmlPaymentMeansCode = "";
+            
             // Convert XML PaymentMeansCode to internal KPKSVRPL code
             // Reverse process from wxeracun.cscs
             NKPR_GL_SIF_PL = "";
@@ -1090,11 +1082,8 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             }
 
             if (contains(paymentMeans,"PayeeFinancialAccount")) {
-                pfe = paymentMeans["PayeeFinancialAccount"];
-                pfeId = pfe["ID"];
-                if(Contains(pfeId, "@attributes")){
-                    pfeId = pfeId["@text"];
-                }
+                pfe = GetNodeText(paymentMeans["PayeeFinancialAccount"]);
+                pfeId = GetNodeText(pfe["ID"]);
                 pfeId = pfeId.Replace(" ", "");
             }
 
@@ -1130,7 +1119,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             
 
             if (Contains(paymentMeans, "PaymentID")) {
-                paymentID = paymentMeans["PaymentID"];
+                paymentID = GetNodeText(paymentMeans["PaymentID"]);
                 NKPR_GL_MODEL = Substring(paymentID, 2, 2);
 
                 if(paymentID.length > 4){
@@ -1141,18 +1130,18 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         
         
         // Monetary totals
-        legalMonTotal = docData["LegalMonetaryTotal"];
+        legalMonTotal = GetNodeText(docData["LegalMonetaryTotal"]);
         if (legalMonTotal != null && legalMonTotal != "") {
             //NKPR_GL_LINETOTAL = ParseDecimal(legalMonTotal["LineExtensionAmount"]);
-            NKPR_GL_SUBTOT = ParseDecimal(legalMonTotal["TaxExclusiveAmount"]["@text"]);
-            NKPR_GL_TOTAL = ParseDecimal(legalMonTotal["TaxInclusiveAmount"]["@text"]);
+            NKPR_GL_SUBTOT = ParseDecimal(GetNodeText(legalMonTotal["TaxExclusiveAmount"]));
+            NKPR_GL_TOTAL = ParseDecimal(GetNodeText(legalMonTotal["TaxInclusiveAmount"]));
             NKPR_GL_TAXAMT = NKPR_GL_TOTAL - NKPR_GL_SUBTOT;
         }
         
         
         // Notes
         if (Contains(docData, "Note")) {
-            note = docData["Note"];
+            note = GetNodeText(docData["Note"]);
             if (note != "") {
                 /*
                 // Parse referenced invoices from note, za slučaj kada dobavljač šalje račun koji je napravljen sa našim programom Asconto ERP
@@ -1185,8 +1174,9 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
 
         // Billing references
         if (Contains(docData, "BillingReference")) {
-            billingRef = docData["BillingReference"];
-            billingRefID = billingRef["InvoiceDocumentReference.ID"];
+            billingRef = GetNodeText(docData["BillingReference"]);
+            billingRefInvoiceDocumentReference = GetNodeText(billingRef["InvoiceDocumentReference"]);
+            billingRefID = GetNodeText(billingRefInvoiceDocumentReference["ID"]);
             if (billingRefID != "" && NKPR_GL_REZ3 == "") {
                 NKPR_GL_REZ3 = ParseInvoiceNumber(billingRefID);
             }
@@ -1277,7 +1267,7 @@ function ExtractAndSaveNotes(docData) {
             return; // No notes to process
         }
         
-        noteValue = docData["Note"];
+        noteValue = GetNodeText(docData["Note"]);
         
         if (noteValue == null || noteValue == "") {
             return; // Empty note
@@ -1294,7 +1284,7 @@ function ExtractAndSaveNotes(docData) {
             // Single note as object (might have #text)
             noteText = "";
             if (Contains(noteValue, "#text")) {
-                noteText = noteValue["#text"];
+                noteText = GetNodeText(noteValue["#text"]);
             } else {
                 noteText = String(noteValue);
             }
@@ -1359,13 +1349,13 @@ function ExtractLineItemsFromDict(invoiceDict, docType) {
         lineItems = {};
         // Get the root document data
         docData = invoiceDict;
-        if (docType == "S" && invoiceDict.Contains("Invoice")) {
-            docData = invoiceDict["Invoice"];
-        } elif (docType == "R" && invoiceDict.Contains("CreditNote")) {
-            docData = invoiceDict["CreditNote"];
-        } elif (docType == "T" && invoiceDict.Contains("DebitNote")) {
-            docData = invoiceDict["DebitNote"];
-        }
+        // if (docType == "S" && invoiceDict.Contains("Invoice")) {
+        //     docData = invoiceDict["Invoice"];
+        // } elif (docType == "R" && invoiceDict.Contains("CreditNote")) {
+        //     docData = invoiceDict["CreditNote"];
+        // } elif (docType == "T" && invoiceDict.Contains("DebitNote")) {
+        //     docData = invoiceDict["DebitNote"];
+        // }
         
         // Determine line element name based on document type
         lineElementName = "";
@@ -1381,17 +1371,7 @@ function ExtractLineItemsFromDict(invoiceDict, docType) {
             quantityElementName = "DebitedQuantity";
         }
         
-        // Get line items array
-       
-        // MSG("docData:\n" + docData);
-        // MSG("lineElementName:\n" + lineElementName);
-
-        // msg("docData:\n" + docData);
-        // msg("lineelementName:\n" + lineelementName);
-        //linesArray = docData[lineElementName]; 
-        
-        // linesArray = GetDictValue2(docData, lineElementName); 
-        // linesArray = docData["InvoiceLine"]; 
+         
 
         if(ArrayOrDict(documentDict[documentType][lineElementName]) == "array"){
             for(mmm = 0; mmm < Size(documentDict[documentType][lineElementName]); mmm++){
@@ -1494,19 +1474,20 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
         // Basic line information
         // lineData["NKPR_LN_BR_LN"] = GetDictValue(lineDict, "ID");
 
-        lineData["NKPR_LN_BR_LN"] = lineDict["ID"];
+        lineData["NKPR_LN_BR_LN"] = GetNodeText(lineDict["ID"]);
 
     // msg ("LINE ID: " + lineData["NKPR_LN_BR_LN"]);
 
         // Quantity and unit
         // quantity = GetDictValue(lineDict, quantityElementName);
-        quantity = lineDict[quantityElementName]["@text"];
+        
+        quantity = lineDict[quantityElementName];
         if (quantity != "") {
-            lineData["NKPR_LN_PQTY"] = ParseDecimal(quantity);
+            lineData["NKPR_LN_PQTY"] = ParseDecimal(GetNodeText(quantity));
             
             // Unit code (might be in attributes - handle as needed)
             // unitCode = GetDictValue(lineDict, quantityElementName + ".unitCode");
-            unitCode = lineDict[quantityElementName]["@attributes"]["unitCode"];
+            unitCode = quantity["@attributes"]["unitCode"];
             // MSG("UNIT CODE RAW: " + unitCode);
             lineData["NKPR_LN_JEDMJ"] = GetUnitCodeFromUN(unitCode);
         }
@@ -1514,33 +1495,33 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
         // Line amount
         //lineData["NKPR_LN_AMT"] = ParseDecimal(GetDictValue(lineDict, "LineExtensionAmount"));
         // lineData["NKPR_LN_AMT"] = ParseDecimal(GetDictValue(lineDict, "LineExtensionAmount"));
-        lineData["NKPR_LN_AMT"] = ParseDecimal(lineDict["LineExtensionAmount"]["@text"]);
+        lineData["NKPR_LN_AMT"] = ParseDecimal(GetNodeText(lineDict["LineExtensionAmount"]));
         // MSG("LINE AMT RAW: " + lineData["NKPR_LN_AMT"]);
 
     //msg ("LINE AMT: " + lineData["NKPR_LN_AMT"]);    
         // Item information
         // item = GetDictValue(lineDict, "Item");
-        item = lineDict["Item"];
+        item = GetNodeText(lineDict["Item"]);
         // MSG("ITEM RAW: " + item);
 
         if (item != null && item != "") {
 
-            lineData["NKPR_LN_PDESC"] = item["Name"];
+            lineData["NKPR_LN_PDESC"] = GetNodeText(item["Name"]);
             // msg("LINE DESC: " + lineData["NKPR_LN_PDESC"]);
 
             // Product code - try different locations
             // productCode = GetDictValue(item, "BuyersItemIdentification.ID");
             if(Contains(item, "BuyersItemIdentification")){
                 //MSG("25561: NEEDS TESTING !!!");
-                bii = item["BuyersItemIdentification"];
-                biiId = bii["ID"];    
+                bii = GetNodeText(item["BuyersItemIdentification"]);
+                biiId = GetNodeText(bii["ID"]);    
                 lineData["NKPR_LN_PCODE"] = biiId;       
             }           
 
             if(Contains(item, "StandardItemIdentification")){
                 //MSG("25562: NEEDS TESTING !!!");
-                sii = item["StandardItemIdentification"];
-                siiId = sii["ID"];    
+                sii = GetNodeText(item["StandardItemIdentification"]);
+                siiId = GetNodeText(sii["ID"]);    
                 lineData["NKPR_LN_BARCODE"] = siiId; 
                 if (siiId == "") {
                     lineData["NKPR_LN_PCODE"] = siiId;       
@@ -1554,27 +1535,26 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
 
 
             // msg ("LINE Product: " + lineData["NKPR_LN_PCODE"]+ " DESC: " + lineData["NKPR_LN_PDESC"]);    
-            
-            // Tax information - Convert XML tax category to internal PKFK_TAX_CODE
-            // Reverse process from wxeracun.cscs
-            // taxCategory = GetDictValue(item, "ClassifiedTaxCategory");
-            taxCategory = item["ClassifiedTaxCategory"];
-            // MSG("TAX CATEGORY RAW: " + taxCategory);
+
+
+
+            // ClassifiedTaxCategory
+            taxCategory = GetNodeText(item["ClassifiedTaxCategory"]);
             
             xmlTaxCategoryID = "";
             xmlTaxPercent = 0;
             
             if(Contains(taxCategory, "Percent")){
-                xmlTaxPercent = ParseDecimal(taxCategory["Percent"]);
+                xmlTaxPercent = ParseDecimal(GetNodeText(taxCategory["Percent"]));
                 lineData["NKPR_LN_PRNPR"] = xmlTaxPercent;
             }else{
-                Msg("Stopa poreza nije unesena u liniji " + lineData["NKPR_LN_BR_LN"] + ", račun nije validan!")    
+                Msg("Stopa poreza nije unesena u liniji " + lineData["NKPR_LN_BR_LN"] + ", račun nije validan!");
             }
 
             if(Contains(taxCategory, "ID")){
-                xmlTaxCategoryID = taxCategory["ID"];
+                xmlTaxCategoryID = GetNodeText(taxCategory["ID"]);
             }else{
-                Msg("Kategorija poreza nije unesena u liniji " + lineData["NKPR_LN_BR_LN"] + ", račun nije validan!")    
+                Msg("Kategorija poreza nije unesena u liniji " + lineData["NKPR_LN_BR_LN"] + ", račun nije validan!");
             }
 
       
@@ -1585,18 +1565,18 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
                 lineData["NKPR_LN_TXBLE"] = internalTaxCode;
                 // msg("Tax code converted: Category=" + xmlTaxCategoryID + ", Percent=" + xmlTaxPercent + " -> Internal Code=" + internalTaxCode);
             } else {
-                MessageBox("WARNING: No matching tax code found in PKFKPORZ for Category=" + xmlTaxCategoryID + ", Percent=" + xmlTaxPercent);
+                MessageBox("WARNING: No matching tax code found in PKFKPORZ for Category = " + xmlTaxCategoryID + ", Percent=" + xmlTaxPercent);
                 lineData["NKPR_LN_TXBLE"] = 0;
             }
         }
 
         // Price information
         // price = GetDictValue(lineDict, "Price");
-        price = lineDict["Price"];
+        price = GetNodeText(lineDict["Price"]);
         // Msg("PRICE RAW: " + price);
 
         // if (price != null && price != "") {
-        lineData["NKPR_LN_PPRCE"] = ParseDecimal(price["PriceAmount"]["@text"]);
+        lineData["NKPR_LN_PPRCE"] = ParseDecimal(GetNodeText(price["PriceAmount"]));
         // msg("LINE PRICE: " + lineData["NKPR_LN_PPRCE"]);
         // }
         
@@ -1605,13 +1585,13 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
 
 
         if(Contains(price, "AllowanceCharge")){
-            allowanceCharge = price["AllowanceCharge"];
+            allowanceCharge = GetNodeText(price["AllowanceCharge"]);
 
             discountAmount = (lineData["NKPR_LN_PQTY"] * lineData["NKPR_LN_PPRCE"]) - lineData["NKPR_LN_AMT"];
             postotak = (discountAmount / (lineData["NKPR_LN_PQTY"] * lineData["NKPR_LN_PPRCE"])) * 100;
 
-            MSG("discountAmount: " + discountAmount);
-            MSG("postotak: " + postotak);
+            // MSG("discountAmount: " + discountAmount);
+            // MSG("postotak: " + postotak);
 
             // if (allowanceCharge != null && allowanceCharge != "") {
             //     // Handle both single and multiple allowance/charge entries
@@ -1653,30 +1633,30 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
     }
 }
 
-// Process allowance/charge for line item
-function ProcessAllowanceCharge(allowanceChargeDict, lineData) {
-    chargeIndicator = allowanceChargeDict["ChargeIndicator"];
-    // amount = ParseDecimal(allowanceChargeDict["Amount"]["@text"]);
+// // Process allowance/charge for line item
+// function ProcessAllowanceCharge(allowanceChargeDict, lineData) {
+//     chargeIndicator = allowanceChargeDict["ChargeIndicator"];
+//     // amount = ParseDecimal(allowanceChargeDict["Amount"]["@text"]);
     
-    if (chargeIndicator == "false" && amount > 0) {
-        // This is an allowance (discount)
-        lineData["NKPR_LN_POPL"] = amount;
+//     if (chargeIndicator == "false" && amount > 0) {
+//         // This is an allowance (discount)
+//         lineData["NKPR_LN_POPL"] = amount;
         
-        // Calculate discount percentage
-        grossAmount = lineData["NKPR_LN_PQTY"] * lineData["NKPR_LN_PPRCE"];
-        if (grossAmount > 0) {
-            lineData["NKPR_LN_PDISC"] = (amount / grossAmount) * 100;
-        }
-    } elif (chargeIndicator == "true" && amount > 0) {
-        // This is a charge - handle as negative discount
-        lineData["NKPR_LN_POPL"] = -amount;
+//         // Calculate discount percentage
+//         grossAmount = lineData["NKPR_LN_PQTY"] * lineData["NKPR_LN_PPRCE"];
+//         if (grossAmount > 0) {
+//             lineData["NKPR_LN_PDISC"] = (amount / grossAmount) * 100;
+//         }
+//     } elif (chargeIndicator == "true" && amount > 0) {
+//         // This is a charge - handle as negative discount
+//         lineData["NKPR_LN_POPL"] = -amount;
         
-        grossAmount = lineData["NKPR_LN_PQTY"] * lineData["NKPR_LN_PPRCE"];
-        if (grossAmount > 0) {
-            lineData["NKPR_LN_PDISC"] = -(amount / grossAmount) * 100;
-        }
-    }
-}
+//         grossAmount = lineData["NKPR_LN_PQTY"] * lineData["NKPR_LN_PPRCE"];
+//         if (grossAmount > 0) {
+//             lineData["NKPR_LN_PDISC"] = -(amount / grossAmount) * 100;
+//         }
+//     }
+// }
 
 
 function end(){
@@ -1685,16 +1665,7 @@ function end(){
     exit;
 }
 
-// Helper function to check if value is an array
-function IsArray(value) {
-    return (value != null && value.type() == "object" && value.Length != undefined);
-}
 
-// Helper function to check if value is a string
-function IsString(value) {
-//msg ("HHHH Value: " + value+" TYPE: " + value.type());    
-    return (value.type() == "STRING");
-}
 
 // Helper function to check if value is a primitive (leaf) value (not a dictionary/object)
 // Primitive types include: STRING, INTEGER, DOUBLE, BOOLEAN, etc.
@@ -1719,103 +1690,80 @@ function ParseDecimal(inputString) {
     doubleVal = double(inputString);
     return doubleVal;
 }
-// Helper function to parse decimal values (enhanced)
-function ParseDecimal_old(value) {
-    if (value == "" || value == null) {
-        return 0.00;
-    }
-    
-    // If it's already a primitive value (number or string), convert directly
-    if (IsPrimitiveValue(value)) {
-        // Check if it's already numeric
-        valueType = value.type();
-        if (valueType == "DOUBLE" || valueType == "INTEGER") {
-            return Double(value); // Already a number, just ensure it's double
-        }
-        // It's a string or other primitive, convert to double
-        return Double(value);
-    }
-    
-    // Handle dictionary/object values with #text element
-    if (value.Contains("#text")) {
-        return Double(value["#text"]);
-    }
-    
-    // Fallback: try to convert to string then to double
-    return Double(String(value));
-}
 
-// Helper function to safely get value from dictionary with dot notation support
-function GetDictValue(dict, key) {
-    if (dict == null || IsPrimitiveValue(dict)) {
-        return dict; // Return the primitive value directly (string, number, boolean, etc.)
-    }
+
+// // Helper function to safely get value from dictionary with dot notation support
+// function GetDictValue(dict, key) {
+//     if (dict == null || IsPrimitiveValue(dict)) {
+//         return dict; // Return the primitive value directly (string, number, boolean, etc.)
+//     }
     
-    if (!Contains(key, ".")) {
-        // Simple key
-        if (Contains(dict, key)) {
-            return dict[key];
-        } else {
-            return "";
-        }
-    } else {
-        // Nested key with dot notation (e.g., "Item.Name")
-        keys = Split(key, ".");
-        currentDict = dict;
+//     if (!Contains(key, ".")) {
+//         // Simple key
+//         if (Contains(dict, key)) {
+//             return dict[key];
+//         } else {
+//             return "";
+//         }
+//     } else {
+//         // Nested key with dot notation (e.g., "Item.Name")
+//         keys = Split(key, ".");
+//         currentDict = dict;
         
-        for (i = 0; i < Size(keys); i++) {
-            currentKey = keys[i];
+//         for (i = 0; i < Size(keys); i++) {
+//             currentKey = keys[i];
             
-            if (currentDict == null || IsPrimitiveValue(currentDict)) {
-                return ""; // Hit a primitive value before reaching the end of the key path
-            }
+//             if (currentDict == null || IsPrimitiveValue(currentDict)) {
+//                 return ""; // Hit a primitive value before reaching the end of the key path
+//             }
             
-            if (Contains(currentDict, currentKey)) {
-                currentDict = currentDict[currentKey];
-            } else {
-                return "";
-            }
-        }
+//             if (Contains(currentDict, currentKey)) {
+//                 currentDict = currentDict[currentKey];
+//             } else {
+//                 return "";
+//             }
+//         }
         
-        return currentDict;
-    }
-}
-// Helper function to safely get value from dictionary with dot notation support
-function GetDictValue2(dict, key) {
-    if (dict == null || IsPrimitiveValue(dict)) {
-        return dict; // Return the primitive value directly (string, number, boolean, etc.)
-    }
-msg("KKKK DICT: " + dict+" KEY: " + key);    
-    if (!Contains(key, ".")) {
-        // Simple key
-        if (Contains(dict, key)) {
-   msg("JJJJ VALUE: " + dict[key]);         
-            return dict[key];
-        } else {
-            return "";
-        }
-    } else {
-        // Nested key with dot notation (e.g., "Item.Name")
-        keys = key.Split(".");
-        currentDict = dict;
+//         return currentDict;
+//     }
+// }
+
+// // Helper function to safely get value from dictionary with dot notation support
+// function GetDictValue2(dict, key) {
+//     if (dict == null || IsPrimitiveValue(dict)) {
+//         return dict; // Return the primitive value directly (string, number, boolean, etc.)
+//     }
+// msg("KKKK DICT: " + dict+" KEY: " + key);    
+//     if (!Contains(key, ".")) {
+//         // Simple key
+//         if (Contains(dict, key)) {
+//    msg("JJJJ VALUE: " + dict[key]);         
+//             return dict[key];
+//         } else {
+//             return "";
+//         }
+//     } else {
+//         // Nested key with dot notation (e.g., "Item.Name")
+//         keys = key.Split(".");
+//         currentDict = dict;
         
-        for (i = 0; i < keys.size(); i++) {
-            currentKey = keys[i];
+//         for (i = 0; i < keys.size(); i++) {
+//             currentKey = keys[i];
             
-            if (currentDict == null || IsPrimitiveValue(currentDict)) {
-                return ""; // Hit a primitive value before reaching the end of the key path
-            }
+//             if (currentDict == null || IsPrimitiveValue(currentDict)) {
+//                 return ""; // Hit a primitive value before reaching the end of the key path
+//             }
             
-            if (Contains(currentDict, currentKey)) {
-                currentDict = currentDict[currentKey];
-            } else {
-                return "";
-            }
-        }
+//             if (Contains(currentDict, currentKey)) {
+//                 currentDict = currentDict[currentKey];
+//             } else {
+//                 return "";
+//             }
+//         }
         
-        return currentDict;
-    }
-}
+//         return currentDict;
+//     }
+// }
 
 // Import header data into NKNAERGL table
 function ImportHeaderDataToERGL(docType) {
@@ -1908,7 +1856,7 @@ function ImportHeaderDataToERGL(docType) {
         
         sqlParams.Add({"@shpZip", NKPR_GL_SHPZIP});
         sqlParams.Add({"@shpState", NKPR_GL_SHPST});
-//sqlParams.Add({"@shpGLN", NKPR_AD_GLN"]});
+  //sqlParams.Add({"@shpGLN", NKPR_AD_GLN"]});
         sqlParams.Add({"@payment", NKPR_GL_SIF_PL});
         sqlParams.Add({"@model", NKPR_GL_MODEL});
         sqlParams.Add({"@poziv", NKPR_GL_POZIV});
@@ -2109,7 +2057,9 @@ function GetUnitCodeFromUN(unCode) {
 
 // Validate if invoice ESD date belongs to current fiscal year
 function ValidateFiscalYear() {
+    
     return true; // Temporarily disable fiscal year check
+    
     try {
         //if (esdDate == "" || esdDate == null) {
         //    return false; // No ESD date provided
@@ -2267,20 +2217,20 @@ function ProcessSingleAttachment(attachmentRef, attachmentIndex) {
         // Get attachment ID
         attachmentID = "";
         if (Contains(attachmentRef, "ID")) {
-            attachmentID = attachmentRef["ID"];
+            attachmentID = GetNodeText(attachmentRef["ID"]);
         }
         
         // Get attachment description
         attachmentDesc = "";
         if (Contains(attachmentRef, "DocumentDescription")) {
-            attachmentDesc = attachmentRef["DocumentDescription"];
+            attachmentDesc = GetNodeText(attachmentRef["DocumentDescription"]);
         }
         
         // Extract embedded binary object
         if (Contains(attachmentRef, "Attachment")) {
-            attachment = attachmentRef["Attachment"];
+            attachment = GetNodeText(attachmentRef["Attachment"]);
             if (Contains(attachment, "EmbeddedDocumentBinaryObject")) {
-                embeddedObj = attachment["EmbeddedDocumentBinaryObject"];
+                embeddedObj = GetNodeText(attachment["EmbeddedDocumentBinaryObject"]);
                 
                 // Get MIME type and filename
                 mimeCode = "";
@@ -2298,12 +2248,8 @@ function ProcessSingleAttachment(attachmentRef, attachmentIndex) {
                 }
                 
                 // Get base64 content
-                if (Contains(embeddedObj, "@text")) {
-                    base64Content = embeddedObj["@text"];
-                } else {
-                    base64Content = embeddedObj;
-                }
-                
+                base64Content = GetNodeText(embeddedObj);
+                                
                 if (base64Content != "" && filename != "") {
                     // Save attachment to disk and get reference number
                     attachmentNum = SaveAttachmentToDisk(base64Content, filename, attachmentDesc, attachmentID);
@@ -2327,7 +2273,7 @@ function ProcessSingleAttachment(attachmentRef, attachmentIndex) {
         }
         
     } catch (error) {
-        msg("Greška pri obradi attachment: " + error);
+        msg("Greška pri obradi attachmenta: " + error);
     }
 }
 
@@ -2458,90 +2404,7 @@ function SaveAttachmentToDisk(base64Content, filename, description, attachmentID
     }
 }
 
-// -----------------------------------------------------------
-// Extract and save line item attachments
-// Stores attachment ID in NKNAERLN.NKPR_LN_SASTAV field
-// -----------------------------------------------------------
-function ExtractLineItemAttachments(lineDict, lineNumber) {
-    try {
-        lineAttachmentID = 0;
-        
-        // Check if line has AttachmentReference or similar structure
-        if (Contains(lineDict, "AdditionalDocumentReference")) {
-            lineRef = lineDict["AdditionalDocumentReference"];
-            
-            // Handle both single and multiple references
-            refsToProcess = {};
-            if (lineRef.type() == "ARRAY") {
-                refsToProcess = lineRef;
-            } else {
-                refsToProcess = {lineRef};
-            }
-            
-            for (i = 0; i < Size(refsToProcess); i++) {
-                ref = refsToProcess[i];
-                
-                // Get attachment ID
-                attachmentID = "";
-                if (Contains(ref, "ID")) {
-                    attachmentID = ref["ID"];
-                }
-                
-                // Get description
-                attachmentDesc = "Line " + lineNumber + " attachment";
-                if (Contains(ref, "DocumentDescription")) {
-                    attachmentDesc = "Line " + lineNumber + ": " + ref["DocumentDescription"];
-                }
-                
-                // Extract embedded binary object
-                if (Contains(ref, "Attachment")) {
-                    attachment = ref["Attachment"];
-                    if (Contains(attachment, "EmbeddedDocumentBinaryObject")) {
-                        embeddedObj = attachment["EmbeddedDocumentBinaryObject"];
-                        
-                        // Get MIME type and filename
-                        mimeCode = "";
-                        filename = "";
-                        base64Content = "";
-                        
-                        if (Contains(embeddedObj, "@attributes")) {
-                            attrs = embeddedObj["@attributes"];
-                            if (Contains(attrs, "mimeCode")) {
-                                mimeCode = attrs["mimeCode"];
-                            }
-                            if (Contains(attrs, "filename")) {
-                                filename = attrs["filename"];
-                            }
-                        }
-                        
-                        // Get base64 content
-                        if (Contains(embeddedObj, "@text")) {
-                            base64Content = embeddedObj["@text"];
-                        } else {
-                            base64Content = embeddedObj;
-                        }
-                        
-                        if (base64Content != "" && filename != "") {
-                            // Save attachment to disk
-                            lineAttachmentID = SaveAttachmentToDisk(base64Content, filename, attachmentDesc, attachmentID);
-                            if (lineAttachmentID > 0) {
-                                msg("Saved Line " + lineNumber + " attachment: " + filename + " with ID: " + lineAttachmentID);
-                                // Return first attachment ID found for this line
-                                return lineAttachmentID;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        return lineAttachmentID;
-        
-    } catch (error) {
-        msg("Greška pri extraction line item attachments: " + error);
-        return 0;
-    }
-}
+
 
 // -----------------------------------------------------------
 // Look up internal tax code (PKFK_TAX_CODE) from PKFKPORZ table
@@ -2564,7 +2427,7 @@ function LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent) {
         // If category is 'S' (standard VAT), need to convert to PDV format with rate
         if (xmlTaxCategoryID == "S") {
             // Standard VAT - combine with percent to create PKFK_TAX_TARIFA like "PDV25", "PDV13", "PDV5"
-            pkfkTaxTarifa = "PDV" + String(int(xmlTaxPercent));
+            pkfkTaxTarifa = "PDV" + String(xmlTaxPercent);
         }
         
         // Query PKFKPORZ table to find matching tax code
@@ -2574,7 +2437,7 @@ function LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent) {
         sql_tax_lookup = "SELECT PKFK_TAX_CODE FROM " + databaseName + ".dbo.PKFKPORZ " +
                         "WHERE (PKFK_TAX_TIP = '' OR PKFK_TAX_TIP IS NULL) " +
                         "AND PKFK_TAX_P_PORZ IN ('R', 'T', 'O')" +
-                        "AND (PKFK_TAX_TARIFA = @p1 OR PKFK_TAX_TARIFA LIKE @p1 + '%') " +
+                        "AND (PKFK_TAX_TARIFA = @p1) " +
                         "AND PKFK_TAX_STOPA = @p2;";
         
         sqlParams = {};
@@ -2601,7 +2464,7 @@ function LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent) {
             
             if (Size(taxResult2) >= 2) {
                 taxCode = taxResult2[1][0];
-                msg("Found tax code by category only: " + taxCode + " for Category=" + xmlTaxCategoryID);
+                // msg("Found tax code by category only: " + taxCode + " for Category=" + xmlTaxCategoryID);
                 return taxCode;
             }
         }
@@ -2619,4 +2482,13 @@ function LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent) {
 function UnescapeFromXml(inputString){
     // return inputString.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;").Replace("'", "&apos;");
     return inputString.Replace("&amp;", "&").Replace("&lt;", "<").Replace("&gt;", ">");
+}
+
+
+function GetNodeText(node){
+    if (Contains(node, "@text")) {
+        return UnescapeFromXml(node["@text"]);
+    } else {
+        return node;
+    }
 }

@@ -1139,32 +1139,33 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         }
         
         
-        // Notes
-        if (Contains(docData, "Note")) {
-            note = GetNodeText(docData["Note"]);
-            if (note != "") {
-                /*
-                // Parse referenced invoices from note, za slučaj kada dobavljač šalje račun koji je napravljen sa našim programom Asconto ERP
-                refStartPos = IndexOf(note, "#REF(");
-                if (refStartPos >= 0) {
-                    refEndPos = IndexOf(note, ")", refStartPos);
-                    if (refEndPos >= 0) {
-                        refContent = Substring(note, refStartPos + 5, refEndPos - refStartPos - 5);
-                        refNumbers = refContent.Split(","); // Split by comma 
-                        if (Size(refNumbers) == 1) {
-                            NKPR_GL_REZ3 = refNumbers[1].trim();
-                        } elif (Size(refNumbers) > 1){
-                            //put all data to MEMO field separated by comma
-                            MemoX += "Referencirani računi: ";
-                        } else {
-                            //no valid ref found
-                        }
-                    }
-                }
-                */
-                //tu sad treba spremit cijeli note u MemoH ili MemoF ili u linije ili negdje drugdje ako treba
-            }
-        }
+        // // Notes
+        // // note-i iz xml-a
+        // if (Contains(docData, "Note")) {
+        //     note = GetNodeText(docData["Note"]);
+        //     if (note != "") {
+        //         /*
+        //         // Parse referenced invoices from note, za slučaj kada dobavljač šalje račun koji je napravljen sa našim programom Asconto ERP
+        //         refStartPos = IndexOf(note, "#REF(");
+        //         if (refStartPos >= 0) {
+        //             refEndPos = IndexOf(note, ")", refStartPos);
+        //             if (refEndPos >= 0) {
+        //                 refContent = Substring(note, refStartPos + 5, refEndPos - refStartPos - 5);
+        //                 refNumbers = refContent.Split(","); // Split by comma 
+        //                 if (Size(refNumbers) == 1) {
+        //                     NKPR_GL_REZ3 = refNumbers[1].trim();
+        //                 } elif (Size(refNumbers) > 1){
+        //                     //put all data to MEMO field separated by comma
+        //                     MemoX += "Referencirani računi: ";
+        //                 } else {
+        //                     //no valid ref found
+        //                 }
+        //             }
+        //         }
+        //         */
+        //         //tu sad treba spremit cijeli note u MemoH ili MemoF ili u linije ili negdje drugdje ako treba
+        //     }
+        // }
 
         // Extract and save notes to NKNAOPIS table
         ExtractAndSaveNotes(docData);
@@ -1244,8 +1245,7 @@ function SaveNoteToNKNAOPIS(noteText) {
             startPos += chunkSize;
             lineNum++;
         }
-        
-        msg("Note saved with reference number: " + nextNoteNum + " (" + (lineNum - 1) + " lines)");
+
         return nextNoteNum;
         
     } catch (error) {
@@ -1259,88 +1259,55 @@ function SaveNoteToNKNAOPIS(noteText) {
 // -----------------------------------------------------------
 function ExtractAndSaveNotes(docData) {
     try {
+
+        restOfNotes = {};
+
         NKPR_GL_BROPIS = 0;
         NKPR_GL_BROPIS1 = 0;
+
         
         // Check if Note element exists
         if (!Contains(docData, "Note")) {
             return; // No notes to process
         }
         
-        noteValue = GetNodeText(docData["Note"]);
         
-        if (noteValue == null || noteValue == "") {
-            return; // Empty note
-        }
+        // MSG("noteValue: " + docData["Note"]); 
         
         
-        // Handle single note (STRING or OBJECT)
-        if (noteValue.type() == "STRING") {
-            // Single note as simple string
-            NKPR_GL_BROPIS = SaveNoteToNKNAOPIS(noteValue);
-            msg("Saved first note with reference: " + NKPR_GL_BROPIS);
-        }
-        elif (noteValue.type() == "OBJECT" && !IsArray(noteValue)) {
-            // Single note as object (might have #text)
-            noteText = "";
-            if (Contains(noteValue, "#text")) {
-                noteText = GetNodeText(noteValue["#text"]);
-            } else {
-                noteText = String(noteValue);
+        if (ArrayOrDict(docData["Note"]) == "array") {
+            for (i = 0; i < Size(docData["Note"]); i++) {
+                ProcessSingleNote(docData["Note"][i], i + 1);
             }
-            NKPR_GL_BROPIS = SaveNoteToNKNAOPIS(noteText);
-            msg("Saved first note with reference: " + NKPR_GL_BROPIS);
-        }
-        elif (noteValue.type() == "ARRAY") {
-            // Multiple notes as array
-            if (noteValue.size() > 0) {
-                // First note
-                firstNote = noteValue[0];
-                firstNoteText = "";
-                
-                if (firstNote.type() == "STRING") {
-                    firstNoteText = firstNote;
-                } elif (Contains(firstNote, "#text")) {
-                    firstNoteText = firstNote["#text"];
-                } else {
-                    firstNoteText = String(firstNote);
-                }
-                
-                NKPR_GL_BROPIS = SaveNoteToNKNAOPIS(firstNoteText);
-                msg("Saved first note with reference: " + NKPR_GL_BROPIS);
-            }
-            
-            if (noteValue.size() > 1) {
-                // Second note
-                secondNote = noteValue[1];
-                secondNoteText = "";
-                
-                if (secondNote.type() == "STRING") {
-                    secondNoteText = secondNote;
-                } elif (Contains(secondNote, "#text")) {
-                    secondNoteText = secondNote["#text"];
-                } else {
-                    secondNoteText = String(secondNote);
-                }
-                
-                NKPR_GL_BROPIS1 = SaveNoteToNKNAOPIS(secondNoteText);
-                msg("Saved second note with reference: " + NKPR_GL_BROPIS1);
-            }
-            
-            // If there are more than 2 notes, log a warning
-            if (noteValue.size() > 2) {
-                //ako ima više od va notesa, treba ih spremiti u istu tablu NKNAOPIS i na isti način, ali svaki notes treba otvorit novu liniju u NKNAERLN i referenti broj spremiti u NKPR_LN_BROPI
-                msg("WARNING: Document contains " + noteValue.size() + " notes, but only first 2 were saved");
-            }
+        } else {
+            ProcessSingleNote(docData["Note"], 1); // NKPR_GL_PICTFTR
         }
         
-        //msg("=== NOTES PROCESSING COMPLETE ===");
-        //msg("NKPR_GL_BROPIS: " + NKPR_GL_BROPIS);
-        //msg("NKPR_GL_BROPIS1: " + NKPR_GL_BROPIS1);
         
     } catch (error) {
         MessageBox("Greška pri obradi napomena: " + error);
     }
+}
+
+function ProcessSingleNote(noteNode, noteIndex) {
+
+    noteText = GetNodeText(noteNode);
+    if(noteText.Type != "STRING"){
+        return;
+    }
+
+    // MSG(noteIndex + ". Note text: " + noteText);
+
+    if(noteIndex == 1){
+        NKPR_GL_BROPIS = SaveNoteToNKNAOPIS(noteText);
+    } elif(noteIndex == 2){
+        NKPR_GL_BROPIS1 = SaveNoteToNKNAOPIS(noteText);
+    }else{
+        restOfNotes.Add(SaveNoteToNKNAOPIS(noteText));
+    }
+
+
+    // noteNum = SaveNoteToNKNAOPIS(noteText);
 }
 
 // Extract line items from Dictionary
@@ -1371,7 +1338,8 @@ function ExtractLineItemsFromDict(invoiceDict, docType) {
             quantityElementName = "DebitedQuantity";
         }
         
-         
+
+        numOfLines = 0;
 
         if(ArrayOrDict(documentDict[documentType][lineElementName]) == "array"){
             for(mmm = 0; mmm < Size(documentDict[documentType][lineElementName]); mmm++){
@@ -1398,7 +1366,6 @@ function ExtractLineItemsFromDict(invoiceDict, docType) {
                 lineItems.Add(lineData);
             }
         }
-
 
 
         // MSG(documentDict[documentType][lineElementName]); 
@@ -1474,7 +1441,10 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
         // Basic line information
         // lineData["NKPR_LN_BR_LN"] = GetDictValue(lineDict, "ID");
 
-        lineData["NKPR_LN_BR_LN"] = GetNodeText(lineDict["ID"]);
+        // lineData["NKPR_LN_BR_LN"] = GetNodeText(lineDict["ID"]);
+        numOfLines++;
+        lineData["NKPR_LN_BR_LN"] = numOfLines;
+        
 
     // msg ("LINE ID: " + lineData["NKPR_LN_BR_LN"]);
 
@@ -1783,7 +1753,7 @@ function ImportHeaderDataToERGL(docType) {
         sql_insert += "NKPR_GL_SHPZIP, NKPR_GL_SHPST,";
         sql_insert += "NKPR_GL_SIF_PL, NKPR_GL_MODEL, NKPR_GL_POZIV, NKPR_GL_DATPRI, ";
         sql_insert += "NKPR_GL_TAXAMT, NKPR_GL_TOTAL, NKPR_GL_DESC,";
-        sql_insert += "NKPR_GL_BROPIS1, NKPR_GL_REZ3, NKPR_GL_DATECR, NKPR_GL_DRZAVA, ";
+        sql_insert += "NKPR_GL_BROPIS, NKPR_GL_BROPIS1, NKPR_GL_REZ3, NKPR_GL_DATECR, NKPR_GL_DRZAVA, ";
         sql_insert += "NKPR_GL_POSRED, NKPR_GL_PICTHDR, NKPR_GL_PICTFTR";
         sql_insert += ") VALUES (";
         sql_insert += "@brpon, @docType, @invDate, @timeCreated, ";
@@ -1794,7 +1764,7 @@ function ImportHeaderDataToERGL(docType) {
         sql_insert += "@shpZip, @shpState, ";
         sql_insert += "@payment, @model, @poziv, @datpri, ";
         sql_insert += "@taxTotal, @total, @glDesc, ";
-        sql_insert += "@note, @rez3, @created, @country, @posred, ";
+        sql_insert += "@note1, @note2, @rez3, @created, @country, @posred, ";
         sql_insert += "@pictHdr, @pictFtr ";
         sql_insert += ");";
         
@@ -1869,8 +1839,8 @@ function ImportHeaderDataToERGL(docType) {
         
         sqlParams.Add({"@glDesc", NKPR_GL_DESC}); /////// 40
         
-        // sqlParams.Add({"@note", NKPR_GL_BROPIS1});
-        sqlParams.Add({"@note", 0});
+        sqlParams.Add({"@note1", NKPR_GL_BROPIS}); 
+        sqlParams.Add({"@note2", NKPR_GL_BROPIS1}); 
 
         sqlParams.Add({"@rez3", NKPR_GL_REZ3});
         sqlParams.Add({"@created", NKPR_GL_INVDTE}); //????
@@ -1902,7 +1872,7 @@ function ImportLineItemsToERLN(recordId, lineItems) {
     try {
 
         // msg("lineItems: " + lineItems);
-
+        // linije artikala
         for (i = 0; i < Size(lineItems); i++) {
             lineData = lineItems[i];
             
@@ -1977,6 +1947,75 @@ function ImportLineItemsToERLN(recordId, lineItems) {
             result = SqlNonQuery(sql_insert, sqlParams);
             if (result == 0) {
                 throw "Greška prilikom unosa stavke " + (i + 1);
+            }
+        }
+
+        //opisne linije s attachment referencama u nksypict
+        if(Size(restOfAttachments) > 0) {
+            for(attNum = 0; attNum < Size(restOfAttachments); attNum++){
+                
+                sql_insert = "INSERT INTO " + databaseName + ".dbo.NKNAERLN (";
+                sql_insert += "NKPR_LN_INVNM, NKPR_LN_SASTAV, NKPR_LN_BR_LN, NKPR_LN_MA_US, NKPR_LN_PCODE, ";
+                sql_insert += "NKPR_LN_PDESC) VALUES (";
+                sql_insert += "@recordId, @sastav, @brLn, @MaUs, ";
+                sql_insert += "@PCode, @PDesc";
+                sql_insert += ");";
+                
+                sqlParams = {};
+                sqlParams.Add({"@recordId", NKPR_GL_BRPON});
+                sqlParams.Add({"@sastav", restOfAttachments[attNum]});
+                numOfLines++;
+                sqlParams.Add({"@brLn", numOfLines});
+                sqlParams.Add({"@MaUs", "O"});
+                sqlParams.Add({"@PCode", "\\"});
+
+                sqlParams.Add({"@PDesc", "Prilog broj " + (attNum + 1)}); ///// 50
+                    
+                result = SqlNonQuery(sql_insert, sqlParams);
+                if (result == 0) {
+                    throw "Greška prilikom unosa linije s referencom na attachment.";
+                }
+            }
+        }
+        
+        //linije s referencama na note-ove
+        if(Size(restOfNotes) > 0) {
+            noteNum = 0;
+            while( true ) {
+                if(noteNum >= Size(restOfNotes)) {
+                    break;
+                }
+
+                brOpi = restOfNotes[noteNum];
+                brOpi1 = 0;
+                if(noteNum + 1 < Size(restOfNotes)) {
+                    brOpi1 = restOfNotes[noteNum + 1];
+                }
+
+                sql_insert = "INSERT INTO " + databaseName + ".dbo.NKNAERLN (";
+                sql_insert += "NKPR_LN_INVNM, NKPR_LN_BROPI, NKPR_LN_BROPI1, NKPR_LN_BR_LN, NKPR_LN_MA_US, NKPR_LN_PCODE, ";
+                sql_insert += "NKPR_LN_PDESC) VALUES (";
+                sql_insert += "@recordId, @brOpi, @brOpi1, @brLn, @MaUs, ";
+                sql_insert += "@PCode, @PDesc";
+                sql_insert += ");";
+                
+                sqlParams = {};
+                sqlParams.Add({"@recordId", NKPR_GL_BRPON});
+                sqlParams.Add({"@brOpi", brOpi});
+                sqlParams.Add({"@brOpi1", brOpi1});
+                numOfLines++;
+                sqlParams.Add({"@brLn", numOfLines});
+                sqlParams.Add({"@MaUs", "O"});
+                sqlParams.Add({"@PCode", "\\"});
+
+                sqlParams.Add({"@PDesc", "Bilješka"}); ///// 50
+                    
+                result = SqlNonQuery(sql_insert, sqlParams);
+                if (result == 0) {
+                    throw "Greška prilikom unosa linije s referencom na note.";
+                }
+
+                noteNum += 2;
             }
         }
         
@@ -2120,7 +2159,8 @@ function LogNKSYELOG(elogStatusCode, _invoiceId, description = ""){
 // -----------------------------------------------------------
 function ExtractAndSaveAttachments(invoiceDict, docType) {
     try {
-    
+        restOfAttachments = {};
+
         // Get the root document data
         docData = invoiceDict;
         // if (docType == "S" && Contains(invoiceDict, "Invoice")) {
@@ -2171,7 +2211,7 @@ function ExtractAndSaveAttachments(invoiceDict, docType) {
             slikaIliDokument = "D"; // Document
             sqlParams.Add({"@p4", slikaIliDokument});
 
-            sqlParams.Add({"@p5", ""}); //$$$ NKPR_GL_CUSCOD
+            sqlParams.Add({"@p5", NKPR_GL_CUSCOD}); //$$$ NKPR_GL_CUSCOD
             sqlParams.Add({"@p6", "UR"}); // ulazni račun
             
             sqlNonQuery(sql_insert_pic, sqlParams);
@@ -2182,23 +2222,12 @@ function ExtractAndSaveAttachments(invoiceDict, docType) {
 
         // Process AdditionalDocumentReference elements (contains attachments)
         if (Contains(docData, "AdditionalDocumentReference")) {
-            additionalDocs = docData["AdditionalDocumentReference"];
-            
-            // Handle both single attachment and multiple attachments
-            // if (additionalDocs.type() == "ARRAY") {
-            //     for (i = 0; i < Size(additionalDocs); i++) {
-            //         ProcessSingleAttachment(additionalDocs[i], i);
-            //     }
-            // } else {
-            //     ProcessSingleAttachment(additionalDocs, 0);
-            // }
-
-            if (ArrayOrDict(additionalDocs) == "array") {
-                for (i = 1; i <= Size(additionalDocs); i++) {
-                    ProcessSingleAttachment(additionalDocs[i], i);
+            if (ArrayOrDict(docData["AdditionalDocumentReference"]) == "array") {
+                for (i = 0; i < Size(docData["AdditionalDocumentReference"]); i++) {
+                    ProcessSingleAttachment(docData["AdditionalDocumentReference"][i], i + 1);
                 }
             } else {
-                ProcessSingleAttachment(additionalDocs, 1);
+                ProcessSingleAttachment(docData["AdditionalDocumentReference"], 1); // NKPR_GL_PICTFTR
             }
         }
 
@@ -2230,7 +2259,7 @@ function ProcessSingleAttachment(attachmentRef, attachmentIndex) {
         if (Contains(attachmentRef, "Attachment")) {
             attachment = GetNodeText(attachmentRef["Attachment"]);
             if (Contains(attachment, "EmbeddedDocumentBinaryObject")) {
-                embeddedObj = GetNodeText(attachment["EmbeddedDocumentBinaryObject"]);
+                embeddedObj = attachment["EmbeddedDocumentBinaryObject"];
                 
                 // Get MIME type and filename
                 mimeCode = "";
@@ -2249,23 +2278,23 @@ function ProcessSingleAttachment(attachmentRef, attachmentIndex) {
                 
                 // Get base64 content
                 base64Content = GetNodeText(embeddedObj);
-                                
+
                 if (base64Content != "" && filename != "") {
                     // Save attachment to disk and get reference number
                     attachmentNum = SaveAttachmentToDisk(base64Content, filename, attachmentDesc, attachmentID);
                     
                     if (attachmentNum > 0) {
-                        // Determine attachment type (Header, Footer, or Line item)
-                        // if (attachmentIndex == 0 && NKPR_GL_PICTHDR == 0) {
-                        //     NKPR_GL_PICTHDR = attachmentNum;
-                        //     msg("Saved Header attachment with num: " + attachmentNum);
-                        // } el
+                            // Determine attachment type (Header, Footer, or Line item)
+                            // if (attachmentIndex == 0 && NKPR_GL_PICTHDR == 0) {
+                            //     NKPR_GL_PICTHDR = attachmentNum;
+                            //     msg("Saved Header attachment with num: " + attachmentNum);
+                            // } el
                         if (attachmentIndex == 1 && NKPR_GL_PICTFTR == 0) {
                             NKPR_GL_PICTFTR = attachmentNum;
                         } else {
-                            // Line item attachment - would need to store in NKNAERLN reference
-                            // Store in temporary array for later processing with line items
-                            // msg("Saved Line attachment with num: " + attachmentNum);
+                            // msg("Saved attachment with num: " + attachmentNum);
+                            restOfAttachments.Add(attachmentNum);
+                            // msg("restOfAttachments: " + restOfAttachments);
                         }
                     }
                 }

@@ -9,6 +9,11 @@ args = CommandLineArgs();
 //MessageBox(args[1]); // e.g. Path + wxeizvje.cscs   //SCRIPT
 //MessageBox(args[2]); // e.g. "Y4"                   //companyCode
 //MessageBox(args[3]); // e.g. "ANA"                  //userCode
+//MessageBox(args[4]); // e.g. "FINA"                 //provider (optional)
+
+// Global variable for provider override
+define PROVIDER_OVERRIDE type A size 20;
+PROVIDER_OVERRIDE = "";
 
 if(Size(args) > 2){
     companyCode = args[2]; // e.g. Y3
@@ -16,19 +21,19 @@ if(Size(args) > 2){
 
     if(Size(args) > 3){
         userCode = args[3]; // e.g. ANA
-
-        // if(Size(args) > 4){
-        //     invNum = args[4]; // e.g. 90100002
-
-        //     if(Size(args) > 5){
-        //         attachmentPdfPath = args[5]; // e.g. C:\Temp\90100002.pdf
-        //     }else{
-        //         attachmentPdfPath = "";
-        //     }
-        // }else{
-        //     MessageBox("Nedostaje broj računa u argumentima.");
-        //     exit;
-        // }
+        
+        // Optional 5th parameter: provider override (FINA, MER, FINADEMO, MERDEMO)
+        if(Size(args) > 4){
+            PROVIDER_OVERRIDE = args[4].trim().Upper(); // e.g. FINA, MER, FINADEMO, MERDEMO
+            if(PROVIDER_OVERRIDE != "" && 
+               PROVIDER_OVERRIDE != "FINA" && 
+               PROVIDER_OVERRIDE != "FINADEMO" && 
+               PROVIDER_OVERRIDE != "MER" && 
+               PROVIDER_OVERRIDE != "MERDEMO"){
+                MessageBox("Nepoznat provider: " + PROVIDER_OVERRIDE + "\nPodržani: FINA, FINADEMO, MER, MERDEMO");
+                exit;
+            }
+        }
     }else{
         MessageBox("Nedostaje user code u argumentima.");
         exit;
@@ -124,6 +129,36 @@ function wxeizvje_OnDisplay() {
 
     // Load provider configuration
     LoadProviderConfiguration();
+    
+    // Override provider if specified in command line
+    if(PROVIDER_OVERRIDE != ""){
+        PROVIDER = PROVIDER_OVERRIDE;
+        MessageBox("Provider promijenjen na: " + PROVIDER);
+        
+        // Reload configuration for the overridden provider
+        sql_erac = "SELECT ERAC_REZ1, ERAC_SERVER, ERAC_SERVERT, ERAC_USER, ERAC_PASS, ERAC_USERT, ERAC_PASST, ERAC_DESC FROM " + databaseName + ".dbo.NKSYERAC WHERE ERAC_CODE = @p1;";
+        sqlParams = {};
+        sqlParams.Add({"@p1", PROVIDER});
+        
+        try {
+            eracRes = sqlQuery(sql_erac, sqlParams);
+            if (Size(eracRes) > 1) {
+                ERAC_REZ1 = eracRes[1][0].trim();
+                ERAC_SERVER = eracRes[1][1].trim();
+                ERAC_SERVERT = eracRes[1][2].trim();
+                ERAC_USER = eracRes[1][3].trim();
+                ERAC_PASS = eracRes[1][4].trim();
+                ERAC_USERT = eracRes[1][5].trim();
+                ERAC_PASST = eracRes[1][6].trim();
+                ERAC_DESC = eracRes[1][7].trim();
+            } else {
+                MessageBox("Nema konfiguracije za provider: " + PROVIDER);
+            }
+        } catch(exc) {
+            MessageBox("NKSYERAC reading error za provider " + PROVIDER + ": " + exc);
+        }
+    }
+    
     //MessageBox("Provider: " + PROVIDER + "\nSchemas path: " + SCHEMASPATH);
 }
 
@@ -730,24 +765,21 @@ function SendEReportingToMER(xmlContent, fileName) {
         jsonLoad = '{"username": "' + ERAC_USER + '", "password": "' + ERAC_PASS + '", "companyId": "' + Substring(KPSY_REZERVA, 0, 11) + '", "softwareId": "' + ERAC_DESC + '", "file": "' + escapedXml + '"}';
         //MessageBox("MER JSON Payload: " + jsonLoad);
 
-        for(i = 0; i < 10; i++){
-                webRequestResult = WebRequest(
-                "POST", 
-                /* endpoint + "ereporting", */ 
-                //"https://demo.moj-eracun.hr/api/fiscalization/eReporting",
-                endpoint + "/api/fiscalization/eReporting",
+        webRequestResult = WebRequest(
+            "POST", 
+            /* endpoint + "ereporting", */ 
+            //"https://demo.moj-eracun.hr/api/fiscalization/eReporting",
+            endpoint + "/api/fiscalization/eReporting",
 
-                jsonLoad, 
-                fileName,
-                "MERReportingSuccess", 
-                "MERReportingFailure", 
-                "application/json", 
-                null, 
-                1000 * 30, 
-                false
-            );
-            msg("ok");
-        }
+            jsonLoad, 
+            fileName,
+            "MERReportingSuccess", 
+            "MERReportingFailure", 
+            "application/json", 
+            null, 
+            1000 * 30, 
+            false
+        );
     } catch (ex) {
         MessageBox("Greška pri slanju na MER eIzvještavanje: " + ex);
     }
@@ -884,42 +916,54 @@ function SendEReportingToFINA(xmlContent, fileName) {
             return;
         }
 
-        // Create SOAP envelope for FINA eIzvještavanje
+        // For FINA, we need to send through WSDL web service
+        // Use similar approach as wxeracun.cscs SendToFINA()
+        
         requestId = UUID();
         
-        xmlBody = "<fin:EvidentirajIsporukuZaKojuNijeIzdanERacun xmlns:fin=\"http://www.fina.hr/e-racun/services\">\n";
-        xmlBody += "  <HeaderSupplier>\n";
-        xmlBody += "    <MessageID>" + requestId + "</MessageID>\n";
-        xmlBody += "    <SupplierID>9934:HR" + Substring(KPSY_REZERVA, 0, 11) + "</SupplierID>\n";
-        xmlBody += "    <MessageType>9002</MessageType>\n";  // eReporting message type
-        xmlBody += "  </HeaderSupplier>\n";
-        xmlBody += "  <Data>\n";
-        xmlBody += "    <EReportingEnvelope>\n";
-        xmlBody += "      <XMLStandard>HR-EIZV</XMLStandard>\n";
-        xmlBody += "      <ReportEnvelope>" + File2Base64(xmlContent) + "</ReportEnvelope>\n";
-        xmlBody += "    </EReportingEnvelope>\n";
-        xmlBody += "  </Data>\n";
-        xmlBody += "</fin:EvidentirajIsporukuZaKojuNijeIzdanERacun>";
-
-        soapAction = "";
-
-        // Call unified SOAP creation and sending
-        response = await CreateSOAP(
-            xmlBody,
-            soapAction,
-            endpoint,
-            ERAC_PASST,  // Certificate path
-            ERAC_PASS    // Certificate password
-        );
-
-        // Process response
-        if (response.StartsWith("ERROR:") || response.StartsWith("HTTP_ERROR:") || response.StartsWith("EXCEPTION:")) {
-            FINAReportingFailure(fileName, 0, response);
-        } else {
-            FINAReportingSuccess(fileName, 200, response);
+        // Save XML content to temporary file for signing
+        tempXmlFilePath = XMLpath() + "temp_" + fileName;
+        SaveFile(xmlContent, tempXmlFilePath, "");
+        
+        // Call FINA web service for eReporting
+        try {
+            ack = FINA_SEND_B2B_OUTGOING_INVOICE_REPORTING(
+                endpoint + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",
+                ERAC_DESC,
+                CERTPATH + ERAC_USERT, // service certificate
+                CERTPATH + ERAC_PASST, // p12 certificate (client)
+                ERAC_PASS,              // password for p12 certificate
+                "9500095",              // ERPID
+                
+                requestId,
+                "9934:" + Substring(KPSY_REZERVA, 0, 11), // supplierId
+                tempXmlFilePath         // eReporting XML file path
+            );
+            
+            // Clean up temp file
+            if(Exists(tempXmlFilePath)){
+                Delete(tempXmlFilePath);
+            }
+            
+            LogEReportingResponse("FINA", ack["AckStatusCode"], ack, fileName);
+            
+            if(ack["AckStatusCode"] == 10){
+                if(ack["Correct"]){
+                    FINAReportingSuccess(fileName, 200, "FINA eIzvještavanje uspješno poslano");
+                }else{
+                    FINAReportingFailure(fileName, ack["AckStatusCode"], "ErrorCode: " + ack["ErrorCode"] + "\nErrorMessage: " + ack["ErrorMessage"]);
+                }
+            }else{
+                FINAReportingFailure(fileName, ack["AckStatusCode"], "AckStatus: " + ack["AckStatus"] + "\nAckStatusText: " + ack["AckStatusText"]);
+            }
+        } catch (wsdlEx) {
+            MessageBox("Greška pri FINA WSDL pozivu: " + wsdlEx);
+            FINAReportingFailure(fileName, 0, "WSDL Exception: " + wsdlEx);
         }
+        
     } catch (ex) {
         MessageBox("Greška pri slanju na FINA eIzvještavanje: " + ex);
+        FINAReportingFailure(fileName, 0, "Exception: " + ex);
     }
 }
 

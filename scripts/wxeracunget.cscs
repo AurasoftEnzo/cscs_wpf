@@ -13,32 +13,64 @@ Import(strTrim(mpath()) + "CSCS.Math.dll");
 
 CreateWindow(strTrim(tpath()) + "wxeracunget.xaml");
 
+DEFINE cntr1 type i; // for datagrid
+
 DEFINE Rbr type i;
-DEFINE cntr1 type i;
+DEFINE TEMP_Rbr type i;
+
 
 DEFINE arrayRbr type i size 100 array 10000;
+DEFINE TEMP_arrayRbr type i size 100 array 10000;
+
 DEFINE arrayDobavljac type a size 500 array 10000;
+DEFINE TEMP_arrayDobavljac type a size 500 array 10000;
+
 DEFINE arrayOibDobavljaca type a size 11 array 10000;
+DEFINE TEMP_arrayOibDobavljaca type a size 11 array 10000;
+
 DEFINE arrayDatumIzdavanja type a size 10 array 10000;
+DEFINE TEMP_arrayDatumIzdavanja type a size 10 array 10000;
+
 DEFINE arrayDatumPDVa type a size 10 array 10000;
+DEFINE TEMP_arrayDatumPDVa type a size 10 array 10000;
+
 DEFINE arrayBrojRacuna type a size 50 array 10000;
+DEFINE TEMP_arrayBrojRacuna type a size 50 array 10000;
+
 
 DEFINE arrayBrojRacunaFina type a size 50 array 10000;
+DEFINE TEMP_arrayBrojRacunaFina type a size 50 array 10000;
+
 DEFINE arrayBrojRacunaMer type a size 50 array 10000;
+DEFINE TEMP_arrayBrojRacunaMer type a size 50 array 10000;
+
+
+DEFINE FilterDateFrom type d size 10;
+DEFINE FilterDateTo type d size 10;
 
 // savedXmlFilesList = {};
+
+
+// FilterDateFrom = Now("dd/MM/yyyy");
+// FilterDateTo = Now("dd/MM/yyyy");
+
+dtNow = DateTime();
+
+doubleToday = Math.Trunc(DateTimeToDouble(dtNow));
+
+FilterDateFrom = DoubleToDateTime(doubleToday - 60).ToString("yyyy-MM-dd");
+FilterDateTo = DoubleToDateTime(doubleToday + 7).ToString("yyyy-MM-dd");
+
 
 function wxeracunget_onDisplay(){
     cursor("wait");
     SetWidgetOptions("btnPreuzmi", "IsEnabled", "false");
-    SetWidgetOptions("StatusLabel", "Content", "Dohvaćanje liste ulaznih e-računa");
-    SetWidgetOptions("StatusLabel2", "Content", "Pričekajte...");
+    // SetWidgetOptions("StatusLabel", "Content", "Dohvaćanje liste ulaznih e-računa");
+    // SetWidgetOptions("StatusLabel2", "Content", "Pričekajte...");
 
     try{
         init();
         SetWindowOptions("wxeracungetWindow", "title", "Preuzimanje ulaznih e-računa(" + PROVIDER + ")");
-        getList();
-        DisplayArraySetup("datagridListaRacuna", counterFld: cntr1, activeElements: Rbr, maxElements: Rbr);
     }catch(ex){
         MessageBox("Greška pri inicijalizaciji:\n" + ex);
         // ??? LOG? ne?
@@ -46,7 +78,7 @@ function wxeracunget_onDisplay(){
     }
     
     cursor("dflt");
-    SetWidgetOptions("btnPreuzmi", "IsEnabled", "true");
+    // SetWidgetOptions("btnPreuzmi", "IsEnabled", "true");
     SetWidgetOptions("StatusLabel", "Content", "");
     SetWidgetOptions("StatusLabel2", "Content", "");
 }
@@ -161,11 +193,46 @@ function init(){
         KPSY_COMP_EMAIL = sqlResult[1][8].trim();
         KPSY_PO_FREIGHT = substring(sqlResult[1][9], 0, 2).trim();
         KPSY_REZERVAX = sqlResult[1][10].trim(); // Supplier GLN
-        KPSY_FISCAL_YR = sqlResult[1][11].trim();
+        KPSY_FISCAL_YR = sqlResult[1][11];
     } 
 }
 
+function btnPrikazi@clicked(){
+
+    cntr1 = 0;
+    Rbr = 0;
+    TEMP_Rbr = 0;
+
+    DisplayArray("datagridListaRacuna", "close");
+
+    cursor("wait");
+    SetWidgetOptions("btnPrikazi", "IsEnabled", "false");
+    SetWidgetOptions("btnPreuzmi", "IsEnabled", "false");
+
+    SetWidgetOptions("StatusLabel", "Content", "Provjera ulaznih e-računa.");
+    SetWidgetOptions("StatusLabel2", "Content", "Molim pričekajte...");
+
+    AsyncCall("getList", "endPrikazi");   
+
+    // DisplayArraySetup("datagridListaRacuna", counterFld: cntr1, activeElements: Rbr, maxElements: Rbr);
+}
+
+function endPrikazi(){
+    cursor("dflt");
+    SetWidgetOptions("StatusLabel", "Content", "");
+    SetWidgetOptions("StatusLabel2", "Content", "");
+
+    SetWidgetOptions("btnPrikazi", "IsEnabled", "true");
+}
+
 function getList(){
+
+
+    // sleep(5000);
+    // return;
+
+
+
     try {
         sql_erac = "SELECT
                 ERAC_REZ1, ERAC_SERVER, ERAC_SERVERT, ERAC_USER, ERAC_PASS, ERAC_USERT, ERAC_PASST, ERAC_DESC 
@@ -204,6 +271,13 @@ function getList(){
             MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA");
             exit;
         }
+
+        CheckLocalXmls();
+
+        CheckTempListInDB();
+
+        RunOnMain("endGetList");
+
     } catch (ex) {
         MessageBox("Greška u preuzimanju sa provider-a " + PROVIDER + ": " + ex);
         // !!! LOG !!!
@@ -223,7 +297,9 @@ function GetListFINA(){
             ERAC_PASS, // password za p12 certifikat
 
             UUID(), // messageId
-            "9934:" + companyOIB // OIB primatelja (VLASTITI) // !!! stavit pravi OIB iz baze
+            "9934:" + companyOIB, // OIB primatelja (VLASTITI) // !!! stavit pravi OIB iz baze
+            FilterDateFrom, // filterDateFrom
+            FilterDateTo // filterDateTo
         );
 
         // MSG("ack = " + ack);
@@ -336,32 +412,101 @@ function GetListMERFailure(trackingId, responseCode, res) {
     }
 }
 
+function CheckLocalXmls(){
+    UR_NEW_DirectoryPath = FILESPATH + "UR\\" + "NEW\\";
+    if (!Exists(UR_NEW_DirectoryPath)) {
+        MkDir(UR_NEW_DirectoryPath);
+    }
 
-function AddRacunToArrays(supplierName, supplierId, datumIzdavanja, datumPdva, supplierInvoiceId, eRacunBrojRacuna){
-    arrayDobavljac[Rbr] = supplierName;
-    arrayOibDobavljaca[Rbr] = supplierId;
-    arrayDatumIzdavanja[Rbr] = datumIzdavanja;
-    arrayDatumPDVa[Rbr] = datumPdva;
-    arrayBrojRacuna[Rbr] = supplierInvoiceId;
+    cd(UR_NEW_DirectoryPath);
+    listOfXmls = FindFiles("*.xml");
+
+    for(xmlCounter = 0; xmlCounter < Size(listOfXmls); xmlCounter++){
+
+        xmlFilePath = listOfXmls[xmlCounter];
+
+        xmlFilename = parsefile(xmlFilePath, "pfName") + ParseFile(xmlFilePath, "pfExt");;
+
+        AddRacunToArrays("FILE", "", "", "", xmlFilename, "");
+    }
+}
+
+function CheckTempListInDB(){
+    numOfInvoices = TEMP_Rbr;
+
     if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
-        arrayBrojRacunaMer[Rbr] = eRacunBrojRacuna;
+        TEMP_arrayInovoiceID = TEMP_arrayBrojRacunaMer;
     } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
-        arrayBrojRacunaFina[Rbr] = eRacunBrojRacuna;
+        TEMP_arrayInovoiceID = TEMP_arrayBrojRacunaFina;
     } else {
         MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA, MERDEMO, FINADEMO");
         exit;
     }
 
-    arrayRbr[Rbr] = ++Rbr;
+    for(invoiceIdCounter = 0; invoiceIdCounter < numOfInvoices; invoiceIdCounter++){
+        sqlQueryString = "SELECT COUNT(*) FROM " + databaseName + ".dbo.NKNAERGL WHERE NKPR_GL_POSRED = @p1";
+        sqlParams = {};
+        sqlParams.Add({"@p1", TEMP_arrayInovoiceID[invoiceIdCounter]});
+        sqlResult = sqlQuery(sqlQueryString, sqlParams);
+        if (Size(sqlResult) > 1)
+        {
+            count = sqlResult[1][0];
+            if(count > 0){
+                continue; // RemoveRacunFromTempArrays(invoiceId);
+            }else{
+                arrayDobavljac[Rbr] = TEMP_arrayDobavljac[invoiceIdCounter];
+                arrayOibDobavljaca[Rbr] = TEMP_arrayOibDobavljaca[invoiceIdCounter];
+                arrayDatumIzdavanja[Rbr] = TEMP_arrayDatumIzdavanja[invoiceIdCounter];
+                arrayDatumPDVa[Rbr] = TEMP_arrayDatumPDVa[invoiceIdCounter];
+                arrayBrojRacuna[Rbr] = TEMP_arrayBrojRacuna[invoiceIdCounter];
+                if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
+                    arrayBrojRacunaMer[Rbr] = TEMP_arrayBrojRacunaMer[invoiceIdCounter];
+                } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
+                    arrayBrojRacunaFina[Rbr] = TEMP_arrayBrojRacunaFina[invoiceIdCounter];
+                } else {
+                    MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA, MERDEMO, FINADEMO");
+                    exit;
+                }
+
+                arrayRbr[Rbr] = ++Rbr;
+            }
+        }
+    }
 }
 
+function AddRacunToArrays(supplierName, supplierId, datumIzdavanja, datumPdva, supplierInvoiceId, eRacunBrojRacuna){
+    TEMP_arrayDobavljac[TEMP_Rbr] = supplierName;
+    TEMP_arrayOibDobavljaca[TEMP_Rbr] = supplierId;
+    TEMP_arrayDatumIzdavanja[TEMP_Rbr] = datumIzdavanja;
+    TEMP_arrayDatumPDVa[TEMP_Rbr] = datumPdva;
+    TEMP_arrayBrojRacuna[TEMP_Rbr] = supplierInvoiceId;
+    if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
+        TEMP_arrayBrojRacunaMer[TEMP_Rbr] = eRacunBrojRacuna;
+    } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
+        TEMP_arrayBrojRacunaFina[TEMP_Rbr] = eRacunBrojRacuna;
+    } else {
+        MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA, MERDEMO, FINADEMO");
+        exit;
+    }
 
+    TEMP_arrayRbr[TEMP_Rbr] = ++TEMP_Rbr;
+}
+
+function endGetList(){
+    if(Rbr > 0){
+        DisplayArraySetup("datagridListaRacuna", counterFld: cntr1, activeElements: Rbr, maxElements: Rbr);
+        SetWidgetOptions("btnPreuzmi", "IsEnabled", "true");
+    }else{
+        SetWidgetOptions("btnPreuzmi", "IsEnabled", "false");
+    }
+}
 //-----------------------------------------------------------
 
 function btnPreuzmi@clicked(){
     cursor("wait");
     SetWidgetOptions("btnPreuzmi", "IsEnabled", "false");
-    SetWidgetOptions("StatusLabel", "Content", "Preuzimanje ulaznih e-računa, molim pričekajte...");
+    SetWidgetOptions("StatusLabel", "Content", "Preuzimanje ulaznih e-računa.");
+    SetWidgetOptions("StatusLabel2", "Content", "Molim pričekajte...");
 
     AsyncCall("startDownload", "startImportCall");   
     // AsyncCall("startImport", "end");
@@ -373,6 +518,7 @@ function startDownload(){
     if (!Exists(UR_NEW_DirectoryPath)) {
         MkDir(UR_NEW_DirectoryPath);
     }
+
     if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
         GetRacuniMER();
     } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
@@ -385,6 +531,10 @@ function startDownload(){
 
 function GetRacuniFINA(){
     for(f = 0; f < Rbr; f++) {
+        if(arrayDobavljac[f] == "FILE"){
+            continue;
+        }
+
         try{
             // MSG("Dohvaćam 1 ULAZNI račun preko FINA-e putem WSDL-a!");
 
@@ -521,7 +671,7 @@ function startImport(){
 
     for(xmlCounter = 0; xmlCounter < Size(listOfXmls); xmlCounter++){
     // for(xmlCounter = 0; xmlCounter < 1; xmlCounter++){
-        msg("IMPORTING: " + listOfXmls[xmlCounter]);
+        // msg("IMPORTING: " + listOfXmls[xmlCounter]);
         xmlFilePath = listOfXmls[xmlCounter];
         MemoX = ""; //memo u kojega spremamo one podatke iz xml računa koje želimo prikazati korisniku prilikom uvoza
 
@@ -537,7 +687,7 @@ function startImport(){
         importUBLXmlFromDict(ReadAllText(listOfXmls[xmlCounter]), currentInvoiceId, xmlFilenameWithoutExtension);
 
     }
-    msg("Broj preuzetih XML računa sa servera posrednika: " + rBr +"\n\nBroj importiranih računa u bazu: " + xmlCounter);
+    // msg("Broj preuzetih XML računa sa servera posrednika: " + rBr +"\n\nBroj importiranih računa u bazu: " + xmlCounter);
 }
 
 // New main import function using XmlToDict
@@ -596,7 +746,7 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
         // Validate fiscal year before proceeding
         //if (!ValidateFiscalYear(NKPR_GL_ESD"])) {
         if (!ValidateFiscalYear(NKPR_GL_ESD)) {
-            MessageBox("Račun se ne može importirati jer datum ESD (" + NKPR_GL_ESD + ") ne pripada fiskalnoj godini " + KPSY_FISCAL_YR + ". Račun će biti premješten u arhivu.");
+            MessageBox("Račun se ne može importirati jer datum (" + NKPR_GL_ESD + ") ne pripada fiskalnoj godini " + year(KPSY_FISCAL_YR) + ". Račun će biti premješten u arhivu.");
             return "FISCAL_YEAR_MISMATCH";
         }
         //msg ("ESD: " + NKPR_GL_ESD + " FISCAL YR: " + KPSY_FISCAL_YR);
@@ -1629,6 +1779,8 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
 // }
 
 
+
+
 function end(){
     cursor("dflt");
     //MessageBox("Kraj");
@@ -2096,9 +2248,6 @@ function GetUnitCodeFromUN(unCode) {
 
 // Validate if invoice ESD date belongs to current fiscal year
 function ValidateFiscalYear() {
-    
-    return true; // Temporarily disable fiscal year check
-    
     try {
         //if (esdDate == "" || esdDate == null) {
         //    return false; // No ESD date provided
@@ -2108,7 +2257,8 @@ function ValidateFiscalYear() {
         fiscalYear = year(KPSY_FISCAL_YR);
         
         // Parse year from ESD date (format: YYYY-MM-DD)
-        esdYear =  year(gl_esd);
+        esdYear =  year(NKPR_GL_ESD);
+
         // Compare years
         return (esdYear == fiscalYear);
         

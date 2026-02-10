@@ -15,6 +15,16 @@ args = CommandLineArgs();
 define PROVIDER_OVERRIDE type A size 20;
 PROVIDER_OVERRIDE = "";
 
+
+
+
+
+
+
+
+
+
+
 if(Size(args) > 2){
     companyCode = args[2]; // e.g. Y3
     CoSet(companyCode);
@@ -410,7 +420,7 @@ function btnSend@clicked() {
     //xml += "  <xd:Signature><xd:SignedInfo>...</xd:SignedInfo><xd:SignatureValue>...</xd:SignatureValue></xd:Signature>\n";
     
     
-/*  if ((PROVIDER == "MERDEMO") || (PROVIDER == "MER"))
+ /*  if ((PROVIDER == "MERDEMO") || (PROVIDER == "MER"))
     {
 
     }
@@ -1010,3 +1020,27 @@ function EscapeXml(xmlContent) {
     escaped = StrReplace(escaped, "\t", " ");
     return escaped;
 }
+
+
+
+        ack = FINA_SEND_B2B_OUTGOING_INVOICE_REPORTING(
+            endpoint + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",
+            ERAC_DESC,
+            CERTPATH + ERAC_USERT, // service certificate
+            CERTPATH + ERAC_PASST, // p12 certificate (client)
+            ERAC_PASS,              // password for p12 certificate
+            "9500095",              // ERPID
+
+            UUID(),
+            "9934:26389058739" , // supplierId
+            "9934:12345678903", // buyerId
+            "00002-26-1", //supplier invoice Id
+            "Invoice", // document type
+            
+            "D:\\WinX\\ERAC\\DATA\\AURAE\\IR\\aaaa.xml", // eReporting UBL XML file path
+            
+            // "", // additional suppier id
+            // "", // additional buyer id
+        );
+
+        msg("ack\n: " + ack);

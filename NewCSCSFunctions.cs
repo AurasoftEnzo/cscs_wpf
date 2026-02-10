@@ -5420,6 +5420,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             {
                 additionalBuyerId = null;
             }
+
             //var messageAttributes = Utils.GetSafeString(args, );
 
             Variable resVar = new Fiskalizacija2.FINA.B2BOutgoing.SendOutgoingInvoice().Send(
@@ -5526,8 +5527,17 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
 
             var unsignedInvoiceXmlPath = Utils.GetSafeString(args, 11);
 
-            //var additionalSupplierId = Utils.GetSafeString(args, );
-            //var erpid = Utils.GetSafeString(args, );
+            var additionalSupplierId = Utils.GetSafeString(args, 12);
+            if (additionalSupplierId == "")
+            {
+                additionalSupplierId = null;
+            }
+            var additionalBuyerId = Utils.GetSafeString(args, 13);
+            if (additionalBuyerId == "")
+            {
+                additionalBuyerId = null;
+            }
+
             //var messageAttributes = Utils.GetSafeString(args, );
             //var documentCurrencyCode = Utils.GetSafeString(args, ); // true/false ispis valute iznosa djelomičnog plaćanja u odgovornoj poruci (neobavezan element)
 
@@ -5544,7 +5554,10 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
                 buyerId,
                 supplierInvoiceId,
                 itemChoiceType,
-                unsignedInvoiceXmlPath);
+                unsignedInvoiceXmlPath,
+
+                additionalSupplierId,
+                additionalBuyerId);
 
             return resVar;
         }

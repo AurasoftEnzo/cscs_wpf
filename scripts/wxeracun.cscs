@@ -2411,10 +2411,10 @@ function LogResponse(responseCode, response)
         MAKE_DIR(FILESPATH + "IR\\" + "responses\\");
     }
     logFilePath = FILESPATH + "IR\\" + "responses\\" + parsefile(attachmentPdfPath, "pfName") + ".response"; //FILESPATH + "responses\\" + parsefile(attachmentPdfPath, "pfName") + ".response";
-// messageBox("Logging response to file: " + logFilePath);
+ // messageBox("Logging response to file: " + logFilePath);
     
     appendText = Now("yyyy-MM-dd HH:mm:ss") + " -----------------------------------\n\n" + "StatusCode = " + responseCode + "\n\n" + "Response:\n" + response + "\n\n";
-// messageBox("Log text: " + appendText);
+ // messageBox("Log text: " + appendText);
     try {
         SaveFile(appendText, logFilePath, "a");        
     } catch (ex) {

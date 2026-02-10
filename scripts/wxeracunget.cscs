@@ -355,7 +355,7 @@ function GetListMER(){
         apiUrl = ERAC_SERVER + "apis/v2/queryinbox";
         jsonResponse = WebRequest("POST", apiUrl, jsonPayload, "", "GetListMERSuccess", "GetListMERFailure", "application/json", null, 1000 * 20, false);
     } catch (ex) {
-        MessageBox("Greška prilikom API poziva: " + ex);
+        MessageBox("Greška prilikom poziva MER API-a: " + ex);
         // !!! LOG !!!
         exit;
     }

@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<XtraReportsLayoutSerializer SerializerVersion="18.2.14.0" Ref="0" ControlType="DevExpress.XtraReports.UI.XtraReport, DevExpress.XtraReports.v18.2, Version=18.2.14.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" Name="starter_simple2" PaperKind="A4" PageWidth="827" PageHeight="1169" Version="18.2" DataMember="Table1">
+  <Parameters>
+    <Item1 Ref="2" Visible="false" Description="Report Title" Name="ReportTitle" />
+    <Item2 Ref="3" Visible="false" Description="Company Logo Path" Name="LogoPath" />
+  </Parameters>
+  <Bands>
+    <Item1 Ref="4" ControlType="TopMarginBand" Name="TopMargin" />
+    <Item2 Ref="5" ControlType="ReportHeaderBand" Name="ReportHeader" HeightF="120">
+      <Controls>
+        <Item1 Ref="6" ControlType="XRPictureBox" Name="companyLogo" Sizing="ZoomImage" SizeF="150,80" LocationFloat="0, 0" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="logoPath">
+          <Scripts Ref="7" OnBeforePrint="// Load image from variable&#xD;&#xA;// this.ImageUrl = GetCurrentColumnValue(&quot;logoPath&quot;);" />
+        </Item1>
+        <Item2 Ref="8" ControlType="XRLabel" Name="reportTitle" Text="Report Title" TextAlignment="TopCenter" SizeF="627,40" LocationFloat="0, 40" Font="Arial, 18pt, style=Bold" ForeColor="DarkBlue" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="reportTitle">
+          <ExpressionBindings>
+            <Item1 Ref="9" Expression="[reportTitle]" PropertyName="Text" EventName="BeforePrint" />
+          </ExpressionBindings>
+        </Item2>
+        <Item3 Ref="10" ControlType="XRLabel" Name="reportDate" TextAlignment="TopCenter" SizeF="627,20" LocationFloat="0, 85" Font="Arial, 10pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="reportDate">
+          <ExpressionBindings>
+            <Item1 Ref="11" Expression="'Date: ' + [reportDate]" PropertyName="Text" EventName="BeforePrint" />
+          </ExpressionBindings>
+        </Item3>
+      </Controls>
+    </Item2>
+    <Item3 Ref="12" ControlType="DetailBand" Name="Detail" HeightF="103.958336">
+      <Controls>
+        <Item1 Ref="13" ControlType="XRSubreport" Name="starter_simple2detail" ReportSourceUrl="C:\Users\User\Documents\GitHub\cscs_wpf\scripts\starter_simple2detail.repx" SizeF="627,40" LocationFloat="0, 20.25" />
+      </Controls>
+    </Item3>
+    <Item4 Ref="14" ControlType="ReportFooterBand" Name="ReportFooter" HeightF="60" />
+    <Item5 Ref="15" ControlType="PageFooterBand" Name="PageFooter" HeightF="40">
+      <Controls>
+        <Item1 Ref="16" ControlType="XRPageInfo" Name="printDate" PageInfo="DateTime" TextFormatString="{0:dd.MM.yyyy HH:mm}" SizeF="200,20" LocationFloat="0, 10" Font="Arial, 8pt" />
+        <Item2 Ref="17" ControlType="XRPageInfo" Name="pageNumber" TextFormatString="Page {0} of {1}" TextAlignment="TopRight" SizeF="200,20" LocationFloat="427, 10" Font="Arial, 8pt" />
+      </Controls>
+    </Item5>
+    <Item6 Ref="18" ControlType="BottomMarginBand" Name="BottomMargin" />
+  </Bands>
+  <StyleSheet>
+    <Item1 Ref="19" Name="EvenStyle" BorderStyle="Inset" BackColor="255,250,250,255" StringFormat="Near;Near;0;None;Character;Default" />
+  </StyleSheet>
+</XtraReportsLayoutSerializer>

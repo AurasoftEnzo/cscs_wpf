@@ -1,8 +1,8 @@
-msg("...Testing starter_simple...");
-msg(tpath() + "starter_simple.repx");
+msg("...Testing starter_simple2...");
+msg(tpath() + "starter_simple2.repx");
 
 // ========================================================================
-// Using Simplified Starter Template
+// Using Simplified Starter 2 Template
 // ========================================================================
 
 // Report data using implicit variables
@@ -12,7 +12,7 @@ logoPath = "C:\Logos\company.png";
 
 // Validate template
 
-errors = ValidateReportTemplate(tpath() + "starter_simple.repx",  "field1,field2,field3,amount");
+errors = ValidateReportTemplate(tpath() + "starter_simple2detail.repx",  "field1,field2,field3,amount");
 
 if (Size(errors) > 0) {
     MSG("Validation errors found!");
@@ -24,39 +24,43 @@ if (Size(errors) > 0) {
 
 
 // Setup report
-reportHandle = SetupReport(tpath() + "starter_simple.repx");
+reportHandle = SetupReport(tpath() + "starter_simple2.repx");
+reportHandle2 = SetupReport(tpath() + "starter_simple2detail.repx", reportHandle);
 
 // Configure
 ConfigureReportOutput(reportHandle, "PageSize", "A4");
 SetReportParameter(reportHandle, "ReportTitle", reportTitle);
 SetReportParameter(reportHandle, "LogoPath", logoPath);
 
+OutputReport(reportHandle);
+
 // Add data rows
 field1 = "PROD-001";
 field2 = "Laptop HP ProBook 450";
 field3 = "Electronics";
 amount = 5499.99;
-OutputReport(reportHandle);
+OutputReport(reportHandle2);
 
 field1 = "PROD-002";
 field2 = "Monitor Dell 24 inch";
 field3 = "Electronics";
 amount = 899.00;
-OutputReport(reportHandle);
+OutputReport(reportHandle2);
 
 field1 = "PROD-003";
 field2 = "Office Chair Ergonomic";
 field3 = "Furniture";
 amount = 1299.00;
-OutputReport(reportHandle);
+OutputReport(reportHandle2);
 
 // Export
-ExportReport(reportHandle, "PDF", "D:\sales_report.pdf");
+ExportReport(reportHandle, "PDF", "D:\sales_report2.pdf");
 
 // Print
 PrintReport(reportHandle, 0); //0 je za modalni prozor
 
 // Cleanup
+DisposeReport(reportHandle2);
 DisposeReport(reportHandle);
 
 MSG("Report generated successfully!");

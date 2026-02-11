@@ -94,21 +94,21 @@ namespace WpfCSCS.Fiskalizacija2.FINA.B2BOutgoing
             if (resB2BOutgoingInvoiceEnvelope != null && resB2BOutgoingInvoiceEnvelope.B2BOutgoingInvoiceProcessing != null)
             {
                 var item = resB2BOutgoingInvoiceEnvelope.B2BOutgoingInvoiceProcessing.Item;
-                if (item is SendB2BOutgoingInvoiceAckMsgB2BOutgoingInvoiceEnvelopeB2BOutgoingInvoiceProcessingCorrectB2BOutgoingInvoice)
+                if (item is SendB2BOutgoingInvoiceReportingAckMsgB2BOutgoingInvoiceEnvelopeB2BOutgoingInvoiceProcessingCorrectB2BOutgoingInvoice)
                 {
                     retVar.SetHashVariable("Correct", new Variable(true));
 
-                    var correctItem = item as SendB2BOutgoingInvoiceAckMsgB2BOutgoingInvoiceEnvelopeB2BOutgoingInvoiceProcessingCorrectB2BOutgoingInvoice;
+                    var correctItem = item as SendB2BOutgoingInvoiceReportingAckMsgB2BOutgoingInvoiceEnvelopeB2BOutgoingInvoiceProcessingCorrectB2BOutgoingInvoice;
 
                     retVar.SetHashVariable("SupplierInvoiceID", new Variable(correctItem.SupplierInvoiceID));
                     retVar.SetHashVariable("InvoiceID", new Variable(correctItem.InvoiceID));
                     retVar.SetHashVariable("InvoiceTimestamp", new Variable(correctItem.InvoiceTimestamp));
                 }
-                else if (item is SendB2BOutgoingInvoiceAckMsgB2BOutgoingInvoiceEnvelopeB2BOutgoingInvoiceProcessingIncorrectB2BOutgoingInvoice)
+                else if (item is SendB2BOutgoingInvoiceReportingAckMsgB2BOutgoingInvoiceEnvelopeB2BOutgoingInvoiceProcessingIncorrectB2BOutgoingInvoice)
                 {
                     retVar.SetHashVariable("Correct", new Variable(false));
 
-                    var incorrectItem = item as SendB2BOutgoingInvoiceAckMsgB2BOutgoingInvoiceEnvelopeB2BOutgoingInvoiceProcessingIncorrectB2BOutgoingInvoice;
+                    var incorrectItem = item as SendB2BOutgoingInvoiceReportingAckMsgB2BOutgoingInvoiceEnvelopeB2BOutgoingInvoiceProcessingIncorrectB2BOutgoingInvoice;
 
                     retVar.SetHashVariable("SupplierInvoiceID", new Variable(incorrectItem.SupplierInvoiceID));
                     retVar.SetHashVariable("ErrorCode", new Variable(incorrectItem.ErrorCode));

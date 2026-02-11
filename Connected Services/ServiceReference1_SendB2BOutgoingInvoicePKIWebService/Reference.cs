@@ -32,11 +32,11 @@ namespace WpfCSCS.ServiceReference1_SendB2BOutgoingInvoicePKIWebService {
         System.Threading.Tasks.Task<WpfCSCS.ServiceReference1_SendB2BOutgoingInvoicePKIWebService.sendB2BOutgoingInvoiceResponse> sendB2BOutgoingInvoiceAsync(WpfCSCS.ServiceReference1_SendB2BOutgoingInvoicePKIWebService.sendB2BOutgoingInvoiceRequest request);
         
         // CODEGEN: Generating message contract since the operation sendB2BOutgoingInvoiceReporting is neither RPC nor document wrapped.
-        [System.ServiceModel.OperationContractAttribute(Action="http://fina.hr/eracun/b2g/SendB2BOutgoingInvoiceReporting", ReplyAction="*")]
+        [System.ServiceModel.OperationContractAttribute(Action="http://fina.hr/eracun/b2b/SendB2BOutgoingInvoiceReporting", ReplyAction="*")]
         [System.ServiceModel.XmlSerializerFormatAttribute(SupportFaults=true)]
         WpfCSCS.ServiceReference1_SendB2BOutgoingInvoicePKIWebService.sendB2BOutgoingInvoiceReportingResponse sendB2BOutgoingInvoiceReporting(WpfCSCS.ServiceReference1_SendB2BOutgoingInvoicePKIWebService.sendB2BOutgoingInvoiceReportingRequest request);
         
-        [System.ServiceModel.OperationContractAttribute(Action="http://fina.hr/eracun/b2g/SendB2BOutgoingInvoiceReporting", ReplyAction="*")]
+        [System.ServiceModel.OperationContractAttribute(Action="http://fina.hr/eracun/b2b/SendB2BOutgoingInvoiceReporting", ReplyAction="*")]
         System.Threading.Tasks.Task<WpfCSCS.ServiceReference1_SendB2BOutgoingInvoicePKIWebService.sendB2BOutgoingInvoiceReportingResponse> sendB2BOutgoingInvoiceReportingAsync(WpfCSCS.ServiceReference1_SendB2BOutgoingInvoicePKIWebService.sendB2BOutgoingInvoiceReportingRequest request);
         
         // CODEGEN: Generating message contract since the operation getB2BOutgoingInvoiceStatus is neither RPC nor document wrapped.

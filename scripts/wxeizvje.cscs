@@ -1,7 +1,8 @@
 ﻿// e-Izvješćivanje – Mjesečni izvještaj za neposlane račune
 
 //include(strTrim(tpath()) + "wxsy_lib.cscs");
-//Import(strTrim(mpath()) + "CSCS.Math.dll");
+Import(strTrim(mpath()) + "CSCS.Math.dll");
+
 
 
 args = CommandLineArgs(); 
@@ -12,17 +13,29 @@ args = CommandLineArgs();
 //MessageBox(args[4]); // e.g. "FINA"                 //provider (optional)
 
 // Global variable for provider override
-define PROVIDER_OVERRIDE type A size 20;
-PROVIDER_OVERRIDE = "";
+// define PROVIDER_OVERRIDE type A size 20;
+// PROVIDER_OVERRIDE = "";
 
+DEFINE AURARbr type i;
+DEFINE Rbr type i;
+DEFINE cntr1 type i;
 
+DEFINE arrayRbr type i size 100 array 10000;
+DEFINE arrayKupac type a size 500 array 10000;
+DEFINE arrayOibKupca type a size 11 array 10000;
+DEFINE arrayStatusRacuna type a size 100 array 10000;
+DEFINE arrayDatumIzdavanja type a size 10 array 10000;
+DEFINE arrayDatumKnjizenja type a size 10 array 10000;
+DEFINE arrayBrojRacuna type a size 50 array 10000;
 
+DEFINE arrayBrojRacunaFina type a size 50 array 10000;
+DEFINE arrayBrojRacunaMer type a size 50 array 10000;
 
+DEFINE arrayIdRacunaPosrednika type a size 50 array 10000;
+DEFINE arrayStatusFiskalizacije type a size 50 array 10000;
+DEFINE arrayReportPaymentStatus type a size 50 array 10000;
 
-
-
-
-
+DEFINE arrayOriginalSupplierInvoiceId type a size 50 array 10000;
 
 
 if(Size(args) > 2){
@@ -32,18 +45,18 @@ if(Size(args) > 2){
     if(Size(args) > 3){
         userCode = args[3]; // e.g. ANA
         
-        // Optional 5th parameter: provider override (FINA, MER, FINADEMO, MERDEMO)
-        if(Size(args) > 4){
-            PROVIDER_OVERRIDE = args[4].trim().Upper(); // e.g. FINA, MER, FINADEMO, MERDEMO
-            if(PROVIDER_OVERRIDE != "" && 
-               PROVIDER_OVERRIDE != "FINA" && 
-               PROVIDER_OVERRIDE != "FINADEMO" && 
-               PROVIDER_OVERRIDE != "MER" && 
-               PROVIDER_OVERRIDE != "MERDEMO"){
-                MessageBox("Nepoznat provider: " + PROVIDER_OVERRIDE + "\nPodržani: FINA, FINADEMO, MER, MERDEMO");
-                exit;
-            }
-        }
+        // // Optional 5th parameter: provider override (FINA, MER, FINADEMO, MERDEMO)
+        // if(Size(args) > 4){
+        //     PROVIDER_OVERRIDE = args[4].trim().Upper(); // e.g. FINA, MER, FINADEMO, MERDEMO
+        //     if(PROVIDER_OVERRIDE != "" && 
+        //        PROVIDER_OVERRIDE != "FINA" && 
+        //        PROVIDER_OVERRIDE != "FINADEMO" && 
+        //        PROVIDER_OVERRIDE != "MER" && 
+        //        PROVIDER_OVERRIDE != "MERDEMO"){
+        //         MessageBox("Nepoznat provider: " + PROVIDER_OVERRIDE + "\nPodržani: FINA, FINADEMO, MER, MERDEMO");
+        //         exit;
+        //     }
+        // }
     }else{
         MessageBox("Nedostaje user code u argumentima.");
         exit;
@@ -85,8 +98,8 @@ if (size(sqlResult) > 1)
 //CreateWindow(strTrim(tpath()) + "eizvjestavanje.xaml");
 CreateWindow(strTrim(tpath()) + "wxeizvje.xaml");
 
-define KPSY_COMP_NAME type A size 40;
-define KPSY_REZERVA type A size 152;//OIB
+// define KPSY_COMP_NAME type A size 40;
+// define KPSY_REZERVA type A size 152;//OIB
 
 define racunodaberi_ar type L array 500;
 define racunbrojracuna_ar type R array 500;
@@ -98,17 +111,17 @@ define rowCountInvoices type R;
 
 define cntr type R;
 
-// Provider configuration variables
-define PROVIDER type A size 20;
-define ERAC_REZ1 type A size 50;
-define ERAC_SERVER type A size 200;
-define ERAC_SERVERT type A size 200;
-define ERAC_USER type A size 100;
-define ERAC_PASS type A size 100;
-define ERAC_USERT type A size 200;
-define ERAC_PASST type A size 200;
-define ERAC_DESC type A size 100;
-define SCHEMASPATH type A size 200;
+// // Provider configuration variables
+// define PROVIDER type A size 20;
+// define ERAC_REZ1 type A size 50;
+// define ERAC_SERVER type A size 200;
+// define ERAC_SERVERT type A size 200;
+// define ERAC_USER type A size 100;
+// define ERAC_PASS type A size 100;
+// define ERAC_USERT type A size 200;
+// define ERAC_PASST type A size 200;
+// define ERAC_DESC type A size 100;
+// define SCHEMASPATH type A size 200;
 
 //DEFINE time1 type T size 8;
 
@@ -118,6 +131,11 @@ function wxeizvje_OnDisplay() {
     //for (m = 1; m <= 12; m++) {
         //DisplayArrayAdd("cmbMonth", FormatNum(m, 2, "") + "|" + MonthName(m));
     //}
+
+    Get_KPSY_COMP_NAME();//Company name
+    Get_KPSY_REZERVA();//OIB
+
+
     comboItems = {"01|Siječanj", "02|Veljača", "03|Ožujak", "04|Travanj", "05|Svibanj", "06|Lipanj", "07|Srpanj", "08|Kolovoz", "09|Rujan", "10|Listopad", "11|Studeni", "12|Prosinac"};
     AddWidgetData("cmbMonth", comboItems);
 
@@ -125,15 +143,18 @@ function wxeizvje_OnDisplay() {
     strCurrentDate = DTOS(DateTime());
     strMonth = Substring(strCurrentDate, 4, 2);
     intMonth = Int(strMonth);
-    SetWidgetOptions("cmbMonth", "SelectedIndex", intMonth - 1);
+    if(intMonth == 1){
+        intMonth = 12;
+    }
+    SetWidgetOptions("cmbMonth", "SelectedIndex", (intMonth - 2));
 
     //SetCell("txtYear", "text", FormatDate(Now(), "yyyy"));
-    strYear = Substring(strCurrentDate, 0, 4);
+    // strYear = Substring(strCurrentDate, 0, 4);
+    strYear = string(year(KPSY_FISCAL_YR));
     SetWidgetOptions("txtYear", "Text", strYear);
 
     //*******************************************************************************
-    Get_KPSY_COMP_NAME();//Company name
-    Get_KPSY_REZERVA();//OIB
+    
     //MessageBox("KPSY_COMP_NAME is " + KPSY_COMP_NAME + "*");    //ok je -> NE TREBA TRIMAT
     //MessageBox("KPSY_REZERVA is " + KPSY_REZERVA  + "*");//OIB  //ok je -> NE TREBA TRIMAT
 
@@ -141,35 +162,244 @@ function wxeizvje_OnDisplay() {
     LoadProviderConfiguration();
     
     // Override provider if specified in command line
-    if(PROVIDER_OVERRIDE != ""){
-        PROVIDER = PROVIDER_OVERRIDE;
-        MessageBox("Provider promijenjen na: " + PROVIDER);
+    // if(PROVIDER_OVERRIDE != ""){
+    //     PROVIDER = PROVIDER_OVERRIDE;
+    //     MessageBox("Provider promijenjen na: " + PROVIDER);
         
-        // Reload configuration for the overridden provider
-        sql_erac = "SELECT ERAC_REZ1, ERAC_SERVER, ERAC_SERVERT, ERAC_USER, ERAC_PASS, ERAC_USERT, ERAC_PASST, ERAC_DESC FROM " + databaseName + ".dbo.NKSYERAC WHERE ERAC_CODE = @p1;";
-        sqlParams = {};
-        sqlParams.Add({"@p1", PROVIDER});
+    //     // Reload configuration for the overridden provider
+    //     sql_erac = "SELECT ERAC_REZ1, ERAC_SERVER, ERAC_SERVERT, ERAC_USER, ERAC_PASS, ERAC_USERT, ERAC_PASST, ERAC_DESC FROM " + databaseName + ".dbo.NKSYERAC WHERE ERAC_CODE = @p1;";
+    //     sqlParams = {};
+    //     sqlParams.Add({"@p1", PROVIDER});
         
-        try {
-            eracRes = sqlQuery(sql_erac, sqlParams);
-            if (Size(eracRes) > 1) {
-                ERAC_REZ1 = eracRes[1][0].trim();
-                ERAC_SERVER = eracRes[1][1].trim();
-                ERAC_SERVERT = eracRes[1][2].trim();
-                ERAC_USER = eracRes[1][3].trim();
-                ERAC_PASS = eracRes[1][4].trim();
-                ERAC_USERT = eracRes[1][5].trim();
-                ERAC_PASST = eracRes[1][6].trim();
-                ERAC_DESC = eracRes[1][7].trim();
-            } else {
-                MessageBox("Nema konfiguracije za provider: " + PROVIDER);
-            }
-        } catch(exc) {
-            MessageBox("NKSYERAC reading error za provider " + PROVIDER + ": " + exc);
-        }
-    }
+    //     try {
+    //         eracRes = sqlQuery(sql_erac, sqlParams);
+    //         if (Size(eracRes) > 1) {
+    //             ERAC_REZ1 = eracRes[1][0].trim();
+    //             ERAC_SERVER = eracRes[1][1].trim();
+    //             ERAC_SERVERT = eracRes[1][2].trim();
+    //             ERAC_USER = eracRes[1][3].trim();
+    //             ERAC_PASS = eracRes[1][4].trim();
+    //             ERAC_USERT = eracRes[1][5].trim();
+    //             ERAC_PASST = eracRes[1][6].trim();
+    //             ERAC_DESC = eracRes[1][7].trim();
+    //         } else {
+    //             MessageBox("Nema konfiguracije za provider: " + PROVIDER);
+    //         }
+    //     } catch(exc) {
+    //         MessageBox("NKSYERAC reading error za provider " + PROVIDER + ": " + exc);
+    //     }
+    // }
     
     //MessageBox("Provider: " + PROVIDER + "\nSchemas path: " + SCHEMASPATH);
+}
+
+
+
+
+
+function btnProvjera@clicked() 
+{
+    // MessageBox(Substring(selectedMonth, 0, 2));
+    AURARbr = 0;
+    Rbr = 0;
+    cntr1 = 0;
+
+    GetListNKPRINV();
+
+    GetListFINA_B2B();
+
+    for(i = 0; i < Rbr; i++){
+
+        if(i > 5){
+            break;
+        }
+
+        // MSG("arrayRbr = " + arrayRbr[i] + "\n" +
+        //     "arrayKupac = " + arrayKupac[i] + "\n" +
+        //     "arrayOibKupca = " + arrayOibKupca[i] + "\n" +
+        //     "arrayStatusRacuna = " + arrayStatusRacuna[i] + "\n" +
+        //     "arrayDatumIzdavanja = " + arrayDatumIzdavanja[i] + "\n" +
+        //     "arrayDatumKnjizenja = " + arrayDatumKnjizenja[i] + "\n" +
+        //     "arrayBrojRacuna = " + arrayBrojRacuna[i] + "\n" +
+        //     "arrayBrojRacunaFina = " + arrayBrojRacunaFina[i] + "\n" +
+        //     "arrayBrojRacunaMer = " + arrayBrojRacunaMer[i] + "\n" +
+        //     "arrayIdRacunaPosrednika = " + arrayIdRacunaPosrednika[i] + "\n" +
+        //     "arrayStatusFiskalizacije = " + arrayStatusFiskalizacije[i] + "\n" +
+        //     "arrayReportPaymentStatus = " + arrayReportPaymentStatus[i] + "\n" + 
+        //     "arrayOriginalSupplierInvoiceId = " + arrayOriginalSupplierInvoiceId[i] + "\n"
+        // );
+    }
+}
+
+function GetListNKPRINV(){
+    sql = "select NKPR_GL_NUM, NKPR_GL_POSRED from " + databaseName + ".dbo.NKPRINV 
+            where month(nkpr_gl_invdte) = " + int(Substring(selectedMonth, 0, 2)) + " and year(nkpr_gl_invdte) = " + strYear + "
+            and NKPR_GL_RTS = 'E'";
+    sqlResult = sqlQuery(sql);
+
+    for ( i = 1; i < Size(sqlResult); i++ )
+    {
+        supplierName = sqlResult[i][2];
+        supplierId = ""; // !!! OIB kupca nije u tablici NKPRINV, treba dodat ili dohvatiti iz neke druge tablice
+        datumIzdavanja = DateTime(sqlResult[i][1], "yyyy-MM-dd");
+        datumKnjizenja = DateTime(sqlResult[i][1], "yyyy-MM-dd"); // !!! u tablici NKPRINV nema datuma knjiženja, koristim datum izdavanja kao zamjenu
+        supplierInvoiceId = sqlResult[i][0];
+        aurasoftFormatSupplierInvoiceId = TransformInvoiceNumberToAurasoftFormat(supplierInvoiceId);
+
+        AddRacunToAURAArrays(*************************);
+    }
+}
+
+function GetListFINA_B2B(){
+
+    dtNow = DateTime(strYear + "-" + Substring(selectedMonth, 0, 2) + "-01", "yyyy-MM-dd");
+
+    doublefirstOfMonth = Math.Trunc(DateTimeToDouble(dtNow));
+
+    FilterDateFrom = DoubleToDateTime(doublefirstOfMonth - 30).ToString("yyyy-MM-dd");
+    FilterDateTo = DoubleToDateTime(doublefirstOfMonth + 55).ToString("yyyy-MM-dd");
+
+    // msg(companyOIB);
+
+    // GET INCOMING INVOICE LIST
+    try{
+        // MSG("Dohvaćam listu ULAZNIH računa preko FINA-e putem WSDL-a!");
+        ack = FINA_GET_B2B_OUTGOING_INVOICE_LIST(
+            ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
+            ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
+            CERTPATH + ERAC_USERT, // servisni certifikat
+            CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
+            ERAC_PASS, // password za p12 certifikat
+
+            UUID(), // messageId
+            "9934:" + companyOIB, // OIB primatelja (VLASTITI) // !!! stavit pravi OIB iz baze
+            FilterDateFrom, // dateFrom (dd/MM/yyyy)
+            FilterDateTo  // dateTo (dd/MM/yyyy)
+        );
+        // msg(ack);
+
+        if(!Contains(ack, "ErrorCode")){
+            // MSG("U listi je " + Size(ack["InvoiceList"]) + " računa za preuzimanje sa FINA servera.");
+            for(i = 0; i < Size(ack["InvoiceList"]); i++){
+                // MSG(ack["InvoiceList"][i]);
+
+                buyerName = ack["InvoiceList"][i]["BuyerRegistrationName"];
+                buyerId = ack["InvoiceList"][i]["BuyerId"];
+                buyerId = buyerId.Replace("9934:", "");
+
+                // !!! datumi (2) ???
+
+                supplierInvoiceId = ack["InvoiceList"][i]["SupplierInvoiceID"];
+                aurasoftFormatSupplierInvoiceId = TransformInvoiceNumberToAurasoftFormat(supplierInvoiceId);
+
+
+
+                invoiceId = ack["InvoiceList"][i]["InvoiceID"];
+
+                statusCode = ack["InvoiceList"][i]["StatusCode"];
+                if(statusCode == "RECEIVED"){
+                    statusCode = "Zaprimljen";
+                }elif(statusCode == "RECEIVING_CONFIRMED"){
+                    statusCode = "Potvrđeno zaprimanje";
+                }elif(statusCode == "APPROVED"){
+                    statusCode = "Prihvaćen";
+                }elif(statusCode == "REJECTED"){
+                    statusCode = "Odbijen";
+                }
+
+                datumIzdavanja = ack["InvoiceList"][i]["InvoiceIssueDate"];
+                // datumIzdavanja = Substring(datumIzdavanja, 0, 8);
+                datumKnjizenja = ack["InvoiceList"][i]["InvoiceDate"];
+                // datumKnjizenja = Substring(datumKnjizenja, 0, 8);
+                // MSG(datumIzdavanja);
+                // MSG(datumIzdavanja.ToString("dd/MM/yyyy") + " ... " + datumKnjizenja.ToString("dd/MM/yyyy"));
+
+                fiskStatusAck = FINA_GET_B2B_OUTGOING_INVOICE_FISK_STATUS(
+                    ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
+                    ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
+                    CERTPATH + ERAC_USERT, // servisni certifikat
+                    CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
+                    ERAC_PASS, // password za p12 certifikat
+
+                    UUID(), // messageId
+                    "9934:" + companyOIB, // OIB primatelja (VLASTITI) // !!! stavit pravi OIB iz baze
+                    invoiceId
+                );
+
+                if(Contains(fiskStatusAck, "ErrorCode")){
+                    // fiskStatus = fiskStatusAck["ErrorMessage"];
+                    // !!! spremit error u neki LOG
+                    fiskStatus = "?";
+                    reportPaymentStatus = "?";
+                }else{
+                    if(Contains(fiskStatusAck, "FiskStatus")){
+                        fiskStatus = fiskStatusAck["FiskStatus"];
+                        if(fiskStatus == "True"){
+                            fiskStatus = "Da (" + fiskStatusAck["FiskStatusTimestamp"] + ")";                         
+                        }elif(fiskStatus == "False"){
+                            fiskStatus = "NE! (" + fiskStatusAck["FiskStatusTimestamp"] + ")";
+                        }
+                    }else{
+                        fiskStatus = "";
+                    }
+
+                    if(Contains(fiskStatusAck, "ReportPaymentStatus")){
+                        reportPaymentStatus = fiskStatusAck["ReportPaymentStatus"];
+                        if(reportPaymentStatus == "True"){
+                            reportPaymentStatus = "Da (" + fiskStatusAck["ReportPaymentStatusTimestamp"] + ")";
+                        }elif(reportPaymentStatus == "False"){
+                            reportPaymentStatus = "NE! (" + fiskStatusAck["ReportPaymentStatusTimestamp"] + ")";
+                        }
+                    }else{
+                        reportPaymentStatus = "";
+                    }
+                }
+
+                AddRacunToFINAArrays(buyerName, buyerId, datumIzdavanja, datumKnjizenja, aurasoftFormatSupplierInvoiceId, invoiceId, statusCode, fiskStatus, reportPaymentStatus, supplierInvoiceId);
+            }
+        }else{
+            MessageBox("ack[\"ErrorCode\"] = " + ack["ErrorCode"] + "\nack[\"ErrorText\"] = " + ack["ErrorText"] + "\nack[\"ErrorMessage\"] = " + ack["ErrorMessage"]);
+        }
+    }catch(ex){
+        MessageBox("GetListFINA_B2B - Nepoznata greška:\n" + ex);
+        LogException(ex); // !!!
+        exit;
+    }
+} 
+
+function AddRacunToFINAArrays(supplierName, supplierId, datumIzdavanja, datumKnjizenja, supplierInvoiceId, eRacunBrojRacuna, statusRacuna, fiskStatus, reportPaymentStatus, originalSupplierInvoiceId){
+    arrayKupac[Rbr] = supplierName;
+    arrayOibKupca[Rbr] = supplierId;
+    arrayStatusRacuna[Rbr] = statusRacuna;
+    arrayDatumIzdavanja[Rbr] = datumIzdavanja.ToString("dd/MM/yy");
+    arrayDatumKnjizenja[Rbr] = datumKnjizenja.ToString("dd/MM/yy");
+    arrayBrojRacuna[Rbr] = supplierInvoiceId;
+    
+    arrayIdRacunaPosrednika[Rbr] = eRacunBrojRacuna;
+
+    arrayStatusFiskalizacije[Rbr] = fiskStatus;
+    arrayReportPaymentStatus[Rbr] = reportPaymentStatus;
+    
+    if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
+        arrayBrojRacunaMer[Rbr] = eRacunBrojRacuna;
+    } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
+        arrayBrojRacunaFina[Rbr] = eRacunBrojRacuna;
+    } else {
+        MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA, MERDEMO, FINADEMO");
+        exit;
+    }
+
+    arrayOriginalSupplierInvoiceId[Rbr] = originalSupplierInvoiceId;
+
+
+    arrayRbr[Rbr] = ++Rbr;
+}
+
+function AddRacunToAURAArrays(NKPR_GL_NUM, NKPR_GL_POSRED){
+    arrayNKPR_GL_NUM[Rbr] = NKPR_GL_NUM;
+    arrayNKPR_GL_POSRED[Rbr] = NKPR_GL_POSRED;
+
+    arrayAURARbr[AURARbr] = ++AURARbr;
 }
 
 // Prepare List
@@ -225,47 +455,6 @@ function btnPrepare@Clicked() {
 
     cursor("dflt");
 }
-
-
-
-function btnTest@clicked() 
-{
-    MessageBox("Test button clicked");
-
-    /*
-    lines = readfile("D:\\XML\\EvidentirajIsporukuZaKojuNijeIzdanERacun.xml");
-    //lines = readfile("D:\\XML\\eIzvjestavanje_202512.xml");
-    Messagebox(lines);
-    s="";
-    for (i=0; i<size(lines); i++)
-    {
-	    line = lines[i];
-	    s += line + "\n";
-    } 
-    MessageBox(s);
-
-    testxmlContent = s;
-    testfileName = "EvidentirajIsporukuZaKojuNijeIzdanERacun.xml";
-    //testfileName = "eIzvjestavanje_202512.xml";
-    ValidateEReportingXML(testxmlContent, testfileName) 
-    */
-
-    lines = readfile("D:\\XML\\eIzvjestavanje_202512_kopija.xml");
-    // Messagebox(lines);
-    s="";
-    for (i=0; i<size(lines); i++)
-    {
-	    line = lines[i];
-	    s += line + "\n";
-    } 
-    // MessageBox(s);
-
-    // rezultat = NixxonSignXml(s, "C:\\WinX\\ERAC\\certifikati\\p12_aurasoft_demo.p12", "Aurasoft1");
-    SaveFile(rezultat, "D:\\XML\\eIzvjestavanje_202512_kopija_signed.xml");
-
-    // MessageBox("Kraj Test button");
-}
-
 
 
 // Send XML to Porezna Uprava
@@ -533,7 +722,7 @@ function Get_KPSY_COMP_NAME()
 {
     //trenutnaGodinaBaza = databaseName; //npr. C__DATAX_2024__BY4
 
-    sqlQueryString = " SELECT TOP 1 kpsy_comp_name FROM " + databaseName + ".dbo.KPSYMSTR";
+    sqlQueryString = "SELECT TOP 1 kpsy_comp_name, kpsy_fiscal_yr FROM " + databaseName + ".dbo.KPSYMSTR";
 	try	
     {
 		sqlResult = sqlQuery(sqlQueryString);
@@ -541,15 +730,18 @@ function Get_KPSY_COMP_NAME()
     catch(exc)
     {
 		MessageBox(exc);
+        exit;
 	}
 
     if (Size(sqlResult) >= 2) 
     {
         KPSY_COMP_NAME = sqlResult[1][0].trim();
+        KPSY_FISCAL_YR = sqlResult[1][1];
     } 
     else 
     {
-        KPSY_COMP_NAME = "Unknown Company";
+        MessageBox("Greška čitanja KPSYMSTR!");
+        exit;
     }    
 }
 
@@ -566,15 +758,20 @@ function Get_KPSY_REZERVA()
     catch(exc)
     {
 		MessageBox(exc);
+        exit;
 	}
 
     if (Size(sqlResult) >= 2) 
     {
         KPSY_REZERVA = sqlResult[1][0].trim();
+        if(KPSY_REZERVA.length > 11){
+            companyOIB = Substring(KPSY_REZERVA, 0, 11); //OIB je max 11 znakova
+        }
     } 
     else 
     {
-        KPSY_REZERVA = "00000000000"; //OIB
+        MessageBox("Greška čitanja KPSYMSTR!");
+        exit;
     }
 }
 
@@ -593,101 +790,118 @@ function FormatDate(dateValue, formatString)
 }
 
 
-function XMLpath()
-{
-    return "D:\\XML\\";
-}
+// function XMLpath()
+// {
+//     return "D:\\XML\\";
+// }
 
 // -----------------------------------------------------------
 // XML VALIDATION FUNCTIONS
 // -----------------------------------------------------------
 
-function ValidateEReportingXML(xmlContent, fileName) {
-    try {
-        // Setup validation result files
-        xsdValidationResultOutputFile = XMLpath() + "validation\\" + fileName + "_XSD.err";
-        schValidationResultOutputFile = XMLpath() + "validation\\" + fileName + "_SCH.err";
-        
-        // Create validation directory if not exists
-        if (!DIR_EXISTS(XMLpath() + "validation\\")) {
-            MAKE_DIR(XMLpath() + "validation\\");
-        }
-        
-        // Delete older validation output files if they exist
-        if (Exists(xsdValidationResultOutputFile)) {
-            Delete(xsdValidationResultOutputFile);
-        }
-        if (Exists(schValidationResultOutputFile)) {
-            Delete(schValidationResultOutputFile);
-        }
 
-        // -----------------------------------------------------------
-        // XSD VALIDATION
-        // -----------------------------------------------------------
-        xsdFiles = {};
-        // eIzvještavanje uses specific Croatian schema
-        //xsdFiles.Add(SCHEMASPATH + "xsd\\eIzvjestavanje\\EvidentirajIsporukuZaKojuNijeIzdanERacunZahtjev.xsd");//ORIGINAL
-        xsdFiles.Add(SCHEMASPATH + "xsd\\eIzvjestavanje\\eIzvjestavanjeSchema.xsd");//JA PREINAČIO NAZIV DATOTEKE
+// function ValidateEReportingXML(xmlContent, fileName) {
+//     try {
+//         // Setup validation result files
+//         xsdValidationResultOutputFile = XMLpath() + "validation\\" + fileName + "_XSD.err";
+//         schValidationResultOutputFile = XMLpath() + "validation\\" + fileName + "_SCH.err";
         
-        //DALIBOR DODAO 2 linije
-        // Add W3C XML-Dsig schema so xd:Signature is declared
-        //xsdFiles.Add(SCHEMASPATH + "xsd\\eIzvjestavanje\\xmldsig-core-schema.xsd");
-
-        if (!ValidateXsd(xmlContent, xsdFiles, xsdValidationResultOutputFile)) {
-            MessageBox("eIzvještavanje XML FAILED XSD validation\n\nSee " + xsdValidationResultOutputFile + " file for details.");
-            return false;
-        }
-
-        /*
-        // -----------------------------------------------------------
-        // SCH VALIDATION (Schematron)
-        // -----------------------------------------------------------
-        schFiles = {};
-        // Croatian eReporting schematron validation
-        //schFiles.Add(SCHEMASPATH + "schematron\\HR-eIzvjestavanje.sch");        
+//         // Create validation directory if not exists
+//         if (!DIR_EXISTS(XMLpath() + "validation\\")) {
+//             MAKE_DIR(XMLpath() + "validation\\");
+//         }
         
-        if (!ValidateSch(xmlContent, schFiles, SCHEMASPATH + "schematron\\transpile.xsl", schValidationResultOutputFile)) {
-            MessageBox("eIzvještavanje XML FAILED SCH validation\n\nSee " + schValidationResultOutputFile + " file for details.");
-            return false;
-        }
-        */
+//         // Delete older validation output files if they exist
+//         if (Exists(xsdValidationResultOutputFile)) {
+//             Delete(xsdValidationResultOutputFile);
+//         }
+//         if (Exists(schValidationResultOutputFile)) {
+//             Delete(schValidationResultOutputFile);
+//         }
 
-        // If we get here, validation passed
-        return true;
+//         // -----------------------------------------------------------
+//         // XSD VALIDATION
+//         // -----------------------------------------------------------
+//         xsdFiles = {};
+//         // eIzvještavanje uses specific Croatian schema
+//         //xsdFiles.Add(SCHEMASPATH + "xsd\\eIzvjestavanje\\EvidentirajIsporukuZaKojuNijeIzdanERacunZahtjev.xsd");//ORIGINAL
+//         xsdFiles.Add(SCHEMASPATH + "xsd\\eIzvjestavanje\\eIzvjestavanjeSchema.xsd");//JA PREINAČIO NAZIV DATOTEKE
         
-    } catch (ex) {
-        MessageBox("XML validation error: " + ex);
-        return false;
-    }
-}
+//         //DALIBOR DODAO 2 linije
+//         // Add W3C XML-Dsig schema so xd:Signature is declared
+//         //xsdFiles.Add(SCHEMASPATH + "xsd\\eIzvjestavanje\\xmldsig-core-schema.xsd");
+
+//         if (!ValidateXsd(xmlContent, xsdFiles, xsdValidationResultOutputFile)) {
+//             MessageBox("eIzvještavanje XML FAILED XSD validation\n\nSee " + xsdValidationResultOutputFile + " file for details.");
+//             return false;
+//         }
+
+//         /*
+//         // -----------------------------------------------------------
+//         // SCH VALIDATION (Schematron)
+//         // -----------------------------------------------------------
+//         schFiles = {};
+//         // Croatian eReporting schematron validation
+//         //schFiles.Add(SCHEMASPATH + "schematron\\HR-eIzvjestavanje.sch");        
+        
+//         if (!ValidateSch(xmlContent, schFiles, SCHEMASPATH + "schematron\\transpile.xsl", schValidationResultOutputFile)) {
+//             MessageBox("eIzvještavanje XML FAILED SCH validation\n\nSee " + schValidationResultOutputFile + " file for details.");
+//             return false;
+//         }
+//         */
+
+//         // If we get here, validation passed
+//         return true;
+        
+//     } catch (ex) {
+//         MessageBox("XML validation error: " + ex);
+//         return false;
+//     }
+// }
+
 
 // Load provider configuration from NKSYSYCO and NKSYERAC tables
 function LoadProviderConfiguration() {
+
+    FILESPATH = "";
+    PROVIDER = "";
+    // SCHEMASPATH = "";
+    CERTPATH = "";
+
     // Read provider and schemas path from NKSYSYCO
-    sqlQueryString = "SELECT NKSYS_FIELD, NKSYS_VALUE FROM " + databaseName + ".dbo.NKSYSYCO WHERE NKSYS_MODUL = 'WKSY' AND NKSYS_GRUP = 'ERACUN' AND (NKSYS_FIELD = 'PROVIDER' OR NKSYS_FIELD = 'SCHEMASPATH');";
+    sqlQueryString = "SELECT NKSYS_FIELD, NKSYS_VALUE FROM " + databaseName + ".dbo.NKSYSYCO WHERE NKSYS_MODUL = 'WKSY' AND NKSYS_GRUP = 'ERACUN'";
     try {
         sqlResult = sqlQuery(sqlQueryString);
         if (Size(sqlResult) > 1) {
-            for(i = 1; i < Size(sqlResult); i++) {
-                if(sqlResult[i][0].trim() == "PROVIDER") {
+            for(i = 1; i < Size(sqlResult); i++){
+                if(sqlResult[i][0].trim() == "FILESPATH"){
+                    FILESPATH = sqlResult[i][1].trim();
+                }
+                elif(sqlResult[i][0].trim() == "PROVIDER"){
                     PROVIDER = sqlResult[i][1].trim().Upper();
-                } elif(sqlResult[i][0].trim() == "SCHEMASPATH") {
-                    SCHEMASPATH = sqlResult[i][1].trim();
+                }
+                elif(sqlResult[i][0].trim() == "CERTPATH"){
+                    CERTPATH = sqlResult[i][1].trim();
                 }
             }
         }
         
         // Set defaults if not found
-        if (PROVIDER == "") {
-            PROVIDER = "FINA"; // Default to FINA
+        if (FILESPATH == "") {
+            MessageBox("FILESPATH za eRačune nije definiran.");
+            exit;
         }
-        if (SCHEMASPATH == "") {
-            SCHEMASPATH = "C:\\Schemas\\"; // Default schemas path
+        if (PROVIDER == "") {
+            MessageBox("PROVIDER za eRačune nije definiran.");
+            exit;
+        }
+        if (CERTPATH == "") {
+            MessageBox("CERTPATH za eRačune nije definiran.");
+            exit;
         }
     } catch(exc) {
-        MessageBox("NKSYSYCO provider reading error: " + exc);
-        PROVIDER = "FINA"; // Default fallback
-        SCHEMASPATH = "C:\\Schemas\\";
+        MessageBox("LoadProviderConfiguration: " + exc);
+        exit;
     }
 
     // Read provider configuration from NKSYERAC
@@ -707,35 +921,27 @@ function LoadProviderConfiguration() {
             ERAC_PASST = eracRes[1][6].trim();
             ERAC_DESC = eracRes[1][7].trim();
         } else {
-            MessageBox("Nema konfiguracije za provider: " + PROVIDER);
+            MessageBox("Nema konfiguracije za providera: " + PROVIDER);
+            exit;
         }
     } catch(exc) {
         MessageBox("NKSYERAC reading error: " + exc);
+        exit;
     }
-    /*
-    MessageBox("ERAC_REZ1: " + ERAC_REZ1 + 
-             "\nERAC_SERVER: " + ERAC_SERVER + 
-             "\nERAC_SERVERT: " + ERAC_SERVERT + 
-             "\nERAC_USER: " + ERAC_USER + 
-             "\nERAC_PASS: " + ERAC_PASS + 
-             "\nERAC_USERT: " + ERAC_USERT +
-             "\nERAC_PASST: " + ERAC_PASST +
-             "\nERAC_DESC: " + ERAC_DESC);
-    */
 }
 
 
-function AntiXMLSpecialChars(xmlValueIn)
-{
-    xmlValueOut = StrReplace(xmlValueIn, "&", " ");
-    xmlValueOut = StrReplace(xmlValueOut, "<", " ");
-    xmlValueOut = StrReplace(xmlValueOut, ">", " ");
-    xmlValueOut = StrReplace(xmlValueOut, "/", " ");
-    xmlValueOut = StrReplace(xmlValueOut, "\"", " ");
-    xmlValueOut = StrReplace(xmlValueOut, "'", " ");
+// function AntiXMLSpecialChars(xmlValueIn)
+// {
+//     xmlValueOut = StrReplace(xmlValueIn, "&", " ");
+//     xmlValueOut = StrReplace(xmlValueOut, "<", " ");
+//     xmlValueOut = StrReplace(xmlValueOut, ">", " ");
+//     xmlValueOut = StrReplace(xmlValueOut, "/", " ");
+//     xmlValueOut = StrReplace(xmlValueOut, "\"", " ");
+//     xmlValueOut = StrReplace(xmlValueOut, "'", " ");
 
-    return xmlValueOut;
-}
+//     return xmlValueOut;
+// }
 
 // -----------------------------------------------------------
 // MULTI-PROVIDER eREPORTING SENDER
@@ -747,9 +953,10 @@ function SendEReporting(xmlContent, xmlFilePath, fileName) {
     } elif (PROVIDER == "EPOS" || PROVIDER == "EPOSDEMO") {
         SendEReportingToEPOS(xmlContent, fileName);
     } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
-        SendEReportingToFINA(xmlContent, fileName);
+        SendEReportingToFINA();
     } else {
         MessageBox("Nepoznat provider za eIzvještavanje: " + PROVIDER);
+        exit;
     }
 }
 
@@ -1030,24 +1237,80 @@ function EscapeXml(xmlContent) {
 
 
 
-        ack = FINA_SEND_B2B_OUTGOING_INVOICE_REPORTING(
-            endpoint + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",
-            ERAC_DESC,
-            CERTPATH + ERAC_USERT, // service certificate
-            CERTPATH + ERAC_PASST, // p12 certificate (client)
-            ERAC_PASS,              // password for p12 certificate
-            "9500095",              // ERPID
+//--------------------------------------------------
 
-            UUID(),
-            "9934:26389058739" , // supplierId
-            "9934:12345678903", // buyerId
-            "00002-26-1", //supplier invoice Id
-            "Invoice", // document type
-            
-            "D:\\WinX\\ERAC\\DATA\\AURAE\\IR\\aaaa.xml", // eReporting UBL XML file path
-            
-            // "", // additional suppier id
-            // "", // additional buyer id
-        );
+// ack = FINA_SEND_B2B_OUTGOING_INVOICE_REPORTING(
+//     endpoint + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",
+//     ERAC_DESC,
+//     CERTPATH + ERAC_USERT, // service certificate
+//     CERTPATH + ERAC_PASST, // p12 certificate (client)
+//     ERAC_PASS,              // password for p12 certificate
+//     "9500095",              // ERPID
 
-        msg("ack\n: " + ack);
+//     UUID(),
+//     "9934:26389058739" , // supplierId
+//     "9934:09124339194", // buyerId
+//     "00002-26-1", //supplier invoice Id
+//     "Invoice", // document type
+    
+//     "D:\\WinX\\ERAC\\DATA\\AURAE\\IR\\aaaa.xml", // eReporting UBL XML file path
+    
+//     // "", // additional suppier id
+//     // (NKSP_AD_OBJED != "" ? "HR99:" + NKSP_AD_OBJED : "") // additional Buyer Id
+// );
+
+// msg("ack\n: " + ack);
+
+
+//--------------------------------------------------
+
+// ack = FINA_SEND_B2B_OUTGOING_INVOICE_REPORTING(
+//     "https://prezdigitalneusluge.fina.hr/" + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",
+//     "e-invoice",
+//     "D:\\WinX\\ERAC\\certifikati\\" + "e-invoice.cer", // service certificate
+//     "D:\\WinX\\ERAC\\certifikati\\" + "p12_aurasoft_demo.p12", // p12 certificate (client)
+//     "Aurasoft1", // password for p12 certificate
+//     "9500095", // ERPID
+
+//     UUID(),
+//     "9934:26389058739" , // supplierId
+//     "9934:09124339194", // buyerId
+//     "00002-26-1", //supplier invoice Id
+//     "Invoice", // document type
+    
+//     "D:\\WinX\\ERAC\\DATA\\AURAE\\IR\\aaaa.xml", // eReporting UBL XML file path
+    
+//     // "", // additional suppier id
+//     // (NKSP_AD_OBJED != "" ? "HR99:" + NKSP_AD_OBJED : "") // additional Buyer Id
+// );
+
+// msg("ack\n: " + ack);
+
+// exit;
+
+
+
+// 123-90-1 -> 90100123
+function TransformInvoiceNumberToAurasoftFormat(supplierInvoiceId){
+    try{
+        parts = supplierInvoiceId.Split("-");
+        
+        part0 = parts[0];
+        part1 = parts[1];
+        part2 = parts[2];
+
+
+        parts0Length = part0.length;
+
+        while(parts0Length < 5){
+            part0 = "0" + part0;
+            parts0Length = part0.length;
+        }
+        
+        final = part1 + part2 + part0;
+
+        return final;
+    }catch(ex){
+        return supplierInvoiceId;
+    }
+}

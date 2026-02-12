@@ -16,9 +16,12 @@ args = CommandLineArgs();
 // define PROVIDER_OVERRIDE type A size 20;
 // PROVIDER_OVERRIDE = "";
 
-DEFINE AURARbr type i;
+
 DEFINE Rbr type i;
 DEFINE cntr1 type i;
+
+DEFINE AURARbr type i;
+
 
 DEFINE arrayRbr type i size 100 array 10000;
 DEFINE arrayKupac type a size 500 array 10000;
@@ -37,6 +40,15 @@ DEFINE arrayReportPaymentStatus type a size 50 array 10000;
 
 DEFINE arrayOriginalSupplierInvoiceId type a size 50 array 10000;
 
+//--- AURA arrays -------------------
+DEFINE arrayAURARbr type a size 50 array 10000;
+DEFINE arrayNKPR_GL_NUM type a size 50 array 10000;
+DEFINE arrayNKPR_GL_POSRED type a size 50 array 10000;
+
+//--- finalArrays ---------------------
+// DEFINE arrayAURARbr type a size 50 array 10000;
+// DEFINE arrayNKPR_GL_NUM type a size 50 array 10000;
+// DEFINE arrayNKPR_GL_POSRED type a size 50 array 10000;
 
 if(Size(args) > 2){
     companyCode = args[2]; // e.g. Y3
@@ -137,7 +149,7 @@ function wxeizvje_OnDisplay() {
     strMonth = Substring(strCurrentDate, 4, 2);
     intMonth = Int(strMonth);
     if(intMonth == 1){
-        intMonth = 12;
+        intMonth = 13;
     }
     SetWidgetOptions("cmbMonth", "SelectedIndex", (intMonth - 2));
 
@@ -146,44 +158,9 @@ function wxeizvje_OnDisplay() {
     strYear = string(year(KPSY_FISCAL_YR));
     SetWidgetOptions("txtYear", "Text", strYear);
 
-    //*******************************************************************************
-    
-    //MessageBox("KPSY_COMP_NAME is " + KPSY_COMP_NAME + "*");    //ok je -> NE TREBA TRIMAT
-    //MessageBox("KPSY_REZERVA is " + KPSY_REZERVA  + "*");//OIB  //ok je -> NE TREBA TRIMAT
 
     // Load provider configuration
     LoadProviderConfiguration();
-    
-    // Override provider if specified in command line
-    // if(PROVIDER_OVERRIDE != ""){
-    //     PROVIDER = PROVIDER_OVERRIDE;
-    //     MessageBox("Provider promijenjen na: " + PROVIDER);
-        
-    //     // Reload configuration for the overridden provider
-    //     sql_erac = "SELECT ERAC_REZ1, ERAC_SERVER, ERAC_SERVERT, ERAC_USER, ERAC_PASS, ERAC_USERT, ERAC_PASST, ERAC_DESC FROM " + databaseName + ".dbo.NKSYERAC WHERE ERAC_CODE = @p1;";
-    //     sqlParams = {};
-    //     sqlParams.Add({"@p1", PROVIDER});
-        
-    //     try {
-    //         eracRes = sqlQuery(sql_erac, sqlParams);
-    //         if (Size(eracRes) > 1) {
-    //             ERAC_REZ1 = eracRes[1][0].trim();
-    //             ERAC_SERVER = eracRes[1][1].trim();
-    //             ERAC_SERVERT = eracRes[1][2].trim();
-    //             ERAC_USER = eracRes[1][3].trim();
-    //             ERAC_PASS = eracRes[1][4].trim();
-    //             ERAC_USERT = eracRes[1][5].trim();
-    //             ERAC_PASST = eracRes[1][6].trim();
-    //             ERAC_DESC = eracRes[1][7].trim();
-    //         } else {
-    //             MessageBox("Nema konfiguracije za provider: " + PROVIDER);
-    //         }
-    //     } catch(exc) {
-    //         MessageBox("NKSYERAC reading error za provider " + PROVIDER + ": " + exc);
-    //     }
-    // }
-    
-    //MessageBox("Provider: " + PROVIDER + "\nSchemas path: " + SCHEMASPATH);
 }
 
 
@@ -197,34 +174,34 @@ function btnProvjera@clicked()
     Rbr = 0;
     cntr1 = 0;
 
-    GetListNKPRINV();
+    // GetListNKPRINVNotSent(); // da li treba????
+
+    GetListNKPRINVSent();
 
     GetListFINA_B2B();
 
-    for(i = 0; i < Rbr; i++){
-
-        if(i > 5){
-            break;
-        }
-
-        // MSG("arrayRbr = " + arrayRbr[i] + "\n" +
-        //     "arrayKupac = " + arrayKupac[i] + "\n" +
-        //     "arrayOibKupca = " + arrayOibKupca[i] + "\n" +
-        //     "arrayStatusRacuna = " + arrayStatusRacuna[i] + "\n" +
-        //     "arrayDatumIzdavanja = " + arrayDatumIzdavanja[i] + "\n" +
-        //     "arrayDatumKnjizenja = " + arrayDatumKnjizenja[i] + "\n" +
-        //     "arrayBrojRacuna = " + arrayBrojRacuna[i] + "\n" +
-        //     "arrayBrojRacunaFina = " + arrayBrojRacunaFina[i] + "\n" +
-        //     "arrayBrojRacunaMer = " + arrayBrojRacunaMer[i] + "\n" +
-        //     "arrayIdRacunaPosrednika = " + arrayIdRacunaPosrednika[i] + "\n" +
-        //     "arrayStatusFiskalizacije = " + arrayStatusFiskalizacije[i] + "\n" +
-        //     "arrayReportPaymentStatus = " + arrayReportPaymentStatus[i] + "\n" + 
-        //     "arrayOriginalSupplierInvoiceId = " + arrayOriginalSupplierInvoiceId[i] + "\n"
-        // );
-    }
+    CheckSentInvoices();
 }
 
-function GetListNKPRINV(){
+// function GetListNKPRINVNotSent(){
+//     sql = "select NKPR_GL_NUM
+//             from " + databaseName + ".dbo.NKPRINV 
+//             where month(nkpr_gl_invdte) = " + int(Substring(selectedMonth, 0, 2)) + " and year(nkpr_gl_invdte) = " + strYear + "
+//             and NKPR_GL_RTS != 'E'
+//             and NKPR_GL_INVCD in ('A', 'B', 'D')
+//             and nkpr_gl_drzava = (select TOP 1 KPSY_PO_FREIGHT from kpsymstr)";
+//     sqlResult = sqlQuery(sql);
+
+//     for ( i = 1; i < Size(sqlResult); i++ )
+//     {
+//         auraNum = sqlResult[i][0].trim();
+//         // aurasoftFormatSupplierInvoiceId = TransformInvoiceNumberToAurasoftFormat(supplierInvoiceId);
+
+//         AddRacunToAURAArrays(auraNum, providerNum);
+//     }
+// }
+
+function GetListNKPRINVSent(){
     sql = "select NKPR_GL_NUM, NKPR_GL_POSRED from " + databaseName + ".dbo.NKPRINV 
             where month(nkpr_gl_invdte) = " + int(Substring(selectedMonth, 0, 2)) + " and year(nkpr_gl_invdte) = " + strYear + "
             and NKPR_GL_RTS = 'E'";
@@ -232,14 +209,11 @@ function GetListNKPRINV(){
 
     for ( i = 1; i < Size(sqlResult); i++ )
     {
-        supplierName = sqlResult[i][2];
-        supplierId = ""; // !!! OIB kupca nije u tablici NKPRINV, treba dodat ili dohvatiti iz neke druge tablice
-        datumIzdavanja = DateTime(sqlResult[i][1], "yyyy-MM-dd");
-        datumKnjizenja = DateTime(sqlResult[i][1], "yyyy-MM-dd"); // !!! u tablici NKPRINV nema datuma knjiženja, koristim datum izdavanja kao zamjenu
-        supplierInvoiceId = sqlResult[i][0];
-        aurasoftFormatSupplierInvoiceId = TransformInvoiceNumberToAurasoftFormat(supplierInvoiceId);
+        auraNum = sqlResult[i][0].trim();
+        providerNum = sqlResult[i][1].trim();
+        // aurasoftFormatSupplierInvoiceId = TransformInvoiceNumberToAurasoftFormat(supplierInvoiceId);
 
-        AddRacunToAURAArrays(*************************);
+        AddRacunToAURAArrays(auraNum, providerNum);
     }
 }
 
@@ -351,7 +325,11 @@ function GetListFINA_B2B(){
                 AddRacunToFINAArrays(buyerName, buyerId, datumIzdavanja, datumKnjizenja, aurasoftFormatSupplierInvoiceId, invoiceId, statusCode, fiskStatus, reportPaymentStatus, supplierInvoiceId);
             }
         }else{
-            MessageBox("ack[\"ErrorCode\"] = " + ack["ErrorCode"] + "\nack[\"ErrorText\"] = " + ack["ErrorText"] + "\nack[\"ErrorMessage\"] = " + ack["ErrorMessage"]);
+            errorString = "ack[\"ErrorCode\"] = " + ack["ErrorCode"] + "\nack[\"ErrorText\"] = " + ack["ErrorText"] + "\nack[\"ErrorMessage\"] = " + ack["ErrorMessage"];
+            MessageBox(errorString);
+            
+            WriteLog("FINA_GET_B2B_OUTGOING_INVOICE_LIST", errorString);
+            exit;
         }
     }catch(ex){
         MessageBox("GetListFINA_B2B - Nepoznata greška:\n" + ex);
@@ -389,10 +367,25 @@ function AddRacunToFINAArrays(supplierName, supplierId, datumIzdavanja, datumKnj
 }
 
 function AddRacunToAURAArrays(NKPR_GL_NUM, NKPR_GL_POSRED){
-    arrayNKPR_GL_NUM[Rbr] = NKPR_GL_NUM;
-    arrayNKPR_GL_POSRED[Rbr] = NKPR_GL_POSRED;
+    arrayNKPR_GL_NUM[AURARbr] = NKPR_GL_NUM;
+    arrayNKPR_GL_POSRED[AURARbr] = NKPR_GL_POSRED;
 
     arrayAURARbr[AURARbr] = ++AURARbr;
+}
+
+
+function CheckSentInvoices(){
+    for(auraI = 0; auraI <= AURARbr; auraIi++){
+        if(arrayNKPR_GL_POSRED[auraI] == ""){
+            arrayNKPR_GL_POSRED[auraI] = FindInvoiceInFinaArrays(arrayNKPR_GL_NUM[auraI]);
+        }
+
+
+    }
+}
+
+function FindInvoiceInFinaArrays(){
+
 }
 
 // Prepare List
@@ -1305,5 +1298,26 @@ function TransformInvoiceNumberToAurasoftFormat(supplierInvoiceId){
         return final;
     }catch(ex){
         return supplierInvoiceId;
+    }
+}
+
+
+function WriteLog(filename, text, responseCode = "") {
+    logPath = FILESPATH + "eIzvje\\" + "log\\";
+
+    if(!DIR_EXISTS(logPath)){
+        MAKE_DIR(logPath);
+    }
+
+    logFilePath = logPath + filename + ".txt";
+    responseCodeText = (responseCode != "" ? "ResponseCode:\n" + responseCode + "\n\n" : "");
+    appendText = Now("yyyy-MM-dd HH:mm:ss") + " -----------------------------------\n\n"
+        + responseCodeText
+        + "Response:\n" + text + "\n\n";
+
+    try {
+        SaveFile(appendText, logFilePath, "a");        
+    } catch (ex) {
+        MessageBox("CRITICAL: Cannot write to log file: " + logFilePath + "\nError: " + ex);
     }
 }

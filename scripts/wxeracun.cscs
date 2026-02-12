@@ -873,7 +873,7 @@ function GenerateUBLXml() {
     // BT-1; Invoice number; 1..1
     // Invoice Number (8 digits: 90100002 -->> 00002-90-1)
     invNumStr = String(NKPR_GL_NUM); // 
-    invID = Substring(invNumStr, 3, 5) + "-" + Substring(invNumStr, 0, 2) + "-" + Substring(invNumStr, 2, 1);
+    invID = int(Substring(invNumStr, 3, 5)) + "-" + Substring(invNumStr, 0, 2) + "-" + Substring(invNumStr, 2, 1);
     xml += "<cbc:ID>" + invID + "</cbc:ID>\n";
     if (CopyIndicator == "D") {
         xml += "<cbc:CopyIndicator>true</cbc:CopyIndicator>\n"; // HR-BT-1; 0..1

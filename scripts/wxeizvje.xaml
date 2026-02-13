@@ -17,7 +17,26 @@
             <Label x:Name="txtYear" FontSize="25" FontWeight="Bold" Content="" Width="80" HorizontalAlignment="Left" Margin="290,0,0,10"/>
         <!--</StackPanel>-->
 
-        <DataGrid x:Name="dgInvoices" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="False" CanUserAddRows="False" CanUserDeleteRows="False" Margin="0,0,0,10">
+        <DataGrid 
+            x:Name="datagridListaRacuna" Grid.Row="1" AutoGenerateColumns="False" Margin="0,0,0,10"
+            
+                    GridLinesVisibility="All"
+                    HorizontalGridLinesBrush="#FFD7D6D6"
+                    VerticalGridLinesBrush="#FFD7D6D6"
+                      Background="White"
+                      
+                      IsReadOnly="true"
+                    RowHeight="22"
+                      FontSize="15"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto"
+                    
+                        BorderBrush="DarkGray"
+                        BorderThickness="1"
+                     Height="410" Width="960"  
+                    VerticalAlignment="Top" 
+                    HorizontalAlignment="Center"
+            >
             <DataGrid.Columns>
                 <!--<DataGridCheckBoxColumn Header="Odaberi" Binding="{Binding Selected}" Width="60"/>
                 <DataGridTextColumn Header="Broj računa" Binding="{Binding NKPR_GL_NUM}" Width="120"/>
@@ -25,7 +44,10 @@
                 <DataGridTextColumn Header="Kupac" Binding="{Binding NKPR_GL_CUSNME}" Width="*"/>
                 <DataGridTextColumn Header="Iznos" Binding="{Binding NKPR_GL_TOTAL}" Width="100"/>-->
 			
-				<DataGridTemplateColumn Header="Odaberi" Width="60" IsReadOnly="False">
+                
+                
+                
+				<!--<DataGridTemplateColumn Header="Odaberi" Width="60" IsReadOnly="False">
 					<DataGridTemplateColumn.CellTemplate>
 						<DataTemplate>
 							<wcl:ASGridCell FieldName="RACUNODABERI_AR"
@@ -33,19 +55,110 @@
                                      />
 						</DataTemplate>
 					</DataGridTemplateColumn.CellTemplate>
-				</DataGridTemplateColumn>
+				</DataGridTemplateColumn>-->
 				
-				<DataGridTemplateColumn Header="Broj računa" Width="120" IsReadOnly="True">
+                
+                
+				<DataGridTemplateColumn Header="R.br." Width="40">
 					<DataGridTemplateColumn.CellTemplate>
 						<DataTemplate>
-							<wcl:ASGridCell FieldName="RACUNBROJRACUNA_AR"
-                                    HorizontalContentAlignment="Center"
+                            <wcl:ASGridCell FieldName="arrayFINALRbr"
+                                    HorizontalContentAlignment="Left"
                                      />
 						</DataTemplate>
 					</DataGridTemplateColumn.CellTemplate>
 				</DataGridTemplateColumn>
 
-				<DataGridTemplateColumn Header="Datum" Width="100">
+
+                <DataGridTemplateColumn Header="Br. računa" Width="120">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <wcl:ASGridCell FieldName="arrayFINAL_NKPR_GL_NUM"
+                    HorizontalContentAlignment="Left"
+                     />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                
+                
+                <DataGridTemplateColumn Header="Kupac" Width="150">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <wcl:ASGridCell FieldName="arrayFINALKupac"
+                    HorizontalContentAlignment="Left"
+                     />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                
+                
+                <DataGridTemplateColumn Header="OIB kupca" Width="150">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <wcl:ASGridCell FieldName="arrayFINALOibKupca"
+                    HorizontalContentAlignment="Left"
+                     />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+               
+                
+                <DataGridTemplateColumn Header="Dat. izdav." Width="100">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <wcl:ASGridCell FieldName="arrayFINALDatumIzdavanja"
+                    HorizontalContentAlignment="Center"
+                     />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Dat. knjiž." Width="100">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <wcl:ASGridCell FieldName="arrayFINALDatumKnjizenja"
+                    HorizontalContentAlignment="Center"
+                     />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                
+                
+                
+                
+                <DataGridTemplateColumn Header="Fiskaliziran?" Width="120">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <wcl:ASGridCell FieldName="arrayFINALStatusFiskalizacije"
+                    HorizontalContentAlignment="Left"
+                     />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                
+                <DataGridTemplateColumn Header="Report payment status" Width="170">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <wcl:ASGridCell FieldName="arrayFINALReportPaymentStatus"
+                    HorizontalContentAlignment="Left"
+                     />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+
+                <DataGridTemplateColumn Header="ID računa" Width="120">
+					<DataGridTemplateColumn.CellTemplate>
+						<DataTemplate>
+                            <wcl:ASGridCell FieldName="arrayFINALInvoiceId"
+                                    HorizontalContentAlignment="Left"
+                                     />
+						</DataTemplate>
+					</DataGridTemplateColumn.CellTemplate>
+				</DataGridTemplateColumn>
+                
+                
+
+				<!--<DataGridTemplateColumn Header="Datum" Width="100">
 					<DataGridTemplateColumn.CellTemplate>
 						<DataTemplate>
 							<wcl:ASGridCell FieldName="RACUNDATUM_AR"
@@ -53,9 +166,9 @@
                                      />
 						</DataTemplate>
 					</DataGridTemplateColumn.CellTemplate>
-				</DataGridTemplateColumn>
+				</DataGridTemplateColumn>-->
 
-				<DataGridTemplateColumn Header="Kupac" Width="570">
+				<!--<DataGridTemplateColumn Header="Kupac" Width="570">
 					<DataGridTemplateColumn.CellTemplate>
 						<DataTemplate>
 							<wcl:ASGridCell FieldName="RACUNKUPAC_AR"
@@ -63,9 +176,9 @@
                                      />
 						</DataTemplate>
 					</DataGridTemplateColumn.CellTemplate>
-				</DataGridTemplateColumn>
+				</DataGridTemplateColumn>-->
 
-				<DataGridTemplateColumn Header="Iznos" Width="100">
+				<!--<DataGridTemplateColumn Header="Iznos" Width="100">
 					<DataGridTemplateColumn.CellTemplate>
 						<DataTemplate>							
 							<wcl:ASGridCell FieldName="RACUNIZNOS_AR"
@@ -73,16 +186,18 @@
                                      />							
 						</DataTemplate>
 					</DataGridTemplateColumn.CellTemplate>
-				</DataGridTemplateColumn>
+				</DataGridTemplateColumn>-->
+                
+                
             </DataGrid.Columns>
         </DataGrid>
 
         
         <!--<StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">-->
 		<Button Name="btnProvjera" Content="Provjera" FontWeight="Bold" Width="130" Height="35" Grid.Row="2" HorizontalAlignment="Right" Margin="0,0,390,0"/>
-    		<Button Name="btnPrepare" Content="Učitaj listu" Width="130" Height="35" Grid.Row="2" HorizontalAlignment="Right" Margin="0,0,250,0"/>
-            <Button Name="btnSend" Content="Pošalji XML" Width="130" Height="35"  Grid.Row="2" HorizontalAlignment="Right" Margin="0,0,110,0"/>
-            <Button Name="btnExit" Content="Izlaz" Width="100" Height="35" Grid.Row="2" HorizontalAlignment="Right" Margin="0,0,0,0"/>
+    	<Button Name="btnPrepare" Content="Učitaj listu" Width="130" Height="35" Grid.Row="2" HorizontalAlignment="Right" Margin="0,0,250,0"/>
+        <Button Name="btnSend" Content="Pošalji XML" Width="130" Height="35"  Grid.Row="2" HorizontalAlignment="Right" Margin="0,0,110,0"/>
+        <Button Name="btnExit" Content="Izlaz" Width="100" Height="35" Grid.Row="2" HorizontalAlignment="Right" Margin="0,0,0,0"/>
         <!--</StackPanel>-->
     </Grid>
 </Window>

@@ -21,6 +21,7 @@ DEFINE Rbr type i;
 DEFINE cntr1 type i;
 
 DEFINE AURARbr type i;
+DEFINE FINALRbr type i;
 
 
 DEFINE arrayRbr type i size 100 array 10000;
@@ -45,10 +46,37 @@ DEFINE arrayAURARbr type a size 50 array 10000;
 DEFINE arrayNKPR_GL_NUM type a size 50 array 10000;
 DEFINE arrayNKPR_GL_POSRED type a size 50 array 10000;
 
+DEFINE arrayAURAKupac type a size 50 array 10000;
+DEFINE arrayAURAOibKupca type a size 50 array 10000;
+
+DEFINE arrayAURADatumIzdavanja type a size 50 array 10000;
+DEFINE arrayAURADatumKnjizenja type a size 50 array 10000;
+
+DEFINE arrayAURAStatusFiskalizacije type a size 50 array 10000; // Da, NE!, ?
+DEFINE arrayAURAReportPaymentStatus type a size 50 array 10000; // Da, NE!, ?
+
+DEFINE arrayAURAStatusRacuna type a size 50 array 10000; 
+
+
 //--- finalArrays ---------------------
-// DEFINE arrayAURARbr type a size 50 array 10000;
-// DEFINE arrayNKPR_GL_NUM type a size 50 array 10000;
-// DEFINE arrayNKPR_GL_POSRED type a size 50 array 10000;
+DEFINE arrayFINALRbr type a size 50 array 10000; // ...
+DEFINE arrayFINAL_NKPR_GL_NUM type a size 50 array 10000; // from arrayNKPR_GL_NUM npr. 26100007
+DEFINE arrayFINALKupac type a size 50 array 10000; // from db, naziv kupca
+DEFINE arrayFINALOibKupca type a size 50 array 10000; // from db, OIB kupca
+
+DEFINE arrayFINALDatumIzdavanja type a size 50 array 10000; // from FINA
+DEFINE arrayFINALDatumKnjizenja type a size 50 array 10000; // from FINA
+
+DEFINE arrayFINALStatusFiskalizacije type a size 50 array 10000; // Da, NE!, ?
+DEFINE arrayFINALReportPaymentStatus type a size 50 array 10000; // Da, NE!, ?
+DEFINE arrayFINALInvoiceId type a size 50 array 10000; // from arrayNKPR_GL_POSRED, FINA-in ID
+
+DEFINE arrayFINALStatusRacuna type a size 50 array 10000; // from FINA
+
+// ne na GUI-ju
+DEFINE arrayFINALOriginalSupplierInvoiceId type a size 50 array 10000; // NE TREBA ? npr. 00007-26-1
+DEFINE arrayFINALDocumentType type a size 50 array 10000; // "Invoice"/"CreditNote" za api poziv - "Račun"/"Odobrenje" za GUI
+
 
 if(Size(args) > 2){
     companyCode = args[2]; // e.g. Y3
@@ -169,10 +197,15 @@ function wxeizvje_OnDisplay() {
 
 function btnProvjera@clicked() 
 {
+    cursor("wait");
+    DisplayArray("datagridListaRacuna", "close");
+
+
     // MessageBox(Substring(selectedMonth, 0, 2));
     AURARbr = 0;
     Rbr = 0;
     cntr1 = 0;
+    FINALRbr = 0;
 
     // GetListNKPRINVNotSent(); // da li treba????
 
@@ -180,7 +213,27 @@ function btnProvjera@clicked()
 
     GetListFINA_B2B();
 
+
     CheckSentInvoices();
+
+
+
+    // finalMSGString = "";
+    // for(a = 0; a < FINALRbr; a++){
+    //     finalMSGString += arrayFINALInvoiceId[a] + "\n";
+    // }
+    // msg(finalMSGString);
+
+    if(FINALRbr > 0){
+        DisplayArraySetup("datagridListaRacuna", counterFld: cntr1, activeElements: FINALRbr, maxElements: FINALRbr);
+    }
+    
+    cursor("dflt");
+    
+
+    // SetWidgetOptions("btnPošalji", "IsEnabled", "true");
+    // SetWidgetOptions("StatusLabel", "Content", "");
+    // SetWidgetOptions("StatusLabel2", "Content", "");
 }
 
 // function GetListNKPRINVNotSent(){
@@ -202,7 +255,7 @@ function btnProvjera@clicked()
 // }
 
 function GetListNKPRINVSent(){
-    sql = "select NKPR_GL_NUM, NKPR_GL_POSRED from " + databaseName + ".dbo.NKPRINV 
+    sql = "select NKPR_GL_NUM, NKPR_GL_POSRED, NKPR_GL_CUSNME, NKPR_GL_JMBG, NKPR_GL_INVDTE, NKPR_GL_ESD from " + databaseName + ".dbo.NKPRINV 
             where month(nkpr_gl_invdte) = " + int(Substring(selectedMonth, 0, 2)) + " and year(nkpr_gl_invdte) = " + strYear + "
             and NKPR_GL_RTS = 'E'";
     sqlResult = sqlQuery(sql);
@@ -211,9 +264,13 @@ function GetListNKPRINVSent(){
     {
         auraNum = sqlResult[i][0].trim();
         providerNum = sqlResult[i][1].trim();
+        nazivKupca = sqlResult[i][2].trim();
+        oibKupca = sqlResult[i][3].trim();
+        datIzdavanja = sqlResult[i][4];
+        datKnjizenja = sqlResult[i][5];
         // aurasoftFormatSupplierInvoiceId = TransformInvoiceNumberToAurasoftFormat(supplierInvoiceId);
 
-        AddRacunToAURAArrays(auraNum, providerNum);
+        AddRacunToAURAArrays(auraNum, providerNum, nazivKupca, oibKupca, datIzdavanja, datKnjizenja);
     }
 }
 
@@ -281,48 +338,9 @@ function GetListFINA_B2B(){
                 // MSG(datumIzdavanja);
                 // MSG(datumIzdavanja.ToString("dd/MM/yyyy") + " ... " + datumKnjizenja.ToString("dd/MM/yyyy"));
 
-                fiskStatusAck = FINA_GET_B2B_OUTGOING_INVOICE_FISK_STATUS(
-                    ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
-                    ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
-                    CERTPATH + ERAC_USERT, // servisni certifikat
-                    CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
-                    ERAC_PASS, // password za p12 certifikat
+                
 
-                    UUID(), // messageId
-                    "9934:" + companyOIB, // OIB primatelja (VLASTITI) // !!! stavit pravi OIB iz baze
-                    invoiceId
-                );
-
-                if(Contains(fiskStatusAck, "ErrorCode")){
-                    // fiskStatus = fiskStatusAck["ErrorMessage"];
-                    // !!! spremit error u neki LOG
-                    fiskStatus = "?";
-                    reportPaymentStatus = "?";
-                }else{
-                    if(Contains(fiskStatusAck, "FiskStatus")){
-                        fiskStatus = fiskStatusAck["FiskStatus"];
-                        if(fiskStatus == "True"){
-                            fiskStatus = "Da (" + fiskStatusAck["FiskStatusTimestamp"] + ")";                         
-                        }elif(fiskStatus == "False"){
-                            fiskStatus = "NE! (" + fiskStatusAck["FiskStatusTimestamp"] + ")";
-                        }
-                    }else{
-                        fiskStatus = "";
-                    }
-
-                    if(Contains(fiskStatusAck, "ReportPaymentStatus")){
-                        reportPaymentStatus = fiskStatusAck["ReportPaymentStatus"];
-                        if(reportPaymentStatus == "True"){
-                            reportPaymentStatus = "Da (" + fiskStatusAck["ReportPaymentStatusTimestamp"] + ")";
-                        }elif(reportPaymentStatus == "False"){
-                            reportPaymentStatus = "NE! (" + fiskStatusAck["ReportPaymentStatusTimestamp"] + ")";
-                        }
-                    }else{
-                        reportPaymentStatus = "";
-                    }
-                }
-
-                AddRacunToFINAArrays(buyerName, buyerId, datumIzdavanja, datumKnjizenja, aurasoftFormatSupplierInvoiceId, invoiceId, statusCode, fiskStatus, reportPaymentStatus, supplierInvoiceId);
+                AddRacunToFINAArrays(buyerName, buyerId, datumIzdavanja, datumKnjizenja, aurasoftFormatSupplierInvoiceId, invoiceId, statusCode, "X" /*fiskStatus*/, "X"/*reportPaymentStatus*/, supplierInvoiceId);
             }
         }else{
             errorString = "ack[\"ErrorCode\"] = " + ack["ErrorCode"] + "\nack[\"ErrorText\"] = " + ack["ErrorText"] + "\nack[\"ErrorMessage\"] = " + ack["ErrorMessage"];
@@ -332,8 +350,9 @@ function GetListFINA_B2B(){
             exit;
         }
     }catch(ex){
-        MessageBox("GetListFINA_B2B - Nepoznata greška:\n" + ex);
-        LogException(ex); // !!!
+        MessageBox("GetListFINA_B2B_exception:\n" + ex);
+        
+        WriteLog("GetListFINA_B2B_exception", ex);
         exit;
     }
 } 
@@ -366,27 +385,189 @@ function AddRacunToFINAArrays(supplierName, supplierId, datumIzdavanja, datumKnj
     arrayRbr[Rbr] = ++Rbr;
 }
 
-function AddRacunToAURAArrays(NKPR_GL_NUM, NKPR_GL_POSRED){
+function AddRacunToAURAArrays(NKPR_GL_NUM, NKPR_GL_POSRED, NKPR_GL_CUSNME, NKPR_GL_JMBG){
     arrayNKPR_GL_NUM[AURARbr] = NKPR_GL_NUM;
     arrayNKPR_GL_POSRED[AURARbr] = NKPR_GL_POSRED;
+
+
+    arrayAURAKupac[AURARbr] = NKPR_GL_CUSNME;
+    arrayAURAOibKupca[AURARbr] = NKPR_GL_JMBG;
+
+    arrayAURADatumIzdavanja[AURARbr] = datIzdavanja.ToString("dd/MM/yy");
+    arrayAURADatumKnjizenja[AURARbr] = datKnjizenja.ToString("dd/MM/yy");
 
     arrayAURARbr[AURARbr] = ++AURARbr;
 }
 
+// function UpdateRacunInAURAArrays1(_rbr, datIzdavanja, datKnjizenja, statusRacuna){
+//     arrayAURADatumIzdavanja[_rbr] = datIzdavanja.ToString("dd/MM/yy");
+//     arrayAURADatumKnjizenja[_rbr] = datKnjizenja.ToString("dd/MM/yy");
+
+//     arrayAURAStatusRacuna[_rbr] = statusRacuna;
+// }
+
+
+function UpdateRacunInAURAArrays2(_rbr, fiskStatus, reportPaymentStatus){
+    arrayAURAStatusFiskalizacije[_rbr] = fiskStatus;
+    arrayAURAReportPaymentStatus[_rbr] = reportPaymentStatus;
+}
+
+
 
 function CheckSentInvoices(){
-    for(auraI = 0; auraI <= AURARbr; auraIi++){
-        if(arrayNKPR_GL_POSRED[auraI] == ""){
-            arrayNKPR_GL_POSRED[auraI] = FindInvoiceInFinaArrays(arrayNKPR_GL_NUM[auraI]);
+    //find missing invoice Ids
+    for(auraCounter = 0; auraCounter < AURARbr; auraCounter++){
+        if(arrayNKPR_GL_POSRED[auraCounter] == ""){
+            arrayNKPR_GL_POSRED[auraCounter] = FindInvoiceIdInPosrednikArrays(arrayNKPR_GL_NUM[auraCounter]);
         }
+    }
 
-
+    //check fisc statuses for sent invoices
+    for(auraCounter = 0; auraCounter < AURARbr; auraCounter++){
+        if(false == checkOneInvoiceFromAura(auraCounter)){
+            AddRacunToFinalArrays(arrayNKPR_GL_NUM[auraCounter],
+                arrayAURAKupac[auraCounter],
+                arrayAURAOibKupca[auraCounter],
+                arrayAURADatumIzdavanja[auraCounter],
+                arrayAURADatumKnjizenja[auraCounter],
+                arrayAURAStatusFiskalizacije[auraCounter],
+                arrayAURAReportPaymentStatus[auraCounter],
+                arrayNKPR_GL_POSRED[auraCounter]
+            );
+        }
     }
 }
 
-function FindInvoiceInFinaArrays(){
+function FindInvoiceIdInPosrednikArrays(NKPR_GL_NUM){
+    invoiceId = "";
+    
+    for(finaI = 0; finaI < Rbr; finaI++){
+        if(arrayBrojRacuna[finaI] == NKPR_GL_NUM){
+            invoiceId = arrayIdRacunaPosrednika[finaI];
+            break;
+        }
+    }
+
+    return invoiceId;
+}
+
+function checkOneInvoiceFromAura(_auraCounter) {
+    fiskStatusAck = FINA_GET_B2B_OUTGOING_INVOICE_FISK_STATUS(
+        ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
+        ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
+        CERTPATH + ERAC_USERT, // servisni certifikat
+        CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
+        ERAC_PASS, // password za p12 certifikat
+
+        UUID(), // messageId
+        "9934:" + companyOIB, // OIB primatelja (VLASTITI) // !!! stavit pravi OIB iz baze
+        arrayNKPR_GL_POSRED[_auraCounter]
+    );
+
+    fiskStatus = "";
+    reportPaymentStatus = "";
+
+    if(Contains(fiskStatusAck, "ErrorCode")){
+        // fiskStatus = fiskStatusAck["ErrorMessage"];
+        // !!! spremit error u neki LOG
+
+        fiskStatus = "?";
+        reportPaymentStatus = "?";
+
+        
+    }else{
+        if(Contains(fiskStatusAck, "FiskStatus")){
+            fiskStatus = fiskStatusAck["FiskStatus"];
+            if(fiskStatus == "True"){
+                fiskStatus = "Da (" + fiskStatusAck["FiskStatusTimestamp"] + ")";                         
+            }elif(fiskStatus == "False"){
+                fiskStatus = "NE! (" + fiskStatusAck["FiskStatusTimestamp"] + ")";
+            }
+        }else{
+            fiskStatus = "";
+        }
+
+        if(Contains(fiskStatusAck, "ReportPaymentStatus")){
+            reportPaymentStatus = fiskStatusAck["ReportPaymentStatus"];
+            if(reportPaymentStatus == "True"){
+                reportPaymentStatus = "Da (" + fiskStatusAck["ReportPaymentStatusTimestamp"] + ")";
+            }elif(reportPaymentStatus == "False"){
+                reportPaymentStatus = "NE! (" + fiskStatusAck["ReportPaymentStatusTimestamp"] + ")";
+            }
+        }else{
+            reportPaymentStatus = "";
+        }
+    }
+
+
+    if(fiskStatus == "" || fiskStatus.StartsWith("NE!") || fiskStatus.StartsWith("?")){
+        //AddRacunToFinalArrays(currentInvoiceId, fiskStatus, reportPaymentStatus);
+        UpdateRacunInAURAArrays2(_auraCounter, fiskStatus, reportPaymentStatus);        
+        return false;
+    }else{
+        return true;
+    }
+}
+
+function AddRacunToFinalArrays(gl_num, nazivKupca, oibKupca, datIzdavanja, datKnjizenja, fiskStatus, reportPaymentStatus, invcId){
+
+
+    arrayFINAL_NKPR_GL_NUM[FINALRbr] = gl_num;
+    arrayFINALKupac[FINALRbr] = nazivKupca;
+    arrayFINALOibKupca[FINALRbr] = oibKupca;
+
+    arrayFINALDatumIzdavanja[FINALRbr] = datIzdavanja;
+    arrayFINALDatumKnjizenja[FINALRbr] = datKnjizenja;
+
+    arrayFINALStatusFiskalizacije[FINALRbr] = fiskStatus;
+    arrayFINALReportPaymentStatus[FINALRbr] = reportPaymentStatus;
+    arrayFINALInvoiceId[FINALRbr] = invcId;
+
+
+    // arrayOibKupca[FINALRbr] = supplierId;
+    // arrayStatusRacuna[FINALRbr] = statusRacuna;
+    // arrayDatumIzdavanja[FINALRbr] = datumIzdavanja.ToString("dd/MM/yy");
+    // arrayDatumKnjizenja[FINALRbr] = datumKnjizenja.ToString("dd/MM/yy");
+    // arrayBrojRacuna[FINALRbr] = supplierInvoiceId;
+    
+    // arrayIdRacunaPosrednika[FINALRbr] = eRacunBrojRacuna;
+
+    // arrayStatusFiskalizacije[FINALRbr] = fiskStatus;
+    // arrayReportPaymentStatus[FINALRbr] = reportPaymentStatus;
+    
+    // if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
+    //     arrayBrojRacunaMer[FINALRbr] = eRacunBrojRacuna;
+    // } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
+    //     arrayBrojRacunaFina[FINALRbr] = eRacunBrojRacuna;
+    // } else {
+    //     MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA, MERDEMO, FINADEMO");
+    //     exit;
+    // }
+
+    // arrayFINALOriginalSupplierInvoiceId[FINALRbr] = originalSupplierInvoiceId;
+
+
+    arrayFINALRbr[FINALRbr] = ++FINALRbr;
+
+    /*
+        arrayFINALRbr
+        arrayFINAL_NKPR_GL_NUM
+        arrayFINALInvoiceId
+        arrayFINALBuyerId
+        arrayFINALOriginalSupplierInvoiceId
+        arrayFINALDocumentType
+    */
 
 }
+
+
+
+
+
+
+
+
+
 
 // Prepare List
 function btnPrepare@Clicked() {

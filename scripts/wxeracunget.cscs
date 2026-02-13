@@ -1911,7 +1911,7 @@ function ImportHeaderDataToERGL(docType) {
         sql_insert += "NKPR_GL_SIF_PL, NKPR_GL_MODEL, NKPR_GL_POZIV, NKPR_GL_DATPRI, ";
         sql_insert += "NKPR_GL_TAXAMT, NKPR_GL_TOTAL, NKPR_GL_DESC,";
         sql_insert += "NKPR_GL_BROPIS, NKPR_GL_BROPIS1, NKPR_GL_REZ3, NKPR_GL_DATECR, NKPR_GL_DRZAVA, ";
-        sql_insert += "NKPR_GL_POSRED, NKPR_GL_PICTHDR, NKPR_GL_PICTFTR";
+        sql_insert += "NKPR_GL_POSRED, NKPR_GL_PICTHDR, NKPR_GL_PICTFTR, NKPR_GL_DATJCD";
         sql_insert += ") VALUES (";
         sql_insert += "@brpon, @docType, @invDate, @timeCreated, ";
         sql_insert += "@dvo, @nokam, @taxPointDate, @currency, ";
@@ -1922,7 +1922,7 @@ function ImportHeaderDataToERGL(docType) {
         sql_insert += "@payment, @model, @poziv, @datpri, ";
         sql_insert += "@taxTotal, @total, @glDesc, ";
         sql_insert += "@note1, @note2, @rez3, @created, @country, @posred, ";
-        sql_insert += "@pictHdr, @pictFtr ";
+        sql_insert += "@pictHdr, @pictFtr, @datjcd ";
         sql_insert += ");";
         
         // Prepare parameters
@@ -2006,6 +2006,8 @@ function ImportHeaderDataToERGL(docType) {
         
         sqlParams.Add({"@pictHdr", NKPR_GL_PICTHDR});
         sqlParams.Add({"@pictFtr", NKPR_GL_PICTFTR});
+        
+        sqlParams.Add({"@datjcd", Now("yyyy-MM-dd")}); // date of import  
 
         // Execute SQL insert
         // msg("sqlParams  : " + sqlParams);

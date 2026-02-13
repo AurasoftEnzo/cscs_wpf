@@ -57,6 +57,9 @@ DEFINE arrayAURAReportPaymentStatus type a size 50 array 10000; // Da, NE!, ?
 
 DEFINE arrayAURAStatusRacuna type a size 50 array 10000; 
 
+DEFINE arrayAURAOriginalSupplierInvoiceId type a size 50 array 10000;
+DEFINE arrayAURAXmlPath type a size 500 array 10000; 
+
 
 //--- finalArrays ---------------------
 DEFINE arrayFINALRbr type a size 50 array 10000; // ...
@@ -72,6 +75,8 @@ DEFINE arrayFINALReportPaymentStatus type a size 50 array 10000; // Da, NE!, ?
 DEFINE arrayFINALInvoiceId type a size 50 array 10000; // from arrayNKPR_GL_POSRED, FINA-in ID
 
 DEFINE arrayFINALStatusRacuna type a size 50 array 10000; // from FINA
+
+DEFINE arrayFINALXmlPath type a size 500 array 10000;
 
 // ne na GUI-ju
 DEFINE arrayFINALOriginalSupplierInvoiceId type a size 50 array 10000; // NE TREBA ? npr. 00007-26-1
@@ -216,7 +221,7 @@ function btnProvjera@clicked()
 
     CheckSentInvoices();
 
-
+    FindXmls();
 
     // finalMSGString = "";
     // for(a = 0; a < FINALRbr; a++){
@@ -420,6 +425,10 @@ function CheckSentInvoices(){
         if(arrayNKPR_GL_POSRED[auraCounter] == ""){
             arrayNKPR_GL_POSRED[auraCounter] = FindInvoiceIdInPosrednikArrays(arrayNKPR_GL_NUM[auraCounter]);
         }
+
+        arrayAURAStatusRacuna[auraCounter] = FindStatusRacunaInPosrednikArrays(arrayNKPR_GL_NUM[auraCounter]);
+        arrayAURAOriginalSupplierInvoiceId[auraCounter] = FindOriginalSupplierInvoiceIdInPosrednikArrays(arrayNKPR_GL_NUM[auraCounter]);
+
     }
 
     //check fisc statuses for sent invoices
@@ -432,7 +441,11 @@ function CheckSentInvoices(){
                 arrayAURADatumKnjizenja[auraCounter],
                 arrayAURAStatusFiskalizacije[auraCounter],
                 arrayAURAReportPaymentStatus[auraCounter],
-                arrayNKPR_GL_POSRED[auraCounter]
+                arrayNKPR_GL_POSRED[auraCounter],
+
+                arrayAURAStatusRacuna[auraCounter],
+                arrayAURAOriginalSupplierInvoiceId[auraCounter],
+                arrayAURAXmlPath[auraCounter]
             );
         }
     }
@@ -449,6 +462,30 @@ function FindInvoiceIdInPosrednikArrays(NKPR_GL_NUM){
     }
 
     return invoiceId;
+}
+function FindOriginalSupplierInvoiceIdInPosrednikArrays(NKPR_GL_NUM){
+    origSuppInvId = "";
+    
+    for(finaI = 0; finaI < Rbr; finaI++){
+        if(arrayBrojRacuna[finaI] == NKPR_GL_NUM){
+            origSuppInvId = arrayOriginalSupplierInvoiceId[finaI];
+            break;
+        }
+    }
+
+    return origSuppInvId;
+}
+function FindStatusRacunaInPosrednikArrays(NKPR_GL_NUM){
+    statusRacuna = "";
+    
+    for(finaI = 0; finaI < Rbr; finaI++){
+        if(arrayBrojRacuna[finaI] == NKPR_GL_NUM){
+            statusRacuna = arrayStatusRacuna[finaI];
+            break;
+        }
+    }
+
+    return statusRacuna;
 }
 
 function checkOneInvoiceFromAura(_auraCounter) {
@@ -509,7 +546,7 @@ function checkOneInvoiceFromAura(_auraCounter) {
     }
 }
 
-function AddRacunToFinalArrays(gl_num, nazivKupca, oibKupca, datIzdavanja, datKnjizenja, fiskStatus, reportPaymentStatus, invcId){
+function AddRacunToFinalArrays(gl_num, nazivKupca, oibKupca, datIzdavanja, datKnjizenja, fiskStatus, reportPaymentStatus, invcId, statusRacuna, originalSupplierInvoiceId, xmlPath){
 
 
     arrayFINAL_NKPR_GL_NUM[FINALRbr] = gl_num;
@@ -522,7 +559,11 @@ function AddRacunToFinalArrays(gl_num, nazivKupca, oibKupca, datIzdavanja, datKn
     arrayFINALStatusFiskalizacije[FINALRbr] = fiskStatus;
     arrayFINALReportPaymentStatus[FINALRbr] = reportPaymentStatus;
     arrayFINALInvoiceId[FINALRbr] = invcId;
-
+    
+    
+    arrayFINALStatusRacuna[FINALRbr] = statusRacuna;
+    arrayFINALOriginalSupplierInvoiceId[FINALRbr] = originalSupplierInvoiceId;
+    arrayFINALXmlPath[FINALRbr] = xmlPath;
 
     // arrayOibKupca[FINALRbr] = supplierId;
     // arrayStatusRacuna[FINALRbr] = statusRacuna;
@@ -561,9 +602,45 @@ function AddRacunToFinalArrays(gl_num, nazivKupca, oibKupca, datIzdavanja, datKn
 }
 
 
+function FindXmls(){
+    for(finalCounter = 0; finalCounter < FINALRbr; finalCounter++){
+        if(FindXmlInERAC(finalCounter)){ // CSCS
+            continue;
+        }else{
+            FindXmlInEDOK(finalCounter); // Nebojša servis
+        }
+    }
+}
 
+function FindXmlInERAC(_counter){
+    xmlsDir = FILESPATH + "IR\\";
+    cd(xmlsDir);
+    file = findfiles("IR_*_*_" + arrayFINAL_NKPR_GL_NUM[_counter] + ".xml"); 
+    
+    if(Size(file) > 0){
+        arrayFINALXmlPath[_counter] = xmlsDir + file[0];
+        return true;
+    }else{
+        // MessageBox("Nije pronađen XML za račun " + arrayFINAL_NKPR_GL_NUM[_counter] + " u direktoriju " + xmlsDir);
+        return false;
+    }
+}
 
+function FindXmlInEDOK(_counter){
 
+    nebojsaBrRac = int(substring(arrayFINAL_NKPR_GL_NUM[_counter], 3, 5)) + "-" + substring(arrayFINAL_NKPR_GL_NUM[_counter], 0, 2) + "-" + substring(arrayFINAL_NKPR_GL_NUM[_counter], 2, 1);
+
+    xmlsDir = "T:\\winx\\edok\\Izl\\AURAE\\OK\\" + nebojsaBrRac + "\\"; // !!!
+    cd(xmlsDir);
+
+    file = findfiles(nebojsaBrRac + "_WithNamespaces.xml"); 
+    
+    if(Size(file) > 0){
+        arrayFINALXmlPath[_counter] = xmlsDir + file[0];
+    }else{
+        MessageBox("Nije pronađen XML za račun " + arrayFINAL_NKPR_GL_NUM[_counter] + " u direktoriju " + xmlsDir);
+    }
+}
 
 
 

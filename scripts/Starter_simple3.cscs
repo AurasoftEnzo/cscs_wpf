@@ -1,0 +1,120 @@
+msg("...Testing starter_simple3...");
+msg(tpath() + "starter_simple3.repx");
+
+// ========================================================================
+// Using Simplified Starter 3 Template
+// ========================================================================
+
+// Report data using implicit variables
+reportTitle = "INVOICES";
+reportDate = Now("dd/MM/yyyy");
+logoPath = "C:\Logos\company.png";
+grandTotal = 0;
+
+
+// Validate template
+
+errors = ValidateReportTemplate(tpath() + "starter_simple3invoice.repx",  "invoiceNumber,invoiceDate");
+
+if (Size(errors) > 0) {
+    MSG("Validation errors found!");
+    for (i = 0; i < Size(errors); i++) {
+        MSG("  - " + errors[i]);
+    }
+    exit;
+}
+
+
+errors = ValidateReportTemplate(tpath() + "starter_simple3detail.repx",  "field1,field2,field3,amount");
+
+if (Size(errors) > 0) {
+    MSG("Validation errors found!");
+    for (i = 0; i < Size(errors); i++) {
+        MSG("  - " + errors[i]);
+    }
+    exit;
+}
+
+
+// Setup report
+reportHandle = SetupReport(tpath() + "starter_simple3.repx");
+reportHandle2 = SetupReport(tpath() + "starter_simple3invoice.repx", reportHandle);
+reportHandle3 = SetupReport(tpath() + "starter_simple3detail.repx", reportHandle2);
+
+// Configure
+ConfigureReportOutput(reportHandle, "PageSize", "A4");
+SetReportParameter(reportHandle, "reportTitle", reportTitle);
+SetReportParameter(reportHandle, "reportDate", reportDate);
+SetReportParameter(reportHandle, "LogoPath", logoPath);
+
+OutputReport(reportHandle);
+
+invoiceNumber = "111111";
+invoiceDate = "11.1.2026.";
+
+OutputReport(reportHandle2);
+
+// Add data rows
+field1 = "PROD-001";
+field2 = "Laptop HP ProBook 450";
+field3 = "Electronics";
+amount = 5499.99;
+grandTotal += amount;
+OutputReport(reportHandle3);
+
+field1 = "PROD-002";
+field2 = "Monitor Dell 24 inch";
+field3 = "Electronics";
+amount = 899.00;
+grandTotal += amount;
+OutputReport(reportHandle3);
+
+field1 = "PROD-003";
+field2 = "Office Chair Ergonomic";
+field3 = "Furniture";
+amount = 1299.00;
+grandTotal += amount;
+OutputReport(reportHandle3);
+
+//*************************************************************
+invoiceNumber = "2222222";
+invoiceDate = "22.2.2026.";
+
+OutputReport(reportHandle2);
+
+// Add data rows
+field1 = "Proizvod-001";
+field2 = "Sadnica Kiwi";
+field3 = "Biljke";
+amount = 100.99;
+grandTotal += amount;
+OutputReport(reportHandle3);
+
+field1 = "Proizvod-002";
+field2 = "Sadnica Marelica";
+field3 = "Biljke";
+amount = 200.00;
+grandTotal += amount;
+OutputReport(reportHandle3);
+
+//*************************************************************
+msg("grandTotal=" + grandTotal);
+
+reportGrandTotal = "GRAND TOTAL: " + grandTotal.ToString("N2");
+UpdateReport(reportHandle, "reportGrandTotal");
+
+
+// Export
+ExportReport(reportHandle, "PDF", "D:\sales_report3.pdf");
+
+// Print
+PrintReport(reportHandle, 0); //0 je za modalni prozor
+
+// Cleanup
+DisposeReport(reportHandle3);
+DisposeReport(reportHandle2);
+DisposeReport(reportHandle);
+
+MSG("Report generated successfully!");
+
+quit;

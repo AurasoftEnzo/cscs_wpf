@@ -45,6 +45,9 @@ function wxirstatus_onDisplay(){
     try{
         init();
         SetWindowOptions("wxirstatusWindow", "title", "Pregled statusa izlaznih e-računa(" + PROVIDER + ")");
+        // ✅ Enable sorting and resizing programmatically
+        SetWidgetOptions("datagridListaRacuna", "CanUserSortColumns", "true");
+        SetWidgetOptions("datagridListaRacuna", "CanUserResizeColumns", "true");
     }catch(ex){
         MessageBox("Greška pri inicijalizaciji:\n" + ex);
         // ??? LOG? ne?

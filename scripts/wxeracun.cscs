@@ -1678,8 +1678,8 @@ function GenerateUBLXml() {
 
     // LegalMonetaryTotal
     total = NKPR_GL_TOTAL;
-    prepaid = (profileID == "P11" ? NKPR_GL_REZ1 : 0);
-    payable = total - prepaid;
+    prepaid = 0; //(profileID == "P11" ? NKPR_GL_REZ1 : 0);
+    payable = total; // - prepaid;
     rounding = total - (totalOsnovica + totalPorez);
 
     xml += "<cac:LegalMonetaryTotal>\n";

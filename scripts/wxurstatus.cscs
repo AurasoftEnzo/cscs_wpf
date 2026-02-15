@@ -47,7 +47,7 @@ function wxurstatus_onDisplay(){
         init();
         SetWindowOptions("wxurstatusWindow", "title", "Pregled statusa ulaznih e-računa(" + PROVIDER + ")");
     }catch(ex){
-        MessageBox("Greška pri inicijalizaciji:\n" + ex);
+        Mbox("Greška pri inicijalizaciji:\n" + ex);
         // ??? LOG? ne?
         exit;
     }
@@ -68,7 +68,7 @@ function init(){
             userCode = args[3]; // e.g. ANA
 
         }else{
-            MessageBox("Nedostaje user code u argumentima.");
+            Mbox("Nedostaje user code u argumentima.");
             exit;
         }
     }else{
@@ -84,7 +84,7 @@ function init(){
     }
     catch(ex)
     {
-        MessageBox("Greška čitanja NKSYCCYR:\n" + ex);
+        Mbox("Greška čitanja NKSYCCYR:\n" + ex);
         // ??? LOG? ne?
         exit;
     }
@@ -109,7 +109,7 @@ function init(){
     }
     catch(ex)
     {
-        MessageBox("Greška čitanja NKSYSYCO:\n" + ex);
+        Mbox("Greška čitanja NKSYSYCO:\n" + ex);
         // ??? LOG? ne?
         exit;
     }
@@ -149,7 +149,7 @@ function init(){
     }
     catch(ex)
     {
-        MessageBox("Greška čitanja KPSYMSTR:\n" + ex);
+        Mbox("Greška čitanja KPSYMSTR:\n" + ex);
         // !!! LOG ???
         exit;
     }
@@ -194,7 +194,7 @@ function getList(){
         
         eracRes = sqlQuery(sql_erac, sqlParams);
         if (Size(eracRes) < 2) {
-            MessageBox("Nema podataka o posredniku " + PROVIDER + "!");
+            Mbox("Nema podataka o posredniku " + PROVIDER + "!");
             // !!! LOG !!!
             exit;
         }
@@ -215,11 +215,11 @@ function getList(){
         } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
             GetListFINA();
         } else {
-            MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA");
+            Mbox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA");
             exit;
         }
     } catch (ex) {
-        MessageBox("Greška u preuzimanju sa provider-a " + PROVIDER + ": " + ex);
+        Mbox("Greška u preuzimanju sa provider-a " + PROVIDER + ": " + ex);
         // !!! LOG !!!
         exit;
     }
@@ -322,10 +322,10 @@ function GetListFINA(){
                 AddRacunToArrays(supplierName, supplierId, statusCode, datumIzdavanja, datumPdva, supplierInvoiceId, invoiceId, fiskStatus, reportRejectionStatus);
             }
         }else{
-            MessageBox("ack[\"ErrorCode\"]" + ack["ErrorCode"] + "\nack[\"ErrorText\"]" + ack["ErrorText"] + "\nack[\"ErrorMessage\"]" + ack["ErrorMessage"]);
+            Mbox("ack[\"ErrorCode\"]" + ack["ErrorCode"] + "\nack[\"ErrorText\"]" + ack["ErrorText"] + "\nack[\"ErrorMessage\"]" + ack["ErrorMessage"]);
         }
     }catch(ex){
-        MessageBox("A: Nepoznata greška:\n" + ex);
+        Mbox("A: Nepoznata greška:\n" + ex);
         LogException(ex); // !!!
         exit;
     }
@@ -366,7 +366,7 @@ function GetListMER(){
         apiUrl = ERAC_SERVER + "apis/v2/queryinbox";
         jsonResponse = WebRequest("POST", apiUrl, jsonPayload, "", "GetListMERSuccess", "GetListMERFailure", "application/json", null, 1000 * 20, false);
     } catch (ex) {
-        MessageBox("Greška prilikom API poziva: " + ex);
+        Mbox("Greška prilikom API poziva: " + ex);
         // !!! LOG !!!
         exit;
     }
@@ -409,7 +409,7 @@ function GetListMERSuccess(trackingId, responseCode, res) {
         }
     }
     catch(ex){
-        MessageBox("MERSuccess - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        Mbox("MERSuccess - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
         // LogNKSYELOG(); // !!! LOG !!!
         exit;
     }
@@ -422,7 +422,7 @@ function GetListMERFailure(trackingId, responseCode, res) {
         LogResponse(responseCode, res);  
     }
     catch(ex){
-        MessageBox("SendingFailure - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        Mbox("SendingFailure - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
         // !!! LOG !!!
         exit;
     }
@@ -448,7 +448,7 @@ function AddRacunToArrays(supplierName, supplierId, statusRacuna, datumIzdavanja
     // } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
     //     arrayBrojRacunaFina[Rbr] = eRacunBrojRacuna;
     // } else {
-    //     MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA, MERDEMO, FINADEMO");
+    //     Mbox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA, MERDEMO, FINADEMO");
     //     exit;
     // }
 
@@ -487,7 +487,7 @@ function startGetLista(){
             // } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
             //     GetRacuniFINA();
             // } else {
-            //     MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA");
+            //     Mbox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA");
             //     exit;
             // }
 }
@@ -543,7 +543,7 @@ function GetRacuniFINA(){
             // NKSYELOG
             // !!! za FINA-u moramo postavit status računa na RECEIVING_CONFIRMED !!!
         }catch(ex){
-            MessageBox("Račun " + invoiceId + "\nNepoznata greška:\n" + ex);
+            Mbox("Račun " + invoiceId + "\nNepoznata greška:\n" + ex);
             LogException(ex); // !!! 
         }
     }
@@ -563,7 +563,7 @@ function GetRacuniMER(){
 
             WebRequest("POST", ERAC_SERVER + "apis/v2/receive", jsonPayload, trackingId, "MERReceiveRacunSuccess", "MERReceiveRacunFailure", "application/json", null, 1000 * 20, false);           
         }catch(ex){
-            MessageBox("Račun " + invoiceId + "\nNepoznata greška:\n" + ex);
+            Mbox("Račun " + invoiceId + "\nNepoznata greška:\n" + ex);
             LogException(ex); // !!! 
         }
     }    
@@ -579,7 +579,7 @@ function MERReceiveRacunSuccess(trackingId, responseCode, res) {
         SaveFile(res, xmlFilePath);
         // savedXmlFilesList.Add(xmlFilePath);
     }catch(ex){
-        MessageBox("MERReceiveRacunSuccess - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        Mbox("MERReceiveRacunSuccess - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
         // !!! LOG !!!
     }
     
@@ -591,7 +591,7 @@ function MERReceiveRacunFailure(trackingId, responseCode, res) {
         LogResponse(responseCode, res);  
     }
     catch(ex){
-        MessageBox("MERReceiveRacunFailure - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        Mbox("MERReceiveRacunFailure - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
         // !!! LOG !!!
     }
 }
@@ -627,7 +627,7 @@ function ImportXml(xmlFilePath){
             // }elif(Contains(xmlDict, "CreditNote")){
             //     mainNode = xmlDict["CreditNote"];
             // }else{
-            //     MessageBox("Nepoznat tip XML datoteke: " + xmlFilePath);
+            //     Mbox("Nepoznat tip XML datoteke: " + xmlFilePath);
             //     continue;
             // }
             
@@ -636,7 +636,7 @@ function ImportXml(xmlFilePath){
             // }elif(Contains(xmlDict, "CreditNote")){
             //     mainNode = xmlDict["CreditNote"];
             // }else{
-            //     MessageBox("Nepoznat tip XML datoteke: " + xmlFilePath);
+            //     Mbox("Nepoznat tip XML datoteke: " + xmlFilePath);
             //     continue;
             // }
 
@@ -658,7 +658,7 @@ function ImportXml(xmlFilePath){
             }
         }
     }catch(ex){
-        MessageBox("Greška pri importu XML datoteke " + xmlFilePath + ":\n" + ex);
+        Mbox("Greška pri importu XML datoteke " + xmlFilePath + ":\n" + ex);
         // LogException(ex); // !!!
         return;
     }
@@ -726,10 +726,10 @@ function ImportXml(xmlFilePath){
     //     MSG("ack = " + ack);
 
     //     if(ack["AckStatusCode"] == 10){
-    //         MessageBox("Uspješan ECHO BUYER test prema FINA-i!");
+    //         Mbox("Uspješan ECHO BUYER test prema FINA-i!");
     //     }
     // }catch(ex){
-    //     MessageBox("Nepoznata greška:\n" + ex);
+    //     Mbox("Nepoznata greška:\n" + ex);
     //     LogException(ex);
     // }
     
@@ -763,10 +763,10 @@ function ImportXml(xmlFilePath){
     //             MSG(ack["InvoiceList"][i]);
     //         }
     //     }else{
-    //         MessageBox("ack[\"Error\"]" + ack["Error"]);
+    //         Mbox("ack[\"Error\"]" + ack["Error"]);
     //     }
     // }catch(ex){
-    //     MessageBox("Nepoznata greška:\n" + ex);
+    //     Mbox("Nepoznata greška:\n" + ex);
     //     LogException(ex);
     // }
     
@@ -806,7 +806,7 @@ function ImportXml(xmlFilePath){
 
 
     // }catch(ex){
-    //     MessageBox("Nepoznata greška:\n" + ex);
+    //     Mbox("Nepoznata greška:\n" + ex);
     //     LogException(ex);
     // }
     
@@ -841,7 +841,7 @@ function ImportXml(xmlFilePath){
     //     MSG("ack[\"AckStatusCode\"] = " + ack["AckStatusCode"]);
     //     MSG("ack[\"AckStatusText\"] = " + ack["AckStatusText"]);
     // }catch(ex){
-    //     MessageBox("Nepoznata greška:\n" + ex);
+    //     Mbox("Nepoznata greška:\n" + ex);
     //     LogException(ex);
     // }
 
@@ -915,7 +915,7 @@ function ImportXml(xmlFilePath){
 // // Provider Configuration
 // if (PROVIDER == null || PROVIDER == "") {
 //     PROVIDER = "MER"; // Default to MojEracun
-//     MessageBox("PROVIDER nije konfiguriran u NKSYSYCO, koristim default: MER");
+//     Mbox("PROVIDER nije konfiguriran u NKSYSYCO, koristim default: MER");
 // }
 
 // // MojEracun API Configuration
@@ -945,14 +945,14 @@ function ImportXml(xmlFilePath){
 
 function start(){
     // Phase 1: Download all NEW invoices from configured provider to folder
-    MessageBox("Koristim provider: " + PROVIDER);
+    Mbox("Koristim provider: " + PROVIDER);
     downloadedCount = DownloadNewInvoicesFromProvider();
     
     // Phase 2: Import all XML files found in the folder (including manually added files)
     importedCount = ImportAllXMLFilesInFolder();
     
     // Summary report
-    MessageBox("Proces završen!\nPreuzeto sa servera: " + downloadedCount + "\nUkupno importirano: " + importedCount);
+    Mbox("Proces završen!\nPreuzeto sa servera: " + downloadedCount + "\nUkupno importirano: " + importedCount);
 }
 
 
@@ -978,7 +978,7 @@ function DownloadNewInvoicesFromMeR() {
             MkDir(incomingFolder);
         }
         
-        // MessageBox("Počinje preuzimanje novih računa sa MojEracun servera...");
+        // Mbox("Počinje preuzimanje novih računa sa MojEracun servera...");
         
 
         // // Prepare date range for request (last 30 days)
@@ -1006,7 +1006,7 @@ function DownloadNewInvoicesFromMeR() {
             jsonResponse = WebRequest("POST", apiUrl, jsonPayload, "", "MERSuccess", "MERFailure", "application/json", null, 1000 * 20, false);
 
             // if (jsonResponse == "" || jsonResponse == null) {
-            //     MessageBox("Nema odgovora sa MojEracun servera");
+            //     Mbox("Nema odgovora sa MojEracun servera");
             //     return 0;
             // }
             
@@ -1014,7 +1014,7 @@ function DownloadNewInvoicesFromMeR() {
             // responseObj = DeserializeJson(jsonResponse);
             
             // if (responseObj == null) {
-            //     MessageBox("Greška prilikom parsiranja odgovora sa servera");
+            //     Mbox("Greška prilikom parsiranja odgovora sa servera");
             //     return 0;
             // }
             
@@ -1024,18 +1024,18 @@ function DownloadNewInvoicesFromMeR() {
             //     if (responseObj.ContainsKey("message")) {
             //         errorMsg += ": " + responseObj["message"];
             //     }
-            //     MessageBox(errorMsg);
+            //     Mbox(errorMsg);
             //     return 0;
             // }
             
             // // Get documents array
             // documents = responseObj["documents"];
             // if (!IsArray(documents) || Size(documents) == 0) {
-            //     MessageBox("Nema novih dokumenata za preuzimanje");
+            //     Mbox("Nema novih dokumenata za preuzimanje");
             //     return 0;
             // }
             
-            // MessageBox("Pronađeno " + Size(documents) + " dokumenata za preuzimanje...");
+            // Mbox("Pronađeno " + Size(documents) + " dokumenata za preuzimanje...");
             
             // // Process each document
             // for (i = 0; i < Size(documents); i++) {
@@ -1046,7 +1046,7 @@ function DownloadNewInvoicesFromMeR() {
             //     sender = document["sender"];
             //     dateReceived = document["dateReceived"];
                 
-            //     MessageBox("Preuzimam dokument " + (i + 1) + "/" + Size(documents) + ": " + documentId);
+            //     Mbox("Preuzimam dokument " + (i + 1) + "/" + Size(documents) + ": " + documentId);
                 
             //     // Download XML attachment for each document
             //     if (document.ContainsKey("attachments") && IsArray(document["attachments"])) {
@@ -1076,7 +1076,7 @@ function DownloadNewInvoicesFromMeR() {
             //                     SaveFile("download_log.txt", logEntry, "A");
                                 
             //                 } else {
-            //                     MessageBox("Greška prilikom preuzimanja XML-a za dokument: " + documentId);
+            //                     Mbox("Greška prilikom preuzimanja XML-a za dokument: " + documentId);
             //                     // Log failed download
             //                     logEntry = FormatDate(Now(), "yyyy-MM-dd HH:mm:ss") + " | DOWNLOAD_FAILURE | " + documentId + " | " + attachmentName + "\r\n";
             //                     SaveFile("download_log.txt", logEntry, "A");
@@ -1088,15 +1088,15 @@ function DownloadNewInvoicesFromMeR() {
             // }
             
         } catch (apiError) {
-            MessageBox("Greška prilikom API poziva: " + apiError);
+            Mbox("Greška prilikom API poziva: " + apiError);
             return 0;
         }
         
-        MessageBox("Preuzimanje završeno. Ukupno preuzeto: " + downloadCount + " XML računa.");
+        Mbox("Preuzimanje završeno. Ukupno preuzeto: " + downloadCount + " XML računa.");
         return downloadCount;
         
     } catch (error) {
-        MessageBox("Greška u procesu preuzimanja: " + error);
+        Mbox("Greška u procesu preuzimanja: " + error);
         return 0;
     }
 }
@@ -1114,7 +1114,7 @@ function LogResponse(responseCode, response) {
     try {
         SaveFile(appendText, logFilePath, "a");        
     } catch (ex) {
-        MessageBox("CRITICAL: Cannot write to log file: " + logPath + "\nError: " + ex);
+        Mbox("CRITICAL: Cannot write to log file: " + logPath + "\nError: " + ex);
     }
 }
 
@@ -1154,7 +1154,7 @@ function MERReceiveSuccess(trackingId, responseCode, res) {
         //     MSG(xmlDict["InvoiceLine"][0]);
         // }
     }catch(ex){
-        MessageBox("MERReceiveSuccess - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        Mbox("MERReceiveSuccess - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
     }
     
 }
@@ -1165,7 +1165,7 @@ function MERReceiveFailure(trackingId, responseCode, res) {
         LogResponse(responseCode, res);  
     }
     catch(ex){
-        MessageBox("MERReceiveFailure - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        Mbox("MERReceiveFailure - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
     }
 }
 
@@ -1177,14 +1177,14 @@ function LogException(exText) {
     //     MAKE_DIR(FILESPATH + "UR\\" + "responses\\");
     // }
     // logFilePath = FILESPATH + "UR\\" + "responses\\" + parsefile(attachmentPdfPath, "pfName") + ".response"; //FILESPATH + "responses\\" + parsefile(attachmentPdfPath, "pfName") + ".response";
-    // // messageBox("Logging response to file: " + logFilePath);
+    // // Mbox("Logging response to file: " + logFilePath);
     
     // appendText = Now("yyyy-MM-dd HH:mm:ss") + " -----------------------------------\n\n" + "Exception = " + exText + "\n\n";
-    // // messageBox("Log text: " + appendText);
+    // // Mbox("Log text: " + appendText);
     // try {
     //     SaveFile(appendText, logFilePath, "a");        
     // } catch (ex) {
-    //     MessageBox("CRITICAL: Cannot write to log file: " + logFilePath + "\nError: " + ex);
+    //     Mbox("CRITICAL: Cannot write to log file: " + logFilePath + "\nError: " + ex);
     // }
 }
 
@@ -1219,7 +1219,7 @@ function DownloadNewInvoicesFromFINA() {
             MkDir(incomingFolder);
         }
         
-        MessageBox("Počinje preuzimanje novih računa sa FINA servera...");
+        Mbox("Počinje preuzimanje novih računa sa FINA servera...");
         
         // Prepare date range for request (last 30 days)
         endDate = FormatDate(Now(), "yyyy-MM-dd");
@@ -1253,9 +1253,9 @@ function DownloadNewInvoicesFromFINA() {
             if (Exists(FINA_CERT_PATH)) {
                 // Certificate authentication would be handled by the HTTP client
                 // For now, we'll simulate the request structure
-                MessageBox("Koristim FINA certifikat: " + FINA_CERT_PATH);
+                Mbox("Koristim FINA certifikat: " + FINA_CERT_PATH);
             } else {
-                MessageBox("FINA certifikat nije pronađen: " + FINA_CERT_PATH);
+                Mbox("FINA certifikat nije pronađen: " + FINA_CERT_PATH);
                 return 0;
             }
             
@@ -1267,17 +1267,17 @@ function DownloadNewInvoicesFromFINA() {
             soapResponse = WebRequestMPFD(apiUrl, "POST", soapEnvelope, headers);
             
             if (soapResponse == "" || soapResponse == null) {
-                MessageBox("Nema odgovora sa FINA servera");
+                Mbox("Nema odgovora sa FINA servera");
                 return 0;
             }
             
-            MessageBox("Primljen SOAP odgovor sa FINA servera, parsiranje...");
+            Mbox("Primljen SOAP odgovor sa FINA servera, parsiranje...");
             
             // Parse SOAP response using XmlToDict
             responseDict = XmlToDict(soapResponse);
             
             if (responseDict == null) {
-                MessageBox("Greška prilikom parsiranja SOAP odgovora");
+                Mbox("Greška prilikom parsiranja SOAP odgovora");
                 return 0;
             }
             
@@ -1291,19 +1291,19 @@ function DownloadNewInvoicesFromFINA() {
             
             invoicesResponse = GetDictValue(soapBody, "GetIncomingInvoicesResponse");
             if (invoicesResponse == null || invoicesResponse == "") {
-                MessageBox("Neočekivana struktura SOAP odgovora");
+                Mbox("Neočekivana struktura SOAP odgovora");
                 return 0;
             }
             
             invoiceList = GetDictValue(invoicesResponse, "InvoiceList");
             if (invoiceList == null || invoiceList == "") {
-                MessageBox("Nema novih dokumenata za preuzimanje sa FINA servera");
+                Mbox("Nema novih dokumenata za preuzimanje sa FINA servera");
                 return 0;
             }
             
             invoices = GetDictValue(invoiceList, "Invoice");
             if (invoices == null || invoices == "") {
-                MessageBox("Nema računa u listi");
+                Mbox("Nema računa u listi");
                 return 0;
             }
             
@@ -1315,7 +1315,7 @@ function DownloadNewInvoicesFromFINA() {
                 invoicesArray.Add(invoices); // Single invoice
             }
             
-            MessageBox("Pronađeno " + Size(invoicesArray) + " dokumenata za preuzimanje sa FINA servera...");
+            Mbox("Pronađeno " + Size(invoicesArray) + " dokumenata za preuzimanje sa FINA servera...");
             
             // Process each invoice
             for (i = 0; i < Size(invoicesArray); i++) {
@@ -1326,7 +1326,7 @@ function DownloadNewInvoicesFromFINA() {
                 senderOIB = GetDictValue(invoice, "SenderOIB");
                 dateReceived = GetDictValue(invoice, "DateReceived");
                 
-                MessageBox("Preuzimam dokument " + (i + 1) + "/" + Size(invoicesArray) + ": " + invoiceNumber);
+                Mbox("Preuzimam dokument " + (i + 1) + "/" + Size(invoicesArray) + ": " + invoiceNumber);
                 
                 // Download XML content for each invoice
                 xmlContent = DownloadInvoiceXMLFromFINA(invoiceId);
@@ -1346,7 +1346,7 @@ function DownloadNewInvoicesFromFINA() {
                     SaveFile("download_log.txt", logEntry, "A");
                     
                 } else {
-                    MessageBox("Greška prilikom preuzimanja XML-a za dokument: " + invoiceNumber);
+                    Mbox("Greška prilikom preuzimanja XML-a za dokument: " + invoiceNumber);
                     // Log failed download
                     logEntry = FormatDate(Now(), "yyyy-MM-dd HH:mm:ss") + " | DOWNLOAD_FAILURE | " + invoiceId + " | " + invoiceNumber + "\r\n";
                     SaveFile("download_log.txt", logEntry, "A");
@@ -1354,15 +1354,15 @@ function DownloadNewInvoicesFromFINA() {
             }
             
         } catch (apiError) {
-            MessageBox("Greška prilikom SOAP poziva na FINA: " + apiError);
+            Mbox("Greška prilikom SOAP poziva na FINA: " + apiError);
             return 0;
         }
         
-        MessageBox("Preuzimanje sa FINA završeno. Ukupno preuzeto: " + downloadCount + " XML računa.");
+        Mbox("Preuzimanje sa FINA završeno. Ukupno preuzeto: " + downloadCount + " XML računa.");
         return downloadCount;
         
     } catch (error) {
-        MessageBox("Greška u procesu preuzimanja sa FINA: " + error);
+        Mbox("Greška u procesu preuzimanja sa FINA: " + error);
         return 0;
     }
 }
@@ -1428,7 +1428,7 @@ function DownloadInvoiceXMLFromFINA(invoiceId) {
         return "";
         
     } catch (error) {
-        MessageBox("Greška prilikom preuzimanja XML-a sa FINA: " + error);
+        Mbox("Greška prilikom preuzimanja XML-a sa FINA: " + error);
         return "";
     }
 }
@@ -1442,7 +1442,7 @@ function ImportAllXMLFilesInFolder() {
         // Set working directory to incoming folder
         incomingFolder = FILESPATH + "UR\\";
         if (!Exists(incomingFolder)) {
-            MessageBox("Folder 'Novi XML e-računi' ne postoji!");
+            Mbox("Folder 'Novi XML e-računi' ne postoji!");
             return 0;
         }
         
@@ -1486,11 +1486,11 @@ function ImportAllXMLFilesInFolder() {
 
 
         if (Size(xmlFiles) == 0) {
-            MessageBox("Nema XML datoteka za import u folderu: " + incomingFolder);
+            Mbox("Nema XML datoteka za import u folderu: " + incomingFolder);
             return 0;
         }
         
-        MessageBox("Pronađeno " + Size(xmlFiles) + " XML datoteka za import...");
+        Mbox("Pronađeno " + Size(xmlFiles) + " XML datoteka za import...");
         
         // Create necessary folders
         archiveFolder = FILESPATH + "UR\\" + "arhiva\\";
@@ -1508,7 +1508,7 @@ function ImportAllXMLFilesInFolder() {
             xmlFilePath = xmlFiles[i];
             xmlFileName = ParseFile(xmlFilePath, "pfname") + ParseFile(xmlFilePath, "pfExt");
             
-            MessageBox("Importiram datoteku " + (i + 1) + "/" + Size(xmlFiles) + ": " + xmlFileName);
+            Mbox("Importiram datoteku " + (i + 1) + "/" + Size(xmlFiles) + ": " + xmlFileName);
             
             try {
                 // Import the XML file
@@ -1556,24 +1556,24 @@ function ImportAllXMLFilesInFolder() {
                 
             } catch (importError) {
                 errorCount++;
-                MessageBox("Greška prilikom importa datoteke " + xmlFileName + ": " + importError);
+                Mbox("Greška prilikom importa datoteke " + xmlFileName + ": " + importError);
                 
                 // Move to error folder
                 errorFile = errorFolder + "ERROR_" + xmlFileName;
                 try {
                     Move(xmlFilePath, errorFile);
                 } catch (moveError) {
-                    MessageBox("Ne mogu premjestiti datoteku u error folder: " + moveError);
+                    Mbox("Ne mogu premjestiti datoteku u error folder: " + moveError);
                 }
             }
         }
         
         // Final summary
-        MessageBox("Import završen!\nUspješno importirano: " + importCount + "\nGreške: " + errorCount);
+        Mbox("Import završen!\nUspješno importirano: " + importCount + "\nGreške: " + errorCount);
         return importCount;
         
     } catch (error) {
-        MessageBox("Greška u procesu importa: " + error);
+        Mbox("Greška u procesu importa: " + error);
         return 0;
     }
 }
@@ -1596,7 +1596,7 @@ function DownloadAttachmentFromMeR(attachmentUrl) {
         }
         
     } catch (error) {
-        MessageBox("Greška prilikom preuzimanja datoteke: " + error);
+        Mbox("Greška prilikom preuzimanja datoteke: " + error);
         return "";
     }
 }
@@ -1624,7 +1624,7 @@ function ProcessSingleInvoiceFromServer(invoiceData) {
         return xmlFilePath;
         
     } catch (error) {
-        MessageBox("Greška prilikom procesiranja računa " + invoiceId + ": " + error);
+        Mbox("Greška prilikom procesiranja računa " + invoiceId + ": " + error);
         return "";
     }
 }
@@ -1636,34 +1636,34 @@ function importUBLXmlFromDict(xmlContent, xmlFilePath = "") {
         invoiceDict = XmlToDict(xmlContent);
         
         if (invoiceDict == null || Size(invoiceDict) == 0) {
-            MessageBox("Greška prilikom parsiranja XML-a u Dictionary");
+            Mbox("Greška prilikom parsiranja XML-a u Dictionary");
             return false;
         }
         
         // Determine document type from dictionary structure
         docType = GetDocumentTypeFromDict(invoiceDict);
         if (docType == "") {
-            MessageBox("Nepoznat tip dokumenta u XML datoteci");
+            Mbox("Nepoznat tip dokumenta u XML datoteci");
             return false;
         }
         
         // Extract header information from dictionary
         headerData = ExtractHeaderDataFromDict(invoiceDict, docType);
         if (headerData == null) {
-            MessageBox("Greška prilikom izvlačenja podataka zaglavlja");
+            Mbox("Greška prilikom izvlačenja podataka zaglavlja");
             return false;
         }
         
         // Validate fiscal year before proceeding
         if (!ValidateFiscalYear(headerData["NKPR_GL_ESD"])) {
-            MessageBox("Račun se ne može importirati jer datum ESD (" + headerData["NKPR_GL_ESD"] + ") ne pripada fiskalnoj godini " + KPSY_FISCAL_YR + ". Račun će biti premješten u arhivu.");
+            Mbox("Račun se ne može importirati jer datum ESD (" + headerData["NKPR_GL_ESD"] + ") ne pripada fiskalnoj godini " + KPSY_FISCAL_YR + ". Račun će biti premješten u arhivu.");
             return "FISCAL_YEAR_MISMATCH";
         }
         
         // Extract line items from dictionary
         lineItems = ExtractLineItemsFromDict(invoiceDict, docType);
         if (lineItems == null) {
-            MessageBox("Greška prilikom izvlačenja stavki računa");
+            Mbox("Greška prilikom izvlačenja stavki računa");
             return false;
         }
         
@@ -1688,19 +1688,19 @@ function importUBLXmlFromDict(xmlContent, xmlFilePath = "") {
             // Commit transaction
             CommitTransaction();
             
-            MessageBox("UBL XML račun je uspješno uvezen!\nBroj računa: " + invNum);
+            Mbox("UBL XML račun je uspješno uvezen!\nBroj računa: " + invNum);
             return invNum;
             
         } catch (error) {
             // Rollback transaction on error
             RollbackTransaction();
             LogToNKSYELOG(0, xmlFilePath, "IMPORT_FAILURE: " + error);
-            MessageBox("Greška prilikom unosa u bazu podataka: " + error);
+            Mbox("Greška prilikom unosa u bazu podataka: " + error);
             return false;
         }
         
     } catch (error) {
-        MessageBox("Greška prilikom uvoza XML datoteke: " + error);
+        Mbox("Greška prilikom uvoza XML datoteke: " + error);
         return false;
     }
 }
@@ -1893,7 +1893,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType) {
         return headerData;
         
     } catch (error) {
-        MessageBox("Greška prilikom izvlačenja podataka zaglavlja: " + error);
+        Mbox("Greška prilikom izvlačenja podataka zaglavlja: " + error);
         return null;
     }
 }
@@ -1903,7 +1903,7 @@ function importUBLXml(xmlFilePath) {
     try {
         // Check if file exists
         if (!Exists(xmlFilePath)) {
-            MessageBox("XML datoteka ne postoji: " + xmlFilePath);
+            Mbox("XML datoteka ne postoji: " + xmlFilePath);
             return false;
         }
         
@@ -1914,7 +1914,7 @@ function importUBLXml(xmlFilePath) {
 
         
         if (xmlContent == "") {
-            MessageBox("XML datoteka je prazna ili se ne može učitati: " + xmlFilePath);
+            Mbox("XML datoteka je prazna ili se ne može učitati: " + xmlFilePath);
             return false;
         }
         
@@ -1922,7 +1922,7 @@ function importUBLXml(xmlFilePath) {
         return importUBLXmlFromDict(xmlContent, xmlFilePath);
         
     } catch (error) {
-        MessageBox("Greška prilikom uvoza XML datoteke: " + error);
+        Mbox("Greška prilikom uvoza XML datoteke: " + error);
         return false;
     }
 }
@@ -2010,7 +2010,7 @@ function ExtractLineItemsFromDict(invoiceDict, docType) {
         return lineItems;
         
     } catch (error) {
-        MessageBox("Greška prilikom izvlačenja stavki: " + error);
+        Mbox("Greška prilikom izvlačenja stavki: " + error);
         return null;
     }
 }
@@ -2092,7 +2092,7 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
         return lineData;
         
     } catch (error) {
-        MessageBox("Greška prilikom izvlačenja stavke: " + error);
+        Mbox("Greška prilikom izvlačenja stavke: " + error);
         return null;
     }
 }
@@ -2306,7 +2306,7 @@ function LogToNKSYELOG(recordId, xmlFilePath, status) {
         
     } catch (error) {
         // Don't throw error for logging issues
-        MessageBox("Warning: Could not log to NKSYELOG: " + error);
+        Mbox("Warning: Could not log to NKSYELOG: " + error);
     }
 }
 
@@ -2380,7 +2380,7 @@ function ValidateFiscalYear(esdDate) {
         return (esdYear == fiscalYear);
         
     } catch (error) {
-        MessageBox("Greška prilikom validacije fiskalne godine: " + error);
+        Mbox("Greška prilikom validacije fiskalne godine: " + error);
         return false;
     }
 }
@@ -2389,14 +2389,14 @@ function ValidateFiscalYear(esdDate) {
 function BatchImportXMLFiles(folderPath) {
     try {
         if (!Exists(folderPath)) {
-            MessageBox("Folder ne postoji: " + folderPath);
+            Mbox("Folder ne postoji: " + folderPath);
             return false;
         }
         
         // Get all XML files in folder
         xmlFiles = FindFiles(folderPath, "*.xml");
         if (Size(xmlFiles) == 0) {
-            MessageBox("Nema XML datoteka u folderu: " + folderPath);
+            Mbox("Nema XML datoteka u folderu: " + folderPath);
             return true;
         }
         
@@ -2429,11 +2429,11 @@ function BatchImportXMLFiles(folderPath) {
             }
         }
         
-        MessageBox("Batch import završen!\nUspješno: " + successCount + "\nGreške: " + errorCount);
+        Mbox("Batch import završen!\nUspješno: " + successCount + "\nGreške: " + errorCount);
         return true;
         
     } catch (error) {
-        MessageBox("Greška prilikom batch importa: " + error);
+        Mbox("Greška prilikom batch importa: " + error);
         return false;
     }
 }
@@ -2453,9 +2453,9 @@ Usage Examples:
 
 4. Import with error checking:
    if (importUBLXml("invoice.xml")) {
-       MessageBox("Import successful!");
+       Mbox("Import successful!");
    } else {
-       MessageBox("Import failed!");
+       Mbox("Import failed!");
    }
 
 Database Tables Used:

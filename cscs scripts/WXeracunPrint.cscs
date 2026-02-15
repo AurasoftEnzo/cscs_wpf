@@ -1,0 +1,130 @@
+// ========================================================================
+// WXeracunPrint.cscs - Croatian UBL 2.1 E-Invoice XML Viewer & Printer
+// CORRECTED VERSION using actual CSCS_WPF functions
+// ========================================================================
+
+Import(strTrim(mpath()) + "CSCS.Math.dll");
+
+// Global variables
+xmlFilePath = "";
+reportHandle = 0;
+mainWindowName = "winEracunPrint";
+
+// -------------------- INITIALIZE GUI --------------------
+function InitializeGUI() {
+    // Load XAML window using the new helper
+    gui = GetGui();
+    win = gui.LoadXamlWindow("templates\\WXeracunPrint.xaml");
+    
+    // Show window
+    ShowWindow(win, mainWindowName);
+    
+    // Set initial status
+    SetText(mainWindowName, "lblStatus", "Spremno. Odaberite XML datoteku e-raèuna.");
+    
+    // Disable buttons initially
+    SetEnabled(mainWindowName, "btnLoad", false);
+    SetEnabled(mainWindowName, "btnExportPDF", false);
+    SetEnabled(mainWindowName, "btnPrint", false);
+    
+    // Attach event handlers using the new AddWidgetHandler
+    gui.AddWidgetHandler("btnBrowse", "Click", "OnBrowseClick");
+    gui.AddWidgetHandler("btnLoad", "Click", "OnLoadClick");
+    gui.AddWidgetHandler("btnExportPDF", "Click", "OnExportPDFClick");
+    gui.AddWidgetHandler("btnPrint", "Click", "OnPrintClick");
+    gui.AddWidgetHandler("btnClose", "Click", "OnCloseClick");
+    gui.AddWidgetHandler("txtXmlPath", "TextChanged", "OnXmlPathChanged");
+}
+
+// -------------------- EVENT HANDLERS --------------------
+
+function OnBrowseClick(widgetName, eventType) {
+    filter = "XML Datoteke (*.xml)|*.xml|Sve datoteke (*.*)|*.*";
+    initialDir = "C:\\Temp\\";
+    
+    selectedFile = OpenFileDialog("Odaberite XML e-raèun", filter, initialDir);
+    
+    if (selectedFile != "") {
+        SetText(mainWindowName, "txtXmlPath", selectedFile);
+        xmlFilePath = selectedFile;
+        SetEnabled(mainWindowName, "btnLoad", true);
+        SetText(mainWindowName, "lblStatus", "XML datoteka odabrana.");
+    }
+}
+
+function OnXmlPathChanged(widgetName, eventType) {
+    path = GetText(mainWindowName, "txtXmlPath");
+    if (path != "" && Exists(path)) {
+        xmlFilePath = path;
+        SetEnabled(mainWindowName, "btnLoad", true);
+    } else {
+        SetEnabled(mainWindowName, "btnLoad", false);
+    }
+}
+
+function OnLoadClick(widgetName, eventType) {
+    if (xmlFilePath == "" || !Exists(xmlFilePath)) {
+        MessageBox("Datoteka ne postoji: " + xmlFilePath);
+        return;
+    }
+    
+    SetText(mainWindowName, "lblStatus", "Uèitavanje XML e-raèuna...");
+    
+    if (LoadInvoiceFromXML(xmlFilePath)) {
+        SetText(mainWindowName, "lblStatus", "XML e-raèun uspješno uèitan.");
+        SetEnabled(mainWindowName, "btnExportPDF", true);
+        SetEnabled(mainWindowName, "btnPrint", true);
+    } else {
+        SetText(mainWindowName, "lblStatus", "GREŠKA: Nije moguæe uèitati XML.");
+        SetEnabled(mainWindowName, "btnExportPDF", false);
+        SetEnabled(mainWindowName, "btnPrint", false);
+    }
+}
+
+function OnExportPDFClick(widgetName, eventType) {
+    if (reportHandle == 0) {
+        MessageBox("Najprije uèitajte XML e-raèun.");
+        return;
+    }
+    
+    defaultName = ParseFile(xmlFilePath, "pfName") + "_export.pdf";
+    filter = "PDF Datoteke (*.pdf)|*.pdf";
+    
+    pdfPath = SaveFileDialog("Spremi kao PDF", filter, "", defaultName);
+    
+    if (pdfPath != "") {
+        SetText(mainWindowName, "lblStatus", "Izvoz u PDF...");
+        ExportReport(reportHandle, "PDF", pdfPath);
+        SetText(mainWindowName, "lblStatus", "PDF uspješno izvezen.");
+        MessageBox("PDF e-raèuna izvezen:\n" + pdfPath);
+    }
+}
+
+function OnPrintClick(widgetName, eventType) {
+    if (reportHandle == 0) {
+        MessageBox("Najprije uèitajte XML e-raèun.");
+        return;
+    }
+    
+    SetText(mainWindowName, "lblStatus", "Priprema za ispis...");
+    PrintReport(reportHandle);
+    SetText(mainWindowName, "lblStatus", "Pregled prije ispisa prikazan.");
+}
+
+function OnCloseClick(widgetName, eventType) {
+    if (reportHandle != 0) {
+        DisposeReport(reportHandle);
+    }
+    CloseWindow(mainWindowName);
+}
+
+// -------------------- XML PARSING (SIMPLIFIED) --------------------
+
+function LoadInvoiceFromXML(xmlPath) {
+    // ... (keep your existing XML parsing logic)
+    return true;
+}
+
+// -------------------- MAIN ENTRY POINT --------------------
+
+InitializeGUI();

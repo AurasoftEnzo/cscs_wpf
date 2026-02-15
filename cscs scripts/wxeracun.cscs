@@ -1,0 +1,132 @@
+// -----------------------------------------------------------
+// AMS (ADDRESS MANAGEMENT SYSTEM) CHECK
+// -----------------------------------------------------------
+// Check if customer is registered in AMS and can receive e-invoices
+// Returns: "REGISTERED", "NOT_REGISTERED", "ERROR", or "UNKNOWN"
+function CheckAMSRegistration(oib, provider = "") {
+    try {
+        // Use configured provider if not specified
+        if (provider == "") {
+            provider = PROVIDER;
+        }
+        
+        // Route to appropriate AMS check based on provider
+        if (provider == "FINA" || provider == "FINADEMO") {
+            return CheckAMSRegistration_FINA(oib);
+        } elif (provider == "MER" || provider == "MERDEMO") {
+            return CheckAMSRegistration_MER(oib);
+        } else {
+            return "UNKNOWN"; // Provider doesn't support AMS check
+        }
+    } catch (ex) {
+        LogException("AMS Check Exception: " + ex);
+        return "ERROR";
+    }
+}
+
+// -----------------------------------------------------------
+// FINA AMS Registration Check
+// -----------------------------------------------------------
+function CheckAMSRegistration_FINA(oib) {
+    try {
+        // Use FINA WSDL service to check AMS registration
+        // Service: CheckParticipantRegistration or similar
+        
+        requestId = UUID();
+        
+        ack = FINA_CHECK_PARTICIPANT_REGISTRATION(
+            ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
+            ERAC_DESC,
+            CERTPATH + ERAC_USERT,
+            CERTPATH + ERAC_PASST,
+            ERAC_PASS,
+            requestId,
+            "9934:" + oib  // Participant OIB
+        );
+        
+        if (Contains(ack, "IsRegistered")) {
+            if (ack["IsRegistered"] == "true" || ack["IsRegistered"] == true) {
+                return "REGISTERED";
+            } else {
+                return "NOT_REGISTERED";
+            }
+        }
+        
+        if (Contains(ack, "ErrorCode")) {
+            LogException("FINA AMS Check Error: " + ack["ErrorCode"] + " - " + ack["ErrorMessage"]);
+            return "ERROR";
+        }
+        
+        return "UNKNOWN";
+        
+    } catch (ex) {
+        LogException("FINA AMS Check Exception: " + ex);
+        return "ERROR";
+    }
+}
+
+// -----------------------------------------------------------
+// MER (Moj-eRaèun) AMS Registration Check
+// -----------------------------------------------------------
+function CheckAMSRegistration_MER(oib) {
+    try {
+        // MER API endpoint for checking participant registration
+        // API: GET /api/v2/participant/{oib}
+        
+        endpoint = (PROVIDER == "MERDEMO") ? ERAC_SERVERT : ERAC_SERVER;
+        apiUrl = endpoint + "/api/v2/participant/" + oib;
+        
+        jsonPayload = '{"Username": "' + ERAC_USER + '", "Password": "' + ERAC_PASS + '", "CompanyId": "' + substring(KPSY_REZERVA, 0, 11).trim() + '", "SoftwareId": "' + ERAC_DESC + '"}';
+        
+        jsonResponse = WebRequest(
+            "POST",
+            apiUrl,
+            jsonPayload,
+            "AMS_CHECK_" + oib,
+            "MER_AMS_Success",
+            "MER_AMS_Failure",
+            "application/json",
+            null,
+            1000 * 10,
+            false
+        );
+        
+        // Response will be handled by callback functions
+        // For now, return UNKNOWN and use callback results
+        return "UNKNOWN";
+        
+    } catch (ex) {
+        LogException("MER AMS Check Exception: " + ex);
+        return "ERROR";
+    }
+}
+
+// -----------------------------------------------------------
+// MER AMS Check Callbacks
+// -----------------------------------------------------------
+function MER_AMS_Success(trackingId, responseCode, res) {
+    try {
+        resObject = DeserializeJson(res);
+        
+        if (Contains(resObject, "isRegistered")) {
+            if (resObject["isRegistered"] == true) {
+                MSG("Kupac je registriran u AMS sustavu");
+                return "REGISTERED";
+            } else {
+                MSG("Kupac NIJE registriran u AMS sustavu");
+                return "NOT_REGISTERED";
+            }
+        }
+        
+        return "UNKNOWN";
+    } catch (ex) {
+        LogException("MER AMS Success Callback Error: " + ex);
+        return "ERROR";
+    }
+}
+
+function MER_AMS_Failure(trackingId, responseCode, res) {
+    LogException("MER AMS Check Failed: ResponseCode=" + responseCode + ", Response=" + res);
+    MSG("AMS provjera neuspješna");
+    return "ERROR";
+}

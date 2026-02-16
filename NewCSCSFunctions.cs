@@ -161,6 +161,8 @@ namespace WpfCSCS
 
             interpreter.RegisterFunction("FINA_GET_B2B_OUTGOING_INVOICE_FISK_STATUS", new FINA_GET_B2B_OUTGOING_INVOICE_FISK_STATUSFunction());
             interpreter.RegisterFunction("FINA_GET_B2B_INCOMING_INVOICE_FISK_STATUS", new FINA_GET_B2B_INCOMING_INVOICE_FISK_STATUSFunction());
+            
+            interpreter.RegisterFunction("FINA_GET_RECEIVER_LIST", new FINA_GET_RECEIVER_LISTFunction());
 
             // FINA B2G OUTGOING
             //interpreter.RegisterFunction("FINA_B2G_ECHO", new FINA_B2G_ECHOFunction());
@@ -5886,6 +5888,39 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
                 messageId,
                 buyerId,
                 invoiceId);
+
+            return resVar;
+        }
+    }
+    
+    class FINA_GET_RECEIVER_LISTFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 8, m_name);
+
+            var endpoint = Utils.GetSafeString(args, 0);
+            var dnsIdentity = Utils.GetSafeString(args, 1);
+            var serviceCertificatePath = Utils.GetSafeString(args, 2);
+            var clientCertificatePath = Utils.GetSafeString(args, 3);
+            var clientCertificatePassword = Utils.GetSafeString(args, 4);
+
+            var messageId = Utils.GetSafeString(args, 5);
+            var supplierId = Utils.GetSafeString(args, 6);
+
+            var buyerOib = Utils.GetSafeString(args, 7);
+
+            Variable resVar = new Fiskalizacija2.FINA.B2BIncoming.GetReceiverList().Send(
+                endpoint,
+                dnsIdentity,
+                serviceCertificatePath,
+                clientCertificatePath,
+                clientCertificatePassword,
+
+                messageId,
+                supplierId,
+                buyerOib);
 
             return resVar;
         }

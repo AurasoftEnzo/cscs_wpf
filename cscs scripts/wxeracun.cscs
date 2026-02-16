@@ -29,35 +29,19 @@ function CheckAMSRegistration(oib, provider = "") {
 // -----------------------------------------------------------
 function CheckAMSRegistration_FINA(oib) {
     try {
-        // Use FINA WSDL service to check AMS registration
-        // Service: CheckParticipantRegistration or similar
-        
-        requestId = UUID();
-        
-        ack = FINA_CHECK_PARTICIPANT_REGISTRATION(
+        ackReceiverList = FINA_GET_RECEIVER_LIST(
             ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
             ERAC_DESC,
             CERTPATH + ERAC_USERT,
             CERTPATH + ERAC_PASST,
             ERAC_PASS,
-            requestId,
-            "9934:" + oib  // Participant OIB
+
+            UUID(),
+            "9934:"
+            "HR" + oib  // Participant OIB
         );
         
-        if (Contains(ack, "IsRegistered")) {
-            if (ack["IsRegistered"] == "true" || ack["IsRegistered"] == true) {
-                return "REGISTERED";
-            } else {
-                return "NOT_REGISTERED";
-            }
-        }
-        
-        if (Contains(ack, "ErrorCode")) {
-            LogException("FINA AMS Check Error: " + ack["ErrorCode"] + " - " + ack["ErrorMessage"]);
-            return "ERROR";
-        }
-        
-        return "UNKNOWN";
+        msg(ackReceiverList);
         
     } catch (ex) {
         LogException("FINA AMS Check Exception: " + ex);
@@ -66,7 +50,7 @@ function CheckAMSRegistration_FINA(oib) {
 }
 
 // -----------------------------------------------------------
-// MER (Moj-eRaèun) AMS Registration Check
+// MER (Moj-eRaï¿½un) AMS Registration Check
 // -----------------------------------------------------------
 function CheckAMSRegistration_MER(oib) {
     try {
@@ -127,6 +111,6 @@ function MER_AMS_Success(trackingId, responseCode, res) {
 
 function MER_AMS_Failure(trackingId, responseCode, res) {
     LogException("MER AMS Check Failed: ResponseCode=" + responseCode + ", Response=" + res);
-    MSG("AMS provjera neuspješna");
+    MSG("AMS provjera neuspjeï¿½na");
     return "ERROR";
 }

@@ -291,6 +291,16 @@ function GenerateUBLXml() {
     ERAC_CODE = eracRes[1][8].trim();
     //MessageBox("Slanje eRačuna putem posrednika: " + PROVIDER + " (" + ERAC_PASST + ")");
 
+
+    
+    
+    // if(false || !CheckAMSRegistration()){
+        
+    //     exit;
+    // }
+
+
+
     // -----------------------------------------------------------
     // 2. Load Lines
     // -----------------------------------------------------------
@@ -3107,4 +3117,56 @@ function UpdateNKPRINVWithStatus(_invoiceId){
     sql_string = "UPDATE " + databaseName + ".dbo.NKPRINV SET NKPR_GL_RTS = 'E', NKPR_GL_DATPRI = getdate(), NKPR_GL_POSRED = '" + _invoiceId + "' WHERE nkpr_gl_num = '" + invNum + "'";    
     sqlResult = sqlNonQuery(sql_string);
     return;
+}
+
+
+
+
+
+function CheckAMSRegistration() {
+    try {
+        if (provider == "FINA" || provider == "FINADEMO") {
+            return FINA_CheckAMSRegistration(NKPR_GL_JMBG);
+        } elif (provider == "MER" || provider == "MERDEMO") {
+            return CheckAMSRegistration_MER(NKPR_GL_JMBG);
+        } else {
+            Mbox("Provider " + provider + " nije podržan za AMS provjeru.");
+            exit;
+        }
+    } catch (ex) {
+        LogException("AMS Check Exception: " + ex);
+        return false;
+    }
+}
+
+
+
+function FINA_CheckAMSRegistration(buyerOib) {
+    try {
+        ackReceiverList = FINA_GET_RECEIVER_LIST(
+            ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
+            ERAC_DESC,
+            CERTPATH + ERAC_USERT,
+            CERTPATH + ERAC_PASST,
+            ERAC_PASS,
+
+            UUID(),
+            "9934:" + supOib, // Supplier OIB
+            "HR" + buyerOib  // Participant OIB
+        );
+        
+        if(ackReceiverList["AckStatusCode"] != 10){
+            
+        }
+
+        msg("ReceiverListCount: " + ackReceiverList["ReceiverListCount"]);
+
+        exit;
+
+        return false;
+        
+    } catch (ex) {
+        LogException("FINA AMS Check Exception: " + ex);
+        return false;
+    }
 }

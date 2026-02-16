@@ -3170,3 +3170,71 @@ function FINA_CheckAMSRegistration(buyerOib) {
         return false;
     }
 }
+
+
+
+// -----------------------------------------------------------
+// MER (Moj-eRa�un) AMS Registration Check
+// -----------------------------------------------------------
+function CheckAMSRegistration_MER(oib) {
+    try {
+        // MER API endpoint for checking participant registration
+        // API: GET /api/v2/participant/{oib}
+        
+        endpoint = (PROVIDER == "MERDEMO") ? ERAC_SERVERT : ERAC_SERVER;
+        apiUrl = endpoint + "/api/v2/participant/" + oib;
+        
+        jsonPayload = '{"Username": "' + ERAC_USER + '", "Password": "' + ERAC_PASS + '", "CompanyId": "' + substring(KPSY_REZERVA, 0, 11).trim() + '", "SoftwareId": "' + ERAC_DESC + '"}';
+        
+        jsonResponse = WebRequest(
+            "POST",
+            apiUrl,
+            jsonPayload,
+            "AMS_CHECK_" + oib,
+            "MER_AMS_Success",
+            "MER_AMS_Failure",
+            "application/json",
+            null,
+            1000 * 10,
+            false
+        );
+        
+        // Response will be handled by callback functions
+        // For now, return UNKNOWN and use callback results
+        return "UNKNOWN";
+        
+    } catch (ex) {
+        LogException("MER AMS Check Exception: " + ex);
+        return "ERROR";
+    }
+}
+
+// -----------------------------------------------------------
+// MER AMS Check Callbacks
+// -----------------------------------------------------------
+function MER_AMS_Success(trackingId, responseCode, res) {
+    try {
+        resObject = DeserializeJson(res);
+        
+        if (Contains(resObject, "isRegistered")) {
+            if (resObject["isRegistered"] == true) {
+                MSG("Kupac je registriran u AMS sustavu");
+                return "REGISTERED";
+            } else {
+                MSG("Kupac NIJE registriran u AMS sustavu");
+                return "NOT_REGISTERED";
+            }
+        }
+        
+        return "UNKNOWN";
+    } catch (ex) {
+        LogException("MER AMS Success Callback Error: " + ex);
+        return "ERROR";
+    }
+}
+
+function MER_AMS_Failure(trackingId, responseCode, res) {
+    LogException("MER AMS Check Failed: ResponseCode=" + responseCode + ", Response=" + res);
+    MSG("AMS provjera neuspje�na");
+    return "ERROR";
+}

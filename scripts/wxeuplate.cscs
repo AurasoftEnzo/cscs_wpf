@@ -193,19 +193,19 @@ function btnUcitaj@clicked() {
 function btnPosalji@clicked() {
     cursor("wait");
     
-    // Count selected payments
-    selectedCount = 0;
-    for (i = 0; i < rowCountPayments; i++) {
-        if (arrayOdaberi[i] == true) {
-            selectedCount++;
-        }
-    }
+    // // Count selected payments
+    // selectedCount = 0;
+    // for (i = 0; i < rowCountPayments; i++) {
+    //     if (arrayOdaberi[i] == true) {
+    //         selectedCount++;
+    //     }
+    // }
     
-    if (selectedCount == 0) {
-        MessageBox("Nema odabranih plaćanja!");
-        cursor("dflt");
-        return;
-    }
+    // if (selectedCount == 0) {
+    //     MessageBox("Nema odabranih plaćanja!");
+    //     cursor("dflt");
+    //     return;
+    // }
     
     // Get selected month/year
     strMonthLong = GetWidgetOptions("cmbMonth", "SelectedValue");
@@ -215,7 +215,7 @@ function btnPosalji@clicked() {
     xml = GenerateEUplateXML();
     
     if (xml == "") {
-        MessageBox("Gre�ka pri generiranju XML-a!");
+        MessageBox("Greška pri slanju izvještaja!");
         cursor("dflt");
         return;
     }

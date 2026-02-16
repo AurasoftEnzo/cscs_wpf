@@ -1,4 +1,4 @@
-// e-IzvjeöÊivanje ñ eUplate (Report Payment) - MjeseËni izvjeötaj za zatvorene raËune
+// e-Izvje≈°ƒáivanje - eUplate (Report Payment) - Mjeseƒçni izvje≈°taj za zatvorene raƒçune
 // Reports invoice payments to tax authorities (FINA/MER)
 
 Import(strTrim(mpath()) + "CSCS.Math.dll");
@@ -33,7 +33,7 @@ try {
 }
 
 // Create window
-CreateWindow(strTrim(tpath()) + "wxweuplate.xaml");
+CreateWindow(strTrim(tpath()) + "wxeuplate.xaml");
 
 // Define arrays for payment data
 DEFINE Rbr type i;
@@ -73,13 +73,13 @@ DEFINE companyOIB type A size 11;
 DEFINE KPSY_FISCAL_YR type d;
 
 // Window initialization
-function wxweuplate_OnDisplay() {
+function wxeuplate_OnDisplay() {
     GetCompanyData();
     LoadProviderConfiguration();
     
     // Fill month combo
     comboItems = {
-        "01|SijeËanj", "02|VeljaËa", "03|Oûujak", "04|Travanj", 
+        "01|Sijeƒçanj", "02|Veljaƒça", "03|O≈æujak", "04|Travanj", 
         "05|Svibanj", "06|Lipanj", "07|Srpanj", "08|Kolovoz", 
         "09|Rujan", "10|Listopad", "11|Studeni", "12|Prosinac"
     };
@@ -153,7 +153,7 @@ function btnUcitaj@clicked() {
         sqlResult = sqlQuery(sql, sqlParams);
         
         if (Size(sqlResult) < 2) {
-            MessageBox("Nema zatvorenih raËuna za " + strMonthLong + " " + year + "!");
+            MessageBox("Nema zatvorenih raƒçuna za " + strMonthLong + " " + year + "!");
             cursor("dflt");
             return;
         }
@@ -165,7 +165,7 @@ function btnUcitaj@clicked() {
             arrayOIB[Rbr] = sqlResult[i][1].trim();
             arrayBrRacuna[Rbr] = sqlResult[i][2].trim();
             arrayIDNum[Rbr] = sqlResult[i][3].trim();
-            arrayVrstaPlacanja[Rbr] = sqlResult[i][4].trim();
+            arrayVrstaPlacanja[Rbr] = sqlResult[i][4];
             arrayMjesec[Rbr] = sqlResult[i][5];
             arrayGodina[Rbr] = sqlResult[i][6];
             arrayIznosRacuna[Rbr] = sqlResult[i][7];
@@ -180,10 +180,10 @@ function btnUcitaj@clicked() {
         Format("arrayPlaceniIznos", "nofd");
         DisplayArraySetup("dgPayments", counterFld: cntr1, activeElements: Rbr, maxElements: Rbr);
         
-        MessageBox("UËitano " + Rbr + " plaÊanja za " + strMonthLong + " " + year);
+        MessageBox("Uƒçitano " + Rbr + " plaƒáanja za " + strMonthLong + " " + year);
         
     } catch(ex) {
-        MessageBox("Greöka pri uËitavanju podataka:\n" + ex);
+        MessageBox("Gre≈°ka pri uƒçitavanju podataka:\n" + ex);
     }
     
     cursor("dflt");
@@ -202,7 +202,7 @@ function btnPosalji@clicked() {
     }
     
     if (selectedCount == 0) {
-        MessageBox("Nema odabranih plaÊanja!");
+        MessageBox("Nema odabranih plaƒáanja!");
         cursor("dflt");
         return;
     }
@@ -215,7 +215,7 @@ function btnPosalji@clicked() {
     xml = GenerateEUplateXML();
     
     if (xml == "") {
-        MessageBox("Greöka pri generiranju XML-a!");
+        MessageBox("GreÔøΩka pri generiranju XML-a!");
         cursor("dflt");
         return;
     }
@@ -240,8 +240,8 @@ function btnPosalji@clicked() {
     // Confirm send
     answer = MessageBox(
         "XML generiran i validiran: " + fileName + 
-        "\nBroj plaÊanja: " + selectedCount + 
-        "\n\nPoslati izvjeötaj putem " + PROVIDER + "?",
+        "\nBroj plaÔøΩanja: " + selectedCount + 
+        "\n\nPoslati izvjeÔøΩtaj putem " + PROVIDER + "?",
         "Potvrda slanja",
         "yesno",
         "question"
@@ -336,7 +336,7 @@ function GenerateEUplateXML() {
         return xml;
         
     } catch(ex) {
-        MessageBox("Greöka pri generiranju XML-a:\n" + ex);
+        MessageBox("GreÔøΩka pri generiranju XML-a:\n" + ex);
         return "";
     }
 }
@@ -379,15 +379,15 @@ function SendEUplateToFINA(xmlContent, xmlFilePath, fileName) {
         );
         
         if (ack["AckStatusCode"] == 10 && ack["Correct"]) {
-            MessageBox("FINA eUplate uspjeöno poslane!");
+            MessageBox("FINA eUplate uspjeÔøΩno poslane!");
             LogEUplateResponse("FINA", 200, "Success", fileName);
         } else {
-            MessageBox("FINA eUplate neuspjeöne!\n" + ack["ErrorMessage"]);
+            MessageBox("FINA eUplate neuspjeÔøΩne!\n" + ack["ErrorMessage"]);
             LogEUplateResponse("FINA", ack["AckStatusCode"], ack["ErrorMessage"], fileName);
         }
         
     } catch(ex) {
-        MessageBox("Greöka pri slanju na FINA:\n" + ex);
+        MessageBox("Gre≈°ka pri slanju na FINA:\n" + ex);
         LogEUplateResponse("FINA", 0, "Exception: " + ex, fileName);
     }
 }
@@ -419,19 +419,19 @@ function SendEUplateToMER(xmlContent, fileName) {
         );
         
     } catch(ex) {
-        MessageBox("Greöka pri slanju na MER:\n" + ex);
+        MessageBox("GreÔøΩka pri slanju na MER:\n" + ex);
         LogEUplateResponse("MER", 0, "Exception: " + ex, fileName);
     }
 }
 
 // MER callbacks
 function MERUplateSuccess(fileName, responseCode, res) {
-    MessageBox("MER eUplate uspjeöno poslane!\nOdgovor: " + res);
+    MessageBox("MER eUplate uspjeÔøΩno poslane!\nOdgovor: " + res);
     LogEUplateResponse("MER", responseCode, res, fileName);
 }
 
 function MERUplateFailure(fileName, responseCode, res) {
-    MessageBox("MER eUplate neuspjeöne!\nStatus: " + responseCode + "\nOdgovor: " + res);
+    MessageBox("MER eUplate neuspjeÔøΩne!\nStatus: " + responseCode + "\nOdgovor: " + res);
     LogEUplateResponse("MER", responseCode, res, fileName);
 }
 
@@ -485,7 +485,7 @@ function GetPaymentTypeCode(vrstaPlacanja) {
     // Map payment type from NKSP_INVT_TERMN to eUplate code
     // Common codes: 
     // 1 = Gotovina (Cash)
-    // 30-59 = Transakcijski raËun (Bank transfer)
+    // 30-59 = Transakcijski raÔøΩun (Bank transfer)
     // 42 = Virman
     // 48 = Kartica
     
@@ -535,12 +535,13 @@ function EscapeForXml(text) {
 }
 
 function EscapeQuotesInXml(xmlContent) {
-    escaped = StrReplace(xmlContent, "\\", "\\\\");
-    escaped = StrReplace(escaped, "\"", "\\\"");
-    escaped = StrReplace(escaped, "\r", " ");
-    escaped = StrReplace(escaped, "\n", " ");
-    escaped = StrReplace(escaped, "\t", " ");
-    return escaped;
+    // escaped = StrReplace(xmlContent, "\\", "\\\\");
+    // escaped = StrReplace(escaped, "\"", "\\\"");
+    // escaped = StrReplace(escaped, "\r", " ");
+    // escaped = StrReplace(escaped, "\n", " ");
+    // escaped = StrReplace(escaped, "\t", " ");
+    // return escaped;
+    return xmlContent;
 }
 
 function LogEUplateResponse(provider, responseCode, response, fileName) {

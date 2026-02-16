@@ -157,6 +157,7 @@ namespace WpfCSCS
             interpreter.RegisterFunction("FINA_GET_B2B_INCOMING_INVOICE_LIST", new FINA_GET_B2B_INCOMING_INVOICE_LISTFunction());
             interpreter.RegisterFunction("FINA_GET_B2B_INCOMING_INVOICE", new FINA_GET_B2B_INCOMING_INVOICEFunction());
             interpreter.RegisterFunction("FINA_CHANGE_B2B_INCOMING_INVOICE_STATUS", new FINA_CHANGE_B2B_INCOMING_INVOICE_STATUSFunction());
+            interpreter.RegisterFunction("FINA_CHANGE_B2B_OUTGOING_INVOICE_STATUS", new FINA_CHANGE_B2B_OUTGOING_INVOICE_STATUSFunction());
             interpreter.RegisterFunction("FINA_GET_B2B_OUTGOING_INVOICE_LIST", new FINA_GET_B2B_OUTGOING_INVOICE_LISTFunction());
 
             interpreter.RegisterFunction("FINA_GET_B2B_OUTGOING_INVOICE_FISK_STATUS", new FINA_GET_B2B_OUTGOING_INVOICE_FISK_STATUSFunction());
@@ -5785,6 +5786,106 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
                 );
 
             return resVar;
+        }
+    }
+    
+    class FINA_CHANGE_B2B_OUTGOING_INVOICE_STATUSFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            //List<Variable> args = script.GetFunctionArgs();
+            //Utils.CheckArgs(args.Count, 9, m_name);
+
+            //var endpoint = Utils.GetSafeString(args, 0);
+            //var dnsIdentity = Utils.GetSafeString(args, 1);
+            //var serviceCertificatePath = Utils.GetSafeString(args, 2);
+            //var clientCertificatePath = Utils.GetSafeString(args, 3);
+            //var clientCertificatePassword = Utils.GetSafeString(args, 4);
+
+            //var messageId = Utils.GetSafeString(args, 5);
+            //var buyerId = Utils.GetSafeString(args, 6);
+            //var invoiceId = Utils.GetSafeString(args, 7);
+
+            //var newStatusCodeString = Utils.GetSafeString(args, 8);
+            //InvoiceStatusTypeStatusCode newStatusCode = InvoiceStatusTypeStatusCode.RECEIVED;
+            //switch (newStatusCodeString.ToUpper())
+            //{
+            //    case "RECEIVED":
+            //        newStatusCode = InvoiceStatusTypeStatusCode.RECEIVED;
+            //        break;
+            //    case "RECEIVING_CONFIRMED":
+            //        newStatusCode = InvoiceStatusTypeStatusCode.RECEIVING_CONFIRMED;
+            //        break;
+            //    case "APPROVED":
+            //        newStatusCode = InvoiceStatusTypeStatusCode.APPROVED;
+            //        break;
+            //    case "REJECTED":
+            //        newStatusCode = InvoiceStatusTypeStatusCode.REJECTED;
+            //        break;
+            //    case "PAYMENT_RECEIVED":
+            //        newStatusCode = InvoiceStatusTypeStatusCode.PAYMENT_RECEIVED;
+            //        break;
+            //    case "PAYMENT_FULFILLED":
+            //        newStatusCode = InvoiceStatusTypeStatusCode.PAYMENT_FULFILLED;
+            //        break;
+            //    case "PAYMENT_PARTIALLY_FULFILLED":
+            //        newStatusCode = InvoiceStatusTypeStatusCode.PAYMENT_PARTIALLY_FULFILLED;
+            //        break;
+            //    default:
+            //        throw new Exception("Invalid newStatusCodeString!");
+            //}
+
+            //var codeReasonString = Utils.GetSafeString(args, 9, "");
+            //bool codeReasonSpecified = false;
+            //InvoiceStatusTypeCodeReason codeReason = InvoiceStatusTypeCodeReason.OTHER_REASON;
+            //switch (codeReasonString.ToUpper())
+            //{
+            //    case "":
+            //        codeReasonSpecified = false;
+            //        codeReason = InvoiceStatusTypeCodeReason.OTHER_REASON;
+            //        break;
+            //    case "VAT_REASON":
+            //        codeReasonSpecified = true;
+            //        codeReason = InvoiceStatusTypeCodeReason.VAT_REASON;
+            //        break;
+            //    case "NOT_VAT_REASON":
+            //        codeReasonSpecified = true;
+            //        codeReason = InvoiceStatusTypeCodeReason.NOT_VAT_REASON;
+            //        break;
+            //    case "OTHER_REASON":
+            //        codeReasonSpecified = true;
+            //        codeReason = InvoiceStatusTypeCodeReason.OTHER_REASON;
+            //        break;
+            //    default:
+            //        throw new Exception("Invalid codeReasonString!");
+            //}
+
+            //var note = Utils.GetSafeString(args, 10, "");
+            //if(note.Length == 0)
+            //{
+            //    note = null;
+            //}
+
+            //Variable resVar = new Fiskalizacija2.FINA.B2BIncoming.ChangeOutgoingInvoiceStatus().Send(
+            //    endpoint,
+            //    dnsIdentity,
+            //    serviceCertificatePath,
+            //    clientCertificatePath,
+            //    clientCertificatePassword,
+                
+            //    messageId,
+            //    supplierId,
+            //    supplierInvoiceId,
+
+            //    invoiceYear,
+            //    payedDate,
+            //    payedAmount,
+            //    paymentMeansCode
+            //    );
+
+            //return resVar;
+
+            return Variable.EmptyInstance;
         }
     }
 

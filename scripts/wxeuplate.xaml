@@ -1,7 +1,7 @@
-<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ï»¿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:wcl="clr-namespace:WpfControlsLibrary;assembly=WpfControlsLibrary"
-        Title="eUplate - Izvješæivanje o plaæanjima"
+        Title="eUplate - IzvjeÅ¡Ä‡ivanje o plaÄ‡anjima"
         Height="700"
         Width="1200"
         ResizeMode="CanResize"
@@ -9,44 +9,35 @@
         Name="wxweuplateWindow">
     <Grid Margin="10">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="100"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="100"/>
         </Grid.RowDefinitions>
 
-        <!-- Header section -->
-        <StackPanel Grid.Row="0" Margin="0,0,0,10">
-            <Label Content="eUplate - Izvješæivanje o zatvorenim raèunima" 
+
+        <Label Content="eUplate - IzvjeÅ¡Ä‡ivanje o zatvorenim raÄunima" 
                    FontSize="20" 
                    FontWeight="Bold" 
                    HorizontalAlignment="Center"/>
 
-            <StackPanel Orientation="Horizontal" 
-                        HorizontalAlignment="Center" 
-                        Margin="0,10,0,0">
-                <Label Content="Mjesec:" FontSize="16" VerticalAlignment="Center"/>
-                <ComboBox x:Name="cmbMonth" 
-                          Width="150" 
-                          Height="30" 
-                          FontSize="14" 
-                          Margin="5,0,20,0"/>
+        <Label Content="Mjesec:" FontSize="16" VerticalAlignment="Top" Margin="0,49,1100,0"/>
 
-                <Label Content="Godina:" FontSize="16" VerticalAlignment="Center"/>
-                <TextBox x:Name="txtYear" 
-                         Width="80" 
+
+        <Label Content="Godina:" FontSize="16" VerticalAlignment="Top" Margin="265,48,835,0"/>
+        <TextBox x:Name="txtYear"
+                 IsReadOnly="True"
                          Height="30" 
                          FontSize="14" 
-                         Margin="5,0,20,0"/>
+                         Margin="330,49,740,21"/>
 
-                <Button x:Name="btnUcitaj" 
-                        Content="Uèitaj plaæanja" 
+        <Button x:Name="btnUcitaj" 
+                        Content="UÄitaj plaÄ‡anja" 
                         Width="150" 
                         Height="35" 
                         FontSize="14" 
                         Background="#FF4CAF50" 
-                        Foreground="White"/>
-            </StackPanel>
-        </StackPanel>
+                        Foreground="White" Margin="720,44,310,21"/>
+
 
         <!-- DataGrid section -->
         <DataGrid Grid.Row="1" 
@@ -54,6 +45,7 @@
                   AutoGenerateColumns="False"
                   CanUserAddRows="False"
                   CanUserDeleteRows="False"
+                  IsReadOnly="True"
                   RowHeight="25"
                   FontSize="13"
                   GridLinesVisibility="All"
@@ -75,13 +67,13 @@
                 </Style>
             </DataGrid.Resources>
             <DataGrid.Columns>
-                <DataGridTemplateColumn Header="Odaberi" Width="60">
+                <!--<DataGridTemplateColumn Header="Odaberi" Width="60">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <wcl:ASGridCell FieldName="arrayOdaberi"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+                </DataGridTemplateColumn>-->
 
                 <DataGridTemplateColumn Header="Rbr" Width="50">
                     <DataGridTemplateColumn.CellTemplate>
@@ -107,7 +99,7 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridTemplateColumn Header="Br. raèuna" Width="100">
+                <DataGridTemplateColumn Header="Br. raÄuna" Width="100">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <wcl:ASGridCell FieldName="arrayBrRacuna"/>
@@ -115,7 +107,7 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridTemplateColumn Header="ID raèuna" Width="120">
+                <DataGridTemplateColumn Header="ID raÄuna" Width="120">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <wcl:ASGridCell FieldName="arrayIDNum"/>
@@ -123,7 +115,7 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridTemplateColumn Header="Vrsta plaæanja" Width="100">
+                <DataGridTemplateColumn Header="Vrsta plaÄ‡anja" Width="100">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <wcl:ASGridCell FieldName="arrayVrstaPlacanja"/>
@@ -131,7 +123,7 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridTemplateColumn Header="Iznos raèuna" Width="110">
+                <DataGridTemplateColumn Header="Iznos raÄuna" Width="110">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <wcl:ASGridCell FieldName="arrayIznosRacuna" HorizontalContentAlignment="Right"/>
@@ -139,7 +131,7 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridTemplateColumn Header="Plaæeni iznos" Width="110">
+                <DataGridTemplateColumn Header="PlaÄ‡eni iznos" Width="110">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <wcl:ASGridCell FieldName="arrayPlaceniIznos" HorizontalContentAlignment="Right"/>
@@ -158,26 +150,29 @@
         </DataGrid>
 
         <!-- Buttons section -->
-        <StackPanel Grid.Row="2" 
-                    Orientation="Horizontal" 
-                    HorizontalAlignment="Center" 
-                    Margin="0,10,0,0">
-            <Button x:Name="btnPosalji" 
-                    Content="Pošalji izvještaj" 
+
+        <Button x:Name="btnPosalji" 
+                Grid.Row="2"
+                    Content="PoÅ¡alji izvjeÅ¡taj" 
                     Width="180" 
                     Height="45" 
                     FontSize="16" 
                     Background="#FFFF9800" 
                     Foreground="White" 
-                    Margin="0,0,20,0"/>
+                    Margin="0" />
 
-            <Button x:Name="btnIzlaz" 
+        <Button x:Name="btnIzlaz" 
+                Grid.Row="2"
                     Content="Izlaz" 
                     Width="120" 
                     Height="45" 
                     FontSize="16" 
                     Background="#FFF44336" 
-                    Foreground="White"/>
-        </StackPanel>
+                    Foreground="White" Margin="880,30,180,25"/>
+
+        <ComboBox x:Name="cmbMonth" 
+   Height="30" 
+   FontSize="14" 
+   Margin="70,49,920,21"/>
     </Grid>
 </Window>

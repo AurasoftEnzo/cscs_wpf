@@ -1,0 +1,60 @@
+function GenerateUBLXml() {
+    // ... existing code to load header ...
+   
+   // After loading customer OIB (NKPR_GL_JMBG)
+  
+    // ✅ CHECK AMS REGISTRATION BEFORE GENERATING XML
+    amsStatus = CheckAMSRegistration(NKPR_GL_JMBG, PROVIDER);
+  
+    if (amsStatus == "NOT_REGISTERED") {
+        // Customer is not registered in AMS
+        answer = MessageBox(
+            "UPOZORENJE!\n\n" +
+            "Kupac " + NKPR_GL_CUSNME + " (OIB: " + NKPR_GL_JMBG + ")\n" +
+            "NIJE registriran u AMS sustavu!\n\n" +
+            "E-račun možda neće biti uspješno dostavljen.\n\n" +
+            "Želite li ipak nastaviti slanje?",
+            "AMS Upozorenje",
+            "yesno",
+            "warning"
+        );
+       
+        if (answer == "no" || answer == "cancel") {
+            LogNKSYELOG("B", "Slanje otkazano - kupac nije u AMS");
+            return false;
+        }
+       
+        // Log warning but continue
+        LogNKSYELOG("W", "Kupac nije u AMS, ali slanje nastavljeno");
+    }
+    elif (amsStatus == "ERROR") {
+        // AMS check failed
+        answer = MessageBox(
+            "GREŠKA!\n\n" +
+            "Nije moguće provjeriti AMS registraciju kupca\n" +
+            NKPR_GL_CUSNME + " (OIB: " + NKPR_GL_JMBG + ")\n\n" +
+            "Želite li ipak nastaviti slanje?",
+            "AMS Greška",
+            "yesno",
+            "error"
+        );
+       
+        if (answer == "no" || answer == "cancel") {
+            LogNKSYELOG("B", "Slanje otkazano - AMS greška");
+            return false;
+        }
+       
+        LogNKSYELOG("W", "AMS provjera neuspješna, ali slanje nastavljeno");
+    }
+    elif (amsStatus == "REGISTERED") {
+        // Customer is registered - all OK
+        MSG("Kupac je registriran u AMS - nastavak slanja");
+        LogNKSYELOG("I", "Kupac registriran u AMS");
+    }
+    elif (amsStatus == "UNKNOWN") {
+        // Provider doesn't support AMS check
+        MSG("AMS provjera nije dostupna za ovog posrednika");
+    }
+   
+    // ... continue with existing XML generation ...
+}

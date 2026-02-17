@@ -5793,99 +5793,48 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
     {
         protected override Variable Evaluate(ParsingScript script)
         {
-            //List<Variable> args = script.GetFunctionArgs();
-            //Utils.CheckArgs(args.Count, 9, m_name);
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 9, m_name);
 
-            //var endpoint = Utils.GetSafeString(args, 0);
-            //var dnsIdentity = Utils.GetSafeString(args, 1);
-            //var serviceCertificatePath = Utils.GetSafeString(args, 2);
-            //var clientCertificatePath = Utils.GetSafeString(args, 3);
-            //var clientCertificatePassword = Utils.GetSafeString(args, 4);
+            var endpoint = Utils.GetSafeString(args, 0);
+            var dnsIdentity = Utils.GetSafeString(args, 1);
+            var serviceCertificatePath = Utils.GetSafeString(args, 2);
+            var clientCertificatePath = Utils.GetSafeString(args, 3);
+            var clientCertificatePassword = Utils.GetSafeString(args, 4);
 
-            //var messageId = Utils.GetSafeString(args, 5);
-            //var buyerId = Utils.GetSafeString(args, 6);
+            var messageId = Utils.GetSafeString(args, 5);
+            var supplierId = Utils.GetSafeString(args, 6);
+            
             //var invoiceId = Utils.GetSafeString(args, 7);
+            var supplierInvoiceId = Utils.GetSafeString(args, 7);
+            var invoiceYear = Utils.GetSafeString(args, 8);
 
-            //var newStatusCodeString = Utils.GetSafeString(args, 8);
-            //InvoiceStatusTypeStatusCode newStatusCode = InvoiceStatusTypeStatusCode.RECEIVED;
-            //switch (newStatusCodeString.ToUpper())
-            //{
-            //    case "RECEIVED":
-            //        newStatusCode = InvoiceStatusTypeStatusCode.RECEIVED;
-            //        break;
-            //    case "RECEIVING_CONFIRMED":
-            //        newStatusCode = InvoiceStatusTypeStatusCode.RECEIVING_CONFIRMED;
-            //        break;
-            //    case "APPROVED":
-            //        newStatusCode = InvoiceStatusTypeStatusCode.APPROVED;
-            //        break;
-            //    case "REJECTED":
-            //        newStatusCode = InvoiceStatusTypeStatusCode.REJECTED;
-            //        break;
-            //    case "PAYMENT_RECEIVED":
-            //        newStatusCode = InvoiceStatusTypeStatusCode.PAYMENT_RECEIVED;
-            //        break;
-            //    case "PAYMENT_FULFILLED":
-            //        newStatusCode = InvoiceStatusTypeStatusCode.PAYMENT_FULFILLED;
-            //        break;
-            //    case "PAYMENT_PARTIALLY_FULFILLED":
-            //        newStatusCode = InvoiceStatusTypeStatusCode.PAYMENT_PARTIALLY_FULFILLED;
-            //        break;
-            //    default:
-            //        throw new Exception("Invalid newStatusCodeString!");
-            //}
+            var payedDateString = Utils.GetSafeString(args, 9);
+            DateTime.TryParseExact(payedDateString, DateConfiguration.InternalFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime payedDate);
 
-            //var codeReasonString = Utils.GetSafeString(args, 9, "");
-            //bool codeReasonSpecified = false;
-            //InvoiceStatusTypeCodeReason codeReason = InvoiceStatusTypeCodeReason.OTHER_REASON;
-            //switch (codeReasonString.ToUpper())
-            //{
-            //    case "":
-            //        codeReasonSpecified = false;
-            //        codeReason = InvoiceStatusTypeCodeReason.OTHER_REASON;
-            //        break;
-            //    case "VAT_REASON":
-            //        codeReasonSpecified = true;
-            //        codeReason = InvoiceStatusTypeCodeReason.VAT_REASON;
-            //        break;
-            //    case "NOT_VAT_REASON":
-            //        codeReasonSpecified = true;
-            //        codeReason = InvoiceStatusTypeCodeReason.NOT_VAT_REASON;
-            //        break;
-            //    case "OTHER_REASON":
-            //        codeReasonSpecified = true;
-            //        codeReason = InvoiceStatusTypeCodeReason.OTHER_REASON;
-            //        break;
-            //    default:
-            //        throw new Exception("Invalid codeReasonString!");
-            //}
+            var payedAmountString = Utils.GetSafeString(args, 10);
+            decimal.TryParse(payedAmountString, out decimal payedAmount);
 
-            //var note = Utils.GetSafeString(args, 10, "");
-            //if(note.Length == 0)
-            //{
-            //    note = null;
-            //}
+            var paymentMeansCode = Utils.GetSafeString(args, 11); // T - transakcijsko, O - obročno, Z - ostalo
 
-            //Variable resVar = new Fiskalizacija2.FINA.B2BIncoming.ChangeOutgoingInvoiceStatus().Send(
-            //    endpoint,
-            //    dnsIdentity,
-            //    serviceCertificatePath,
-            //    clientCertificatePath,
-            //    clientCertificatePassword,
-                
-            //    messageId,
-            //    supplierId,
-            //    supplierInvoiceId,
+            Variable resVar = new Fiskalizacija2.FINA.B2BIncoming.ChangeOutgoingInvoiceStatus().Send(
+                endpoint,
+                dnsIdentity,
+                serviceCertificatePath,
+                clientCertificatePath,
+                clientCertificatePassword,
 
-            //    invoiceYear,
-            //    payedDate,
-            //    payedAmount,
-            //    paymentMeansCode
-            //    );
+                messageId,
+                supplierId,
+                supplierInvoiceId,
 
-            //return resVar;
+                invoiceYear,
+                payedDate,
+                payedAmount,
+                paymentMeansCode
+                );
 
-            return Variable.EmptyInstance;
+            return resVar;
         }
     }
 

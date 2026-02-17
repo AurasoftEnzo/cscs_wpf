@@ -897,9 +897,13 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             NKPR_GL_DVO = GetNodeText(docData["IssueDate"]);
             NKPR_GL_NOKAM = 30;
         }   
-           
+        taxPointDate= "1900-01-01";   
         if (Contains(docData, "TaxPointDate")) {
             NKPR_GL_ESD = GetNodeText(docData["TaxPointDate"]);
+            taPointDate = GetNodeText(docData["TaxPointDate"]);
+        }elif{
+            NKPR_GL_ESD = GetNodeText(docData["IssueDate"]);
+        }
         }else{
             NKPR_GL_ESD = GetNodeText(docData["IssueDate"]);
         }
@@ -1169,7 +1173,9 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                         }
                     }
                 }
-            
+                if (Contains(delivery, "ActualDeliveryDate") && TaxPointDate == "1900-01-01") {
+                    NKPR_GL_ESD = GetNodeText(delivery["ActualDeliveryDate"]);
+                }   
                 // Delivery party
                 if (Contains(delivery, "DeliveryParty")) {
                     deliveryParty = GetNodeText(delivery["DeliveryParty"]);
@@ -1179,6 +1185,21 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                     }
                 } else {
                     deliveryParty = {};
+                }
+            }
+        }
+        if (Contains(docData, "InvoicePeriod")) {
+            StartDate = "";
+            EndDate = "";
+            invoicePeriod = GetNodeText(docData["InvoicePeriod"]);
+            if (invoicePeriod != null && invoicePeriod != "") {
+                //StartDate i EndDate bi sada trebalo konvertirat u format dd/MM/yy i spremiti u NKPR_GL_EMAIL(17,8) i NKPR_GL_EMAIL(25,8) da nam služe kao pomoćna polja za filtriranje po datumu prilikom knjiženja računa, a kao ESD nam treba uzet EndDate ako postoji, a ako ne postoji onda StartDate, a ako ne postoji ni StartDate onda ostaviti IssueDate ili TaxPointDate kao što je bilo prije
+                if (Contains(invoicePeriod, "StartDate")) { 
+                    startDate= GetNodeText(invoicePeriod["StartDate"]); 
+                }
+                if (Contains(invoicePeriod, "EndDate")) { 
+                    endDate = GetNodeText(invoicePeriod["EndDate"]); 
+                    NKPR_GL_ESD = endDate; //ako postoji EndDate, onda njega uzimamo kao ESD, inače ostaje ono što je bilo prije (IssueDate ili TaxPointDate) 
                 }
             }
         }
@@ -2017,7 +2038,7 @@ function GetUnitCodeFromUN(unCode) {
     if (unCode == "C62") { return "JED"; }
     return "KOM"; // Default
 }
-
+/*
 // Validate if invoice ESD date belongs to current fiscal year
 function ValidateFiscalYear() {
     try {
@@ -2039,7 +2060,7 @@ function ValidateFiscalYear() {
         return false;
     }
 }
-
+*/
 
 /* 
 Usage Examples:

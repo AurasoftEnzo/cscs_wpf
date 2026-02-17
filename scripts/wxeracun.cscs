@@ -179,7 +179,7 @@ function GenerateUBLXml() {
                 NKPR_GL_ENTBY, NKPR_GL_BROPIS, NKPR_GL_BROPIS1,
                 CONVERT(varchar(10), DATEADD(DAY, NKPR_GL_NOKAM + NKPR_GL_ROKPL, NKPR_GL_DVO), 23) as NKPR_GL_DUE_DATE,
                 NKPR_GL_SCONTO,NKPR_GL_DANSC,NKPR_GL_REZ3,NKPR_GL_SHPCOD, NKPR_GL_SHPNME, NKPR_GL_SHPRO, NKPR_GL_SHPA1, 
-                NKPR_GL_SHPZIP, NKPR_GL_SHPCTY,NKPR_GL_SHPST, NKPR_GL_UGOVOR,NKPR_GL_CUSCOD,NKPR_GL_RNALOG,
+                NKPR_GL_SHPZIP, NKPR_GL_SHPCTY,NKPR_GL_SHPST, NKPR_GL_UGOVOR,NKPR_GL_CUSCOD,NKPR_GL_RNALOG,NKPR_GL_EMAIL,
                 SUBSTRING(NKSP_AD_REZ,37,13) as NKSP_AD_GLN ,SUBSTRING(NKSP_AD_REZ,51,20) as NKSP_AD_OBJED, 
                 NKSC_SOP, NKSC_POSREDNIK, NKSC_REZ10, NKSC_TAX_DN, substring(NKSC_REZ, 42, 10) as POSREDNIK,NKSC_REZ9,
                 PKKU_PP_OPIS
@@ -241,15 +241,16 @@ function GenerateUBLXml() {
     NKPR_GL_UGOVOR = hdrRes[1][41].trim();
     NKPR_GL_CUSCOD = hdrRes[1][42].trim();
     NKPR_GL_RNALOG = hdrRes[1][43].trim();
-    NKSP_AD_GLN = hdrRes[1][44].trim();
-    NKSP_AD_OBJED = hdrRes[1][45].trim();
-    NKSC_SOP = hdrRes[1][46].trim(); // Customer GLN
-    NKSC_POSREDNIK = hdrRes[1][47].trim().Upper(); // Not in use
-    NKSC_REZ10 = hdrRes[1][48].trim().Upper(); // P - šalji na server / F = spremi file na disk / E - šalji na E-mail(NIJE U FUNKCIJI)
-    NKSC_TAX_DN = hdrRes[1][49].trim().Upper(); // F - kupac po fakturiranoj realizaciji/ N = po naplaćenoj realizaciji / X - nije u sustavu PDV-a
-    POSREDNIK = hdrRes[1][50].trim();
-    NKSC_REZ9 = hdrRes[1][51].trim();
-    PKKU_PP_OPIS = hdrRes[1][52].trim();
+    NKPR_GL_EMAIL = hdrRes[1][44].trim();
+    NKSP_AD_GLN = hdrRes[1][45].trim();
+    NKSP_AD_OBJED = hdrRes[1][46].trim();
+    NKSC_SOP = hdrRes[1][47].trim(); // Customer GLN
+    NKSC_POSREDNIK = hdrRes[1][48].trim().Upper(); // Not in use
+    NKSC_REZ10 = hdrRes[1][49].trim().Upper(); // P - šalji na server / F = spremi file na disk / E - šalji na E-mail(NIJE U FUNKCIJI)
+    NKSC_TAX_DN = hdrRes[1][50].trim().Upper(); // F - kupac po fakturiranoj realizaciji/ N = po naplaćenoj realizaciji / X - nije u sustavu PDV-a
+    POSREDNIK = hdrRes[1][51].trim();
+    NKSC_REZ9 = hdrRes[1][52].trim();
+    PKKU_PP_OPIS = hdrRes[1][53].trim();
 /*
     if(NKSC_REZ10 == "E"){
         MessageBox("Način slanja e-računa e-mailom(E) nije podržan! Partner " + NKSC_PARTCODE + ".");
@@ -946,7 +947,15 @@ function GenerateUBLXml() {
             xml += "<cbc:TaxPointDate>" + NKPR_GL_ESD + "</cbc:TaxPointDate>\n"; //BT-7; 0..1
         }
     }
-
+    /*
+if (SUBSTRING(NKPR_GL_EMAIL,17,8) != "" && SUBSTRING(NKPR_GL_EMAIL,25,8) != "") { //Ako period od/do datuma postoji u NKPR_GL_EMAIL, koristi ga kao InvoicePeriod
+    xml += "  <cac:InvoicePeriod>\n";
+    //trebalo bi provjeriti da li su datumi u ispravnom formatu i logičnom odnosu (StartDate prije EndDate), ali pretpostavljamo da jesu jer dolaze iz Knjiga gdje su već uneseni kao datumi
+    xml += "    <cbc:StartDate>20"+SUBSTRING(NKPR_GL_EMAIL,23,2)+"-"+SUBSTRING(NKPR_GL_EMAIL,20,2)+"-"+SUBSTRING(NKPR_GL_EMAIL,17,2)+"</cbc:StartDate>\n";
+    xml += "    <cbc:EndDate>20"+SUBSTRING(NKPR_GL_EMAIL,30,2)+"-"+SUBSTRING(NKPR_GL_EMAIL,27,2)+"-"+SUBSTRING(NKPR_GL_EMAIL,25,2)+"</cbc:EndDate>\n";
+    xml += "  </cac:InvoicePeriod>\n";
+}
+*/
     xml += "<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>\n"; // BT-5; 1..1 
     xml += "<cbc:TaxCurrencyCode>EUR</cbc:TaxCurrencyCode>\n";
 
@@ -1323,7 +1332,7 @@ function GenerateUBLXml() {
      // Check if any delivery location information is present
 
 
-     if (NKPR_GL_SHPCOD != "" || NKPR_GL_SHPNME != "" || NKPR_GL_SHPRO != "") {
+    if (NKPR_GL_SHPCOD != "" || NKPR_GL_SHPNME != "" || NKPR_GL_SHPRO != "") {
 
          xml += "<cac:Delivery>\n";
          xml += "  <cac:DeliveryLocation>\n";
@@ -1356,8 +1365,6 @@ function GenerateUBLXml() {
             xml += "    <cbc:ID>" + deliveryLocationID + "</cbc:ID>\n";
         }
         */
-        
-        
         
          // Add delivery address if any address components are present
          if (NKPR_GL_SHPA1 != "" || NKPR_GL_SHPCTY != "" || NKPR_GL_SHPZIP != "" || NKPR_GL_SHPST != "") {

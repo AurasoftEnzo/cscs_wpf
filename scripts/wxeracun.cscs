@@ -922,7 +922,7 @@ function GenerateUBLXml() {
     note = note.Replace("$$", "\n");
 
     if (profileID == "P9") { // credit note
-        if (NKPR_GL_ESD != NKPR_GL_INVDTE){
+        if (NKPR_GL_ESD != NKPR_GL_INVDTE){ 
             //ako je datum oporezivanja različit od datuma računa, treba ga unijeti; PROVJERI MATEMATIKU SA DATUMIMA!!!!
             xml += "<cbc:TaxPointDate>" + NKPR_GL_ESD + "</cbc:TaxPointDate>\n"; //BT-7; 0..1
         }
@@ -942,22 +942,24 @@ function GenerateUBLXml() {
             xml += "<cbc:Note>" + EscapeForXml(note) + "</cbc:Note>\n"; // BT-21, 0..1 (note code) and BT-22; 1..1 note text
         }
 
-        if (NKPR_GL_ESD != NKPR_GL_INVDTE){
+        if (NKPR_GL_ESD != NKPR_GL_INVDTE){ //treba stavit ako je esd < invdte, onda je taxpoint date esd, ali ako je veći onda je to invdte!
             //ako je datum oporezivanja različit od datuma računa, treba ga unijeti; PROVJERI MATEMATIKU SA DATUMIMA!!!!
             xml += "<cbc:TaxPointDate>" + NKPR_GL_ESD + "</cbc:TaxPointDate>\n"; //BT-7; 0..1
         }
     }
-    /*
-if (SUBSTRING(NKPR_GL_EMAIL,17,8) != "" && SUBSTRING(NKPR_GL_EMAIL,25,8) != "") { //Ako period od/do datuma postoji u NKPR_GL_EMAIL, koristi ga kao InvoicePeriod
-    xml += "  <cac:InvoicePeriod>\n";
-    //trebalo bi provjeriti da li su datumi u ispravnom formatu i logičnom odnosu (StartDate prije EndDate), ali pretpostavljamo da jesu jer dolaze iz Knjiga gdje su već uneseni kao datumi
-    xml += "    <cbc:StartDate>20"+SUBSTRING(NKPR_GL_EMAIL,23,2)+"-"+SUBSTRING(NKPR_GL_EMAIL,20,2)+"-"+SUBSTRING(NKPR_GL_EMAIL,17,2)+"</cbc:StartDate>\n";
-    xml += "    <cbc:EndDate>20"+SUBSTRING(NKPR_GL_EMAIL,30,2)+"-"+SUBSTRING(NKPR_GL_EMAIL,27,2)+"-"+SUBSTRING(NKPR_GL_EMAIL,25,2)+"</cbc:EndDate>\n";
-    xml += "  </cac:InvoicePeriod>\n";
-}
-*/
     xml += "<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>\n"; // BT-5; 1..1 
     xml += "<cbc:TaxCurrencyCode>EUR</cbc:TaxCurrencyCode>\n";
+    
+if ((SUBSTRING(NKPR_GL_EMAIL,16,8) != "00/00/00" || SUBSTRING(NKPR_GL_EMAIL,16,8) != "00.00.00") && (SUBSTRING(NKPR_GL_EMAIL,24,8) != "00/00/00" || SUBSTRING(NKPR_GL_EMAIL,24,8) != "00.00.00")) { //Ako period od/do datuma postoji u NKPR_GL_EMAIL, koristi ga kao InvoicePeriod
+    xml += "  <cac:InvoicePeriod>\n";
+    StartDate = "20"+SUBSTRING(NKPR_GL_EMAIL,22,2)+"-"+SUBSTRING(NKPR_GL_EMAIL,19,2)+"-"+SUBSTRING(NKPR_GL_EMAIL,16,2);
+    EndDate = "20"+SUBSTRING(NKPR_GL_EMAIL,30,2)+"-"+SUBSTRING(NKPR_GL_EMAIL,27,2)+"-"+SUBSTRING(NKPR_GL_EMAIL,24,2);
+//    //trebalo bi provjeriti da li su datumi u ispravnom formatu i logičnom odnosu (StartDate prije EndDate), ali pretpostavljamo da jesu jer dolaze iz Knjiga gdje su već uneseni kao datumi
+    xml += "    <cbc:StartDate>" + StartDate + "</cbc:StartDate>\n";
+    xml += "    <cbc:EndDate>" + EndDate + "</cbc:EndDate>\n";
+    xml += "  </cac:InvoicePeriod>\n";
+}
+
 
     if (NKPR_GL_UGOVOR != 0 && PKKU_PP_OPIS != "") {  
         xml += "<cac:ContractDocumentReference>";

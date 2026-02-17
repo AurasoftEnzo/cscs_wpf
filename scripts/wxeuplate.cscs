@@ -240,8 +240,8 @@ function btnPosalji@clicked() {
     // Confirm send
     answer = MessageBox(
         "XML generiran i validiran: " + fileName + 
-        "\nBroj pla�anja: " + selectedCount + 
-        "\n\nPoslati izvje�taj putem " + PROVIDER + "?",
+        "\nBroj plaćanja: " + selectedCount + 
+        "\n\nPoslati izvještaj putem " + PROVIDER + "?",
         "Potvrda slanja",
         "yesno",
         "question"
@@ -336,7 +336,7 @@ function GenerateEUplateXML() {
         return xml;
         
     } catch(ex) {
-        MessageBox("Gre�ka pri generiranju XML-a:\n" + ex);
+        MessageBox("Greška pri generiranju XML-a:\n" + ex);
         return "";
     }
 }
@@ -379,10 +379,10 @@ function SendEUplateToFINA(xmlContent, xmlFilePath, fileName) {
         );
         
         if (ack["AckStatusCode"] == 10 && ack["Correct"]) {
-            MessageBox("FINA eUplate uspje�no poslane!");
+            MessageBox("FINA eUplate uspješno poslane!");
             LogEUplateResponse("FINA", 200, "Success", fileName);
         } else {
-            MessageBox("FINA eUplate neuspje�ne!\n" + ack["ErrorMessage"]);
+            MessageBox("FINA eUplate neuspješne!\n" + ack["ErrorMessage"]);
             LogEUplateResponse("FINA", ack["AckStatusCode"], ack["ErrorMessage"], fileName);
         }
         
@@ -419,19 +419,19 @@ function SendEUplateToMER(xmlContent, fileName) {
         );
         
     } catch(ex) {
-        MessageBox("Gre�ka pri slanju na MER:\n" + ex);
+        MessageBox("Greška pri slanju na MER:\n" + ex);
         LogEUplateResponse("MER", 0, "Exception: " + ex, fileName);
     }
 }
 
 // MER callbacks
 function MERUplateSuccess(fileName, responseCode, res) {
-    MessageBox("MER eUplate uspje�no poslane!\nOdgovor: " + res);
+    MessageBox("MER eUplate uspješno poslane!\nOdgovor: " + res);
     LogEUplateResponse("MER", responseCode, res, fileName);
 }
 
 function MERUplateFailure(fileName, responseCode, res) {
-    MessageBox("MER eUplate neuspje�ne!\nStatus: " + responseCode + "\nOdgovor: " + res);
+    MessageBox("MER eUplate neuspješne!\nStatus: " + responseCode + "\nOdgovor: " + res);
     LogEUplateResponse("MER", responseCode, res, fileName);
 }
 
@@ -485,7 +485,7 @@ function GetPaymentTypeCode(vrstaPlacanja) {
     // Map payment type from NKSP_INVT_TERMN to eUplate code
     // Common codes: 
     // 1 = Gotovina (Cash)
-    // 30-59 = Transakcijski ra�un (Bank transfer)
+    // 30-59 = Transakcijski račun (Bank transfer)
     // 42 = Virman
     // 48 = Kartica
     

@@ -142,7 +142,7 @@ function refreshList(){
             FROM " + databaseName + ".dbo.kpspzatv 
             LEFT JOIN " + databaseName + ".dbo.nkspprom ON nksp_invt_ident = kpsp_ztv_identr 
             LEFT JOIN " + databaseName + ".dbo.NKSCPART ON kpsp_ztv_code = NKSC_PARTCODE
-            WHERE kpsp_ztv_rac_dp = 'D' 
+            WHERE kpsp_ztv_rac_dp = 'D' AND NKSP_INVT_AMT > 0
               AND month(kpsp_ztv_datupl) <= @month 
               AND KPSP_ZTV_REZ4 = '1900-01-01'
                 AND nksp_invt_code = kpsp_ztv_code 

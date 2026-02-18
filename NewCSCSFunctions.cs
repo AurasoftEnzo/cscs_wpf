@@ -5812,8 +5812,10 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             var payedDateString = Utils.GetSafeString(args, 9);
             DateTime.TryParseExact(payedDateString, DateConfiguration.InternalFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime payedDate);
 
-            var payedAmountString = Utils.GetSafeString(args, 10);
-            decimal.TryParse(payedAmountString, out decimal payedAmount);
+            //var payedAmountString = Utils.GetSafeString(args, 10);
+            //decimal.TryParse(payedAmountString, out decimal payedAmount);
+
+            decimal payedAmountDecimal = (decimal)Utils.GetSafeDouble(args, 10);
 
             var paymentMeansCode = Utils.GetSafeString(args, 11); // T - transakcijsko, O - obračunsko, Z - ostalo
 
@@ -5830,7 +5832,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
 
                 invoiceYear,
                 payedDate,
-                payedAmount,
+                payedAmountDecimal,
                 paymentMeansCode
                 );
 

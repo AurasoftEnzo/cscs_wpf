@@ -81,6 +81,11 @@ function wxeuplate_OnDisplay() {
     GetCompanyData();
     LoadProviderConfiguration();
     
+    // Set fiscal year
+    strYear = string(year(KPSY_FISCAL_YR));
+    SetWidgetOptions("txtYear", "Text", strYear);
+
+
     // Fill month combo
     comboItems = {
         "01|Siječanj", "02|Veljača", "03|Ožujak", "04|Travanj", 
@@ -97,14 +102,15 @@ function wxeuplate_OnDisplay() {
         intMonth = 13;
     }
     SetWidgetOptions("cmbMonth", "SelectedIndex", (intMonth - 2));
-
-    // Set fiscal year
-    strYear = string(year(KPSY_FISCAL_YR));
-    SetWidgetOptions("txtYear", "Text", strYear);
 }
 
+
 // Load payment data button
-function btnUcitaj@clicked() {
+function cmbMonth@SelectionChanged() {
+    refreshList();
+}
+
+function refreshList(){
     cursor("wait");
     
     // Get selected month and year
@@ -125,7 +131,7 @@ function btnUcitaj@clicked() {
                 SELECT kpsp_ztv_code, 
                 NKSC_PARTNAME as partnerNaziv,
                 kpsp_ztv_num, kpsp_ztv_identr, 
-                    nksp_invt_TERMN as vrstaPlacanja, 
+                    CASE WHEN nksp_invt_TERMN = 0 THEN 'T' WHEN nksp_invt_TERMN = 5 THEN 'Z' ELSE 'O' END as vrstaPlacanja,
                     month(kpsp_ztv_datupl) as mjesecUplate,
                     kpsp_ztv_datupl as datumUplate, 
                     year(nksp_invt_date) as xyear, 
@@ -158,7 +164,7 @@ function btnUcitaj@clicked() {
             LEFT JOIN " + databaseName + ".dbo.NKSCPART ON nksc_partcode = r.kpsp_ztv_code 
             WHERE r.xyear = @year 
                 AND r.KPSP_ZTV_DAT_RN <= r.datumUplate
-            ORDER BY r.kpsp_ztv_code, r.kpsp_ztv_num";
+            ORDER BY r.datumUplate, r.id";
     
     sqlParams = {};
     sqlParams.Add({"@month", month});
@@ -168,7 +174,7 @@ function btnUcitaj@clicked() {
         sqlResult = sqlQuery(sql, sqlParams);
         
         if (Size(sqlResult) < 2) {
-            MessageBox("Nema zatvorenih računa za " + strMonthLong + " " + year + "!");
+            // MessageBox("Nema zatvorenih računa za " + strMonthLong + " " + year + "!");
             cursor("dflt");
             return;
         }
@@ -231,147 +237,150 @@ function btnPosalji@clicked() {
     strMonthLong = GetWidgetOptions("cmbMonth", "SelectedValue");
     strYear = GetWidgetOptions("txtYear", "Text");
     
+
     // Generate XML
-    xml = GenerateEUplateXML();
+    // xml = GenerateEUplateXML();
     
-    if (xml == "") {
-        MessageBox("Greška pri slanju izvještaja!");
-        cursor("dflt");
-        return;
-    }
+    // if (xml == "") {
+    //     MessageBox("Greška pri slanju izvještaja!");
+    //     cursor("dflt");
+    //     return;
+    // }
     
-    // Save XML
-    fileName = "eUplate_" + strYear + Substring(strMonthLong, 0, 2) + ".xml";
-    xmlFilePath = FILESPATH + "eUplate\\" + fileName;
+    // // Save XML
+    // fileName = "eUplate_" + strYear + Substring(strMonthLong, 0, 2) + ".xml";
+    // xmlFilePath = FILESPATH + "eUplate\\" + fileName;
     
     // Create directory if not exists
     if (!DIR_EXISTS(FILESPATH + "eUplate\\")) {
         MAKE_DIR(FILESPATH + "eUplate\\");
     }
     
-    SaveFile(xml, xmlFilePath, "");
+    // SaveFile(xml, xmlFilePath, "");
     
-    // Validate XML
-    if (!ValidateEUplateXML(xml, fileName)) {
-        cursor("dflt");
-        return;
-    }
+    // // Validate XML
+    // if (!ValidateEUplateXML(xml, fileName)) {
+    //     cursor("dflt");
+    //     return;
+    // }
     
-    // Confirm send
-    answer = MessageBox(
-        "XML generiran i validiran: " + fileName + 
-        "\nBroj plaćanja: " + selectedCount + 
-        "\n\nPoslati izvještaj putem " + PROVIDER + "?",
-        "Potvrda slanja",
-        "yesno",
-        "question"
-    );
+    // // Confirm send
+    // answer = MessageBox(
+    //     "XML generiran i validiran: " + fileName + 
+    //     "\nBroj plaćanja: " + selectedCount + 
+    //     "\n\nPoslati izvještaj putem " + PROVIDER + "?",
+    //     "Potvrda slanja",
+    //     "yesno",
+    //     "question"
+    // );
     
-    if (answer != "yes") {
-        MessageBox("Slanje otkazano.");
-        cursor("dflt");
-        return;
-    }
+    // if (answer != "yes") {
+    //     MessageBox("Slanje otkazano.");
+    //     cursor("dflt");
+    //     return;
+    // }
     
     // Send via configured provider
-    SendEUplate(xml, xmlFilePath, fileName);
+    SendEUplate();
+
+    refreshList();
     
     cursor("dflt");
 }
 
-// Generate eUplate XML
-function GenerateEUplateXML() {
-    try {
-        requestId = UUID();
+// // Generate eUplate XML
+// function GenerateEUplateXML() {
+//     try {
+//         requestId = UUID();
         
-        xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-        xml += "<eup:EvidentirajUplatuZahtjev " +
-               "xmlns:eup=\"http://www.porezna-uprava.gov.hr/fin/2024/types/eUplate\" " +
-               "xmlns:xd=\"http://www.w3.org/2000/09/xmldsig#\" " +
-               "eup:id=\"" + requestId + "\">\n";
+//         xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+//         xml += "<eup:EvidentirajUplatuZahtjev " +
+//                "xmlns:eup=\"http://www.porezna-uprava.gov.hr/fin/2024/types/eUplate\" " +
+//                "xmlns:xd=\"http://www.w3.org/2000/09/xmldsig#\" " +
+//                "eup:id=\"" + requestId + "\">\n";
         
-        xml += "  <eup:Zaglavlje>\n";
-        xml += "    <eup:datumVrijemeSlanja>" + DateNow("yyyy-MM-dd'T'HH:mm:ss.0000") + "</eup:datumVrijemeSlanja>\n";
-        xml += "    <eup:vrstaIzvjesca>UP</eup:vrstaIzvjesca>\n";
-        xml += "  </eup:Zaglavlje>\n";
+//         xml += "  <eup:Zaglavlje>\n";
+//         xml += "    <eup:datumVrijemeSlanja>" + DateNow("yyyy-MM-dd'T'HH:mm:ss.0000") + "</eup:datumVrijemeSlanja>\n";
+//         xml += "    <eup:vrstaIzvjesca>UP</eup:vrstaIzvjesca>\n";
+//         xml += "  </eup:Zaglavlje>\n";
         
-        xml += "  <eup:Izdavatelj>\n";
-        xml += "    <eup:ime>" + EscapeForXml(KPSY_COMP_NAME) + "</eup:ime>\n";
-        xml += "    <eup:oibPorezniBroj>" + companyOIB + "</eup:oibPorezniBroj>\n";
-        xml += "  </eup:Izdavatelj>\n";
+//         xml += "  <eup:Izdavatelj>\n";
+//         xml += "    <eup:ime>" + EscapeForXml(KPSY_COMP_NAME) + "</eup:ime>\n";
+//         xml += "    <eup:oibPorezniBroj>" + companyOIB + "</eup:oibPorezniBroj>\n";
+//         xml += "  </eup:Izdavatelj>\n";
         
-        // Add selected payments
-        for (i = 0; i < rowCountPayments; i++) {
-            if (arrayOdaberi[i] != true) {
-                continue;
-            }
+//         // Add selected payments
+//         for (i = 0; i < rowCountPayments; i++) {
+//             if (arrayOdaberi[i] != true) {
+//                 continue;
+//             }
             
-            xml += "  <eup:Uplata>\n";
-            xml += "    <eup:brojDokumenta>" + EscapeForXml(arrayBrRacuna[i]) + "</eup:brojDokumenta>\n";
-            xml += "    <eup:identifikatorRacuna>" + EscapeForXml(arrayIDNum[i]) + "</eup:identifikatorRacuna>\n";
+//             xml += "  <eup:Uplata>\n";
+//             xml += "    <eup:brojDokumenta>" + EscapeForXml(arrayBrRacuna[i]) + "</eup:brojDokumenta>\n";
+//             xml += "    <eup:identifikatorRacuna>" + EscapeForXml(arrayIDNum[i]) + "</eup:identifikatorRacuna>\n";
             
-            xml += "    <eup:Primatelj>\n";
-            xml += "      <eup:ime>" + EscapeForXml(arrayPartner[i]) + "</eup:ime>\n";
-            if (arrayOIB[i] != "") {
-                xml += "      <eup:oibPorezniBroj>" + EscapeForXml(arrayOIB[i]) + "</eup:oibPorezniBroj>\n";
-            }
-            xml += "    </eup:Primatelj>\n";
+//             xml += "    <eup:Primatelj>\n";
+//             xml += "      <eup:ime>" + EscapeForXml(arrayPartner[i]) + "</eup:ime>\n";
+//             if (arrayOIB[i] != "") {
+//                 xml += "      <eup:oibPorezniBroj>" + EscapeForXml(arrayOIB[i]) + "</eup:oibPorezniBroj>\n";
+//             }
+//             xml += "    </eup:Primatelj>\n";
             
-            xml += "    <eup:iznosRacuna>" + FormatNum(arrayIznosRacuna[i], 2, ".") + "</eup:iznosRacuna>\n";
-            xml += "    <eup:iznosUplate>" + FormatNum(arrayPlaceniIznos[i], 2, ".") + "</eup:iznosUplate>\n";
-            xml += "    <eup:vrstaPlacanja>" + GetPaymentTypeCode(arrayVrstaPlacanja[i]) + "</eup:vrstaPlacanja>\n";
-            xml += "    <eup:valutaUplate>EUR</eup:valutaUplate>\n";
+//             xml += "    <eup:iznosRacuna>" + FormatNum(arrayIznosRacuna[i], 2, ".") + "</eup:iznosRacuna>\n";
+//             xml += "    <eup:iznosUplate>" + FormatNum(arrayPlaceniIznos[i], 2, ".") + "</eup:iznosUplate>\n";
+//             xml += "    <eup:vrstaPlacanja>" + GetPaymentTypeCode(arrayVrstaPlacanja[i]) + "</eup:vrstaPlacanja>\n";
+//             xml += "    <eup:valutaUplate>EUR</eup:valutaUplate>\n";
             
-            // Calculate payment date (last day of selected month)
-            paymentDate = GetLastDayOfMonth(arrayMjesec[i], arrayGodina[i]);
-            xml += "    <eup:datumUplate>" + paymentDate + "</eup:datumUplate>\n";
+//             // Calculate payment date (last day of selected month)
+//             paymentDate = GetLastDayOfMonth(arrayMjesec[i], arrayGodina[i]);
+//             xml += "    <eup:datumUplate>" + paymentDate + "</eup:datumUplate>\n";
             
-            xml += "  </eup:Uplata>\n";
-        }
+//             xml += "  </eup:Uplata>\n";
+//         }
         
-        // Add signature placeholder
-        xml += "  <xd:Signature>\n";
-        xml += "    <xd:SignedInfo>\n";
-        xml += "      <xd:CanonicalizationMethod Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\"/>\n";
-        xml += "      <xd:SignatureMethod Algorithm=\"http://www.w3.org/2001/04/xmldsig-more#rsa-sha256\"/>\n";
-        xml += "      <xd:Reference URI=\"#" + requestId + "\">\n";
-        xml += "        <xd:Transforms>\n";
-        xml += "          <xd:Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#enveloped-signature\"/>\n";
-        xml += "          <xd:Transform Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\"/>\n";
-        xml += "        </xd:Transforms>\n";
-        xml += "        <xd:DigestMethod Algorithm=\"http://www.w3.org/2001/04/xmlenc#sha256\"/>\n";
-        xml += "        <xd:DigestValue></xd:DigestValue>\n";
-        xml += "      </xd:Reference>\n";
-        xml += "    </xd:SignedInfo>\n";
-        xml += "    <xd:SignatureValue></xd:SignatureValue>\n";
-        xml += "    <xd:KeyInfo>\n";
-        xml += "      <xd:X509Data>\n";
-        xml += "        <xd:X509Certificate></xd:X509Certificate>\n";
-        xml += "      </xd:X509Data>\n";
-        xml += "    </xd:KeyInfo>\n";
-        xml += "  </xd:Signature>\n";
+//         // Add signature placeholder
+//         xml += "  <xd:Signature>\n";
+//         xml += "    <xd:SignedInfo>\n";
+//         xml += "      <xd:CanonicalizationMethod Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\"/>\n";
+//         xml += "      <xd:SignatureMethod Algorithm=\"http://www.w3.org/2001/04/xmldsig-more#rsa-sha256\"/>\n";
+//         xml += "      <xd:Reference URI=\"#" + requestId + "\">\n";
+//         xml += "        <xd:Transforms>\n";
+//         xml += "          <xd:Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#enveloped-signature\"/>\n";
+//         xml += "          <xd:Transform Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\"/>\n";
+//         xml += "        </xd:Transforms>\n";
+//         xml += "        <xd:DigestMethod Algorithm=\"http://www.w3.org/2001/04/xmlenc#sha256\"/>\n";
+//         xml += "        <xd:DigestValue></xd:DigestValue>\n";
+//         xml += "      </xd:Reference>\n";
+//         xml += "    </xd:SignedInfo>\n";
+//         xml += "    <xd:SignatureValue></xd:SignatureValue>\n";
+//         xml += "    <xd:KeyInfo>\n";
+//         xml += "      <xd:X509Data>\n";
+//         xml += "        <xd:X509Certificate></xd:X509Certificate>\n";
+//         xml += "      </xd:X509Data>\n";
+//         xml += "    </xd:KeyInfo>\n";
+//         xml += "  </xd:Signature>\n";
         
-        xml += "</eup:EvidentirajUplatuZahtjev>";
+//         xml += "</eup:EvidentirajUplatuZahtjev>";
         
-        return xml;
+//         return xml;
         
-    } catch(ex) {
-        MessageBox("Greška pri generiranju XML-a:\n" + ex);
-        return "";
-    }
-}
+//     } catch(ex) {
+//         MessageBox("Greška pri generiranju XML-a:\n" + ex);
+//         return "";
+//     }
+// }
 
-// Validate eUplate XML
-function ValidateEUplateXML(xmlContent, fileName) {
-    // Similar to wxeizvje.cscs validation
-    // Add XSD validation for eUplate schema
-    return true; // Placeholder
-}
+// // Validate eUplate XML
+// function ValidateEUplateXML(xmlContent, fileName) {
+//     // Similar to wxeizvje.cscs validation
+//     // Add XSD validation for eUplate schema
+//     return true; // Placeholder
+// }
 
 // Send eUplate to provider
-function SendEUplate(xmlContent, xmlFilePath, fileName) {
+function SendEUplate() {
     if (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
-        SendEUplateToFINA(xmlContent, xmlFilePath, fileName);
+        SendEUplateToFINA();
     } elif (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
         SendEUplateToMER(xmlContent, fileName);
     } else {
@@ -380,35 +389,17 @@ function SendEUplate(xmlContent, xmlFilePath, fileName) {
 }
 
 // Send to FINA
-function SendEUplateToFINA(xmlContent, xmlFilePath, fileName) {
+function SendEUplateToFINA() {
     try {
-        endpoint = (PROVIDER == "FINADEMO") ? ERAC_SERVERT : ERAC_SERVER;
+        // endpoint = (PROVIDER == "FINADEMO") ? ERAC_SERVERT : ERAC_SERVER;
         
-        requestId = UUID();
-        
-        ack = FINA_SEND_B2B_OUTGOING_INVOICE_REPORTING(
-            endpoint + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",
-            ERAC_DESC,
-            CERTPATH + ERAC_USERT,
-            CERTPATH + ERAC_PASST,
-            ERAC_PASS,
-            "9500095",
-            requestId,
-            "9934:" + companyOIB,
-            xmlFilePath
-        );
-        
-        if (ack["AckStatusCode"] == 10 && ack["Correct"]) {
-            MessageBox("FINA eUplate uspješno poslane!");
-            LogEUplateResponse("FINA", 200, "Success", fileName);
-        } else {
-            MessageBox("FINA eUplate neuspješne!\n" + ack["ErrorMessage"]);
-            LogEUplateResponse("FINA", ack["AckStatusCode"], ack["ErrorMessage"], fileName);
+        for(currentRbr = 0; currentRbr < Rbr; currentRbr++){
+            SendUplataToFINA(currentRbr);
         }
         
     } catch(ex) {
         MessageBox("Greška pri slanju na FINA:\n" + ex);
-        LogEUplateResponse("FINA", 0, "Exception: " + ex, fileName);
+        // LogEUplateResponse("FINA", 0, "Exception: " + ex);
     }
 }
 
@@ -581,7 +572,7 @@ function btnIzlaz@clicked() {
 }
 
 
-function SendUplataToFINA(){
+function SendUplataToFINA(_currRbr){
     
     try{
         ack = FINA_CHANGE_B2B_OUTGOING_INVOICE_STATUS(
@@ -593,42 +584,51 @@ function SendUplataToFINA(){
 
             UUID(),
             "9934:" + companyOIB, // supplierId(OIB)
-            supplierInvoiceId, // supplierInvoiceId -> 7-26-1
-            invoiceYear, // invoiceYear npr. 2026
+            TransformFromAurasoftInvoiceId(arrayBrRacuna[_currRbr]), // supplierInvoiceId -> 7-26-1
+            string(year), // invoiceYear npr. 2026
 
-            payedDate, // payedDate yyyy-MM-dd
-            payedAmountString, // payedAmount (string) npr. 1234.56
-            paymentMeansCode // paymentMeansCode (string) T - transakcijsko, O - obračunsko, Z - ostalo
+            arrayDatumUplate[_currRbr].ToString("yyyy-MM-dd"), // payedDate yyyy-MM-dd
+            arrayPlaceniIznos[_currRbr], // payedAmount (string) npr. 1234.56
+            arrayVrstaPlacanja[_currRbr] // paymentMeansCode (string) T - transakcijsko, O - obračunsko, Z - ostalo
         );
 
+        Mbox("ack:\n" + ack);
+
         if(ack["AckStatusCode"] != 10){
-            //ERROR
-            Mbox("ERROR");
+            // !!! LOG
+            Mbox("request ERROR!\nack:\n" + ack);
         }else{
-            //SUCCESS
-            Mbox("SUCCESS");
-
-            UpdateKPSPZATV(aaaaaaaaaa);
+            if(Contains(ack, "ErrorCode")){
+                if(ack["ErrorCode"] == "150"){
+                    // Try again with 000brojRačuna
+                    
+                }else{
+                    // !!! LOG
+                    Mbox("ErrorMessage:\n" + ack["ErrorMessage"]);
+                    // Mbox("ErrorCode: " + ack["ErrorCode"] + "\nErrorMessage: " + ack["ErrorMessage"] + "\nErrorText: " + ack["ErrorText"]);
+                }
+            }else{
+                // Success
+                UpdateKPSPZATV(arrayID[_currRbr]); // update KPSP_ZTV_REZ4 = getdate() for current record
+                return;
+            }   
         }
-
-        
-        msg("ack\n: " + ack);
-
-        //...
-
-
-
     }catch(ex){
-        // !!! log + mbox
-        MSG("FINA_CHANGE_B2B_OUTGOING_INVOICE_STATUS exception\n" +  + "\n" + ex);
+        // !!! LOG
+        Mbox("FINA_CHANGE_B2B_OUTGOING_INVOICE_STATUS exception\n" + ex);
     }
 }
 
 
-function UpdateKPSPZATV(aaaaaaaaaa){
+function TransformFromAurasoftInvoiceId(aurasoftInvoiceId){
+    return int(substring(aurasoftInvoiceId, 3, 5)) + "-" + substring(aurasoftInvoiceId, 0, 2) + "-" + substring(aurasoftInvoiceId, 2, 1);
+}
+
+
+function UpdateKPSPZATV(kpspzatvId){
     // update KPSPZATV set KPSP_ZTV_REZ4 = getdate() where ID = @ID
     sql = "UPDATE " + databaseName + ".dbo.KPSPZATV SET KPSP_ZTV_REZ4 = GETDATE() WHERE ID = @p1";
     sqlParams = {};
-    sqlParams.Add({"@p1", aaaaaaaaaa}); // ID from the grid row
+    sqlParams.Add({"@p1", kpspzatvId}); // ID from the grid row
     sqlNonQuery(sql, sqlParams);
 }

@@ -13,6 +13,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media.Imaging;
 using System.Xml;
 
 namespace WpfCSCS
@@ -125,7 +126,7 @@ namespace WpfCSCS
                 MessageBox.Show(toDisplay);
         }
 
-        public SpecialWindow(CSCS_GUI gui, string filename, MODE mode = MODE.NORMAL, Window owner = null)
+        public SpecialWindow(CSCS_GUI gui, string filename, MODE mode = MODE.NORMAL, Window owner = null, string iconPath = null)
         {
             Mode = mode;
             Owner = owner;
@@ -134,7 +135,33 @@ namespace WpfCSCS
             Gui = gui;
             Instance = CreateWindow(filename);
 
-            
+            // Set the window icon
+            if (!string.IsNullOrEmpty(iconPath))
+            {
+                if (File.Exists(iconPath))
+                {
+                    var stream = new FileStream(iconPath, FileMode.Open, FileAccess.Read);
+
+                    Instance.Icon = BitmapFrame.Create(
+                        stream,
+                        BitmapCreateOptions.None,
+                        BitmapCacheOption.OnLoad);
+
+                    //var stream = new FileStream(iconPath, FileMode.Open, FileAccess.Read);
+
+                    //var decoder = new IconBitmapDecoder(
+                    //    stream,
+                    //    BitmapCreateOptions.PreservePixelFormat,
+                    //    BitmapCacheOption.OnLoad); // 👈 important
+
+                    //// Pick a real icon size, not 256 PNG
+                    //Instance.Icon = decoder.Frames
+                    //              .First(f => f.PixelWidth <= 64);
+                }
+            }
+
+
+
             var ib = new InputBinding(
                 new KeyCommand((object arg1) => { return true; }, showProperties),
                 new KeyGesture(Key.F9, ModifierKeys.Shift));

@@ -251,15 +251,15 @@ function GenerateUBLXml() {
     POSREDNIK = hdrRes[1][51].trim();
     NKSC_REZ9 = hdrRes[1][52].trim();
     PKKU_PP_OPIS = hdrRes[1][53].trim();
-/*
-    if(NKSC_REZ10 == "E"){
-        MessageBox("Način slanja e-računa e-mailom(E) nije podržan! Partner " + NKSC_PARTCODE + ".");
-        exit;
-    }elif(NKSC_REZ10 != "P" && NKSC_REZ10 != "F"){
-        MessageBox("Neispravno konfiguriran način slanja e-računa(" + NKSC_REZ10 + ") za partnera " + NKSC_PARTCODE + "!");
-        exit;
-    }
-*/
+    /*
+        if(NKSC_REZ10 == "E"){
+            MessageBox("Način slanja e-računa e-mailom(E) nije podržan! Partner " + NKSC_PARTCODE + ".");
+            exit;
+        }elif(NKSC_REZ10 != "P" && NKSC_REZ10 != "F"){
+            MessageBox("Neispravno konfiguriran način slanja e-računa(" + NKSC_REZ10 + ") za partnera " + NKSC_PARTCODE + "!");
+            exit;
+        }
+    */
     // NKSC_POSERDNIK SE KORISTI ISKLJUČIVO ZA MEGGLE EDITEL, OMNIZON, ...
     // if(NKSC_POSREDNIK != ""){    
     //     PROVIDER = NKSC_POSREDNIK;
@@ -950,15 +950,15 @@ function GenerateUBLXml() {
     xml += "<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>\n"; // BT-5; 1..1 
     xml += "<cbc:TaxCurrencyCode>EUR</cbc:TaxCurrencyCode>\n";
     
-if ((SUBSTRING(NKPR_GL_EMAIL,16,8) != "00/00/00" || SUBSTRING(NKPR_GL_EMAIL,16,8) != "00.00.00") && (SUBSTRING(NKPR_GL_EMAIL,24,8) != "00/00/00" || SUBSTRING(NKPR_GL_EMAIL,24,8) != "00.00.00")) { //Ako period od/do datuma postoji u NKPR_GL_EMAIL, koristi ga kao InvoicePeriod
-    xml += "  <cac:InvoicePeriod>\n";
-    StartDate = "20"+SUBSTRING(NKPR_GL_EMAIL,22,2)+"-"+SUBSTRING(NKPR_GL_EMAIL,19,2)+"-"+SUBSTRING(NKPR_GL_EMAIL,16,2);
-    EndDate = "20"+SUBSTRING(NKPR_GL_EMAIL,30,2)+"-"+SUBSTRING(NKPR_GL_EMAIL,27,2)+"-"+SUBSTRING(NKPR_GL_EMAIL,24,2);
-//    //trebalo bi provjeriti da li su datumi u ispravnom formatu i logičnom odnosu (StartDate prije EndDate), ali pretpostavljamo da jesu jer dolaze iz Knjiga gdje su već uneseni kao datumi
-    xml += "    <cbc:StartDate>" + StartDate + "</cbc:StartDate>\n";
-    xml += "    <cbc:EndDate>" + EndDate + "</cbc:EndDate>\n";
-    xml += "  </cac:InvoicePeriod>\n";
-}
+    if ((SUBSTRING(NKPR_GL_EMAIL,16,8) != "00/00/00" && SUBSTRING(NKPR_GL_EMAIL,16,8) != "00.00.00") && (SUBSTRING(NKPR_GL_EMAIL,24,8) != "00/00/00" && SUBSTRING(NKPR_GL_EMAIL,24,8) != "00.00.00")) { //Ako period od/do datuma postoji u NKPR_GL_EMAIL, koristi ga kao InvoicePeriod
+        xml += "  <cac:InvoicePeriod>\n";
+        StartDate = "20"+SUBSTRING(NKPR_GL_EMAIL,22,2)+"-"+SUBSTRING(NKPR_GL_EMAIL,19,2)+"-"+SUBSTRING(NKPR_GL_EMAIL,16,2);
+        EndDate = "20"+SUBSTRING(NKPR_GL_EMAIL,30,2)+"-"+SUBSTRING(NKPR_GL_EMAIL,27,2)+"-"+SUBSTRING(NKPR_GL_EMAIL,24,2);
+        //    //trebalo bi provjeriti da li su datumi u ispravnom formatu i logičnom odnosu (StartDate prije EndDate), ali pretpostavljamo da jesu jer dolaze iz Knjiga gdje su već uneseni kao datumi
+        xml += "    <cbc:StartDate>" + StartDate + "</cbc:StartDate>\n";
+        xml += "    <cbc:EndDate>" + EndDate + "</cbc:EndDate>\n";
+        xml += "  </cac:InvoicePeriod>\n";
+    }
 
 
     if (NKPR_GL_UGOVOR != 0 && PKKU_PP_OPIS != "") {  
@@ -2082,8 +2082,8 @@ if ((SUBSTRING(NKPR_GL_EMAIL,16,8) != "00/00/00" || SUBSTRING(NKPR_GL_EMAIL,16,8
     if (!ValidateXsd(xml, xsdFiles, xsdValidationResultOutputFile)) {
         // LogError("XSD_FAIL", "Validation failed for " + invNum, validationErrors);
         // MessageBox("XML nije prošao XSD validaciju\n\nProvjerite _XSD.err datoteku za detalje.");
-        Notification("Slanje eRačuna", "Interna GREŠKA u računu broj:\n" + invNum + " - " + NKPR_GL_CUSNME + "\n" + "Ispravite račun i pokušajte ponovo.", errorImage);
         LogException("XSD_VALIDATION_FAILED");
+        Notification("Slanje eRačuna", "Interna GREŠKA u računu broj:\n" + invNum + " - " + NKPR_GL_CUSNME + "\n" + "Ispravite račun i pokušajte ponovo.", errorImage);
         return false;
     }
 
@@ -2103,8 +2103,8 @@ if ((SUBSTRING(NKPR_GL_EMAIL,16,8) != "00/00/00" || SUBSTRING(NKPR_GL_EMAIL,16,8
     //  schFiles.Add(SCHEMASPATH + "schematron\\preprocessed\\EN16931-UBL-validation-preprocessed.sch");
     if(!ValidateSch(xml, schFiles, SCHEMASPATH + "schematron\\transpile.xsl", schValidationResultOutputFile)){
         // MessageBox("xml FAILED SCH validation\n\nSee _SCH.err file for details.");
-        Notification("Slanje eRačuna", "Interna GREŠKA u računu broj:\n" + invNum + " - " + NKPR_GL_CUSNME + "\n" + "Ispravite račun i pokušajte ponovo.", errorImage);
         LogException("SCH_VALIDATION_FAILED");
+        Notification("Slanje eRačuna", "Interna GREŠKA u računu broj:\n" + invNum + " - " + NKPR_GL_CUSNME + "\n" + "Ispravite račun i pokušajte ponovo.", errorImage);
         return false;
     }
      
@@ -2351,10 +2351,10 @@ function MERSuccess(_invID, responseCode, res) {
             Notification("Slanje eRačuna", "Uspješno poslan račun broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, okImage);
         }
         else{
+            LogException("GREŠKA slanja dokumenta.");
             Notification("Slanje eRačuna", "GREŠKA slanja računa broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, errorImage);
             // MessageBox("GREŠKA slanja dokumenta.");
-            LogException("GREŠKA slanja dokumenta.");
-
+            
             // LogNKSYELOG("B", 'Debug: NEPOZNATA GREŠKA'); // !!!
         }
 
@@ -2707,21 +2707,21 @@ function SendToFINA() {
                 // MSG("Uspješno poslan dokument.\n" + "Šifra računa kod FINA-e (ack[\"InvoiceID\"]) = " + ack["InvoiceID"]);
                 Notification("Slanje eRačuna", "Uspješno poslan račun broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, okImage);
             }else{
-                Notification("Slanje eRačuna", "GREŠKA slanja računa broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, errorImage);
                 LogException("ErrorCode: " + ack["ErrorCode"] + "\nErrorMessage: " + ack["ErrorMessage"]);
+                Notification("Slanje eRačuna", "GREŠKA slanja računa broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, errorImage);
                 // MSG("ack[\"ErrorCode\"] = " + ack["ErrorCode"]);
                 // MSG("ack[\"ErrorMessage\"] = " + ack["ErrorMessage"]);
             }
         }else{
-            Notification("Slanje eRačuna", "GREŠKA slanja računa broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, errorImage);
             LogException("AckStatus: " + ack["AckStatus"] + "\nAckStatusCode: " + ack["AckStatusCode"] + "\nAckStatusText: " + ack["AckStatusText"]);
+            Notification("Slanje eRačuna", "GREŠKA slanja računa broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, errorImage);
             // MessageBox("AckStatusText = " + ack["AckStatusText"]);
             // MessageBox("NEUSPJEŠNO poslan RAČUN prema FINA-i!");
         }
     }catch(ex){
+        LogException("Nepoznata greška:\n" + ex);
         Notification("Slanje eRačuna", "GREŠKA slanja računa broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, errorImage);
         // MessageBox("Nepoznata greška:\n" + ex);
-        LogException("Nepoznata greška:\n" + ex);
     }
     
 

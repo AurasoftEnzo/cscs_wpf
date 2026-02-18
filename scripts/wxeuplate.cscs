@@ -138,6 +138,7 @@ function btnUcitaj@clicked() {
             LEFT JOIN " + databaseName + ".dbo.NKSCPART ON kpsp_ztv_code = NKSC_PARTCODE
             WHERE kpsp_ztv_rac_dp = 'D' 
               AND month(kpsp_ztv_datupl) <= @month 
+              AND KPSP_ZTV_REZ4 = '1900-01-01'
                 AND nksp_invt_code = kpsp_ztv_code 
                 ) 
                 SELECT  r.id,
@@ -603,6 +604,11 @@ function SendUplataToFINA(){
         if(ack["AckStatusCode"] != 10){
             //ERROR
             Mbox("ERROR");
+        }else{
+            //SUCCESS
+            Mbox("SUCCESS");
+
+            UpdateKPSPZATV(aaaaaaaaaa);
         }
 
         
@@ -616,4 +622,13 @@ function SendUplataToFINA(){
         // !!! log + mbox
         MSG("FINA_CHANGE_B2B_OUTGOING_INVOICE_STATUS exception\n" +  + "\n" + ex);
     }
+}
+
+
+function UpdateKPSPZATV(aaaaaaaaaa){
+    // update KPSPZATV set KPSP_ZTV_REZ4 = getdate() where ID = @ID
+    sql = "UPDATE " + databaseName + ".dbo.KPSPZATV SET KPSP_ZTV_REZ4 = GETDATE() WHERE ID = @p1";
+    sqlParams = {};
+    sqlParams.Add({"@p1", aaaaaaaaaa}); // ID from the grid row
+    sqlNonQuery(sql, sqlParams);
 }

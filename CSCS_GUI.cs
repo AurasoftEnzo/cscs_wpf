@@ -7481,9 +7481,10 @@ namespace WpfCSCS
 
 			Utils.CheckArgs(args.Count, 1, m_name);
 			string instanceName = args[0].AsString();
-			// ../../scripts/Window4.xaml
+			string windowIconPath = Utils.GetSafeString(args, 1);
+            // ../../scripts/Window4.xaml
 
-			Window wind = null;
+            Window wind = null;
 			if (m_mode == MODE.NEW || m_mode == MODE.MODAL)
 			{
 				var parentWin = Gui.ActiveWindow != null ? Gui.ActiveWindow : Gui.GetParentWindow(script);
@@ -7496,7 +7497,7 @@ namespace WpfCSCS
 				Variable result = Variable.EmptyInstance;
 				Application.Current.Dispatcher.Invoke(new Action(() =>
 				{
-					SpecialWindow modalwin = CreateNew(instanceName, parentWin, winMode, script);
+					SpecialWindow modalwin = CreateNew(instanceName, parentWin, winMode, script, windowIconPath);
 					//modalwin.Instance.Title = string.IsNullOrWhiteSpace(title) ? modalwin.Instance.Title : title;
 					result = new Variable(modalwin.DialogResult);
 				}));
@@ -7541,11 +7542,11 @@ namespace WpfCSCS
 		}
 
 		public SpecialWindow CreateNew(string instanceName, Window parentWin = null,
-			SpecialWindow.MODE winMode = SpecialWindow.MODE.NORMAL, ParsingScript script = null)
+			SpecialWindow.MODE winMode = SpecialWindow.MODE.NORMAL, ParsingScript script = null, string windowIconPath = null)
 		{
 			//var isMain = ChainFunction.CheckParentScriptIsMain(script);
 			//winMode = isMain ? SpecialWindow.MODE.NORMAL : SpecialWindow.MODE.MODAL;
-			SpecialWindow modalwin = new SpecialWindow(Gui, instanceName, winMode, parentWin);
+			SpecialWindow modalwin = new SpecialWindow(Gui, instanceName, winMode, parentWin, windowIconPath);
 			//winMode != SpecialWindow.MODE.NORMAL ? parentWin : null);
 			var wind = modalwin.Instance;
 

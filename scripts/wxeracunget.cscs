@@ -11,7 +11,8 @@
 
 Import(strTrim(mpath()) + "CSCS.Math.dll");
 
-CreateWindow(strTrim(tpath()) + "wxeracunget.xaml");
+CreateWindow(strTrim(tpath()) + "wxeracunget.xaml", strTrim(ipath()) + "icons\\" + "wxeracunget.ico");
+// CreateWindow(strTrim(tpath()) + "wxeracunget.xaml");
 
 DEFINE cntr1 type i; // for datagrid
 
@@ -903,7 +904,6 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             taPointDate = GetNodeText(docData["TaxPointDate"]);
         }elif{
             NKPR_GL_ESD = GetNodeText(docData["IssueDate"]);
-        }
         }else{
             NKPR_GL_ESD = GetNodeText(docData["IssueDate"]);
         }

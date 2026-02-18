@@ -5,6 +5,7 @@ using System.Configuration;
 using System.Data;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -21,8 +22,16 @@ namespace WpfCSCS
     /// </summary>
     public partial class App : Application
     {
+        [DllImport("shell32.dll")]
+        public static extern int SetCurrentProcessExplicitAppUserModelID(
+        [MarshalAs(UnmanagedType.LPWStr)] string appID);
+
         protected override void OnStartup(StartupEventArgs e)
         {
+            string uniqueId = $"MyApp.Window.{Guid.NewGuid()}";
+            SetCurrentProcessExplicitAppUserModelID(uniqueId);
+
+
             // Initialize date configuration from App.config
             DateConfiguration.Initialize();
 

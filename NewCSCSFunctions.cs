@@ -5815,7 +5815,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             var payedAmountString = Utils.GetSafeString(args, 10);
             decimal.TryParse(payedAmountString, out decimal payedAmount);
 
-            var paymentMeansCode = Utils.GetSafeString(args, 11); // T - transakcijsko, O - obročno, Z - ostalo
+            var paymentMeansCode = Utils.GetSafeString(args, 11); // T - transakcijsko, O - obračunsko, Z - ostalo
 
             Variable resVar = new Fiskalizacija2.FINA.B2BIncoming.ChangeOutgoingInvoiceStatus().Send(
                 endpoint,

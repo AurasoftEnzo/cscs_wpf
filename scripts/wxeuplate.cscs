@@ -40,12 +40,16 @@ DEFINE Rbr type i;
 DEFINE cntr1 type i;
 
 DEFINE arrayRbr type i size 100 array 10000;
+DEFINE arrayID type r size 50 array 10000;
+DEFINE arrayDatumRacuna type a size 10 array 10000;
 DEFINE arrayPartner type a size 50 array 10000;
+DEFINE arrayPartnerNaziv type a size 50 array 10000;
 DEFINE arrayOIB type a size 11 array 10000;
 DEFINE arrayBrRacuna type a size 50 array 10000;
 DEFINE arrayIDNum type a size 50 array 10000;
 DEFINE arrayVrstaPlacanja type a size 10 array 10000;
 DEFINE arrayMjesec type i size 2 array 10000;
+DEFINE arrayDatumUplate type a size 10 array 10000;
 DEFINE arrayGodina type i size 4 array 10000;
 DEFINE arrayIznosRacuna type n size 14 dec 2 array 10000;
 DEFINE arrayPlaceniIznos type n size 14 dec 2 array 10000;
@@ -115,35 +119,45 @@ function btnUcitaj@clicked() {
     cntr1 = 0;
     DisplayArray("dgPayments", "close");
     
+
     // Query closed invoices for selected month
-    sql = "WITH racuni AS ( " +
-          "  SELECT kpsp_ztv_code, kpsp_ztv_num, kpsp_ztv_identr, " +
-          "         nksp_invt_TERMN as vrstaPlacanja, " +
-          "         month(kpsp_ztv_datupl) as mjesec, " +
-          "         year(nksp_invt_date) as xyear, " +
-          "         max(nksp_invt_amt) as nksp_invt_amt, " +
-          "         sum(kpsp_ztv_iznos) as placeniIznos " +
-          "  FROM " + databaseName + ".dbo.kpspzatv " +
-          "  LEFT JOIN " + databaseName + ".dbo.nkspprom ON nksp_invt_ident = kpsp_ztv_identr " +
-          "  WHERE kpsp_ztv_rac_dp = 'D' " +
-          "    AND month(kpsp_ztv_datupl) = @month " +
-          "    AND nksp_invt_code = kpsp_ztv_code " +
-          "  GROUP BY kpsp_ztv_code, kpsp_ztv_num, kpsp_ztv_identr, " +
-          "           year(nksp_invt_date), month(kpsp_ztv_datupl), nksp_invt_TERMN " +
-          ") " +
-          "SELECT r.kpsp_ztv_code as Partner, " +
-          "       ISNULL(NKSC_SIFRA, '') as OIB, " +
-          "       r.kpsp_ztv_num as BrRacuna, " +
-          "       r.kpsp_ztv_identr as IDNum, " +
-          "       r.vrstaPlacanja, " +
-          "       r.mjesec, " +
-          "       r.xyear, " +
-          "       r.nksp_invt_amt as iznosRacuna, " +
-          "       r.placeniIznos " +
-          "FROM racuni r " +
-          "LEFT JOIN " + databaseName + ".dbo.NKSCPART ON nksc_partcode = r.kpsp_ztv_code " +
-          "WHERE r.xyear = @year " +
-          "ORDER BY r.kpsp_ztv_code, r.kpsp_ztv_num;";
+    sql = " WITH racuni AS (
+                SELECT kpsp_ztv_code, 
+                NKSC_PARTNAME as partnerNaziv,
+                kpsp_ztv_num, kpsp_ztv_identr, 
+                    nksp_invt_TERMN as vrstaPlacanja, 
+                    month(kpsp_ztv_datupl) as mjesecUplate,
+                    kpsp_ztv_datupl as datumUplate, 
+                    year(nksp_invt_date) as xyear, 
+                    nksp_invt_amt as nksp_invt_amt, 
+                    kpsp_ztv_iznos as placeniIznos,
+                    kpspzatv.KPSP_ZTV_DAT_RN,
+                    kpspzatv.ID 
+            FROM " + databaseName + ".dbo.kpspzatv 
+            LEFT JOIN " + databaseName + ".dbo.nkspprom ON nksp_invt_ident = kpsp_ztv_identr 
+            LEFT JOIN " + databaseName + ".dbo.NKSCPART ON kpsp_ztv_code = NKSC_PARTCODE
+            WHERE kpsp_ztv_rac_dp = 'D' 
+              AND month(kpsp_ztv_datupl) <= @month 
+                AND nksp_invt_code = kpsp_ztv_code 
+                ) 
+                SELECT  r.id,
+                        r.KPSP_ZTV_DAT_RN,
+                        r.kpsp_ztv_code as Partner, 
+                        r.partnerNaziv,
+                    ISNULL(NKSC_SIFRA, '') as OIB, 
+                    r.kpsp_ztv_num as BrRacuna, 
+                    r.kpsp_ztv_identr as IDNum, 
+                    r.vrstaPlacanja,
+                    r.mjesecUplate, 
+                    r.datumUplate,
+                    r.xyear, 
+                    r.nksp_invt_amt as iznosRacuna, 
+                    r.placeniIznos 
+                FROM racuni r 
+            LEFT JOIN " + databaseName + ".dbo.NKSCPART ON nksc_partcode = r.kpsp_ztv_code 
+            WHERE r.xyear = @year 
+                AND r.KPSP_ZTV_DAT_RN <= r.datumUplate
+            ORDER BY r.kpsp_ztv_code, r.kpsp_ztv_num";
     
     sqlParams = {};
     sqlParams.Add({"@month", month});
@@ -161,15 +175,20 @@ function btnUcitaj@clicked() {
         // Fill arrays with data
         for (i = 1; i < Size(sqlResult); i++) {
             arrayOdaberi[Rbr] = false;
-            arrayPartner[Rbr] = sqlResult[i][0].trim();
-            arrayOIB[Rbr] = sqlResult[i][1].trim();
-            arrayBrRacuna[Rbr] = sqlResult[i][2].trim();
-            arrayIDNum[Rbr] = sqlResult[i][3].trim();
-            arrayVrstaPlacanja[Rbr] = sqlResult[i][4];
-            arrayMjesec[Rbr] = sqlResult[i][5];
-            arrayGodina[Rbr] = sqlResult[i][6];
-            arrayIznosRacuna[Rbr] = sqlResult[i][7];
-            arrayPlaceniIznos[Rbr] = sqlResult[i][8];
+
+            arrayID[Rbr] = sqlResult[i][0]; // ID od retka table kpspzatv
+            arrayDatumRacuna[Rbr] = sqlResult[i][1].ToString("yyyy-MM-dd"); // KPSP_ZTV_DAT_RN 
+            arrayPartner[Rbr] = sqlResult[i][2].trim();
+            arrayPartnerNaziv[Rbr] = sqlResult[i][3].trim();
+            arrayOIB[Rbr] = sqlResult[i][4].trim();
+            arrayBrRacuna[Rbr] = sqlResult[i][5].trim();
+            arrayIDNum[Rbr] = sqlResult[i][6].trim();
+            arrayVrstaPlacanja[Rbr] = sqlResult[i][7];
+            arrayMjesec[Rbr] = sqlResult[i][8];
+            arrayDatumUplate[Rbr] = sqlResult[i][9].ToString("yyyy-MM-dd");
+            arrayGodina[Rbr] = sqlResult[i][10];
+            arrayIznosRacuna[Rbr] = sqlResult[i][11];
+            arrayPlaceniIznos[Rbr] = sqlResult[i][12];
             arrayRbr[Rbr] = ++Rbr;
         }
         
@@ -178,9 +197,9 @@ function btnUcitaj@clicked() {
         // Display data in grid
         Format("arrayIznosRacuna", "nofd");
         Format("arrayPlaceniIznos", "nofd");
-        DisplayArraySetup("dgPayments", counterFld: cntr1, activeElements: Rbr, maxElements: Rbr);
+        DisplayArraySetup("dgPayments", counterFld: cntr1, activeElements: Rbr, maxElements: 10000);
         
-        MessageBox("Učitano " + Rbr + " plaćanja za " + strMonthLong + " " + year);
+        // MessageBox("Učitano " + Rbr + " plaćanja za " + strMonthLong + " " + year);
         
     } catch(ex) {
         MessageBox("Greška pri učitavanju podataka:\n" + ex);
@@ -558,4 +577,43 @@ function LogEUplateResponse(provider, responseCode, response, fileName) {
 
 function btnIzlaz@clicked() {
     CloseWindow();
+}
+
+
+function SendUplataToFINA(){
+    
+    try{
+        ack = FINA_CHANGE_B2B_OUTGOING_INVOICE_STATUS(
+            ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
+            ERAC_DESC,
+            CERTPATH + ERAC_USERT, // service certificate
+            CERTPATH + ERAC_PASST, // p12 certificate (client)
+            ERAC_PASS,              // password for p12 certificate
+
+            UUID(),
+            "9934:" + companyOIB, // supplierId(OIB)
+            supplierInvoiceId, // supplierInvoiceId -> 7-26-1
+            invoiceYear, // invoiceYear npr. 2026
+
+            payedDate, // payedDate yyyy-MM-dd
+            payedAmountString, // payedAmount (string) npr. 1234.56
+            paymentMeansCode // paymentMeansCode (string) T - transakcijsko, O - obračunsko, Z - ostalo
+        );
+
+        if(ack["AckStatusCode"] != 10){
+            //ERROR
+            Mbox("ERROR");
+        }
+
+        
+        msg("ack\n: " + ack);
+
+        //...
+
+
+
+    }catch(ex){
+        // !!! log + mbox
+        MSG("FINA_CHANGE_B2B_OUTGOING_INVOICE_STATUS exception\n" +  + "\n" + ex);
+    }
 }

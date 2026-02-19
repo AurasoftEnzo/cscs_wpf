@@ -53,6 +53,7 @@ DEFINE arrayDatumUplate type a size 10 array 10000;
 DEFINE arrayGodina type i size 4 array 10000;
 DEFINE arrayIznosRacuna type n size 14 dec 2 array 10000;
 DEFINE arrayPlaceniIznos type n size 14 dec 2 array 10000;
+DEFINE arrayDatumIsporuke type a size 10 array 10000;
 DEFINE arrayOdaberi type l array 10000;
 
 DEFINE rowCountPayments type i;
@@ -138,13 +139,16 @@ function refreshList(){
                     nksp_invt_amt as nksp_invt_amt, 
                     kpsp_ztv_iznos as placeniIznos,
                     kpspzatv.KPSP_ZTV_DAT_RN,
-                    kpspzatv.ID 
+                    kpspzatv.ID,
+                    nkpr_gl_esd
             FROM " + databaseName + ".dbo.kpspzatv 
             LEFT JOIN " + databaseName + ".dbo.nkspprom ON nksp_invt_ident = kpsp_ztv_identr 
             LEFT JOIN " + databaseName + ".dbo.NKSCPART ON kpsp_ztv_code = NKSC_PARTCODE
+            LEFT JOIN " + databaseName + ".dbo.NKPRINV ON nkpr_gl_num = kpsp_ztv_num
             WHERE kpsp_ztv_rac_dp = 'D' AND NKSP_INVT_AMT > 0
-              AND month(kpsp_ztv_datupl) <= @month 
+              AND kpsp_ztv_datupl <= DATEADD(month, 1, DATEFROMPARTS(@year, @month, 1))  
               AND KPSP_ZTV_REZ4 = '1900-01-01'
+              AND KPSP_ZTV_UPLPLU != '-'
                 AND nksp_invt_code = kpsp_ztv_code 
                 ) 
                 SELECT  r.id,
@@ -159,11 +163,12 @@ function refreshList(){
                     r.datumUplate,
                     r.xyear, 
                     r.nksp_invt_amt as iznosRacuna, 
-                    r.placeniIznos 
+                    r.placeniIznos,
+                    r.nkpr_gl_esd as datumIsporuke
                 FROM racuni r 
             LEFT JOIN " + databaseName + ".dbo.NKSCPART ON nksc_partcode = r.kpsp_ztv_code 
             WHERE r.xyear = @year 
-                AND r.KPSP_ZTV_DAT_RN <= r.datumUplate
+                AND month(r.KPSP_ZTV_DAT_RN) <= @month
             ORDER BY r.datumUplate, r.id";
     
     sqlParams = {};
@@ -196,6 +201,7 @@ function refreshList(){
             arrayGodina[Rbr] = sqlResult[i][10];
             arrayIznosRacuna[Rbr] = sqlResult[i][11];
             arrayPlaceniIznos[Rbr] = sqlResult[i][12];
+            arrayDatumIsporuke[Rbr] = sqlResult[i][13].ToString("yyyy-MM-dd");
             arrayRbr[Rbr] = ++Rbr;
         }
         
@@ -281,7 +287,14 @@ function btnPosalji@clicked() {
     // }
     
     // Send via configured provider
+
+    hasErrors = false;
     SendEUplate();
+    if(hasErrors){
+        Mbox("Došlo je do grešaka prilikom slanja. Provjerite logove za detalje.");
+    }else{
+        Mbox("eUplate uspješno poslane!");
+    }
 
     refreshList();
     
@@ -382,7 +395,7 @@ function SendEUplate() {
     if (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
         SendEUplateToFINA();
     } elif (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
-        SendEUplateToMER(xmlContent, fileName);
+        SendEUplateToMER();
     } else {
         MessageBox("Nepoznat provider za eUplate: " + PROVIDER);
     }
@@ -396,54 +409,99 @@ function SendEUplateToFINA() {
         for(currentRbr = 0; currentRbr < Rbr; currentRbr++){
             SendUplataToFINA(currentRbr);
         }
-        
     } catch(ex) {
-        MessageBox("Greška pri slanju na FINA:\n" + ex);
+        hasErrors = true;
+        Mbox("Greška pri slanju na FINA:\n" + ex);
         // LogEUplateResponse("FINA", 0, "Exception: " + ex);
     }
 }
 
 // Send to MER
-function SendEUplateToMER(xmlContent, fileName) {
+function SendEUplateToMER() {
     try {
-        endpoint = (PROVIDER == "MERDEMO") ? ERAC_SERVERT : ERAC_SERVER;
-        
-        escapedXml = EscapeQuotesInXml(xmlContent);
-        
-        jsonLoad = '{"username": "' + ERAC_USER + 
-                   '", "password": "' + ERAC_PASS + 
-                   '", "companyId": "' + companyOIB + 
-                   '", "softwareId": "' + ERAC_DESC + 
-                   '", "file": "' + escapedXml + '"}';
-        
+        for(currentRbr = 0; currentRbr < Rbr; currentRbr++){
+            if(currentRbr == 1){
+                break;
+            }
+            SendEUplataToMER(currentRbr);
+        }
+    } catch(ex) {
+        hasErrors = true;
+        Mbox("Greška pri slanju na MER:\n" + ex);
+        // LogEUplateResponse("MER", 0, "Exception: " + ex);
+    }
+}
+
+function SendEUplataToMER(_currRbr){
+    try {
+        jsonLoad = "{
+                        \"username\": \"" + ERAC_USER + "\",
+                        \"password\": \"" + ERAC_PASS + "\",
+                        \"companyId\": \"" + companyOIB + "\",
+                        \"companyBU\": null,
+                        \"softwareId\": \"" + ERAC_DESC + "\",
+                        \"internalMark\": \"" + TransformFromAurasoftInvoiceId(arrayBrRacuna[_currRbr]) + "\",
+                        \"issueDate\": \"" + arrayDatumRacuna[_currRbr] + "\",
+                        \"senderIdentifierValue\": \"" + companyOIB + "\",
+                        \"recipientIdentifierValue\": \"" + arrayOIB[_currRbr] + "\",
+                        \"paymentDate\": \"" + arrayDatumUplate[_currRbr] + "\",
+                        \"paymentAmount\":" + FormatNum(arrayPlaceniIznos[_currRbr], 2, ".") + ",
+                        \"paymentMethod\": \"" + arrayVrstaPlacanja[_currRbr] + "\"
+                    }";
+
         webRequestResult = WebRequest(
             "POST",
-            endpoint + "/api/fiscalization/ePayment",
+            ERAC_SERVER + "/api/fiscalization/markPaidWithoutElectronicID",
             jsonLoad,
-            fileName,
-            "MERUplateSuccess",
-            "MERUplateFailure",
+            _currRbr, //tracking
+            "MERUplataSuccess",
+            "MERUplataFailure",
             "application/json",
             null,
             1000 * 30,
             false
         );
-        
+
     } catch(ex) {
-        MessageBox("Greška pri slanju na MER:\n" + ex);
-        LogEUplateResponse("MER", 0, "Exception: " + ex, fileName);
+        hasErrors = true;
+        WriteLog("SendEUplataToMER", "Exception:\n " + ex);
     }
 }
 
 // MER callbacks
-function MERUplateSuccess(fileName, responseCode, res) {
-    MessageBox("MER eUplate uspješno poslane!\nOdgovor: " + res);
-    LogEUplateResponse("MER", responseCode, res, fileName);
+function MERUplataSuccess(tracking, responseCode, res) {
+    try{
+        WriteLog("MERUplataSuccessJSON", res);
+
+        resObject = DeserializeJson(res);
+        WriteLog("MERUplataSuccessJSONDeserialized", resObject);
+
+        if(Contains(resObject, "encodedXml")){
+            encodedXml = resObject["encodedXml"];
+            responseXmlsPath = FILESPATH + "eUplate\\responsesXmls\\";
+
+            if(!Exists(responseXmlsPath)){
+                MAKE_DIR(responseXmlsPath);
+            }
+
+            Base642File(encodedXml, responseXmlsPath + "MER_" + arrayBrRacuna[tracking] + "_" + DateNow("yyyyMMdd_HHmmss") + ".xml");
+
+            UpdateKPSPZATV(arrayID[tracking]);
+        }
+        
+    }catch(ex){
+        hasErrors = true;
+        WriteLog("SendEUplataToMER", "Broj računa: " + arrayBrRacuna[tracking] + "\n" + "MERUplataSuccess exception:\n " + ex);
+    }
 }
 
-function MERUplateFailure(fileName, responseCode, res) {
-    MessageBox("MER eUplate neuspješne!\nStatus: " + responseCode + "\nOdgovor: " + res);
-    LogEUplateResponse("MER", responseCode, res, fileName);
+function MERUplataFailure(tracking, responseCode, res) {
+    try{
+        hasErrors = true;
+        WriteLog("SendEUplataToMER", "Broj računa: " + arrayBrRacuna[tracking] + "\n" + "MERUplataFailure responseCode:\n " + responseCode + "\nres: " + res);
+    }catch(ex){
+        WriteLog("SendEUplataToMER", "Broj računa: " + arrayBrRacuna[tracking] + "\n" + "MERUplataFailure exception:\n " + ex);
+    }
 }
 
 // Helper functions
@@ -585,25 +643,25 @@ function SendUplataToFINA(_currRbr){
             UUID(),
             "9934:" + companyOIB, // supplierId(OIB)
             TransformFromAurasoftInvoiceId(arrayBrRacuna[_currRbr]), // supplierInvoiceId -> 7-26-1
-            string(year), // invoiceYear npr. 2026
+            Substring(arrayDatumIsporuke[_currRbr], 0, 4), // invoiceYear npr. 2026
 
             arrayDatumUplate[_currRbr].ToString("yyyy-MM-dd"), // payedDate yyyy-MM-dd
             arrayPlaceniIznos[_currRbr], // payedAmount (string) npr. 1234.56
             arrayVrstaPlacanja[_currRbr] // paymentMeansCode (string) T - transakcijsko, O - obračunsko, Z - ostalo
         );
 
-        Mbox("ack:\n" + ack);
-
         if(ack["AckStatusCode"] != 10){
-            // !!! LOG
+            hasErrors = true;
+            WriteLog("SendUplataToFINA", "ack:\n" + ack);
             Mbox("request ERROR!\nack:\n" + ack);
         }else{
             if(Contains(ack, "ErrorCode")){
                 if(ack["ErrorCode"] == "150"){
-                    // Try again with 000brojRačuna
-                    
+                    // Try again with 000 prefix
+                    SendUplataToFINAWith000Prefix(_currRbr);
                 }else{
-                    // !!! LOG
+                    hasErrors = true;
+                    WriteLog("SendUplataToFINA", "ack:\n" + ack);
                     Mbox("ErrorMessage:\n" + ack["ErrorMessage"]);
                     // Mbox("ErrorCode: " + ack["ErrorCode"] + "\nErrorMessage: " + ack["ErrorMessage"] + "\nErrorText: " + ack["ErrorText"]);
                 }
@@ -614,14 +672,61 @@ function SendUplataToFINA(_currRbr){
             }   
         }
     }catch(ex){
-        // !!! LOG
+        hasErrors = true;
+        WriteLog("SendUplataToFINA", "FINA_CHANGE_B2B_OUTGOING_INVOICE_STATUS exception:\n" + ex);
+        Mbox("FINA_CHANGE_B2B_OUTGOING_INVOICE_STATUS exception\n" + ex);
+    }
+}
+function SendUplataToFINAWith000Prefix(_currRbr){
+    
+    try{
+        ack = FINA_CHANGE_B2B_OUTGOING_INVOICE_STATUS(
+            ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
+            ERAC_DESC,
+            CERTPATH + ERAC_USERT, // service certificate
+            CERTPATH + ERAC_PASST, // p12 certificate (client)
+            ERAC_PASS,              // password for p12 certificate
+
+            UUID(),
+            "9934:" + companyOIB, // supplierId(OIB)
+            TransformFromAurasoftInvoiceId(arrayBrRacuna[_currRbr], true), // supplierInvoiceId -> 7-26-1
+            Substring(arrayDatumIsporuke[_currRbr], 0, 4), // invoiceYear npr. 2026
+
+            arrayDatumUplate[_currRbr].ToString("yyyy-MM-dd"), // payedDate yyyy-MM-dd
+            arrayPlaceniIznos[_currRbr], // payedAmount (string) npr. 1234.56
+            arrayVrstaPlacanja[_currRbr] // paymentMeansCode (string) T - transakcijsko, O - obračunsko, Z - ostalo
+        );
+
+        if(ack["AckStatusCode"] != 10){
+            hasErrors = true;
+            WriteLog("SendUplataToFINA", "ack:\n" + ack);
+            Mbox("request ERROR!\nack:\n" + ack);
+        }else{
+            if(Contains(ack, "ErrorCode")){
+                hasErrors = true;
+                WriteLog("SendUplataToFINA", "ack:\n" + ack);
+                Mbox("ErrorMessage:\n" + ack["ErrorMessage"]);
+            }else{
+                // Success
+                UpdateKPSPZATV(arrayID[_currRbr]); // update KPSP_ZTV_REZ4 = getdate() for current record
+                return;
+            }   
+        }
+    }catch(ex){
+        hasErrors = true;
+        WriteLog("SendUplataToFINA", "FINA_CHANGE_B2B_OUTGOING_INVOICE_STATUS exception:\n" + ex);
         Mbox("FINA_CHANGE_B2B_OUTGOING_INVOICE_STATUS exception\n" + ex);
     }
 }
 
-
-function TransformFromAurasoftInvoiceId(aurasoftInvoiceId){
-    return int(substring(aurasoftInvoiceId, 3, 5)) + "-" + substring(aurasoftInvoiceId, 0, 2) + "-" + substring(aurasoftInvoiceId, 2, 1);
+function TransformFromAurasoftInvoiceId(aurasoftInvoiceId, keep000Prefix = false){
+    if(keep000Prefix){
+        invoiceNumber = substring(aurasoftInvoiceId, 3, 5);
+    }else{
+        invoiceNumber = int(substring(aurasoftInvoiceId, 3, 5));
+    }
+     
+    return invoiceNumber + "-" + substring(aurasoftInvoiceId, 0, 2) + "-" + substring(aurasoftInvoiceId, 2, 1);
 }
 
 
@@ -631,4 +736,25 @@ function UpdateKPSPZATV(kpspzatvId){
     sqlParams = {};
     sqlParams.Add({"@p1", kpspzatvId}); // ID from the grid row
     sqlNonQuery(sql, sqlParams);
+}
+
+
+function WriteLog(filename, text, responseCode = "") {
+    logPath = FILESPATH + "eUplate\\" + "log\\";
+
+    if(!DIR_EXISTS(logPath)){
+        MAKE_DIR(logPath);
+    }
+
+    logFilePath = logPath + filename + ".txt";
+    responseCodeText = (responseCode != "" ? "ResponseCode:\n" + responseCode + "\n\n" : "");
+    appendText = Now("yyyy-MM-dd HH:mm:ss") + " -----------------------------------\n\n"
+        + responseCodeText
+        + "Response:\n" + text + "\n\n";
+
+    try {
+        SaveFile(appendText, logFilePath, "a");        
+    } catch (ex) {
+        MessageBox("CRITICAL: Cannot write to log file: " + logFilePath + "\nError: " + ex);
+    }
 }

@@ -757,3 +757,129 @@ function WriteLog(filename, text, responseCode = "") {
         MessageBox("CRITICAL: Cannot write to log file: " + logFilePath + "\nError: " + ex);
     }
 }
+
+// Export state
+exportedXlsxPath = "";
+exportErrorText = "";
+
+function GetRandom8Digits(){
+    raw = UUID().Replace("-", "");
+    digits = "";
+
+    for(i = 0; i < raw.length; i++){
+        ch = Substring(raw, i, 1);
+        if(ch >= "0" && ch <= "9"){
+            digits += ch;
+        }
+        if(digits.length >= 8){
+            break;
+        }
+    }
+
+    if(digits.length < 8){
+        digits += Now("HHmmssff");
+    }
+
+    return Substring(digits, 0, 8);
+}
+
+function Export2XLSX@clicked(){
+    if(Rbr <= 0){
+        Mbox("Nema podataka za export.");
+        return;
+    }
+
+    cursor("wait");
+    SetWidgetOptions("Export2XLSX", "IsEnabled", "false");
+    AsyncCall("StartExport2XLSX", "EndExport2XLSX");
+}
+
+function StartExport2XLSX(){
+    exportErrorText = "";
+    exportedXlsxPath = "";
+
+    try{
+        exportFolder = FILESPATH + "eUplate\\" + "exports\\";
+        if(!DIR_EXISTS(exportFolder)){
+            MAKE_DIR(exportFolder);
+        }
+
+        random8 = GetRandom8Digits();
+        exportedXlsxPath = exportFolder + "Wxeuplate_" + random8 + ".xlsx";
+
+        XFileNew(exportedXlsxPath);
+        XFileOpen(exportedXlsxPath);
+        XSheetRename(1, "eUplate");
+
+        // Header
+        XCellWriteString(1, 1, 1, "R.br.");
+        XCellWriteString(1, 2, 1, "ID");
+        XCellWriteString(1, 3, 1, "Datum racuna");
+        XCellWriteString(1, 4, 1, "Partner");
+        XCellWriteString(1, 5, 1, "Partner naziv");
+        XCellWriteString(1, 6, 1, "OIB");
+        XCellWriteString(1, 7, 1, "Br. racuna");
+        XCellWriteString(1, 8, 1, "IDNum");
+        XCellWriteString(1, 9, 1, "Vrsta placanja");
+        XCellWriteString(1, 10, 1, "Mjesec");
+        XCellWriteString(1, 11, 1, "Datum uplate");
+        XCellWriteString(1, 12, 1, "Godina");
+        XCellWriteString(1, 13, 1, "Iznos racuna");
+        XCellWriteString(1, 14, 1, "Placeni iznos");
+        XCellWriteString(1, 15, 1, "Datum isporuke");
+        XCellWriteString(1, 16, 1, "Odaberi");
+
+        for(col = 1; col <= 16; col++){
+            XBackgroundColor(1, col, 1, 53, 91, 178);
+            XFontColor(1, col, 1, 255, 255, 255);
+            XFontFormat(1, col, 1, true, false, false, false, false, false);
+        }
+
+        // Data rows
+        for(i = 0; i < Rbr; i++){
+            row = i + 2;
+
+            XCellWriteInteger(1, 1, row, arrayRbr[i]);
+            XCellWriteDouble(1, 2, row, arrayID[i], "");
+            XCellWriteString(1, 3, row, arrayDatumRacuna[i]);
+            XCellWriteString(1, 4, row, arrayPartner[i]);
+            XCellWriteString(1, 5, row, arrayPartnerNaziv[i]);
+            XCellWriteString(1, 6, row, arrayOIB[i]);
+            XCellWriteString(1, 7, row, arrayBrRacuna[i]);
+            XCellWriteString(1, 8, row, arrayIDNum[i]);
+            XCellWriteString(1, 9, row, arrayVrstaPlacanja[i]);
+            XCellWriteInteger(1, 10, row, arrayMjesec[i]);
+            XCellWriteString(1, 11, row, arrayDatumUplate[i]);
+            XCellWriteInteger(1, 12, row, arrayGodina[i]);
+            XCellWriteDouble(1, 13, row, arrayIznosRacuna[i], "0.00");
+            XCellWriteDouble(1, 14, row, arrayPlaceniIznos[i], "0.00");
+            XCellWriteString(1, 15, row, arrayDatumIsporuke[i]);
+            XCellWriteBoolean(1, 16, row, arrayOdaberi[i]);
+        }
+
+        XColumnsAutoFit(1);
+        XFileSave();
+    }catch(ex){
+        exportErrorText = ex;
+        exportedXlsxPath = "";
+        WriteLog("Export2XLSX", "Exception:\n" + ex);
+    }
+}
+
+function EndExport2XLSX(){
+    cursor("dflt");
+    SetWidgetOptions("Export2XLSX", "IsEnabled", "true");
+
+    if(exportErrorText != ""){
+        Mbox("Greška kod exporta u XLSX:\n" + exportErrorText);
+        return;
+    }
+
+    if(exportedXlsxPath != ""){
+        try{
+            RunExec(exportedXlsxPath);
+        }catch(ex){
+            Mbox("XLSX je kreiran:\n" + exportedXlsxPath);
+        }
+    }
+}

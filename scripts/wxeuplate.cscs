@@ -140,11 +140,10 @@ function refreshList(){
                     kpsp_ztv_iznos as placeniIznos,
                     kpspzatv.KPSP_ZTV_DAT_RN,
                     kpspzatv.ID,
-                    nkpr_gl_esd
+                    CASE WHEN nksp_invt_dtzak <> '1900-01-01' THEN nksp_invt_dtzak ELSE CASE WHEN nksp_invt_tiptm= 'PS' THEN nksp_invt_date ELSE nksp_invt_datem END END as datumIsporuke
             FROM " + databaseName + ".dbo.kpspzatv 
             LEFT JOIN " + databaseName + ".dbo.nkspprom ON nksp_invt_ident = kpsp_ztv_identr 
             LEFT JOIN " + databaseName + ".dbo.NKSCPART ON kpsp_ztv_code = NKSC_PARTCODE
-            LEFT JOIN " + databaseName + ".dbo.NKPRINV ON nkpr_gl_num = kpsp_ztv_num
             WHERE kpsp_ztv_rac_dp = 'D' AND NKSP_INVT_AMT > 0
               AND kpsp_ztv_datupl <= DATEADD(month, 1, DATEFROMPARTS(@year, @month, 1))  
               AND KPSP_ZTV_REZ4 = '1900-01-01'
@@ -164,7 +163,7 @@ function refreshList(){
                     r.xyear, 
                     r.nksp_invt_amt as iznosRacuna, 
                     r.placeniIznos,
-                    r.nkpr_gl_esd as datumIsporuke
+                    r.datumIsporuke
                 FROM racuni r 
             LEFT JOIN " + databaseName + ".dbo.NKSCPART ON nksc_partcode = r.kpsp_ztv_code 
             WHERE r.xyear = @year 

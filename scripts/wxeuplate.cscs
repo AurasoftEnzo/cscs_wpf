@@ -421,9 +421,9 @@ function SendEUplateToFINA() {
 function SendEUplateToMER() {
     try {
         for(currentRbr = 0; currentRbr < Rbr; currentRbr++){
-            if(currentRbr == 1){
-                break;
-            }
+            // if(currentRbr == 1){
+            //     break;
+            // }
             SendEUplataToMER(currentRbr);
         }
     } catch(ex) {
@@ -452,7 +452,7 @@ function SendEUplataToMER(_currRbr){
 
         webRequestResult = WebRequest(
             "POST",
-            ERAC_SERVER + "/api/fiscalization/markPaidWithoutElectronicID",
+            ERAC_SERVER + "api/fiscalization/markPaidWithoutElectronicID",
             jsonLoad,
             _currRbr, //tracking
             "MERUplataSuccess",

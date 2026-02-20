@@ -140,7 +140,7 @@ function refreshList(){
                     kpsp_ztv_iznos as placeniIznos,
                     kpspzatv.KPSP_ZTV_DAT_RN,
                     kpspzatv.ID,
-                    CASE WHEN nksp_invt_dtzak <> '1900-01-01' THEN nksp_invt_dtzak ELSE CASE WHEN nksp_invt_tiptm= 'PS' THEN nksp_invt_date ELSE nksp_invt_datem END END as datumIsporuke
+                    CASE WHEN nksp_invt_dtzak <> '1900-01-01' THEN nksp_invt_dtzak ELSE CASE WHEN nksp_invt_tiptm = 'PS' THEN dateadd(DAY, -1, NKSP_INVT_DATEM) ELSE nksp_invt_datem END END as yearIsporuke
             FROM " + databaseName + ".dbo.kpspzatv 
             LEFT JOIN " + databaseName + ".dbo.nkspprom ON nksp_invt_ident = kpsp_ztv_identr 
             LEFT JOIN " + databaseName + ".dbo.NKSCPART ON kpsp_ztv_code = NKSC_PARTCODE
@@ -149,6 +149,8 @@ function refreshList(){
               AND KPSP_ZTV_REZ4 = '1900-01-01'
               AND KPSP_ZTV_UPLPLU != '-'
                 AND nksp_invt_code = kpsp_ztv_code 
+                AND NKSP_INVT_TIPTM != 'KS'
+                AND nksc_model = '" + KPSY_PO_FREIGHT + "'
                 ) 
                 SELECT  r.id,
                         r.KPSP_ZTV_DAT_RN,
@@ -163,7 +165,7 @@ function refreshList(){
                     r.xyear, 
                     r.nksp_invt_amt as iznosRacuna, 
                     r.placeniIznos,
-                    r.datumIsporuke
+                    year(r.yearIsporuke)
                 FROM racuni r 
             LEFT JOIN " + databaseName + ".dbo.NKSCPART ON nksc_partcode = r.kpsp_ztv_code 
             WHERE r.xyear = @year 
@@ -200,7 +202,7 @@ function refreshList(){
             arrayGodina[Rbr] = sqlResult[i][10];
             arrayIznosRacuna[Rbr] = sqlResult[i][11];
             arrayPlaceniIznos[Rbr] = sqlResult[i][12];
-            arrayDatumIsporuke[Rbr] = sqlResult[i][13].ToString("yyyy-MM-dd");
+            arrayDatumIsporuke[Rbr] = sqlResult[i][13].ToString("yyyy");
             arrayRbr[Rbr] = ++Rbr;
         }
         
@@ -505,12 +507,13 @@ function MERUplataFailure(tracking, responseCode, res) {
 
 // Helper functions
 function GetCompanyData() {
-    sql = "SELECT TOP 1 kpsy_comp_name, kpsy_rezerva, kpsy_fiscal_yr FROM " + databaseName + ".dbo.KPSYMSTR";
+    sql = "SELECT TOP 1 kpsy_comp_name, kpsy_rezerva, kpsy_fiscal_yr, KPSY_PO_FREIGHT FROM " + databaseName + ".dbo.KPSYMSTR";
     sqlResult = sqlQuery(sql);
     if (Size(sqlResult) >= 2) {
         KPSY_COMP_NAME = sqlResult[1][0].trim();
         KPSY_REZERVA = sqlResult[1][1].trim();
         KPSY_FISCAL_YR = sqlResult[1][2];
+        KPSY_PO_FREIGHT = sqlResult[1][3].trim();
         companyOIB = Substring(KPSY_REZERVA, 0, 11);
     }
 }
@@ -625,7 +628,7 @@ function LogEUplateResponse(provider, responseCode, response, fileName) {
 }
 
 function btnIzlaz@clicked() {
-    CloseWindow();
+    exit;
 }
 
 
@@ -827,7 +830,7 @@ function StartExport2XLSX(){
         XCellWriteString(1, 13, 1, "Iznos racuna");
         XCellWriteString(1, 14, 1, "Placeni iznos");
         XCellWriteString(1, 15, 1, "Datum isporuke");
-        XCellWriteString(1, 16, 1, "Odaberi");
+        // XCellWriteString(1, 16, 1, "Odaberi");
 
         for(col = 1; col <= 16; col++){
             XBackgroundColor(1, col, 1, 53, 91, 178);
@@ -854,7 +857,7 @@ function StartExport2XLSX(){
             XCellWriteDouble(1, 13, row, arrayIznosRacuna[i], "0.00");
             XCellWriteDouble(1, 14, row, arrayPlaceniIznos[i], "0.00");
             XCellWriteString(1, 15, row, arrayDatumIsporuke[i]);
-            XCellWriteBoolean(1, 16, row, arrayOdaberi[i]);
+            // XCellWriteBoolean(1, 16, row, arrayOdaberi[i]);
         }
 
         XColumnsAutoFit(1);

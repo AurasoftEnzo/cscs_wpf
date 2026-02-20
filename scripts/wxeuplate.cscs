@@ -149,7 +149,7 @@ function refreshList(){
               AND KPSP_ZTV_REZ4 = '1900-01-01'
               AND KPSP_ZTV_UPLPLU != '-'
                 AND nksp_invt_code = kpsp_ztv_code 
-                AND NKSP_INVT_TIPTM != 'KS'
+                AND NKSP_INVT_TIPTM not IN ('KS', 'KI', 'TR')
                 AND nksc_model = '" + KPSY_PO_FREIGHT + "'
                 ) 
                 SELECT  r.id,

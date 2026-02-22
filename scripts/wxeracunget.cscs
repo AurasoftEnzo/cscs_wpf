@@ -2310,7 +2310,7 @@ function SaveAttachmentToDisk(base64Content, filename, description, attachmentID
         return nextPicNum;
         
     } catch (error) {
-        Mbox("Greška pri spremanju attachmenta: " + error);
+        Mbox("Greška pri spremanju priloga: " + error);
         return 0;
     }
 }
@@ -2325,7 +2325,7 @@ function SaveAttachmentToDisk(base64Content, filename, description, attachmentID
 function LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent) {
     try {
         if (xmlTaxCategoryID == "" || xmlTaxCategoryID == null) {
-            msg("WARNING: xmlTaxCategoryID is empty");
+            msg("POZOR: Kategorija poreza nije unesena!");
             return 0;
         }
         
@@ -2380,7 +2380,7 @@ function LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent) {
             }
         }
         
-        msg("WARNING: No tax code found for Category=" + xmlTaxCategoryID + " (" + pkfkTaxTarifa + "), Percent=" + xmlTaxPercent);
+        msg("POZOR: Šifra poreza nije nađena za kategoriju=" + xmlTaxCategoryID + " (" + pkfkTaxTarifa + "), Stopa=" + xmlTaxPercent);
         return 0;
         
     } catch (error) {

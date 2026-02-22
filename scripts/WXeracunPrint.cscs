@@ -8,25 +8,31 @@ Import(strTrim(mpath()) + "CSCS.Math.dll");
 // Global variables
 xmlFilePath = "";
 reportHandle = 0;
-mainWindowName = "winEracunPrint";
+mainWindowName = "wxEracunPrint";
+
+CreateWindow(strTrim(tpath()) + "wxEracunPrint.xaml", strTrim(ipath()) + "icons\\" + "wxeracunprint.ico");
 
 // -------------------- INITIALIZE GUI --------------------
-function InitializeGUI() {
+function winEracunPrint_onDisplay(){
+
+
+
+
     // Load XAML window using the new helper
-    gui = GetGui();
-    win = gui.LoadXamlWindow("templates\\WXeracunPrint.xaml");
+    //gui = GetGui();
+    //win = gui.LoadXamlWindow("templates\\WXeracunPrint.xaml");
     
     // Show window
-    ShowWindow(win, mainWindowName);
+    //ShowWindow(win, mainWindowName);
     
     // Set initial status
-    SetText(mainWindowName, "lblStatus", "Spremno. Odaberite XML datoteku e-ra�una.");
+    SetWidgetOptions(mainWindowName, "lblStatus", "Content","Spremno. Odaberite XML datoteku e-računa.");
     
     // Disable buttons initially
-    SetEnabled(mainWindowName, "btnLoad", false);
-    SetEnabled(mainWindowName, "btnExportPDF", false);
-    SetEnabled(mainWindowName, "btnPrint", false);
-    
+    SetWidgetOptions(mainWindowName, "btnLoad", "IsEnabled", false);
+    SetWidgetOptions(mainWindowName, "btnExportPDF", "IsEnabled", false);
+    SetWidgetOptions(mainWindowName, "btnPrint", "IsEnabled", false);
+    /*
     // Attach event handlers using the new AddWidgetHandler
     gui.AddWidgetHandler("btnBrowse", "Click", "OnBrowseClick");
     gui.AddWidgetHandler("btnLoad", "Click", "OnLoadClick");
@@ -34,21 +40,22 @@ function InitializeGUI() {
     gui.AddWidgetHandler("btnPrint", "Click", "OnPrintClick");
     gui.AddWidgetHandler("btnClose", "Click", "OnCloseClick");
     gui.AddWidgetHandler("txtXmlPath", "TextChanged", "OnXmlPathChanged");
+    */
 }
 
 // -------------------- EVENT HANDLERS --------------------
 
-function OnBrowseClick(widgetName, eventType) {
+function btnBrowse@clicked() {
     filter = "XML Datoteke (*.xml)|*.xml|Sve datoteke (*.*)|*.*";
     initialDir = "C:\\Temp\\";
     
-    selectedFile = OpenFileDialog("Odaberite XML e-ra�un", filter, initialDir);
+    selectedFile = OpenFileDialog("Odaberite XML e-račun", filter, initialDir);
     
     if (selectedFile != "") {
-        SetText(mainWindowName, "txtXmlPath", selectedFile);
+        SetWidgetOptions(mainWindowName, "txtXmlPath","Content", selectedFile);
         xmlFilePath = selectedFile;
-        SetEnabled(mainWindowName, "btnLoad", true);
-        SetText(mainWindowName, "lblStatus", "XML datoteka odabrana.");
+        SetWidgetOptions(mainWindowName, "btnLoad", "IsEnabled", true);
+        SetWidgetOptions(mainWindowName, "lblStatus", "Content", "XML datoteka odabrana.");
     }
 }
 
@@ -56,9 +63,9 @@ function OnXmlPathChanged(widgetName, eventType) {
     path = GetText(mainWindowName, "txtXmlPath");
     if (path != "" && Exists(path)) {
         xmlFilePath = path;
-        SetEnabled(mainWindowName, "btnLoad", true);
+        SetWidgetOptions(mainWindowName, "btnLoad", "IsEnabled", true);
     } else {
-        SetEnabled(mainWindowName, "btnLoad", false);
+        SetWidgetOptions(mainWindowName, "btnLoad", "IsEnabled", false);
     }
 }
 
@@ -68,22 +75,22 @@ function OnLoadClick(widgetName, eventType) {
         return;
     }
     
-    SetText(mainWindowName, "lblStatus", "U�itavanje XML e-ra�una...");
+    SetWidgetOptions(mainWindowName, "lblStatus",  "Content", "Učitavanje XML e-računa...");
     
     if (LoadInvoiceFromXML(xmlFilePath)) {
-        SetText(mainWindowName, "lblStatus", "XML e-ra�un uspje�no u�itan.");
-        SetEnabled(mainWindowName, "btnExportPDF", true);
-        SetEnabled(mainWindowName, "btnPrint", true);
+        SetWidgetOptions(mainWindowName, "lblStatus", "Content", "XML e-račun uspješno učitan.");
+        SetWidgetOptions(mainWindowName, "btnExportPDF", "IsEnabled", true);
+        SetWidgetOptions(mainWindowName, "btnPrint", "IsEnabled", true);
     } else {
-        SetText(mainWindowName, "lblStatus", "GRE�KA: Nije mogu�e u�itati XML.");
-        SetEnabled(mainWindowName, "btnExportPDF", false);
-        SetEnabled(mainWindowName, "btnPrint", false);
+        SetWidgetOptions(mainWindowName, "lblStatus", "Content", "GREŠKA: Nije moguće učitati XML.");
+        SetWidgetOptions(mainWindowName, "btnExportPDF", "IsEnabled", false);
+        SetWidgetOptions(mainWindowName, "btnPrint", "IsEnabled", false);
     }
 }
 
 function OnExportPDFClick(widgetName, eventType) {
     if (reportHandle == 0) {
-        MessageBox("Najprije u�itajte XML e-ra�un.");
+        MessageBox("Najprije učitajte XML e-račun.");
         return;
     }
     
@@ -93,38 +100,289 @@ function OnExportPDFClick(widgetName, eventType) {
     pdfPath = SaveFileDialog("Spremi kao PDF", filter, "", defaultName);
     
     if (pdfPath != "") {
-        SetText(mainWindowName, "lblStatus", "Izvoz u PDF...");
+        SetWidgetOptions(mainWindowName, "lblStatus", "Content", "Izvoz u PDF...");
         ExportReport(reportHandle, "PDF", pdfPath);
-        SetText(mainWindowName, "lblStatus", "PDF uspje�no izvezen.");
-        MessageBox("PDF e-ra�una izvezen:\n" + pdfPath);
+        SetWidgetOptions(mainWindowName, "lblStatus", "Content", "PDF uspješno izvezen.");
+        MessageBox("PDF e-računa izvezen:\n" + pdfPath);
     }
 }
 
 function OnPrintClick(widgetName, eventType) {
     if (reportHandle == 0) {
-        MessageBox("Najprije u�itajte XML e-ra�un.");
+        MessageBox("Najprije učitajte XML e-račun.");
         return;
     }
     
-    SetText(mainWindowName, "lblStatus", "Priprema za ispis...");
+    SetWidgetOptions(mainWindowName, "lblStatus", "Content", "Priprema za ispis...");
     PrintReport(reportHandle);
-    SetText(mainWindowName, "lblStatus", "Pregled prije ispisa prikazan.");
+    SetWidgetOptions(mainWindowName, "lblStatus", "Content", "Pregled prije ispisa prikazan.");
 }
 
 function OnCloseClick(widgetName, eventType) {
     if (reportHandle != 0) {
         DisposeReport(reportHandle);
     }
-    CloseWindow(mainWindowName);
+    exit; //CloseWindow(mainWindowName);
 }
 
-// -------------------- XML PARSING (SIMPLIFIED) --------------------
-
 function LoadInvoiceFromXML(xmlPath) {
-    // ... (keep your existing XML parsing logic)
+    try {
+        // Read XML content
+        xmlContent = ReadFile(xmlPath);
+        if (xmlContent == "") {
+            MessageBox("XML datoteka je prazna ili neispravna.");
+            return false;
+        }
+        
+        // Parse XML using XDocument
+        xDoc = XmlParse(xmlContent);
+        if (xDoc == null) {
+            MessageBox("Greška pri parsiranju XML-a.");
+            return false;
+        }
+        
+        // Detect document type (Invoice, CreditNote, DebitNote)
+        rootElement = XmlGetRootName(xDoc);
+        
+        if (rootElement == "Invoice") {
+            return LoadInvoice(xDoc);
+        } elif (rootElement == "CreditNote") {
+            return LoadCreditNote(xDoc);
+        } elif (rootElement == "DebitNote") {
+            return LoadDebitNote(xDoc);
+        } else {
+            MessageBox("Nepoznat tip dokumenta: " + rootElement);
+            return false;
+        }
+        
+    } catch (ex) {
+        MessageBox("Iznimka pri učitavanju XML-a:\n" + ex);
+        return false;
+    }
+}
+
+function LoadInvoice(xDoc) {
+    // Define XML namespace
+    ns = "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2";
+    nsCbc = "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2";
+    nsCac = "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2";
+    
+    // -------------------- HEADER DATA --------------------
+    invoiceID = XmlGetValue(xDoc, "//cbc:ID", nsCbc);
+    issueDate = XmlGetValue(xDoc, "//cbc:IssueDate", nsCbc);
+    issueTime = XmlGetValue(xDoc, "//cbc:IssueTime", nsCbc);
+    dueDate = XmlGetValue(xDoc, "//cbc:DueDate", nsCbc);
+    invoiceTypeCode = XmlGetValue(xDoc, "//cbc:InvoiceTypeCode", nsCbc);
+    documentCurrencyCode = XmlGetValue(xDoc, "//cbc:DocumentCurrencyCode", nsCbc);
+    note = XmlGetValue(xDoc, "//cbc:Note", nsCbc);
+    
+    // -------------------- SUPPLIER DATA --------------------
+    supplierName = XmlGetValue(xDoc, "//cac:AccountingSupplierParty/cac:Party/cac:PartyName/cbc:Name", nsCbc);
+    supplierStreet = XmlGetValue(xDoc, "//cac:AccountingSupplierParty/cac:Party/cac:PostalAddress/cbc:StreetName", nsCbc);
+    supplierCity = XmlGetValue(xDoc, "//cac:AccountingSupplierParty/cac:Party/cac:PostalAddress/cbc:CityName", nsCbc);
+    supplierPostalZone = XmlGetValue(xDoc, "//cac:AccountingSupplierParty/cac:Party/cac:PostalAddress/cbc:PostalZone", nsCbc);
+    supplierCountry = XmlGetValue(xDoc, "//cac:AccountingSupplierParty/cac:Party/cac:PostalAddress/cac:Country/cbc:IdentificationCode", nsCbc);
+    supplierVAT = XmlGetValue(xDoc, "//cac:AccountingSupplierParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID", nsCbc);
+    supplierEndpointID = XmlGetValue(xDoc, "//cac:AccountingSupplierParty/cac:Party/cbc:EndpointID", nsCbc);
+    
+    // -------------------- CUSTOMER DATA --------------------
+    customerName = XmlGetValue(xDoc, "//cac:AccountingCustomerParty/cac:Party/cac:PartyName/cbc:Name", nsCbc);
+    customerStreet = XmlGetValue(xDoc, "//cac:AccountingCustomerParty/cac:Party/cac:PostalAddress/cbc:StreetName", nsCbc);
+    customerCity = XmlGetValue(xDoc, "//cac:AccountingCustomerParty/cac:Party/cac:PostalAddress/cbc:CityName", nsCbc);
+    customerPostalZone = XmlGetValue(xDoc, "//cac:AccountingCustomerParty/cac:Party/cac:PostalAddress/cbc:PostalZone", nsCbc);
+    customerCountry = XmlGetValue(xDoc, "//cac:AccountingCustomerParty/cac:Party/cac:PostalAddress/cac:Country/cbc:IdentificationCode", nsCbc);
+    customerVAT = XmlGetValue(xDoc, "//cac:AccountingCustomerParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID", nsCbc);
+    
+    // -------------------- PAYMENT MEANS --------------------
+    paymentMeansCode = XmlGetValue(xDoc, "//cac:PaymentMeans/cbc:PaymentMeansCode", nsCbc);
+    paymentID = XmlGetValue(xDoc, "//cac:PaymentMeans/cbc:PaymentID", nsCbc);
+    payeeAccountID = XmlGetValue(xDoc, "//cac:PaymentMeans/cac:PayeeFinancialAccount/cbc:ID", nsCbc);
+    payeeAccountName = XmlGetValue(xDoc, "//cac:PaymentMeans/cac:PayeeFinancialAccount/cbc:Name", nsCbc);
+    
+    // -------------------- TAX TOTAL --------------------
+    taxAmount = XmlGetValue(xDoc, "//cac:TaxTotal/cbc:TaxAmount", nsCbc);
+    
+    // Parse TaxSubtotals
+    taxSubtotals = XmlGetElements(xDoc, "//cac:TaxTotal/cac:TaxSubtotal", nsCac);
+    taxSubtotalCount = Size(taxSubtotals);
+    
+    // -------------------- MONETARY TOTALS --------------------
+    lineExtensionAmount = XmlGetValue(xDoc, "//cac:LegalMonetaryTotal/cbc:LineExtensionAmount", nsCbc);
+    taxExclusiveAmount = XmlGetValue(xDoc, "//cac:LegalMonetaryTotal/cbc:TaxExclusiveAmount", nsCbc);
+    taxInclusiveAmount = XmlGetValue(xDoc, "//cac:LegalMonetaryTotal/cbc:TaxInclusiveAmount", nsCbc);
+    payableAmount = XmlGetValue(xDoc, "//cac:LegalMonetaryTotal/cbc:PayableAmount", nsCbc);
+    
+    // -------------------- INVOICE LINES --------------------
+    invoiceLines = XmlGetElements(xDoc, "//cac:InvoiceLine", nsCac);
+    lineCount = Size(invoiceLines);
+    
+    // -------------------- SETUP REPORT --------------------
+    
+    // Validate template
+    errors = ValidateReportTemplate("templates\\WXeracunPrint.repx",
+        "invoiceID,issueDate,supplierName,customerName,taxAmount,payableAmount");
+    
+    if (Size(errors) > 0) {
+        MessageBox("Greška validacije predloška e-računa!");
+        for (i = 0; i < Size(errors); i++) {
+            MSG("  - " + errors[i]);
+        }
+        return false;
+    }
+    
+    // Cleanup previous report if exists
+    if (reportHandle != 0) {
+        DisposeReport(reportHandle);
+    }
+    
+    // Setup main report
+    reportHandle = SetupReport("templates\\WXeracunPrint.repx");
+    
+    ConfigureReportOutput(reportHandle, "PageSize", "A4");
+    ConfigureReportOutput(reportHandle, "Orientation", "Portrait");
+    
+    // Set report parameters
+    SetReportParameter(reportHandle, "DocumentTitle", "E-RAČUN / E-INVOICE");
+    
+    // -------------------- POPULATE REPORT DATA --------------------
+    
+    // Header data
+    reportTitle = "E-RAČUN / E-INVOICE";
+    documentType = GetDocumentTypeName(invoiceTypeCode);
+    
+    // Format dates
+    formattedIssueDate = FormatDate(issueDate, "dd.MM.yyyy");
+    formattedDueDate = (dueDate != "" ? FormatDate(dueDate, "dd.MM.yyyy") : "");
+    
+    // Supplier address
+    supplierAddress = supplierStreet;
+    supplierCityZip = supplierPostalZone + " " + supplierCity;
+    
+    // Customer address
+    customerAddress = customerStreet;
+    customerCityZip = customerPostalZone + " " + customerCity;
+    
+    // Payment reference
+    paymentReference = paymentID;
+    bankAccount = payeeAccountID;
+    bankName = payeeAccountName;
+    
+    // Amounts
+    subtotal = ParseDouble(lineExtensionAmount);
+    taxTotal = ParseDouble(taxAmount);
+    total = ParseDouble(payableAmount);
+    
+    // Add main invoice record
+    OutputReport(reportHandle);
+    
+    // -------------------- PROCESS INVOICE LINES --------------------
+    
+    // Setup detail subreport
+    detailReport = SetupReport("templates\\WXeracunPrint_detail.repx", reportHandle);
+    
+    for (i = 0; i < lineCount; i++) {
+        linElement = invoiceLines[i];
+        
+        lineID = XmlGetChildValue(linElement, "cbc:ID", nsCbc);
+        invoicedQuantity = XmlGetChildValue(linElement, "cbc:InvoicedQuantity", nsCbc);
+        quantityUnit = XmlGetChildAttribute(linElement, "cbc:InvoicedQuantity", "unitCode", nsCbc);
+        lineExtension = XmlGetChildValue(linElement, "cbc:LineExtensionAmount", nsCbc);
+        
+        // Item data
+        itemName = XmlGetChildValue(linElement, "cac:Item/cbc:Name", nsCbc);
+        itemDescription = XmlGetChildValue(linElement, "cac:Item/cbc:Description", nsCbc);
+        
+        // Price
+        priceAmount = XmlGetChildValue(linElement, "cac:Price/cbc:PriceAmount", nsCbc);
+        
+        // Tax
+        taxPercent = XmlGetChildValue(linElement, "cac:Item/cac:ClassifiedTaxCategory/cbc:Percent", nsCbc);
+        taxCategoryID = XmlGetChildValue(linElement, "cac:Item/cac:ClassifiedTaxCategory/cbc:ID", nsCbc);
+        
+        // Format values
+        lineNum = Int(lineID);
+        quantity = ParseDouble(invoicedQuantity);
+        unitPrice = ParseDouble(priceAmount);
+        lineTotal = ParseDouble(lineExtension);
+        taxRate = ParseDouble(taxPercent);
+        
+        // Product info
+        productCode = XmlGetChildValue(linElement, "cac:Item/cac:SellersItemIdentification/cbc:ID", nsCbc);
+        productName = (itemName != "" ? itemName : itemDescription);
+        unit = (quantityUnit != "" ? quantityUnit : "kom");
+        
+        // Output line
+        OutputReport(detailReport);
+    }
+    
     return true;
 }
 
-// -------------------- MAIN ENTRY POINT --------------------
+function LoadCreditNote(xDoc) {
+    // Similar to LoadInvoice but for CreditNote
+    // ... (implement similar logic with CreditNote-specific namespaces)
+    MessageBox("CreditNote tip dokumenta - u razvoju.");
+    return false;
+}
 
-InitializeGUI();
+function LoadDebitNote(xDoc) {
+    // Similar to LoadInvoice but for DebitNote
+    MessageBox("DebitNote tip dokumenta - u razvoju.");
+    return false;
+}
+
+// -------------------- HELPER FUNCTIONS --------------------
+
+function GetDocumentTypeName(typeCode) {
+    if (typeCode == "380") { return "Račun / Invoice"; }
+    if (typeCode == "381") { return "Dobropis / Credit Note"; }
+    if (typeCode == "383") { return "Terećenje / Debit Note"; }
+    if (typeCode == "384") { return "Korektivni račun / Corrective Invoice"; }
+    if (typeCode == "386") { return "Predujam / Prepayment"; }
+    return "Dokument / Document";
+}
+
+function FormatDate(dateStr, format) {
+    if (dateStr == "") { return ""; }
+    
+    // Parse ISO date (yyyy-MM-dd)
+    parts = dateStr.Split("-");
+    if (Size(parts) != 3) { return dateStr; }
+    
+    year = parts[0];
+    month = parts[1];
+    day = parts[2];
+    
+    if (format == "dd.MM.yyyy") {
+        return day + "." + month + "." + year;
+    }
+    
+    return dateStr;
+}
+
+function ParseDouble(str) {
+    if (str == "") { return 0.0; }
+    return Double(str);
+}
+
+function FormatDate(dateStr) {
+    if (dateStr == "") {
+        return "";
+    }
+    
+    // Parse ISO date (yyyy-MM-dd) to Croatian format (dd.MM.yyyy)
+    parts = Split(dateStr, "-");
+    if (Size(parts) != 3) {
+        return dateStr;
+    }
+    
+    return parts[2] + "." + parts[1] + "." + parts[0];
+}
+
+function ParseDouble(str) {
+    if (str == "") {
+        return 0.0;
+    }
+    return Double(str);
+}    return true;
+}

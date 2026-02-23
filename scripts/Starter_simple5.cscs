@@ -1,0 +1,194 @@
+msg("...Testing starter_simple5...");
+msg(tpath() + "starter_simple5.repx");
+
+// ========================================================================
+// Using Simplified Starter 5 Template
+// ========================================================================
+
+// Report data using implicit variables
+reportTitle = "INVOICES";
+reportDate = Now("dd/MM/yyyy");
+logoPath = "C:\Logos\company.png";
+grandTotal = 0;
+
+
+// Validate template
+
+errors = ValidateReportTemplate(tpath() + "starter_simple5invoice.repx",  "invoiceNumber,invoiceDate");
+
+if (Size(errors) > 0) {
+    MSG("Validation errors found!");
+    for (i = 0; i < Size(errors); i++) {
+        MSG("  - " + errors[i]);
+    }
+    exit;
+}
+
+
+errors = ValidateReportTemplate(tpath() + "starter_simple5detail.repx",  "field1,field2,field3,amount");
+
+if (Size(errors) > 0) {
+    MSG("Validation errors found!");
+    for (i = 0; i < Size(errors); i++) {
+        MSG("  - " + errors[i]);
+    }
+    exit;
+}
+
+/*
+myFields = GetReportFields(tpath() + "starter_simple5invoice.repx");
+msg("myFields = " + myFields);
+myFields = GetReportFields(tpath() + "starter_simple5detail.repx");
+msg("myFields = " + myFields);
+*/
+
+// Setup report
+reportHandle = SetupReport(tpath() + "starter_simple5.repx");
+reportHandle2 = SetupReport(tpath() + "starter_simple5invoice.repx", reportHandle);
+reportHandle3 = SetupReport(tpath() + "starter_simple5detail.repx", reportHandle2);
+
+
+
+
+// Configure
+ConfigureReportOutput(reportHandle, "PageSize", "A4");
+//ConfigureReportOutput(reportHandle, "Orientation", "Portrait");
+//ConfigureReportOutput(reportHandle, "Margins", "10,10,10,10");
+
+
+SetReportParameter(reportHandle, "reportTitle", reportTitle);
+SetReportParameter(reportHandle, "reportDate", reportDate);
+SetReportParameter(reportHandle, "LogoPath", logoPath);
+
+//DEFINE reportGrandTotalFc type a size 100;
+//DEFINE reportGrandTotalCl type a size 100;
+//reportGrandTotalCl = "Yellow";    //Label Font color
+
+//myColorParam = "Green";
+//SetReportParameter(reportHandle, "myColorParam", myColorParam);
+
+reportPrintingPerson = "Dalibor";
+SetReportParameter(reportHandle, "reportPrintingPerson", reportPrintingPerson);
+
+reportChecker = "Mauroviæ";
+SetReportParameter(reportHandle, "reportChecker", reportChecker);
+
+/*
+value111 = GetReportParameter(reportHandle, "reportPrintingPerson");
+msg("value111 = " + value111);
+value222 = GetReportParameter(reportHandle, "reportChecker");
+msg("value222 = " + value222);
+*/
+
+OutputReport(reportHandle);
+
+invoiceNumber = "111111";
+invoiceDate = "11.1.2026.";
+
+OutputReport(reportHandle2);
+
+// Add data rows
+field1 = "PROD-001";
+field2 = "Laptop HP ProBook 450";
+field3 = "Electronics";
+amount = 5499.99;
+grandTotal += amount;
+OutputReport(reportHandle3);
+
+field1 = "PROD-002";
+field2 = "Monitor Dell 24 inch";
+field3 = "Electronics";
+amount = 899.00;
+grandTotal += amount;
+OutputReport(reportHandle3);
+
+field1 = "PROD-003";
+field2 = "Office Chair Ergonomic";
+field3 = "Furniture";
+amount = 1299.00;
+grandTotal += amount;
+OutputReport(reportHandle3);
+//*************************************************************
+
+//ClearReportData(reportHandle3);
+//ClearReportData(reportHandle2);
+
+//*************************************************************
+invoiceNumber = "2222222";
+invoiceDate = "22.2.2026.";
+
+OutputReport(reportHandle2);
+
+// Add data rows
+field1 = "Product-001";
+field2 = "Kiwi";
+field3 = "Plants";
+amount = 100.99;
+grandTotal += amount;
+OutputReport(reportHandle3);
+
+field1 = "Product-002";
+field2 = "Orange";
+field3 = "Plants";
+amount = 200.00;
+grandTotal += amount;
+OutputReport(reportHandle3);
+
+
+//********************************************************************************
+//HERE IS NEW DATA TABLE WITH DATA FETCHED FROM SQL SERVER
+//MANDATORY IS TO HAVE _parentid COLUMN IN DATA
+//MANDATORY IS TO DISTRIBUTE ROWS OVER INVOICES MANUALLY BY FILLING _parentid COLUMN
+//IT OVERWRITES PREVIOUS DATA IN reportHandle3
+
+invoiceNumber = "3333333";
+invoiceDate = "13.3.2026.";
+
+OutputReport(reportHandle2);
+
+sourceType = "SQL";
+connectionOrData = "Server=localhost;User Id=sa;Password=aura;Initial Catalog=database1";
+//query = "SELECT STR(productNumber) as field1, productName as field2, STR(price) as field3, price as amount, 1 as _rowid, 2 as _parentid FROM products";
+
+//Table products
+//Odd productNumber goes to first invoice
+//Even productNumber goes to second invoice
+query = "SELECT STR(productNumber) as field1, productName as field2, STR(price) as field3, price as amount, ";
+query += " 1 as _rowid, ";
+query += " CASE ";
+query += "    WHEN productNumber % 2 <> 0 THEN 1 ";
+query += "    ELSE 2 ";
+query += " END AS _parentid ";
+query += " FROM products";
+
+//This function overwrites the existing table in a specific report
+SetReportDataSource(reportHandle3, sourceType, connectionOrData, query);
+
+
+//********************************************************************************
+
+
+
+//*************************************************************
+msg("grandTotal=" + grandTotal);
+reportGrandTotal = "GRAND TOTAL: " + grandTotal.ToString("N2");
+UpdateReport(reportHandle, "reportGrandTotal");
+
+reportChecker = "Mauroviæ2";
+SetReportParameter(reportHandle, "reportChecker", reportChecker);
+
+
+// Export
+ExportReport(reportHandle, "PDF", "D:\sales_report5.pdf");
+
+// Print
+PrintReport(reportHandle, 0); //0 je za modalni prozor
+
+// Cleanup
+DisposeReport(reportHandle3);
+DisposeReport(reportHandle2);
+DisposeReport(reportHandle);
+
+MSG("Report generated successfully!");
+
+quit;

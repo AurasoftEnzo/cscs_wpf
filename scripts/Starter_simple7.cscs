@@ -1,0 +1,135 @@
+msg("...Testing starter_simple7...");
+msg(tpath() + "starter_simple7.repx");
+
+// ========================================================================
+// Using Simplified Starter 7 Template
+// ========================================================================
+
+reportTitle = "INVOICES 2026";
+reportDate = "Report date: " + Now("dd/MM/yyyy");
+logoPath = "C:\Logos\company.png";
+grandTotal = 0;
+
+
+// Validate template
+
+errors = ValidateReportTemplate(tpath() + "starter_simple7invoice.repx",  "invoiceNumber,invoiceDate");
+
+if (Size(errors) > 0) {
+    MSG("Validation errors found!");
+    for (i = 0; i < Size(errors); i++) {
+        MSG("  - " + errors[i]);
+    }
+    exit;
+}
+
+
+errors = ValidateReportTemplate(tpath() + "starter_simple7detail.repx",  "field1,field2,field3,amount");
+
+if (Size(errors) > 0) {
+    MSG("Validation errors found!");
+    for (i = 0; i < Size(errors); i++) {
+        MSG("  - " + errors[i]);
+    }
+    exit;
+}
+
+
+// Setup report
+reportHandle = SetupReport(tpath() + "starter_simple7.repx");
+reportHandle2 = SetupReport(tpath() + "starter_simple7invoice.repx", reportHandle);
+reportHandle3 = SetupReport(tpath() + "starter_simple7detail.repx", reportHandle2);
+
+// Configure
+ConfigureReportOutput(reportHandle, "PageSize", "A4");
+
+SetReportParameter(reportHandle, "reportTitle", reportTitle);
+SetReportParameter(reportHandle, "reportDate", reportDate);
+SetReportParameter(reportHandle, "logoPath", logoPath);
+
+OutputReport(reportHandle);
+
+//*************************************************************
+
+invoiceNumber = "INVOICE 111111";
+invoiceDate = "Invoice date: 11.1.2026.";
+
+OutputReport(reportHandle2);
+
+// Add data rows
+field1 = "PROD-001";
+field2 = "Laptop HP ProBook 450";
+field3 = "Electronics";
+amount = 5499.99;
+productBarCode = "12345";
+grandTotal += amount;
+OutputReport(reportHandle3);
+
+field1 = "PROD-002";
+field2 = "Monitor Dell 24 inch";
+field3 = "Electronics";
+amount = 899.00;
+productBarCode = "22345";
+grandTotal += amount;
+OutputReport(reportHandle3);
+
+field1 = "PROD-003";
+field2 = "Office Chair Ergonomic";
+field3 = "Furniture";
+amount = 1299.00;
+productBarCode = "32345";
+grandTotal += amount;
+OutputReport(reportHandle3);
+
+invoiceQRcode = "HTTPS://WWW.AURASOFT.HR";
+UpdateReport(reportHandle2, "invoiceQRcode");
+
+//*************************************************************
+invoiceNumber = "INVOICE 2222222";
+invoiceDate = "Invoice date: 22.2.2026.";
+
+OutputReport(reportHandle2);
+
+// Add data rows
+field1 = "Product-001";
+field2 = "Kiwi";
+field3 = "Plants";
+amount = 100.99;
+productBarCode = "42345";
+grandTotal += amount;
+OutputReport(reportHandle3);
+
+field1 = "Product-002";
+field2 = "Orange";
+field3 = "Plants";
+amount = 200.00;
+productBarCode = "52345";
+grandTotal += amount;
+OutputReport(reportHandle3);
+
+//invoiceQRcode = "HTTPS://WWW.AURASOFT.HR/$%*+-./:01234   56789";
+invoiceQRcode = "HTTPS://WWW.PROVJERI-RACUN.HR";
+UpdateReport(reportHandle2, "invoiceQRcode");
+
+
+//*************************************************************
+msg("grandTotal=" + grandTotal);
+
+reportGrandTotal = "GRAND TOTAL: " + grandTotal.ToString("N2");
+UpdateReport(reportHandle, "reportGrandTotal");
+
+
+// Export
+ExportReport(reportHandle, "PDF", "D:\sales_report7.pdf");
+
+// Print
+PrintReport(reportHandle, 0); //0 je za modalni prozor
+
+// Cleanup
+DisposeReport(reportHandle3);
+DisposeReport(reportHandle2);
+DisposeReport(reportHandle);
+
+MSG("Report generated successfully!");
+
+quit;

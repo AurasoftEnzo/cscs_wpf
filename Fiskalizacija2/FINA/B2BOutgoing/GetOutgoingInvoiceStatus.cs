@@ -29,7 +29,7 @@ namespace WpfCSCS.Fiskalizacija2.FINA.B2BOutgoing
 
                                     string additionalSupplierId = null,
                                     string messageAttributes = null,
-                                    bool documentCurrencyCode = false
+                                    bool documentCurrencyCode = true
                                     )
         {
             GetB2BOutgoingInvoiceStatusMsg message = new GetB2BOutgoingInvoiceStatusMsg();
@@ -113,7 +113,7 @@ namespace WpfCSCS.Fiskalizacija2.FINA.B2BOutgoing
                         documentStatusDict.SetHashVariable("PartialAmountSpecified", new Variable(documentStatus.PartialAmountSpecified));
                         if (documentStatus.PartialAmountSpecified)
                         {
-                            documentStatusDict.SetHashVariable("PartialAmount", new Variable(documentStatus.PartialAmount));
+                            documentStatusDict.SetHashVariable("PartialAmount", new Variable((double)documentStatus.PartialAmount));
                         }
 
                         documentStatusDict.SetHashVariable("DocumentCurrencyCode", new Variable(documentStatus.DocumentCurrencyCode));

@@ -108,8 +108,7 @@ function init(){
 
     // NKSYCCYR
     sqlQueryString = "select SY_CC_USER, SY_CC_DBASE from " + strtrim(CommonDBGet()) + ".dbo.NKSYCCYR WHERE SY_CC_CODE = '" + companyCode + "'";
-    try
-    {
+    try{
         sqlResult = sqlQuery(sqlQueryString);
     }
     catch(ex)
@@ -133,8 +132,7 @@ function init(){
         FROM " + databaseName + ".dbo.NKSYSYCO 
         WHERE NKSYS_MODUL = 'WKSY'
         AND NKSYS_GRUP = 'ERACUN'";
-    try
-    {
+    try{
         sqlResult = sqlQuery(sqlQueryString);
     }
     catch(ex)
@@ -168,8 +166,7 @@ function init(){
     sqlQueryString = " SELECT TOP 1 KPSY_REZERVA, KPSY_COMP_NAME, KPSY_COMP_ADD1, KPSY_GL_RETEARN, KPSY_COMP_CSZ, KPSY_COMP_ZIP,
                     KPSY_COMP_JMBFI, KPSY_COMP_PHONE, KPSY_COMP_EMAIL, KPSY_PO_FREIGHT, KPSY_REZERVAX,KPSY_FISCAL_YR
                         FROM " + databaseName + ".dbo.KPSYMSTR";
-    try
-    {
+    try{
         sqlResult = sqlQuery(sqlQueryString);
     }
     catch(ex)
@@ -231,7 +228,7 @@ function endPrikazi(){
 }
 
 function getList(){
-    try {
+    try{
         sql_erac = "SELECT
                 ERAC_REZ1, ERAC_SERVER, ERAC_SERVERT, ERAC_USER, ERAC_PASS, ERAC_USERT, ERAC_PASST, ERAC_DESC 
                 FROM " + databaseName + ".dbo.NKSYERAC WHERE ERAC_CODE = @p1;";
@@ -276,7 +273,7 @@ function getList(){
 
         RunOnMain("endGetList");
 
-    } catch (ex) {
+    } catch(ex) {
         Mbox("Greška u preuzimanju sa provider-a " + PROVIDER + ": " + ex);
         // !!! LOG !!!
         exit;
@@ -361,10 +358,10 @@ function GetListMER(){
                     '", "From": "' + FilterDateFrom + 'T00:00:00' +
                     '", "To": "' + FilterDateTo + 'T23:59:59' +
                     '"}';
-    try {
+    try{
         apiUrl = ERAC_SERVER + "apis/v2/queryinbox";
         jsonResponse = WebRequest("POST", apiUrl, jsonPayload, "", "GetListMERSuccess", "GetListMERFailure", "application/json", null, 1000 * 20, false);
-    } catch (ex) {
+    } catch(ex) {
         Mbox("Greška prilikom poziva MER API-a: " + ex);
         // !!! LOG !!!
         exit;
@@ -514,7 +511,7 @@ function btnPreuzmi@clicked(){
     SetWidgetOptions("StatusLabel", "Content", "Preuzimanje ulaznih e-računa.");
     SetWidgetOptions("StatusLabel2", "Content", "Molim pričekajte...");
 
-    AsyncCall("startDownload", "startImportCall");   
+    AsyncCall("startDownload", "startImportCall");
     // AsyncCall("startImport", "end");
 }
 
@@ -668,7 +665,6 @@ function startImport(){
     // MSG(Size(listOfXmls));
 
     for(xmlCounter = 0; xmlCounter < Size(listOfXmls); xmlCounter++){
-    // for(xmlCounter = 0; xmlCounter < 1; xmlCounter++){
         // msg("IMPORTING: " + listOfXmls[xmlCounter]);
         xmlFilePath = listOfXmls[xmlCounter];
         MemoX = ""; //memo u kojega spremamo one podatke iz xml računa koje želimo prikazati korisniku prilikom uvoza
@@ -690,7 +686,7 @@ function startImport(){
 
 // New main import function using XmlToDict
 function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtension) {
-    try {
+    try{
 
         // Create incoming folder if it doesn't exist
         UR_IMPORTED_DirectoryPath = FILESPATH + "UR\\" + "IMPORTED\\" + xmlFilenameWithoutExtension + "\\";
@@ -759,7 +755,7 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
         // Begin database transaction
         //BeginTransaction();
         
-        try {
+        try{
             // Import header data to NKNAERGL table
             //msg ("0000: xmlFilePath: " + xmlFilePath); 
             invNum = ImportHeaderDataToERGL(docType);
@@ -788,7 +784,7 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
 
             return invNum;
             
-        } catch (error) {
+        } catch(error) {
             // Rollback transaction on error
             //RollbackTransaction();
             // LogToNKSYELOG(0, xmlFilePath, "IMPORT_FAILURE: " + error);
@@ -796,7 +792,7 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
             return false;
         }
 
-    } catch (error) {
+    } catch(error) {
         Mbox("Greška prilikom uvoza XML datoteke: " + error);
         return false;
     }
@@ -819,8 +815,7 @@ function GetDocumentTypeFromDict(invoiceDict) {
 
 // Extract header data from Dictionary
 function ExtractHeaderDataFromDict(invoiceDict, docType){
-    try 
-    {
+    try{
         NKPR_GL_SHPA1 = "";
         NKPR_GL_SHPCOD = "";
         NKPR_GL_SHPCTY = "";
@@ -887,23 +882,21 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         NKPR_GL_DATPRI = GetNodeText(docData["IssueDate"]);
         NKPR_GL_DVO = GetNodeText(docData["IssueDate"]);
         NKPR_GL_NOKAM = 0;
-        if (Contains(docData, "DueDate")){
+        if(Contains(docData, "DueDate")){
             //tu staviti matematiku za datum dospijeća: duedate-issuedate=nokam kao broj dana, a dvo je isti kao i datum issuedate
             dueDate = GetNodeText(docData["DueDate"]);
             dueDateDateTime = DateTime(dueDate, "yyyy-MM-dd");
             datpriDateTime = DateTime(NKPR_GL_DATPRI, "yyyy-MM-dd");
             dateDiff = Math.Trunc(DateTimeToDouble(dueDateDateTime)) - Math.Trunc(DateTimeToDouble(datpriDateTime));
             NKPR_GL_NOKAM = dateDiff; // !!! hardcoded 30 days for now, TREBA POPRAVITI!!!
-        } else{
+        }else{
             NKPR_GL_DVO = GetNodeText(docData["IssueDate"]);
             NKPR_GL_NOKAM = 30;
         }   
         taxPointDate= "1900-01-01";   
-        if (Contains(docData, "TaxPointDate")) {
+        if(Contains(docData, "TaxPointDate")) {
             NKPR_GL_ESD = GetNodeText(docData["TaxPointDate"]);
             taPointDate = GetNodeText(docData["TaxPointDate"]);
-        }elif{
-            NKPR_GL_ESD = GetNodeText(docData["IssueDate"]);
         }else{
             NKPR_GL_ESD = GetNodeText(docData["IssueDate"]);
         }
@@ -981,11 +974,26 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             }
             
             //tu sad imamo OIB dobavljača i broj računa dobavljača; sada provjeriti da li je taj račun već unesen za tog dobavljača
-            sqlQueryString = "select NKPR_GL_BRPON, NKPR_GL_JMBG, NKPR_GL_DESC from " + strtrim(databaseName) + ".dbo.NKNAERGL WHERE NKPR_GL_JMBG = '" + OIBSupp + "' AND NKPR_GL_DESC = '" + NKPR_GL_DESC + "'";
+            sqlQueryString = "select NKPR_GL_BRPON, NKPR_GL_JMBG, NKPR_GL_DESC, NKPR_GL_POSRED from " + strtrim(databaseName) + ".dbo.NKNAERGL WHERE NKPR_GL_JMBG = '" + OIBSupp + "' AND NKPR_GL_DESC = '" + NKPR_GL_DESC + "'";
             sqlOIBInvoicenum = sqlQuery(sqlQueryString);
             if (size(sqlOIBInvoicenum) > 1)
             {
                 if(copyIndicator != "true"){
+                    
+                    // ako nema electronic Id zapisan, zapišimo ga
+                    if(sqlOIBInvoicenum[1][3] == ""){
+                        sqlStringInsertElectronicId = "UPDATE " + databaseName + ".dbo.NKNAERGL SET NKPR_GL_POSRED = '" + NKPR_GL_POSRED + "' WHERE NKPR_GL_BRPON = " + sqlOIBInvoicenum[1][0];
+                        try{
+                            SqlNonQuery(sqlStringInsertElectronicId);
+                        }
+                        catch(ex)
+                        {
+                            Mbox("Greška prilikom unosa ID-a računa posrednika u bazu:\n" + ex);
+                            // !!! LOG !!!
+                            //exit;
+                        }
+                    }
+                    
                     //ako je copyIndicator false, znači nije kopija, a došao je račun koji smo već učitali; to je greška i račun se ne bi smio preuzeti!
                     //ako nije, onda javiti da je račun kopija, i taj se ne bi smio pojaviti na knjiženju već samo u registru e-računa
                     Mbox("Račun s OIB-om dobavljača " + OIBSupp + " i brojem računa dobavljača " + glDesc + " je već unesen u registar eRačuna pod brojem: " + sqlOIBInvoicenum[1][0].trim());
@@ -998,7 +1006,6 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                     Mbox("Račun s OIB-om dobavljača " + OIBSupp + " i brojem računa dobavljača " + glDesc + " je već unesen u registar eRačuna pod brojem: " + sqlOIBInvoicenum[1][0].trim() + ". IMA OZNAKU KOPIJE RAČUNA!");
                     NKPR_GL_INVCD = "K";
                 }
-                return;
             }
 
             // Supplier address
@@ -1024,8 +1031,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             // NKSCPART - nađi dobavljača po OIB-u/GLN-u i uzmi šifru dobavljača
             // ako ne postoji, kreiraj novog dobavljača
             sqlQueryString = "select NKSC_PARTCODE, NKSC_PARTNAME, NKSC_RO, NKSC_ADD1, NKSC_CITY, NKSC_ZIP, NKSC_drzava, NKSC_SIFRA  from " + strtrim(databaseName) + ".dbo.NKSCPART WHERE NKSC_SIFRA = '" + OIBSupp + "'";
-            try
-            {
+            try{
                 sqlPartner = sqlQuery(sqlQueryString);
             }
             catch(ex)
@@ -1038,8 +1044,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             // NKSCPART - nađi dobavljača po OIB-u/GLN-u i uzmi šifru dobavljača
             // ako ne postoji, kreiraj novog dobavljača
             sqlQueryString = "select NKSC_PARTCODE, NKSC_PARTNAME, NKSC_RO, NKSC_ADD1, NKSC_CITY, NKSC_ZIP, NKSC_drzava, NKSC_SIFRA  from " + strtrim(databaseName) + ".dbo.NKSCPART WHERE NKSC_SOP = '" + GLNSupp + "'";
-            try
-            {
+            try{
                 sqlPartner = sqlQuery(sqlQueryString);
             }
             catch(ex)
@@ -1340,7 +1345,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
 
         return true;
         
-    } catch (error) {
+    } catch(error) {
         Mbox("Greška prilikom izvlačenja podataka zaglavlja: " + error);
         return null;
     }
@@ -1352,7 +1357,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
 // Save note to NKNAOPIS table and return reference number
 // -----------------------------------------------------------
 function SaveNoteToNKNAOPIS(noteText) {
-    try {
+    try{
         if (noteText == "" || noteText == null) {
             return 0;
         }
@@ -1401,7 +1406,7 @@ function SaveNoteToNKNAOPIS(noteText) {
 
         return nextNoteNum;
         
-    } catch (error) {
+    } catch(error) {
         Mbox("Greška pri spremanju napomene: " + error);
         return 0;
     }
@@ -1411,7 +1416,7 @@ function SaveNoteToNKNAOPIS(noteText) {
 // Extract and save notes from document
 // -----------------------------------------------------------
 function ExtractAndSaveNotes(docData) {
-    try {
+    try{
         restOfNotes = {};
 
         NKPR_GL_BROPIS = 0;
@@ -1429,7 +1434,7 @@ function ExtractAndSaveNotes(docData) {
         } else {
             ProcessSingleNote(docData["Note"], 1); // NKPR_GL_PICTFTR
         }
-    } catch (error) {
+    } catch(error) {
         Mbox("Greška pri obradi napomena: " + error);
     }
 }
@@ -1454,7 +1459,7 @@ function ProcessSingleNote(noteNode, noteIndex) {
 
 // Extract line items from Dictionary
 function ExtractLineItemsFromDict(invoiceDict, docType) {
-    try {
+    try{
         lineItems = {};
         // Get the root document data
         docData = invoiceDict;
@@ -1501,7 +1506,7 @@ function ExtractLineItemsFromDict(invoiceDict, docType) {
             }
         }
         return;
-    } catch (error) {
+    } catch(error) {
         Mbox("Greška prilikom izvlačenja stavki: " + error);
         return null;
     }
@@ -1509,7 +1514,7 @@ function ExtractLineItemsFromDict(invoiceDict, docType) {
 
 // Extract single line item data from Dictionary
 function ExtractSingleLineFromDict(lineDict, quantityElementName) {
-    try {
+    try{
         lineData = {};
         
         numOfLines++;
@@ -1628,7 +1633,7 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
         //msg ("FINAL LINE DATA: " + lineData);    
         return lineData;
         
-    } catch (error) {
+    } catch(error) {
         Mbox("Greška prilikom izvlačenja stavke: " + error);
         return null;
     }
@@ -1691,7 +1696,7 @@ function ParseDecimal(inputString) {
 
 // Import header data into NKNAERGL table
 function ImportHeaderDataToERGL(docType) {
-    try {
+    try{
         // Generate new record ID
         newRecordId = GetNextRecordId("NKNAERGL");
         NKPR_GL_BRPON = newRecordId;
@@ -1817,7 +1822,7 @@ function ImportHeaderDataToERGL(docType) {
             throw "SQL insert neuspješan";
         }
         
-    } catch (error) {
+    } catch(error) {
         throw "Greška prilikom unosa zaglavlja: " + error;
     }
 }
@@ -1825,7 +1830,7 @@ function ImportHeaderDataToERGL(docType) {
 // Import line items into NKNAERLN table
 function ImportLineItemsToERLN(recordId, lineItems) {
   //msg("Importing line items for Record ID: " + recordId);      
-    try {
+    try{
 
         // msg("lineItems: " + lineItems);
         // linije artikala
@@ -1977,14 +1982,14 @@ function ImportLineItemsToERLN(recordId, lineItems) {
         
         return true;
         
-    } catch (error) {
+    } catch(error) {
         throw "Greška prilikom unosa stavki: " + error;
     }
 }
 
 // Log to NKSYELOG table
 function LogToNKSYELOG(recordId, xmlFilePath, status) {
-    try {
+    try{
         sql_log = "INSERT INTO " + databaseName + ".dbo.NKSYELOG (";
         sql_log += "SY_ELOG_DATE, SY_ELOG_PERSON, SY_ELOG_PROGRAM, SY_ELOG_MESSAGE, ";
         sql_log += "SY_ELOG_RECORDID, SY_ELOG_STATUS";
@@ -2002,7 +2007,7 @@ function LogToNKSYELOG(recordId, xmlFilePath, status) {
         
         SqlNonQuery(sql_log, sqlParams);
         
-    } catch (error) {
+    } catch(error) {
         // Don't throw error for logging issues
         Mbox("Warning: Could not log to NKSYELOG: " + error);
     }
@@ -2041,7 +2046,7 @@ function GetUnitCodeFromUN(unCode) {
 /*
 // Validate if invoice ESD date belongs to current fiscal year
 function ValidateFiscalYear() {
-    try {
+    try{
         //if (esdDate == "" || esdDate == null) {
         //    return false; // No ESD date provided
         //}
@@ -2055,7 +2060,7 @@ function ValidateFiscalYear() {
         // Compare years
         return (esdYear == fiscalYear);
         
-    } catch (error) {
+    } catch(error) {
         Mbox("Greška prilikom validacije fiskalne godine: " + error);
         return false;
     }
@@ -2101,7 +2106,7 @@ function LogNKSYELOG(elogStatusCode, _invoiceId, description = ""){
 // Reverse process from wxeracun.cscs
 // -----------------------------------------------------------
 function ExtractAndSaveAttachments(invoiceDict, docType) {
-    try {
+    try{
         restOfAttachments = {};
 
         // Get the root document data
@@ -2158,7 +2163,7 @@ function ExtractAndSaveAttachments(invoiceDict, docType) {
         }
 
         return true;
-    } catch (error) {
+    } catch(error) {
         Mbox("Greška pri extraction attachments: " + error);
         return false;
     }
@@ -2168,7 +2173,7 @@ function ExtractAndSaveAttachments(invoiceDict, docType) {
 // Process single attachment from AdditionalDocumentReference
 // -----------------------------------------------------------
 function ProcessSingleAttachment(attachmentRef, attachmentIndex) {
-    try {
+    try{
         // Get attachment ID
         attachmentID = "";
         if (Contains(attachmentRef, "ID")) {
@@ -2227,7 +2232,7 @@ function ProcessSingleAttachment(attachmentRef, attachmentIndex) {
             }
         }
         
-    } catch (error) {
+    } catch(error) {
         msg("Greška pri obradi attachmenta: " + error);
     }
 }
@@ -2237,7 +2242,7 @@ function ProcessSingleAttachment(attachmentRef, attachmentIndex) {
 // Returns the NKSYPICT reference number (SY_SL_NUM)
 // -----------------------------------------------------------
 function SaveAttachmentToDisk(base64Content, filename, description, attachmentID) {
-    try {
+    try{
         // Validate inputs
         if (base64Content == "" || filename == "") {
             //msg("Preskakanje praznog attachment ili filename");
@@ -2309,7 +2314,7 @@ function SaveAttachmentToDisk(base64Content, filename, description, attachmentID
         
         return nextPicNum;
         
-    } catch (error) {
+    } catch(error) {
         Mbox("Greška pri spremanju priloga: " + error);
         return 0;
     }
@@ -2323,7 +2328,7 @@ function SaveAttachmentToDisk(base64Content, filename, description, attachmentID
 // Reverse process from wxeracun.cscs
 // -----------------------------------------------------------
 function LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent) {
-    try {
+    try{
         if (xmlTaxCategoryID == "" || xmlTaxCategoryID == null) {
             msg("POZOR: Kategorija poreza nije unesena!");
             return 0;
@@ -2383,7 +2388,7 @@ function LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent) {
         msg("POZOR: Šifra poreza nije nađena za kategoriju=" + xmlTaxCategoryID + " (" + pkfkTaxTarifa + "), Stopa=" + xmlTaxPercent);
         return 0;
         
-    } catch (error) {
+    } catch(error) {
         msg("Greška pri traženju tax code: " + error);
         return 0;
     }
@@ -2417,9 +2422,9 @@ function WriteLog(filename, text, responseCode = "") {
         + responseCodeText
         + "Response:\n" + text + "\n\n";
 
-    try {
+    try{
         SaveFile(appendText, logFilePath, "a");        
-    } catch (ex) {
+    } catch(ex) {
         Mbox("CRITICAL: Cannot write to log file: " + logFilePath + "\nError: " + ex);
     }
 }

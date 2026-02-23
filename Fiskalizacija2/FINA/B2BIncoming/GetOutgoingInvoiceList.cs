@@ -130,7 +130,7 @@ namespace WpfCSCS.Fiskalizacija2.FINA.B2BIncoming
                         invoiceVar.SetHashVariable("InvoiceIssueDate", new Variable(B2BOutgoingInvoice.InvoiceIssueDate));
                         invoiceVar.SetHashVariable("InvoiceDate", new Variable(B2BOutgoingInvoice.InvoiceDate));
                         invoiceVar.SetHashVariable("InvoiceTimestamp", new Variable(B2BOutgoingInvoice.InvoiceTimestamp));
-                        invoiceVar.SetHashVariable("InvoicePayableAmount", new Variable(B2BOutgoingInvoice.InvoicePayableAmount));
+                        invoiceVar.SetHashVariable("InvoicePayableAmount", new Variable((double)B2BOutgoingInvoice.InvoicePayableAmount));
                         invoiceVar.SetHashVariable("DocumentCurrencyCode", new Variable(B2BOutgoingInvoice.DocumentCurrencyCode));
                         invoicesArrayVar.AddVariable(invoiceVar);
                     });

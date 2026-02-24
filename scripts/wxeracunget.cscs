@@ -850,7 +850,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         NKPR_GL_REZ3 = 0;
         NKPR_GL_SIGNATU = "";
         NKPR_GL_INVCD= "";
-        NKPR_GL_POSRED = "";
+        // NKPR_GL_POSRED = ""; // već je ispunjen
 
 
         // Get the root document data (handle nested or flat structure)
@@ -981,7 +981,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                 if(copyIndicator != "true"){
                     
                     // ako nema electronic Id zapisan, zapišimo ga
-                    if(sqlOIBInvoicenum[1][3] == ""){
+                    if(sqlOIBInvoicenum[1][3].trim() == ""){
                         sqlStringInsertElectronicId = "UPDATE " + databaseName + ".dbo.NKNAERGL SET NKPR_GL_POSRED = '" + NKPR_GL_POSRED + "' WHERE NKPR_GL_BRPON = " + sqlOIBInvoicenum[1][0];
                         try{
                             SqlNonQuery(sqlStringInsertElectronicId);

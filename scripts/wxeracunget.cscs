@@ -699,6 +699,9 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
         pdfPathInIMPORTED = UR_IMPORTED_DirectoryPath + "p0.pdf";
         if(Exists(pdfPathInNEW)){
             try{
+                if(Exists(pdfPathInIMPORTED)){
+                    Delete(pdfPathInIMPORTED);
+                }
                 Move(pdfPathInNEW, pdfPathInIMPORTED);
             }
             catch(aa){
@@ -729,7 +732,7 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
         
         // Extract header information from dictionary
         if (!ExtractHeaderDataFromDict(invoiceDict, docType)) {
-            Mbox("Greška prilikom izvlačenja podataka zaglavlja");
+            // Mbox("Greška prilikom izvlačenja podataka zaglavlja");
             return false;
         }
         //   if (NKPR_GL_ESD"] == "") {NKPR_GL_ESD"] = NKPR_GL_INVDTE"];} 
@@ -774,6 +777,9 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
             
 
             // Move XML to IMPORTED folder
+            if(Exists(UR_IMPORTED_DirectoryPath + xmlFilenameWithoutExtension + ".xml")){
+                Delete(UR_IMPORTED_DirectoryPath + xmlFilenameWithoutExtension + ".xml");
+            }
             Move(UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".xml", UR_IMPORTED_DirectoryPath + xmlFilenameWithoutExtension + ".xml");
             
             
@@ -973,40 +979,46 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                 }
             }
             
-            //tu sad imamo OIB dobavljača i broj računa dobavljača; sada provjeriti da li je taj račun već unesen za tog dobavljača
-            sqlQueryString = "select NKPR_GL_BRPON, NKPR_GL_JMBG, NKPR_GL_DESC, NKPR_GL_POSRED from " + strtrim(databaseName) + ".dbo.NKNAERGL WHERE NKPR_GL_JMBG = '" + OIBSupp + "' AND NKPR_GL_DESC = '" + NKPR_GL_DESC + "'";
-            sqlOIBInvoicenum = sqlQuery(sqlQueryString);
-            if (size(sqlOIBInvoicenum) > 1)
-            {
-                if(copyIndicator != "true"){
+            // //tu sad imamo OIB dobavljača i broj računa dobavljača; sada provjeriti da li je taj račun već unesen za tog dobavljača
+            // sqlQueryString = "select NKPR_GL_BRPON, NKPR_GL_JMBG, NKPR_GL_DESC, NKPR_GL_POSRED from " + strtrim(databaseName) + ".dbo.NKNAERGL WHERE NKPR_GL_JMBG = '" + OIBSupp + "' AND NKPR_GL_DESC = '" + NKPR_GL_DESC + "'";
+            // sqlOIBInvoicenum = sqlQuery(sqlQueryString);
+            // if (size(sqlOIBInvoicenum) > 1)
+            // {
+            //     if(copyIndicator != "true"){
                     
-                    // ako nema electronic Id zapisan, zapišimo ga
-                    if(sqlOIBInvoicenum[1][3].trim() == ""){
-                        sqlStringInsertElectronicId = "UPDATE " + databaseName + ".dbo.NKNAERGL SET NKPR_GL_POSRED = '" + NKPR_GL_POSRED + "' WHERE NKPR_GL_BRPON = " + sqlOIBInvoicenum[1][0];
-                        try{
-                            SqlNonQuery(sqlStringInsertElectronicId);
-                        }
-                        catch(ex)
-                        {
-                            Mbox("Greška prilikom unosa ID-a računa posrednika u bazu:\n" + ex);
-                            // !!! LOG !!!
-                            //exit;
-                        }
-                    }
+            //         // ako nema electronic Id zapisan, zapišimo ga
+            //         if(sqlOIBInvoicenum[1][3].trim() == ""){
+            //             sqlStringInsertElectronicId = "UPDATE " + databaseName + ".dbo.NKNAERGL SET NKPR_GL_POSRED = '" + NKPR_GL_POSRED + "' WHERE NKPR_GL_BRPON = " + sqlOIBInvoicenum[1][0];
+            //             try{
+            //                 SqlNonQuery(sqlStringInsertElectronicId);
+            //             }
+            //             catch(ex)
+            //             {
+            //                 Mbox("Greška prilikom unosa ID-a računa posrednika u bazu:\n" + ex);
+            //                 // !!! LOG !!!
+            //                 //exit;
+            //             }
+            //         }
                     
-                    //ako je copyIndicator false, znači nije kopija, a došao je račun koji smo već učitali; to je greška i račun se ne bi smio preuzeti!
-                    //ako nije, onda javiti da je račun kopija, i taj se ne bi smio pojaviti na knjiženju već samo u registru e-računa
-                    Mbox("Račun s OIB-om dobavljača " + OIBSupp + " i brojem računa dobavljača " + glDesc + " je već unesen u registar eRačuna pod brojem: " + sqlOIBInvoicenum[1][0].trim());
-                    return;
-                }else{
-                    //tu je označeni račun kao kopija, preuzmimo ga i označimo sa 'K' u invcd; račun se ne bi smio preuzeti na knjiženje, već samo 'na znanje'
-                    //u memoX upisati:
-                    //memoX += "Račun s OIB-om dobavljača " + OIBSupp + " i brojem računa dobavljača " + glDesc + " je već unesen u bazu pod brojem računa: " + sqlOIBInvoicenum[1][0].trim() + ". Došla je kopija računa.\n";
-                    // return;
-                    Mbox("Račun s OIB-om dobavljača " + OIBSupp + " i brojem računa dobavljača " + glDesc + " je već unesen u registar eRačuna pod brojem: " + sqlOIBInvoicenum[1][0].trim() + ". IMA OZNAKU KOPIJE RAČUNA!");
-                    NKPR_GL_INVCD = "K";
-                }
+            //         //ako je copyIndicator false, znači nije kopija, a došao je račun koji smo već učitali; to je greška i račun se ne bi smio preuzeti!
+            //         //ako nije, onda javiti da je račun kopija, i taj se ne bi smio pojaviti na knjiženju već samo u registru e-računa
+            //         Mbox("Račun s OIB-om dobavljača " + OIBSupp + " i brojem računa dobavljača " + glDesc + " je već unesen u registar eRačuna pod brojem: " + sqlOIBInvoicenum[1][0].trim());
+            //         return;
+            //     }else{
+            //         //tu je označeni račun kao kopija, preuzmimo ga i označimo sa 'K' u invcd; račun se ne bi smio preuzeti na knjiženje, već samo 'na znanje'
+            //         //u memoX upisati:
+            //         //memoX += "Račun s OIB-om dobavljača " + OIBSupp + " i brojem računa dobavljača " + glDesc + " je već unesen u bazu pod brojem računa: " + sqlOIBInvoicenum[1][0].trim() + ". Došla je kopija računa.\n";
+            //         // return;
+            //         Mbox("Račun s OIB-om dobavljača " + OIBSupp + " i brojem računa dobavljača " + glDesc + " je već unesen u registar eRačuna pod brojem: " + sqlOIBInvoicenum[1][0].trim() + ". IMA OZNAKU KOPIJE RAČUNA!");
+            //         NKPR_GL_INVCD = "K";
+            //     }
+            // }
+
+
+            if(copyIndicator == "true"){
+                NKPR_GL_INVCD = "K";
             }
+
 
             // Supplier address
             if (Contains(suppPartyData, "PostalAddress")) { 
@@ -1082,6 +1094,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         } elif (GLNSupp != "") {
             MemoX += "GLN: " + GLNSupp + "\n";
         }else {
+            Mbox("Nije moguće odrediti OIB ili GLN dobavljača iz računa " + NKPR_GL_DESC + ". Račun neće biti uvezen.");
             return;
         }
 
@@ -1210,78 +1223,80 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         }
         
         // Payment information
-        paymentMeans = GetNodeText(docData["PaymentMeans"]);
-        xmlPaymentMeansCode = "";
-        if (paymentMeans != null && paymentMeans != "") {
-            // Get PaymentMeansCode from XML (e.g., "30", "42", etc.)
-            //    xmlPaymentMeansCode = paymentMeans["PaymentMeansCode"]; //[#text]; POPRAVITI!!!
-            if (Contains(paymentMeans, "PaymentMeansCode")) {
-                xmlPaymentMeansCode = GetNodeText(paymentMeans["PaymentMeansCode"]);
-            }
-            
-            // Convert XML PaymentMeansCode to internal KPKSVRPL code
-            // Reverse process from wxeracun.cscs
-            NKPR_GL_SIF_PL = "";
-            if (xmlPaymentMeansCode != "") {
-                // Query KPKSVRPL table to find matching internal code
-                // KPKS_PL_NAZIV2 contains the UBL code (e.g., "30", "42")
-                sql_payment = "SELECT KPKS_PL_SIF_PL FROM " + databaseName + ".dbo.KPKSVRPL WHERE SUBSTRING(KPKS_PL_NAZIV2, 1, 2) = @p1;";
-                sqlParams = {};
-                sqlParams.Add({"@p1", xmlPaymentMeansCode});
-                paymentRes = sqlQuery(sql_payment, sqlParams);
-                if (Size(paymentRes) >= 2) {
-                    NKPR_GL_SIF_PL = paymentRes[1][0].trim();
-                    //msg("Payment means code converted: XML=" + xmlPaymentMeansCode + " -> Internal=" + NKPR_GL_SIF_PL);
-                } else {
-                    // If no match found, use default or log warning
-                    //msg("WARNING: No matching payment means code found in KPKSVRPL for XML code: " + xmlPaymentMeansCode);
-                    NKPR_GL_SIF_PL = xmlPaymentMeansCode; // Or set a value from XML directly
+        if(Contains(docData, "PaymentMeans")) {
+            paymentMeans = GetNodeText(docData["PaymentMeans"]);
+            xmlPaymentMeansCode = "";
+            if (paymentMeans != null && paymentMeans != "") {
+                // Get PaymentMeansCode from XML (e.g., "30", "42", etc.)
+                //    xmlPaymentMeansCode = paymentMeans["PaymentMeansCode"]; //[#text]; POPRAVITI!!!
+                if (Contains(paymentMeans, "PaymentMeansCode")) {
+                    xmlPaymentMeansCode = GetNodeText(paymentMeans["PaymentMeansCode"]);
                 }
-            }
-
-            if (contains(paymentMeans,"PayeeFinancialAccount")) {
-                pfe = GetNodeText(paymentMeans["PayeeFinancialAccount"]);
-                pfeId = GetNodeText(pfe["ID"]);
-                pfeId = pfeId.Replace(" ", "");
-            }
-
-            ziroFound = false;
-            if (NKPR_GL_CUSCOD != "") {
-                sql_bank = "SELECT NKSC_ZR_REZ, NKSC_ZR_NAZIV, NKSC_ZR_BANKA FROM " + databaseName + ".dbo.NKSCZIRO WHERE NKSC_ZR_CODE = @p1;";
-                sqlParams = {};
-                sqlParams.Add({"@p1", NKPR_GL_CUSCOD});
-                bankRes = sqlQuery(sql_bank, sqlParams);
-                if (Size(bankRes) > 1) {
-                    
-                    for(bankResCounter = 0; bankResCounter < Size(bankRes); bankResCounter++){
-                        NKSC_ZR_REZ = bankRes[bankResCounter][0].trim();
-                        NKSC_ZR_NAZIV = bankRes[bankResCounter][1].trim();
-                        NKSC_ZR_BANKA = bankRes[bankResCounter][2].trim();
-                        
-                        if (NKSC_ZR_REZ.Replace(" ", "") == pfeId) {
-                            NKPR_GL_RZRVA1 = NKSC_ZR_BANKA;
-                            ziroFound = true;
-                            break;
-                        }
+                
+                // Convert XML PaymentMeansCode to internal KPKSVRPL code
+                // Reverse process from wxeracun.cscs
+                NKPR_GL_SIF_PL = "";
+                if (xmlPaymentMeansCode != "") {
+                    // Query KPKSVRPL table to find matching internal code
+                    // KPKS_PL_NAZIV2 contains the UBL code (e.g., "30", "42")
+                    sql_payment = "SELECT KPKS_PL_SIF_PL FROM " + databaseName + ".dbo.KPKSVRPL WHERE SUBSTRING(KPKS_PL_NAZIV2, 1, 2) = @p1;";
+                    sqlParams = {};
+                    sqlParams.Add({"@p1", xmlPaymentMeansCode});
+                    paymentRes = sqlQuery(sql_payment, sqlParams);
+                    if (Size(paymentRes) >= 2) {
+                        NKPR_GL_SIF_PL = paymentRes[1][0].trim();
+                        //msg("Payment means code converted: XML=" + xmlPaymentMeansCode + " -> Internal=" + NKPR_GL_SIF_PL);
+                    } else {
+                        // If no match found, use default or log warning
+                        //msg("WARNING: No matching payment means code found in KPKSVRPL for XML code: " + xmlPaymentMeansCode);
+                        NKPR_GL_SIF_PL = xmlPaymentMeansCode; // Or set a value from XML directly
                     }
+                }
 
-                    if(ziroFound == false){
+                if (contains(paymentMeans,"PayeeFinancialAccount")) {
+                    pfe = GetNodeText(paymentMeans["PayeeFinancialAccount"]);
+                    pfeId = GetNodeText(pfe["ID"]);
+                    pfeId = pfeId.Replace(" ", "");
+                }
+
+                ziroFound = false;
+                if (NKPR_GL_CUSCOD != "") {
+                    sql_bank = "SELECT NKSC_ZR_REZ, NKSC_ZR_NAZIV, NKSC_ZR_BANKA FROM " + databaseName + ".dbo.NKSCZIRO WHERE NKSC_ZR_CODE = @p1;";
+                    sqlParams = {};
+                    sqlParams.Add({"@p1", NKPR_GL_CUSCOD});
+                    bankRes = sqlQuery(sql_bank, sqlParams);
+                    if (Size(bankRes) > 1) {
+                        
+                        for(bankResCounter = 0; bankResCounter < Size(bankRes); bankResCounter++){
+                            NKSC_ZR_REZ = bankRes[bankResCounter][0].trim();
+                            NKSC_ZR_NAZIV = bankRes[bankResCounter][1].trim();
+                            NKSC_ZR_BANKA = bankRes[bankResCounter][2].trim();
+                            
+                            if (NKSC_ZR_REZ.Replace(" ", "") == pfeId) {
+                                NKPR_GL_RZRVA1 = NKSC_ZR_BANKA;
+                                ziroFound = true;
+                                break;
+                            }
+                        }
+
+                        if(ziroFound == false){
+                            NKPR_GL_SIGNATU = pfeId;
+                        }
+                    }else{
                         NKPR_GL_SIGNATU = pfeId;
                     }
-                }else{
+                } else {
                     NKPR_GL_SIGNATU = pfeId;
                 }
-            } else {
-                NKPR_GL_SIGNATU = pfeId;
-            }
-            
+                
 
-            if (Contains(paymentMeans, "PaymentID")) {
-                paymentID = GetNodeText(paymentMeans["PaymentID"]);
-                NKPR_GL_MODEL = Substring(paymentID, 2, 2);
+                if (Contains(paymentMeans, "PaymentID")) {
+                    paymentID = GetNodeText(paymentMeans["PaymentID"]);
+                    NKPR_GL_MODEL = Substring(paymentID, 2, 2);
 
-                if(paymentID.length > 4){
-                    NKPR_GL_POZIV = Substring(paymentID, 4, paymentID.length - 4).trim();
+                    if(paymentID.length > 4){
+                        NKPR_GL_POZIV = Substring(paymentID, 4, paymentID.length - 4).trim();
+                    }
                 }
             }
         }
@@ -1347,7 +1362,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         
     } catch(error) {
         Mbox("Greška prilikom izvlačenja podataka zaglavlja: " + error);
-        return null;
+        return false;
     }
 }
 

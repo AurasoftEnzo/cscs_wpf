@@ -1873,16 +1873,27 @@ function GenerateUBLXml() {
             ARTI_SIFART_BAR = artRes[1][1].trim();
             ARTI_PRELIMTEZ = artRes[1][2].trim();
 
-            if (ARTI_SIFART_BAR.length == 13) {
+            if(ARTI_SIFART_BAR == ""){
+                intCode = ARTI_ARTIKL;
                 ean = ARTI_SIFART_BAR;
+            }elif(ARTI_SIFART_BAR.length == 13 && ARTI_ARTIKL.length != 13){
                 intCode = ARTI_ARTIKL;
-            } elif(ARTI_ARTIKL.length == 13) {
-                ean = ARTI_ARTIKL;
+                ean = ARTI_SIFART_BAR;
+            }else{
+                //jedinstvo
                 intCode = ARTI_SIFART_BAR;
-            } else {
-                intCode = ARTI_ARTIKL;
-                ean = "";
+                ean = ARTI_ARTIKL;
             }
+                // elif (ARTI_SIFART_BAR.length == 13) {
+                //     ean = ARTI_SIFART_BAR;
+                //     intCode = ARTI_ARTIKL;
+                // } elif(ARTI_ARTIKL.length == 13) {
+                //     ean = ARTI_ARTIKL;
+                //     intCode = ARTI_SIFART_BAR;
+                // } else {
+                //     intCode = ARTI_ARTIKL;
+                //     ean = "";
+                // }
         }
         xml += "    <cac:SellersItemIdentification><cbc:ID>" + intCode + "</cbc:ID></cac:SellersItemIdentification>\n";
         if (ean.length == 13) {

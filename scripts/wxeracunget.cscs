@@ -428,7 +428,7 @@ function CheckLocalXmls(){
 
         xmlFilePath = listOfXmls[xmlCounter];
 
-        xmlFilename = parsefile(xmlFilePath, "pfName") + ParseFile(xmlFilePath, "pfExt");;
+        xmlFilename = parsefile(xmlFilePath, "pfName") + ParseFile(xmlFilePath, "pfExt");
 
         AddRacunToArrays("FILE", "", "", "", xmlFilename, "");
     }
@@ -777,10 +777,12 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
             
 
             // Move XML to IMPORTED folder
-            if(Exists(UR_IMPORTED_DirectoryPath + xmlFilenameWithoutExtension + ".xml")){
-                Delete(UR_IMPORTED_DirectoryPath + xmlFilenameWithoutExtension + ".xml");
+            xmlInNewPath = UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".xml";
+            xmlInImportedPath = UR_IMPORTED_DirectoryPath + xmlFilenameWithoutExtension + ".xml";
+            if(Exists(xmlInImportedPath)){
+                Delete(xmlInImportedPath);
             }
-            Move(UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".xml", UR_IMPORTED_DirectoryPath + xmlFilenameWithoutExtension + ".xml");
+            Move(xmlInNewPath, xmlInImportedPath);
             
             
             //Mbox("UBL XML račun je uspješno uvezen!\nBroj računa: " + invNum);
@@ -872,10 +874,10 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         glDesc = GetNodeText(docData["ID"]); //broj računa od dobavljača
         
         if(glDesc.length > 40){
-            NKPR_GL_DESC = Substring(glDesc, 0, 40);
+            NKPR_GL_DESC = string(Substring(glDesc, 0, 40));
             memoX += "Originalni broj računa dobavljača: " + glDesc + "\n";
         }else{
-            NKPR_GL_DESC = glDesc;
+            NKPR_GL_DESC = string(glDesc);
         }
             
         //provjeriti kasnije kad imamo i OIB dobavljača, u NKNAERGL da li je taj broj već unesen/preuzet
@@ -1026,7 +1028,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                 if (suppAddress != null && suppAddress != "") {
                     if (Contains(suppAddress, "StreetName")) {NKPR_GL_CUSA1 = GetNodeText(suppAddress["StreetName"]);}
                     if (Contains(suppAddress, "CityName")) {NKPR_GL_CUSCTY = GetNodeText(suppAddress["CityName"]);}
-                    if (Contains(suppAddress, "PostalZone")) {NKPR_GL_CUSZIP = GetNodeText(suppAddress["PostalZone"]);}
+                    if (Contains(suppAddress, "PostalZone")) {NKPR_GL_CUSZIP = int(GetNodeText(suppAddress["PostalZone"]));}
                     if (Contains(suppAddress, "Country")) {
                         suppAddressCountry = GetNodeText(suppAddress["Country"]);
                         NKPR_GL_CUSST = GetNodeText(suppAddressCountry["IdentificationCode"]);
@@ -1090,7 +1092,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         }   
 
         if (OIBSupp != "") {
-            NKPR_GL_JMBG = OIBSupp;
+            NKPR_GL_JMBG = string(OIBSupp);
         } elif (GLNSupp != "") {
             MemoX += "GLN: " + GLNSupp + "\n";
         }else {
@@ -1113,9 +1115,9 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
 
             companyIDEndpointID = custPartyData["EndpointID"]; // npr 12345678903
             if(companyIDEndpointID["@attributes"]["schemeID"] == "9934"){
-                OIBCust = GetNodeText(companyIDEndpointID);
+                OIBCust = string(GetNodeText(companyIDEndpointID));
             } elif(companyIDEndpointID["@attributes"]["schemeID"] == "0088"){
-                GLNCust = GetNodeText(companyIDEndpointID);
+                GLNCust = string(GetNodeText(companyIDEndpointID));
 
                 if(Contains(custPartyData, "PartyIdentification")){// npr.: OIB 9934:12345678903 ili možda GLN 0088:12345678
                     custPartyDataPartyIdentification = GetNodeText(custPartyData["PartyIdentification"]);
@@ -1124,15 +1126,15 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                     refNum = refNumbers[0].trim();
                     refOIB = refNumbers[1].trim();
                     if(refNum == "9934"){
-                        OIBCust = refOIB;
+                        OIBCust = string(refOIB);
                     } elif(refNum == "0088"){
-                        GLNCust = refOIB;
+                        GLNCust = string(refOIB);
 
                         if(OIBCust == ""){
                             if(Contains(custPartyData, "PartyTaxScheme")){
                                 custPartyDataPartyTaxScheme = GetNodeText(custPartyData["PartyTaxScheme"]);
                                 compId = GetNodeText(custPartyDataPartyTaxScheme["CompanyID"]); // npr.: OIB 9934:12345678903 ili možda GLN 0088:12345678
-                                OIBCust = compId.Replace("HR", "");
+                                OIBCust = string(compId.Replace("HR", ""));
                             }
                             else{
                                 Mbox("Nije moguće odrediti OIB kupca iz računa " + NKPR_GL_DESC + ".");
@@ -1141,6 +1143,8 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                     }
                 }
             }
+
+            OIBCust = OIBCust.Replace("HR", ""); //ako slučajno dođe sa HR prefiksom, maknimo ga
 
             if(OIBCust == ""){
                 Mbox("Nije moguće odrediti OIB kupca iz računa " + NKPR_GL_DESC + ". Račun neće biti uvezen.");
@@ -1183,7 +1187,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                         if (deliveryAddr != null && deliveryAddr != "") {
                             if (Contains(deliveryAddr, "StreetName")) {NKPR_GL_SHPA1 = GetNodeText(deliveryAddr["StreetName"])};
                             if (Contains(deliveryAddr, "CityName")) {NKPR_GL_SHPCTY = GetNodeText(deliveryAddr["CityName"])};
-                            if (Contains(deliveryAddr, "PostalZone")) {NKPR_GL_SHPZIP = GetNodeText(deliveryAddr["PostalZone"])};
+                            if (Contains(deliveryAddr, "PostalZone")) {NKPR_GL_SHPZIP = int(GetNodeText(deliveryAddr["PostalZone"]))};
                             if (Contains(deliveryAddr, "Country")) {
                                 deliveryAddrCountry = GetNodeText(deliveryAddr["Country"]);
                                 NKPR_GL_SHPST = GetNodeText(deliveryAddrCountry["IdentificationCode"]);
@@ -1361,7 +1365,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         return true;
         
     } catch(error) {
-        Mbox("Greška prilikom izvlačenja podataka zaglavlja: " + error);
+        Mbox("Greška prilikom izvlačenja podataka zaglavlja(ID " + NKPR_GL_POSRED + "): " + error);
         return false;
     }
 }
@@ -1571,22 +1575,34 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
 
             // Product code - try different locations
             // productCode = GetDictValue(item, "BuyersItemIdentification.ID");
+            biiId = "";
             if(Contains(item, "BuyersItemIdentification")){
                 //MSG("25561: NEEDS TESTING !!!");
                 bii = GetNodeText(item["BuyersItemIdentification"]);
-                biiId = GetNodeText(bii["ID"]);    
-                lineData["NKPR_LN_PCODE"] = biiId;       
+                biiId = GetNodeText(bii["ID"]);
             }           
 
+            siiId = "";
             if(Contains(item, "StandardItemIdentification")){
                 //MSG("25562: NEEDS TESTING !!!");
                 sii = GetNodeText(item["StandardItemIdentification"]);
-                siiId = GetNodeText(sii["ID"]);    
-                lineData["NKPR_LN_BARCODE"] = siiId; 
-                if (siiId == "") {
-                    lineData["NKPR_LN_PCODE"] = siiId;       
-                }     
+                siiId = GetNodeText(sii["ID"]);     
+                // if (siiId != "") {
+                //     lineData["NKPR_LN_PCODE"] = siiId;       
+                // }     
             }             
+
+            if(biiId != "" && siiId != ""){
+                lineData["NKPR_LN_PCODE"] = biiId;
+                lineData["NKPR_LN_BARCODE"] = siiId;
+            } elif (biiId != "" && siiId == ""){
+                lineData["NKPR_LN_PCODE"] = biiId;
+                lineData["NKPR_LN_BARCODE"] = "";
+            } elif (biiId == "" && siiId != ""){
+                lineData["NKPR_LN_PCODE"] = siiId;
+                lineData["NKPR_LN_BARCODE"] = "";
+            }
+            
 
             // if (productCode == "") {
             //     productCode = GetDictValue(item, "SellersItemIdentification.ID");
@@ -1680,9 +1696,21 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
 // }
 
 function end(){
+    cntr1 = 0;
+    Rbr = 0;
+    TEMP_Rbr = 0;
+
+    DisplayArray("datagridListaRacuna", "close");
+
+    SetWidgetOptions("btnPrikazi", "IsEnabled", "true");
+    SetWidgetOptions("btnPreuzmi", "IsEnabled", "false");
+
+    SetWidgetOptions("StatusLabel", "Content", "");
+    SetWidgetOptions("StatusLabel2", "Content", "");
+
     cursor("dflt");
-    //Mbox("Kraj");
-    exit;
+    Mbox("Kraj");
+    // exit;
 }
 
 // Helper function to check if value is a primitive (leaf) value (not a dictionary/object)
@@ -1756,7 +1784,7 @@ function ImportHeaderDataToERGL(docType) {
         sqlParams.Add({"@taxPointDate", NKPR_GL_ESD});
 
         sqlParams.Add({"@currency", NKPR_GL_SIFDVZ});
-        sqlParams.Add({"@custOIB", NKPR_GL_JMBG});
+        sqlParams.Add({"@custOIB", string(NKPR_GL_JMBG)});
 
         if(NKPR_GL_CUSNME.length > 50){
             NKPR_GL_CUSNME = Substring(NKPR_GL_CUSNME, 0, 50);
@@ -1811,7 +1839,7 @@ function ImportHeaderDataToERGL(docType) {
         sqlParams.Add({"@total", NKPR_GL_TOTAL});
         //sqlParams.Add({"@payable", NKPR_GL_PAYABLE});
         
-        sqlParams.Add({"@glDesc", NKPR_GL_DESC}); /////// 40
+        sqlParams.Add({"@glDesc", string(NKPR_GL_DESC)}); /////// 40
         
         sqlParams.Add({"@note1", NKPR_GL_BROPIS}); 
         sqlParams.Add({"@note2", NKPR_GL_BROPIS1}); 
@@ -1838,7 +1866,7 @@ function ImportHeaderDataToERGL(docType) {
         }
         
     } catch(error) {
-        throw "Greška prilikom unosa zaglavlja: " + error;
+        throw "Greška prilikom unosa zaglavlja za ID " + NKPR_GL_POSRED + " : " + error;
     }
 }
 
@@ -1998,7 +2026,7 @@ function ImportLineItemsToERLN(recordId, lineItems) {
         return true;
         
     } catch(error) {
-        throw "Greška prilikom unosa stavki: " + error;
+        throw "Greška prilikom unosa stavki(ID " + NKPR_GL_POSRED + "): " + error;
     }
 }
 

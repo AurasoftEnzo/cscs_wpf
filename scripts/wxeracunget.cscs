@@ -432,7 +432,7 @@ function CheckLocalXmls(){
 
         AddRacunToArrays("FILE", "", "", "", xmlFilename, "");
 
-        msg("TEMP_arrayBrojRacuna: " + TEMP_arrayBrojRacuna);
+        //msg("TEMP_arrayBrojRacuna: " + TEMP_arrayBrojRacuna);
     }
 }
 
@@ -740,13 +740,22 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
         //   if (NKPR_GL_ESD"] == "") {NKPR_GL_ESD"] = NKPR_GL_INVDTE"];} 
         // Validate fiscal year before proceeding
         //ovo ne trebamo validirati na fiskalnu godinu jer svi računi idu u isti folder, a onda će operater odlučiti u koju će ga godinu unositi u knjigovodstvo
-        /*
         if (!ValidateFiscalYear(NKPR_GL_ESD)) {
             Mbox("Račun se ne može importirati jer datum (" + NKPR_GL_ESD + ") ne pripada fiskalnoj godini " + year(KPSY_FISCAL_YR) + ". Račun će biti premješten u arhivu.");
             return "FISCAL_YEAR_MISMATCH";
         }
-        */
         //msg ("ESD: " + NKPR_GL_ESD + " FISCAL YR: " + KPSY_FISCAL_YR);
+
+        // Extract and save notes to NKNAOPIS table
+        ExtractAndSaveNotes(docData);
+
+        // Extract and save attachments to disk and NKSYPICT table
+        ExtractAndSaveAttachments(invoiceDict, docType);
+
+        SaveMemoX();
+
+
+
         // Extract line items from dictionary
         // lineItems = ExtractLineItemsFromDict(invoiceDict, docType);
 
@@ -1368,7 +1377,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         //         //tu sad treba spremit cijeli note u MemoH ili MemoF ili u linije ili negdje drugdje ako treba
         //     }
         // }
-
+        /*
         // Extract and save notes to NKNAOPIS table
         ExtractAndSaveNotes(docData);
 
@@ -1376,7 +1385,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         ExtractAndSaveAttachments(invoiceDict, docType);
 
         SaveMemoX();
-
+        */
         // Billing references
         if (Contains(docData, "BillingReference")) {
             billingRef = GetNodeText(docData["BillingReference"]);

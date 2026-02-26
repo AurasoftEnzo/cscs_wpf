@@ -631,7 +631,7 @@ function GenerateUBLXml() {
         {
             TotaltaxOutOfScopeAmt += row[1]; //tu ide osnovica
             totalPorez += row[0];
-            totalOsnovica += row[1];
+            // totalOsnovica += row[1];
         }
         elif (PKFK_TAX_TARIFA == "PP"){
             TotaltaxOutOfScopeAmt += row[0]; //tu treba uzet iznos poreza
@@ -1703,7 +1703,7 @@ function GenerateUBLXml() {
     rounding = total - (totalOsnovica + totalPorez);
 
     xml += "<cac:LegalMonetaryTotal>\n";
-    xml += "  <cbc:LineExtensionAmount currencyID=\"EUR\">" + FormatNum(totalOsnovica, 2, ".", formatNumOption) + "</cbc:LineExtensionAmount>\n"; // BT-106
+    xml += "  <cbc:LineExtensionAmount currencyID=\"EUR\">" + FormatNum(totalOsnovica + TotaltaxOutOfScopeAmt, 2, ".", formatNumOption) + "</cbc:LineExtensionAmount>\n"; // BT-106
     xml += "  <cbc:TaxExclusiveAmount currencyID=\"EUR\">" + FormatNum(total - totalPorez, 2, ".", formatNumOption) + "</cbc:TaxExclusiveAmount>\n"; // BT-109
     xml += "  <cbc:TaxInclusiveAmount currencyID=\"EUR\">" + FormatNum(total, 2, ".", formatNumOption) + "</cbc:TaxInclusiveAmount>\n"; // BT-110
     xml += "  <cbc:ChargeTotalAmount currencyID=\"EUR\">" + FormatNum(ChargeTotAmt, 2, ".", formatNumOption) + "</cbc:ChargeTotalAmount>\n"; // BT-108

@@ -5306,7 +5306,7 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
                     <visual>
                         <binding template=""ToastImageAndText01"">
                             <text id=""1"">
-                                {messageText}
+                                {SecurityElement.Escape(messageText)}
                             </text>"
                             + (imagePath != "" ? $"<image id=\"1\" src=\"file://{imagePath}\" />" : "") + $@"
                         </binding>

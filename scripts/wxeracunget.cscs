@@ -431,6 +431,8 @@ function CheckLocalXmls(){
         xmlFilename = parsefile(xmlFilePath, "pfName") + ParseFile(xmlFilePath, "pfExt");
 
         AddRacunToArrays("FILE", "", "", "", xmlFilename, "");
+
+        msg("TEMP_arrayBrojRacuna: " + TEMP_arrayBrojRacuna);
     }
 }
 
@@ -454,7 +456,7 @@ function CheckTempListInDB(){
         if (Size(sqlResult) > 1)
         {
             count = sqlResult[1][0];
-            if(count > 0){
+            if(count > 0 && TEMP_arrayDobavljac[invoiceIdCounter] != "FILE"){
                 continue; // RemoveRacunFromTempArrays(invoiceId);
             }else{
                 arrayDobavljac[Rbr] = TEMP_arrayDobavljac[invoiceIdCounter];
@@ -931,9 +933,31 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             } elif(companyIDEndpointID["@attributes"]["schemeID"] == "0088"){
                 GLNSupp = GetNodeText(companyIDEndpointID);
 
-                if(Contains(suppPartyData, "PartyIdentification")){// npr.: OIB 9934:12345678903 ili možda GLN 0088:12345678
-                    suppPartyDataPI = GetNodeText(suppPartyData["PartyIdentification"]);
-                    companyIDPartyIdentificationID = GetNodeText(suppPartyDataPI["ID"]);
+                if(Contains(suppPartyData, "PartyIdentification")){
+                    if(ArrayOrDict(suppPartyData["PartyIdentification"]) == "array"){
+                        for(PIArrCntr = 0; PIArrCntr < Size(suppPartyData["PartyIdentification"]); PIArrCntr++){
+                            suppPartyDataPI = GetNodeText(suppPartyData["PartyIdentification"][PIArrCntr]);
+                            companyIDPartyIdentificationID = suppPartyDataPI["ID"];
+                            if(Contains(companyIDPartyIdentificationID, "@attributes")){
+                                companyIDPartyIdentificationID = companyIDPartyIdentificationID["@attributes"]["schemeID"] + ":" + GetNodeText(suppPartyDataPI["ID"]);
+                            }else{
+                                companyIDPartyIdentificationID = GetNodeText(suppPartyDataPI["ID"]);
+                            }
+
+                            if(companyIDPartyIdentificationID.StartsWith("9934:")){
+                                break;
+                            }
+                        }                
+                    }else{
+                        suppPartyDataPI = GetNodeText(suppPartyData["PartyIdentification"]);
+                        companyIDPartyIdentificationID = suppPartyDataPI["ID"];
+                        if(Contains(companyIDPartyIdentificationID, "@attributes")){
+                            companyIDPartyIdentificationID = companyIDPartyIdentificationID["@attributes"]["schemeID"] + ":" + GetNodeText(suppPartyDataPI["ID"]);
+                        }else{
+                            companyIDPartyIdentificationID = GetNodeText(suppPartyDataPI["ID"]);
+                        }
+                    }
+                    
                     refNumbers = companyIDPartyIdentificationID.split(":");
                     refNum = refNumbers[0].trim();
                     refOIB = refNumbers[1].trim();
@@ -1152,8 +1176,9 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             }
             
             if (CompanyOIB != OIBCust){
-                Mbox("OIB kupca u računu (" + OIBCust + ") ne odgovara OIB-u naše tvrtke (" + CompanyOIB + "). Račun neće biti uvezen.");
-                return;
+                //Mbox("OIB kupca u računu (" + OIBCust + ") ne odgovara OIB-u naše tvrtke (" + CompanyOIB + "). Račun neće biti uvezen.");
+                MemoX += "OIB kupca u računu (" + OIBCust + ") ne odgovara OIB-u naše tvrtke (" + CompanyOIB + ").\n";
+                // return;
             }
         }
 
@@ -1350,6 +1375,8 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         // Extract and save attachments to disk and NKSYPICT table
         ExtractAndSaveAttachments(invoiceDict, docType);
 
+        SaveMemoX();
+
         // Billing references
         if (Contains(docData, "BillingReference")) {
             billingRef = GetNodeText(docData["BillingReference"]);
@@ -1369,6 +1396,13 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         return false;
     }
 }
+
+function SaveMemoX(){
+    NKPR_GL_BROPIS2 = 0;
+    if(MemoX != ""){
+        NKPR_GL_BROPIS2 = SaveNoteToNKNAOPIS(MemoX);
+    }
+} 
 
 // Add this function after ExtractHeaderDataFromDict function
 
@@ -1755,7 +1789,7 @@ function ImportHeaderDataToERGL(docType) {
         sql_insert += "NKPR_GL_SHPZIP, NKPR_GL_SHPST,";
         sql_insert += "NKPR_GL_SIF_PL, NKPR_GL_MODEL, NKPR_GL_POZIV, NKPR_GL_DATPRI, ";
         sql_insert += "NKPR_GL_TAXAMT, NKPR_GL_TOTAL, NKPR_GL_DESC,";
-        sql_insert += "NKPR_GL_BROPIS, NKPR_GL_BROPIS1, NKPR_GL_REZ3, NKPR_GL_DATECR, NKPR_GL_DRZAVA, ";
+        sql_insert += "NKPR_GL_BROPIS, NKPR_GL_BROPIS1, NKPR_GL_BROPIS2, NKPR_GL_REZ3, NKPR_GL_DATECR, NKPR_GL_DRZAVA, ";
         sql_insert += "NKPR_GL_POSRED, NKPR_GL_PICTHDR, NKPR_GL_PICTFTR, NKPR_GL_DATJCD, NKPR_GL_INVCD";
         sql_insert += ") VALUES (";
         sql_insert += "@brpon, @docType, @invDate, @timeCreated, ";
@@ -1766,7 +1800,7 @@ function ImportHeaderDataToERGL(docType) {
         sql_insert += "@shpZip, @shpState, ";
         sql_insert += "@payment, @model, @poziv, @datpri, ";
         sql_insert += "@taxTotal, @total, @glDesc, ";
-        sql_insert += "@note1, @note2, @rez3, @created, @country, @posred, ";
+        sql_insert += "@note1, @note2, @memoX, @rez3, @created, @country, @posred, ";
         sql_insert += "@pictHdr, @pictFtr, @datjcd, @invcd ";
         sql_insert += ");";
         
@@ -1843,6 +1877,7 @@ function ImportHeaderDataToERGL(docType) {
         
         sqlParams.Add({"@note1", NKPR_GL_BROPIS}); 
         sqlParams.Add({"@note2", NKPR_GL_BROPIS1}); 
+        sqlParams.Add({"@memoX", NKPR_GL_BROPIS2}); // MemoX
 
         sqlParams.Add({"@rez3", NKPR_GL_REZ3});
         sqlParams.Add({"@created", NKPR_GL_INVDTE}); //????

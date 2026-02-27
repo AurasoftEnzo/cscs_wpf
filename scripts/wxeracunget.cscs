@@ -696,6 +696,41 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
             MkDir(UR_IMPORTED_DirectoryPath);
         }
 
+        documentDict = XmlToDict(xmlContent);
+        
+        documentKeys = documentDict.Keys;
+        documentType = documentKeys[0];
+
+        invoiceDict = documentDict[documentType];
+
+        NKPR_GL_POSRED = _invoiceId; // broj računa posrednika
+
+        if (invoiceDict == null || Size(invoiceDict) == 0) {
+            Mbox("Greška prilikom parsiranja XML-a u Dictionary");
+            return;
+        }
+        
+        // Determine document type from dictionary structure
+        docType = GetDocumentTypeFromDict(invoiceDict);
+        if (docType == "") {
+            Mbox("Nepoznat tip dokumenta u XML datoteci");
+            return;
+        }
+        
+        // Extract header information from dictionary
+        if (!ExtractHeaderDataFromDict(invoiceDict, docType)) {
+            // Mbox("Greška prilikom izvlačenja podataka zaglavlja");
+            return;
+        }
+        //   if (NKPR_GL_ESD"] == "") {NKPR_GL_ESD"] = NKPR_GL_INVDTE"];} 
+        // Validate fiscal year before proceeding
+        //ovo ne trebamo validirati na fiskalnu godinu jer svi računi idu u isti folder, a onda će operater odlučiti u koju će ga godinu unositi u knjigovodstvo
+        if (!ValidateFiscalYear(NKPR_GL_ESD)) {
+            Mbox("Račun ID " + NKPR_GL_POSRED + " se ne može importirati jer datum isporuke (" + NKPR_GL_ESD + ") ne pripada fiskalnoj godini " + year(KPSY_FISCAL_YR) + ".");
+            return;
+        }
+        //msg ("ESD: " + NKPR_GL_ESD + " FISCAL YR: " + KPSY_FISCAL_YR);
+
         //move VANJSKI pdf (if exists) to IMPORTED folder
         pdfPathInNEW = UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".pdf";
         pdfPathInIMPORTED = UR_IMPORTED_DirectoryPath + "p0.pdf";
@@ -710,41 +745,6 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
                 MBox("Greška prilikom premještanja PDF datoteke: " + aa);
             }
         }
-
-        documentDict = XmlToDict(xmlContent);
-        
-        documentKeys = documentDict.Keys;
-        documentType = documentKeys[0];
-
-        invoiceDict = documentDict[documentType];
-
-        NKPR_GL_POSRED = _invoiceId; // broj računa posrednika
-
-        if (invoiceDict == null || Size(invoiceDict) == 0) {
-            Mbox("Greška prilikom parsiranja XML-a u Dictionary");
-            return false;
-        }
-        
-        // Determine document type from dictionary structure
-        docType = GetDocumentTypeFromDict(invoiceDict);
-        if (docType == "") {
-            Mbox("Nepoznat tip dokumenta u XML datoteci");
-            return false;
-        }
-        
-        // Extract header information from dictionary
-        if (!ExtractHeaderDataFromDict(invoiceDict, docType)) {
-            // Mbox("Greška prilikom izvlačenja podataka zaglavlja");
-            return false;
-        }
-        //   if (NKPR_GL_ESD"] == "") {NKPR_GL_ESD"] = NKPR_GL_INVDTE"];} 
-        // Validate fiscal year before proceeding
-        //ovo ne trebamo validirati na fiskalnu godinu jer svi računi idu u isti folder, a onda će operater odlučiti u koju će ga godinu unositi u knjigovodstvo
-        if (!ValidateFiscalYear(NKPR_GL_ESD)) {
-            Mbox("Račun se ne može importirati jer datum (" + NKPR_GL_ESD + ") ne pripada fiskalnoj godini " + year(KPSY_FISCAL_YR) + ". Račun će biti premješten u arhivu.");
-            return "FISCAL_YEAR_MISMATCH";
-        }
-        //msg ("ESD: " + NKPR_GL_ESD + " FISCAL YR: " + KPSY_FISCAL_YR);
 
         // Extract and save notes to NKNAOPIS table
         ExtractAndSaveNotes(docData);
@@ -801,19 +801,19 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
 
             // LogNKSYELOG("P", invNum, currentInvoiceId);
 
-            return invNum;
+            return;
             
         } catch(error) {
             // Rollback transaction on error
             //RollbackTransaction();
             // LogToNKSYELOG(0, xmlFilePath, "IMPORT_FAILURE: " + error);
             Mbox("Greška prilikom unosa u bazu podataka: " + error);
-            return false;
+            return;
         }
 
     } catch(error) {
         Mbox("Greška prilikom uvoza XML datoteke: " + error);
-        return false;
+        return;
     }
 }
 
@@ -1014,40 +1014,40 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                 }
             }
             
-            // //tu sad imamo OIB dobavljača i broj računa dobavljača; sada provjeriti da li je taj račun već unesen za tog dobavljača
-            // sqlQueryString = "select NKPR_GL_BRPON, NKPR_GL_JMBG, NKPR_GL_DESC, NKPR_GL_POSRED from " + strtrim(databaseName) + ".dbo.NKNAERGL WHERE NKPR_GL_JMBG = '" + OIBSupp + "' AND NKPR_GL_DESC = '" + NKPR_GL_DESC + "'";
-            // sqlOIBInvoicenum = sqlQuery(sqlQueryString);
-            // if (size(sqlOIBInvoicenum) > 1)
-            // {
-            //     if(copyIndicator != "true"){
+            //tu sad imamo OIB dobavljača i broj računa dobavljača; sada provjeriti da li je taj račun već unesen za tog dobavljača
+            sqlQueryString = "select NKPR_GL_BRPON, NKPR_GL_JMBG, NKPR_GL_DESC, NKPR_GL_POSRED from " + strtrim(databaseName) + ".dbo.NKNAERGL WHERE NKPR_GL_JMBG = '" + OIBSupp + "' AND NKPR_GL_DESC = '" + NKPR_GL_DESC + "'";
+            sqlOIBInvoicenum = sqlQuery(sqlQueryString);
+            if (size(sqlOIBInvoicenum) > 1)
+            {
+                if(copyIndicator != "true"){
                     
-            //         // ako nema electronic Id zapisan, zapišimo ga
-            //         if(sqlOIBInvoicenum[1][3].trim() == ""){
-            //             sqlStringInsertElectronicId = "UPDATE " + databaseName + ".dbo.NKNAERGL SET NKPR_GL_POSRED = '" + NKPR_GL_POSRED + "' WHERE NKPR_GL_BRPON = " + sqlOIBInvoicenum[1][0];
-            //             try{
-            //                 SqlNonQuery(sqlStringInsertElectronicId);
-            //             }
-            //             catch(ex)
-            //             {
-            //                 Mbox("Greška prilikom unosa ID-a računa posrednika u bazu:\n" + ex);
-            //                 // !!! LOG !!!
-            //                 //exit;
-            //             }
-            //         }
+                    // ako nema electronic Id zapisan, zapišimo ga
+                    if(sqlOIBInvoicenum[1][3].trim() == ""){
+                        sqlStringInsertElectronicId = "UPDATE " + databaseName + ".dbo.NKNAERGL SET NKPR_GL_POSRED = '" + NKPR_GL_POSRED + "' WHERE NKPR_GL_JMBG = '" + OIBSupp + "' AND NKPR_GL_DESC = '" + NKPR_GL_DESC + "'";
+                        try{
+                            SqlNonQuery(sqlStringInsertElectronicId);
+                        }
+                        catch(ex)
+                        {
+                            Mbox("Greška prilikom unosa ID-a računa posrednika u bazu:\n" + ex);
+                            // !!! LOG !!!
+                            //exit;
+                        }
+                    }
                     
-            //         //ako je copyIndicator false, znači nije kopija, a došao je račun koji smo već učitali; to je greška i račun se ne bi smio preuzeti!
-            //         //ako nije, onda javiti da je račun kopija, i taj se ne bi smio pojaviti na knjiženju već samo u registru e-računa
-            //         Mbox("Račun s OIB-om dobavljača " + OIBSupp + " i brojem računa dobavljača " + glDesc + " je već unesen u registar eRačuna pod brojem: " + sqlOIBInvoicenum[1][0].trim());
-            //         return;
-            //     }else{
-            //         //tu je označeni račun kao kopija, preuzmimo ga i označimo sa 'K' u invcd; račun se ne bi smio preuzeti na knjiženje, već samo 'na znanje'
-            //         //u memoX upisati:
-            //         //memoX += "Račun s OIB-om dobavljača " + OIBSupp + " i brojem računa dobavljača " + glDesc + " je već unesen u bazu pod brojem računa: " + sqlOIBInvoicenum[1][0].trim() + ". Došla je kopija računa.\n";
-            //         // return;
-            //         Mbox("Račun s OIB-om dobavljača " + OIBSupp + " i brojem računa dobavljača " + glDesc + " je već unesen u registar eRačuna pod brojem: " + sqlOIBInvoicenum[1][0].trim() + ". IMA OZNAKU KOPIJE RAČUNA!");
-            //         NKPR_GL_INVCD = "K";
-            //     }
-            // }
+                    //ako je copyIndicator false, znači nije kopija, a došao je račun koji smo već učitali; to je greška i račun se ne bi smio preuzeti!
+                    //ako nije, onda javiti da je račun kopija, i taj se ne bi smio pojaviti na knjiženju već samo u registru e-računa
+                    //Mbox("Račun s OIB-om dobavljača " + OIBSupp + " i brojem računa dobavljača " + glDesc + " je već unesen u registar eRačuna pod brojem: " + sqlOIBInvoicenum[1][0].trim());
+                    return;
+                }else{
+                    //tu je označeni račun kao kopija, preuzmimo ga i označimo sa 'K' u invcd; račun se ne bi smio preuzeti na knjiženje, već samo 'na znanje'
+                    //u memoX upisati:
+                    //memoX += "Račun s OIB-om dobavljača " + OIBSupp + " i brojem računa dobavljača " + glDesc + " je već unesen u bazu pod brojem računa: " + sqlOIBInvoicenum[1][0].trim() + ". Došla je kopija računa.\n";
+                    // return;
+                    Mbox("Račun s OIB-om dobavljača " + OIBSupp + " i brojem računa dobavljača " + glDesc + " je već unesen u registar eRačuna pod brojem: " + sqlOIBInvoicenum[1][0].trim() + ". IMA OZNAKU KOPIJE RAČUNA!");
+                    NKPR_GL_INVCD = "K";
+                }
+            }
 
 
             if(copyIndicator == "true"){
@@ -2130,9 +2130,10 @@ function GetUnitCodeFromUN(unCode) {
     if (unCode == "C62") { return "JED"; }
     return "KOM"; // Default
 }
-/*
+
+
 // Validate if invoice ESD date belongs to current fiscal year
-function ValidateFiscalYear() {
+function ValidateFiscalYear(NKPR_GL_ESD) {
     try{
         //if (esdDate == "" || esdDate == null) {
         //    return false; // No ESD date provided
@@ -2152,7 +2153,7 @@ function ValidateFiscalYear() {
         return false;
     }
 }
-*/
+
 
 /* 
 Usage Examples:

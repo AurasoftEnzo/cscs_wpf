@@ -1023,7 +1023,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                     
                     // ako nema electronic Id zapisan, zapišimo ga
                     if(sqlOIBInvoicenum[1][3].trim() == ""){
-                        sqlStringInsertElectronicId = "UPDATE " + databaseName + ".dbo.NKNAERGL SET NKPR_GL_POSRED = '" + NKPR_GL_POSRED + "' WHERE NKPR_GL_JMBG = '" + OIBSupp + "' AND NKPR_GL_DESC = '" + NKPR_GL_DESC + "'";
+                        sqlStringInsertElectronicId = "UPDATE " + databaseName + ".dbo.NKNAERGL SET NKPR_GL_POSRED = '" + NKPR_GL_POSRED + "' WHERE NKPR_GL_JMBG = '" + OIBSupp + "' AND NKPR_GL_DESC = '" + NKPR_GL_DESC + "' AND NKPR_GL_POSRED = ''";
                         try{
                             SqlNonQuery(sqlStringInsertElectronicId);
                         }

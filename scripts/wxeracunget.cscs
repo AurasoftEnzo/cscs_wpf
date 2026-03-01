@@ -199,6 +199,18 @@ function init(){
     } 
 }
 
+function BeginSqlTransaction() {
+    SqlNonQuery("BEGIN TRANSACTION;");
+}
+
+function CommitSqlTransaction() {
+    SqlNonQuery("COMMIT TRANSACTION;");
+}
+
+function RollbackSqlTransaction() {
+    SqlNonQuery("IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;");
+}
+
 function btnPrikazi@clicked(){
 
     cntr1 = 0;
@@ -653,6 +665,21 @@ function MERReceiveRacunFailure(trackingId, responseCode, res) {
     }
 }
 
+function LogResponse(responseCode, response) {
+    if(!DIR_EXISTS(FILESPATH + "URRacunGet\\" + "responses\\")){
+        MAKE_DIR(FILESPATH + "URRacunGet\\" + "responses\\");
+    }
+
+    logFilePath = FILESPATH + "URRacunGet\\" + "responses\\" + "queryinbox" + ".response";
+    appendText = Now("yyyy-MM-dd HH:mm:ss") + " -----------------------------------\n\n" + "StatusCode = " + responseCode + "\n\n" + "Response:\n" + response + "\n\n";
+    try {
+        SaveFile(appendText, logFilePath, "a");        
+    } catch (ex) {
+        Mbox("CRITICAL: Cannot write to log file: " + logPath + "\nError: " + ex);
+    }
+}
+
+
 //-----------------------------------------------------------
 
 function startImportCall(){
@@ -746,16 +773,6 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
             }
         }
 
-        // Extract and save notes to NKNAOPIS table
-        ExtractAndSaveNotes(docData);
-
-        // Extract and save attachments to disk and NKSYPICT table
-        ExtractAndSaveAttachments(invoiceDict, docType);
-
-        SaveMemoX();
-
-
-
         // Extract line items from dictionary
         // lineItems = ExtractLineItemsFromDict(invoiceDict, docType);
 
@@ -766,10 +783,24 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
         }
         
 
-        // Begin database transaction
-        //BeginTransaction();
+        transactionStarted = false;
         
         try{
+            BeginSqlTransaction();
+            transactionStarted = true;
+
+            // Extract and save notes to NKNAOPIS table
+            if (!ExtractAndSaveNotes(docData)) {
+                throw "Greška prilikom spremanja napomena";
+            }
+
+            // Extract and save attachments to disk and NKSYPICT table
+            if (!ExtractAndSaveAttachments(invoiceDict, docType)) {
+                throw "Greška prilikom spremanja priloga";
+            }
+
+            SaveMemoX();
+
             // Import header data to NKNAERGL table
             //msg ("0000: xmlFilePath: " + xmlFilePath); 
             invNum = ImportHeaderDataToERGL(docType);
@@ -783,8 +814,8 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
             // Log to NKSYELOG
             // LogToNKSYELOG(invNum, xmlFilePath, "IMPORT_SUCCESS");
             
-            // Commit transaction
-            //CommitTransaction();
+            CommitSqlTransaction();
+            transactionStarted = false;
             
 
             // Move XML to IMPORTED folder
@@ -804,8 +835,13 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
             return;
             
         } catch(error) {
-            // Rollback transaction on error
-            //RollbackTransaction();
+            if (transactionStarted) {
+                try {
+                    RollbackSqlTransaction();
+                } catch(rollbackError) {
+                    Mbox("Greška pri rollback transakcije: " + rollbackError);
+                }
+            }
             // LogToNKSYELOG(0, xmlFilePath, "IMPORT_FAILURE: " + error);
             Mbox("Greška prilikom unosa u bazu podataka: " + error);
             return;
@@ -1023,9 +1059,18 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                     
                     // ako nema electronic Id zapisan, zapišimo ga
                     if(sqlOIBInvoicenum[1][3].trim() == ""){
-                        sqlStringInsertElectronicId = "UPDATE " + databaseName + ".dbo.NKNAERGL SET NKPR_GL_POSRED = '" + NKPR_GL_POSRED + "' WHERE NKPR_GL_JMBG = '" + OIBSupp + "' AND NKPR_GL_DESC = '" + NKPR_GL_DESC + "' AND NKPR_GL_POSRED = ''";
+                        sqlStringInsertElectronicId = "UPDATE " + databaseName + ".dbo.NKNAERGL " +
+                                "SET NKPR_GL_POSRED = @p1 " +
+                                "WHERE NKPR_GL_JMBG = @p2 AND NKPR_GL_DESC = @p3 AND NKPR_GL_POSRED = '';";
+                        sqlParams = {};
+                        sqlParams.Add({"@p1", NKPR_GL_POSRED});
+                        sqlParams.Add({"@p2", OIBSupp});
+                        sqlParams.Add({"@p3", NKPR_GL_DESC});
                         try{
-                            SqlNonQuery(sqlStringInsertElectronicId);
+                            updateRes = SqlNonQuery(sqlStringInsertElectronicId, sqlParams);
+                            if (updateRes == 0) {
+                                throw "Nije ažuriran niti jedan redak";
+                            }
                         }
                         catch(ex)
                         {
@@ -1410,6 +1455,9 @@ function SaveMemoX(){
     NKPR_GL_BROPIS2 = 0;
     if(MemoX != ""){
         NKPR_GL_BROPIS2 = SaveNoteToNKNAOPIS(MemoX);
+        if (NKPR_GL_BROPIS2 == 0) {
+            throw "Greška pri spremanju MemoX napomene";
+        }
     }
 } 
 
@@ -1419,86 +1467,78 @@ function SaveMemoX(){
 // Save note to NKNAOPIS table and return reference number
 // -----------------------------------------------------------
 function SaveNoteToNKNAOPIS(noteText) {
-    try{
-        if (noteText == "" || noteText == null) {
-            return 0;
-        }
-        
-        // Get next available KPPR_OP_BROJ
-        sql_max_note = "SELECT ISNULL(MAX(KPPR_OP_BROJ), 0) AS maxNum FROM " + databaseName + ".dbo.NKNAOPIS";
-        maxRes = sqlQuery(sql_max_note);
-        
-        nextNoteNum = 1;
-        if (Size(maxRes) >= 2) {
-            nextNoteNum = maxRes[1][0] + 1;
-        }
-        
-        // Split note text into chunks of 75 characters
-        noteLength = noteText.length;
-        chunkSize = 75;
-        lineNum = 1;
-        startPos = 0;
-        
-        while (startPos < noteLength) {
-            // Calculate chunk length (75 chars or remaining text if less)
-            remainingLength = noteLength - startPos;
-            currentChunkSize = (remainingLength > chunkSize) ? chunkSize : remainingLength;
-            
-            // Extract chunk
-            chunk = Substring(noteText, startPos, currentChunkSize);
-            
-            // Insert chunk into KPPROPIS
-            sql_insert_note = "INSERT INTO " + databaseName + ".dbo.NKNAOPIS (KPPR_OP_BROJ, KPPR_OP_LIN, KPPR_OP_TEXT) " +
-                            "VALUES (@p1, @p2, @p3);";
-            sqlParams = {};
-            sqlParams.Add({"@p1", nextNoteNum});
-            sqlParams.Add({"@p2", lineNum});
-            sqlParams.Add({"@p3", chunk});
-            
-            result = SqlNonQuery(sql_insert_note, sqlParams);
-            
-            if (result == 0) {
-                throw "Failed to insert note chunk at line " + lineNum;
-            }
-            
-            // Move to next chunk
-            startPos += chunkSize;
-            lineNum++;
-        }
-
-        return nextNoteNum;
-        
-    } catch(error) {
-        Mbox("Greška pri spremanju napomene: " + error);
+    if (noteText == "" || noteText == null) {
         return 0;
     }
+    
+    // Get next available KPPR_OP_BROJ
+    sql_max_note = "SELECT ISNULL(MAX(KPPR_OP_BROJ), 0) AS maxNum FROM " + databaseName + ".dbo.NKNAOPIS";
+    maxRes = sqlQuery(sql_max_note);
+    
+    nextNoteNum = 1;
+    if (Size(maxRes) >= 2) {
+        nextNoteNum = maxRes[1][0] + 1;
+    }
+    
+    // Split note text into chunks of 75 characters
+    noteLength = noteText.length;
+    chunkSize = 75;
+    lineNum = 1;
+    startPos = 0;
+    
+    while (startPos < noteLength) {
+        // Calculate chunk length (75 chars or remaining text if less)
+        remainingLength = noteLength - startPos;
+        currentChunkSize = (remainingLength > chunkSize) ? chunkSize : remainingLength;
+        
+        // Extract chunk
+        chunk = Substring(noteText, startPos, currentChunkSize);
+        
+        // Insert chunk into KPPROPIS
+        sql_insert_note = "INSERT INTO " + databaseName + ".dbo.NKNAOPIS (KPPR_OP_BROJ, KPPR_OP_LIN, KPPR_OP_TEXT) " +
+                        "VALUES (@p1, @p2, @p3);";
+        sqlParams = {};
+        sqlParams.Add({"@p1", nextNoteNum});
+        sqlParams.Add({"@p2", lineNum});
+        sqlParams.Add({"@p3", chunk});
+        
+        result = SqlNonQuery(sql_insert_note, sqlParams);
+        
+        if (result == 0) {
+            throw "Failed to insert note chunk at line " + lineNum;
+        }
+        
+        // Move to next chunk
+        startPos += chunkSize;
+        lineNum++;
+    }
+
+    return nextNoteNum;
 }
 
 // -----------------------------------------------------------
 // Extract and save notes from document
 // -----------------------------------------------------------
 function ExtractAndSaveNotes(docData) {
-    try{
-        restOfNotes = {};
+    restOfNotes = {};
 
-        NKPR_GL_BROPIS = 0;
-        NKPR_GL_BROPIS1 = 0;
-        
-        // Check if Note element exists
-        if (!Contains(docData, "Note")) {
-            return; // No notes to process
-        }
-        
-        if (ArrayOrDict(docData["Note"]) == "array") {
-            for (i = 0; i < Size(docData["Note"]); i++) {
-                ProcessSingleNote(docData["Note"][i], i + 1);
-            }
-        } else {
-            ProcessSingleNote(docData["Note"], 1); // NKPR_GL_PICTFTR
-        }
-    } catch(error) {
-        Mbox("Greška pri obradi napomena: " + error);
+    NKPR_GL_BROPIS = 0;
+    NKPR_GL_BROPIS1 = 0;
+    
+    // Check if Note element exists
+    if (!Contains(docData, "Note")) {
+        return true; // No notes to process
     }
+    
+    if (ArrayOrDict(docData["Note"]) == "array") {
+        for (i = 0; i < Size(docData["Note"]); i++) {
+            ProcessSingleNote(docData["Note"][i], i + 1);
+        }
+    } else {
+        ProcessSingleNote(docData["Note"], 1); // NKPR_GL_PICTFTR
+    }
+
+    return true;
 }
 
 function ProcessSingleNote(noteNode, noteIndex) {
@@ -1509,12 +1549,17 @@ function ProcessSingleNote(noteNode, noteIndex) {
 
     // MSG(noteIndex + ". Note text: " + noteText);
 
+    noteNum = SaveNoteToNKNAOPIS(noteText);
+    if (noteNum == 0) {
+        throw "Greška pri spremanju napomene broj " + noteIndex;
+    }
+
     if(noteIndex == 1){
-        NKPR_GL_BROPIS = SaveNoteToNKNAOPIS(noteText);
+        NKPR_GL_BROPIS = noteNum;
     } elif(noteIndex == 2){
-        NKPR_GL_BROPIS1 = SaveNoteToNKNAOPIS(noteText);
+        NKPR_GL_BROPIS1 = noteNum;
     }else{
-        restOfNotes.Add(SaveNoteToNKNAOPIS(noteText));
+        restOfNotes.Add(noteNum);
     }
     // noteNum = SaveNoteToNKNAOPIS(noteText);
 }

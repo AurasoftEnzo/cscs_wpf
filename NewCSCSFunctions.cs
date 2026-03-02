@@ -90,6 +90,9 @@ namespace WpfCSCS
             //interpreter.RegisterFunction(Constants.MATH_RANDOM2, CSCS.Math. ???  GetRandomFunction(false));
 
             interpreter.RegisterFunction(Constants.SQLNonQuery, new SQLNonQueryFunction()); // override of SQLNonQueryFunction in Functions.SQL
+            interpreter.RegisterFunction(Constants.SQLBeginTransaction, new SQLBeginTransactionFunction());
+            interpreter.RegisterFunction(Constants.SQLCommitTransaction, new SQLCommitTransactionFunction());
+            interpreter.RegisterFunction(Constants.SQLRollbackTransaction, new SQLRollbackTransactionFunction());
 
 
             interpreter.RegisterFunction(Constants.File2Base64, new File2Base64Function());
@@ -212,6 +215,9 @@ namespace WpfCSCS
             //public const string MATH_RANDOM2 = "Math.Random2";
             
             public const string SQLNonQuery = "SQLNonQuery";
+            public const string SQLBeginTransaction = "SQLBeginTransaction";
+            public const string SQLCommitTransaction = "SQLCommitTransaction";
+            public const string SQLRollbackTransaction = "SQLRollbackTransaction";
 
             public const string File2Base64 = "File2Base64";
             public const string Base642File = "Base642File";
@@ -1322,24 +1328,115 @@ namespace WpfCSCS
             var spArgs = Utils.GetSafeVariable(args, 1);
             var sp = SQLQueryFunction.GetParameters(spArgs);
             var timeoutSeconds = Utils.GetSafeInt(args, 2, 60);
+            var transaction_hndl = Utils.GetSafeInt(args, 3, -1);
 
             int result = 0;
-            using (SqlConnection con = new SqlConnection(CSCS_SQL.ConnectionString))
+
+            if(transaction_hndl > -1) // transaction
             {
-                using (SqlCommand cmd = new SqlCommand(queryStatement, con))
+                using (SqlCommand cmd = new SqlCommand(queryStatement, SqlTransactions.connectionsDictionary[transaction_hndl]))
                 {
                     if (sp != null)
                     {
                         cmd.Parameters.AddRange(sp.ToArray());
                     }
-                    con.Open();
                     cmd.CommandTimeout = timeoutSeconds;
                     result = cmd.ExecuteNonQuery();
                 }
             }
+            else
+            {
+                using (SqlConnection con = new SqlConnection(CSCS_SQL.ConnectionString))
+                {
+                    using (SqlCommand cmd = new SqlCommand(queryStatement, con))
+                    {
+                        if (sp != null)
+                        {
+                            cmd.Parameters.AddRange(sp.ToArray());
+                        }
+                        con.Open();
+                        cmd.CommandTimeout = timeoutSeconds;
+                        result = cmd.ExecuteNonQuery();
+                    }
+                }
+            }
+            
             return new Variable(result);
         }
     }
+
+    public static class SqlTransactions
+    {
+        public static Dictionary<int, SqlConnection> connectionsDictionary = new Dictionary<int, SqlConnection>();
+        public static int transactionCounter = 0;
+    }
+
+    class SQLBeginTransactionFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            CSCS_SQL.CheckConnectionString(script, m_name);
+
+            SqlConnection con = new SqlConnection(CSCS_SQL.ConnectionString);
+
+            using (SqlCommand cmd = new SqlCommand("BEGIN TRANSACTION; SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;", con))
+            {
+                con.Open();
+                cmd.CommandTimeout = 60;
+                cmd.ExecuteNonQuery();
+            }
+
+            SqlTransactions.connectionsDictionary.Add(SqlTransactions.transactionCounter, con);
+
+            return new Variable(SqlTransactions.transactionCounter++);
+        }
+    }
+    class SQLCommitTransactionFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+            //CSCS_SQL.CheckConnectionString(script, m_name);
+
+            var transaction_hndl = Utils.GetSafeInt(args, 0, -1);
+
+            using (SqlCommand cmd = new SqlCommand("COMMIT TRANSACTION;", SqlTransactions.connectionsDictionary[transaction_hndl]))
+            {
+                cmd.CommandTimeout = 60;
+                cmd.ExecuteNonQuery();
+            }
+            
+            SqlTransactions.connectionsDictionary[transaction_hndl].Close();
+
+            return Variable.EmptyInstance;
+        }
+    }
+    class SQLRollbackTransactionFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+            CSCS_SQL.CheckConnectionString(script, m_name);
+
+            var transaction_hndl = Utils.GetSafeInt(args, 0, -1);
+
+            using (SqlCommand cmd = new SqlCommand("IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;", SqlTransactions.connectionsDictionary[transaction_hndl]))
+            {
+                cmd.CommandTimeout = 60;
+                cmd.ExecuteNonQuery();
+            }
+
+            SqlTransactions.connectionsDictionary[transaction_hndl].Close();
+
+            return Variable.EmptyInstance;
+        }
+    }
+
+
+
+
 
     class File2Base64Function : ParserFunction
     {

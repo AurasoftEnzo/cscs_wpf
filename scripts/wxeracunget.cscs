@@ -199,17 +199,6 @@ function init(){
     } 
 }
 
-function BeginSqlTransaction() {
-    SqlNonQuery("BEGIN TRANSACTION;");
-}
-
-function CommitSqlTransaction() {
-    SqlNonQuery("COMMIT TRANSACTION;");
-}
-
-function RollbackSqlTransaction() {
-    SqlNonQuery("IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;");
-}
 
 function btnPrikazi@clicked(){
 
@@ -666,16 +655,16 @@ function MERReceiveRacunFailure(trackingId, responseCode, res) {
 }
 
 function LogResponse(responseCode, response) {
-    if(!DIR_EXISTS(FILESPATH + "URRacunGet\\" + "responses\\")){
-        MAKE_DIR(FILESPATH + "URRacunGet\\" + "responses\\");
+    if(!DIR_EXISTS(FILESPATH + "UR\\" + "responses\\")){
+        MAKE_DIR(FILESPATH + "UR\\" + "responses\\");
     }
 
-    logFilePath = FILESPATH + "URRacunGet\\" + "responses\\" + "queryinbox" + ".response";
+    logFilePath = FILESPATH + "UR\\" + "responses\\" + "queryinbox" + ".response";
     appendText = Now("yyyy-MM-dd HH:mm:ss") + " -----------------------------------\n\n" + "StatusCode = " + responseCode + "\n\n" + "Response:\n" + response + "\n\n";
     try {
-        SaveFile(appendText, logFilePath, "a");        
+        SaveFile(appendText, logFilePath, "a");
     } catch (ex) {
-        Mbox("CRITICAL: Cannot write to log file: " + logPath + "\nError: " + ex);
+        Mbox("CRITICAL: Cannot write to log file: " + logFilePath + "\nError: " + ex);
     }
 }
 
@@ -786,8 +775,17 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
         transactionStarted = false;
         
         try{
-            BeginSqlTransaction();
+            transactionHndl = SqlBeginTransaction();
             transactionStarted = true;
+
+            // Get next available KPPR_OP_BROJ
+            sql_max_note = "SELECT ISNULL(MAX(KPPR_OP_BROJ), 0) AS maxNum FROM " + databaseName + ".dbo.NKNAOPIS";
+            maxRes = sqlQuery(sql_max_note);
+            
+            nextNoteNum = 1;
+            if (Size(maxRes) >= 2) {
+                nextNoteNum = maxRes[1][0];
+            }
 
             // Extract and save notes to NKNAOPIS table
             if (!ExtractAndSaveNotes(docData)) {
@@ -814,7 +812,7 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
             // Log to NKSYELOG
             // LogToNKSYELOG(invNum, xmlFilePath, "IMPORT_SUCCESS");
             
-            CommitSqlTransaction();
+            SqlCommitTransaction(transactionHndl);
             transactionStarted = false;
             
 
@@ -837,7 +835,7 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
         } catch(error) {
             if (transactionStarted) {
                 try {
-                    RollbackSqlTransaction();
+                    SqlRollbackTransaction(transactionHndl); 
                 } catch(rollbackError) {
                     Mbox("Greška pri rollback transakcije: " + rollbackError);
                 }
@@ -1067,7 +1065,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                         sqlParams.Add({"@p2", OIBSupp});
                         sqlParams.Add({"@p3", NKPR_GL_DESC});
                         try{
-                            updateRes = SqlNonQuery(sqlStringInsertElectronicId, sqlParams);
+                            updateRes = SqlNonQuery(sqlStringInsertElectronicId, sqlParams, 60, transactionHndl);
                             if (updateRes == 0) {
                                 throw "Nije ažuriran niti jedan redak";
                             }
@@ -1471,14 +1469,7 @@ function SaveNoteToNKNAOPIS(noteText) {
         return 0;
     }
     
-    // Get next available KPPR_OP_BROJ
-    sql_max_note = "SELECT ISNULL(MAX(KPPR_OP_BROJ), 0) AS maxNum FROM " + databaseName + ".dbo.NKNAOPIS";
-    maxRes = sqlQuery(sql_max_note);
-    
-    nextNoteNum = 1;
-    if (Size(maxRes) >= 2) {
-        nextNoteNum = maxRes[1][0] + 1;
-    }
+    nextNoteNum = nextNoteNum + 1;
     
     // Split note text into chunks of 75 characters
     noteLength = noteText.length;
@@ -1502,7 +1493,7 @@ function SaveNoteToNKNAOPIS(noteText) {
         sqlParams.Add({"@p2", lineNum});
         sqlParams.Add({"@p3", chunk});
         
-        result = SqlNonQuery(sql_insert_note, sqlParams);
+        result = SqlNonQuery(sql_insert_note, sqlParams, 60, transactionHndl);
         
         if (result == 0) {
             throw "Failed to insert note chunk at line " + lineNum;
@@ -1667,14 +1658,14 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
             if(Contains(item, "BuyersItemIdentification")){
                 //MSG("25561: NEEDS TESTING !!!");
                 bii = GetNodeText(item["BuyersItemIdentification"]);
-                biiId = GetNodeText(bii["ID"]);
+                biiId = string(GetNodeText(bii["ID"]));
             }           
 
             siiId = "";
             if(Contains(item, "StandardItemIdentification")){
                 //MSG("25562: NEEDS TESTING !!!");
                 sii = GetNodeText(item["StandardItemIdentification"]);
-                siiId = GetNodeText(sii["ID"]);     
+                siiId = string(GetNodeText(sii["ID"]));
                 // if (siiId != "") {
                 //     lineData["NKPR_LN_PCODE"] = siiId;       
                 // }     
@@ -1946,7 +1937,7 @@ function ImportHeaderDataToERGL(docType) {
 
         // Execute SQL insert
         // msg("sqlParams  : " + sqlParams);
-        result = SqlNonQuery(sql_insert, sqlParams);
+        result = SqlNonQuery(sql_insert, sqlParams, 60, transactionHndl);
         
         if (result > 0) {
             return newRecordId;
@@ -2014,7 +2005,12 @@ function ImportLineItemsToERLN(recordId, lineItems) {
             sqlParams.Add({"@lineNum", i + 1});
             sqlParams.Add({"@qty", lineData["NKPR_LN_PQTY"]});
             sqlParams.Add({"@amount", lineData["NKPR_LN_AMT"]});
-            sqlParams.Add({"@productCode", lineData["NKPR_LN_PCODE"]});
+
+            pCode = lineData["NKPR_LN_PCODE"];
+            if(pCode.length > 15){
+                pCode = Substring(pCode, 0, 15);
+            }
+            sqlParams.Add({"@productCode", pCode}); ///// 15
 
             pDesc = lineData["NKPR_LN_PDESC"];
             if(pDesc.length > 50){
@@ -2037,7 +2033,7 @@ function ImportLineItemsToERLN(recordId, lineItems) {
             }
             sqlParams.Add({"@attachmentId", lineAttachmentId});
                    
-            result = SqlNonQuery(sql_insert, sqlParams);
+            result = SqlNonQuery(sql_insert, sqlParams, 60, transactionHndl);
             if (result == 0) {
                 throw "Greška prilikom unosa stavke " + (i + 1);
             }
@@ -2064,7 +2060,7 @@ function ImportLineItemsToERLN(recordId, lineItems) {
 
                 sqlParams.Add({"@PDesc", "Prilog broj " + (attNum + 1)}); ///// 50
                     
-                result = SqlNonQuery(sql_insert, sqlParams);
+                result = SqlNonQuery(sql_insert, sqlParams, 60, transactionHndl);
                 if (result == 0) {
                     throw "Greška prilikom unosa linije s referencom na attachment.";
                 }
@@ -2103,7 +2099,7 @@ function ImportLineItemsToERLN(recordId, lineItems) {
 
                 sqlParams.Add({"@PDesc", "Bilješka"}); ///// 50
                     
-                result = SqlNonQuery(sql_insert, sqlParams);
+                result = SqlNonQuery(sql_insert, sqlParams, 60, transactionHndl);
                 if (result == 0) {
                     throw "Greška prilikom unosa linije s referencom na note.";
                 }
@@ -2137,7 +2133,7 @@ function LogToNKSYELOG(recordId, xmlFilePath, status) {
         sqlParams.Add({"@recordId", recordId});
         sqlParams.Add({"@status", status});
         
-        SqlNonQuery(sql_log, sqlParams);
+        SqlNonQuery(sql_log, sqlParams, 60, transactionHndl);
         
     } catch(error) {
         // Don't throw error for logging issues
@@ -2250,16 +2246,18 @@ function ExtractAndSaveAttachments(invoiceDict, docType) {
         NKPR_GL_PICTFTR = 0;  // Footer attachment
         attachmentCounter = 0;
 
+        // Get next available NKSYPICT number
+        sql_max_pic = "SELECT ISNULL(MAX(SY_SL_NUM), 0) AS maxNum FROM " + databaseName + ".dbo.NKSYPICT";
+        maxRes = sqlQuery(sql_max_pic);
+        
+        nextPicNum = 1;
+        if (Size(maxRes) >= 2) {
+            nextPicNum = maxRes[1][0];
+        }
+
         // vanjski pdf attachment
         if(Exists(pdfPathInIMPORTED)){
-            // Get next available NKSYPICT number
-            sql_max_pic = "SELECT ISNULL(MAX(SY_SL_NUM), 0) AS maxNum FROM " + databaseName + ".dbo.NKSYPICT";
-            maxRes = sqlQuery(sql_max_pic);
-            
-            nextPicNum = 1;
-            if (Size(maxRes) >= 2) {
-                nextPicNum = maxRes[1][0] + 1;
-            }
+            nextPicNum = nextPicNum + 1;
 
             newPdfName = pdfPathInIMPORTED.Replace("p0.pdf", nextPicNum + ".pdf");
             Move(pdfPathInIMPORTED, newPdfName);
@@ -2278,7 +2276,7 @@ function ExtractAndSaveAttachments(invoiceDict, docType) {
             sqlParams.Add({"@p5", NKPR_GL_CUSCOD}); //$$$ NKPR_GL_CUSCOD
             sqlParams.Add({"@p6", "UR"}); // ulazni račun
             
-            sqlNonQuery(sql_insert_pic, sqlParams);
+            sqlNonQuery(sql_insert_pic, sqlParams, 60, transactionHndl);
 
             NKPR_GL_PICTHDR = nextPicNum;
         }
@@ -2408,13 +2406,15 @@ function SaveAttachmentToDisk(base64Content, filename, description, attachmentID
         
 
         // Get next available NKSYPICT number
-        sql_max_pic = "SELECT ISNULL(MAX(SY_SL_NUM), 0) AS maxNum FROM " + databaseName + ".dbo.NKSYPICT";
-        maxRes = sqlQuery(sql_max_pic);
+        // sql_max_pic = "SELECT ISNULL(MAX(SY_SL_NUM), 0) AS maxNum FROM " + databaseName + ".dbo.NKSYPICT";
+        // maxRes = sqlQuery(sql_max_pic);
         
-        nextPicNum = 1;
-        if (Size(maxRes) >= 2) {
-            nextPicNum = maxRes[1][0] + 1;
-        }
+        // nextPicNum = 1;
+        // if (Size(maxRes) >= 2) {
+        //     nextPicNum = maxRes[1][0] + 1;
+        // }
+
+        nextPicNum = nextPicNum + 1;
         
         newPdfName = fullFilePath.Replace(parsefile(fullFilePath, "pfName"), nextPicNum);
         Move(fullFilePath, newPdfName);
@@ -2443,7 +2443,7 @@ function SaveAttachmentToDisk(base64Content, filename, description, attachmentID
         sqlParams.Add({"@p5", NKPR_GL_CUSCOD}); //$$$
         sqlParams.Add({"@p6", "UR"}); // ulazni račun
         
-        sqlNonQuery(sql_insert_pic, sqlParams);
+        sqlNonQuery(sql_insert_pic, sqlParams, 60, transactionHndl);
         
         return nextPicNum;
         

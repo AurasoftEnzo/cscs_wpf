@@ -1,0 +1,40 @@
+
+
+try{
+    transaction_hndl /* int */ = SqlBeginTransaction();
+    transactionStarted = true;
+
+
+    sqlStr = "INSERT INTO dbTest1.dbo.Customers values ('12345', 'lalalalalla', 'lalal22cccccccc')";
+    SqlNonQuery(sqlStr, {}, 60, transaction_hndl);
+    SqlNonQuery(sqlStr, {}, 60, transaction_hndl);
+    
+    throw("asdasdasd");
+
+    SqlNonQuery(sqlStr, {}, 60, transaction_hndl);
+    SqlNonQuery(sqlStr, {}, 60, transaction_hndl);
+    
+    // throw "Simulated error after inserts, before commit!";
+    
+    // SqlNonQuery(sqlStr, {}, 60, transaction_hndl);
+    // SqlNonQuery(sqlStr, {}, 60, transaction_hndl);
+
+        
+    SqlCommitTransaction(transaction_hndl);
+    transactionStarted = false;    
+
+} catch(error) {
+    if (transactionStarted) {
+        try {
+            SqlRollbackTransaction(transaction_hndl); // IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        } catch(rollbackError) {
+            Mbox("Greška pri rollback transakcije: " + rollbackError);
+        }
+    }
+    
+    Mbox("Greška prilikom unosa u bazu podataka: " + error);
+}
+
+
+
+exit;

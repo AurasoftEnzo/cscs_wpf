@@ -1078,7 +1078,6 @@ namespace WpfCSCS
         }
     }
     
-
     class CHRFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -1985,32 +1984,39 @@ namespace WpfCSCS
 
     class EMAILFunction : ParserFunction
     {
-        private bool SetupMail(string podaci, string outgoingServer, string password, string username, string senderMail, string senderUsername, string to, string subject)
+        private bool SetupMail(string podaci, string outgoingServer, string password, string username,
+                           string senderMail, string senderUsername, string to, string subject,
+                           string htmlBodyFile = null)
         {
             bool ok = true;
-            //var to = GetTo(podaci);
-            //var subject = GetSubject(podaci);
-            //var body = GetiBody(podaci);
             var body = podaci;
+            var isBodyHtml = false;
 
-            //var cc = GetCC(podaci);
-            //var bcc = GetBCC(podaci);
-            //var atch = GetATCH(podaci);
+            if (!string.IsNullOrWhiteSpace(htmlBodyFile))
+            {
+                if (!File.Exists(htmlBodyFile))
+                {
+                    return false;
+                }
+
+                body = File.ReadAllText(htmlBodyFile, Encoding.UTF8);
+                isBodyHtml = true;
+            }
 
             foreach (var email in to.Split(','))
             {
-                ok = Send(email.Trim(), senderMail, subject, body, outgoingServer, username, password /*, cc, bcc, atch*/);
+                ok = Send(email.Trim(), senderMail, subject, body, outgoingServer, username, password,
+                      null, null, null, isBodyHtml);
+                if (!ok) break;
             }
-
-            //foreach (var item in to)
-            //{
-            //    if(ok)
-            //    ok =  Send(item, senderMail, subject, body, outgoingServer, username, password /*, cc, bcc, atch*/);
-            //}
 
             return ok;
         }
-        public bool Send(string addressTo, string addressFrom, string subject, string body, string outgoingServer , string username, string password, List<string> cc = null, List<string> bcc = null, List<string> atchs = null)
+
+        public bool Send(string addressTo, string addressFrom, string subject, string body,
+                     string outgoingServer, string username, string password,
+                     List<string> cc = null, List<string> bcc = null, List<string> atchs = null,
+                     bool isBodyHtml = false)
         {
             MailAddress to = new MailAddress(addressTo);
             MailAddress from = new MailAddress(addressFrom);
@@ -2020,7 +2026,7 @@ namespace WpfCSCS
             {
                 foreach (var item in cc)
                 {
-                    if(!string.IsNullOrEmpty(item))
+                    if (!string.IsNullOrEmpty(item))
                         email.CC.Add(item);
                 }
             }
@@ -2028,11 +2034,10 @@ namespace WpfCSCS
             {
                 foreach (var item in atchs)
                 {
-                    if(!string.IsNullOrEmpty(item) && File.Exists(item))
+                    if (!string.IsNullOrEmpty(item) && File.Exists(item))
                         email.Attachments.Add(new Attachment(item));
                 }
             }
-
             if (bcc != null)
             {
                 foreach (var item in bcc)
@@ -2041,191 +2046,23 @@ namespace WpfCSCS
                         email.Bcc.Add(item);
                 }
             }
+
             email.Subject = subject;
             email.Body = body;
+            email.IsBodyHtml = isBodyHtml;
 
             SmtpClient smtp = new SmtpClient();
             smtp.Host = outgoingServer;
-            smtp.Port = 587; //25
+            smtp.Port = 587;
             smtp.UseDefaultCredentials = false;
             smtp.Credentials = new NetworkCredential(username, password);
             smtp.DeliveryMethod = SmtpDeliveryMethod.Network;
             smtp.EnableSsl = true;
 
-            
             smtp.Send(email);
             return true;
         }
 
-        private List<string> GetTo(string podaci)
-        {
-            bool start = false;
-            string address = null;
-            using (StringReader reader = new StringReader(podaci))
-            {
-                string line;
-                while ((line = reader.ReadLine()) != null)
-                {
-                    line = line.Trim();
-                    if (line.ToLower().StartsWith(@"\") )
-                    {
-                        start = false;
-                    }
-                    if (start)
-                    {
-                        address += line;
-                    }
-                    if (line.ToLower().StartsWith(@"\to"))
-                    {
-                        start = true;
-                    }
-                  
-                }
-            }
-           return address.Split(',').ToList();
-
-        }
-        private string GetSubject(string podaci)
-        {
-            bool start = false;
-            string subject = null;
-            using (StringReader reader = new StringReader(podaci))
-            {
-                string line;
-                while ((line = reader.ReadLine()) != null)
-                {
-                    line = line.Trim();
-                    if (line.ToLower().StartsWith(@"\"))
-                    {
-                        start = false;
-                    }
-                    if (start)
-                    {
-                        subject += line;
-                    }
-                    if (line.ToLower().StartsWith(@"\subject"))
-                    {
-                        start = true;
-                    }
-
-                }
-            }
-            return subject;
-
-        }
-        private string GetiBody(string podaci)
-        {
-            bool start = false;
-            string body = null;
-            using (StringReader reader = new StringReader(podaci))
-            {
-                string line;
-                while ((line = reader.ReadLine()) != null)
-                {
-                    if (line.TrimStart().ToLower().StartsWith(@"\"))
-                    {
-                        start = false;
-                    }
-                    if (start)
-                    {
-                        body += line + System.Environment.NewLine;
-                    }
-                    if (line.TrimStart().ToLower().StartsWith(@"\body"))
-                    {
-                        start = true;
-                    }
-
-                }
-            }
-            return body;
-
-        }
-        private List<string> GetCC(string podaci)
-        {
-            bool start = false;
-            string address = null;
-            using (StringReader reader = new StringReader(podaci))
-            {
-                string line;
-                while ((line = reader.ReadLine()) != null)
-                {
-                    line = line.Trim();
-                    if (line.ToLower().StartsWith(@"\"))
-                    {
-                        start = false;
-                    }
-                    if (start)
-                    {
-                        address += line;
-                    }
-                    if (line.ToLower().StartsWith(@"\cc"))
-                    {
-                        start = true;
-                    }
-
-                }
-            }
-            return address.Split(',').ToList();
-
-        }
-        private List<string> GetBCC(string podaci)
-        {
-            bool start = false;
-            string address = null;
-            using (StringReader reader = new StringReader(podaci))
-            {
-                string line;
-                while ((line = reader.ReadLine()) != null)
-                {
-                    line = line.Trim();
-                    if (line.ToLower().StartsWith(@"\"))
-                    {
-                        start = false;
-                    }
-                    if (start)
-                    {
-                        address += line;
-                    }
-                    if (line.ToLower().StartsWith(@"\bcc"))
-                    {
-                        start = true;
-                    }
-
-                }
-            }
-            return address.Split(',').ToList();
-
-        }
-        private List<string> GetATCH(string podaci)
-        {
-            bool start = false;
-            string address = null;
-            using (StringReader reader = new StringReader(podaci))
-            {
-                string line;
-                while ((line = reader.ReadLine()) != null)
-                {
-                    line = line.Trim();
-                    if (line.ToLower().StartsWith(@"\"))
-                    {
-                        start = false;
-                    }
-                    if (start)
-                    {
-                        address += line;
-                    }
-                    if (line.ToLower().StartsWith(@"\attachments"))
-                    {
-                        start = true;
-                    }
-
-                }
-            }
-            if (address == null)
-                return null;
-            return address.Split(',').ToList();
-
-        }
         protected override Variable Evaluate(ParsingScript script)
         {
             List<Variable> args = script.GetFunctionArgs();
@@ -2234,34 +2071,25 @@ namespace WpfCSCS
             var gui = CSCS_GUI.GetInstance(script);
 
             var option = Utils.GetSafeString(args, 0);
-            //var podaci = Utils.GetSafeString(args, 1);
             var text = Utils.GetSafeString(args, 1);
             var widgetName = Utils.GetSafeString(args, 2);
-            var saveAttachsFolder = Utils.GetSafeString(args,3);
-            var outgoingServer = Utils.GetSafeString(args,4);
-            var password = Utils.GetSafeString(args,5);
-            var username = Utils.GetSafeString(args,6);
-            var senderMail = Utils.GetSafeString(args,7);
-            var senderName = Utils.GetSafeString(args,8);
-            var to = Utils.GetSafeString(args,9);
-            var subject = Utils.GetSafeString(args,10);
+            var saveAttachsFolder = Utils.GetSafeString(args, 3);
+            var outgoingServer = Utils.GetSafeString(args, 4);
+            var password = Utils.GetSafeString(args, 5);
+            var username = Utils.GetSafeString(args, 6);
+            var senderMail = Utils.GetSafeString(args, 7);
+            var senderName = Utils.GetSafeString(args, 8);
+            var to = Utils.GetSafeString(args, 9);
+            var subject = Utils.GetSafeString(args, 10);
+
+            // NEW optional arg: HTML template/body file path
+            var htmlBodyFile = Utils.GetSafeString(args, 11);
 
             switch (option.ToLower())
             {
                 case "emlsendmsg":
-                    //var widget1 = gui.GetWidget(podaci);
-                    //if (widget1 is ListBox)
-                    //{
-                    //    string text = null;
-                    //    var asmemobox = widget1 as ListBox;
-                    //    foreach (var item in asmemobox.Items)
-                    //    {
-                    //        text = text +((ListBoxItem) item).Content + System.Environment.NewLine;
-                    //    }
-                    //    return new Variable(SetupMail(text, outgoingServer, password, username, senderMail, senderUsername));
-                    //}
-                    return new Variable(SetupMail(text, outgoingServer, password, username, senderMail, senderName, to, subject));
-                    
+                    return new Variable(SetupMail(text, outgoingServer, password, username,
+                                              senderMail, senderName, to, subject, htmlBodyFile));
                 case "test":
                     var widget = gui.GetWidget(widgetName);
                     if (widget is ASMemoBox)
@@ -2270,13 +2098,13 @@ namespace WpfCSCS
                         asmemobox.Text =
         @"
                     \TO
-                    nebojsa@aurasoft.hr, matija@aurasoft.hr
-,sanja@aurasoft.hr
+                    nebojsa@as.hr, matija@as.hr
+,sanja@as.hr
 \CC
-                    lidija@aurasoft.hr
-,lorena@aurasoft.hr
+                    lidija@as.hr
+,lorena@as.hr
   \BCC
-                    enzo@aurasoft.hr, boris@aurasoft.hr
+                    enzo@as.hr, boris@as.hr
                     \SUBJECT
                     Nebki naslov
                     \BODY

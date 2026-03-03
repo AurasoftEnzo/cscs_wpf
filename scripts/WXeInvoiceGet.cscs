@@ -777,7 +777,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             sqlQueryString = "select NKPR_GL_BRPON, NKPR_GL_JMBG, NKPR_GL_DESC, NKPR_GL_POSRED from " + strtrim(databaseName) + ".dbo.NKPRERGL WHERE NKPR_GL_NUMJCD = '" + NKPR_GL_NUMJCD + "'";
             sqlOIBInvoicenum = sqlQuery(sqlQueryString);
             if (size(sqlOIBInvoicenum) > 1){
-                if(copyIndicator != "true"){
+                if(copyIndicator == 0 || copyIndicator == "false"){
                     if(sqlOIBInvoicenum[1][3].trim() == ""){
                         sqlStringInsertElectronicId = "UPDATE " + databaseName + ".dbo.NKPRERGL " +
                                 "SET NKPR_GL_POSRED = @p1 " +
@@ -796,7 +796,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                     NKPR_GL_INVCD = "K";
                 }
             }
-            if(copyIndicator == "true"){ NKPR_GL_INVCD = "K"; }
+            if(copyIndicator == 1 || copyIndicator == "true"){ NKPR_GL_INVCD = "K"; }
 
             // Customer address
             if (Contains(custPartyData, "PostalAddress")) {
@@ -816,11 +816,11 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
 
         NKPR_GL_CUSCOD = "";
         if (OIBCust != "") {
-            sqlQueryString = "select NKSC_PARTCODE, NKSC_PARTNAME, NKSC_RO, NKSC_ADD1, NKSC_CITY, NKSC_ZIP, NKSC_drzava, NKSC_SIFRA from " + strtrim(databaseName) + ".dbo.NKSCPART WHERE NKSC_SIFRA = '" + OIBCust + "'";
+            sqlQueryString = "select NKSC_PARTCODE, NKSC_PARTNAME, NKSC_RO, NKSC_ADD1, NKSC_CITY, NKSC_ZIP, NKSC_drzava, NKSC_SIFRA from " + strtrim(databaseName) + ".dbo.NKSCPART WHERE NKSC_SIFRA = '" + OIBCust + "' AND (NKSC_CUST_VEND = 'K' || NKSC_CUST_VEND = '')";
             try{ sqlPartner = sqlQuery(sqlQueryString); }
             catch(ex){ Mbox("Greška čitanja NKSCPART:\n" + ex); }
         } elif (GLNCust != "") {
-            sqlQueryString = "select NKSC_PARTCODE, NKSC_PARTNAME, NKSC_RO, NKSC_ADD1, NKSC_CITY, NKSC_ZIP, NKSC_drzava, NKSC_SIFRA from " + strtrim(databaseName) + ".dbo.NKSCPART WHERE NKSC_SOP = '" + GLNCust + "'";
+            sqlQueryString = "select NKSC_PARTCODE, NKSC_PARTNAME, NKSC_RO, NKSC_ADD1, NKSC_CITY, NKSC_ZIP, NKSC_drzava, NKSC_SIFRA from " + strtrim(databaseName) + ".dbo.NKSCPART WHERE NKSC_SOP = '" + GLNCust + "' AND (NKSC_CUST_VEND = 'K' || NKSC_CUST_VEND = '')";
             try{ sqlPartner = sqlQuery(sqlQueryString); }
             catch(ex){ Mbox("Greška čitanja NKSCPART:\n" + ex); }
         } else {

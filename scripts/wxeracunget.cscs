@@ -1123,7 +1123,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             // OIB
             // NKSCPART - nađi dobavljača po OIB-u/GLN-u i uzmi šifru dobavljača
             // ako ne postoji, kreiraj novog dobavljača
-            sqlQueryString = "select NKSC_PARTCODE, NKSC_PARTNAME, NKSC_RO, NKSC_ADD1, NKSC_CITY, NKSC_ZIP, NKSC_drzava, NKSC_SIFRA  from " + strtrim(databaseName) + ".dbo.NKSCPART WHERE NKSC_SIFRA = '" + OIBSupp + "' AND (NKSC_CUST_VEND = 'K' || NKSC_CUST_VEND = '')";
+            sqlQueryString = "select NKSC_PARTCODE, NKSC_PARTNAME, NKSC_RO, NKSC_ADD1, NKSC_CITY, NKSC_ZIP, NKSC_drzava, NKSC_SIFRA  from " + strtrim(databaseName) + ".dbo.NKSCPART WHERE NKSC_SIFRA = '" + OIBSupp + "' AND (NKSC_CUST_VEND = 'D' || NKSC_CUST_VEND = '')";
             try{
                 sqlPartner = sqlQuery(sqlQueryString);
             }
@@ -1136,7 +1136,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         } elif (GLNSupp != "") { // GLN
             // NKSCPART - nađi dobavljača po OIB-u/GLN-u i uzmi šifru dobavljača
             // ako ne postoji, kreiraj novog dobavljača
-            sqlQueryString = "select NKSC_PARTCODE, NKSC_PARTNAME, NKSC_RO, NKSC_ADD1, NKSC_CITY, NKSC_ZIP, NKSC_drzava, NKSC_SIFRA  from " + strtrim(databaseName) + ".dbo.NKSCPART WHERE NKSC_SOP = '" + GLNSupp + "' AND (NKSC_CUST_VEND = 'K' || NKSC_CUST_VEND = '')";
+            sqlQueryString = "select NKSC_PARTCODE, NKSC_PARTNAME, NKSC_RO, NKSC_ADD1, NKSC_CITY, NKSC_ZIP, NKSC_drzava, NKSC_SIFRA  from " + strtrim(databaseName) + ".dbo.NKSCPART WHERE NKSC_SOP = '" + GLNSupp + "' AND (NKSC_CUST_VEND = 'D' || NKSC_CUST_VEND = '')";
             try{
                 sqlPartner = sqlQuery(sqlQueryString);
             }

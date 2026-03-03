@@ -141,6 +141,14 @@ function init(){
         // ??? LOG? ne?
         exit;
     }
+    FILESPATH = "";
+    PROVIDER = "";
+    SCHEMASPATH = "";
+    CERTPATH = "";
+    //ERPID = "";
+    SISTEM_RADA = "";
+    APP_RADI = "";
+
     if (size(sqlResult) > 1)
     {
         for(i = 1; i < Size(sqlResult); i++){
@@ -156,11 +164,26 @@ function init(){
                 SCHEMASPATH = sqlResult[i][1].trim();
             }elif(sqlResult[i][0].trim() == "CERTPATH"){
                 CERTPATH = sqlResult[i][1].trim();
+            }elif(sqlResult[i][0].trim() == "ERPID"){
+                //ERPID = sqlResult[i][1].trim();
+            }elif(sqlResult[i][0].trim() == "SISTEM_RADA"){
+                SISTEM_RADA = sqlResult[i][1].trim();
+            }elif(sqlResult[i][0].trim() == "APP_RADI"){
+                APP_RADI = sqlResult[i][1].trim();
             }
             
         }
     }
 
+    if(SISTEM_RADA == "S"){
+        Mbox("Ovaj se program ne može koristiti- Servis za e-račune je uključen!");
+        exit;
+    } else{
+        if(APP_RADI == "I"){
+            Mbox("Ulazni e-računi nisu predviđeni za preuzimanje!");
+            exit;
+        }
+    }
 
     // KPSYMSTR
     sqlQueryString = " SELECT TOP 1 KPSY_REZERVA, KPSY_COMP_NAME, KPSY_COMP_ADD1, KPSY_GL_RETEARN, KPSY_COMP_CSZ, KPSY_COMP_ZIP,

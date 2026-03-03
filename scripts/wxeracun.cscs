@@ -1400,13 +1400,14 @@ function GenerateUBLXml() {
          if (NKPR_GL_SHPNME != "" || NKPR_GL_SHPRO != "") {
             fullShpNme = NKPR_GL_SHPNME.trim();
             fullShpNme += (NKPR_GL_SHPRO != "" ? " " + NKPR_GL_SHPRO : "");
+            fullShpNme = fullShpNme.trim();
 
-            xml += "  <cac:DeliveryParty>\n";
-        
-            if (NKPR_GL_SHPNME != "") {
+            if (fullShpNme != "") {
+                xml += "  <cac:DeliveryParty>\n";
                 xml += "    <cac:PartyName>\n";
                 xml += "      <cbc:Name>" + EscapeForXml(fullShpNme) + "</cbc:Name>\n";
                 xml += "    </cac:PartyName>\n";
+                xml += "  </cac:DeliveryParty>\n";
             }
             
             // // If province is different from delivery address, add it as party location
@@ -1416,9 +1417,7 @@ function GenerateUBLXml() {
             //     xml += "        <cbc:CountrySubentity>" + EscapeForXml(NKPR_GL_SHPRO) + "</cbc:CountrySubentity>\n";
             //     xml += "      </cac:Address>\n";
             //     xml += "    </cac:PhysicalLocation>\n";
-            // }
-            
-            xml += "  </cac:DeliveryParty>\n";
+            // }            
         }
         
         xml += "</cac:Delivery>\n";

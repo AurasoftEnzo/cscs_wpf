@@ -393,14 +393,15 @@ function GenerateUBLXml() {
         }
     } elif (NKPR_GL_OZNAKA == "P") {
         //za ovaj tip računa - PREDUJAM - ne treba unositit KPD!!!
-        if (NKPR_GL_CUSORD == ""){
-            profileID = "P4";
+        if (NKPR_GL_TOTAL < 0) {
+            profileID = "P10";
+            typeCode = "384";
+            invType = "Korektivni račun (storno ili ispravak)";
         } else {
-            //a ako ima narudžbenicu onda je P6
-            profileID = "P6";
+            profileID = "P4";
+            typeCode = "386";
+            invType = "Avansno plaćanje (plaćanje unaprijed)";
         }
-        typeCode = "386";
-        invType = "Avansno plaćanje (plaćanje unaprijed)";
     } elif (NKPR_GL_OZNAKA == "R") {
         //Reklamacija ili povrat sa ovim tipom se isto može napraviti storno računa
         profileID = "P9";

@@ -1053,7 +1053,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             sqlOIBInvoicenum = sqlQuery(sqlQueryString);
             if (size(sqlOIBInvoicenum) > 1)
             {
-                if(copyIndicator != "true"){
+                if(copyIndicator == 0){ // NIJE kopija
                     
                     // ako nema electronic Id zapisan, zapišimo ga
                     if(sqlOIBInvoicenum[1][3].trim() == ""){
@@ -1065,7 +1065,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                         sqlParams.Add({"@p2", OIBSupp});
                         sqlParams.Add({"@p3", NKPR_GL_DESC});
                         try{
-                            updateRes = SqlNonQuery(sqlStringInsertElectronicId, sqlParams, 60, transactionHndl);
+                            updateRes = SqlNonQuery(sqlStringInsertElectronicId, sqlParams);
                             if (updateRes == 0) {
                                 throw "Nije ažuriran niti jedan redak";
                             }
@@ -1076,13 +1076,16 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                             // !!! LOG !!!
                             //exit;
                         }
+
+                        return;
                     }
                     
                     //ako je copyIndicator false, znači nije kopija, a došao je račun koji smo već učitali; to je greška i račun se ne bi smio preuzeti!
                     //ako nije, onda javiti da je račun kopija, i taj se ne bi smio pojaviti na knjiženju već samo u registru e-računa
                     //Mbox("Račun s OIB-om dobavljača " + OIBSupp + " i brojem računa dobavljača " + glDesc + " je već unesen u registar eRačuna pod brojem: " + sqlOIBInvoicenum[1][0].trim());
-                    return;
-                }else{
+                    
+                    
+                }else{ // JE kopija
                     //tu je označeni račun kao kopija, preuzmimo ga i označimo sa 'K' u invcd; račun se ne bi smio preuzeti na knjiženje, već samo 'na znanje'
                     //u memoX upisati:
                     //memoX += "Račun s OIB-om dobavljača " + OIBSupp + " i brojem računa dobavljača " + glDesc + " je već unesen u bazu pod brojem računa: " + sqlOIBInvoicenum[1][0].trim() + ". Došla je kopija računa.\n";
@@ -1093,7 +1096,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             }
 
 
-            if(copyIndicator == "true"){
+            if(copyIndicator == 1){
                 NKPR_GL_INVCD = "K";
             }
 

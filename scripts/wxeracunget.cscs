@@ -764,11 +764,14 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
         //   if (NKPR_GL_ESD"] == "") {NKPR_GL_ESD"] = NKPR_GL_INVDTE"];} 
         // Validate fiscal year before proceeding
         //ovo ne trebamo validirati na fiskalnu godinu jer svi računi idu u isti folder, a onda će operater odlučiti u koju će ga godinu unositi u knjigovodstvo
-        if (!ValidateFiscalYear(NKPR_GL_ESD)) {
-            Mbox("Račun ID " + NKPR_GL_POSRED + " se ne može importirati jer datum isporuke (" + NKPR_GL_ESD + ") ne pripada fiskalnoj godini " + year(KPSY_FISCAL_YR) + ".");
-            return;
-        }
+        
+        // if (!ValidateFiscalYear(NKPR_GL_ESD)) {
+        //     Mbox("Račun ID " + NKPR_GL_POSRED + " se ne može importirati jer datum isporuke (" + NKPR_GL_ESD + ") ne pripada fiskalnoj godini " + year(KPSY_FISCAL_YR) + ".");
+        //     return;
+        // }
+
         //msg ("ESD: " + NKPR_GL_ESD + " FISCAL YR: " + KPSY_FISCAL_YR);
+
 
         //move VANJSKI pdf (if exists) to IMPORTED folder
         pdfPathInNEW = UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".pdf";
@@ -950,7 +953,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             
         //provjeriti kasnije kad imamo i OIB dobavljača, u NKNAERGL da li je taj broj već unesen/preuzet
         //sada još uzmimo copyIndictIndicator iz računa ako postoji
-        copyIndicator = "";
+        copyIndicator = 0;
         if (Contains(docData, "CopyIndicator")) {
             copyIndicator = GetNodeText(docData["CopyIndicator"]);
         }
@@ -1146,7 +1149,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             // OIB
             // NKSCPART - nađi dobavljača po OIB-u/GLN-u i uzmi šifru dobavljača
             // ako ne postoji, kreiraj novog dobavljača
-            sqlQueryString = "select NKSC_PARTCODE, NKSC_PARTNAME, NKSC_RO, NKSC_ADD1, NKSC_CITY, NKSC_ZIP, NKSC_drzava, NKSC_SIFRA  from " + strtrim(databaseName) + ".dbo.NKSCPART WHERE NKSC_SIFRA = '" + OIBSupp + "' AND (NKSC_CUST_VEND = 'D' || NKSC_CUST_VEND = '')";
+            sqlQueryString = "select NKSC_PARTCODE, NKSC_PARTNAME, NKSC_RO, NKSC_ADD1, NKSC_CITY, NKSC_ZIP, NKSC_drzava, NKSC_SIFRA  from " + strtrim(databaseName) + ".dbo.NKSCPART WHERE NKSC_SIFRA = '" + OIBSupp + "' AND (NKSC_CUST_VEND = 'D' OR NKSC_CUST_VEND = '')";
             try{
                 sqlPartner = sqlQuery(sqlQueryString);
             }
@@ -1159,7 +1162,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         } elif (GLNSupp != "") { // GLN
             // NKSCPART - nađi dobavljača po OIB-u/GLN-u i uzmi šifru dobavljača
             // ako ne postoji, kreiraj novog dobavljača
-            sqlQueryString = "select NKSC_PARTCODE, NKSC_PARTNAME, NKSC_RO, NKSC_ADD1, NKSC_CITY, NKSC_ZIP, NKSC_drzava, NKSC_SIFRA  from " + strtrim(databaseName) + ".dbo.NKSCPART WHERE NKSC_SOP = '" + GLNSupp + "' AND (NKSC_CUST_VEND = 'D' || NKSC_CUST_VEND = '')";
+            sqlQueryString = "select NKSC_PARTCODE, NKSC_PARTNAME, NKSC_RO, NKSC_ADD1, NKSC_CITY, NKSC_ZIP, NKSC_drzava, NKSC_SIFRA  from " + strtrim(databaseName) + ".dbo.NKSCPART WHERE NKSC_SOP = '" + GLNSupp + "' AND (NKSC_CUST_VEND = 'D' OR NKSC_CUST_VEND = '')";
             try{
                 sqlPartner = sqlQuery(sqlQueryString);
             }

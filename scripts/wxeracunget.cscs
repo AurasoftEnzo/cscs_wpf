@@ -1103,6 +1103,39 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                             //exit;
                         }
 
+                        //move xml and pdf to SERVISDUPLIKATI folder
+                        UR_ServisDuplikati_DirectoryPath = FILESPATH + "UR\\" + "ServisDuplikati\\";
+                        if (!Exists(UR_ServisDuplikati_DirectoryPath)) {
+                            MkDir(UR_ServisDuplikati_DirectoryPath);
+                        }
+
+                        pdfPathInNEW = UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".pdf";
+                        pdfPathInDUPLIKATI = UR_ServisDuplikati_DirectoryPath + xmlFilenameWithoutExtension + ".pdf";
+                        if(Exists(pdfPathInNEW)){
+                            try{
+                                if(Exists(pdfPathInDUPLIKATI)){
+                                    Delete(pdfPathInDUPLIKATI);
+                                }
+                                Move(pdfPathInNEW, pdfPathInDUPLIKATI);
+                            }
+                            catch(aa){
+                                MBox("Greška prilikom premještanja PDF datoteke: " + aa);
+                            }
+                        }
+                        xmlPathInNEW = UR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".xml";
+                        xmlPathInDUPLIKATI = UR_ServisDuplikati_DirectoryPath + xmlFilenameWithoutExtension + ".xml";
+                        if(Exists(xmlPathInNEW)){
+                            try{
+                                if(Exists(xmlPathInDUPLIKATI)){
+                                    Delete(xmlPathInDUPLIKATI);
+                                }
+                                Move(xmlPathInNEW, xmlPathInDUPLIKATI);
+                            }
+                            catch(aa){
+                                MBox("Greška prilikom premještanja XML datoteke: " + aa);
+                            }
+                        }
+
                         return;
                     }
                     

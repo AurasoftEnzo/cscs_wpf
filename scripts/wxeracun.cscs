@@ -379,14 +379,20 @@ function GenerateUBLXml() {
     invType = "Izdavanje računa za isporuke prema neformalnom ugovoru";
 
     if (NKPR_GL_OZNAKA == "S") {
-        if (NKPR_GL_BROTP != 0) {
+        if (NKPR_GL_UGOVOR != 0) {
+            profileID = "P2";
+            invType = "Račun s referencom na ugovor";
+        }
+        elif (NKPR_GL_BROTP != 0) {
             profileID = "P7";
             invType = "Račun s referencom na otpremnicu"; //samo jedna otpremnica po računu je moguća!
-        } elif (NKPR_GL_CUSORD != "") {
+        }
+        elif (NKPR_GL_CUSORD != "") {
             //u tom polju je referenca na narudžbenicu kupca
             profileID = "P3";
             invType = "Račun sa referencom na narudžbenicu kupca"; //samo jedna narudžbenica po računu je moguća!
-        } elif (NKPR_GL_REZ1 != 0) {
+        }
+        elif (NKPR_GL_REZ1 != 0) {
             //u REZ1 je referenca na prethodni račun
             profileID = "P11";
             invType = "Djelomični i konačni račun";

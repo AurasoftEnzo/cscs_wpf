@@ -12,9 +12,9 @@ using System.Xml.Linq;
 
 
 //using WpfCSCS.Reporting.DevExpressReporting;
-using WpfCSCS.Reporting.DevExpressReportingNonDEFINEVariables;
+//using WpfCSCS.Reporting.DevExpressReportingNonDEFINEVariables;
+using WpfCSCS.Reporting.DevExpressReportingNew;
 //using WpfCSCS.Reporting.ReportBuilderReporting;
-
 
 namespace WpfCSCS.Reporting
 {

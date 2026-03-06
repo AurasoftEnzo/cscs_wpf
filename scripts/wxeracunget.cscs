@@ -1367,7 +1367,16 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         
         // Payment information
         if(Contains(docData, "PaymentMeans")) {
-            paymentMeans = GetNodeText(docData["PaymentMeans"]);
+            // paymentMeans = GetNodeText(docData["PaymentMeans"]);
+
+            if(ArrayOrDict(docData["PaymentMeans"]) == "array"){
+                paymentMeans = docData["PaymentMeans"][0]; //ako ima više načina plačanja, uzmimo prvi, TREBA LI POPRAVITI????
+            }
+            else{
+                paymentMeans = docData["PaymentMeans"];
+            }
+            // MSG(paymentMeans);
+
             xmlPaymentMeansCode = "";
             if (paymentMeans != null && paymentMeans != "") {
                 // Get PaymentMeansCode from XML (e.g., "30", "42", etc.)
@@ -1441,6 +1450,14 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                         NKPR_GL_POZIV = Substring(paymentID, 4, paymentID.length - 4).trim();
                     }
                 }
+            }
+        }
+        
+        if(Contains(docData, "PaymentTerms")) {
+            paymentTerms = GetNodeText(docData["PaymentTerms"]);
+
+            if (Contains(paymentTerms, "Note")) {
+                MemoX += "Uvjeti plaćanja: " + GetNodeText(paymentTerms["Note"]);
             }
         }
         

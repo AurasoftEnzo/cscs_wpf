@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<XtraReportsLayoutSerializer SerializerVersion="18.2.3.0" Ref="1" ControlType="DevExpress.XtraReports.UI.XtraReport, DevExpress.XtraReports.v18.2, Version=18.2.3.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" Name="WXeracunPrint_detail" Margins="0, 0, 0, 0" PageWidth="727" PageHeight="1169" Version="18.2" DataMember="Table1" FilterString="[_parentid] = ?parentIdParam">
+  <Bands>
+    <!-- Group Header (Table Header) -->
+    <Item1 Ref="2" ControlType="GroupHeaderBand" Name="GroupHeader" HeightF="30" RepeatEveryPage="true">
+      <Controls>
+        <Item1 Ref="3" ControlType="XRPanel" Name="pnlHeader" SizeF="727,30" LocationFloat="0, 0" BackColor="Navy" ForeColor="White">
+          <Controls>
+            <Item1 Ref="4" ControlType="XRLabel" Name="hdrLineNum" Text="Rbr" Font="Arial, 9pt, style=Bold" TextAlignment="MiddleCenter" SizeF="40,30" LocationFloat="0, 0" ForeColor="White" />
+            <Item2 Ref="5" ControlType="XRLabel" Name="hdrProductCode" Text="Šifra" Font="Arial, 9pt, style=Bold" TextAlignment="MiddleLeft" SizeF="80,30" LocationFloat="42, 0" Padding="5,0,0,0" ForeColor="White" />
+            <Item3 Ref="6" ControlType="XRLabel" Name="hdrProductName" Text="Naziv" Font="Arial, 9pt, style=Bold" TextAlignment="MiddleLeft" SizeF="250,30" LocationFloat="124, 0" Padding="5,0,0,0" ForeColor="White" />
+            <Item4 Ref="7" ControlType="XRLabel" Name="hdrQuantity" Text="Količina" Font="Arial, 9pt, style=Bold" TextAlignment="MiddleRight" SizeF="70,30" LocationFloat="376, 0" Padding="0,0,5,0" ForeColor="White" />
+            <Item5 Ref="8" ControlType="XRLabel" Name="hdrUnit" Text="JM" Font="Arial, 9pt, style=Bold" TextAlignment="MiddleCenter" SizeF="50,30" LocationFloat="448, 0" ForeColor="White" />
+            <Item6 Ref="9" ControlType="XRLabel" Name="hdrUnitPrice" Text="Cijena" Font="Arial, 9pt, style=Bold" TextAlignment="MiddleRight" SizeF="85,30" LocationFloat="500, 0" Padding="0,0,5,0" ForeColor="White" />
+            <Item7 Ref="10" ControlType="XRLabel" Name="hdrTotal" Text="Ukupno" Font="Arial, 9pt, style=Bold" TextAlignment="MiddleRight" SizeF="90,30" LocationFloat="587, 0" Padding="0,0,5,0" ForeColor="White" />
+            <Item8 Ref="11" ControlType="XRLabel" Name="hdrTax" Text="PDV %" Font="Arial, 9pt, style=Bold" TextAlignment="MiddleCenter" SizeF="50,30" LocationFloat="679, 0" ForeColor="White" />
+          </Controls>
+        </Item1>
+      </Controls>
+    </Item1>
+    
+    <!-- Detail Band -->
+    <Item2 Ref="12" ControlType="DetailBand" Name="Detail" HeightF="25">
+      <Controls>
+        <Item1 Ref="13" ControlType="XRLabel" Name="lblLineNum" Font="Arial, 9pt" TextAlignment="MiddleCenter" SizeF="40,25" LocationFloat="0, 0" Tag="lineNum" Borders="Left, Bottom" BorderWidth="1" BorderColor="LightGray">
+          <ExpressionBindings>
+            <Item1 Ref="14" EventName="BeforePrint" PropertyName="Text" Expression="[lineNum]" />
+          </ExpressionBindings>
+        </Item1>
+        
+        <Item2 Ref="15" ControlType="XRLabel" Name="lblProductCode" Font="Arial, 8pt" TextAlignment="MiddleLeft" SizeF="80,25" LocationFloat="42, 0" Padding="5,0,0,0" Tag="productCode" Borders="Bottom" BorderWidth="1" BorderColor="LightGray">
+          <ExpressionBindings>
+            <Item1 Ref="16" EventName="BeforePrint" PropertyName="Text" Expression="[productCode]" />
+          </ExpressionBindings>
+        </Item2>
+        
+        <Item3 Ref="17" ControlType="XRLabel" Name="lblProductName" Font="Arial, 8pt" TextAlignment="MiddleLeft" SizeF="250,25" LocationFloat="124, 0" Padding="5,0,0,0" Tag="productName" Borders="Bottom" BorderWidth="1" BorderColor="LightGray" CanGrow="true">
+          <ExpressionBindings>
+            <Item1 Ref="18" EventName="BeforePrint" PropertyName="Text" Expression="[productName]" />
+          </ExpressionBindings>
+        </Item3>
+        
+        <Item4 Ref="19" ControlType="XRLabel" Name="lblQuantity" Font="Arial, 9pt" TextAlignment="MiddleRight" SizeF="70,25" LocationFloat="376, 0" Padding="0,0,5,0" Tag="quantity" Borders="Bottom" BorderWidth="1" BorderColor="LightGray" TextFormatString="{0:N2}">
+          <ExpressionBindings>
+            <Item1 Ref="20" EventName="BeforePrint" PropertyName="Text" Expression="[quantity]" />
+          </ExpressionBindings>
+        </Item4>
+        
+        <Item5 Ref="21" ControlType="XRLabel" Name="lblUnit" Font="Arial, 8pt" TextAlignment="MiddleCenter" SizeF="50,25" LocationFloat="448, 0" Tag="unit" Borders="Bottom" BorderWidth="1" BorderColor="LightGray">
+          <ExpressionBindings>
+            <Item1 Ref="22" EventName="BeforePrint" PropertyName="Text" Expression="[unit]" />
+          </ExpressionBindings>
+        </Item5>
+        
+        <Item6 Ref="23" ControlType="XRLabel" Name="lblUnitPrice" Font="Arial, 9pt" TextAlignment="MiddleRight" SizeF="85,25" LocationFloat="500, 0" Padding="0,0,5,0" Tag="unitPrice" Borders="Bottom" BorderWidth="1" BorderColor="LightGray" TextFormatString="{0:N2}">
+          <ExpressionBindings>
+            <Item1 Ref="24" EventName="BeforePrint" PropertyName="Text" Expression="[unitPrice]" />
+          </ExpressionBindings>
+        </Item6>
+        
+        <Item7 Ref="25" ControlType="XRLabel" Name="lblLineTotal" Font="Arial, 9pt, style=Bold" TextAlignment="MiddleRight" SizeF="90,25" LocationFloat="587, 0" Padding="0,0,5,0" Tag="lineTotal" Borders="Bottom" BorderWidth="1" BorderColor="LightGray" TextFormatString="{0:N2}">
+          <ExpressionBindings>
+            <Item1 Ref="26" EventName="BeforePrint" PropertyName="Text" Expression="[lineTotal]" />
+          </ExpressionBindings>
+        </Item7>
+        
+        <Item8 Ref="27" ControlType="XRLabel" Name="lblTaxRate" Font="Arial, 8pt" TextAlignment="MiddleCenter" SizeF="50,25" LocationFloat="679, 0" Tag="taxRate" Borders="Right, Bottom" BorderWidth="1" BorderColor="LightGray" TextFormatString="{0:N0}">
+          <ExpressionBindings>
+            <Item1 Ref="28" EventName="BeforePrint" PropertyName="Text" Expression="[taxRate]" />
+          </ExpressionBindings>
+        </Item8>
+      </Controls>
+      
+      <EvenStyleName>DetailEvenStyle</EvenStyleName>
+    </Item2>
+  </Bands>
+  
+  <StyleSheet>
+    <Item1 Ref="29" Name="DetailEvenStyle" BackColor="WhiteSmoke" />
+  </StyleSheet>
+  
+  <Parameters>
+    <Item1 Ref="30" Name="parentIdParam" Type="System.Int32" Visible="false" />
+  </Parameters>
+</XtraReportsLayoutSerializer>

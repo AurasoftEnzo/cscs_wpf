@@ -1,0 +1,98 @@
+Import(strTrim(mpath()) + "CSCS.Math.dll");
+
+CreateWindow(strTrim(tpath()) + "testgui.xaml", strTrim(ipath()) + "icons\\" + "wxeracunprint.ico");
+
+DEFINE rb1DC type L;
+DEFINE rb2DC type L;
+DEFINE checkbox1DC type L;
+
+function testgui_onDisplay()
+{
+    msg("ok0");
+
+    SetWidgetOptions("txtTitle", "Text", "Title111");
+  
+    msg("ok0A");      
+    
+    // Disable buttons initially 
+    //SetWidgetOptions("btnLoad", "IsEnabled", false);
+    /*
+    SetWidgetOptions("btnExportPDF", "IsEnabled", false);
+    SetWidgetOptions("btnPrint", "IsEnabled", false);
+    */
+
+    //SetWidgetOptions("rb1", "IsChecked", 1); //invalid cast from System.String to Nullable Boolean
+
+
+
+
+    
+    checkbox1DC = false;
+    msg("ok0B");  
+
+}
+
+function btn1@Clicked(sender, load) 
+{
+    msg("btn1A");
+    //SetBackgroundColor("tabcontrol1", "Blue");
+    //SetForegroundColor("tabcontrol1", "Red");
+
+    //SetBackgroundColor("toolbartray1", "Blue");
+    //SetForegroundColor("toolbartray1", "Red");
+
+    //SetBackgroundColor("rb1", "Blue");
+    //SetForegroundColor("rb1", "Red");
+
+    //SetBackgroundColor("checkbox1", "Blue");
+    //SetForegroundColor("checkbox1", "Red");
+
+    //SetBackgroundColor("btn2", "Blue");
+    //SetForegroundColor("btn2", "Red");
+
+    //SetBackgroundColor("textblockStatus", "Blue");
+    //SetForegroundColor("textblockStatus", "Red");
+
+    //SetBackgroundColor("label1", "Blue");
+    //SetForegroundColor("label1", "Red");
+
+    SetBackgroundColor("textbox1", "Blue");
+    SetForegroundColor("textbox1", "Red");
+
+    
+    msg("btn1B");
+}
+
+function btnToolbar1@Clicked(sender, load) 
+{
+    msg("btnToolbar1");
+}
+
+
+
+
+function btnTrueFalse@Clicked(sender, load) 
+{
+    msg("btnTrueFalse");
+    //rb2DC = true;
+    checkbox1DC = true;
+}
+
+//My Button
+function btn2@Clicked(sender, load) 
+{
+    msg(btn2);
+    //SetWidgetOptions("textblockStatus", "Text", "Ready. Choose XML file");
+
+    //SetWidgetOptions("label1", "Text", "My NEW Text.");
+
+    //SetWidgetOptions("textbox1", "Text", "MyTextBoxText.");
+
+    //value = GetWidgetOptions("textbox1", "Text");
+    //msg("Value=" + value);
+
+    //msg("checkbox1=" + checkbox1 + "\n" + "checkbox1DC=" + checkbox1DC);
+    msg("checkbox1DC=" + checkbox1DC);
+    
+}
+

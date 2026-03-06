@@ -1,0 +1,83 @@
+Import(strTrim(mpath()) + "CSCS.Math.dll");
+
+CreateWindow(strTrim(tpath()) + "testgui2.xaml", strTrim(ipath()) + "icons\\" + "wxeracunprint.ico");
+
+DEFINE datum1 type d size 8;
+DEFINE radiobutton1DC type L;
+DEFINE radiobutton2DC type L;
+DEFINE radiobutton3DC type L;
+DEFINE radiobutton4DC type L;
+
+
+function testgui2_onDisplay()
+{
+    msg("ok0");
+
+    SetWidgetOptions("txtTitle", "Text", "Title222");
+  
+    msg("ok0A");      
+    
+    // Disable buttons initially 
+    //SetWidgetOptions("btnLoad", "IsEnabled", false);
+    /*
+    SetWidgetOptions("btnExportPDF", "IsEnabled", false);
+    SetWidgetOptions("btnPrint", "IsEnabled", false);
+    */
+
+    //SetWidgetOptions("rb1", "IsChecked", 1); //invalid cast from System.String to Nullable Boolean
+
+    radiobutton1DC = false;
+    radiobutton2DC = true;
+    radiobutton3DC = false;
+    radiobutton4DC = true;
+
+    msg("ok0B");  
+
+    datum1 = "2026-05-05";
+
+    msg("ok0C");  
+
+}
+
+function btnToolbar1@Clicked(sender, load) 
+{
+    msg("btnToolbar1");
+    //msg (datum1.ToString("dd.MM.yyyy"));
+
+    //HorizontalBar("HorizontalBarLT", "Text", "Some text");
+    //colorArrayTJ = {165, 216, 221};
+	//HorizontalBar("HorizontalBarLT", "Color", colorArrayTJ);
+    //HorizontalBar("HorizontalBarLT", "BarWidth", 30);
+
+    //SetBackgroundColor("grid1", "Red");
+    //SetBackgroundColor("stackpanel1", "Blue");
+    
+    //SetBackgroundColor("border1", "LightBlue");
+    //SetForegroundColor("border1", "Red");
+
+    //SetBackgroundColor("groupbox2", "LightBlue");
+    //SetForegroundColor("groupbox2", "Red");
+
+    //SetBackgroundColor("combobox1", "Blue");
+    //SetForegroundColor("combobox1", "Red");
+    
+    //SetBackgroundColor("richtextbox1", "Green");
+    //SetBackgroundColor("dockpanel1", "LightGreen");
+    
+    SetBackgroundColor("mainMenuDC", "Blue");
+    SetForegroundColor("mainMenuDC", "Red");
+}
+
+function btnToolbar2@Clicked(sender, load) 
+{
+    msg("btnToolbar2");
+    //datum1 = "2026-10-03";
+
+    //SetWidgetOptions("textBlock1", "Color.Text", "Green");
+}
+
+function btnToolbar3@Clicked(sender, load) 
+{
+    msg("btnToolbar3");
+    //radiobutton1DC = true;
+}

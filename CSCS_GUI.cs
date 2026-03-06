@@ -27,6 +27,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using System.Windows.Xps;
+//using Windows.UI.Xaml.Controls;
 using WpfControlsLibrary;
 using WpfCSCS;
 using WpfCSCS.Reporting;
@@ -160,10 +161,23 @@ namespace SplitAndMerge
 
 	public const string SET_PARAM_REPORT = "SetParamReport";
 	public const string GET_PARAM_REPORT = "GetParamReport";
+				
+        // New critical functions
+        public const string EXPORT_REPORT = "ExportReport";
+        public const string SET_REPORT_PARAMETER = "SetReportParameter";
+        public const string GET_REPORT_PARAMETER = "GetReportParameter";
+        public const string CLEAR_REPORT_DATA = "ClearReportData";
+        // Enhanced functions
+        public const string VALIDATE_REPORT_TEMPLATE = "ValidateReportTemplate";
+        public const string GET_REPORT_FIELDS = "GetReportFields";
+        public const string CONFIGURE_REPORT_OUTPUT = "ConfigureReportOutput";
+        // Advanced functions
+        public const string SET_REPORT_DATASOURCE = "SetReportDataSource";
+        public const string DISPOSE_REPORT = "DisposeReport";
 
-	//public const string PRINT_SQL_REPORT = "PrintSqlReport";
+        //public const string PRINT_SQL_REPORT = "PrintSqlReport";
 
-	public const string MAINMENU = "#MAINMENU";
+        public const string MAINMENU = "#MAINMENU";
 	public const string WINFORM = "#WINFORM";
 
 	public const string OPENV = "Openv";
@@ -611,7 +625,7 @@ namespace WpfCSCS
 			CommonDB = App.GetConfiguration("CommonDB", "");
 			DefaultDateFormat = App.GetConfiguration("DateFormat", "dd/MM/yyyy");
 			DateFormat10 = App.GetConfiguration("DateFormat", "dd/MM/yyyy");
-			DateFormat8 = App.GetConfiguration("DateFormat", "dd/MM/yy");
+			DateFormat8 = App.GetConfiguration("DateFormat8", "dd/MM/yy");
 
 			if (int.TryParse(App.GetConfiguration("MaxCacheSize", "300"), out int cacheSize))
 			{
@@ -2835,32 +2849,91 @@ namespace WpfCSCS
 
 			if (content is Grid)
 			{
+				//dalibor commented out
+				//var grid = content as Grid;
+				//if (grid.Children.Count > 0 && grid.Children[0] is StackPanel)
+				//{
+				//	var stack = grid.Children[0] as StackPanel;
+				//	children = stack.Children.Cast<UIElement>().ToList();
+				//}
+				//else
+				//{
+				//	children = grid.Children.Cast<UIElement>().ToList();
+				//}
 				var grid = content as Grid;
-				if (grid.Children.Count > 0 && grid.Children[0] is StackPanel)
-				{
-					var stack = grid.Children[0] as StackPanel;
-					children = stack.Children.Cast<UIElement>().ToList();
-				}
-				else
-				{
-					children = grid.Children.Cast<UIElement>().ToList();
-				}
-			}
-			else if (content is Panel)
-			{
-				var panel = content as Panel;
-				children = (content as Panel).Children.Cast<UIElement>().ToList();
-			}
+				children = grid.Children.Cast<UIElement>().ToList();
+
+                CacheControl(content as FrameworkElement, win, controls);
+            }			
 			else if (content is StackPanel)
 			{
 				var stack = content as StackPanel;
 				children = stack.Children.Cast<UIElement>().ToList();
-			}
-			else if (content is Viewbox)
+
+                CacheControl(content as FrameworkElement, win, controls);
+            }
+            else if (content is DockPanel)
+            {
+                var dock = content as DockPanel;
+                children = dock.Children.Cast<UIElement>().ToList();
+
+                CacheControl(content as FrameworkElement, win, controls);
+            }
+            else if (content is Viewbox)
 			{
 				var viewbox = content as Viewbox;
 				children = new List<UIElement>() { viewbox.Child };
+
+                CacheControl(content as FrameworkElement, win, controls);
+            }
+			else if (content is Border)
+			{
+				var border = content as Border;
+				children = new List<UIElement>() { border.Child };
+
+                CacheControl(content as FrameworkElement, win, controls);
+            }
+			else if (content is GroupBox)
+			{                
+                var groupbox = content as GroupBox;
+				children = new List<UIElement>() { groupbox.Content as UIElement };
+
+                CacheControl(content as FrameworkElement, win, controls);
+
+				//Dalibor recoded
+				if (groupbox.Content is Grid)
+				{
+					var groupBoxGrid = groupbox.Content as Grid;
+
+					foreach (var item in groupBoxGrid.Children)
+					{
+						if (item is RadioButton)
+						{
+							if (!GroupBoxesAndRadioButtons.Any(p => p.Key.ToLower() == groupbox.Name.ToLower()))
+								GroupBoxesAndRadioButtons.Add(groupbox.Name, new List<string>());
+							if (!GroupBoxesAndRadioButtons[groupbox.Name].Any(p => p == (item as RadioButton).Name.ToLower()))
+								GroupBoxesAndRadioButtons[groupbox.Name].Add((item as RadioButton).Name.ToLower());
+						}
+					}
+				}
 			}
+			else if (content is ItemsControl)
+			{
+				var itemscontrol = content as ItemsControl;
+                //dalibor commented out
+                //children = itemscontrol.Items.Cast<UIElement>().ToList();
+                //dalibor added
+                children = new List<UIElement>() { };
+                foreach (var item in itemscontrol.Items)
+                {
+                    if (item is UIElement)
+                    {
+                        children.Add(item as UIElement);
+                    }
+                }                
+
+                CacheControl(content as FrameworkElement, win, controls);
+            }
 
 			CacheChildren(children, controls, win);
 			return controls;
@@ -2876,151 +2949,296 @@ namespace WpfCSCS
 			{
 				if (child is Grid)
 				{
-					var gridControl = child as Grid;
+                    CacheControl(child as FrameworkElement, win, controls);
+
+                    var gridControl = child as Grid;
 					CacheChildren(gridControl.Children.Cast<UIElement>().ToList(), controls, win);
 				}
-				else if (child is TabControl)
+				else if (child is StackPanel)
 				{
-					var tabControl = child as TabControl;
-					CacheControl(tabControl, win, controls);
+                    CacheControl(child as FrameworkElement, win, controls);
 
-					var count = VisualTreeHelper.GetChildrenCount(tabControl);
-					for (int i = 0; i < count; i++)
+                    var stackpanelControl = child as StackPanel;
+					CacheChildren(stackpanelControl.Children.Cast<UIElement>().ToList(), controls, win);
+				}
+                else if (child is DockPanel)
+                {
+                    CacheControl(child as FrameworkElement, win, controls);
+
+                    var dockpanelControl = child as DockPanel;
+                    CacheChildren(dockpanelControl.Children.Cast<UIElement>().ToList(), controls, win);
+                }
+                //else if (child is Viewbox)
+                //{
+                //                CacheControl(child as FrameworkElement, win, controls);
+
+                //                var viewboxControl = child as Viewbox;
+                //	List<UIElement> viewboxchildren = new List<UIElement>() { viewboxControl.Child };
+                //	CacheChildren(viewboxchildren.Cast<UIElement>().ToList(), controls, win);
+                //}
+                else if (child is Border)
+				{
+                    CacheControl(child as FrameworkElement, win, controls);
+
+                    var borderControl = child as Border;
+
+					UIElement element = borderControl.Child;
+					List<UIElement> list = new List<UIElement> { element };
+
+					CacheChildren(list.Cast<UIElement>().ToList(), controls, win);
+				}
+                else if (child is GroupBox)//for RadioButtons
+                {
+                    CacheControl(child as FrameworkElement, win, controls);
+
+                    //Dalibor commented out
+                    //var groupBox = child as GroupBox;
+                    //var groupBoxGrid = groupBox.Content as Grid;
+                    //foreach (var item in groupBoxGrid.Children)
+                    //{
+                    //	if (item is RadioButton)
+                    //	{
+                    //		CacheControl(item as FrameworkElement, win, controls);
+                    //		if (!GroupBoxesAndRadioButtons.Any(p => p.Key.ToLower() == groupBox.Name.ToLower()))
+                    //			GroupBoxesAndRadioButtons.Add(groupBox.Name, new List<string>());
+                    //		if (!GroupBoxesAndRadioButtons[groupBox.Name].Any(p => p == (item as RadioButton).Name.ToLower()))
+                    //			GroupBoxesAndRadioButtons[groupBox.Name].Add((item as RadioButton).Name.ToLower());
+                    //	}
+
+                    //	else if (item is CheckBox)
+                    //		CacheControl(item as FrameworkElement, win, controls);
+                    //}
+					
+
+                    var groupboxControl = child as GroupBox;
+                    List<UIElement> groupboxchildren = new List<UIElement>() { groupboxControl.Content as UIElement };
+                    CacheChildren(groupboxchildren.Cast<UIElement>().ToList(), controls, win);
+
+					//Dalibor recoded
+					if (groupboxControl.Content is Grid)
 					{
-						DependencyObject item = VisualTreeHelper.GetChild(tabControl, i);
-						if (item is Grid)
+						var groupBoxGrid = groupboxControl.Content as Grid;
+
+						foreach (var item in groupBoxGrid.Children)
 						{
-							var tabGrid = item as Grid;
-							var count2 = VisualTreeHelper.GetChildrenCount(tabGrid);
-							for (int j = 0; j < count2; j++)
+							if (item is RadioButton)
 							{
-								DependencyObject item2 = VisualTreeHelper.GetChild(tabGrid, j);
-								if (item2 is TabPanel)
-								{
-									var tabPanel = item2 as TabPanel;
-									var count3 = VisualTreeHelper.GetChildrenCount(tabPanel);
-									for (int k = 0; k < count3; k++)
-									{
-										DependencyObject item3 = VisualTreeHelper.GetChild(tabPanel, k);
-										if (item3 is TabItem)
-										{
-											var tabItem = item3 as TabItem;
-											var content2 = tabItem.Content as Grid;
-											foreach (var child2 in content2.Children)
-											{
-
-												if (child2 is ASButton)
-												{
-													var asButton = child2 as ASButton;
-													var insideButton = asButton.Content as Button;
-
-													//CacheControl(insideButton as FrameworkElement, win, controls);
-													CacheASButton(asButton as FrameworkElement, win, controls, insideButton);
-												}
-												else if (child2 is ASEnterBox)
-												{
-													var enterBox = child2 as ASEnterBox;
-													var enterBoxGrid = enterBox.Content as Grid;
-													foreach (var item4 in enterBoxGrid.Children)
-													{
-														CacheASEnterBoxChild(item4 as FrameworkElement, win, controls, enterBox);
-													}
-
-												}
-												else if (child2 is ASNumericBox)
-												{
-													var numBox = child2 as ASNumericBox;
-													var numBoxGrid = numBox.Content as Grid;
-													foreach (var item5 in numBoxGrid.Children)
-													{
-														CacheNumericBoxChild(item5 as FrameworkElement, win, controls, numBox);
-													}
-												}
-												else if (child2 is GroupBox)//for RadioButtons
-												{
-													CacheControl(child2 as FrameworkElement, win, controls);
-
-													var groupBox = child2 as GroupBox;
-													var groupBoxGrid = groupBox.Content as Grid;
-													foreach (var item6 in groupBoxGrid.Children)
-													{
-														if (item6 is RadioButton)
-														{
-															CacheControl(item6 as FrameworkElement, win, controls);
-															if (!GroupBoxesAndRadioButtons.Any(p => p.Key.ToLower() == groupBox.Name.ToLower()))
-																GroupBoxesAndRadioButtons.Add(groupBox.Name, new List<string>());
-															if (!GroupBoxesAndRadioButtons[groupBox.Name].Any(p => p == (item6 as RadioButton).Name.ToLower()))
-																GroupBoxesAndRadioButtons[groupBox.Name].Add((item6 as RadioButton).Name.ToLower());
-														}
-
-														else if (item6 is CheckBox)
-															CacheControl(item6 as FrameworkElement, win, controls);
-													}
-												}
-												else if (child2 is ASDateEditer2)
-												{
-													//CacheControl(child as ASDateEditer2, win, controls);
-
-													var asde2 = child2 as ASDateEditer2;
-													var asde2Grid = asde2.Content as Grid;
-													foreach (var item6 in asde2Grid.Children)
-													{
-														var fe = (item6 as FrameworkElement);
-														fe.DataContext = asde2.FieldName;
-														CacheControl(fe, win, controls);
-													}
-												}
-												else
-												{
-													if (child2 is DataGrid dg)
-													{
-														gridsSelectedRow.Remove(dg.Name.ToLower());
-													}
-													CacheControl(child2 as FrameworkElement, win, controls);
-													if (child2 is ItemsControl)
-													{
-														var parent = child2 as ItemsControl;
-														var items = parent.Items;
-														if (items != null && items.Count > 0)
-														{
-															try
-															{
-																CacheChildren(items.Cast<UIElement>().ToList(), controls, win);
-															}
-															catch (Exception ex)
-															{
-																//MessageBox.Show("Vassili help needed");
-															}
-														}
-													}
-												}
-											}
-										}
-									}
-								}
+								if (!GroupBoxesAndRadioButtons.Any(p => p.Key.ToLower() == groupboxControl.Name.ToLower()))
+									GroupBoxesAndRadioButtons.Add(groupboxControl.Name, new List<string>());
+								if (!GroupBoxesAndRadioButtons[groupboxControl.Name].Any(p => p == (item as RadioButton).Name.ToLower()))
+									GroupBoxesAndRadioButtons[groupboxControl.Name].Add((item as RadioButton).Name.ToLower());
 							}
 						}
 					}
 				}
+				else if (child is ComboBox) //---> //ComboBox must be before ItemsControl 
+				{
+					CacheControl(child as FrameworkElement, win, controls);
+				}
+                else if (child is Menu) //---> //Menu must be before ItemsControl 
+                {
+                    CacheControl(child as FrameworkElement, win, controls);
+                }                
+                else if (child is TabControl)
+				{
+					//Dalibor commented out
+					//var tabControl = child as TabControl;
+					//CacheControl(tabControl, win, controls);
+
+					//var count = VisualTreeHelper.GetChildrenCount(tabControl);
+					//for (int i = 0; i < count; i++)
+					//{
+					//	DependencyObject item = VisualTreeHelper.GetChild(tabControl, i);
+					//	if (item is Grid)
+					//	{
+					//		var tabGrid = item as Grid;
+					//		var count2 = VisualTreeHelper.GetChildrenCount(tabGrid);
+					//		for (int j = 0; j < count2; j++)
+					//		{
+					//			DependencyObject item2 = VisualTreeHelper.GetChild(tabGrid, j);
+					//			if (item2 is TabPanel)
+					//			{
+					//				var tabPanel = item2 as TabPanel;
+					//				var count3 = VisualTreeHelper.GetChildrenCount(tabPanel);
+					//				for (int k = 0; k < count3; k++)
+					//				{
+					//					DependencyObject item3 = VisualTreeHelper.GetChild(tabPanel, k);
+					//					if (item3 is TabItem)
+					//					{
+					//						var tabItem = item3 as TabItem;
+
+											
+											//var content2 = tabItem.Content as Grid;
+											//foreach (var child2 in content2.Children)
+											//{
+
+											//	if (child2 is ASButton)
+											//	{
+											//		var asButton = child2 as ASButton;
+											//		var insideButton = asButton.Content as Button;
+
+											//		//CacheControl(insideButton as FrameworkElement, win, controls);
+											//		CacheASButton(asButton as FrameworkElement, win, controls, insideButton);
+											//	}
+											//	else if (child2 is ASEnterBox)
+											//	{
+											//		var enterBox = child2 as ASEnterBox;
+											//		var enterBoxGrid = enterBox.Content as Grid;
+											//		foreach (var item4 in enterBoxGrid.Children)
+											//		{
+											//			CacheASEnterBoxChild(item4 as FrameworkElement, win, controls, enterBox);
+											//		}
+
+											//	}
+											//	else if (child2 is ASNumericBox)
+											//	{
+											//		var numBox = child2 as ASNumericBox;
+											//		var numBoxGrid = numBox.Content as Grid;
+											//		foreach (var item5 in numBoxGrid.Children)
+											//		{
+											//			CacheNumericBoxChild(item5 as FrameworkElement, win, controls, numBox);
+											//		}
+											//	}
+											//	else if (child2 is GroupBox)//for RadioButtons
+											//	{
+											//		CacheControl(child2 as FrameworkElement, win, controls);
+
+											//		var groupBox = child2 as GroupBox;
+											//		var groupBoxGrid = groupBox.Content as Grid;
+											//		foreach (var item6 in groupBoxGrid.Children)
+											//		{
+											//			if (item6 is RadioButton)
+											//			{
+											//				CacheControl(item6 as FrameworkElement, win, controls);
+											//				if (!GroupBoxesAndRadioButtons.Any(p => p.Key.ToLower() == groupBox.Name.ToLower()))
+											//					GroupBoxesAndRadioButtons.Add(groupBox.Name, new List<string>());
+											//				if (!GroupBoxesAndRadioButtons[groupBox.Name].Any(p => p == (item6 as RadioButton).Name.ToLower()))
+											//					GroupBoxesAndRadioButtons[groupBox.Name].Add((item6 as RadioButton).Name.ToLower());
+											//			}
+
+											//			else if (item6 is CheckBox)
+											//				CacheControl(item6 as FrameworkElement, win, controls);
+											//		}
+											//	}
+											//	else if (child2 is ASDateEditer2)
+											//	{
+											//		//CacheControl(child as ASDateEditer2, win, controls);
+
+											//		var asde2 = child2 as ASDateEditer2;
+											//		var asde2Grid = asde2.Content as Grid;
+											//		foreach (var item6 in asde2Grid.Children)
+											//		{
+											//			var fe = (item6 as FrameworkElement);
+											//			fe.DataContext = asde2.FieldName;
+											//			CacheControl(fe, win, controls);
+											//		}
+											//	}
+											//	else
+											//	{
+											//		if (child2 is DataGrid dg)
+											//		{
+											//			gridsSelectedRow.Remove(dg.Name.ToLower());
+											//		}
+											//		CacheControl(child2 as FrameworkElement, win, controls);
+											//		if (child2 is ItemsControl)
+											//		{
+											//			var parent = child2 as ItemsControl;
+											//			var items = parent.Items;
+											//			if (items != null && items.Count > 0)
+											//			{
+											//				try
+											//				{
+											//					CacheChildren(items.Cast<UIElement>().ToList(), controls, win);
+											//				}
+											//				catch (Exception ex)
+											//				{
+											//					//MessageBox.Show("Vassili help needed");
+											//				}
+											//			}
+											//		}
+											//	}
+											//}
+
+											
+
+											//					}
+											//				}
+											//			}
+											//		}
+											//	}
+											//}
+
+
+
+
+
+
+					var tabControl = child as TabControl;
+                    CacheControl(tabControl, win, controls);
+
+                    var count = VisualTreeHelper.GetChildrenCount(tabControl);
+                    for (int i = 0; i < count; i++)
+                    {
+                        DependencyObject item = VisualTreeHelper.GetChild(tabControl, i);
+                        if (item is Grid)
+                        {
+                            var tabGrid = item as Grid;
+                            var count2 = VisualTreeHelper.GetChildrenCount(tabGrid);
+                            for (int j = 0; j < count2; j++)
+                            {
+                                DependencyObject item2 = VisualTreeHelper.GetChild(tabGrid, j);
+                                if (item2 is TabPanel)
+                                {
+                                    var tabPanel = item2 as TabPanel;
+                                    var count3 = VisualTreeHelper.GetChildrenCount(tabPanel);
+                                    for (int k = 0; k < count3; k++)
+                                    {
+                                        DependencyObject item3 = VisualTreeHelper.GetChild(tabPanel, k);
+                                        if (item3 is TabItem)
+                                        {
+                                            var tabItem = item3 as TabItem;
+
+											//dalibor added
+											UIElement tabItemChild = tabItem.Content as UIElement;
+                                            List<UIElement> tabItemChildlist = new List<UIElement>() { tabItemChild };					
+                                            CacheChildren(tabItemChildlist.Cast<UIElement>().ToList(), controls, win);											
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
 				else if (child is ToolBarTray)
 				{
-					var tbTray = child as ToolBarTray;
-					var toolbars = tbTray.ToolBars;
+                    //Dalibor commented out
+                    //var tbTray = child as ToolBarTray;
+                    //var toolbars = tbTray.ToolBars;
+
+                    //foreach (var toolbar in toolbars)
+                    //{
+                    //	foreach (var item in toolbar.Items)
+                    //	{
+                    //		if (item is Button)
+                    //		{
+                    //			CacheControl(item as FrameworkElement, win, controls);
+                    //		}
+                    //	}
+                    //}
+                    //  //CacheControl(insideButton as FrameworkElement, win, controls);
+                    //  //CacheASButton(asButton as FrameworkElement, win, controls, insideButton);
+
+                    CacheControl(child as FrameworkElement, win, controls);
+
+                    var toolbartrayControl = child as ToolBarTray;
+					var toolbars = toolbartrayControl.ToolBars;
 
 					foreach (var toolbar in toolbars)
 					{
-						foreach (var item in toolbar.Items)
-						{
-							if(item is Button)
-							{
-                                CacheControl(item as FrameworkElement, win, controls);
-                            }
-						}
+						CacheChildren(toolbar.Items.Cast<UIElement>().ToList(), controls, win);
 					}
-                    //CacheControl(insideButton as FrameworkElement, win, controls);
-                    //CacheASButton(asButton as FrameworkElement, win, controls, insideButton);
-				}
-				else if (child is ASButton)
+				}                
+                else if (child is ASButton)
 				{
 					var asButton = child as ASButton;
 					var insideButton = asButton.Content as Button;
@@ -3046,28 +3264,18 @@ namespace WpfCSCS
 					{
 						CacheNumericBoxChild(item as FrameworkElement, win, controls, numBox);
 					}
-				}
-				else if (child is GroupBox)//for RadioButtons
-				{
-					CacheControl(child as FrameworkElement, win, controls);
-
-					var groupBox = child as GroupBox;
-					var groupBoxGrid = groupBox.Content as Grid;
-					foreach (var item in groupBoxGrid.Children)
-					{
-						if (item is RadioButton)
-						{
-							CacheControl(item as FrameworkElement, win, controls);
-							if (!GroupBoxesAndRadioButtons.Any(p => p.Key.ToLower() == groupBox.Name.ToLower()))
-								GroupBoxesAndRadioButtons.Add(groupBox.Name, new List<string>());
-							if (!GroupBoxesAndRadioButtons[groupBox.Name].Any(p => p == (item as RadioButton).Name.ToLower()))
-								GroupBoxesAndRadioButtons[groupBox.Name].Add((item as RadioButton).Name.ToLower());
-						}
-
-						else if (item is CheckBox)
-							CacheControl(item as FrameworkElement, win, controls);
-					}
-				}
+				}				
+				//else if (child is ASDateEditer)
+				//{			
+				//	var asde = child as ASDateEditer;
+				//	var asdeGrid = asde.Content as Grid;
+				//	foreach (var item in asdeGrid.Children)
+				//	{
+				//		var fe = (item as FrameworkElement);
+				//		fe.DataContext = asde.FieldName;
+				//		CacheControl(fe, win, controls);
+				//	}
+				//}				
 				else if (child is ASDateEditer2)
 				{
 					//CacheControl(child as ASDateEditer2, win, controls);
@@ -3080,30 +3288,99 @@ namespace WpfCSCS
 						fe.DataContext = asde2.FieldName;
 						CacheControl(fe, win, controls);
 					}
-				}
-				else
+				}				
+				else if (child is RadioButton)
 				{
-					if (child is DataGrid dg)
-					{
-						gridsSelectedRow.Remove(dg.Name.ToLower());
-					}
+                    CacheControl(child as FrameworkElement, win, controls);
+                }
+                else if (child is CheckBox)
+                {
+                    CacheControl(child as FrameworkElement, win, controls);
+                }
+                else if (child is Button)
+                {
+                    CacheControl(child as FrameworkElement, win, controls);
+                }
+                else if (child is TextBlock)
+                {
+                    CacheControl(child as FrameworkElement, win, controls);
+                }
+                else if (child is Label)
+                {
+                    CacheControl(child as FrameworkElement, win, controls);
+                }
+                else if (child is DataGrid dg)
+                {
+                    gridsSelectedRow.Remove(dg.Name.ToLower());
+
+                    CacheControl(child as FrameworkElement, win, controls);
+                }				
+				else if (child is RichTextBox) 
+				{
 					CacheControl(child as FrameworkElement, win, controls);
-					if (child is ItemsControl)
-					{
-						var parent = child as ItemsControl;
-						var items = parent.Items;
-						if (items != null && items.Count > 0)
-						{
-							try
-							{
-								CacheChildren(items.Cast<UIElement>().ToList(), controls, win);
-							}
-							catch (Exception ex)
-							{
-								//MessageBox.Show("Vassili help needed");
-							}
-						}
-					}
+				}
+                else if (child is TextBox)
+                {
+                    CacheControl(child as FrameworkElement, win, controls);
+                }
+				else if (child is ASDateEditer)//this else if must be before else if DatePicker
+                {
+                    CacheControl(child as FrameworkElement, win, controls);
+                }
+                else if (child is DatePicker)
+				{
+					CacheControl(child as FrameworkElement, win, controls);
+				}
+                else if (child is ASHorizontalBar)
+                {
+                    CacheControl(child as FrameworkElement, win, controls);
+                }
+                else if (child is ItemsControl) //ItemsControl should be here before else
+                {
+                    CacheControl(child as FrameworkElement, win, controls);
+
+                    var itemscontrolControl = child as ItemsControl;
+                    //CacheChildren(itemscontrolControl.Items.Cast<UIElement>().ToList(), controls, win);
+
+                    //dalibor added
+                    List<UIElement> itemscontrolchildren = new List<UIElement>() { };
+                    foreach (var item in itemscontrolControl.Items)
+                    {
+                        if (item is UIElement)
+                        {
+                            itemscontrolchildren.Add(item as UIElement);
+                        }
+                    }
+
+                    CacheChildren(itemscontrolchildren.Cast<UIElement>().ToList(), controls, win);
+                }
+                else
+				{
+					//dalibor commented out
+					//if (child is DataGrid dg)
+					//{
+					//	gridsSelectedRow.Remove(dg.Name.ToLower());
+					//}
+
+					CacheControl(child as FrameworkElement, win, controls);
+
+					//dalibor commented out
+					//if (child is ItemsControl)
+					//{
+					//	var parent = child as ItemsControl;
+					//	var items = parent.Items;
+					//	if (items != null && items.Count > 0)
+					//	{
+					//		try
+					//		{
+					//			CacheChildren(items.Cast<UIElement>().ToList(), controls, win);
+					//		}
+					//		catch (Exception ex)
+					//		{
+					//			//MessageBox.Show("Vassili help needed");
+					//		}
+					//	}
+					//}
 				}
 			}
 		}
@@ -4067,8 +4344,9 @@ namespace WpfCSCS
 			if (widget is ContentControl)
 			{
 				var contentable = widget as ContentControl;
-				result = contentable.Content.ToString();
-			}
+                //result = contentable.Content.ToString();                
+                result = contentable.Content?.ToString() ?? "";
+            }
 			else if (widget is CheckBox)
 			{
 				var checkBox = widget as CheckBox;
@@ -6141,6 +6419,136 @@ namespace WpfCSCS
 			var widgetName = Utils.GetSafeString(args, 0);
 			var colorName = Utils.GetSafeString(args, 1);
 			var widget = gui.GetWidget(widgetName);
+            //dalibor            
+            if (widget is UIElement)
+            {
+                var color2 = SetWidgetOptionsFunction.StringToColor(colorName);
+                SolidColorBrush brush2 = new SolidColorBrush(color2);
+
+                if (m_bgColor)
+                {
+					//Background color
+					if (widget is Grid)
+					{
+						((Grid)widget).Background = brush2;
+					}
+					else if (widget is StackPanel)
+                    {
+                        ((StackPanel)widget).Background = brush2;
+                    }
+                    else if (widget is DockPanel)
+                    {
+                        ((DockPanel)widget).Background = brush2;
+                    }
+                    else if (widget is Border)
+                    {
+                        ((Border)widget).Background = brush2;
+                    }
+                    else if (widget is ComboBox)
+                    {
+                        ((ComboBox)widget).Background = brush2;
+                    }
+                    else if (widget is GroupBox)
+                    {
+                        ((GroupBox)widget).Background = brush2;
+                    }
+                    else if (widget is Menu)
+                    {
+                        ((Menu)widget).Background = brush2;
+                    }
+                    else if (widget is RichTextBox)
+                    {
+                        ((RichTextBox)widget).Background = brush2;
+                    }
+                    else if (widget is TabControl)
+                    {
+                        ((TabControl)widget).Background = brush2;
+                    }
+                    else if (widget is ToolBarTray)
+                    {
+                        ((ToolBarTray)widget).Background = brush2;
+                    }
+                    else if (widget is RadioButton)
+                    {
+                        ((RadioButton)widget).Background = brush2;
+                    }
+                    else if (widget is CheckBox)
+                    {
+                        ((CheckBox)widget).Background = brush2;
+                    }
+                    else if (widget is Button)
+                    {
+                        ((Button)widget).Background = brush2;
+                    }
+                    else if (widget is TextBlock)
+                    {
+                        ((TextBlock)widget).Background = brush2;
+                    }
+                    else if (widget is Label)
+                    {
+                        ((Label)widget).Background = brush2;
+                    }
+                    else if (widget is TextBox)
+                    {
+                        ((TextBox)widget).Background = brush2;
+                    }
+                }
+                else
+                {
+					//Foreground color
+                    if (widget is Border)
+                    {
+                        ((Border)widget).BorderBrush = brush2;
+                    }
+                    else if (widget is ComboBox)
+                    {
+                        ((ComboBox)widget).Foreground = brush2;
+                    }
+                    else if (widget is GroupBox)
+                    {
+                        ((GroupBox)widget).Foreground = brush2;
+                    }
+                    else if (widget is Menu)
+                    {
+                        ((Menu)widget).Foreground = brush2;
+                    }
+                    else if (widget is TabControl) 
+                    {
+						TabControl tabcontroltemp = (TabControl)widget;
+						foreach (TabItem tabitem in tabcontroltemp.Items)
+						{
+                            tabitem.Foreground = brush2;
+                        }						
+                    }
+                    else if (widget is RadioButton)
+                    {
+                        ((RadioButton)widget).Foreground = brush2;
+                    }
+                    else if (widget is CheckBox)
+                    {
+                        ((CheckBox)widget).Foreground = brush2;
+                    }
+                    else if (widget is Button)
+                    {
+                        ((Button)widget).Foreground = brush2;
+                    }
+                    else if (widget is TextBlock)
+                    {
+                        ((TextBlock)widget).Foreground = brush2;
+                    }
+                    else if (widget is Label)
+                    {
+                        ((Label)widget).Foreground = brush2;
+                    }
+                    else if (widget is TextBox)
+                    {
+                        ((TextBox)widget).Foreground = brush2;
+                    }
+                }
+                return new Variable(true);
+            }
+			//end dalibor
+
 			if (widget == null || !(widget is Control))
 			{
 				return Variable.EmptyInstance;

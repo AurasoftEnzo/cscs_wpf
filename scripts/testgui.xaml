@@ -1,0 +1,296 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wcl="clr-namespace:WpfControlsLibrary;assembly=WpfControlsLibrary"
+        Title="E-Racun Pregled i Ispis" 
+        Height="512" Width="811"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="CanResize">
+
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="Padding" Value="15,8"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Background" Value="#FF2196F3"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#FFBDBDBD"/>
+                    <Setter Property="Foreground" Value="#FF757575"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style TargetType="Label">
+            <Setter Property="Margin" Value="5,5,5,2"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+        </Style>
+
+        <Style TargetType="GroupBox">
+            <Setter Property="Margin" Value="10"/>
+            <Setter Property="Padding" Value="10"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderBrush" Value="#FF2196F3"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid x:Name = "gridmain">                
+        <TabControl x:Name = "tabcontrol1" TabStripPlacement="Left" HorizontalAlignment="Left" Height="774" VerticalAlignment="Top" Width="1080" Margin="0,0,0,0">
+                <TabItem Header="Pocetak " x:Name="tabitem0" Height="40" Width="150" Margin="2,2,2,0" HorizontalAlignment="Center" VerticalAlignment="Top">
+                    <GroupBox x:Name = "groupbox1" Header="ABC" Height="150" Width="200" HorizontalAlignment="Left" VerticalAlignment="Top">
+                        <Grid x:Name="grid0">
+                            <Grid.RowDefinitions> 
+                                <RowDefinition Height="Auto" /> 
+                                <RowDefinition Height="Auto" /> 
+                                <RowDefinition Height="Auto" /> 
+                                <RowDefinition Height="Auto" /> 
+                                <RowDefinition Height="Auto" /> 
+                            </Grid.RowDefinitions>
+
+                            <TextBlock x:Name = "txtgr1" 
+                                        Text="Group1" 
+                                        Grid.Row="0"
+                                        Height="15"
+                                        Width="100"
+                                        HorizontalAlignment="Left" 
+                                        VerticalAlignment="Top"/>
+                            <TextBlock x:Name = "txtgr2" 
+                                        Text="Group2" 
+                                        Grid.Row="1"
+                                        Height="15"
+                                        Width="100"
+                                        HorizontalAlignment="Left" 
+                                        VerticalAlignment="Top"/>
+
+                            <RadioButton x:Name = "radiobtn1" Content="Mode A" GroupName="Modes" IsChecked="False" Grid.Row="2" DataContext="radiobtn1DC"/> 
+                            <RadioButton x:Name = "radiobtn2" Content="Mode B" GroupName="Modes" IsChecked="True" Grid.Row="3" DataContext="radiobtn2DC"/> 
+                            <RadioButton x:Name = "radiobtn3" Content="Mode C" GroupName="Modes" Grid.Row="4" DataContext="radiobtn3DC"/> 
+                            <Button x:Name="btn1"
+                                    Content="COLORS"
+                                    Width="120"
+                                    Height="35"
+                                    />       
+                        </Grid>
+                    </GroupBox>
+                </TabItem>
+                <TabItem Header="Izbor " x:Name="tabitem1" Height="40" Width="150" Margin="2,2,2,0" HorizontalAlignment="Center" VerticalAlignment="Top">
+                    <Grid x:Name="grid1" Background="#FFE5E5E5" Margin="0,6,0,9" Width="940">
+                        <TextBlock x:Name = "txtTitle" 
+                                   Text="Pocetni tekst" />
+                        <TextBlock HorizontalAlignment="Left"
+                            VerticalAlignment="Top"
+                            Height="15"
+                            Width="100"
+                            Margin="143,68,0,0"
+                            FontFamily="lato"
+                            x:Name="Label1"
+                            FontSize="14"
+                            Foreground="Black"
+                            Text="KupacA:" />
+                        <TextBlock HorizontalAlignment="Left"
+                            Height="15"
+                            Width="100"
+                            Margin="143,100,0,638"
+                            FontFamily="lato"
+                            x:Name="Label2"
+                            FontSize="14"
+                            Foreground="Black"
+                            Text="RegijaA: " />
+                    </Grid>                                  
+                </TabItem>
+                <TabItem Header="Filtriranja  " x:Name="tabitem2" Height="40" Width="150" Margin="2,2,2,0" HorizontalAlignment="Center" VerticalAlignment="Top">
+                    <Grid x:Name="grid2" Background="#FFE5E5E5" Margin="0,6,0,9" Width="940">
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <TextBlock HorizontalAlignment="Left"
+                            VerticalAlignment="Top"
+                            Height="15"
+                            Width="100"
+                            Margin="143,68,0,0"
+                            FontFamily="lato"
+                            x:Name="Label3"
+                            FontSize="14"
+                            Foreground="Black"
+                            Text="KupacB:" />
+                        <TextBlock HorizontalAlignment="Left"
+                            Height="15"
+                            Width="100"
+                            Margin="143,100,0,638"
+                            FontFamily="lato"
+                            x:Name="Label4"
+                            FontSize="14"
+                            Foreground="Black"
+                            Text="RegijaB: " />
+                    </Grid>                    
+                </TabItem>
+                <TabItem Header="SQL Tests"  x:Name="tabitem3" Height="40" Width="150" Margin="2,2,2,0" HorizontalAlignment="Center" VerticalAlignment="Top">
+                    <Grid x:Name="grid3" Background="#FFE5E5E5" Margin="0,0,0,-12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="200*"/>
+                            <ColumnDefinition Width="100*"/>
+                            <ColumnDefinition Width="100*"/>
+                            <ColumnDefinition Width="100*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name = "txtEnd" 
+                               Text="Zavrsni tekst" 
+                               Width="100" />
+                        <Border BorderBrush="Gray" 
+                                BorderThickness="2" 
+                                CornerRadius="4" 
+                                Padding="10" 
+                                Margin="10" 
+                                Background="#FFEFEFEF"> 
+                                <TextBlock x:Name="Label10" 
+                                           Text="Hello from inside the Border" 
+                                           FontSize="16" 
+                                           Foreground="Black" 
+                                           Height="15"
+                                           Width="200"/> 
+                        </Border>
+                    </Grid>                    
+                </TabItem>
+                <TabItem Header="Kraj " x:Name="tabitem4" Height="40" Width="150" Margin="2,2,2,0" HorizontalAlignment="Center" VerticalAlignment="Top">        
+                    <Grid x:Name="grid4">
+                        <Grid.RowDefinitions> 
+                            <RowDefinition Height="Auto" /> 
+                            <RowDefinition Height="Auto" /> 
+                            <RowDefinition Height="Auto" /> 
+                            <RowDefinition Height="Auto" /> 
+                            <RowDefinition Height="Auto" /> 
+                        </Grid.RowDefinitions>
+
+                        <DataGrid AutoGenerateColumns="False" 
+                                  HeadersVisibility="Column" 
+                                  CanUserAddRows="False" 
+                                  Margin="10"
+                                  Width="250"
+                                  HorizontalAlignment="Left"
+                                  VerticalAlignment="Top"> 
+                            <DataGrid.Columns> 
+                                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="100" /> 
+                                <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="100" /> 
+                            </DataGrid.Columns> 
+                        </DataGrid>
+                    </Grid>                
+                </TabItem>
+                <TabItem Header="ToolBarTray " x:Name="tabitem5" Height="40" Width="150" Margin="2,2,2,0" HorizontalAlignment="Center" VerticalAlignment="Top">        
+                    <Grid x:Name="grid5">
+                        <Grid.RowDefinitions> 
+                            <RowDefinition Height="Auto" /> 
+                            <RowDefinition Height="Auto" /> 
+                            <RowDefinition Height="Auto" /> 
+                            <RowDefinition Height="Auto" /> 
+                            <RowDefinition Height="Auto" /> 
+                        </Grid.RowDefinitions>
+
+                        <ToolBarTray x:Name = "toolbartray1"> 
+                            <ToolBar> 
+                                <Button x:Name="btnToolbar1" Content="Button 1" Width="80" /> 
+                                <Button x:Name="btnToolbar2" Content="Button 2" Width="80" /> 
+                                <Separator /> 
+                                <Button x:Name="btnToolbar3" Content="Button 3" Width="80" /> 
+                            </ToolBar> 
+                        </ToolBarTray>
+                    </Grid>                
+                </TabItem>
+                <TabItem Header="AS Controls " x:Name="tabitem6" Height="40" Width="150" Margin="2,2,2,0" HorizontalAlignment="Center" VerticalAlignment="Top">        
+                    <Grid x:Name="grid6">
+                        <Grid.RowDefinitions> 
+                            <RowDefinition Height="Auto" /> 
+                            <RowDefinition Height="Auto" /> 
+                            <RowDefinition Height="Auto" /> 
+                            <RowDefinition Height="Auto" /> 
+                            <RowDefinition Height="Auto" /> 
+                        </Grid.RowDefinitions>
+
+
+                    </Grid>                
+                </TabItem>
+                <TabItem Header="RADIO BUTTONS " x:Name="tabitem7" Height="40" Width="150" Margin="2,2,2,0" HorizontalAlignment="Center" VerticalAlignment="Top">        
+                    <Grid x:Name="grid7">
+                        <Grid.RowDefinitions> 
+                            <RowDefinition Height="Auto" /> 
+                            <RowDefinition Height="Auto" /> 
+                            <RowDefinition Height="Auto" /> 
+                            <RowDefinition Height="Auto" /> 
+                            <RowDefinition Height="Auto" /> 
+                            <RowDefinition Height="Auto" /> 
+                            <RowDefinition Height="Auto" /> 
+                        </Grid.RowDefinitions>
+
+                        <GroupBox x:Name="groupboxRB"
+                                  Grid.Row="0"
+                                  Header="RadioButtons sa DataContext DC">
+                            <Grid x:Name="gridRB">
+                                <Grid.RowDefinitions> 
+                                    <RowDefinition Height="Auto" /> 
+                                    <RowDefinition Height="Auto" />                                     
+                                </Grid.RowDefinitions>
+
+                                <RadioButton x:Name="rb1" 
+                                     Grid.Row="0"
+                                     Content="Option 1" 
+                                     GroupName="MyGroup" 
+                                     DataContext="rb1DC"/> 
+                                <RadioButton x:Name="rb2" 
+                                     Grid.Row="1"
+                                     Content="Option 2" 
+                                     GroupName="MyGroup" 
+                                     DataContext="rb2DC"/> 
+                            </Grid>
+                        </GroupBox>
+
+                        <Button x:Name="btnTrueFalse"
+                                Grid.Row="1"
+                                Content="TRUE-FALSE"
+                                Width = "200"
+                                Height = "30"/>
+
+                        <CheckBox x:Name="checkbox1"
+                                  Grid.Row="2"
+                                  Content="TEST CHECK"
+                                  IsChecked="True"
+                                  Width = "200"
+                                  Height = "30"
+                                  DataContext="checkbox1DC"/>
+
+                        <Button x:Name="btn2"
+                                Grid.Row="3"
+                                Content="My Button"
+                                Width = "200"
+                                Height = "30"/>
+
+                        <TextBlock x:Name="textblockStatus"           
+                                   Text="Ready"                        
+                                   Margin="5,0,0,0"
+                                   Grid.Row="4"/>
+
+                        <Label x:Name="label1"           
+                               Content="My text"                        
+                               Margin="5,0,0,0"
+                               Grid.Row="5"/>                                   
+
+                        <TextBox x:Name="textbox1"           
+                                 Text="This is a TextBox"                        
+                                 Width = "200"
+                                 Height = "30"
+                                 Grid.Row="6"/>
+
+                    </Grid>                
+                </TabItem>
+        </TabControl>
+    </Grid>
+</Window>

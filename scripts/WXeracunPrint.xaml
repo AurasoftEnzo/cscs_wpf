@@ -45,7 +45,8 @@
         </Style>
     </Window.Resources>
 
-    <Grid Margin="10">
+    <Grid x:Name="gridMain"
+		  Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto" MinHeight="47.56"/>
@@ -55,8 +56,9 @@
         </Grid.RowDefinitions>
 
         <!-- Title -->
-        <Border Grid.Row="0" Background="#FF2196F3" Padding="15" Margin="0,0,0,10">
-            <TextBlock Text="E-RAČUN - PREGLED I ISPIS" 
+        <Border x:Name="borderTitle" Grid.Row="0" Background="#FF2196F3" Padding="15" Margin="0,0,0,10">
+            <TextBlock x:Name="txtTitle"
+				       Text="E-RAČUN - PREGLED I ISPIS" 
                        FontSize="20" 
                        FontWeight="Bold" 
                        Foreground="White"
@@ -64,8 +66,8 @@
         </Border>
 
         <!-- File Selection -->
-        <GroupBox Grid.Row="1" Header="1. Odabir XML datoteke e-računa" Margin="10,10,10,10">
-            <Grid>
+        <GroupBox x:Name="groupboxFileSelection" Grid.Row="1" Header="1. Odabir XML datoteke e-računa" Margin="10,10,10,10">
+            <Grid x:Name="gridFileSelection">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
@@ -75,7 +77,10 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <Label Grid.Row="0" Grid.Column="0" Content="Putanja do XML datoteke:"/>
+                <Label x:Name = "label1" 
+					   Grid.Row="0" 
+					   Grid.Column="0" 
+					   Content="Putanja do XML datoteke:"/>
 
                 <TextBox x:Name="txtXmlPath" 
                          Grid.Row="1" 
@@ -93,14 +98,14 @@
         </GroupBox>
 
         <!-- Actions -->
-        <GroupBox Grid.Row="2" Header="2. Akcije" Margin="10,2,10,2">
-            <Grid>
+        <GroupBox x:Name="groupboxActions" Grid.Row="2" Header="2. Akcije" Margin="10,2,10,2">
+            <Grid x:Name="gridActions">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <StackPanel Grid.Row="0" Orientation="Vertical" Margin="5">
+                <StackPanel x:Name="stackpanelActions" Grid.Row="0" Orientation="Vertical" Margin="5">
 
                     <Button x:Name="btnLoad" 
                             Content="📄 Učitaj e-Račun"
@@ -112,7 +117,7 @@
 
                     <Separator Margin="5,10"/>
 
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" RenderTransformOrigin="0.508,0.066">
+                    <StackPanel x:Name="stackpanelActions2" Orientation="Horizontal" HorizontalAlignment="Center" RenderTransformOrigin="0.508,0.066">
 
                         <Button x:Name="btnExportPDF" 
                                 Content="💾 Izvoz u PDF"
@@ -131,12 +136,14 @@
                 </StackPanel>
 
                 <!-- Preview Area (placeholder for future enhancement) -->
-                <Border Grid.Row="1" 
+                <Border x:Name="borderPreview"
+					    Grid.Row="1" 
                         BorderBrush="#FFBDBDBD" 
                         BorderThickness="1" 
                         Margin="5"
                         Background="#FFF5F5F5">
-                    <TextBlock Text="Pregled e-računa će biti prikazan ovdje nakon učitavanja..."
+                    <TextBlock x:Name="label2"
+						       Text="Pregled e-računa će biti prikazan ovdje nakon učitavanja..."
                                Foreground="#FF757575"
                                FontStyle="Italic"
                                HorizontalAlignment="Center"
@@ -147,17 +154,20 @@
         </GroupBox>
 
         <!-- Status Bar -->
-        <Border Grid.Row="3" 
+        <Border x:Name="borderStatus"
+			    Grid.Row="3" 
                 Background="#FF424242" 
                 Padding="10"
                 Margin="0,10,0,5">
-            <Grid>
+			
+            <Grid x:Name="gridStatus">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0" 
+                <TextBlock x:Name="label3"
+					       Grid.Column="0" 
                            Text="Status: " 
                            Foreground="White"
                            FontWeight="Bold"

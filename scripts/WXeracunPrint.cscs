@@ -13,8 +13,9 @@ mainWindowName = "wxEracunPrint";
 CreateWindow(strTrim(tpath()) + "wxEracunPrint.xaml", strTrim(ipath()) + "icons\\" + "wxeracunprint.ico");
 
 // -------------------- INITIALIZE GUI --------------------
-function winEracunPrint_onDisplay(){
-
+//function winEracunPrint_onDisplay(){
+function WXEracunPrint_onDisplay(){
+msg("ok0");
 
 
 
@@ -26,12 +27,21 @@ function winEracunPrint_onDisplay(){
     //ShowWindow(win, mainWindowName);
     
     // Set initial status
-    SetWidgetOptions(mainWindowName, "lblStatus", "Content","Spremno. Odaberite XML datoteku e-računa.");
+    //SetWidgetOptions(mainWindowName, "lblStatus", "Content","Spremno. Odaberite XML datoteku e-računa.");
+    SetWidgetOptions("lblStatus", "Text", "Spremno. Odaberite XML datoteku e-računa.");
+  msg("ok0A");      
     
     // Disable buttons initially
-    SetWidgetOptions(mainWindowName, "btnLoad", "IsEnabled", false);
-    SetWidgetOptions(mainWindowName, "btnExportPDF", "IsEnabled", false);
-    SetWidgetOptions(mainWindowName, "btnPrint", "IsEnabled", false);
+    //SetWidgetOptions(mainWindowName, "btnLoad", "IsEnabled", false);
+    //SetWidgetOptions(mainWindowName, "btnExportPDF", "IsEnabled", false);
+    //SetWidgetOptions(mainWindowName, "btnPrint", "IsEnabled", false);
+    
+    //SetWidgetOptions("btnLoad", "IsEnabled", false);
+    /*
+    SetWidgetOptions("btnExportPDF", "IsEnabled", false);
+    SetWidgetOptions("btnPrint", "IsEnabled", false);
+    */
+msg("ok0B");  
     /*
     // Attach event handlers using the new AddWidgetHandler
     gui.AddWidgetHandler("btnBrowse", "Click", "OnBrowseClick");
@@ -46,6 +56,7 @@ function winEracunPrint_onDisplay(){
 // -------------------- EVENT HANDLERS --------------------
 
 function btnBrowse@clicked() {
+    msg("ok1");
     filter = "XML Datoteke (*.xml)|*.xml|Sve datoteke (*.*)|*.*";
     initialDir = "C:\\Temp\\";
     
@@ -384,5 +395,5 @@ function ParseDouble(str) {
         return 0.0;
     }
     return Double(str);
-}    return true;
-}
+}    //return true;
+//}

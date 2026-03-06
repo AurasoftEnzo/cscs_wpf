@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8"?>
+<XtraReportsLayoutSerializer SerializerVersion="18.2.3.0" Ref="1" ControlType="DevExpress.XtraReports.UI.XtraReport, DevExpress.XtraReports.v18.2, Version=18.2.3.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" Name="WXeracunPrint" Margins="50, 50, 50, 50" PaperKind="A4" PageWidth="827" PageHeight="1169" Version="18.2" DataMember="Table1">
+  <Bands>
+    <Item1 Ref="2" ControlType="TopMarginBand" Name="TopMargin" HeightF="50" />
+    
+    <!-- Report Header -->
+    <Item2 Ref="3" ControlType="ReportHeaderBand" Name="ReportHeader" HeightF="200">
+      <Controls>
+        <!-- Document Title -->
+        <Item1 Ref="4" ControlType="XRLabel" Name="lblDocumentTitle" Text="E-RAČUN / E-INVOICE" Font="Arial, 20pt, style=Bold" TextAlignment="TopCenter" SizeF="727,40" LocationFloat="0, 10" ForeColor="Navy" Tag="reportTitle">
+          <ExpressionBindings>
+            <Item1 Ref="5" EventName="BeforePrint" PropertyName="Text" Expression="[reportTitle]" />
+          </ExpressionBindings>
+        </Item1>
+        
+        <!-- Document Type -->
+        <Item2 Ref="6" ControlType="XRLabel" Name="lblDocumentType" Font="Arial, 14pt" TextAlignment="TopCenter" SizeF="727,25" LocationFloat="0, 55" Tag="documentType">
+          <ExpressionBindings>
+            <Item1 Ref="7" EventName="BeforePrint" PropertyName="Text" Expression="[documentType]" />
+          </ExpressionBindings>
+        </Item2>
+        
+        <!-- Invoice Details Box -->
+        <Item3 Ref="8" ControlType="XRPanel" Name="pnlInvoiceDetails" SizeF="300,110" LocationFloat="427, 90" BackColor="LightGray" Borders="All" BorderWidth="1">
+          <Controls>
+            <Item1 Ref="9" ControlType="XRLabel" Name="lblInvNumLabel" Text="Broj računa:" Font="Arial, 9pt, style=Bold" SizeF="100,20" LocationFloat="10, 10" />
+            <Item2 Ref="10" ControlType="XRLabel" Name="lblInvoiceID" Font="Arial, 10pt, style=Bold" SizeF="180,20" LocationFloat="110, 10" Tag="invoiceID">
+              <ExpressionBindings>
+                <Item1 Ref="11" EventName="BeforePrint" PropertyName="Text" Expression="[invoiceID]" />
+              </ExpressionBindings>
+            </Item2>
+            
+            <Item3 Ref="12" ControlType="XRLabel" Name="lblIssueDateLabel" Text="Datum:" Font="Arial, 9pt, style=Bold" SizeF="100,20" LocationFloat="10, 35" />
+            <Item4 Ref="13" ControlType="XRLabel" Name="lblIssueDate" Font="Arial, 9pt" SizeF="180,20" LocationFloat="110, 35" Tag="formattedIssueDate">
+              <ExpressionBindings>
+                <Item1 Ref="14" EventName="BeforePrint" PropertyName="Text" Expression="[formattedIssueDate]" />
+              </ExpressionBindings>
+            </Item4>
+            
+            <Item5 Ref="15" ControlType="XRLabel" Name="lblDueDateLabel" Text="Rok plaćanja:" Font="Arial, 9pt, style=Bold" SizeF="100,20" LocationFloat="10, 60" />
+            <Item6 Ref="16" ControlType="XRLabel" Name="lblDueDate" Font="Arial, 9pt" SizeF="180,20" LocationFloat="110, 60" Tag="formattedDueDate">
+              <ExpressionBindings>
+                <Item1 Ref="17" EventName="BeforePrint" PropertyName="Text" Expression="[formattedDueDate]" />
+              </ExpressionBindings>
+            </Item6>
+            
+            <Item7 Ref="18" ControlType="XRLabel" Name="lblCurrencyLabel" Text="Valuta:" Font="Arial, 9pt, style=Bold" SizeF="100,20" LocationFloat="10, 85" />
+            <Item8 Ref="19" ControlType="XRLabel" Name="lblCurrency" Font="Arial, 9pt" SizeF="180,20" LocationFloat="110, 85" Tag="documentCurrencyCode">
+              <ExpressionBindings>
+                <Item1 Ref="20" EventName="BeforePrint" PropertyName="Text" Expression="[documentCurrencyCode]" />
+              </ExpressionBindings>
+            </Item8>
+          </Controls>
+        </Item3>
+      </Controls>
+    </Item2>
+    
+    <!-- Page Header -->
+    <Item3 Ref="21" ControlType="PageHeaderBand" Name="PageHeader" HeightF="200">
+      <Controls>
+        <!-- Supplier Panel -->
+        <Item1 Ref="22" ControlType="XRPanel" Name="pnlSupplier" SizeF="350,180" LocationFloat="0, 10" Borders="All" BorderWidth="1">
+          <Controls>
+            <Item1 Ref="23" ControlType="XRLabel" Name="lblSupplierTitle" Text="IZDAVATELJ / SUPPLIER" Font="Arial, 10pt, style=Bold" BackColor="Navy" ForeColor="White" SizeF="350,25" LocationFloat="0, 0" Padding="5,3,0,0" />
+            
+            <Item2 Ref="24" ControlType="XRLabel" Name="lblSupplierName" Font="Arial, 11pt, style=Bold" SizeF="330,22" LocationFloat="10, 30" Tag="supplierName">
+              <ExpressionBindings>
+                <Item1 Ref="25" EventName="BeforePrint" PropertyName="Text" Expression="[supplierName]" />
+              </ExpressionBindings>
+            </Item2>
+            
+            <Item3 Ref="26" ControlType="XRLabel" Name="lblSupplierAddress" Font="Arial, 9pt" SizeF="330,18" LocationFloat="10, 55" Tag="supplierAddress">
+              <ExpressionBindings>
+                <Item1 Ref="27" EventName="BeforePrint" PropertyName="Text" Expression="[supplierAddress]" />
+              </ExpressionBindings>
+            </Item3>
+            
+            <Item4 Ref="28" ControlType="XRLabel" Name="lblSupplierCityZip" Font="Arial, 9pt" SizeF="330,18" LocationFloat="10, 75" Tag="supplierCityZip">
+              <ExpressionBindings>
+                <Item1 Ref="29" EventName="BeforePrint" PropertyName="Text" Expression="[supplierCityZip]" />
+              </ExpressionBindings>
+            </Item4>
+            
+            <Item5 Ref="30" ControlType="XRLabel" Name="lblSupplierCountry" Font="Arial, 9pt" SizeF="330,18" LocationFloat="10, 95" Tag="supplierCountry">
+              <ExpressionBindings>
+                <Item1 Ref="31" EventName="BeforePrint" PropertyName="Text" Expression="[supplierCountry]" />
+              </ExpressionBindings>
+            </Item5>
+            
+            <Item6 Ref="32" ControlType="XRLabel" Name="lblSupplierVATLabel" Text="OIB / VAT:" Font="Arial, 9pt, style=Bold" SizeF="80,18" LocationFloat="10, 120" />
+            <Item7 Ref="33" ControlType="XRLabel" Name="lblSupplierVAT" Font="Arial, 9pt" SizeF="240,18" LocationFloat="90, 120" Tag="supplierVAT">
+              <ExpressionBindings>
+                <Item1 Ref="34" EventName="BeforePrint" PropertyName="Text" Expression="[supplierVAT]" />
+              </ExpressionBindings>
+            </Item7>
+          </Controls>
+        </Item1>
+        
+        <!-- Customer Panel -->
+        <Item2 Ref="35" ControlType="XRPanel" Name="pnlCustomer" SizeF="350,180" LocationFloat="377, 10" Borders="All" BorderWidth="1">
+          <Controls>
+            <Item1 Ref="36" ControlType="XRLabel" Name="lblCustomerTitle" Text="KUPAC / CUSTOMER" Font="Arial, 10pt, style=Bold" BackColor="DarkGreen" ForeColor="White" SizeF="350,25" LocationFloat="0, 0" Padding="5,3,0,0" />
+            
+            <Item2 Ref="37" ControlType="XRLabel" Name="lblCustomerName" Font="Arial, 11pt, style=Bold" SizeF="330,22" LocationFloat="10, 30" Tag="customerName">
+              <ExpressionBindings>
+                <Item1 Ref="38" EventName="BeforePrint" PropertyName="Text" Expression="[customerName]" />
+              </ExpressionBindings>
+            </Item2>
+            
+            <Item3 Ref="39" ControlType="XRLabel" Name="lblCustomerAddress" Font="Arial, 9pt" SizeF="330,18" LocationFloat="10, 55" Tag="customerAddress">
+              <ExpressionBindings>
+                <Item1 Ref="40" EventName="BeforePrint" PropertyName="Text" Expression="[customerAddress]" />
+              </ExpressionBindings>
+            </Item3>
+            
+            <Item4 Ref="41" ControlType="XRLabel" Name="lblCustomerCityZip" Font="Arial, 9pt" SizeF="330,18" LocationFloat="10, 75" Tag="customerCityZip">
+              <ExpressionBindings>
+                <Item1 Ref="42" EventName="BeforePrint" PropertyName="Text" Expression="[customerCityZip]" />
+              </ExpressionBindings>
+            </Item4>
+            
+            <Item5 Ref="43" ControlType="XRLabel" Name="lblCustomerCountry" Font="Arial, 9pt" SizeF="330,18" LocationFloat="10, 95" Tag="customerCountry">
+              <ExpressionBindings>
+                <Item1 Ref="44" EventName="BeforePrint" PropertyName="Text" Expression="[customerCountry]" />
+              </ExpressionBindings>
+            </Item5>
+            
+            <Item6 Ref="45" ControlType="XRLabel" Name="lblCustomerVATLabel" Text="OIB / VAT:" Font="Arial, 9pt, style=Bold" SizeF="80,18" LocationFloat="10, 120" />
+            <Item7 Ref="46" ControlType="XRLabel" Name="lblCustomerVAT" Font="Arial, 9pt" SizeF="240,18" LocationFloat="90, 120" Tag="customerVAT">
+              <ExpressionBindings>
+                <Item1 Ref="47" EventName="BeforePrint" PropertyName="Text" Expression="[customerVAT]" />
+              </ExpressionBindings>
+            </Item7>
+          </Controls>
+        </Item2>
+      </Controls>
+    </Item3>
+    
+    <!-- Detail Band (Subreport for lines) -->
+    <Item4 Ref="48" ControlType="DetailBand" Name="Detail" HeightF="0">
+      <Controls>
+        <Item1 Ref="49" ControlType="XRSubreport" Name="WXeracunPrint_detail" SizeF="727,0" LocationFloat="0, 0" />
+      </Controls>
+    </Item4>
+    
+    <!-- Report Footer (Totals) -->
+    <Item5 Ref="50" ControlType="ReportFooterBand" Name="ReportFooter" HeightF="250">
+      <Controls>
+        <!-- Totals Panel -->
+        <Item1 Ref="51" ControlType="XRPanel" Name="pnlTotals" SizeF="300,180" LocationFloat="427, 20" BackColor="245, 245, 245" Borders="All" BorderWidth="2">
+          <Controls>
+            <Item1 Ref="52" ControlType="XRLabel" Name="lblSubtotalLabel" Text="Osnovica bez PDV-a:" Font="Arial, 10pt" SizeF="180,22" LocationFloat="10, 15" />
+            <Item2 Ref="53" ControlType="XRLabel" Name="lblSubtotal" TextAlignment="TopRight" Font="Arial, 10pt, style=Bold" SizeF="100,22" LocationFloat="190, 15" Tag="subtotal" TextFormatString="{0:N2}">
+              <ExpressionBindings>
+                <Item1 Ref="54" EventName="BeforePrint" PropertyName="Text" Expression="[subtotal]" />
+              </ExpressionBindings>
+            </Item2>
+            
+            <Item3 Ref="55" ControlType="XRLabel" Name="lblTaxLabel" Text="PDV:" Font="Arial, 10pt" SizeF="180,22" LocationFloat="10, 45" />
+            <Item4 Ref="56" ControlType="XRLabel" Name="lblTax" TextAlignment="TopRight" Font="Arial, 10pt, style=Bold" SizeF="100,22" LocationFloat="190, 45" Tag="taxTotal" TextFormatString="{0:N2}">
+              <ExpressionBindings>
+                <Item1 Ref="57" EventName="BeforePrint" PropertyName="Text" Expression="[taxTotal]" />
+              </ExpressionBindings>
+            </Item4>
+            
+            <Item5 Ref="58" ControlType="XRPanel" Name="pnlSeparator" SizeF="280,2" LocationFloat="10, 80" BackColor="Navy" />
+            
+            <Item6 Ref="59" ControlType="XRLabel" Name="lblTotalLabel" Text="UKUPNO ZA PLAĆANJE:" Font="Arial, 12pt, style=Bold" SizeF="180,30" LocationFloat="10, 95" />
+            <Item7 Ref="60" ControlType="XRLabel" Name="lblTotal" TextAlignment="TopRight" Font="Arial, 16pt, style=Bold" SizeF="100,30" LocationFloat="190, 95" Tag="total" TextFormatString="{0:N2}" ForeColor="DarkBlue">
+              <ExpressionBindings>
+                <Item1 Ref="61" EventName="BeforePrint" PropertyName="Text" Expression="[total]" />
+              </ExpressionBindings>
+            </Item7>
+            
+            <Item8 Ref="62" ControlType="XRLabel" Name="lblCurrencyTotal" Font="Arial, 10pt" SizeF="80,20" LocationFloat="210, 130" Tag="documentCurrencyCode">
+              <ExpressionBindings>
+                <Item1 Ref="63" EventName="BeforePrint" PropertyName="Text" Expression="[documentCurrencyCode]" />
+              </ExpressionBindings>
+            </Item8>
+          </Controls>
+        </Item1>
+        
+        <!-- Payment Info -->
+        <Item2 Ref="64" ControlType="XRPanel" Name="pnlPayment" SizeF="400,120" LocationFloat="10, 20" Borders="All" BorderWidth="1">
+          <Controls>
+            <Item1 Ref="65" ControlType="XRLabel" Name="lblPaymentTitle" Text="UPUTE ZA PLAĆANJE / PAYMENT INSTRUCTIONS" Font="Arial, 10pt, style=Bold" BackColor="Navy" ForeColor="White" SizeF="400,25" LocationFloat="0, 0" Padding="5,3,0,0" />
+            
+            <Item2 Ref="66" ControlType="XRLabel" Name="lblBankAccountLabel" Text="Broj računa:" Font="Arial, 9pt, style=Bold" SizeF="100,20" LocationFloat="10, 35" />
+            <Item3 Ref="67" ControlType="XRLabel" Name="lblBankAccount" Font="Arial, 9pt" SizeF="280,20" LocationFloat="110, 35" Tag="bankAccount">
+              <ExpressionBindings>
+                <Item1 Ref="68" EventName="BeforePrint" PropertyName="Text" Expression="[bankAccount]" />
+              </ExpressionBindings>
+            </Item3>
+            
+            <Item4 Ref="69" ControlType="XRLabel" Name="lblPaymentRefLabel" Text="Poziv na broj:" Font="Arial, 9pt, style=Bold" SizeF="100,20" LocationFloat="10, 60" />
+            <Item5 Ref="70" ControlType="XRLabel" Name="lblPaymentRef" Font="Arial, 9pt" SizeF="280,20" LocationFloat="110, 60" Tag="paymentReference">
+              <ExpressionBindings>
+                <Item1 Ref="71" EventName="BeforePrint" PropertyName="Text" Expression="[paymentReference]" />
+              </ExpressionBindings>
+            </Item5>
+            
+            <Item6 Ref="72" ControlType="XRLabel" Name="lblBankNameLabel" Text="Banka:" Font="Arial, 9pt, style=Bold" SizeF="100,20" LocationFloat="10, 85" />
+            <Item7 Ref="73" ControlType="XRLabel" Name="lblBankName" Font="Arial, 9pt" SizeF="280,20" LocationFloat="110, 85" Tag="bankName">
+              <ExpressionBindings>
+                <Item1 Ref="74" EventName="BeforePrint" PropertyName="Text" Expression="[bankName]" />
+              </ExpressionBindings>
+            </Item7>
+          </Controls>
+        </Item2>
+        
+        <!-- Notes -->
+        <Item3 Ref="75" ControlType="XRLabel" Name="lblNotes" Font="Arial, 9pt, style=Italic" SizeF="400,40" LocationFloat="10, 150" Tag="note" CanGrow="true">
+          <ExpressionBindings>
+            <Item1 Ref="76" EventName="BeforePrint" PropertyName="Text" Expression="[note]" />
+          </ExpressionBindings>
+        </Item3>
+      </Controls>
+    </Item5>
+    
+    <!-- Page Footer -->
+    <Item6 Ref="77" ControlType="PageFooterBand" Name="PageFooter" HeightF="40">
+      <Controls>
+        <Item1 Ref="78" ControlType="XRLabel" Name="lblFooterText" Text="E-račun generiran iz XML datoteke pomoću WpfCSCS sustava" Font="Arial, 8pt, style=Italic" TextAlignment="MiddleCenter" SizeF="727,15" LocationFloat="0, 5" ForeColor="Gray" />
+        <Item2 Ref="79" ControlType="XRPageInfo" Name="pageInfo" PageInfo="NumberOfTotal" Format="Stranica {0} od {1}" Font="Arial, 8pt" TextAlignment="MiddleCenter" SizeF="727,15" LocationFloat="0, 20" />
+      </Controls>
+    </Item6>
+    
+    <Item7 Ref="80" ControlType="BottomMarginBand" Name="BottomMargin" HeightF="50" />
+  </Bands>
+  
+  <Parameters>
+    <Item1 Ref="81" Name="DocumentTitle" Type="System.String" Visible="false" />
+  </Parameters>
+</XtraReportsLayoutSerializer>

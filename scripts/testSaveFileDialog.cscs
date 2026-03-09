@@ -1,0 +1,13 @@
+MessageBox("...Testing SaveFileDialog...");
+
+title = "Save as PDF";
+initialDirectory = "C:\\Temp\\";
+defaultName = "export.pdf";
+defaultExt = "pdf";
+filter = "PDF Files (*.pdf)|*.pdf|All files (*.*)|*.*";
+
+pdfPath = SaveFileDialog(title, initialDirectory, defaultName, defaultExt, filter);
+
+msg("pdfPath: " + pdfPath);
+
+exit;

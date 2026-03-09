@@ -82,8 +82,9 @@ namespace SplitAndMerge
 			interpreter.RegisterFunction("OpenFile", new OpenFileFunction(false));
 			interpreter.RegisterFunction("OpenFileContents", new OpenFileFunction(true));
 			interpreter.RegisterFunction("SaveFile", new SaveFileFunction());
+            interpreter.RegisterFunction("SaveFileDialog", new SaveFileDialogFunction());
 
-			interpreter.RegisterFunction("ShowWidget", new ShowHideWidgetFunction(true));
+            interpreter.RegisterFunction("ShowWidget", new ShowHideWidgetFunction(true));
 			interpreter.RegisterFunction("HideWidget", new ShowHideWidgetFunction(false));
 
 			interpreter.RegisterFunction("GetText", new GetTextWidgetFunction());
@@ -6400,6 +6401,43 @@ namespace WpfCSCS
         }
     }
 
+	class SaveFileDialogFunction : ParserFunction
+	{
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            // Get the function arguments
+            List<Variable> args = script.GetFunctionArgs();
+
+            // Ensure 5 arguments are provided
+            if (args.Count < 5)
+            {
+                throw new ArgumentException("In the function SaveFileDialog 5 arguments are required.");
+            }
+
+            string title = Utils.GetSafeString(args, 0);			// First argument: title
+            string initialDirectory = Utils.GetSafeString(args, 1); // Second argument: initialDirectory
+            string fileName = Utils.GetSafeString(args, 2);         // Third argument: default filename
+            string defaultExt = Utils.GetSafeString(args, 3);       // Fourth argument: used if user omits extension
+            string filter = Utils.GetSafeString(args, 4);			// Fifth argument: fileName
+
+            Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog();
+            dialog.Title = title; // caption of the dialog window
+            dialog.InitialDirectory = initialDirectory; // default directory
+            dialog.FileName = fileName; // default filename
+            dialog.DefaultExt = defaultExt; // used if user omits extension
+            dialog.Filter = filter;
+
+            bool? result = dialog.ShowDialog();
+
+            string path = "";
+            if (result == true)
+            {
+                path = dialog.FileName;
+            }            
+
+            return new Variable(path);
+        }
+    }
 
     class SetColorFunction : ParserFunction
 	{

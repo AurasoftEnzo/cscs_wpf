@@ -929,6 +929,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         NKPR_GL_REZ3 = 0;
         NKPR_GL_SIGNATU = "";
         NKPR_GL_INVCD= "";
+        NKPR_GL_HEADER_AC_TOTAL = 0; // ukupni iznos popusta/troškova na razini računa
         // NKPR_GL_POSRED = ""; // već je ispunjen
 
 
@@ -1470,8 +1471,32 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             NKPR_GL_TOTAL = ParseDecimal(GetNodeText(legalMonTotal["TaxInclusiveAmount"]));
             NKPR_GL_TAXAMT = NKPR_GL_TOTAL - NKPR_GL_SUBTOT;
         }
-        
-        
+
+        // Header-level AllowanceCharge items (UBL 2.1) - may appear multiple times
+        if(Contains(docData, "AllowanceCharge")) {
+            headerAC = docData["AllowanceCharge"];
+            // XmlToDict returns a dict for a single element, array for multiple
+            if(ArrayOrDict(headerAC) == "dict") {
+                headerAC = {headerAC};
+            }
+            chargeCounter = 0;
+            allowanceCounter = 0;
+            for(acIdx = 0; acIdx < Size(headerAC); acIdx++) {
+                acItem = GetNodeText(headerAC[acIdx]);
+                chargeIndicator = GetNodeText(acItem["ChargeIndicator"]);
+                acAmount = ParseDecimal(GetNodeText(acItem["Amount"]));
+                if(chargeIndicator == "true") {
+                    chargeCounter++;
+                    MemoX += "Trošak na nivou računa broj " + chargeCounter + ": " + acAmount.ToString("N2") + "\n";
+                    NKPR_GL_HEADER_AC_TOTAL += acAmount;
+                } else {
+                    allowanceCounter++;
+                    MemoX += "Popust na nivou računa broj " + allowanceCounter + ": " + acAmount.ToString("N2") + "\n";
+                    NKPR_GL_HEADER_AC_TOTAL -= acAmount;
+                }
+            }
+        }
+
         // // Notes
         // // note-i iz xml-a
         // if (Contains(docData, "Note")) {
@@ -1817,6 +1842,8 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
             allowanceCharge = GetNodeText(price["AllowanceCharge"]);
             discountAmount = (lineData["NKPR_LN_PQTY"] * lineData["NKPR_LN_PPRCE"]) - lineData["NKPR_LN_AMT"];
             postotak = (discountAmount / (lineData["NKPR_LN_PQTY"] * lineData["NKPR_LN_PPRCE"])) * 100;
+            lineData["NKPR_LN_POPL"] = discountAmount;
+            lineData["NKPR_LN_PDISC"] = postotak;
         }
 
         //msg ("FINAL LINE DATA: " + lineData);    
@@ -2035,9 +2062,24 @@ function ImportLineItemsToERLN(recordId, lineItems) {
     try{
 
         // msg("lineItems: " + lineItems);
+
+        // Compute total line amount for proportional distribution of header-level AllowanceCharge
+        totalLineAmt = 0;
+        for(ltIdx = 0; ltIdx < Size(lineItems); ltIdx++) {
+            totalLineAmt += lineItems[ltIdx]["NKPR_LN_AMT"];
+        }
+
         // linije artikala
         for (i = 0; i < Size(lineItems); i++) {
             lineData = lineItems[i];
+
+            // Distribute header-level AllowanceCharge proportionally to each line
+            linePopu = 0;
+            if(NKPR_GL_HEADER_AC_TOTAL != 0 && totalLineAmt != 0) {
+                linePopu = (lineData["NKPR_LN_AMT"] / totalLineAmt) * NKPR_GL_HEADER_AC_TOTAL;
+            }
+            lineData["NKPR_LN_POPU"] = linePopu;
+            lineData["NKPR_LN_AMT"] = lineData["NKPR_LN_AMT"] + linePopu;
             
             // msg(lineData);
 
@@ -2065,17 +2107,21 @@ function ImportLineItemsToERLN(recordId, lineItems) {
             {
                 lineData["NKPR_LN_BROPI"] = 0;
             }
+            if(!Contains(lineData, "NKPR_LN_POPU"))
+            {
+                lineData["NKPR_LN_POPU"] = 0;
+            }
     
             sql_insert = "INSERT INTO " + databaseName + ".dbo.NKNAERLN (";
             sql_insert += "NKPR_LN_INVNM, NKPR_LN_BR_LN, NKPR_LN_PQTY, NKPR_LN_AMT, ";
             sql_insert += "NKPR_LN_PCODE, NKPR_LN_PDESC, NKPR_LN_JEDMJ, ";
             sql_insert += "NKPR_LN_PPRCE, NKPR_LN_PRNPR, NKPR_LN_TXBLE, ";
-            sql_insert += "NKPR_LN_POPL, NKPR_LN_PDISC, NKPR_LN_BROPI, NKPR_LN_SASTAV";
+            sql_insert += "NKPR_LN_POPL, NKPR_LN_PDISC, NKPR_LN_POPU, NKPR_LN_BROPI, NKPR_LN_SASTAV";
             sql_insert += ") VALUES (";
             sql_insert += "@recordId, @lineNum, @qty, @amount, ";
             sql_insert += "@productCode, @description, @unit, ";
             sql_insert += "@price, @taxPercent, @taxable, ";
-            sql_insert += "@discount, @discountPercent, @note, @attachmentId";
+            sql_insert += "@discount, @discountPercent, @headerDiscount, @note, @attachmentId";
             sql_insert += ");";
             
             sqlParams = {};
@@ -2103,6 +2149,7 @@ function ImportLineItemsToERLN(recordId, lineItems) {
             sqlParams.Add({"@taxable", lineData["NKPR_LN_TXBLE"]});
             sqlParams.Add({"@discount", lineData["NKPR_LN_POPL"]});
             sqlParams.Add({"@discountPercent", lineData["NKPR_LN_PDISC"]});
+            sqlParams.Add({"@headerDiscount", lineData["NKPR_LN_POPU"]});
             sqlParams.Add({"@note", lineData["NKPR_LN_BROPI"]});
             
             // Add line item attachment ID if present

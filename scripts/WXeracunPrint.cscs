@@ -13,35 +13,20 @@ mainWindowName = "wxEracunPrint";
 CreateWindow(strTrim(tpath()) + "wxEracunPrint.xaml", strTrim(ipath()) + "icons\\" + "wxeracunprint.ico");
 
 // -------------------- INITIALIZE GUI --------------------
-//function winEracunPrint_onDisplay(){
-function WXEracunPrint_onDisplay(){
-msg("ok0");
-
-
-
+function WXEracunPrint_onDisplay()
+{
     // Load XAML window using the new helper
-    //gui = GetGui();
-    //win = gui.LoadXamlWindow("templates\\WXeracunPrint.xaml");
+    //gui = GetGui();????
     
-    // Show window
-    //ShowWindow(win, mainWindowName);
+    // Set initial status    
+    SetWidgetOptions("lblStatus", "Text", "Spremno. Odaberite XML datoteku e-računa.");        
     
-    // Set initial status
-    //SetWidgetOptions(mainWindowName, "lblStatus", "Content","Spremno. Odaberite XML datoteku e-računa.");
-    SetWidgetOptions("lblStatus", "Text", "Spremno. Odaberite XML datoteku e-računa.");
-  msg("ok0A");      
-    
-    // Disable buttons initially
-    //SetWidgetOptions(mainWindowName, "btnLoad", "IsEnabled", false);
-    //SetWidgetOptions(mainWindowName, "btnExportPDF", "IsEnabled", false);
-    //SetWidgetOptions(mainWindowName, "btnPrint", "IsEnabled", false);
-    
-    //SetWidgetOptions("btnLoad", "IsEnabled", false);
-    /*
-    SetWidgetOptions("btnExportPDF", "IsEnabled", false);
-    SetWidgetOptions("btnPrint", "IsEnabled", false);
-    */
-msg("ok0B");  
+    // Disable buttons initially        
+    SetWidgetOptions("btnLoad", "Enabled", false);    
+    SetWidgetOptions("btnExportPDF", "Enabled", false); 
+    SetWidgetOptions("btnPrint", "Enabled", false);
+     
+     
     /*
     // Attach event handlers using the new AddWidgetHandler
     gui.AddWidgetHandler("btnBrowse", "Click", "OnBrowseClick");
@@ -55,88 +40,134 @@ msg("ok0B");
 
 // -------------------- EVENT HANDLERS --------------------
 
-function btnBrowse@clicked() {
-    msg("ok1");
+function btnBrowse@clicked() 
+{ 
     filter = "XML Datoteke (*.xml)|*.xml|Sve datoteke (*.*)|*.*";
     initialDir = "C:\\Temp\\";
-    
-    selectedFile = OpenFileDialog("Odaberite XML e-račun", filter, initialDir);
-    
+            
+    selectedFile = GET_FILE(".xml", initialDir, "Odaberite XML e-račun", filter);    
+
     if (selectedFile != "") {
-        SetWidgetOptions(mainWindowName, "txtXmlPath","Content", selectedFile);
+        SetWidgetOptions("txtXmlPath","Text", selectedFile);
         xmlFilePath = selectedFile;
-        SetWidgetOptions(mainWindowName, "btnLoad", "IsEnabled", true);
-        SetWidgetOptions(mainWindowName, "lblStatus", "Content", "XML datoteka odabrana.");
+        
+        SetWidgetOptions("btnLoad", "Enabled", true);
+
+        SetWidgetOptions("lblStatus", "Text", "XML datoteka odabrana.");
     }
 }
 
+/*
+//NEMA EVENTA TextChanged ZA TextBox
+//ČINI MI SE DA OVO IONAKO NE TREBA
 function OnXmlPathChanged(widgetName, eventType) {
-    path = GetText(mainWindowName, "txtXmlPath");
+    path = GetText("txtXmlPath");
     if (path != "" && Exists(path)) {
         xmlFilePath = path;
-        SetWidgetOptions(mainWindowName, "btnLoad", "IsEnabled", true);
+        SetWidgetOptions("btnLoad", "Enabled", true);
     } else {
-        SetWidgetOptions(mainWindowName, "btnLoad", "IsEnabled", false);
+        SetWidgetOptions("btnLoad", "Enabled", false);
     }
 }
+*/
 
-function OnLoadClick(widgetName, eventType) {
+function btnLoad@clicked() 
+{
+  msg("btnload");    
+
     if (xmlFilePath == "" || !Exists(xmlFilePath)) {
         MessageBox("Datoteka ne postoji: " + xmlFilePath);
         return;
     }
     
-    SetWidgetOptions(mainWindowName, "lblStatus",  "Content", "Učitavanje XML e-računa...");
-    
-    if (LoadInvoiceFromXML(xmlFilePath)) {
-        SetWidgetOptions(mainWindowName, "lblStatus", "Content", "XML e-račun uspješno učitan.");
-        SetWidgetOptions(mainWindowName, "btnExportPDF", "IsEnabled", true);
-        SetWidgetOptions(mainWindowName, "btnPrint", "IsEnabled", true);
-    } else {
-        SetWidgetOptions(mainWindowName, "lblStatus", "Content", "GREŠKA: Nije moguće učitati XML.");
-        SetWidgetOptions(mainWindowName, "btnExportPDF", "IsEnabled", false);
-        SetWidgetOptions(mainWindowName, "btnPrint", "IsEnabled", false);
+    SetWidgetOptions("lblStatus",  "Text", "Učitavanje XML e-računa...");
+ 
+    if (LoadInvoiceFromXML(xmlFilePath)) 
+    {
+        SetWidgetOptions("lblStatus", "Text", "XML e-račun uspješno učitan.");
+        SetWidgetOptions("btnExportPDF", "Enabled", true);
+        SetWidgetOptions("btnPrint", "Enabled", true);
+    } 
+    else 
+    {  
+        SetWidgetOptions("lblStatus", "Text", "GREŠKA: Nije moguće učitati XML.");
+        SetWidgetOptions("btnExportPDF", "Enabled", false); 
+        SetWidgetOptions("btnPrint", "Enabled", false);
     }
 }
 
-function OnExportPDFClick(widgetName, eventType) {
-    if (reportHandle == 0) {
+
+function btnExportPDF@clicked()  
+{
+    if (reportHandle == 0) 
+    {
         MessageBox("Najprije učitajte XML e-račun.");
-        return;
+        return; 
     }
     
+    title = "Spremi kao PDF";
+    initialDirectory = "C:\\Temp\\";
     defaultName = ParseFile(xmlFilePath, "pfName") + "_export.pdf";
+    defaultExt = "pdf";
     filter = "PDF Datoteke (*.pdf)|*.pdf";
     
-    pdfPath = SaveFileDialog("Spremi kao PDF", filter, "", defaultName);
-    
+    pdfPath = SaveFileDialog(title, initialDirectory, defaultName, defaultExt, filter);
+    //msg("Selected PDF path: " + pdfPath);   
+
     if (pdfPath != "") {
-        SetWidgetOptions(mainWindowName, "lblStatus", "Content", "Izvoz u PDF...");
+        SetWidgetOptions("lblStatus", "Text", "Izvoz u PDF...");
         ExportReport(reportHandle, "PDF", pdfPath);
-        SetWidgetOptions(mainWindowName, "lblStatus", "Content", "PDF uspješno izvezen.");
+        SetWidgetOptions("lblStatus", "Text", "PDF uspješno izvezen.");
         MessageBox("PDF e-računa izvezen:\n" + pdfPath);
     }
 }
 
-function OnPrintClick(widgetName, eventType) {
-    if (reportHandle == 0) {
+function btnClose@clicked()
+{
+    MessageBox("HellobtnClose2");
+}
+
+function btnPrint@clicked()  
+{
+    if (reportHandle == 0) 
+    {
         MessageBox("Najprije učitajte XML e-račun.");
         return;
     }
     
-    SetWidgetOptions(mainWindowName, "lblStatus", "Content", "Priprema za ispis...");
+    SetWidgetOptions("lblStatus", "Text", "Priprema za ispis...");
     PrintReport(reportHandle);
-    SetWidgetOptions(mainWindowName, "lblStatus", "Content", "Pregled prije ispisa prikazan.");
+    SetWidgetOptions("lblStatus", "Text", "Pregled prije ispisa prikazan.");
 }
 
-function OnCloseClick(widgetName, eventType) {
-    if (reportHandle != 0) {
-        DisposeReport(reportHandle);
+
+//**************************************************************************************
+//**************************************************************************************
+//OVAJ GUMB btnClose NE DELA ZATO JER NISU SVE FUNKCIJE POSTOJEĆE U KODU PRIJE OVE TOČKE
+//**************************************************************************************
+//**************************************************************************************
+/*
+function btnClose@clicked()
+{
+    //MessageBox("btnClose");
+    if (reportHandle != 0) 
+    {
+        //DisposeReport(reportHandle);
     }
     exit; //CloseWindow(mainWindowName);
 }
+*/
 
-function LoadInvoiceFromXML(xmlPath) {
+
+//********************************************************
+//********************************************************
+//DO OVDJE SAM RJEŠIO
+//********************************************************
+//********************************************************
+
+function LoadInvoiceFromXML(xmlPath) 
+{
+return true; //TO SAM JA DODAO ZA IZBRISAT
     try {
         // Read XML content
         xmlContent = ReadFile(xmlPath);
@@ -397,3 +428,29 @@ function ParseDouble(str) {
     return Double(str);
 }    //return true;
 //}
+
+
+
+
+//***********************************************************
+//***********************************************************
+//******Funkcije koje sam ja dodao***************************
+//***********************************************************
+//***********************************************************
+
+function ParseFile(xmlFilePath, pfName)
+{
+    //msg("Function ParseFile is not implemented");
+    
+    //Default ime datoteke dohvaća iz XML datoteke
+
+    //Vraća default ime datoteke bez nastavka
+
+    return "";
+}
+
+function ExportReport(reportHandle, fileType, pdfPath);
+{
+    //msg("Function ExportReport is not implemented");
+    return "";
+}

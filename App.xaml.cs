@@ -14,6 +14,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using SplitAndMerge;
 using WpfControlsLibrary;
+using WpfCSCS.ServiceReference5_EIzvjestavanjeService;
 
 namespace WpfCSCS
 {
@@ -31,6 +32,7 @@ namespace WpfCSCS
             string uniqueId = $"MyApp.Window.{Guid.NewGuid()}";
             SetCurrentProcessExplicitAppUserModelID(uniqueId);
 
+            DebuggerServer.StartServer(13337, true);
 
             // Initialize date configuration from App.config
             DateConfiguration.Initialize();

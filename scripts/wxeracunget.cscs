@@ -651,7 +651,7 @@ function GetRacuniMER(){
 }
 
 function MERReceiveRacunSuccess(trackingId, responseCode, res) {
-    MSG("MERReceiveRacunSuccess");
+    // MSG("MERReceiveRacunSuccess");
     // MSG("MERReceiveSuccess" + "\n" + XmlToDict(res));
     try{
         LogResponse(responseCode, res);
@@ -667,7 +667,7 @@ function MERReceiveRacunSuccess(trackingId, responseCode, res) {
 }
 
 function MERReceiveRacunFailure(trackingId, responseCode, res) {
-    MSG("MERReceiveRacunFailure");
+    // MSG("MERReceiveRacunFailure");
     try{
         LogResponse(responseCode, res);  
     }
@@ -835,6 +835,7 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
             if (!ImportLineItemsToERLN(invNum, lineItems)) {
                 throw "Greška prilikom unosa stavki računa";
             }
+
             // Log to NKSYELOG
             // LogToNKSYELOG(invNum, xmlFilePath, "IMPORT_SUCCESS");
             
@@ -929,7 +930,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         NKPR_GL_REZ3 = 0;
         NKPR_GL_SIGNATU = "";
         NKPR_GL_INVCD= "";
-        NKPR_GL_HEADER_AC_TOTAL = 0; // ukupni iznos popusta/troškova na razini računa
+        // NKPR_GL_HEADER_AC_TOTAL = 0; // ukupni iznos popusta/troškova na razini računa
         // NKPR_GL_POSRED = ""; // već je ispunjen
 
 
@@ -1445,8 +1446,10 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
 
                 if (Contains(paymentMeans, "PaymentID")) {
                     paymentID = GetNodeText(paymentMeans["PaymentID"]);
-                    NKPR_GL_MODEL = Substring(paymentID, 2, 2);
-
+                    if(paymentID.length >= 4){
+                        NKPR_GL_MODEL = Substring(paymentID, 2, 2);
+                    }
+                    
                     if(paymentID.length > 4){
                         NKPR_GL_POZIV = Substring(paymentID, 4, paymentID.length - 4).trim();
                     }
@@ -1472,29 +1475,195 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             NKPR_GL_TAXAMT = NKPR_GL_TOTAL - NKPR_GL_SUBTOT;
         }
 
+        AllowanceChargeLines = {};
         // Header-level AllowanceCharge items (UBL 2.1) - may appear multiple times
         if(Contains(docData, "AllowanceCharge")) {
-            headerAC = docData["AllowanceCharge"];
+            
             // XmlToDict returns a dict for a single element, array for multiple
-            if(ArrayOrDict(headerAC) == "dict") {
-                headerAC = {headerAC};
-            }
-            chargeCounter = 0;
-            allowanceCounter = 0;
-            for(acIdx = 0; acIdx < Size(headerAC); acIdx++) {
-                acItem = GetNodeText(headerAC[acIdx]);
+            if(ArrayOrDict(docData["AllowanceCharge"]) == "dictionary") {
+                // chargeCounter = 0;
+                // allowanceCounter = 0;
+            
+                acItem = GetNodeText(docData["AllowanceCharge"]);
+                
+                allowanceChargeLine = {};
+                                
                 chargeIndicator = GetNodeText(acItem["ChargeIndicator"]);
-                acAmount = ParseDecimal(GetNodeText(acItem["Amount"]));
-                if(chargeIndicator == "true") {
-                    chargeCounter++;
-                    MemoX += "Trošak na nivou računa broj " + chargeCounter + ": " + acAmount.ToString("N2") + "\n";
-                    NKPR_GL_HEADER_AC_TOTAL += acAmount;
+                amount = GetNodeText(acItem["Amount"]);
+
+                allowanceChargeReason = "";
+                multiplierFactorNumeric = 0;
+                baseAmount = 0;
+                if(Contains(acItem, "AllowanceChargeReason")) {
+                    allowanceChargeReason = GetNodeText(acItem["AllowanceChargeReason"]);
+                }
+                if(Contains(acItem, "MultiplierFactorNumeric")) {
+                    multiplierFactorNumeric = GetNodeText(acItem["MultiplierFactorNumeric"]);
+                }
+                if(Contains(acItem, "BaseAmount")) {
+                    baseAmount = GetNodeText(acItem["BaseAmount"]);
+                }
+
+                allowanceChargeLine["NKPR_LN_PQTY"] = 1;
+                allowanceChargeLine["NKPR_LN_MA_US"] = "N";
+                if(chargeIndicator == true) {
+                    allowanceChargeLine["NKPR_LN_AMT"] = amount;
                 } else {
-                    allowanceCounter++;
-                    MemoX += "Popust na nivou računa broj " + allowanceCounter + ": " + acAmount.ToString("N2") + "\n";
-                    NKPR_GL_HEADER_AC_TOTAL -= acAmount;
+                    allowanceChargeLine["NKPR_LN_AMT"] = -1 * double(amount);
+                }
+                allowanceChargeLine["NKPR_LN_PPRCE"] = baseAmount;
+                allowanceChargeLine["NKPR_LN_PDISC"] = multiplierFactorNumeric;
+                allowanceChargeLine["NKPR_LN_PDESC"] = allowanceChargeReason;
+
+
+                //AllowanceCharge TaxCategory
+                taxCategory = GetNodeText(acItem["TaxCategory"]);
+                
+                xmlTaxCategoryID = "";
+                xmlTaxPercent = 0;
+                
+                if(Contains(taxCategory, "Percent")){
+                    xmlTaxPercent = ParseDecimal(GetNodeText(taxCategory["Percent"]));
+                    allowanceChargeLine["NKPR_LN_PRNPR"] = xmlTaxPercent;
+                }else{
+                    Msg("Stopa poreza nije unesena u AllowanceCharge u zaglavlju, račun nije validan!");
+                }
+
+                if(Contains(taxCategory, "ID")){
+                    xmlTaxCategoryID = GetNodeText(taxCategory["ID"]);
+                }else{
+                    Msg("Kategorija poreza nije unesena u AllowanceCharge u zaglavlju, račun nije validan!");
+                }
+                
+
+                xmlTaxCategoryName = null;
+                if(Contains(taxCategory, "Name")){
+                    xmlTaxCategoryName = GetNodeText(taxCategory["Name"]);
+                    xmlTaxCategoryName = xmlTaxCategoryName.Replace("HR:", "");
+                }
+        
+                // Look up internal tax code from PKFKPORZ table
+                // Match by PKFK_TAX_TARIFA (category) and PKFK_TAX_STOPA (percent)
+                internalTaxCode = LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent, xmlTaxCategoryName);
+                if (internalTaxCode > 0) {
+                    allowanceChargeLine["NKPR_LN_TXBLE"] = internalTaxCode;
+                    // msg("Tax code converted: Category=" + xmlTaxCategoryID + ", Percent=" + xmlTaxPercent + " -> Internal Code=" + internalTaxCode);
+                } else {
+                    Mbox("NAPOMENA: Ova kategorija poreza nije nađena u PKFKPORZ: " + xmlTaxCategoryID + ", Stopa poreza: " + xmlTaxPercent);
+                    allowanceChargeLine["NKPR_LN_TXBLE"] = 0;
+                }
+
+
+                // acAmount = ParseDecimal(GetNodeText(acItem["Amount"]));
+                // if(chargeIndicator == true) {
+                //     if(Contains(acItem, "AllowanceChargeReason") && GetNodeText(acItem["AllowanceChargeReason"]).trim() == "#HR:POVNAK#"){
+                //         continue;
+                //     }
+                //     chargeCounter++;
+                //     MemoX += "Trošak na nivou računa broj " + chargeCounter + ": " + acAmount.ToString("N2") + "\n";
+                //     NKPR_GL_HEADER_AC_TOTAL += acAmount;
+                // } else {
+                //     allowanceCounter++;
+                //     MemoX += "Popust na nivou računa broj " + allowanceCounter + ": " + acAmount.ToString("N2") + "\n";
+                //     NKPR_GL_HEADER_AC_TOTAL -= acAmount;
+                // }
+
+
+                AllowanceChargeLines.Add(allowanceChargeLine);
+            }else{
+                // chargeCounter = 0;
+                // allowanceCounter = 0;
+
+                for(acIdx = 0; acIdx < Size(docData["AllowanceCharge"]); acIdx++) {
+                    acItem = GetNodeText(docData["AllowanceCharge"][acIdx]);
+                    
+                    allowanceChargeLine = {};
+                                    
+                    chargeIndicator = GetNodeText(acItem["ChargeIndicator"]);
+                    amount = GetNodeText(acItem["Amount"]);
+
+                    allowanceChargeReason = "";
+                    multiplierFactorNumeric = 0;
+                    baseAmount = 0;
+                    if(Contains(acItem, "AllowanceChargeReason")) {
+                        allowanceChargeReason = GetNodeText(acItem["AllowanceChargeReason"]);
+                    }
+                    if(Contains(acItem, "MultiplierFactorNumeric")) {
+                        multiplierFactorNumeric = GetNodeText(acItem["MultiplierFactorNumeric"]);
+                    }
+                    if(Contains(acItem, "BaseAmount")) {
+                        baseAmount = GetNodeText(acItem["BaseAmount"]);
+                    }
+
+                    allowanceChargeLine["NKPR_LN_PQTY"] = 1;
+                    allowanceChargeLine["NKPR_LN_MA_US"] = "N";
+                    if(chargeIndicator == true) {
+                        allowanceChargeLine["NKPR_LN_AMT"] = amount;
+                    } else {
+                        allowanceChargeLine["NKPR_LN_AMT"] = -1 * double(amount);
+                    }
+                    allowanceChargeLine["NKPR_LN_PPRCE"] = baseAmount;
+                    allowanceChargeLine["NKPR_LN_PDISC"] = multiplierFactorNumeric;
+                    allowanceChargeLine["NKPR_LN_PDESC"] = allowanceChargeReason;
+
+
+                    //AllowanceCharge TaxCategory
+                    taxCategory = GetNodeText(acItem["TaxCategory"]);
+                    
+                    xmlTaxCategoryID = "";
+                    xmlTaxPercent = 0;
+                    
+                    if(Contains(taxCategory, "Percent")){
+                        xmlTaxPercent = ParseDecimal(GetNodeText(taxCategory["Percent"]));
+                        allowanceChargeLine["NKPR_LN_PRNPR"] = xmlTaxPercent;
+                    }else{
+                        Msg("Stopa poreza nije unesena u AllowanceCharge u zaglavlju, račun nije validan!");
+                    }
+
+                    if(Contains(taxCategory, "ID")){
+                        xmlTaxCategoryID = GetNodeText(taxCategory["ID"]);
+                    }else{
+                        Msg("Kategorija poreza nije unesena u AllowanceCharge u zaglavlju, račun nije validan!");
+                    }
+                    
+
+                    xmlTaxCategoryName = null;
+                    if(Contains(taxCategory, "Name")){
+                        xmlTaxCategoryName = GetNodeText(taxCategory["Name"]);
+                        xmlTaxCategoryName = xmlTaxCategoryName.Replace("HR:", "");
+                    }
+            
+                    // Look up internal tax code from PKFKPORZ table
+                    // Match by PKFK_TAX_TARIFA (category) and PKFK_TAX_STOPA (percent)
+                    internalTaxCode = LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent, xmlTaxCategoryName);
+                    if (internalTaxCode > 0) {
+                        allowanceChargeLine["NKPR_LN_TXBLE"] = internalTaxCode;
+                        // msg("Tax code converted: Category=" + xmlTaxCategoryID + ", Percent=" + xmlTaxPercent + " -> Internal Code=" + internalTaxCode);
+                    } else {
+                        Mbox("NAPOMENA: Ova kategorija poreza nije nađena u PKFKPORZ: " + xmlTaxCategoryID + ", Stopa poreza: " + xmlTaxPercent);
+                        allowanceChargeLine["NKPR_LN_TXBLE"] = 0;
+                    }
+
+
+                    // acAmount = ParseDecimal(GetNodeText(acItem["Amount"]));
+                    // if(chargeIndicator == true) {
+                    //     if(Contains(acItem, "AllowanceChargeReason") && GetNodeText(acItem["AllowanceChargeReason"]).trim() == "#HR:POVNAK#"){
+                    //         continue;
+                    //     }
+                    //     chargeCounter++;
+                    //     MemoX += "Trošak na nivou računa broj " + chargeCounter + ": " + acAmount.ToString("N2") + "\n";
+                    //     NKPR_GL_HEADER_AC_TOTAL += acAmount;
+                    // } else {
+                    //     allowanceCounter++;
+                    //     MemoX += "Popust na nivou računa broj " + allowanceCounter + ": " + acAmount.ToString("N2") + "\n";
+                    //     NKPR_GL_HEADER_AC_TOTAL -= acAmount;
+                    // }
+
+
+                    AllowanceChargeLines.Add(allowanceChargeLine);
                 }
             }
+            
         }
 
         // // Notes
@@ -1815,10 +1984,17 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
             }else{
                 Msg("Kategorija poreza nije unesena u liniji " + lineData["NKPR_LN_BR_LN"] + ", račun nije validan!");
             }
+            
+
+            xmlTaxCategoryName = null;
+            if(Contains(taxCategory, "Name")){
+                xmlTaxCategoryName = GetNodeText(taxCategory["Name"]);
+                xmlTaxCategoryName = xmlTaxCategoryName.Replace("HR:", "");
+            }
       
             // Look up internal tax code from PKFKPORZ table
             // Match by PKFK_TAX_TARIFA (category) and PKFK_TAX_STOPA (percent)
-            internalTaxCode = LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent);
+            internalTaxCode = LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent, xmlTaxCategoryName);
             if (internalTaxCode > 0) {
                 lineData["NKPR_LN_TXBLE"] = internalTaxCode;
                 // msg("Tax code converted: Category=" + xmlTaxCategoryID + ", Percent=" + xmlTaxPercent + " -> Internal Code=" + internalTaxCode);
@@ -2063,23 +2239,23 @@ function ImportLineItemsToERLN(recordId, lineItems) {
 
         // msg("lineItems: " + lineItems);
 
-        // Compute total line amount for proportional distribution of header-level AllowanceCharge
-        totalLineAmt = 0;
-        for(ltIdx = 0; ltIdx < Size(lineItems); ltIdx++) {
-            totalLineAmt += lineItems[ltIdx]["NKPR_LN_AMT"];
-        }
+        // // Compute total line amount for proportional distribution of header-level AllowanceCharge
+        // totalLineAmt = 0;
+        // for(ltIdx = 0; ltIdx < Size(lineItems); ltIdx++) {
+        //     totalLineAmt += lineItems[ltIdx]["NKPR_LN_AMT"];
+        // }
 
         // linije artikala
         for (i = 0; i < Size(lineItems); i++) {
             lineData = lineItems[i];
 
-            // Distribute header-level AllowanceCharge proportionally to each line
-            linePopu = 0;
-            if(NKPR_GL_HEADER_AC_TOTAL != 0 && totalLineAmt != 0) {
-                linePopu = (lineData["NKPR_LN_AMT"] / totalLineAmt) * NKPR_GL_HEADER_AC_TOTAL;
-            }
-            lineData["NKPR_LN_POPU"] = linePopu;
-            lineData["NKPR_LN_AMT"] = lineData["NKPR_LN_AMT"] + linePopu;
+            // // Distribute header-level AllowanceCharge proportionally to each line
+            // linePopu = 0;
+            // if(NKPR_GL_HEADER_AC_TOTAL != 0 && totalLineAmt != 0) {
+            //     linePopu = (lineData["NKPR_LN_AMT"] / totalLineAmt) * NKPR_GL_HEADER_AC_TOTAL;
+            // }
+            // lineData["NKPR_LN_POPU"] = linePopu;
+            // lineData["NKPR_LN_AMT"] = lineData["NKPR_LN_AMT"] + linePopu;
             
             // msg(lineData);
 
@@ -2165,6 +2341,108 @@ function ImportLineItemsToERLN(recordId, lineItems) {
             }
         }
 
+        if(Size(AllowanceChargeLines) > 0) {
+            // // Import AllowanceCharge lines to NKNAERLN table
+            // if (!ImportAllowanceChargeLinesToERLN(recordId, AllowanceChargeLines)) {
+            //     throw "Greška prilikom unosa AllowanceCharge podataka zaglavlja u linije računa";
+            // }
+
+            try{
+                for (i = 0; i < Size(AllowanceChargeLines); i++) {
+                    lineData = AllowanceChargeLines[i];
+
+                    if(!Contains(lineData, "NKPR_LN_PCODE"))
+                    {
+                        lineData["NKPR_LN_PCODE"] = "";
+                    }
+                    if(!Contains(lineData, "NKPR_LN_TXBLE"))
+                    {
+                        lineData["NKPR_LN_TXBLE"] = 0;
+                    }
+                    if(!Contains(lineData, "NKPR_LN_POPL"))
+                    {
+                        lineData["NKPR_LN_POPL"] = 0;
+                    }
+                    if(!Contains(lineData, "NKPR_LN_PRNPR"))
+                    {
+                        lineData["NKPR_LN_PRNPR"] = 0;
+                    }
+                    if(!Contains(lineData, "NKPR_LN_PDISC"))
+                    {
+                        lineData["NKPR_LN_PDISC"] = 0;
+                    }
+                    if(!Contains(lineData, "NKPR_LN_BROPI"))
+                    {
+                        lineData["NKPR_LN_BROPI"] = 0;
+                    }
+                    if(!Contains(lineData, "NKPR_LN_POPU"))
+                    {
+                        lineData["NKPR_LN_POPU"] = 0;
+                    }
+                    if(!Contains(lineData, "NKPR_LN_JEDMJ"))
+                    {
+                        lineData["NKPR_LN_JEDMJ"] = ".";
+                    }
+            
+                    sql_insert = "INSERT INTO " + databaseName + ".dbo.NKNAERLN (";
+                    sql_insert += "NKPR_LN_INVNM, NKPR_LN_BR_LN, NKPR_LN_PQTY, NKPR_LN_AMT, ";
+                    sql_insert += "NKPR_LN_PDESC, NKPR_LN_JEDMJ, ";
+                    sql_insert += "NKPR_LN_PPRCE, NKPR_LN_PRNPR, NKPR_LN_TXBLE, ";
+                    sql_insert += "NKPR_LN_PDISC";
+                    sql_insert += ") VALUES (";
+                    sql_insert += "@recordId, @lineNum, @qty, @amount, ";
+                    sql_insert += "@description, @unit, ";
+                    sql_insert += "@price, @taxPercent, @taxable, ";
+                    sql_insert += "@discountPercent";
+                    sql_insert += ");";
+                    
+                    sqlParams = {};
+                    sqlParams.Add({"@recordId", NKPR_GL_BRPON});
+                    
+                    numOfLines++;
+                    sqlParams.Add({"@lineNum", numOfLines});
+
+                    sqlParams.Add({"@qty", lineData["NKPR_LN_PQTY"]});
+                    sqlParams.Add({"@amount", lineData["NKPR_LN_AMT"]});
+
+                    // pCode = lineData["NKPR_LN_PCODE"];
+                    // if(pCode.length > 15){
+                    //     pCode = Substring(pCode, 0, 15);
+                    // }
+                    // sqlParams.Add({"@productCode", pCode}); ///// 15
+
+                    pDesc = lineData["NKPR_LN_PDESC"];
+                    if(pDesc.length > 50){
+                        pDesc = Substring(pDesc, 0, 50);
+                    }
+                    sqlParams.Add({"@description", pDesc}); ///// 50
+
+                    sqlParams.Add({"@unit", lineData["NKPR_LN_JEDMJ"]});
+                    sqlParams.Add({"@price", lineData["NKPR_LN_PPRCE"]});
+                    sqlParams.Add({"@taxPercent", lineData["NKPR_LN_PRNPR"]});
+                    sqlParams.Add({"@taxable", lineData["NKPR_LN_TXBLE"]});
+                    sqlParams.Add({"@discountPercent", lineData["NKPR_LN_PDISC"]});
+                    
+                    // // Add line item attachment ID if present
+                    // lineAttachmentId = 0;
+                    // if (Contains(lineData, "NKPR_LN_SASTAV")) {
+                    //     lineAttachmentId = lineData["NKPR_LN_SASTAV"];
+                    // }
+                    // sqlParams.Add({"@attachmentId", lineAttachmentId});
+                        
+                    result = SqlNonQuery(sql_insert, sqlParams, 60, transactionHndl);
+                    if (result == 0) {
+                        throw "Greška prilikom unosa stavke " + (i + 1);
+                    }
+                }
+                
+                return true;
+                
+            } catch(error) {
+                throw "Greška prilikom unosa stavki(ID " + NKPR_GL_POSRED + "): " + error;
+            }
+        }
+
         //opisne linije s attachment referencama u nksypict
         if(Size(restOfAttachments) > 0) {
             for(attNum = 0; attNum < Size(restOfAttachments); attNum++){
@@ -2240,6 +2518,11 @@ function ImportLineItemsToERLN(recordId, lineItems) {
         throw "Greška prilikom unosa stavki(ID " + NKPR_GL_POSRED + "): " + error;
     }
 }
+
+// // Import allowance charge lines into NKNAERLN table
+// function ImportAllowanceChargeLinesToERLN(recordId, allowanceChargeLineItems) {
+    
+// }
 
 // Log to NKSYELOG table
 function LogToNKSYELOG(recordId, xmlFilePath, status) {
@@ -2586,7 +2869,7 @@ function SaveAttachmentToDisk(base64Content, filename, description, attachmentID
 // Based on XML tax category ID and tax percent
 // Reverse process from wxeracun.cscs
 // -----------------------------------------------------------
-function LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent) {
+function LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent, name = null) {
     try{
         if (xmlTaxCategoryID == "" || xmlTaxCategoryID == null) {
             msg("POZOR: Kategorija poreza nije unesena!");
@@ -2597,13 +2880,21 @@ function LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent) {
         // XML categories: S (standard), E (exempt), K (special), O (zero-rated), AE (reverse charge), etc.
         // Internal PKFK_TAX_TARIFA: PDV25, PDV13, PDV5, E, K, O, AE, etc.
         
-        pkfkTaxTarifa = xmlTaxCategoryID;
-        
-        // If category is 'S' (standard VAT), need to convert to PDV format with rate
-        if (xmlTaxCategoryID == "S") {
-            // Standard VAT - combine with percent to create PKFK_TAX_TARIFA like "PDV25", "PDV13", "PDV5"
-            pkfkTaxTarifa = "PDV" + String(xmlTaxPercent);
-        }
+        if(name != null){
+            pkfkTaxTarifa = name;
+        }else{
+            // If category is 'S' (standard VAT), need to convert to PDV format with rate
+            if (xmlTaxCategoryID == "S") {
+                // Standard VAT - combine with percent to create PKFK_TAX_TARIFA like "PDV25", "PDV13", "PDV5"
+                pkfkTaxTarifa = "PDV" + String(xmlTaxPercent);
+            }
+            elif(xmlTaxCategoryID == "E"){
+                return 0;
+            }else{
+                // For other categories, map directly (e.g. E, K, O, AE)
+                pkfkTaxTarifa = xmlTaxCategoryID;
+            }
+        }      
         
         // Query PKFKPORZ table to find matching tax code
         // For compound tax codes (PKFK_TAX_TIP = 'S'), need to find individual codes
@@ -2626,29 +2917,29 @@ function LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent) {
             return taxCode;
         }
         
-        // If no exact match found, try to find by category only (for special cases)
-        if (xmlTaxCategoryID != "S") {
-            sql_tax_lookup2 = "SELECT TOP 1 PKFK_TAX_CODE FROM " + databaseName + ".dbo.PKFKPORZ " +
-                            "WHERE (PKFK_TAX_TIP = '' OR PKFK_TAX_TIP IS NULL) " +
-                            "AND PKFK_TAX_TARIFA = @p1;";
+        // // If no exact match found, try to find by category only (for special cases)
+        // if (xmlTaxCategoryID != "S") {
+        //     sql_tax_lookup2 = "SELECT TOP 1 PKFK_TAX_CODE FROM " + databaseName + ".dbo.PKFKPORZ " +
+        //                     "WHERE (PKFK_TAX_TIP = '' OR PKFK_TAX_TIP IS NULL) " +
+        //                     "AND PKFK_TAX_TARIFA = @p1;";
             
-            sqlParams2 = {};
-            sqlParams2.Add({"@p1", xmlTaxCategoryID});
+        //     sqlParams2 = {};
+        //     sqlParams2.Add({"@p1", xmlTaxCategoryID});
             
-            taxResult2 = sqlQuery(sql_tax_lookup2, sqlParams2);
+        //     taxResult2 = sqlQuery(sql_tax_lookup2, sqlParams2);
             
-            if (Size(taxResult2) >= 2) {
-                taxCode = taxResult2[1][0];
-                // msg("Found tax code by category only: " + taxCode + " for Category=" + xmlTaxCategoryID);
-                return taxCode;
-            }
-        }
+        //     if (Size(taxResult2) >= 2) {
+        //         taxCode = taxResult2[1][0];
+        //         // msg("Found tax code by category only: " + taxCode + " for Category=" + xmlTaxCategoryID);
+        //         return taxCode;
+        //     }
+        // }
         
-        msg("POZOR: Šifra poreza nije nađena za kategoriju=" + xmlTaxCategoryID + " (" + pkfkTaxTarifa + "), Stopa=" + xmlTaxPercent);
+        Mbox("POZOR: Šifra poreza nije nađena za kategoriju=" + xmlTaxCategoryID + " (" + pkfkTaxTarifa + "), Stopa=" + xmlTaxPercent);
         return 0;
         
     } catch(error) {
-        msg("Greška pri traženju tax code: " + error);
+        Mbox("Greška pri traženju tax code: " + error);
         return 0;
     }
 }

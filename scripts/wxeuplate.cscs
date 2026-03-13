@@ -523,7 +523,8 @@ function MERUplataFailure(tracking, responseCode, res) {
 // Send to Porezna uprava (direct, independent of main PROVIDER)
 function SendEUplateToPorezna() {
     try {
-        for(currentRbr = 0; currentRbr < Rbr; currentRbr++){
+        // for(currentRbr = 0; currentRbr < Rbr; currentRbr++){
+        for(currentRbr = 0; currentRbr < 1; currentRbr++){
             SendUplataToPorezna(currentRbr);
         }
     } catch(ex) {
@@ -533,6 +534,40 @@ function SendEUplateToPorezna() {
 }
 
 function SendUplataToPorezna(_currRbr){
+    try {
+        poreznaResponse = POREZNA_EVIDENTIRAJ_NAPLATU(
+            ERAC_SERVER_POREZNA,
+            CERTPATH + ERAC_PASST_POREZNA,
+            ERAC_PASS_POREZNA,
+
+            UUID(),
+            
+            TransformFromAurasoftInvoiceId(arrayBrRacuna[_currRbr]),
+            arrayDatumRacuna[_currRbr],
+            
+            companyOIB,
+            arrayOIB[_currRbr],
+            
+            arrayDatumUplate[_currRbr],
+            arrayPlaceniIznos[_currRbr],
+            arrayVrstaPlacanja[_currRbr]
+        );
+
+        if(Contains(poreznaResponse, "prihvacenZahtjev") && poreznaResponse["prihvacenZahtjev"] == true){
+            UpdateKPSPZATV(arrayID[_currRbr]);
+        }else{
+            hasErrors = true;
+        }
+
+        WriteLog("SendUplataToPorezna", "Broj računa: " + arrayBrRacuna[_currRbr] + "\nResponse:\n" + poreznaResponse["ResponseXml"] + "\n\nprihvacenZahtjev: " + poreznaResponse["prihvacenZahtjev"] + "\ngreskaSifra: " + poreznaResponse["greskaSifra"] + "\ngreskaOpis: " + poreznaResponse["greskaOpis"]);
+    } catch(ex) {
+        hasErrors = true;
+        WriteLog("SendUplataToPorezna", "Broj računa: " + arrayBrRacuna[_currRbr] + "\nException:\n " + ex);
+    }
+}
+
+
+function SendUplataToPorezna_old(_currRbr){
     try {
         endpoint = (ERAC_SERVERT_POREZNA != "") ? ERAC_SERVERT_POREZNA : ERAC_SERVER_POREZNA;
 

@@ -44,6 +44,7 @@ using System.Xml.Xsl;
 using Windows.UI.Notifications;
 using WpfCSCS.ServiceReference1_SendB2BOutgoingInvoicePKIWebService;
 using WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService;
+using WpfCSCS.ServiceReference5_EIzvjestavanjeService;
 using static System.Net.WebRequestMethods;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 using static WpfCSCS.TEST1Function;
@@ -181,6 +182,10 @@ namespace WpfCSCS
             //interpreter.RegisterFunction("FINA_CHANGE_B2G_INCOMING_INVOICE_STATUS", new FINA_CHANGE_B2G_INCOMING_INVOICE_STATUSFunction());
             interpreter.RegisterFunction("FINA_GET_B2G_OUTGOING_INVOICE_LIST", new FINA_GET_B2G_OUTGOING_INVOICE_LISTFunction());
             interpreter.RegisterFunction("FINA_GET_B2G_OUTGOING_INVOICE_FISK_STATUS", new FINA_GET_B2G_OUTGOING_INVOICE_FISK_STATUSFunction());
+            
+            
+            // POREZNA
+            interpreter.RegisterFunction("POREZNA_EVIDENTIRAJ_NAPLATU", new POREZNA_EVIDENTIRAJ_NAPLATUFunction());
 
 
 
@@ -6152,5 +6157,83 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
 
     #endregion
 
+    #region POREZNA
 
+    class POREZNA_EVIDENTIRAJ_NAPLATUFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 11, m_name);
+
+            var endpoint = Utils.GetSafeString(args, 0);
+
+            //var dnsIdentity = Utils.GetSafeString(args, );
+            //var serviceCertificatePath = Utils.GetSafeString(args, );
+
+            var clientCertificatePath = Utils.GetSafeString(args, 1);
+            var clientCertificatePassword = Utils.GetSafeString(args, 2);
+
+            var messageId = Utils.GetSafeString(args, 3);
+
+
+            //var invoiceId = Utils.GetSafeString(args, 7);
+            var supplierInvoiceId = Utils.GetSafeString(args, 4);
+            //var invoiceYear = Utils.GetSafeString(args, 8);
+
+            var invoiceIssueDateString = Utils.GetSafeString(args, 5);
+            DateTime.TryParseExact(invoiceIssueDateString, DateConfiguration.InternalFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime invoiceIssueDate);
+
+            var supplierOib = Utils.GetSafeString(args, 6);
+            var buyerOib = Utils.GetSafeString(args, 7);
+
+            var payedDateString = Utils.GetSafeString(args, 8);
+            DateTime.TryParseExact(payedDateString, DateConfiguration.InternalFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime payedDate);
+
+            
+
+            //var payedAmountString = Utils.GetSafeString(args, 10);
+            //decimal.TryParse(payedAmountString, out decimal payedAmount);
+
+            decimal payedAmountDecimal = (decimal)Utils.GetSafeDouble(args, 9);
+
+            var paymentMeansCode = Utils.GetSafeString(args, 10); // T - transakcijsko, O - obračunsko, Z - ostalo
+            nacinPlacanja nacinPlacanja = nacinPlacanja.T;
+            switch (paymentMeansCode)
+            {
+                case "T":
+                    nacinPlacanja = nacinPlacanja.T;
+                    break;
+                case "O":
+                    nacinPlacanja = nacinPlacanja.O;
+                    break;
+                case "Z":
+                    nacinPlacanja = nacinPlacanja.Z;
+                    break;
+                default:
+                    throw new Exception("Krivi način plaćanja.");
+            }
+
+            Variable resVar = new Fiskalizacija2.POREZNA.EvidentirajNaplatu().Send(
+                endpoint,
+                clientCertificatePath,
+                clientCertificatePassword,
+
+                messageId,
+
+                supplierInvoiceId,
+                invoiceIssueDate,
+                
+                supplierOib,
+                buyerOib,
+                
+                payedDate,
+                payedAmountDecimal, 
+                nacinPlacanja);
+
+            return resVar;
+        }
+    }
+
+    #endregion
 }

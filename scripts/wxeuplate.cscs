@@ -139,7 +139,32 @@ function refreshList(){
     
 
     // Query closed invoices for selected month
-    sql = " WITH racuni AS (
+    if(substring(KPSY_COMP_JMBFI, 0, 1) == "9"){
+        sql = "SELECT 
+            0, 
+            kpkn_datem, 
+            kpkn_partnr as Partner, 
+            nksc_partname as PartnerNAziv,
+            nksc_sifra as OIB,
+            kpkn_racun as BrRacuna, 
+            pi_pr_brdok as Redbr,
+            'T' as VrstaPlacanja,
+            month(pi_pr_date) as mjesecUplate,
+            pi_pr_date as datumUplate, 
+            year(pi_pr_date) as xyear,
+            kpkn_iznos as iznosRacuna,
+            pi_pr_iznos as PlaceniIznos 
+            FROM " + databaseName + ".dbo.NKPIPROM 
+            LEFT_JOIN " + databaseName + ".dbo.KPKNIZRN ON pi_pr_brdok= kpkn_redbr 
+            LEFT_JOIN " + databaseName + ".dbo.NKSCPART ON KPKN_PARTNR = NKSC_PARTCODE 
+            WHERE month(pi_pr_date) = kpkn_redbr 
+            WHERE month(pi_pr_date) = @month 
+            AND year(pi_pr_date) = @year 
+            AND pi_pr_dp IN ( 'P','U')
+            ORDER BY pi_pr_date, pi_pr_brdok";
+        
+    }else{
+        sql = " WITH racuni AS (
                 SELECT kpsp_ztv_code, 
                 NKSC_PARTNAME as partnerNaziv,
                 kpsp_ztv_num, kpsp_ztv_identr, 
@@ -157,9 +182,9 @@ function refreshList(){
             LEFT JOIN " + databaseName + ".dbo.NKSCPART ON kpsp_ztv_code = NKSC_PARTCODE
             WHERE kpsp_ztv_rac_dp = 'D' AND NKSP_INVT_AMT > 0
               AND kpsp_ztv_datupl <= DATEADD(month, 1, DATEFROMPARTS(@year, @month, 1))  
-              AND KPSP_ZTV_REZ4 = '1900-01-01'
-              AND KPSP_ZTV_UPLPLU != '-'
-                AND nksp_invt_code = kpsp_ztv_code 
+              AND KPSP_ZTV_REZ4 = '1900-01-01'";
+              //AND KPSP_ZTV_UPLPLU != '-'
+        sql +=  " AND nksp_invt_code = kpsp_ztv_code 
                 AND NKSP_INVT_TIPTM not IN ('KS', 'KI', 'TR')
                 AND nksc_model = '" + KPSY_PO_FREIGHT + "'
                 ) 
@@ -180,9 +205,9 @@ function refreshList(){
                 FROM racuni r 
             LEFT JOIN " + databaseName + ".dbo.NKSCPART ON nksc_partcode = r.kpsp_ztv_code 
             WHERE r.xyear = @year 
-                AND month(r.KPSP_ZTV_DAT_RN) <= @month
+                AND month(r.KPSP_ZTV_DAT_RN) = @month
             ORDER BY r.datumUplate, r.id";
-    
+    }
     sqlParams = {};
     sqlParams.Add({"@month", month});
     sqlParams.Add({"@year", year});
@@ -642,7 +667,7 @@ function PoreznaUplataFailure(tracking, responseCode, res) {
 
 // Helper functions
 function GetCompanyData() {
-    sql = "SELECT TOP 1 kpsy_comp_name, kpsy_rezerva, kpsy_fiscal_yr, KPSY_PO_FREIGHT FROM " + databaseName + ".dbo.KPSYMSTR";
+    sql = "SELECT TOP 1 kpsy_comp_name, kpsy_rezerva, kpsy_fiscal_yr, KPSY_PO_FREIGHT, kpsy_comp_jmbfi FROM " + databaseName + ".dbo.KPSYMSTR";
     sqlResult = sqlQuery(sql);
     if (Size(sqlResult) >= 2) {
         KPSY_COMP_NAME = sqlResult[1][0].trim();
@@ -650,6 +675,7 @@ function GetCompanyData() {
         KPSY_FISCAL_YR = sqlResult[1][2];
         KPSY_PO_FREIGHT = sqlResult[1][3].trim();
         companyOIB = Substring(KPSY_REZERVA, 0, 11);
+        KPSY_COMP_JMBFI = sqlResult[1][4].trim();
     }
 }
 

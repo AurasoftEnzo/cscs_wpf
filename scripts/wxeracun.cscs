@@ -688,9 +688,10 @@ function GenerateUBLXml() {
         //OVO treba urediti prema HR zahtjevima, za sada je samo primjer
         //potrebno je poreze potražit iz linija i sa for petljom popunit linije ispod
         xml += "        <hrextac:HRFISK20Data>\n";
-        if (NKSC_TAX_DN == "N") {
-            xml += "        <hrextac:HRObracunPDVPoNaplati>Obračun prema naplaćenoj naknadi</hrextac:HRObracunPDVPoNaplati>\n";
-        }
+        //if (NKSC_TAX_DN == "N") {
+        //ovo je za firme pošičjatelja/suppliera koji su u sustavu PDV-a po naplaćenoj realizaciji, tada se u XML-u mora poslati informacija da se obračun PDV-a vrši prema naplaćenoj naknadi
+        //    xml += "        <hrextac:HRObracunPDVPoNaplati>Obračun prema naplaćenoj naknadi</hrextac:HRObracunPDVPoNaplati>\n";
+        //}
         xml += "            <hrextac:HRTaxTotal>\n";
         xml += "                <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(totalPorez, 2, ".", formatNumOption) + "</cbc:TaxAmount>\n";
         for (i = 1; i < Size(taxRes2); i++) {
@@ -1706,13 +1707,17 @@ function GenerateUBLXml() {
     // LegalMonetaryTotal
     total = NKPR_GL_TOTAL;
     prepaid = 0; //(profileID == "P11" ? NKPR_GL_REZ1 : 0);
-    payable = total; // - prepaid;
+    if (total> 0) {
+        payable = total; // - prepaid;
+    }else {
+        payable = 0;
+    }
     rounding = total - (totalOsnovica + totalPorez);
 
     xml += "<cac:LegalMonetaryTotal>\n";
     xml += "  <cbc:LineExtensionAmount currencyID=\"EUR\">" + FormatNum(totalOsnovica + TotaltaxOutOfScopeAmt, 2, ".", formatNumOption) + "</cbc:LineExtensionAmount>\n"; // BT-106
     xml += "  <cbc:TaxExclusiveAmount currencyID=\"EUR\">" + FormatNum(total - totalPorez, 2, ".", formatNumOption) + "</cbc:TaxExclusiveAmount>\n"; // BT-109
-    xml += "  <cbc:TaxInclusiveAmount currencyID=\"EUR\">" + FormatNum(total, 2, ".", formatNumOption) + "</cbc:TaxInclusiveAmount>\n"; // BT-110
+    xml += "  <cbc:TaxInclusiveAmount currencyID=\"EUR\">" + FormatNum(total, 2, ".", formatNumOption) + "</cbc:TaxInclusiveAmount>\n"; // BT-112
     xml += "  <cbc:ChargeTotalAmount currencyID=\"EUR\">" + FormatNum(ChargeTotAmt, 2, ".", formatNumOption) + "</cbc:ChargeTotalAmount>\n"; // BT-108
     if (prepaid > 0) { xml += "  <cbc:PrepaidAmount currencyID=\"EUR\">" + FormatNum(prepaid, 2, ".", formatNumOption) + "</cbc:PrepaidAmount>\n"; } // BT-113
     xml += "  <cbc:PayableAmount currencyID=\"EUR\">" + FormatNum(payable, 2, ".", formatNumOption) + "</cbc:PayableAmount>\n"; // BT-115

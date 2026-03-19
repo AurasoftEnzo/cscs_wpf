@@ -175,14 +175,15 @@ function refreshList(){
                     nksp_invt_amt as nksp_invt_amt, 
                     kpsp_ztv_iznos as placeniIznos,
                     kpspzatv.KPSP_ZTV_DAT_RN,
+                    CASE WHEN KPSP_ZTV_REZ4 >= '2026-03-01' THEN KPSP_ZTV_REZ4 ELSE CASE WHEN KPSP_ZTV_DAT_RN > KPSP_ZTV_DATUPL THEN KPSP_ZTV_DAT_RN ELSE KPSP_ZTV_DATUPL END END as datZatv,
                     kpspzatv.ID,
                     CASE WHEN nksp_invt_dtzak <> '1900-01-01' THEN nksp_invt_dtzak ELSE CASE WHEN nksp_invt_tiptm = 'PS' THEN dateadd(DAY, -1, NKSP_INVT_DATEM) ELSE nksp_invt_datem END END as yearIsporuke
             FROM " + databaseName + ".dbo.kpspzatv 
             LEFT JOIN " + databaseName + ".dbo.nkspprom ON nksp_invt_ident = kpsp_ztv_identr 
             LEFT JOIN " + databaseName + ".dbo.NKSCPART ON kpsp_ztv_code = NKSC_PARTCODE
             WHERE kpsp_ztv_rac_dp = 'D' AND NKSP_INVT_AMT > 0
-              AND kpsp_ztv_datupl <= DATEADD(month, 1, DATEFROMPARTS(@year, @month, 1))  
-              AND KPSP_ZTV_REZ4 = '1900-01-01'";
+              AND kpsp_ztv_datupl <= DATEADD(month, 1, DATEFROMPARTS(@year, @month, 1))";  
+              //AND KPSP_ZTV_REZ4 = '1900-01-01'";
               //AND KPSP_ZTV_UPLPLU != '-'
         sql +=  " AND nksp_invt_code = kpsp_ztv_code 
                 AND NKSP_INVT_TIPTM not IN ('KS', 'KI', 'TR')
@@ -205,8 +206,8 @@ function refreshList(){
                 FROM racuni r 
             LEFT JOIN " + databaseName + ".dbo.NKSCPART ON nksc_partcode = r.kpsp_ztv_code 
             WHERE r.xyear = @year 
-                AND month(r.KPSP_ZTV_DAT_RN) = @month
-            ORDER BY r.datumUplate, r.id";
+                AND month(r.datZatv) = @month
+            ORDER BY r.datZatv, r.id";
     }
     sqlParams = {};
     sqlParams.Add({"@month", month});
@@ -917,10 +918,10 @@ function TransformFromAurasoftInvoiceId(aurasoftInvoiceId, keep000Prefix = false
 
 function UpdateKPSPZATV(kpspzatvId){
     // update KPSPZATV set KPSP_ZTV_REZ4 = getdate() where ID = @ID
-    sql = "UPDATE " + databaseName + ".dbo.KPSPZATV SET KPSP_ZTV_REZ4 = GETDATE() WHERE ID = @p1";
-    sqlParams = {};
-    sqlParams.Add({"@p1", kpspzatvId}); // ID from the grid row
-    sqlNonQuery(sql, sqlParams);
+    //sql = "UPDATE " + databaseName + ".dbo.KPSPZATV SET KPSP_ZTV_REZ4 = GETDATE() WHERE ID = @p1";
+    //sqlParams = {};
+    //sqlParams.Add({"@p1", kpspzatvId}); // ID from the grid row
+    //sqlNonQuery(sql, sqlParams);
 }
 
 

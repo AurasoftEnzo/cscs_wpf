@@ -1706,9 +1706,15 @@ function GenerateUBLXml() {
 
     // LegalMonetaryTotal
     total = NKPR_GL_TOTAL;
-    prepaid = 0; //(profileID == "P11" ? NKPR_GL_REZ1 : 0);
-    if (total> 0) {
-        payable = total; // - prepaid;
+    if(NKPR_GL_OZNAKA == "P") {
+        //predujam znači da je sve plaćeno unaprijed 
+        prepaid = total;
+    }else {
+        prepaid = 0;
+    }
+    //prepaid = 0; //(profileID == "P11" ? NKPR_GL_REZ1 : 0);
+    if (total> 0 ) {
+        payable = total - prepaid;
     }else {
         payable = 0;
     }

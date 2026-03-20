@@ -3,6 +3,7 @@ using SplitAndMerge;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Data;
 using System.Data.SqlClient;
 using System.Diagnostics;
@@ -7334,7 +7335,8 @@ $@"EXECUTE sp_executesql N'
                 dg.SelectionUnit = DataGridSelectionUnit.FullRow;
 
                 //dg.CanUserSortColumns = true;
-                dg.CanUserSortColumns = true;
+                //dg.CanUserSortColumns = true;
+                //dg.Sorting += Dg_Sorting;
 
                 //dg.ItemsSource = gridSource.DefaultView;
 
@@ -7398,7 +7400,7 @@ $@"EXECUTE sp_executesql N'
             //   Debug.WriteLine("Dg_IsKeyboardFocusWithinChanged");
             //}
 
-            public void fillDataTable(string gridName, CSCS_GUI Gui)
+            public static void fillDataTable(string gridName, CSCS_GUI Gui)
             {
                 int lastArrayCount = 0;
                 for (int i = 0; i < Gui.Btrieve.gridsArrayClass[gridName].tagsAndTypes.Count; i++)
@@ -7521,6 +7523,81 @@ $@"EXECUTE sp_executesql N'
                     }
 
                     Gui.Btrieve.gridsDataTables[gridName].Rows.Add(currentRow);
+                }
+            }
+
+            private void Dg_Sorting(object sender, DataGridSortingEventArgs e)
+            {
+                var dg = sender as DataGrid;
+
+                // Clear sort direction indicator on all other columns
+                foreach (var col in dg.Columns)
+                {
+                    if (col != e.Column)
+                        col.SortDirection = null;
+                }
+
+                // Do NOT set e.Handled = true — let WPF sort the bound DataView
+                // natively via IBindingList so the grid re-renders correctly.
+                // After WPF completes the sort, sync the CSCS script arrays to
+                // match the new row order.
+                CSCS_GUI.Dispatcher.BeginInvoke(
+                    System.Windows.Threading.DispatcherPriority.Background,
+                    new Action(() => SyncDataTableToArrays(gridName, Gui)));
+            }
+
+            private void SyncDataTableToArrays(string gridName, CSCS_GUI Gui)
+            {
+                var view = Gui.Btrieve.gridsDataTables[gridName].DefaultView;
+                var tags = Gui.Btrieve.gridsArrayClass[gridName].newTagsAndTypes;
+
+                foreach (var col in tags)
+                {
+                    if (!Gui.DEFINES.TryGetValue(col.Key.ToLower(), out DefineVariable defVar))
+                        continue;
+
+                    defVar.Tuple.Clear();
+                    foreach (DataRowView rowView in view)
+                    {
+                        var val = rowView[col.Key];
+                        if (val == DBNull.Value || val == null)
+                        {
+                            defVar.Tuple.Add(new Variable());
+                            continue;
+                        }
+                        switch (col.Value.Name)
+                        {
+                            case "String":
+                                defVar.Tuple.Add(new Variable((string)val));
+                                break;
+                            case "Int32":
+                                defVar.Tuple.Add(new Variable((double)(int)val));
+                                break;
+                            case "Double":
+                                defVar.Tuple.Add(new Variable((double)val));
+                                break;
+                            case "Boolean":
+                                defVar.Tuple.Add(new Variable((bool)val));
+                                break;
+                            case "DateTime":
+                                var dt = (DateTime)val;
+                                var dtSize = Gui.Btrieve.gridsArrayClass[gridName].timeAndDateEditerTagsAndSizes[col.Key];
+                                defVar.Tuple.Add(new Variable(dtSize == 8
+                                    ? dt.ToString("dd/MM/yy")
+                                    : dt.ToString("dd/MM/yyyy")));
+                                break;
+                            case "TimeSpan":
+                                var ts = (TimeSpan)val;
+                                var tsSize = Gui.Btrieve.gridsArrayClass[gridName].timeAndDateEditerTagsAndSizes[col.Key];
+                                defVar.Tuple.Add(new Variable(tsSize == 5
+                                    ? ts.ToString("hh\\:mm")
+                                    : ts.ToString("hh\\:mm\\:ss")));
+                                break;
+                            default:
+                                defVar.Tuple.Add(new Variable(val.ToString()));
+                                break;
+                        }
+                    }
                 }
             }
 
@@ -7862,8 +7939,8 @@ $@"EXECUTE sp_executesql N'
                             break;
                     }
 
-                    newColumn.CanUserSort = false;
-                    //e.Column.SortMemberPath = tag;
+                    //newColumn.CanUserSort = true;
+                    //newColumn.SortMemberPath = tag;
 
                     newColumn.Header = realHeader;
 
@@ -8156,7 +8233,7 @@ $@"EXECUTE sp_executesql N'
                     e.Column = boolColumn;
                 }
 
-                e.Column.CanUserSort = false;
+                //e.Column.CanUserSort = true;
                 //e.Column.SortMemberPath = tag;
 
                 e.Column.Header = realHeader;
@@ -8398,12 +8475,24 @@ $@"EXECUTE sp_executesql N'
                 Utils.CheckArgs(args.Count, 1, m_name);
                 var Gui = CSCS_GUI.GetInstance(script);
 
-                var gridName = Utils.GetSafeString(args, 0);
+                var gridName = Utils.GetSafeString(args, 0).ToLower();
+                var mode = Utils.GetSafeString(args, 1).ToLower();
 
-                if (Gui.Btrieve.gridsArrayClass[gridName].lineCntrVarName != null && Gui.DEFINES.TryGetValue(Gui.Btrieve.gridsArrayClass[gridName].lineCntrVarName.ToLower(), out DefineVariable defVar))
+                if (!Gui.Btrieve.gridsArrayClass.ContainsKey(gridName))
+                    return Variable.EmptyInstance;
+
+                if (mode == "reload")
                 {
-                    Gui.Btrieve.gridsArrayClass[gridName].dg.SelectedIndex = (int)defVar.Value;
-                    Gui.Btrieve.gridsArrayClass[gridName].dg.ScrollIntoView(Gui.Btrieve.gridsArrayClass[gridName].dg.SelectedItem);
+                    Gui.Btrieve.gridsDataTables[gridName].Rows.Clear();
+                    DisplayArraySetupFunction.fillDataTable(gridName, Gui);
+                }
+
+                var dac = Gui.Btrieve.gridsArrayClass[gridName];
+                if (dac.lineCntrVarName != null &&
+                    Gui.DEFINES.TryGetValue(dac.lineCntrVarName.ToLower(), out DefineVariable defVar))
+                {
+                    dac.dg.SelectedIndex = (int)defVar.Value;
+                    dac.dg.ScrollIntoView(dac.dg.SelectedItem);
                 }
 
                 return Variable.EmptyInstance;
@@ -8476,7 +8565,7 @@ $@"EXECUTE sp_executesql N'
                         var currentIndex = dg.SelectedIndex;
 
                         Gui.Btrieve.gridsDataTables[gridName].Rows.Clear();
-                        new DisplayArraySetupFunction().fillDataTable(gridName, Gui);
+                        DisplayArraySetupFunction.fillDataTable(gridName, Gui);
 
 
                         if (currentIndex < 0 || currentIndex > dg.Items.Count - 1)
@@ -8710,65 +8799,30 @@ $@"EXECUTE sp_executesql N'
                                 }
                                 else if (Gui.Btrieve.gridsArrayClass.Keys.Contains(gridName)) // -> wlistM (Memory = Arrays)
                                 {
-                                    //var currentRowCount = dg.Items.Count;
+                                    // clear all backing script arrays
+                                    foreach (var tag in Gui.Btrieve.gridsArrayClass[gridName].tags)
+                                    {
+                                        if (Gui.DEFINES.TryGetValue(tag.ToLower(), out DefineVariable defVarClear))
+                                            defVarClear.Tuple.Clear();
+                                    }
 
-                                    //// check for max length
-                                    //if (gridsArrayClass[gridName].maxElemsVarName != null && Gui.DEFINES.TryGetValue(gridsArrayClass[gridName].maxElemsVarName.ToLower(), out DefineVariable defVar))
-                                    //{
-                                    //    if (currentRowCount + 1 > defVar.Value)
-                                    //    {
-                                    //        MessageBox.Show("Maximum elements reached.");
-                                    //        return Variable.EmptyInstance;
-                                    //    }
-                                    //}
-                                    //else
-                                    //{
-                                    //    if (currentRowCount + 1 > gridsArrayClass[gridName].maxElemsValue)
-                                    //    {
-                                    //        MessageBox.Show("Maximum elements reached.");
-                                    //        return Variable.EmptyInstance;
-                                    //    }
-                                    //}
+                                    // reset active elements counter
+                                    if (Gui.Btrieve.gridsArrayClass[gridName].actCntrVarName != null &&
+                                        Gui.DEFINES.TryGetValue(Gui.Btrieve.gridsArrayClass[gridName].actCntrVarName.ToLower(), out DefineVariable actVar))
+                                    {
+                                        actVar.InitVariable(new Variable(0.0), Gui);
+                                    }
+                                    Gui.Btrieve.gridsArrayClass[gridName].actCntrValue = 0;
 
-                                    //// add new array item
-                                    //foreach (var item in gridsArrayClass[gridName].tags)
-                                    //{
-                                    //    var tagToLower = item.ToLower();
+                                    // reset line counter
+                                    if (Gui.Btrieve.gridsArrayClass[gridName].lineCntrVarName != null &&
+                                        Gui.DEFINES.TryGetValue(Gui.Btrieve.gridsArrayClass[gridName].lineCntrVarName.ToLower(), out DefineVariable linVar))
+                                    {
+                                        linVar.InitVariable(new Variable(0.0), Gui);
+                                    }
 
-                                    //    if (Gui.DEFINES.TryGetValue(tagToLower, out DefineVariable defVar2))
-                                    //    {
-                                    //        if (defVar2.Tuple.Count > currentRowCount)
-                                    //        {
-                                    //            defVar2.Tuple[currentRowCount] = new Variable();
-                                    //        }
-                                    //        else
-                                    //        {
-                                    //            defVar2.Tuple.Add(new Variable());
-                                    //        }
-                                    //    }
-                                    //}
-
-
-                                    //// fill linCntr with new element index
-                                    //if (gridsArrayClass[gridName].lineCntrVarName != null && Gui.DEFINES.TryGetValue(gridsArrayClass[gridName].lineCntrVarName.ToLower(), out DefineVariable defVar3))
-                                    //{
-                                    //    defVar3.InitVariable(new Variable(currentRowCount), Gui);
-                                    //}
-
-                                    //// increment active elements variable
-                                    //if (gridsArrayClass[gridName].actCntrVarName != null && Gui.DEFINES.TryGetValue(gridsArrayClass[gridName].actCntrVarName.ToLower(), out DefineVariable defVar4))
-                                    //{
-                                    //    defVar4.InitVariable(new Variable(defVar4.Value + 1), Gui);
-                                    //}
-
-                                    //gridsArrayClass[gridName].actCntrValue++;
-
-                                    //// add new grid row
-                                    //var newRow = gridsDataTables[gridName].NewRow();
-                                    //gridsDataTables[gridName].Rows.Add(newRow);
-
-                                    //dg.ScrollIntoView(dg.Items.GetItemAt(dg.Items.Count - 1));
-                                    //dg.SelectedIndex = dg.Items.Count - 1;
+                                    // clear the DataTable rows and refresh the grid
+                                    Gui.Btrieve.gridsDataTables[gridName].Rows.Clear();
                                 }
 
                                 break;
@@ -8960,6 +9014,28 @@ $@"EXECUTE sp_executesql N'
                                     }
                                 }
 
+                                break;
+
+                            case "getrowcount":
+                                return new Variable(dg.Items.Count);
+
+                            case "getcurrentrow":
+                                return new Variable(dg.SelectedIndex);
+
+                            case "setcurrentrow":
+                                var rowIdx = Utils.GetSafeInt(args, 2);
+                                if (rowIdx >= 0 && rowIdx < dg.Items.Count)
+                                {
+                                    dg.SelectedIndex = rowIdx;
+                                    dg.ScrollIntoView(dg.SelectedItem);
+
+                                    if (Gui.Btrieve.gridsArrayClass.Keys.Contains(gridName) &&
+                                        Gui.Btrieve.gridsArrayClass[gridName].lineCntrVarName != null &&
+                                        Gui.DEFINES.TryGetValue(Gui.Btrieve.gridsArrayClass[gridName].lineCntrVarName.ToLower(), out DefineVariable linVarSet))
+                                    {
+                                        linVarSet.InitVariable(new Variable((double)rowIdx), Gui);
+                                    }
+                                }
                                 break;
 
                             case "aaa": // (test) counts visible rows in datagrid

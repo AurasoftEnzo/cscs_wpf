@@ -27,6 +27,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
@@ -147,6 +148,7 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.ArrayOrDict, new ArrayOrDictFunction());
             
             interpreter.RegisterFunction(Constants.Notification, new NotificationFunction());
+            interpreter.RegisterFunction(Constants.SortA, new SortAFunction());
 
 
 
@@ -254,6 +256,7 @@ namespace WpfCSCS
             public const string ArrayOrDict = "ArrayOrDict";
 
             public const string Notification = "Notification";
+            public const string SortA = "SortA";
         }
     }
 
@@ -5445,6 +5448,175 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
 //            var toast = new ToastNotification(doc);
 //            ToastNotificationManager.CreateToastNotifier("com.aurasoft.cscs").Show(toast);
 //        }
+    }
+
+    // SORTA command - sorts parallel arrays in ascending or descending order.
+    //
+    // Syntax:
+    //   SORTA <sortExpr> NUM <numExpr> MOVE <moveList> CNTR <cntrVar> ASC|DSC
+    //
+    // Parameters:
+    //   <sortExpr>  - Expression used as sort key (must use <cntrVar> as the array subscript)
+    //   NUM         - Number of elements to sort (field, variable, or constant)
+    //   MOVE        - Comma-separated array names (or a tuple variable) to reorder together
+    //   CNTR        - Variable used as the array subscript in <sortExpr>
+    //   ASC|DSC     - Sort direction: ascending or descending
+    //
+    // Example:
+    //   list_of_array_names = [MfgGroup, MfgStrtDate, MfgQty]
+    //   SORTA MfgGroup[aCntr] + MfgStrtDate[aCntr] NUM aCntr MOVE list_of_array_names CNTR aCntr DSC
+
+    class SortAFunction : ParserFunction
+    {
+        // Regex to split the raw statement into its five parts.
+        // Matches (case-insensitive):
+        //   <sortExpr>  NUM  <numExpr>  MOVE  <moveList>  CNTR  <cntrVar>  ASC|DSC
+        private static readonly Regex s_syntaxPattern = new Regex(
+            @"^(?<sortExpr>.+?)\s+NUM\s+(?<numExpr>.+?)\s+MOVE\s+(?<moveList>.+?)\s+CNTR\s+(?<cntrVar>\w+)\s+(?<dir>ASC|DSC)\s*$",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            // Read the full statement body up to the terminating ';'
+            string body = Utils.GetBodyBetween(script, '\0', '\0', Constants.END_STATEMENT);
+
+            var m = s_syntaxPattern.Match(body);
+            if (!m.Success)
+                throw new ArgumentException(
+                    "SORTA: invalid syntax. Expected:\n" +
+                    "  SORTA <sortExpr> NUM <numExpr> MOVE <moveList> CNTR <cntrVar> ASC|DSC");
+
+            string sortExpr = m.Groups["sortExpr"].Value.Trim();
+            string numExpr = m.Groups["numExpr"].Value.Trim();
+            string moveList = m.Groups["moveList"].Value.Trim();
+            string cntrVar = m.Groups["cntrVar"].Value.Trim();
+            bool descend = string.Equals(m.Groups["dir"].Value, "DSC", StringComparison.OrdinalIgnoreCase);
+
+            var interpreter = script.InterpreterInstance;
+
+            // --- 1. Evaluate the count of elements to sort ---
+            int count = script.GetTempScript(numExpr).Execute(null, 0).AsInt();
+            if (count <= 0)
+                return Variable.EmptyInstance;
+
+            // --- 2. Resolve the array names from the MOVE list ---
+            List<string> arrayNames = ResolveArrayNames(interpreter, script, moveList);
+            if (arrayNames.Count == 0)
+                throw new ArgumentException("SORTA: MOVE list is empty.");
+
+            // --- 3. Snapshot ALL elements for all arrays before sorting ---
+            var snapshot = new Dictionary<string, Variable[]>(StringComparer.OrdinalIgnoreCase);
+            foreach (string name in arrayNames)
+            {
+                Variable arr = interpreter.GetVariableValue(name, script);
+                if (arr == null || arr.Tuple == null)
+                    throw new ArgumentException(
+                        $"SORTA: MOVE variable '{name}' is not a defined array.");
+
+                var elements = new Variable[count];
+                for (int i = 0; i < count; i++)
+                    elements[i] = i < arr.Tuple.Count ? arr.Tuple[i].Clone() : Variable.EmptyInstance;
+                snapshot[name] = elements;
+            }
+
+            // --- 4. Build sort keys: temporarily set cntrVar = i and evaluate sortExpr ---
+            Variable[] sortKeys = new Variable[count];
+            for (int i = 0; i < count; i++)
+            {
+                interpreter.AddGlobalOrLocalVariable(cntrVar,
+                    new GetVarFunction(new Variable((double)i)), script);
+                sortKeys[i] = script.GetTempScript(sortExpr).Execute(null, 0);
+            }
+
+            // --- 5. Sort an index array by the sort keys (stable sort via secondary index) ---
+            int[] indices = Enumerable.Range(0, count).ToArray();
+            bool allNumeric = sortKeys.All(k => k.Type == Variable.VarType.NUMBER ||
+                                                k.Type == Variable.VarType.INT);
+
+            if (allNumeric)
+            {
+                if (descend)
+                    Array.Sort(indices, (a, b) =>
+                    {
+                        int cmp = sortKeys[b].Value.CompareTo(sortKeys[a].Value);
+                        return cmp != 0 ? cmp : a.CompareTo(b); // stable
+                    });
+                else
+                    Array.Sort(indices, (a, b) =>
+                    {
+                        int cmp = sortKeys[a].Value.CompareTo(sortKeys[b].Value);
+                        return cmp != 0 ? cmp : a.CompareTo(b); // stable
+                    });
+            }
+            else
+            {
+                if (descend)
+                    Array.Sort(indices, (a, b) =>
+                    {
+                        int cmp = string.Compare(sortKeys[b].AsString(), sortKeys[a].AsString(),
+                                                 StringComparison.Ordinal);
+                        return cmp != 0 ? cmp : a.CompareTo(b); // stable
+                    });
+                else
+                    Array.Sort(indices, (a, b) =>
+                    {
+                        int cmp = string.Compare(sortKeys[a].AsString(), sortKeys[b].AsString(),
+                                                 StringComparison.Ordinal);
+                        return cmp != 0 ? cmp : a.CompareTo(b); // stable
+                    });
+            }
+
+            // --- 6. Apply the sorted permutation to all MOVE arrays ---
+            foreach (string name in arrayNames)
+            {
+                Variable arr = interpreter.GetVariableValue(name, script);
+                Variable[] original = snapshot[name];
+                for (int i = 0; i < count; i++)
+                    arr.Tuple[i] = original[indices[i]];
+            }
+
+            // --- 7. Reset the counter variable to 0 after sorting ---
+            interpreter.AddGlobalOrLocalVariable(cntrVar,
+                new GetVarFunction(new Variable(0.0)), script);
+
+            return Variable.EmptyInstance;
+        }
+
+        // Resolves the MOVE list to individual array variable names.
+        // Accepts either:
+        //   a) A single variable name whose value is a tuple/array of strings, e.g. list_of_array_names
+        //   b) A comma-separated list of names, e.g. "MfgGroup, MfgStrtDate, MfgQty"
+        private static List<string> ResolveArrayNames(Interpreter interpreter, ParsingScript script, string moveList)
+        {
+            var names = new List<string>();
+
+            // Try to resolve as a single variable holding the list
+            string trimmed = moveList.Trim();
+            if (!trimmed.Contains(','))
+            {
+                Variable v = interpreter.GetVariableValue(trimmed, script);
+                if (v != null && v.Tuple != null && v.Tuple.Count > 0)
+                {
+                    foreach (Variable item in v.Tuple)
+                    {
+                        string s = item.AsString().Trim();
+                        if (!string.IsNullOrEmpty(s))
+                            names.Add(s);
+                    }
+                    return names;
+                }
+            }
+
+            // Fall back to comma-separated names
+            foreach (string part in moveList.Split(','))
+            {
+                string name = part.Trim();
+                if (!string.IsNullOrEmpty(name))
+                    names.Add(name);
+            }
+
+            return names;
+        }
     }
 
     #endregion

@@ -65,6 +65,52 @@ function wxirstatus_onDisplay(){
     SetWidgetOptions("StatusLabel2", "Content", "");
 }
 
+// RbrX = 0;
+
+// ascDescCntrDatumIzdavanja = 0;
+// function columnDatumIzdavanja@header(){
+//     list_of_array_names = {"arrayKupac", "arrayOibKupca", "arrayStatusRacuna", "arrayDatumIzdavanja", "arrayDatumKnjizenja", "arrayBrojRacuna", "arrayBrojRacunaFina", "arrayBrojRacunaMer", "arrayIdRacunaPosrednika", "arrayStatusFiskalizacije", "arrayReportPaymentStatus", "arrayPlaceno", "arrayZaPlacanje"};
+//     if(ascDescCntrDatumIzdavanja % 2 == 0){
+//         SORTA arrayDatumIzdavanja[Rbr] NUM Rbr MOVE list_of_array_names CNTR Rbr ASC;
+//     }else{
+//         SORTA arrayDatumIzdavanja[Rbr] NUM Rbr MOVE list_of_array_names CNTR Rbr DSC;
+//     }
+//     dsply();
+//     ascDescCntrDatumIzdavanja++;
+// }
+
+// ascDescCntrKupac = 0;
+// function columnKupac@header(){
+//     list_of_array_names = {"arrayKupac", "arrayOibKupca", "arrayStatusRacuna", "arrayDatumIzdavanja", "arrayDatumKnjizenja", "arrayBrojRacuna", "arrayBrojRacunaFina", "arrayBrojRacunaMer", "arrayIdRacunaPosrednika", "arrayStatusFiskalizacije", "arrayReportPaymentStatus", "arrayPlaceno", "arrayZaPlacanje"};
+    
+
+//     MSG("arrayKupac:\n" + arrayKupac + "\n");
+
+//     if(ascDescCntrKupac % 2 == 0){
+//         SORTA arrayKupac[Rbr]+double(arrayZaPlacanje[Rbr]) NUM Rbr MOVE list_of_array_names CNTR Rbr ASC;
+//     }else{
+//         SORTA arrayKupac[Rbr]+double(arrayZaPlacanje[Rbr]) NUM Rbr MOVE list_of_array_names CNTR Rbr DSC;
+//     }
+    
+//     MSG("arrayKupac:\n" + arrayKupac + "\n");
+    
+    
+//     dsply();
+    
+    
+//     MSG("arrayKupac:\n" + arrayKupac + "\n");
+    
+//     ascDescCntrKupac++;
+// }
+
+// function dsply(){
+//     cntr1 = 0;
+//     cursor("wait");
+//     DisplayArray("datagridListaRacuna", "close");
+//     DisplayArraySetup("datagridListaRacuna", counterFld: cntr1, activeElements: Rbr, maxElements: 10000);
+//     cursor("dflt");
+// }
+
 function init(){
     args = CommandLineArgs(); 
     if(Size(args) > 2){
@@ -355,7 +401,7 @@ function GetListFINA_B2B(){
                     placeno = 0;
                     if(Contains(statusAck, "DocumentStatuses")){
                         
-                        //MSG(statusAck["DocumentStatuses"]);
+                        // MSG("Račun " + supplierInvoiceId + "\n\nstatusi:\n" + statusAck["DocumentStatuses"]);
 
                         for(j = 0; j < Size(statusAck["DocumentStatuses"]); j++){
                             if(statusAck["DocumentStatuses"][j]["StatusCode"] == "PAYMENT_RECEIVED"){

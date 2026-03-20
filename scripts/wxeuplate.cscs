@@ -166,51 +166,52 @@ function refreshList(){
             ORDER BY pi_pr_date, pi_pr_brdok";
         
     }else{
-        sql = " WITH racuni AS (
-                SELECT kpsp_ztv_code, 
-                NKSC_PARTNAME as partnerNaziv,
-                kpsp_ztv_num, kpsp_ztv_identr, 
-                    CASE WHEN nksp_invt_TERMN = 0 THEN 'T' WHEN nksp_invt_TERMN = 5 THEN 'Z' ELSE 'O' END as vrstaPlacanja,
-                    month(kpsp_ztv_datupl) as mjesecUplate,
-                    kpsp_ztv_datupl as datumUplate, 
-                    year(nksp_invt_date) as xyear, 
-                    nksp_invt_amt as nksp_invt_amt, 
-                    kpsp_ztv_iznos as placeniIznos,
-                    kpspzatv.KPSP_ZTV_DAT_RN,
-                    CASE WHEN KPSP_ZTV_REZ1 >= '2026-03-01' THEN KPSP_ZTV_REZ1 ELSE CASE WHEN KPSP_ZTV_DAT_RN > KPSP_ZTV_DATUPL THEN KPSP_ZTV_DAT_RN ELSE KPSP_ZTV_DATUPL END END as datZatv,
-                    kpspzatv.ID,
-                    CASE WHEN nksp_invt_dtzak <> '1900-01-01' THEN nksp_invt_dtzak ELSE CASE WHEN nksp_invt_tiptm = 'PS' THEN dateadd(DAY, -1, NKSP_INVT_DATEM) ELSE nksp_invt_datem END END as yearIsporuke
-            FROM " + databaseName + ".dbo.kpspzatv 
-            LEFT JOIN " + databaseName + ".dbo.nkspprom ON nksp_invt_ident = kpsp_ztv_identr 
-            LEFT JOIN " + databaseName + ".dbo.NKSCPART ON kpsp_ztv_code = NKSC_PARTCODE
-            WHERE kpsp_ztv_rac_dp = 'D' AND NKSP_INVT_AMT > 0
-              AND kpsp_ztv_datupl <= DATEADD(month, 1, DATEFROMPARTS(@year, @month, 1))  
-              AND KPSP_ZTV_REZ4 = '1900-01-01'";
-              //AND KPSP_ZTV_UPLPLU != '-'
-        sql +=  " AND nksp_invt_code = kpsp_ztv_code 
-                AND NKSP_INVT_TIPTM not IN ('KS', 'KI', 'TR')
-                AND nksc_model = '" + KPSY_PO_FREIGHT + "'
-                ) 
-                SELECT 
-                    r.id,
-                    r.KPSP_ZTV_DAT_RN,
-                    r.kpsp_ztv_code as Partner, 
-                    r.partnerNaziv,
-                    ISNULL(NKSC_SIFRA, '') as OIB, 
-                    r.kpsp_ztv_num as BrRacuna, 
-                    r.kpsp_ztv_identr as IDNum, 
-                    r.vrstaPlacanja,
-                    r.mjesecUplate, 
-                    r.datumUplate,
-                    r.xyear, 
-                    r.nksp_invt_amt as iznosRacuna, 
-                    r.placeniIznos,
-                    year(r.yearIsporuke)
-                FROM racuni r 
-            LEFT JOIN " + databaseName + ".dbo.NKSCPART ON nksc_partcode = r.kpsp_ztv_code 
-            WHERE r.xyear = @year 
-                AND month(r.datZatv) = @month
-            ORDER BY r.datZatv, r.id";
+        sql = "     WITH racuni AS (
+                    SELECT kpsp_ztv_code, 
+                    NKSC_PARTNAME as partnerNaziv,
+                    kpsp_ztv_num, kpsp_ztv_identr, 
+                        CASE WHEN nksp_invt_TERMN = 0 THEN 'T' WHEN nksp_invt_TERMN = 5 THEN 'Z' ELSE 'O' END as vrstaPlacanja,
+                        month(kpsp_ztv_datupl) as mjesecUplate,
+                        kpsp_ztv_datupl as datumUplate, 
+                        year(nksp_invt_date) as xyear, 
+                        nksp_invt_amt as nksp_invt_amt, 
+                        kpsp_ztv_iznos as placeniIznos,
+                        kpspzatv.KPSP_ZTV_DAT_RN,
+                        CASE WHEN KPSP_ZTV_REZ1 >= '2026-03-01' THEN KPSP_ZTV_REZ1 ELSE CASE WHEN KPSP_ZTV_DAT_RN > KPSP_ZTV_DATUPL THEN KPSP_ZTV_DAT_RN ELSE KPSP_ZTV_DATUPL END END as datZatv,
+                        kpspzatv.ID,
+                        CASE WHEN nksp_invt_dtzak <> '1900-01-01' THEN nksp_invt_dtzak ELSE CASE WHEN nksp_invt_tiptm = 'PS' THEN dateadd(DAY, -1, NKSP_INVT_DATEM) ELSE nksp_invt_datem END END as yearIsporuke
+                    FROM " + databaseName + ".dbo.kpspzatv 
+                    LEFT JOIN " + databaseName + ".dbo.nkspprom ON nksp_invt_ident = kpsp_ztv_identr 
+                    LEFT JOIN " + databaseName + ".dbo.NKSCPART ON kpsp_ztv_code = NKSC_PARTCODE
+                    WHERE kpsp_ztv_rac_dp = 'D' AND NKSP_INVT_AMT > 0
+                    AND kpsp_ztv_datupl <= DATEADD(month, 1, DATEFROMPARTS(@year, @month, 1))  
+                    AND KPSP_ZTV_REZ4 = '1900-01-01'" +
+                    //AND KPSP_ZTV_UPLPLU != '-'
+                "   AND nksp_invt_code = kpsp_ztv_code 
+                        AND NKSP_INVT_TIPTM not IN ('KS', 'KI', 'TR')
+                        AND nksc_model = '" + KPSY_PO_FREIGHT + "'
+                        ) 
+                        SELECT 
+                            r.id,
+                            r.KPSP_ZTV_DAT_RN,
+                            r.kpsp_ztv_code as Partner, 
+                            r.partnerNaziv,
+                            ISNULL(NKSC_SIFRA, '') as OIB, 
+                            r.kpsp_ztv_num as BrRacuna, 
+                            r.kpsp_ztv_identr as IDNum, 
+                            r.vrstaPlacanja,
+                            r.mjesecUplate, 
+                            r.datumUplate,
+                            r.xyear, 
+                            r.nksp_invt_amt as iznosRacuna, 
+                            r.placeniIznos,
+                            year(r.yearIsporuke)
+                        FROM racuni r 
+                    LEFT JOIN " + databaseName + ".dbo.NKSCPART ON nksc_partcode = r.kpsp_ztv_code 
+                    WHERE r.xyear = @year 
+                        AND month(r.datZatv) = @month
+                        AND r.datumUplate >= '2026-01-01'
+                    ORDER BY r.datZatv, r.id";
     }
     sqlParams = {};
     sqlParams.Add({"@month", month});

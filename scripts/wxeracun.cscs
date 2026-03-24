@@ -1713,11 +1713,15 @@ function GenerateUBLXml() {
         prepaid = 0;
     }
     //prepaid = 0; //(profileID == "P11" ? NKPR_GL_REZ1 : 0);
-    if (total> 0 ) {
-        payable = total - prepaid;
-    }else {
-        payable = 0;
-    }
+    
+    // if (total > 0 ) {
+    //     payable = total - prepaid;
+    // }else {
+    //     payable = 0;
+    // }
+    
+    payable = total - prepaid;
+
     rounding = total - (totalOsnovica + totalPorez);
 
     xml += "<cac:LegalMonetaryTotal>\n";

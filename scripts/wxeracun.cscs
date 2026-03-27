@@ -804,10 +804,10 @@ function GenerateUBLXml() {
                 taxName = "HR:E"; // poreza nema + FormatNum(NKPR_LN_PRNPR, 0, ".", formatNumOption);
                 taxSchemeID = "VAT";
                 xml += "                    <cbc:TaxableAmount currencyID=\"EUR\">" + FormatNum(OSNOVICA, 2, ".", formatNumOption) + "</cbc:TaxableAmount>\n";
-                if(porez != 0){
-                    //ne bi trebalo imati poreza tu! kontrola kod unosa!
-                    xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".", formatNumOption) + "</cbc:TaxAmount>\n";
-                }
+                // if(porez != 0){
+                //     //ne bi trebalo imati poreza tu! kontrola kod unosa!
+                xml += "                    <cbc:TaxAmount currencyID=\"EUR\">" + FormatNum(POREZ, 2, ".", formatNumOption) + "</cbc:TaxAmount>\n";
+                // }
                 xml += "                    <hrextac:HRTaxCategory>\n";
                 xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
                 xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";

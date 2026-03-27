@@ -1729,7 +1729,9 @@ function GenerateUBLXml() {
     xml += "  <cbc:TaxExclusiveAmount currencyID=\"EUR\">" + FormatNum(total - totalPorez, 2, ".", formatNumOption) + "</cbc:TaxExclusiveAmount>\n"; // BT-109
     xml += "  <cbc:TaxInclusiveAmount currencyID=\"EUR\">" + FormatNum(total, 2, ".", formatNumOption) + "</cbc:TaxInclusiveAmount>\n"; // BT-112
     xml += "  <cbc:ChargeTotalAmount currencyID=\"EUR\">" + FormatNum(ChargeTotAmt, 2, ".", formatNumOption) + "</cbc:ChargeTotalAmount>\n"; // BT-108
-    if (prepaid > 0) { xml += "  <cbc:PrepaidAmount currencyID=\"EUR\">" + FormatNum(prepaid, 2, ".", formatNumOption) + "</cbc:PrepaidAmount>\n"; } // BT-113
+    // if (prepaid > 0) { 
+    xml += "  <cbc:PrepaidAmount currencyID=\"EUR\">" + FormatNum(prepaid, 2, ".", formatNumOption) + "</cbc:PrepaidAmount>\n"; 
+    // } // BT-113
     xml += "  <cbc:PayableAmount currencyID=\"EUR\">" + FormatNum(payable, 2, ".", formatNumOption) + "</cbc:PayableAmount>\n"; // BT-115
     // if (rounding != 0) { xml += "  <cbc:PayableRoundingAmount currencyID=\"EUR\">" + FormatNum(rounding, 2, ".", formatNumOption) + "</cbc:PayableRoundingAmount>\n"; }
     xml += "</cac:LegalMonetaryTotal>\n";

@@ -1549,7 +1549,8 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                     allowanceChargeLine["NKPR_LN_TXBLE"] = internalTaxCode;
                     // msg("Tax code converted: Category=" + xmlTaxCategoryID + ", Percent=" + xmlTaxPercent + " -> Internal Code=" + internalTaxCode);
                 } else {
-                    Mbox("NAPOMENA: Ova kategorija poreza nije nađena u PKFKPORZ: " + xmlTaxCategoryID + ", Stopa poreza: " + xmlTaxPercent);
+                    Mbox("NAPOMENA: Ova kategorija poreza nije nađena u PKFKPORZ: " + xmlTaxCategoryID + ", Stopa poreza: " + xmlTaxPercent
+                        + "\nElectronicId: " + NKPR_GL_POSRED + "\nBroj računa: " + NKPR_GL_DESC);
                     allowanceChargeLine["NKPR_LN_TXBLE"] = 0;
                 }
 
@@ -1640,7 +1641,8 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                         allowanceChargeLine["NKPR_LN_TXBLE"] = internalTaxCode;
                         // msg("Tax code converted: Category=" + xmlTaxCategoryID + ", Percent=" + xmlTaxPercent + " -> Internal Code=" + internalTaxCode);
                     } else {
-                        Mbox("NAPOMENA: Ova kategorija poreza nije nađena u PKFKPORZ: " + xmlTaxCategoryID + ", Stopa poreza: " + xmlTaxPercent);
+                        Mbox("NAPOMENA: Ova kategorija poreza nije nađena u PKFKPORZ: " + xmlTaxCategoryID + ", Stopa poreza: " + xmlTaxPercent
+                            + "\nElectronicId: " + NKPR_GL_POSRED + "\nBroj računa: " + NKPR_GL_DESC);
                         allowanceChargeLine["NKPR_LN_TXBLE"] = 0;
                     }
 
@@ -1989,7 +1991,7 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
             xmlTaxCategoryName = null;
             if(Contains(taxCategory, "Name")){
                 xmlTaxCategoryName = GetNodeText(taxCategory["Name"]);
-                xmlTaxCategoryName = xmlTaxCategoryName.Replace("HR:", "");
+                xmlTaxCategoryName = xmlTaxCategoryName.Replace("HR:", "").Replace("#", "");
             }
       
             // Look up internal tax code from PKFKPORZ table
@@ -1999,7 +2001,8 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
                 lineData["NKPR_LN_TXBLE"] = internalTaxCode;
                 // msg("Tax code converted: Category=" + xmlTaxCategoryID + ", Percent=" + xmlTaxPercent + " -> Internal Code=" + internalTaxCode);
             } else {
-                Mbox("NAPOMENA: Ova kategorija poreza nije nađena u PKFKPORZ: " + xmlTaxCategoryID + ", Stopa poreza: " + xmlTaxPercent);
+                Mbox("NAPOMENA: Ova kategorija poreza nije nađena u PKFKPORZ: " + xmlTaxCategoryID + ", Stopa poreza: " + xmlTaxPercent
+                    + "\nElectronicId: " + NKPR_GL_POSRED + "\nBroj računa: " + NKPR_GL_DESC);
                 lineData["NKPR_LN_TXBLE"] = 0;
             }
         }
@@ -2888,9 +2891,10 @@ function LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent, name = null) {
                 // Standard VAT - combine with percent to create PKFK_TAX_TARIFA like "PDV25", "PDV13", "PDV5"
                 pkfkTaxTarifa = "PDV" + String(xmlTaxPercent);
             }
-            elif(xmlTaxCategoryID == "E"){
-                return 0;
-            }else{
+            // elif(xmlTaxCategoryID == "E"){
+            //     return 0;
+            // }
+            else{
                 // For other categories, map directly (e.g. E, K, O, AE)
                 pkfkTaxTarifa = xmlTaxCategoryID;
             }
@@ -2900,11 +2904,11 @@ function LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent, name = null) {
         // For compound tax codes (PKFK_TAX_TIP = 'S'), need to find individual codes
         // For simple tax codes (PKFK_TAX_TIP = '' or NULL), match directly
         
-        sql_tax_lookup = "SELECT PKFK_TAX_CODE FROM " + databaseName + ".dbo.PKFKPORZ " +
-                        "WHERE (PKFK_TAX_TIP = '' OR PKFK_TAX_TIP IS NULL) " +
-                        "AND PKFK_TAX_P_PORZ IN ('R', 'T', 'O')" +
-                        "AND (PKFK_TAX_TARIFA = @p1) " +
-                        "AND PKFK_TAX_STOPA = @p2;";
+        sql_tax_lookup =    "SELECT PKFK_TAX_CODE FROM " + databaseName + ".dbo.PKFKPORZ " +
+                            "WHERE (PKFK_TAX_TIP = '' OR PKFK_TAX_TIP IS NULL) " +
+                            "AND PKFK_TAX_P_PORZ IN ('R', 'T', 'O')" +
+                            "AND (PKFK_TAX_TARIFA = @p1) " +
+                            "AND PKFK_TAX_STOPA = @p2;";
         
         sqlParams = {};
         sqlParams.Add({"@p1", pkfkTaxTarifa});
@@ -2935,7 +2939,8 @@ function LookupTaxCode(xmlTaxCategoryID, xmlTaxPercent, name = null) {
         //     }
         // }
         
-        Mbox("POZOR: Šifra poreza nije nađena za kategoriju=" + xmlTaxCategoryID + " (" + pkfkTaxTarifa + "), Stopa=" + xmlTaxPercent);
+        Mbox("POZOR: Šifra poreza nije nađena za kategoriju=" + xmlTaxCategoryID + " (" + pkfkTaxTarifa + "), Stopa=" + xmlTaxPercent
+            + "\nElectronicId: " + NKPR_GL_POSRED + "\nBroj računa: " + NKPR_GL_DESC);
         return 0;
         
     } catch(error) {

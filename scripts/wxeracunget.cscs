@@ -1306,7 +1306,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                     deliveryLocation = GetNodeText(delivery["DeliveryLocation"]);
                     if (deliveryLocation != null && deliveryLocation != "") {
                         if (Contains(deliveryLocation, "ID")) {
-                            deliveryID = GetNodeText(deliveryLocation["ID"]);
+                            deliveryID = string(GetNodeText(deliveryLocation["ID"]));
                         } else {
                             deliveryID = "";
                         }

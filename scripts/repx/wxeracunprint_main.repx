@@ -1,0 +1,190 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<XtraReportsLayoutSerializer SerializerVersion="18.2.14.0" Ref="0" ControlType="DevExpress.XtraReports.UI.XtraReport, DevExpress.XtraReports.v18.2, Version=18.2.14.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" Name="WXeracunPrint" Margins="50, 50, 50, 50" PaperKind="A4" PageWidth="827" PageHeight="1169" Version="18.2" DataMember="Table1">
+  <Parameters>
+    <Item1 Ref="2" Visible="false" Name="DocumentTitle" />
+  </Parameters>
+  <Bands>
+    <Item1 Ref="3" ControlType="TopMarginBand" Name="TopMargin" HeightF="50" />
+    <Item2 Ref="4" ControlType="ReportHeaderBand" Name="ReportHeader" HeightF="200">
+      <Controls>
+        <Item1 Ref="5" ControlType="XRLabel" Name="lblDocumentTitle" Text="E-RAČUN / E-INVOICE" TextAlignment="TopCenter" SizeF="727,40" LocationFloat="0, 10" Font="Arial, 20pt, style=Bold" ForeColor="Navy" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="reportTitle">
+          <ExpressionBindings>
+            <Item1 Ref="6" Expression="[reportTitle]" PropertyName="Text" EventName="BeforePrint" />
+          </ExpressionBindings>
+        </Item1>
+        <Item2 Ref="7" ControlType="XRLabel" Name="lblDocumentType" TextAlignment="TopCenter" SizeF="727,25" LocationFloat="0, 55" Font="Arial, 14pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="documentType">
+          <ExpressionBindings>
+            <Item1 Ref="8" Expression="[documentType]" PropertyName="Text" EventName="BeforePrint" />
+          </ExpressionBindings>
+        </Item2>
+        <Item3 Ref="9" ControlType="XRPanel" Name="pnlInvoiceDetails" SizeF="300,110" LocationFloat="427, 90" BackColor="LightGray" Borders="All" BorderWidth="1">
+          <Controls>
+            <Item1 Ref="10" ControlType="XRLabel" Name="lblInvNumLabel" Text="Broj računa:" SizeF="100,20" LocationFloat="10, 10" Font="Arial, 9pt, style=Bold" />
+            <Item2 Ref="11" ControlType="XRLabel" Name="lblInvoiceID" SizeF="180,20" LocationFloat="110, 10" Font="Arial, 10pt, style=Bold" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="invoiceID">
+              <ExpressionBindings>
+                <Item1 Ref="12" Expression="[invoiceID]" PropertyName="Text" EventName="BeforePrint" />
+              </ExpressionBindings>
+            </Item2>
+            <Item3 Ref="13" ControlType="XRLabel" Name="lblIssueDateLabel" Text="Datum:" SizeF="100,20" LocationFloat="10, 35" Font="Arial, 9pt, style=Bold" />
+            <Item4 Ref="14" ControlType="XRLabel" Name="lblIssueDate" SizeF="180,20" LocationFloat="110, 35" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="formattedIssueDate">
+              <ExpressionBindings>
+                <Item1 Ref="15" Expression="[formattedIssueDate]" PropertyName="Text" EventName="BeforePrint" />
+              </ExpressionBindings>
+            </Item4>
+            <Item5 Ref="16" ControlType="XRLabel" Name="lblDueDateLabel" Text="Rok plaćanja:" SizeF="100,20" LocationFloat="10, 60" Font="Arial, 9pt, style=Bold" />
+            <Item6 Ref="17" ControlType="XRLabel" Name="lblDueDate" SizeF="180,20" LocationFloat="110, 60" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="formattedDueDate">
+              <ExpressionBindings>
+                <Item1 Ref="18" Expression="[formattedDueDate]" PropertyName="Text" EventName="BeforePrint" />
+              </ExpressionBindings>
+            </Item6>
+            <Item7 Ref="19" ControlType="XRLabel" Name="lblCurrencyLabel" Text="Valuta:" SizeF="100,20" LocationFloat="10, 85" Font="Arial, 9pt, style=Bold" />
+            <Item8 Ref="20" ControlType="XRLabel" Name="lblCurrency" SizeF="180,20" LocationFloat="110, 85" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="documentCurrencyCode">
+              <ExpressionBindings>
+                <Item1 Ref="21" Expression="[documentCurrencyCode]" PropertyName="Text" EventName="BeforePrint" />
+              </ExpressionBindings>
+            </Item8>
+          </Controls>
+        </Item3>
+      </Controls>
+    </Item2>
+    <Item3 Ref="22" ControlType="PageHeaderBand" Name="PageHeader" HeightF="200">
+      <Controls>
+        <Item1 Ref="23" ControlType="XRPanel" Name="pnlSupplier" SizeF="350,180" LocationFloat="0, 10" Borders="All" BorderWidth="1">
+          <Controls>
+            <Item1 Ref="24" ControlType="XRLabel" Name="lblSupplierTitle" Text="IZDAVATELJ / SUPPLIER" SizeF="350,25" LocationFloat="0, 0" Font="Arial, 10pt, style=Bold" ForeColor="White" BackColor="Navy" />
+            <Item2 Ref="25" ControlType="XRLabel" Name="lblSupplierName" SizeF="330,22" LocationFloat="10, 30" Font="Arial, 11pt, style=Bold" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="supplierName">
+              <ExpressionBindings>
+                <Item1 Ref="26" Expression="[supplierName]" PropertyName="Text" EventName="BeforePrint" />
+              </ExpressionBindings>
+            </Item2>
+            <Item3 Ref="27" ControlType="XRLabel" Name="lblSupplierAddress" SizeF="330,18" LocationFloat="10, 55" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="supplierAddress">
+              <ExpressionBindings>
+                <Item1 Ref="28" Expression="[supplierAddress]" PropertyName="Text" EventName="BeforePrint" />
+              </ExpressionBindings>
+            </Item3>
+            <Item4 Ref="29" ControlType="XRLabel" Name="lblSupplierCityZip" SizeF="330,18" LocationFloat="10, 75" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="supplierCityZip">
+              <ExpressionBindings>
+                <Item1 Ref="30" Expression="[supplierCityZip]" PropertyName="Text" EventName="BeforePrint" />
+              </ExpressionBindings>
+            </Item4>
+            <Item5 Ref="31" ControlType="XRLabel" Name="lblSupplierCountry" SizeF="330,18" LocationFloat="10, 95" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="supplierCountry">
+              <ExpressionBindings>
+                <Item1 Ref="32" Expression="[supplierCountry]" PropertyName="Text" EventName="BeforePrint" />
+              </ExpressionBindings>
+            </Item5>
+            <Item6 Ref="33" ControlType="XRLabel" Name="lblSupplierVATLabel" Text="OIB / VAT:" SizeF="80,18" LocationFloat="10, 120" Font="Arial, 9pt, style=Bold" />
+            <Item7 Ref="34" ControlType="XRLabel" Name="lblSupplierVAT" SizeF="240,18" LocationFloat="90, 120" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="supplierVAT">
+              <ExpressionBindings>
+                <Item1 Ref="35" Expression="[supplierVAT]" PropertyName="Text" EventName="BeforePrint" />
+              </ExpressionBindings>
+            </Item7>
+          </Controls>
+        </Item1>
+        <Item2 Ref="36" ControlType="XRPanel" Name="pnlCustomer" SizeF="350,180" LocationFloat="377, 10" Borders="All" BorderWidth="1">
+          <Controls>
+            <Item1 Ref="37" ControlType="XRLabel" Name="lblCustomerTitle" Text="KUPAC / CUSTOMER" SizeF="350,25" LocationFloat="0, 0" Font="Arial, 10pt, style=Bold" ForeColor="White" BackColor="DarkGreen" />
+            <Item2 Ref="38" ControlType="XRLabel" Name="lblCustomerName" SizeF="330,22" LocationFloat="10, 30" Font="Arial, 11pt, style=Bold" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="customerName">
+              <ExpressionBindings>
+                <Item1 Ref="39" Expression="[customerName]" PropertyName="Text" EventName="BeforePrint" />
+              </ExpressionBindings>
+            </Item2>
+            <Item3 Ref="40" ControlType="XRLabel" Name="lblCustomerAddress" SizeF="330,18" LocationFloat="10, 55" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="customerAddress">
+              <ExpressionBindings>
+                <Item1 Ref="41" Expression="[customerAddress]" PropertyName="Text" EventName="BeforePrint" />
+              </ExpressionBindings>
+            </Item3>
+            <Item4 Ref="42" ControlType="XRLabel" Name="lblCustomerCityZip" SizeF="330,18" LocationFloat="10, 75" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="customerCityZip">
+              <ExpressionBindings>
+                <Item1 Ref="43" Expression="[customerCityZip]" PropertyName="Text" EventName="BeforePrint" />
+              </ExpressionBindings>
+            </Item4>
+            <Item5 Ref="44" ControlType="XRLabel" Name="lblCustomerCountry" SizeF="330,18" LocationFloat="10, 95" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="customerCountry">
+              <ExpressionBindings>
+                <Item1 Ref="45" Expression="[customerCountry]" PropertyName="Text" EventName="BeforePrint" />
+              </ExpressionBindings>
+            </Item5>
+            <Item6 Ref="46" ControlType="XRLabel" Name="lblCustomerVATLabel" Text="OIB / VAT:" SizeF="80,18" LocationFloat="10, 120" Font="Arial, 9pt, style=Bold" />
+            <Item7 Ref="47" ControlType="XRLabel" Name="lblCustomerVAT" SizeF="240,18" LocationFloat="90, 120" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="customerVAT">
+              <ExpressionBindings>
+                <Item1 Ref="48" Expression="[customerVAT]" PropertyName="Text" EventName="BeforePrint" />
+              </ExpressionBindings>
+            </Item7>
+          </Controls>
+        </Item2>
+      </Controls>
+    </Item3>
+    <Item4 Ref="49" ControlType="DetailBand" Name="Detail" HeightF="0">
+      <Controls>
+        <Item1 Ref="50" ControlType="XRSubreport" Name="WXeracunPrint_detail" SizeF="727,0" LocationFloat="0, 0" />
+      </Controls>
+    </Item4>
+    <Item5 Ref="51" ControlType="ReportFooterBand" Name="ReportFooter" HeightF="250">
+      <Controls>
+        <Item1 Ref="52" ControlType="XRSubreport" Name="WXeracunPrint_subreport" CanShrink="true" SizeF="527,23.958334" LocationFloat="90, 214.666672" />
+        <Item2 Ref="53" ControlType="XRPanel" Name="pnlTotals" SizeF="300,180" LocationFloat="427, 20" BackColor="WhiteSmoke" Borders="All" BorderWidth="2">
+          <Controls>
+            <Item1 Ref="54" ControlType="XRLabel" Name="lblSubtotalLabel" Text="Osnovica bez PDV-a:" SizeF="180,22" LocationFloat="10, 15" Font="Arial, 10pt" />
+            <Item2 Ref="55" ControlType="XRLabel" Name="lblSubtotal" TextFormatString="{0:N2}" TextAlignment="TopRight" SizeF="100,22" LocationFloat="190, 15" Font="Arial, 10pt, style=Bold" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="subtotal">
+              <ExpressionBindings>
+                <Item1 Ref="56" Expression="[subtotal]" PropertyName="Text" EventName="BeforePrint" />
+              </ExpressionBindings>
+            </Item2>
+            <Item3 Ref="57" ControlType="XRLabel" Name="lblTaxLabel" Text="PDV:" SizeF="180,22" LocationFloat="10, 45" Font="Arial, 10pt" />
+            <Item4 Ref="58" ControlType="XRLabel" Name="lblTax" TextFormatString="{0:N2}" TextAlignment="TopRight" SizeF="100,22" LocationFloat="190, 45" Font="Arial, 10pt, style=Bold" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="taxTotal">
+              <ExpressionBindings>
+                <Item1 Ref="59" Expression="[taxTotal]" PropertyName="Text" EventName="BeforePrint" />
+              </ExpressionBindings>
+            </Item4>
+            <Item5 Ref="60" ControlType="XRPanel" Name="pnlSeparator" SizeF="280,2" LocationFloat="10, 80" BackColor="Navy" />
+            <Item6 Ref="61" ControlType="XRLabel" Name="lblTotalLabel" Text="UKUPNO ZA PLAĆANJE:" SizeF="180,30" LocationFloat="10, 95" Font="Arial, 12pt, style=Bold" />
+            <Item7 Ref="62" ControlType="XRLabel" Name="lblTotal" TextFormatString="{0:N2}" TextAlignment="TopRight" SizeF="100,30" LocationFloat="190, 95" Font="Arial, 16pt, style=Bold" ForeColor="DarkBlue" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="total">
+              <ExpressionBindings>
+                <Item1 Ref="63" Expression="[total]" PropertyName="Text" EventName="BeforePrint" />
+              </ExpressionBindings>
+            </Item7>
+            <Item8 Ref="64" ControlType="XRLabel" Name="lblCurrencyTotal" SizeF="80,20" LocationFloat="210, 130" Font="Arial, 10pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="documentCurrencyCode">
+              <ExpressionBindings>
+                <Item1 Ref="65" Expression="[documentCurrencyCode]" PropertyName="Text" EventName="BeforePrint" />
+              </ExpressionBindings>
+            </Item8>
+          </Controls>
+        </Item2>
+        <Item3 Ref="66" ControlType="XRPanel" Name="pnlPayment" SizeF="400,120" LocationFloat="10, 20" Borders="All" BorderWidth="1">
+          <Controls>
+            <Item1 Ref="67" ControlType="XRLabel" Name="lblPaymentTitle" Text="UPUTE ZA PLAĆANJE / PAYMENT INSTRUCTIONS" SizeF="400,25" LocationFloat="0, 0" Font="Arial, 10pt, style=Bold" ForeColor="White" BackColor="Navy" />
+            <Item2 Ref="68" ControlType="XRLabel" Name="lblBankAccountLabel" Text="Broj računa:" SizeF="100,20" LocationFloat="10, 35" Font="Arial, 9pt, style=Bold" />
+            <Item3 Ref="69" ControlType="XRLabel" Name="lblBankAccount" SizeF="280,20" LocationFloat="110, 35" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="bankAccount">
+              <ExpressionBindings>
+                <Item1 Ref="70" Expression="[bankAccount]" PropertyName="Text" EventName="BeforePrint" />
+              </ExpressionBindings>
+            </Item3>
+            <Item4 Ref="71" ControlType="XRLabel" Name="lblPaymentRefLabel" Text="Poziv na broj:" SizeF="100,20" LocationFloat="10, 60" Font="Arial, 9pt, style=Bold" />
+            <Item5 Ref="72" ControlType="XRLabel" Name="lblPaymentRef" SizeF="280,20" LocationFloat="110, 60" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="paymentReference">
+              <ExpressionBindings>
+                <Item1 Ref="73" Expression="[paymentReference]" PropertyName="Text" EventName="BeforePrint" />
+              </ExpressionBindings>
+            </Item5>
+            <Item6 Ref="74" ControlType="XRLabel" Name="lblBankNameLabel" Text="Banka:" SizeF="100,20" LocationFloat="10, 85" Font="Arial, 9pt, style=Bold" />
+            <Item7 Ref="75" ControlType="XRLabel" Name="lblBankName" SizeF="280,20" LocationFloat="110, 85" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="bankName">
+              <ExpressionBindings>
+                <Item1 Ref="76" Expression="[bankName]" PropertyName="Text" EventName="BeforePrint" />
+              </ExpressionBindings>
+            </Item7>
+          </Controls>
+        </Item3>
+        <Item4 Ref="77" ControlType="XRLabel" Name="lblNotes" SizeF="400,40" LocationFloat="10, 150" Font="Arial, 9pt, style=Italic" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="note">
+          <ExpressionBindings>
+            <Item1 Ref="78" Expression="[note]" PropertyName="Text" EventName="BeforePrint" />
+          </ExpressionBindings>
+        </Item4>
+      </Controls>
+    </Item5>
+    <Item6 Ref="79" ControlType="PageFooterBand" Name="PageFooter" HeightF="40">
+      <Controls>
+        <Item1 Ref="80" ControlType="XRLabel" Name="lblFooterText" Text="E-račun generiran iz XML datoteke pomoću WpfCSCS sustava" TextAlignment="MiddleCenter" SizeF="727,15" LocationFloat="0, 5" Font="Arial, 8pt, style=Italic" ForeColor="Gray" />
+        <Item2 Ref="81" ControlType="XRPageInfo" Name="pageInfo" TextFormatString="Stranica {0} od {1}" TextAlignment="MiddleCenter" SizeF="727,15" LocationFloat="0, 20" Font="Arial, 8pt" />
+      </Controls>
+    </Item6>
+    <Item7 Ref="82" ControlType="BottomMarginBand" Name="BottomMargin" HeightF="50" />
+  </Bands>
+</XtraReportsLayoutSerializer>

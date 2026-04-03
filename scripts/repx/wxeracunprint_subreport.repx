@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<XtraReportsLayoutSerializer SerializerVersion="18.2.14.0" Ref="0" ControlType="DevExpress.XtraReports.UI.XtraReport, DevExpress.XtraReports.v18.2, Version=18.2.14.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" Name="WXeracunPrint_subreport" Margins="0, 0, 0, 0" PageWidth="850" PageHeight="1100" Version="18.2" FilterString="[_parentid] = ?parentIdParam" DataMember="Table1">
+  <Parameters>
+    <Item1 Ref="2" Visible="false" Name="parentIdParam" />
+  </Parameters>
+  <Bands>
+    <Item1 Ref="3" ControlType="GroupHeaderBand" Name="GroupHeader" RepeatEveryPage="true" HeightF="30">
+      <Controls>
+        <Item1 Ref="4" ControlType="XRPanel" Name="pnlHeader" SizeF="727,30" LocationFloat="0, 0" BackColor="Navy">
+          <Controls>
+            <Item1 Ref="5" ControlType="XRLabel" Name="hdrLineNum" Text="Rbr" TextAlignment="MiddleCenter" SizeF="40,30" LocationFloat="0, 0" Font="Arial, 9pt, style=Bold" ForeColor="White" />
+            <Item2 Ref="6" ControlType="XRLabel" Name="hdrProductCode" Text="Šifra" TextAlignment="MiddleLeft" SizeF="80,30" LocationFloat="42, 0" Font="Arial, 9pt, style=Bold" ForeColor="White" />
+            <Item3 Ref="7" ControlType="XRLabel" Name="hdrProductName" Text="Naziv" TextAlignment="MiddleLeft" SizeF="250,30" LocationFloat="124, 0" Font="Arial, 9pt, style=Bold" ForeColor="White" />
+            <Item4 Ref="8" ControlType="XRLabel" Name="hdrQuantity" Text="Količina" TextAlignment="MiddleRight" SizeF="70,30" LocationFloat="376, 0" Font="Arial, 9pt, style=Bold" ForeColor="White" />
+            <Item5 Ref="9" ControlType="XRLabel" Name="hdrUnit" Text="JM" TextAlignment="MiddleCenter" SizeF="50,30" LocationFloat="448, 0" Font="Arial, 9pt, style=Bold" ForeColor="White" />
+            <Item6 Ref="10" ControlType="XRLabel" Name="hdrUnitPrice" Text="Cijena" TextAlignment="MiddleRight" SizeF="85,30" LocationFloat="500, 0" Font="Arial, 9pt, style=Bold" ForeColor="White" />
+            <Item7 Ref="11" ControlType="XRLabel" Name="hdrTotal" Text="Ukupno" TextAlignment="MiddleRight" SizeF="90,30" LocationFloat="587, 0" Font="Arial, 9pt, style=Bold" ForeColor="White" />
+            <Item8 Ref="12" ControlType="XRLabel" Name="hdrTax" Text="PDV %" TextAlignment="MiddleCenter" SizeF="50,30" LocationFloat="679, 0" Font="Arial, 9pt, style=Bold" ForeColor="White" />
+          </Controls>
+        </Item1>
+      </Controls>
+    </Item1>
+    <Item2 Ref="13" ControlType="DetailBand" Name="Detail" HeightF="25">
+      <Controls>
+        <Item1 Ref="14" ControlType="XRLabel" Name="lblLineNum" TextAlignment="MiddleCenter" SizeF="40,25" LocationFloat="0, 0" Font="Arial, 9pt" BorderColor="LightGray" Borders="Left, Bottom" BorderWidth="1" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="lineNum">
+          <ExpressionBindings>
+            <Item1 Ref="15" Expression="[lineNum]" PropertyName="Text" EventName="BeforePrint" />
+          </ExpressionBindings>
+        </Item1>
+        <Item2 Ref="16" ControlType="XRLabel" Name="lblProductCode" TextAlignment="MiddleLeft" SizeF="80,25" LocationFloat="42, 0" Font="Arial, 8pt" BorderColor="LightGray" Borders="Bottom" BorderWidth="1" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="productCode">
+          <ExpressionBindings>
+            <Item1 Ref="17" Expression="[productCode]" PropertyName="Text" EventName="BeforePrint" />
+          </ExpressionBindings>
+        </Item2>
+        <Item3 Ref="18" ControlType="XRLabel" Name="lblProductName" TextAlignment="MiddleLeft" SizeF="250,25" LocationFloat="124, 0" Font="Arial, 8pt" BorderColor="LightGray" Borders="Bottom" BorderWidth="1" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="productName">
+          <ExpressionBindings>
+            <Item1 Ref="19" Expression="[productName]" PropertyName="Text" EventName="BeforePrint" />
+          </ExpressionBindings>
+        </Item3>
+        <Item4 Ref="20" ControlType="XRLabel" Name="lblQuantity" TextFormatString="{0:N2}" TextAlignment="MiddleRight" SizeF="70,25" LocationFloat="376, 0" Font="Arial, 9pt" BorderColor="LightGray" Borders="Bottom" BorderWidth="1" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="quantity">
+          <ExpressionBindings>
+            <Item1 Ref="21" Expression="[quantity]" PropertyName="Text" EventName="BeforePrint" />
+          </ExpressionBindings>
+        </Item4>
+        <Item5 Ref="22" ControlType="XRLabel" Name="lblUnit" TextAlignment="MiddleCenter" SizeF="50,25" LocationFloat="448, 0" Font="Arial, 8pt" BorderColor="LightGray" Borders="Bottom" BorderWidth="1" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="unit">
+          <ExpressionBindings>
+            <Item1 Ref="23" Expression="[unit]" PropertyName="Text" EventName="BeforePrint" />
+          </ExpressionBindings>
+        </Item5>
+        <Item6 Ref="24" ControlType="XRLabel" Name="lblUnitPrice" TextFormatString="{0:N2}" TextAlignment="MiddleRight" SizeF="85,25" LocationFloat="500, 0" Font="Arial, 9pt" BorderColor="LightGray" Borders="Bottom" BorderWidth="1" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="unitPrice">
+          <ExpressionBindings>
+            <Item1 Ref="25" Expression="[unitPrice]" PropertyName="Text" EventName="BeforePrint" />
+          </ExpressionBindings>
+        </Item6>
+        <Item7 Ref="26" ControlType="XRLabel" Name="lblLineTotal" TextFormatString="{0:N2}" TextAlignment="MiddleRight" SizeF="90,25" LocationFloat="587, 0" Font="Arial, 9pt, style=Bold" BorderColor="LightGray" Borders="Bottom" BorderWidth="1" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="lineTotal">
+          <ExpressionBindings>
+            <Item1 Ref="27" Expression="[lineTotal]" PropertyName="Text" EventName="BeforePrint" />
+          </ExpressionBindings>
+        </Item7>
+        <Item8 Ref="28" ControlType="XRLabel" Name="lblTaxRate" TextFormatString="{0:N0}" TextAlignment="MiddleCenter" SizeF="50,25" LocationFloat="679, 0" Font="Arial, 8pt" BorderColor="LightGray" Borders="Right, Bottom" BorderWidth="1" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="taxRate">
+          <ExpressionBindings>
+            <Item1 Ref="29" Expression="[taxRate]" PropertyName="Text" EventName="BeforePrint" />
+          </ExpressionBindings>
+        </Item8>
+      </Controls>
+    </Item2>
+    <Item3 Ref="30" ControlType="TopMarginBand" Name="TopMargin1" HeightF="0" />
+    <Item4 Ref="31" ControlType="BottomMarginBand" Name="BottomMargin1" HeightF="0" />
+  </Bands>
+  <StyleSheet>
+    <Item1 Ref="32" Name="DetailEvenStyle" BorderStyle="Inset" BackColor="WhiteSmoke" StringFormat="Near;Near;0;None;Character;Default" />
+  </StyleSheet>
+</XtraReportsLayoutSerializer>

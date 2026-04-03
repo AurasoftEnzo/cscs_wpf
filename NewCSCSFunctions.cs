@@ -46,6 +46,7 @@ using Windows.UI.Notifications;
 using WpfCSCS.ServiceReference1_SendB2BOutgoingInvoicePKIWebService;
 using WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService;
 using WpfCSCS.ServiceReference5_EIzvjestavanjeService;
+using WpfCSCS.XmlHelper;
 using static System.Net.WebRequestMethods;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 using static WpfCSCS.TEST1Function;
@@ -191,6 +192,14 @@ namespace WpfCSCS
 
 
 
+
+            //Xml Helper
+            interpreter.RegisterFunction("XmlParse", new XmlParseFunction());
+            interpreter.RegisterFunction("XmlGetRootName", new XmlGetRootNameFunction());
+            interpreter.RegisterFunction("XmlGetValue", new XmlGetValueFunction());
+            interpreter.RegisterFunction("XmlGetElements", new XmlGetElementsFunction());
+            interpreter.RegisterFunction("XmlGetChildValue", new XmlGetChildValueFunction());
+            interpreter.RegisterFunction("XmlGetChildAttribute", new XmlGetChildAttributeFunction());
         }
         public partial class Constants
         {

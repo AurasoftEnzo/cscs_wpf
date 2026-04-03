@@ -350,10 +350,13 @@ function GetListFINA_B2B(){
                 );
 
                 if(Contains(fiskStatusAck, "ErrorCode")){
-                    // fiskStatus = fiskStatusAck["ErrorMessage"];
+                    // fiskStatus = "?";
+                    // reportPaymentStatus = "?";
+                    
+                    fiskStatus = fiskStatusAck["ErrorMessage"];
+                    reportPaymentStatus = fiskStatusAck["ErrorMessage"];
+                    
                     // !!! spremit error u neki LOG
-                    fiskStatus = "?";
-                    reportPaymentStatus = "?";
                 }else{
                     if(Contains(fiskStatusAck, "FiskStatus")){
                         fiskStatus = fiskStatusAck["FiskStatus"];

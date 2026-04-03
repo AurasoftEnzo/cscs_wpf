@@ -1,0 +1,54 @@
+
+
+mainReportHndl = SetupReport(strtrim(tpath()) + "repx\\" + "LeoReport1_main.repx");
+subreportHndl = SetupReport(strtrim(tpath()) + "repx\\" + "LeoReport1_subreport.repx", mainReportHndl);
+
+sql = "select top 20 nkpr_gl_num, nkpr_gl_invdte, nkpr_gl_cusnme, nkpr_gl_shpcty from nkprinv";
+sqlResult = SqlQuery(sql);
+
+for(i = 1; i < Size(sqlResult); i++)
+{
+    racunBroj = sqlResult[i][0].trim();
+    racunDatum = sqlResult[i][1].trim();
+    racunPartner = sqlResult[i][2].trim();
+    racunMjesto = sqlResult[i][3].trim();
+    napomenaTest = "";
+    
+    // MSG("X" + string(racunMjesto.Lower()) + "X");
+    //MSG(TypeOf(racunMjesto.lower));
+    //SG(racunMjesto.Lower());
+    // MSG(racunMjesto.Lower().Type);
+
+    if(racunMjesto.Lower == "rijeka")
+    {
+        napomenaTest = "Napomena: Ovaj izvještaj prikazuje samo 20 prvih računa iz baze podataka. Za puni izvještaj, molimo prilagodite SQL upit.";
+    }
+
+
+    OutputReport(mainReportHndl);
+
+    //linije
+    brojLinija = 0;
+    ukupnoIznos = 0;
+    sql2 = "select NKPR_LN_PDESC, NKPR_LN_PQTY, NKPR_LN_PPRCE, NKPR_LN_AMT from nkprinvl where NKPR_LN_INVNM = '" + racunBroj + "'";
+    sqlResult2 = SqlQuery(sql2);
+    for(j = 1; j < Size(sqlResult2); j++)
+    {
+        racunLinijaArtikl = sqlResult2[j][0].trim();
+        racunLinijaKolicina = sqlResult2[j][1].trim();
+        racunLinijaCijena = sqlResult2[j][2].trim();
+        racunLinijaIznos = sqlResult2[j][3].trim();
+
+        OutputReport(subreportHndl);
+
+        brojLinija++;
+
+        ukupnoIznos += double(racunLinijaIznos.Replace(",", ".")); // Pretvaranje stringa u double, zamjenom zareza s točkom
+
+    }
+
+    UpdateReport(mainReportHndl, "brojLinija", "ukupnoIznos");
+    
+}
+
+PrintReport(mainReportHndl);

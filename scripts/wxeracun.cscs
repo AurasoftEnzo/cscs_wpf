@@ -970,17 +970,12 @@ function GenerateUBLXml() {
         xml += "  </cac:InvoicePeriod>\n";
     }
 
-
-    if (NKPR_GL_UGOVOR != 0 && PKKU_PP_OPIS != "") {  
-        xml += "<cac:ContractDocumentReference>";
-            xml +=      "<cbc:ID>"+PKKU_PP_OPIS+"; INT.REF:"+NKPR_GL_UGOVOR+"</cbc:ID>"; //BT-12; 0..1
-        xml += "</cac:ContractDocumentReference>";
-    }
     if (NKPR_GL_CUSORD != "") {  
         xml += "<cac:OrderReference>";
             xml +=      "<cbc:ID>"+NKPR_GL_CUSORD+"</cbc:ID>"; //BT-14; 0..1
         xml += "</cac:OrderReference>";
     }
+       
 
     // BillingReference for all document types (except standard invoices with NKPR_GL_OZNAKA = 'S')
     // Required when referencing another document (Credit Note, Corrective Invoice, Debit Note, etc.)
@@ -1061,6 +1056,11 @@ function GenerateUBLXml() {
         xml += "</cac:DespatchDocumentReference>";
     }
 
+    if (NKPR_GL_UGOVOR != 0 && PKKU_PP_OPIS != "") {  
+        xml += "<cac:ContractDocumentReference>";
+            xml +=      "<cbc:ID>"+PKKU_PP_OPIS+"; INT.REF:"+NKPR_GL_UGOVOR+"</cbc:ID>"; //BT-12; 0..1
+        xml += "</cac:ContractDocumentReference>";
+    }
 
     // if (profileID != "P4") {
     //     ptDesc = "Rok plaćanja je " + NKPR_GL_NOKAM + " dana";

@@ -62,7 +62,7 @@ namespace WpfCSCS.XmlHelper
             try
             {
                 XNamespace xns = ns;
-                var element = xDoc.XPathSelectElement(xpath, CreateNamespaceManager(xDoc, ns));
+                var element = xDoc.Root.XPathSelectElement(xpath, CreateNamespaceManager(xDoc, ns));
                 return new Variable(element?.Value ?? "");
             }
             catch

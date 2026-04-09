@@ -1,10 +1,10 @@
 CreateWindow(strTrim(tpath()) + "wxbackup.xaml");
 
-DEFINE arrayRbr type i size 3 array 100;
-DEFINE arrayNazivFirme type a size 255 array 100;
-DEFINE arrayPoslovnaGodina type a size 10 array 100;
-DEFINE arrayNazivBaze type a size 255 array 100;
-DEFINE arrayDescription type a size 255 array 100;
+DEFINE arrayRbr type i size 3 array 1000;
+DEFINE arrayNazivFirme type a size 255 array 1000;
+DEFINE arrayPoslovnaGodina type a size 10 array 1000;
+DEFINE arrayNazivBaze type a size 255 array 1000;
+DEFINE arrayDescription type a size 255 array 1000;
 
 DEFINE cntr1 type i size 10;
 DEFINE actElem1 type i size 10;
@@ -16,10 +16,10 @@ DEFINE winxIniPath type a size 255;
 DEFINE dialogResult type a size 255;
 
 DEFINE BackupPath type a size 255;
-DEFINE BackupFilenames type a size 255 array 100;
+DEFINE BackupFilenames type a size 255 array 1000;
 
 DEFINE LocalBackupPath type a size 255;
-// DEFINE LocalBackupFilenames type a size 255 array 100;
+// DEFINE LocalBackupFilenames type a size 255 array 1000;
 DEFINE localBakFile type a size 255;
 DEFINE localZipFile type a size 255;
 DEFINE localBakFilename type a size 255;
@@ -85,7 +85,7 @@ function wxbackup_onDisplay()
     GetDatabaseNames();
     
     DisplayArray("datagridDatabases", "close");
-    DisplayArraySetup("datagridDatabases", counterFld: cntr1, activeElements: actElem1, maxElements: 100);
+    DisplayArraySetup("datagridDatabases", counterFld: cntr1, activeElements: actElem1, maxElements: 1000);
 
     winxIniPath = strtrim(wpath()) + "winx.ini";
 

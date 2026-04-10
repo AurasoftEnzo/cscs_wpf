@@ -1,0 +1,82 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<XtraReportsLayoutSerializer SerializerVersion="18.2.14.0" Ref="0" ControlType="DevExpress.XtraReports.UI.XtraReport, DevExpress.XtraReports.v18.2, Version=18.2.14.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" Name="WXeracunprint_SubreportHRPDV" Margins="0, 62, 0, 0" PaperKind="A4" PageWidth="827" PageHeight="1169" Version="18.2">
+  <Bands>
+    <Item1 Ref="1" ControlType="ReportHeaderBand" Name="ReportHeader" HeightF="62.7083321">
+      <Controls>
+        <Item1 Ref="2" ControlType="XRTable" Name="tableHeader" TextAlignment="MiddleCenter" SizeF="764.75,40" LocationFloat="0, 22.7083321" Font="Arial, 8pt, style=Bold" BackColor="WhiteSmoke" Borders="All">
+          <Rows>
+            <Item1 Ref="3" ControlType="XRTableRow" Name="headerRow" Weight="1.3529411764705883">
+              <Cells>
+                <Item1 Ref="4" ControlType="XRTableCell" Name="h1" Weight="0.617456685191239" Text="HR iznos osnovice kategorije PDV" BackColor="Gainsboro">
+                  <StylePriority Ref="5" UseBackColor="false" />
+                </Item1>
+                <Item2 Ref="6" ControlType="XRTableCell" Name="h2" Weight="0.30872834259561949" Text="HR stopa kategorije PDV" BackColor="Gainsboro">
+                  <StylePriority Ref="7" UseBackColor="false" />
+                </Item2>
+                <Item3 Ref="8" ControlType="XRTableCell" Name="h3" Weight="0.51454723765936572" Text="HR iznos kategorije PDV" BackColor="Gainsboro">
+                  <StylePriority Ref="9" UseBackColor="false" />
+                </Item3>
+                <Item4 Ref="10" ControlType="XRTableCell" Name="h4" Weight="0.30872834259561938" Text="HR kod kategorije PDV" BackColor="Gainsboro">
+                  <StylePriority Ref="11" UseBackColor="false" />
+                </Item4>
+                <Item5 Ref="12" ControlType="XRTableCell" Name="h5" Weight="0.30872834259561965" Text="HR oznaka kategorije PDV" BackColor="Gainsboro">
+                  <StylePriority Ref="13" UseBackColor="false" />
+                </Item5>
+                <Item6 Ref="14" ControlType="XRTableCell" Name="h6" Weight="0.94181104936253668" Text="HR tekst razloga oslobođenja kategorije PDV" BackColor="Gainsboro">
+                  <StylePriority Ref="15" UseBackColor="false" />
+                </Item6>
+              </Cells>
+            </Item1>
+          </Rows>
+        </Item1>
+        <Item2 Ref="16" ControlType="XRLabel" Name="lblPdvTitle" Text="HR Raspodjela PDV-a" TextAlignment="MiddleLeft" SizeF="764.75,25" LocationFloat="0, 0" Font="Arial, 10pt, style=Bold" ForeColor="White" BackColor="SlateGray" Padding="5,0,0,0,100">
+          <StylePriority Ref="17" UseBackColor="false" />
+        </Item2>
+      </Controls>
+    </Item1>
+    <Item2 Ref="18" ControlType="DetailBand" Name="Detail" HeightF="25">
+      <Controls>
+        <Item1 Ref="19" ControlType="XRTable" Name="tableData" TextAlignment="MiddleRight" SizeF="764.75,25" LocationFloat="0, 0" Font="Arial, 8pt" Borders="Left, Right, Bottom">
+          <Rows>
+            <Item1 Ref="20" ControlType="XRTableRow" Name="dataRow" Weight="11.5">
+              <Cells>
+                <Item1 Ref="21" ControlType="XRTableCell" Name="cellTaxable" Weight="0.617456685191239" Padding="0,5,0,0,100" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="HRtaxableAmountFormatted">
+                  <ExpressionBindings>
+                    <Item1 Ref="22" Expression="[HRtaxableAmountFormatted]" PropertyName="Text" EventName="BeforePrint" />
+                  </ExpressionBindings>
+                </Item1>
+                <Item2 Ref="23" ControlType="XRTableCell" Name="cellPercent" Weight="0.30872834259561949" TextAlignment="MiddleCenter" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="HRtaxPercentPDV">
+                  <ExpressionBindings>
+                    <Item1 Ref="24" Expression="[HRtaxPercentPDV]" PropertyName="Text" EventName="BeforePrint" />
+                  </ExpressionBindings>
+                </Item2>
+                <Item3 Ref="25" ControlType="XRTableCell" Name="cellTaxAmount" Weight="0.51454723765936572" Padding="0,5,0,0,100" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="HRtaxAmountPDVFormatted">
+                  <ExpressionBindings>
+                    <Item1 Ref="26" Expression="[HRtaxAmountPDVFormatted]" PropertyName="Text" EventName="BeforePrint" />
+                  </ExpressionBindings>
+                </Item3>
+                <Item4 Ref="27" ControlType="XRTableCell" Name="cellCategory" Weight="0.30872834259561938" TextAlignment="MiddleCenter" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="HRtaxCategoryPDVIDAndTaxSchemeID">
+                  <ExpressionBindings>
+                    <Item1 Ref="28" Expression="[HRtaxCategoryPDVIDAndTaxSchemeID]" PropertyName="Text" EventName="BeforePrint" />
+                  </ExpressionBindings>
+                </Item4>
+                <Item5 Ref="29" ControlType="XRTableCell" Name="cellID" Weight="0.30872834259561965" TextAlignment="MiddleCenter" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="HRtaxNamePDV">
+                  <ExpressionBindings>
+                    <Item1 Ref="30" Expression="[HRtaxNamePDV]" PropertyName="Text" EventName="BeforePrint" />
+                  </ExpressionBindings>
+                </Item5>
+                <Item6 Ref="31" ControlType="XRTableCell" Name="cellExemption" Weight="0.94181104936253668" TextAlignment="MiddleLeft" Padding="5,0,0,0,100" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="HRtaxExemptionReasonPDV">
+                  <ExpressionBindings>
+                    <Item1 Ref="32" Expression="[HRtaxExemptionReasonPDV]" PropertyName="Text" EventName="BeforePrint" />
+                  </ExpressionBindings>
+                </Item6>
+              </Cells>
+            </Item1>
+          </Rows>
+        </Item1>
+      </Controls>
+    </Item2>
+    <Item3 Ref="33" ControlType="TopMarginBand" Name="TopMargin1" HeightF="0" />
+    <Item4 Ref="34" ControlType="BottomMarginBand" Name="BottomMargin1" HeightF="0" />
+  </Bands>
+</XtraReportsLayoutSerializer>

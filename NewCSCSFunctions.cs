@@ -199,7 +199,9 @@ namespace WpfCSCS
             interpreter.RegisterFunction("XmlGetValue", new XmlGetValueFunction());
             interpreter.RegisterFunction("XmlGetElements", new XmlGetElementsFunction());
             interpreter.RegisterFunction("XmlGetChildValue", new XmlGetChildValueFunction());
+            interpreter.RegisterFunction("XmlGetChild", new XmlGetChildFunction());
             interpreter.RegisterFunction("XmlGetChildAttribute", new XmlGetChildAttributeFunction());
+            interpreter.RegisterFunction("XmlGetElementValue", new XmlGetElementValueFunction());
         }
         public partial class Constants
         {

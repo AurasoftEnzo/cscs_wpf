@@ -42,6 +42,8 @@ function InitializeGUI() {
 // AddWidgetHandler(txtXmlPath, "TextChanged", "OnXmlPathChanged");
 
 function btnBrowse@clicked(){
+    SetWidgetOptions("btnExportPDF", "IsEnabled", "false");
+    SetWidgetOptions("btnPrint", "IsEnabled", "false");
     OnBrowseClick();
 }
 function btnLoad@clicked(){
@@ -112,32 +114,6 @@ function OnLoadClick() {
     }
 }
 
-function OnExportPDFClick() {
-    if (reportHandle == 0) {
-        MessageBox("Najprije učitajte XML e-račun.");
-        return;
-    }
-    
-    // Prompt for PDF output path
-    defaultName = ParseFile(xmlFilePath, "pfName") + "_export.pdf";
-    filter = "PDF Datoteke (*.pdf)|*.pdf";
-    
-    pdfPath = SaveFileDialog("Spremi kao PDF", filter, "", defaultName, "");
-    
-    if (pdfPath != "") {
-        SetText(lblStatus, "Izvoz u PDF...");
-        
-        try {
-            ExportReport(reportHandle, "PDF", pdfPath);
-            SetText(lblStatus, "PDF uspje no izvezen: " + pdfPath);
-            MessageBox("PDF e-računa uspje no izvezen:\n" + pdfPath);
-        } catch (ex) {
-            SetText(lblStatus, "GREŠKA pri izvozu PDF-a: " + ex);
-            MessageBox("GREŠKA pri izvozu PDF-a:\n" + ex);
-        }
-    }
-}
-
 function OnPrintClick() {
     if (reportHandle == 0) {
         MessageBox("Najprije učitajte XML e-račun.");
@@ -154,13 +130,67 @@ function OnPrintClick() {
         SetText(lblStatus, "GREŠKA pri prikazu: " + ex);
         MessageBox("GREŠKA pri prikazu e-računa:\n" + ex);
     }
+    
+}
+
+function OnExportPDFClick() {
+    if (reportHandle == 0) {
+        MessageBox("Najprije učitajte XML e-račun.");
+        return;
+    }
+    
+    // Define parameters clearly
+    var title = "Spremi kao PDF";
+    var initialDir = ""; // Current directory or specific path
+    var defaultName = ParseFile(xmlFilePath, "pfName") + "_export.pdf";
+    var defaultExt = ".pdf";
+    var filter = "PDF Datoteke (*.pdf)|*.pdf";
+    
+    // Ensure the order matches the C# args: 0:title, 1:dir, 2:name, 3:ext, 4:filter
+    pdfPath = SaveFileDialog(title, initialDir, defaultName, defaultExt, filter);
+    
+    if (pdfPath != "") {
+        SetText(lblStatus, "Izvoz u PDF...");
+        
+        try {
+            ExportReport(reportHandle, "PDF", pdfPath);
+            SetText(lblStatus, "PDF uspješno izvezen: " + pdfPath);
+            MessageBox("PDF e-računa uspješno izvezen:\n" + pdfPath);
+        } catch (ex) {
+            SetText(lblStatus, "GREŠKA pri izvozu PDF-a: " + ex);
+            MessageBox("GREŠKA pri izvozu PDF-a:\n" + ex);
+        }
+    }
 }
 
 function OnCloseClick() {
     if (reportHandle != 0) {
         DisposeReport(reportHandle);
+    
+        if(detailReportArtcles != 0){
+            DisposeReport(detailReportArtcles);
+        }
+        if(detailReportArticlesDetails != 0){
+            DisposeReport(detailReportArticlesDetails);
+        }
+        if(detailReportPDV != 0){
+            DisposeReport(detailReportPDV);
+        }
+        if(detailReportHRPDV != 0){
+            DisposeReport(detailReportHRPDV);
+        }   
+        if(detailReportIBAN != 0){
+            DisposeReport(detailReportIBAN);
+        }
+        if(detailReportNotes != 0){
+            DisposeReport(detailReportNotes);
+        }
+        if(detailReportAttachments != 0){
+            DisposeReport(detailReportAttachments);
+        }
     }
-    CloseWindow("mainWindow");
+   
+    CloseWindow(strtrim(tpath()) + "wxeracunprint.xaml");
 }
 
 // -------------------- XML PARSING AND REPORT GENERATION --------------------

@@ -1968,11 +1968,11 @@ namespace WpfCSCS
                 // If there are no attributes, return just the text value
                 if (!includeAttributes || node.Attributes == null || node.Attributes.Count == 0)
                 {
-                    // Try to parse as number
-                    if (double.TryParse(textValue, NumberStyles.Any, CultureInfo.InvariantCulture, out double numValue))
-                    {
-                        return new Variable(numValue);
-                    }
+                    //// Try to parse as number
+                    //if (double.TryParse(textValue, NumberStyles.Any, CultureInfo.InvariantCulture, out double numValue))
+                    //{
+                    //    return new Variable(numValue);
+                    //}
                     // Try to parse as boolean
                     if (textValue.ToLower() == "true")
                     {

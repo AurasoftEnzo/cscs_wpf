@@ -1029,9 +1029,23 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                         }
                     }
                     
-                    refNumbers = companyIDPartyIdentificationID.split(":");
-                    refNum = refNumbers[0].trim();
-                    refOIB = refNumbers[1].trim();
+                    if(!Contains(companyIDPartyIdentificationID, ":")){
+                        if(companyIDPartyIdentificationID.Length == 11){
+                            refNum = "9934";
+                            refOIB = companyIDPartyIdentificationID;
+                        }elif(companyIDPartyIdentificationID.Length == 13){
+                            refNum = "0088";
+                            refOIB = companyIDPartyIdentificationID;
+                        }else{
+                            refNum = "";
+                            refOIB = companyIDPartyIdentificationID;
+                        }
+                    }else{
+                        refNumbers = companyIDPartyIdentificationID.split(":");
+                        refNum = refNumbers[0].trim();
+                        refOIB = refNumbers[1].trim();
+                    }
+                    
                     if(refNum == "9934"){
                         OIBSupp = refOIB;
                     } elif(refNum == "0088"){
@@ -1047,6 +1061,8 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                                 Mbox("Nije moguće odrediti OIB dobavljača za račun " + NKPR_GL_DESC + ".");
                             }
                         }
+                    }else{
+                        OIBSupp = refOIB;
                     }
                 }
             }

@@ -113,6 +113,32 @@ namespace WpfControlsLibrary
                 base.SetValue(MarginProperty, value);
             }
         }
+        
+        public static readonly DependencyProperty CanUserSortProperty = DependencyProperty.Register("CanUserSort", typeof(bool), typeof(ASGridCell));
+        public bool CanUserSort
+        {
+            get
+            {
+                return (bool)base.GetValue(CanUserSortProperty);
+            }
+            set
+            {
+                base.SetValue(CanUserSortProperty, value);
+            }
+        }
+        
+        public static readonly DependencyProperty IsReadOnlyProperty = DependencyProperty.Register("IsReadOnly", typeof(bool), typeof(ASGridCell));
+        public bool IsReadOnly
+        {
+            get
+            {
+                return (bool)base.GetValue(IsReadOnlyProperty);
+            }
+            set
+            {
+                base.SetValue(IsReadOnlyProperty, value);
+            }
+        }
 
         public override void OnApplyTemplate()
         {

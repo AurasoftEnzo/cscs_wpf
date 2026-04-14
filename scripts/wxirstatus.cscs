@@ -1216,21 +1216,27 @@ function datagridListaRacuna@select(){
 
     if(invoiceID != ""){
         if(PROVIDER == "MER" || PROVIDER == "MERDEMO"){
-            MER_DownloadTempXml(invoiceID);   
+            isDownloaded = MER_DownloadTempXml(invoiceID);   
         } elif(PROVIDER == "FINA" || PROVIDER == "FINADEMO"){
-            FINA_DownloadTempXml(invoiceID);  
+            isDownloaded = FINA_DownloadTempXml(invoiceID);  
         } else {
             MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA, MERDEMO, FINADEMO");
             exit;
         }
     }
 
-    //pozvat leo skriptu
+    //pozvat wxeracunprint.cscs skriptu
+    if(isDownloaded){
+        CHAIN strtrim(tpath())+"\\wxeracunprint.cscs" WITH xmlFilePath, pdfFilePath;
+    }
 }
 
 function MER_DownloadTempXml(_invoiceID){
-    
+    Mbox("TREBA IMPLEMENTIRATI!");
 }
+
+
+
 function FINA_DownloadTempXml(_invoiceID){
     try{
         ack = FINA_GET_B2B_OUTGOING_INVOICE(
@@ -1247,7 +1253,7 @@ function FINA_DownloadTempXml(_invoiceID){
 
         if(Contains(ack, "ErrorCode")){
             Mbox("Greška pri preuzimanju računa " + _invoiceId + ":\n" + "ack:" + "\n" + ack);
-            return;
+            return false;
         }
 
         xmlFilePath = tempXmlFolder + "temp.xml";
@@ -1260,9 +1266,12 @@ function FINA_DownloadTempXml(_invoiceID){
         if(Contains(ack, "Base64PdfDocumentString")){
             Base642File(ack["Base64PdfDocumentString"], pdfFilePath);
         }
+
+        return true;
     }catch(ex){
         Mbox("Račun " + _invoiceID + "\nNepoznata greška:\n" + ex);
         LogException(ex); // !!! 
+        return false;
     }
 }
 

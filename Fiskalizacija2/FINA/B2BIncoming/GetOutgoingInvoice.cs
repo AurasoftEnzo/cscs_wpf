@@ -2,16 +2,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.ServiceModel;
 using System.Text;
 using System.Threading.Tasks;
 using WpfCSCS.ServiceReference2_B2BFinaInvoiceWebService;
 
 namespace WpfCSCS.Fiskalizacija2.FINA.B2BIncoming
 {
-    public class GetIncomingInvoice
+    public class GetOutgoingInvoice
     {
-        private const string GET_B2B_INCOMING_INVOICE_MESSAGE_TYPE = "9103";
+        private const string GET_B2B_OUTGOING_INVOICE_MESSAGE_TYPE = "9107";
 
         public Variable Send(string endpointAddress,
                                 string dnsIdentity,
@@ -20,38 +19,37 @@ namespace WpfCSCS.Fiskalizacija2.FINA.B2BIncoming
                                 string clientCertificatePassword,
 
                                 string messageId,
-                                string buyerId,
+                                string supplierId,
                                 string invoiceId,
 
-                                string additionalBuyerId = null,
+                                string additionalSupplierId = null,
                                 string messageAttributes = null,
 
                                 bool documentCurrencyCode = false)
         {
-            GetB2BIncomingInvoiceMsg message = new GetB2BIncomingInvoiceMsg();
+            GetB2BOutgoingInvoiceMsg message = new GetB2BOutgoingInvoiceMsg();
 
             //Header
-            HeaderBuyerType header = new HeaderBuyerType();
+            HeaderSupplierType header = new HeaderSupplierType();
             header.MessageID = messageId;
-            header.BuyerID = buyerId;
-            header.AdditionalBuyerID = additionalBuyerId;
-            header.MessageType = GET_B2B_INCOMING_INVOICE_MESSAGE_TYPE;
+            header.SupplierID = supplierId;
+            header.AdditionalSupplierID = additionalSupplierId;
+            header.MessageType = GET_B2B_OUTGOING_INVOICE_MESSAGE_TYPE;
             header.MessageAttributes = messageAttributes;
 
-            message.HeaderBuyer = header;
+            message.HeaderSupplier = header;
 
             //Data
-            GetB2BIncomingInvoiceMsgData data = new GetB2BIncomingInvoiceMsgData();
+            GetB2BOutgoingInvoiceMsgData data = new GetB2BOutgoingInvoiceMsgData();
 
-            GetB2BIncomingInvoiceMsgDataB2BIncomingInvoice B2BIncomingInvoice = new GetB2BIncomingInvoiceMsgDataB2BIncomingInvoice();
+            GetB2BOutgoingInvoiceMsgDataB2BOutgoingInvoice B2BOutgoingInvoice = new GetB2BOutgoingInvoiceMsgDataB2BOutgoingInvoice();
 
-            B2BIncomingInvoice.DocumentCurrencyCode = documentCurrencyCode;
-            B2BIncomingInvoice.DocumentCurrencyCodeSpecified = documentCurrencyCode;
+            B2BOutgoingInvoice.DocumentCurrencyCode = documentCurrencyCode;
+            B2BOutgoingInvoice.DocumentCurrencyCodeSpecified = documentCurrencyCode;
 
-            B2BIncomingInvoice.InvoiceID = invoiceId;
+            B2BOutgoingInvoice.InvoiceID = invoiceId;
 
-            data.B2BIncomingInvoice = B2BIncomingInvoice;
-
+            data.B2BOutgoingInvoice = B2BOutgoingInvoice;
             message.Data = data;
 
 
@@ -61,7 +59,7 @@ namespace WpfCSCS.Fiskalizacija2.FINA.B2BIncoming
                                                                                          serviceCertificatePath,
                                                                                          clientCertificatePath,
                                                                                          clientCertificatePassword);
-            GetB2BIncomingInvoiceAckMsg res = client.getB2BIncomingInvoice(message);
+            GetB2BOutgoingInvoiceAckMsg res = client.getB2BOutgoingInvoice(message);
 
             MessageAckType messageAck = res.MessageAck;
 
@@ -77,9 +75,9 @@ namespace WpfCSCS.Fiskalizacija2.FINA.B2BIncoming
             retVar.SetHashVariable("MessageType", new Variable(messageAck.MessageType));
 
             //rest
-            if (res.Item is GetB2BIncomingInvoiceAckMsgB2BIncomingInvoice)
+            if (res.Item is GetB2BOutgoingInvoiceAckMsgB2BOutgoingInvoice)
             {
-                GetB2BIncomingInvoiceAckMsgB2BIncomingInvoice incomingInvoice = (GetB2BIncomingInvoiceAckMsgB2BIncomingInvoice)res.Item;
+                GetB2BOutgoingInvoiceAckMsgB2BOutgoingInvoice incomingInvoice = (GetB2BOutgoingInvoiceAckMsgB2BOutgoingInvoice)res.Item;
 
                 retVar.SetHashVariable("InvoiceID", new Variable(incomingInvoice.InvoiceID));
                 retVar.SetHashVariable("InvoiceTimestamp", new Variable(incomingInvoice.InvoiceTimestamp));
@@ -103,14 +101,14 @@ namespace WpfCSCS.Fiskalizacija2.FINA.B2BIncoming
 
                 retVar.SetHashVariable("DataInterchangeMethod", new Variable(incomingInvoice.DataInterchangeMethod.ToString()));
 
-                // IncomingInvoiceEnvelope 
-                retVar.SetHashVariable("ItemElementName", new Variable(incomingInvoice.IncomingInvoiceEnvelope.ItemElementName.ToString()));
-                string ItemContent = System.Text.Encoding.UTF8.GetString(incomingInvoice.IncomingInvoiceEnvelope.Item);
-                // // //string ItemContent = Convert.ToBase64String(incomingInvoice.IncomingInvoiceEnvelope.Item);
+                // OutgoingInvoiceEnvelope 
+                retVar.SetHashVariable("ItemElementName", new Variable(incomingInvoice.OutgoingInvoiceEnvelope.ItemElementName.ToString()));
+                string ItemContent = System.Text.Encoding.UTF8.GetString(incomingInvoice.OutgoingInvoiceEnvelope.Item);
+                // // //string ItemContent = Convert.ToBase64String(incomingInvoice.OutgoingInvoiceEnvelope.Item);
                 retVar.SetHashVariable("ItemContent", new Variable(ItemContent));
 
-                //string PdfDocumentContent = System.Text.Encoding.Default.GetString(incomingInvoice.IncomingInvoiceEnvelope.PdfDocument);
-                string Base64PdfDocumentString = Convert.ToBase64String(incomingInvoice.IncomingInvoiceEnvelope.PdfDocument);
+                //string PdfDocumentContent = System.Text.Encoding.Default.GetString(incomingInvoice.OutgoingInvoiceEnvelope.PdfDocument);
+                string Base64PdfDocumentString = Convert.ToBase64String(incomingInvoice.OutgoingInvoiceEnvelope.PdfDocument);
                 if (!string.IsNullOrEmpty(Base64PdfDocumentString))
                 {
                     retVar.SetHashVariable("Base64PdfDocumentString", new Variable(Base64PdfDocumentString));

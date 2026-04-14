@@ -6926,6 +6926,8 @@ $@"EXECUTE sp_executesql N'
             public Dictionary<string, string> tagsAndNames = new Dictionary<string, string>();
             public Dictionary<string, double> tagsAndWidths = new Dictionary<string, double>();
             public Dictionary<string, HorizontalAlignment> tagsAndHorizontalContentAlignment = new Dictionary<string, HorizontalAlignment>();
+            public Dictionary<string, bool> tagsAndCanUserSort = new Dictionary<string, bool>();
+            public Dictionary<string, bool> tagsAndIsReadOnly = new Dictionary<string, bool>();
             
             //public Dictionary<string, string> tagsAndStringFormats = new Dictionary<string, string>();
             public Dictionary<string, int?> tagsAndDecimalChrs = new Dictionary<string, int?>();
@@ -7241,6 +7243,8 @@ $@"EXECUTE sp_executesql N'
                                 Gui.Btrieve.gridsArrayClass[gridName].tagsAndNames[asgc.FieldName.ToString()] = asgc.Name;
                                 Gui.Btrieve.gridsArrayClass[gridName].tagsAndWidths[asgc.FieldName.ToString()] = dgtc.ActualWidth;
                                 Gui.Btrieve.gridsArrayClass[gridName].tagsAndHorizontalContentAlignment[asgc.FieldName.ToString()] = asgc.HorizontalContentAlignment;
+                                Gui.Btrieve.gridsArrayClass[gridName].tagsAndCanUserSort[asgc.FieldName.ToString()] = asgc.CanUserSort;
+                                Gui.Btrieve.gridsArrayClass[gridName].tagsAndIsReadOnly[asgc.FieldName.ToString()] = asgc.IsReadOnly;
                                 //gridsArrayClass[gridName].tagsAndStringFormats[asgc.FieldName.ToString()] = "";
 
                                 var decimalChrs = asgc.DecimalChrs;
@@ -7483,17 +7487,19 @@ $@"EXECUTE sp_executesql N'
                                 case "DateTime":
                                     if (defVar.Size == 8)
                                     {
-                                        if (DateTime.TryParseExact(current.AsString(), "dd/MM/yy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTime))
-                                        {
-                                            currentRow[column.Key] = dateTime;
-                                        }
+                                        //if (DateTime.TryParseExact(current.AsString(), "dd/MM/yy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTime))
+                                        //{
+                                        //    currentRow[column.Key] = dateTime;
+                                        //}
+                                        currentRow[column.Key] = current.DateTime;
                                     }
                                     else if (defVar.Size == 10)
                                     {
-                                        if (DateTime.TryParseExact(current.AsString(), "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTime))
-                                        {
-                                            currentRow[column.Key] = dateTime;
-                                        }
+                                        //if (DateTime.TryParseExact(current.AsString(), "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTime))
+                                        //{
+                                        //    currentRow[column.Key] = dateTime;
+                                        //}
+                                        currentRow[column.Key] = current.DateTime;
                                     }
                                     break;
                                 case "TimeSpan":
@@ -7939,8 +7945,9 @@ $@"EXECUTE sp_executesql N'
                             break;
                     }
 
-                    //newColumn.CanUserSort = true;
-                    //newColumn.SortMemberPath = tag;
+                    newColumn.CanUserSort = Gui.Btrieve.gridsArrayClass[gridName].tagsAndCanUserSort[tag];
+                    newColumn.IsReadOnly = Gui.Btrieve.gridsArrayClass[gridName].tagsAndIsReadOnly[tag];
+                    newColumn.SortMemberPath = tag;
 
                     newColumn.Header = realHeader;
 
@@ -8233,8 +8240,9 @@ $@"EXECUTE sp_executesql N'
                     e.Column = boolColumn;
                 }
 
-                //e.Column.CanUserSort = true;
-                //e.Column.SortMemberPath = tag;
+                e.Column.CanUserSort = Gui.Btrieve.gridsArrayClass[gridName].tagsAndCanUserSort[tag];
+                e.Column.IsReadOnly = Gui.Btrieve.gridsArrayClass[gridName].tagsAndIsReadOnly[tag];
+                e.Column.SortMemberPath = tag;
 
                 e.Column.Header = realHeader;
 

@@ -2453,7 +2453,7 @@ namespace WpfCSCS
 			{
 				return;
 			}
-			if (((Control)e.NewFocus) != null)
+			if ((e.NewFocus is Control) && (Control)e.NewFocus != null)
 				LastObjWidgetName = ((Control)e.NewFocus).Name;
 
 			if ((Control)sender is Button)
@@ -6401,39 +6401,38 @@ namespace WpfCSCS
         }
     }
 
-	class SaveFileDialogFunction : ParserFunction
-	{
+    class SaveFileDialogFunction : ParserFunction
+    {
         protected override Variable Evaluate(ParsingScript script)
         {
-            // Get the function arguments
             List<Variable> args = script.GetFunctionArgs();
 
-            // Ensure 5 arguments are provided
             if (args.Count < 5)
             {
-                throw new ArgumentException("In the function SaveFileDialog 5 arguments are required.");
+                throw new ArgumentException("SaveFileDialog requires 5 arguments: title, initialDirectory, fileName, defaultExt, filter");
             }
 
-            string title = Utils.GetSafeString(args, 0);			// First argument: title
-            string initialDirectory = Utils.GetSafeString(args, 1); // Second argument: initialDirectory
-            string fileName = Utils.GetSafeString(args, 2);         // Third argument: default filename
-            string defaultExt = Utils.GetSafeString(args, 3);       // Fourth argument: used if user omits extension
-            string filter = Utils.GetSafeString(args, 4);			// Fifth argument: fileName
-
-            Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog();
-            dialog.Title = title; // caption of the dialog window
-            dialog.InitialDirectory = initialDirectory; // default directory
-            dialog.FileName = fileName; // default filename
-            dialog.DefaultExt = defaultExt; // used if user omits extension
-            dialog.Filter = filter;
-
-            bool? result = dialog.ShowDialog();
+            string title = Utils.GetSafeString(args, 0);
+            string initialDirectory = Utils.GetSafeString(args, 1);
+            string fileName = Utils.GetSafeString(args, 2);
+            string defaultExt = Utils.GetSafeString(args, 3);
+            string filter = Utils.GetSafeString(args, 4);
 
             string path = "";
-            if (result == true)
+
+            // Using a Standard Win32 SaveFileDialog
+            Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog();
+            dialog.Title = title;
+            dialog.InitialDirectory = initialDirectory;
+            dialog.FileName = fileName;
+            dialog.DefaultExt = defaultExt;
+            dialog.Filter = filter;
+
+            // ShowDialog returns a nullable bool
+            if (dialog.ShowDialog() == true)
             {
                 path = dialog.FileName;
-            }            
+            }
 
             return new Variable(path);
         }

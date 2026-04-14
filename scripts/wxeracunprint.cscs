@@ -1,12 +1,107 @@
 ﻿// ========================================================================
 // WXeracunPrint.cscs - Croatian UBL 2.1 E-Invoice XML Viewer & Printer
 // ========================================================================
-
-Import(strTrim(mpath()) + "CSCS.Math.dll");
+// OVERVIEW:
+// This script is a complete  e-invoice processing system that parses UBL 2.1
+// XML documents (specifically Croatian AuraSoft outgoing invoices) and generates
+// formatted multi-part reports for viewing, printing, and PDF export.
+//
+// PRIMARY FUNCTIONS:
+// 1. LoadInvoiceFromXML(xmlPath) - Entry point for XML loading and parsing
+// 2. LoadDocument(xDoc, UBLType) - Main data extraction and report generation
+// 3. InitializeGUI() - Sets up interactive GUI for file selection
+//
+// DATA FLOW:
+// xmlPath (file) -> ReadAllText() -> XmlParse() -> LoadDocument() -> 
+// XmlGetValue/XmlGetElements/XmlGetChild* (extract data) -> 
+// SetupReport() + OutputReport() (populate report) -> PrintReport/ExportReport
+//
+// ENTRY MODES:
+// 1. INTERACTIVE: Run without params -> InitializeGUI() loads wxeracunprint.xaml GUI
+// 2. COMMAND-LINE: Pass xmlPath param -> Direct load and print
+//
+// PARAMETER SUPPORT:
+// PARAM xmlPath - Optional XML file path for direct loading
+// PARAM pdfPath - Optional PDF export path (currently parsed but not used)
+//
+// KEY DATA STRUCTURES:
+// - xDoc: Parsed XDocument (XPath-queryable XML structure)
+// - invoiceLines[]: Array of InvoiceLine elements
+// - taxSubtotals[]: Array of tax breakdown records
+// - payeeFinancialAccounts[]: Array of IBAN/bank accounts
+// - Namespace variables: nsCbc, nsCac, nsExt, nsHrextac (UBL URI mappings)
+//
+// REPORT STRUCTURE:
+// Main Report: wxeracunprint_main.repx (header info, supplier, customer, totals)
+// ├─ Detail Report 1: WXeracunprint_SubreportArticles.repx (invoice lines)
+// │  └─ Detail Report 1a: wxeracunprint_subreportArticlesDetails.repx (line details)
+// ├─ Detail Report 2: wxeracunprint_subreportPDV.repx (standard tax subtotals)
+// ├─ Detail Report 3: wxeracunprint_subreportHRPDV.repx (HR-specific taxes)
+// ├─ Detail Report 4: wxeracunprint_subreportIBAN.repx (payment bank accounts)
+// ├─ Detail Report 5: wxeracunprint_subreportNote.repx (invoice notes)
+// └─ Detail Report 6: wxeracunprint_subreportAttachments.repx (binary attachments)
+//
+// NAMESPACE SUPPORT:
+// Supports UBL 2.1 standard namespaces:
+// - cbc (CommonBasicComponents): Simple typed fields (ID, Name, Amount, etc.)
+// - cac (CommonAggregateComponents): Complex structures (Party, Address, etc.)
+// - ext (CommonExtensionComponents): Extension mechanisms
+// - hrextac: Croatian AuraSoft-specific tax fields and calculations
+//
+// DOCUMENT TYPES SUPPORTED:
+// - Invoice (Račun)
+// - CreditNote (Dobropis)
+// - DebitNote (Terećenje) [structure in place, message not implemented]
+//
+// EXTRACTED DATA CATEGORIES:
+// HEADER: invoiceID, dates (issue, due, taxPoint), type, currency
+// SUPPLIER: name, registration, ID, address, VAT, contact, endpoint
+// CUSTOMER: name, registration, ID, address, VAT, contact, email, endpoint
+// PAYMENT: means code, payment ID, instruction, bank accounts (IBAN)
+// DELIVERY: party info, address, location ID, delivery date
+// TAX: standard totals, line-item taxes, HR-specific tax extensions
+// MONETARY: line extension, tax-exclusive/inclusive, allowances, charges, prepaid, payable
+// LINE ITEMS: ID, quantity, unit, description, price, tax rate, commodity class
+// ADDITIONAL: notes, attachments (binary documents with metadata)
+//
+// ERROR HANDLING:
+// - Validates XML parsing (returns error string on failure)
+// - Validates report templates against schema
+// - MessageBox alerts for user interaction
+// - Try-catch for exception handling with user feedback
+//
+// GLOBAL STATE:
+// xmlFilePath - Currently loaded file path (used for PDF export naming)
+// reportHandle - Active report object handle (0 = uninitialized)
+// detailReport* variables - Subreport handles (cleaned up in OnCloseClick)
+//
+// DEPENDENCIES:
+// - CSCS.Math.dll (imported at runtime)
+// - wxeracunprint.xaml (WPF GUI markup)
+// - 8 .repx report template files (located in scripts/repx/ subdirectory)
+// - XML Functions: XmlParse, XmlGetRootName, XmlGetValue, XmlGetElements,
+//   XmlGetChild, XmlGetChildValue, XmlGetChildAttribute, XmlGetElementValue
+//
+// ========================================================================
 
 // Global variables
 xmlFilePath = "";
 reportHandle = 0;
+
+
+PARAM xmlPath,pdfPath;
+if(xmlPath != "" && Exists(xmlPath)){
+    LoadInvoiceFromXML(xmlPath);
+    PrintReport(reportHandle, 1);
+}
+else{
+    InitializeGUI();
+}
+
+
+Import(strTrim(mpath()) + "CSCS.Math.dll");
+
+
 
 // -------------------- INITIALIZE GUI --------------------
 function InitializeGUI() {
@@ -36,12 +131,14 @@ function InitializeGUI() {
 // Bind events
 // AddWidgetHandler(btnBrowse, "", "OnBrowseClick");
 // AddWidgetHandler(btnLoad, "", "OnLoadClick");
-// AddWidgetHandler(btnExportPDF, "", "OnExportPDFClick");
+//AddWidgetHandler(btnExportPDF, "", "OnExportPDFClick");
 // AddWidgetHandler(btnPrint, "", "OnPrintClick");
 // AddWidgetHandler(btnClose, "", "OnCloseClick");
 // AddWidgetHandler(txtXmlPath, "TextChanged", "OnXmlPathChanged");
 
 function btnBrowse@clicked(){
+    SetWidgetOptions("btnExportPDF", "IsEnabled", "false");
+    SetWidgetOptions("btnPrint", "IsEnabled", "false");
     OnBrowseClick();
 }
 function btnLoad@clicked(){
@@ -104,37 +201,11 @@ function OnLoadClick() {
         SetWidgetOptions("lblStatus", "Text", "XML e-račun uspješno učitan i spreman za ispis.");
         SetWidgetOptions("btnExportPDF", "IsEnabled", "true");
         SetWidgetOptions("btnPrint", "IsEnabled", "true");
-        PrintReport(reportHandle);
+      
     } else {
         SetWidgetOptions("lblStatus", "Text", "GREŠKA: Nije moguće učitati XML e-račun.");
         SetWidgetOptions("btnExportPDF", "IsEnabled", "false");
         SetWidgetOptions("btnPrint", "IsEnabled", "false");
-    }
-}
-
-function OnExportPDFClick() {
-    if (reportHandle == 0) {
-        MessageBox("Najprije učitajte XML e-račun.");
-        return;
-    }
-    
-    // Prompt for PDF output path
-    defaultName = ParseFile(xmlFilePath, "pfName") + "_export.pdf";
-    filter = "PDF Datoteke (*.pdf)|*.pdf";
-    
-    pdfPath = SaveFileDialog("Spremi kao PDF", filter, "", defaultName);
-    
-    if (pdfPath != "") {
-        SetText(lblStatus, "Izvoz u PDF...");
-        
-        try {
-            ExportReport(reportHandle, "PDF", pdfPath);
-            SetText(lblStatus, "PDF uspje no izvezen: " + pdfPath);
-            MessageBox("PDF e-ra una uspje no izvezen:\n" + pdfPath);
-        } catch (ex) {
-            SetText(lblStatus, "GRE KA pri izvozu PDF-a: " + ex);
-            MessageBox("GRE KA pri izvozu PDF-a:\n" + ex);
-        }
     }
 }
 
@@ -154,13 +225,67 @@ function OnPrintClick() {
         SetText(lblStatus, "GREŠKA pri prikazu: " + ex);
         MessageBox("GREŠKA pri prikazu e-računa:\n" + ex);
     }
+    
+}
+
+function OnExportPDFClick() {
+    if (reportHandle == 0) {
+        MessageBox("Najprije učitajte XML e-račun.");
+        return;
+    }
+    
+    // Define parameters clearly
+    var title = "Spremi kao PDF";
+    var initialDir = ""; // Current directory or specific path
+    var defaultName = ParseFile(xmlFilePath, "pfName") + "_export.pdf";
+    var defaultExt = ".pdf";
+    var filter = "PDF Datoteke (*.pdf)|*.pdf";
+    
+    // Ensure the order matches the C# args: 0:title, 1:dir, 2:name, 3:ext, 4:filter
+    pdfPath = SaveFileDialog(title, initialDir, defaultName, defaultExt, filter);
+    
+    if (pdfPath != "") {
+        SetText(lblStatus, "Izvoz u PDF...");
+        
+        try {
+            ExportReport(reportHandle, "PDF", pdfPath);
+            SetText(lblStatus, "PDF uspješno izvezen: " + pdfPath);
+            MessageBox("PDF e-računa uspješno izvezen:\n" + pdfPath);
+        } catch (ex) {
+            SetText(lblStatus, "GREŠKA pri izvozu PDF-a: " + ex);
+            MessageBox("GREŠKA pri izvozu PDF-a:\n" + ex);
+        }
+    }
 }
 
 function OnCloseClick() {
     if (reportHandle != 0) {
         DisposeReport(reportHandle);
+    
+        if(detailReportArtcles != 0){
+            DisposeReport(detailReportArtcles);
+        }
+        if(detailReportArticlesDetails != 0){
+            DisposeReport(detailReportArticlesDetails);
+        }
+        if(detailReportPDV != 0){
+            DisposeReport(detailReportPDV);
+        }
+        if(detailReportHRPDV != 0){
+            DisposeReport(detailReportHRPDV);
+        }   
+        if(detailReportIBAN != 0){
+            DisposeReport(detailReportIBAN);
+        }
+        if(detailReportNotes != 0){
+            DisposeReport(detailReportNotes);
+        }
+        if(detailReportAttachments != 0){
+            DisposeReport(detailReportAttachments);
+        }
     }
-    CloseWindow("mainWindow");
+   
+    CloseWindow(strtrim(tpath()) + "wxeracunprint.xaml");
 }
 
 // -------------------- XML PARSING AND REPORT GENERATION --------------------
@@ -185,11 +310,11 @@ function LoadInvoiceFromXML(xmlPath) {
         rootElement = XmlGetRootName(xDoc);
         
         if (rootElement == "Invoice") {
-            return LoadInvoice(xDoc);
+            return LoadDocument(xDoc, "Invoice");
         } elif (rootElement == "CreditNote") {
-            return LoadCreditNote(xDoc);
+            return LoadDocument(xDoc, "CreditNote");
         } elif (rootElement == "DebitNote") {
-            return LoadDebitNote(xDoc);
+            return LoadDocument(xDoc, "DebitNote");
         } else {
             MessageBox("Nepoznat tip dokumenta: " + rootElement);
             return false;
@@ -201,68 +326,179 @@ function LoadInvoiceFromXML(xmlPath) {
     }
 }
 
-function LoadInvoice(xDoc) {
+function LoadDocument(xDoc, UBLType) {
+
     // Define XML namespace
-    ns = "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2";
+    if(UBLType == "Invoice"){
+        ns = "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2";
+    } elif(UBLType == "CreditNote") {
+        ns = "urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2";
+    }
     nsCbc = "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2";
     nsCac = "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2";
+    nsExt = "urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2";
+    nsHrextac = "urn:mfin.gov.hr:schema:xsd:HRExtensionAggregateComponents-1";
     
     // -------------------- HEADER DATA --------------------
-    invoiceID = XmlGetValue(xDoc, "//cbc:ID", nsCbc);
-    issueDate = XmlGetValue(xDoc, "//cbc:IssueDate", nsCbc);
-    issueTime = XmlGetValue(xDoc, "//cbc:IssueTime", nsCbc);
-    dueDate = XmlGetValue(xDoc, "//cbc:DueDate", nsCbc);
-    invoiceTypeCode = XmlGetValue(xDoc, "//cbc:InvoiceTypeCode", nsCbc);
-    documentCurrencyCode = XmlGetValue(xDoc, "//cbc:DocumentCurrencyCode", nsCbc);
-    note = XmlGetValue(xDoc, "//cbc:Note", nsCbc);
+    invoiceID = XmlGetValue(xDoc, "cbc:ID", nsCbc);
+    issueDate = XmlGetValue(xDoc, "cbc:IssueDate", nsCbc);
+    issueTime = XmlGetValue(xDoc, "cbc:IssueTime", nsCbc);
+    dueDate = XmlGetValue(xDoc, "cbc:DueDate", nsCbc);
+    taxPointDate = XmlGetValue(xDoc, "cbc:TaxPointDate", nsCbc);
+    customizationID = XmlGetValue(xDoc, "cbc:CustomizationID", nsCbc);
+
+    ProfileID = XmlGetValue(xDoc, "cbc:ProfileID", nsCbc);
+    InvoiceTypeCode = XmlGetValue(xDoc, "cbc:" + UBLType + "TypeCode", nsCbc);
+
+    documentCurrencyCode = XmlGetValue(xDoc, "cbc:DocumentCurrencyCode", nsCbc);
     
     // -------------------- SUPPLIER DATA --------------------
-    supplierName = XmlGetValue(xDoc, "//cac:AccountingSupplierParty/cac:Party/cac:PartyName/cbc:Name", nsCbc);
-    supplierStreet = XmlGetValue(xDoc, "//cac:AccountingSupplierParty/cac:Party/cac:PostalAddress/cbc:StreetName", nsCbc);
-    supplierCity = XmlGetValue(xDoc, "//cac:AccountingSupplierParty/cac:Party/cac:PostalAddress/cbc:CityName", nsCbc);
-    supplierPostalZone = XmlGetValue(xDoc, "//cac:AccountingSupplierParty/cac:Party/cac:PostalAddress/cbc:PostalZone", nsCbc);
-    supplierCountry = XmlGetValue(xDoc, "//cac:AccountingSupplierParty/cac:Party/cac:PostalAddress/cac:Country/cbc:IdentificationCode", nsCbc);
-    supplierVAT = XmlGetValue(xDoc, "//cac:AccountingSupplierParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID", nsCbc);
-    supplierEndpointID = XmlGetValue(xDoc, "//cac:AccountingSupplierParty/cac:Party/cbc:EndpointID", nsCbc);
-    
+    accountingSupplierPartyArray = XmlGetElements(xDoc, "cac:AccountingSupplierParty", nsCac);
+    supplierParty = XmlGetChild(accountingSupplierPartyArray[0], "Party", nsCac);
+    endpointSupplierIDSchemeID = XmlGetChildAttribute(supplierParty, "EndpointID", "schemeID", nsCbc);
+    // endpointIDValue = XmlGetChildValue(supplierParty, "EndpointID", nsCbc);
+
+    supplierName = XmlGetValue(xDoc, "cac:AccountingSupplierParty/cac:Party/cac:PartyName/cbc:Name", nsCbc);
+    supplierRegistrationName = XmlGetValue(xDoc, "cac:AccountingSupplierParty/cac:Party/cac:PartyLegalEntity/cbc:RegistrationName", nsCbc);
+    supplierPartyID = XmlGetValue(xDoc, "cac:AccountingSupplierParty/cac:Party/cac:PartyIdentification/cbc:ID", nsCbc);
+    supplierStreet = XmlGetValue(xDoc, "cac:AccountingSupplierParty/cac:Party/cac:PostalAddress/cbc:StreetName", nsCbc);
+    supplierCity = XmlGetValue(xDoc, "cac:AccountingSupplierParty/cac:Party/cac:PostalAddress/cbc:CityName", nsCbc);
+    supplierPostalZone = XmlGetValue(xDoc, "cac:AccountingSupplierParty/cac:Party/cac:PostalAddress/cbc:PostalZone", nsCbc);
+    supplierCountry = XmlGetValue(xDoc, "cac:AccountingSupplierParty/cac:Party/cac:PostalAddress/cac:Country/cbc:IdentificationCode", nsCbc);
+    supplierVAT = XmlGetValue(xDoc, "cac:AccountingSupplierParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID", nsCbc);
+    supplierEndpointID = XmlGetValue(xDoc, "cac:AccountingSupplierParty/cac:Party/cbc:EndpointID", nsCbc);
+    supplierTaxScheme = XmlGetValue(xDoc, "cac:AccountingSupplierParty/cac:Party/cac:PartyTaxScheme/cac:TaxScheme/cbc:ID", nsCbc);
+    supplierContactName = XmlGetValue(xDoc, "cac:AccountingSupplierParty/cac:Party/cac:Contact/cbc:Name", nsCbc);
+    supplierSellerContactName = XmlGetValue(xDoc, "cac:AccountingSupplierParty/cac:SellerContact/cbc:Name", nsCbc);
+    supplierSellerContactID = XmlGetValue(xDoc, "cac:AccountingSupplierParty/cac:SellerContact/cbc:ID", nsCbc);
+
     // -------------------- CUSTOMER DATA --------------------
-    customerName = XmlGetValue(xDoc, "//cac:AccountingCustomerParty/cac:Party/cac:PartyName/cbc:Name", nsCbc);
-    customerStreet = XmlGetValue(xDoc, "//cac:AccountingCustomerParty/cac:Party/cac:PostalAddress/cbc:StreetName", nsCbc);
-    customerCity = XmlGetValue(xDoc, "//cac:AccountingCustomerParty/cac:Party/cac:PostalAddress/cbc:CityName", nsCbc);
-    customerPostalZone = XmlGetValue(xDoc, "//cac:AccountingCustomerParty/cac:Party/cac:PostalAddress/cbc:PostalZone", nsCbc);
-    customerCountry = XmlGetValue(xDoc, "//cac:AccountingCustomerParty/cac:Party/cac:PostalAddress/cac:Country/cbc:IdentificationCode", nsCbc);
-    customerVAT = XmlGetValue(xDoc, "//cac:AccountingCustomerParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID", nsCbc);
+    accountingCustomerPartyArray = XmlGetElements(xDoc, "cac:AccountingCustomerParty", nsCac);
+    customerParty = XmlGetChild(accountingCustomerPartyArray[0], "Party", nsCac);
+    endpointCustomerIDSchemeID = XmlGetChildAttribute(customerParty, "EndpointID", "schemeID", nsCbc);
+
+    customerName = XmlGetValue(xDoc, "cac:AccountingCustomerParty/cac:Party/cac:PartyName/cbc:Name", nsCbc);
+    customerRegistrationName = XmlGetValue(xDoc, "cac:AccountingCustomerParty/cac:Party/cac:PartyLegalEntity/cbc:RegistrationName", nsCbc);
+    customerPartyID = XmlGetValue(xDoc, "cac:AccountingCustomerParty/cac:Party/cac:PartyIdentification/cbc:ID", nsCbc);
+    customerStreet = XmlGetValue(xDoc, "cac:AccountingCustomerParty/cac:Party/cac:PostalAddress/cbc:StreetName", nsCbc);
+    customerCity = XmlGetValue(xDoc, "cac:AccountingCustomerParty/cac:Party/cac:PostalAddress/cbc:CityName", nsCbc);
+    customerPostalZone = XmlGetValue(xDoc, "cac:AccountingCustomerParty/cac:Party/cac:PostalAddress/cbc:PostalZone", nsCbc);
+    customerCountry = XmlGetValue(xDoc, "cac:AccountingCustomerParty/cac:Party/cac:PostalAddress/cac:Country/cbc:IdentificationCode", nsCbc);
+    customerVAT = XmlGetValue(xDoc, "cac:AccountingCustomerParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID", nsCbc);
+    customerEndpointID = XmlGetValue(xDoc, "cac:AccountingCustomerParty/cac:Party/cbc:EndpointID", nsCbc);
+    customerTaxScheme = XmlGetValue(xDoc, "cac:AccountingCustomerParty/cac:Party/cac:PartyTaxScheme/cac:TaxScheme/cbc:ID", nsCbc);
+    customerContactName = XmlGetValue(xDoc, "cac:AccountingCustomerParty/cac:Party/cac:Contact/cbc:Name", nsCbc);
+    customerContactElectronicMail = XmlGetValue(xDoc, "cac:AccountingCustomerParty/cac:Party/cac:Contact/cbc:ElectronicMail", nsCbc);
+
     
     // -------------------- PAYMENT MEANS --------------------
-    paymentMeansCode = XmlGetValue(xDoc, "//cac:PaymentMeans/cbc:PaymentMeansCode", nsCbc);
-    paymentID = XmlGetValue(xDoc, "//cac:PaymentMeans/cbc:PaymentID", nsCbc);
+    paymentMeansCode = XmlGetValue(xDoc, "cac:PaymentMeans/cbc:PaymentMeansCode", nsCbc);
+    paymentID = XmlGetValue(xDoc, "cac:PaymentMeans/cbc:PaymentID", nsCbc);
+    instructionNote = XmlGetValue(xDoc, "cac:PaymentMeans/cbc:InstructionNote", nsCbc);
+    
+    payeeFinancialAccounts = XmlGetElements(xDoc, "cac:PaymentMeans/cac:PayeeFinancialAccount", nsCac);
+    payeeFinancialAccountCount = Size(payeeFinancialAccounts);
+
     payeeAccountID = XmlGetValue(xDoc, "//cac:PaymentMeans/cac:PayeeFinancialAccount/cbc:ID", nsCbc);
     payeeAccountName = XmlGetValue(xDoc, "//cac:PaymentMeans/cac:PayeeFinancialAccount/cbc:Name", nsCbc);
     
+    // -------------------- DELIVERY INFORMATION --------------------
+    deliveryPartyName = XmlGetValue(xDoc, "cac:Delivery/cac:DeliveryParty/cac:PartyName/cbc:Name", nsCbc);
+    deliveryPartyStreet = XmlGetValue(xDoc, "cac:Delivery/cac:DeliveryParty/cac:Address/cbc:StreetName", nsCbc);
+    deliveryPartyCity = XmlGetValue(xDoc, "cac:Delivery/cac:DeliveryParty/cac:Address/cbc:CityName", nsCbc);
+    deliveryPartyPostalZone = XmlGetValue(xDoc, "cac:Delivery/cac:DeliveryParty/cac:Address/cbc:PostalZone", nsCbc);
+    deliveryLocationID = XmlGetValue(xDoc, "cac:Delivery/cac:DeliveryLocation/cbc:ID", nsCbc);
+    deliveryPartyIdentificationCode = XmlGetValue(xDoc, "cac:Delivery/cac:DeliveryParty/cac:Address/cac:Country/cbc:IdentificationCode", nsCbc);
+
+
+    actualDeliveryDate = XmlGetValue(xDoc, "cac:Delivery/cbc:ActualDeliveryDate", nsCbc);
+    //actualDeliveryDateformatted = (actualDeliveryDate != "" ? actualDeliveryDate.ToString("dd.MM.yyyy") : "");
+    if(actualDeliveryDate != ""){
+        actualDeliveryDateformatted = actualDeliveryDate.ToString("dd.MM.yyyy");
+    } else{
+        actualDeliveryDateformatted = "";
+    }
+
+    deliveryArray = XmlGetElements(xDoc, "cac:Delivery", nsCac);
+    deliveryLocation = XmlGetChild(deliveryArray[0], "DeliveryLocation", nsCac);
+    deliverySchemaID = XmlGetChildAttribute(deliveryLocation, "ID", "schemeID", nsCbc);
+    if (deliveryLocationID != "" && deliverySchemaID != "") {
+        deliveryLocationIDformatted = deliveryLocationID + "-" + deliverySchemaID;
+    } else {
+        deliveryLocationIDformatted = "";
+    }
+
     // -------------------- TAX TOTAL --------------------
-    taxAmount = XmlGetValue(xDoc, "//cac:TaxTotal/cbc:TaxAmount", nsCbc);
-    
+    taxAmount = XmlGetValue(xDoc, "cac:TaxTotal/cbc:TaxAmount", nsCbc);
+    taxTotalArray = XmlGetElements(xDoc, "cac:TaxTotal", nsCac);
+    taxTotalCurrencyID = XmlGetChildAttribute(taxTotalArray[0], "TaxAmount", "currencyID", nsCbc);
+    taxAmountFormatted = taxAmount + " " + taxTotalCurrencyID;
+
+    // Parse  HR TaxSubtotals
+    taxHRSubtotals = XmlGetElements(xDoc, "ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/hrextac:HRFISK20Data/hrextac:HRTaxTotal/hrextac:HRTaxSubtotal", nsExt);
+    taxHRSubtotalsCount = Size(taxHRSubtotals);
+
     // Parse TaxSubtotals
-    taxSubtotals = XmlGetElements(xDoc, "//cac:TaxTotal/cac:TaxSubtotal", nsCac);
+    taxSubtotals = XmlGetElements(xDoc, "cac:TaxTotal/cac:TaxSubtotal", nsCac);
     taxSubtotalCount = Size(taxSubtotals);
-    
+     
+    // -------------------- HR MONETARY TOTALS --------------------
+    taxExclusiveAmountHR = XmlGetValue(xDoc, "ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/hrextac:HRFISK20Data/hrextac:HRLegalMonetaryTotal/cbc:TaxExclusiveAmount", nsCbc);
+    HRLegalMonetaryTotalArray = XmlGetElements(xDoc, "ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/hrextac:HRFISK20Data/hrextac:HRLegalMonetaryTotal", nsHrextac);
+    lineExtensionAmountHRCurrencyID = XmlGetChildAttribute(HRLegalMonetaryTotalArray[0], "TaxExclusiveAmount", "currencyID", nsCbc);
+    taxExclusiveAmountHRFormatted = taxExclusiveAmountHR + " " + lineExtensionAmountHRCurrencyID;
+
+    outOfScopeOfVATAmountHR = XmlGetValue(xDoc, "ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/hrextac:HRFISK20Data/hrextac:HRLegalMonetaryTotal/hrextac:OutOfScopeOfVATAmount", nsHrextac);
+    outOfScopeOfVATAmountHRCurrencyID = XmlGetChildAttribute(HRLegalMonetaryTotalArray[0], "OutOfScopeOfVATAmount", "currencyID", nsHrextac);
+    outOfScopeOfVATAmountHRFormatted = outOfScopeOfVATAmountHR + " " + outOfScopeOfVATAmountHRCurrencyID;
+
+    TaxAmountHR = XmlGetValue(xDoc, "ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/hrextac:HRFISK20Data/hrextac:HRTaxTotal/cbc:TaxAmount", nsCbc);
+    HRTaxTotalArray = XmlGetElements(xDoc, "ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/hrextac:HRFISK20Data/hrextac:HRTaxTotal", nsHrextac);
+    taxTotalHRCurrencyID = XmlGetChildAttribute(HRTaxTotalArray[0], "TaxAmount", "currencyID", nsCbc);
+    taxAmountHRFormatted = TaxAmountHR + " " + taxTotalHRCurrencyID;
+
     // -------------------- MONETARY TOTALS --------------------
-    lineExtensionAmount = XmlGetValue(xDoc, "//cac:LegalMonetaryTotal/cbc:LineExtensionAmount", nsCbc);
-    taxExclusiveAmount = XmlGetValue(xDoc, "//cac:LegalMonetaryTotal/cbc:TaxExclusiveAmount", nsCbc);
-    taxInclusiveAmount = XmlGetValue(xDoc, "//cac:LegalMonetaryTotal/cbc:TaxInclusiveAmount", nsCbc);
-    payableAmount = XmlGetValue(xDoc, "//cac:LegalMonetaryTotal/cbc:PayableAmount", nsCbc);
-    
+    LegalMonetaryTotalArray = XmlGetElements(xDoc, "cac:LegalMonetaryTotal", nsCac);
+    lineExtensionAmountCurrencyID = XmlGetChildAttribute(LegalMonetaryTotalArray[0], "LineExtensionAmount", "currencyID", nsCbc);
+    lineExtensionAmount = XmlGetValue(xDoc, "cac:LegalMonetaryTotal/cbc:LineExtensionAmount", nsCbc);
+    lineExtensionAmountFormatted = lineExtensionAmount + " " + lineExtensionAmountCurrencyID;
+
+    taxExclusiveAmountCurrencyID = XmlGetChildAttribute(LegalMonetaryTotalArray[0], "TaxExclusiveAmount", "currencyID", nsCbc);
+    taxExclusiveAmount = XmlGetValue(xDoc, "cac:LegalMonetaryTotal/cbc:TaxExclusiveAmount", nsCbc);
+    taxExclusiveAmountFormatted = taxExclusiveAmount + " " + taxExclusiveAmountCurrencyID;
+
+    taxInclusiveAmountCurrencyID = XmlGetChildAttribute(LegalMonetaryTotalArray[0], "TaxInclusiveAmount", "currencyID", nsCbc);
+    taxInclusiveAmount = XmlGetValue(xDoc, "cac:LegalMonetaryTotal/cbc:TaxInclusiveAmount", nsCbc);
+    taxInclusiveAmountFormatted = taxInclusiveAmount + " " + taxInclusiveAmountCurrencyID;
+
+    allowanceTotalAmountCurrencyID = XmlGetChildAttribute(LegalMonetaryTotalArray[0], "AllowanceTotalAmount", "currencyID", nsCbc);
+    allowanceTotalAmount = XmlGetValue(xDoc, "cac:LegalMonetaryTotal/cbc:AllowanceTotalAmount", nsCbc);
+    allowanceTotalAmountFormatted = allowanceTotalAmount + " " + allowanceTotalAmountCurrencyID;
+
+    chargeTotalAmountCurrencyID = XmlGetChildAttribute(LegalMonetaryTotalArray[0], "ChargeTotalAmount", "currencyID", nsCbc);
+    chargeTotalAmount = XmlGetValue(xDoc, "cac:LegalMonetaryTotal/cbc:ChargeTotalAmount", nsCbc);
+    chargeTotalAmountFormatted = chargeTotalAmount + " " + chargeTotalAmountCurrencyID;
+
+    prepaidAmount = XmlGetValue(xDoc, "cac:LegalMonetaryTotal/cbc:PrepaidAmount", nsCbc);
+    prepaidAmountCurrencyID = XmlGetChildAttribute(LegalMonetaryTotalArray[0], "PrepaidAmount", "currencyID", nsCbc);
+    prepaidAmountFormatted = prepaidAmount + " " + prepaidAmountCurrencyID;
+
+    payableRoundingAmount = XmlGetValue(xDoc, "cac:LegalMonetaryTotal/cbc:PayableRoundingAmount", nsCbc);
+    payableRoundingAmountCurrencyID = XmlGetChildAttribute(LegalMonetaryTotalArray[0], "PayableRoundingAmount", "currencyID", nsCbc);
+    payableRoundingAmountFormatted = payableRoundingAmount + " " + payableRoundingAmountCurrencyID;
+
+    payableAmount = XmlGetValue(xDoc, "cac:LegalMonetaryTotal/cbc:PayableAmount", nsCbc);
+    payableAmountCurrencyID = XmlGetChildAttribute(LegalMonetaryTotalArray[0], "PayableAmount", "currencyID", nsCbc);
+    payableAmountFormatted = payableAmount + " " + payableAmountCurrencyID;
+
     // -------------------- INVOICE LINES --------------------
-    invoiceLines = XmlGetElements(xDoc, "//cac:InvoiceLine", nsCac);
+    invoiceLines = XmlGetElements(xDoc, "cac:" + UBLType + "Line", nsCac);
     lineCount = Size(invoiceLines);
-    
+
     // -------------------- SETUP REPORT --------------------
     
     // Validate template
-    errors = ValidateReportTemplate(strtrim(tpath()) + "repx\\" + "WXeracunPrint_main.repx",
-        // "invoiceID,issueDate,supplierName,customerName,taxAmount,payableAmount"
-        "invoiceID,supplierName,customerName"
-    );
+    errors = ValidateReportTemplate(strtrim(tpath()) + "repx\\" + "WXeracunPrint_main.repx");
     
     if (Size(errors) > 0) {
         MessageBox("Greška validacije predloška e-računa!");
@@ -289,7 +525,11 @@ function LoadInvoice(xDoc) {
     // -------------------- POPULATE REPORT DATA --------------------
     
     // Header data
-    reportTitle = "E-RAČUN / E-INVOICE";
+    if(UBLType == "Invoice"){
+        reportTitle = "E-RAČUN / E-INVOICE";
+    } elif(UBLType == "CreditNote"){
+        reportTitle = "DOBROPIS / CREDIT NOTE";
+    }
     documentType = GetDocumentTypeName(invoiceTypeCode);
     
     // Format dates
@@ -312,9 +552,9 @@ function LoadInvoice(xDoc) {
     bankName = payeeAccountName;
     
     // Amounts
-    subtotal = double(lineExtensionAmount);
-    taxTotal = double(taxAmount);
-    total = double(payableAmount);
+    // subtotal = double(lineExtensionAmount);
+    // taxTotal = double(taxAmount);
+    // total = double(payableAmount);
     
     // Add main invoice record
     OutputReport(reportHandle);
@@ -322,48 +562,196 @@ function LoadInvoice(xDoc) {
     // -------------------- PROCESS INVOICE LINES --------------------
     
     // Setup detail subreport
-    detailReport = SetupReport(strtrim(tpath()) + "repx\\" + "WXeracunPrint_subreport.repx", reportHandle);
-    
+    detailReportArtcles = SetupReport(strtrim(tpath()) + "repx\\" + "WXeracunprint_SubreportArticles.repx", reportHandle);
+    detailReportArticlesDetails = SetupReport(strtrim(tpath()) + "repx\\" + "wxeracunprint_subreportArticlesDetails.repx", detailReportArtcles);
+
     for (i = 0; i < lineCount; i++) {
         linElement = invoiceLines[i];
         
         lineID = XmlGetChildValue(linElement, "ID", nsCbc);
-        invoicedQuantity = XmlGetChildValue(linElement, "InvoicedQuantity", nsCbc);
-        quantityUnit = XmlGetChildAttribute(linElement, "InvoicedQuantity", "unitCode", nsCbc);
+        if(UBLType == "Invoice"){
+            invoicedQuantity = XmlGetChildValue(linElement, "InvoicedQuantity", nsCbc);
+            quantityUnit = XmlGetChildAttribute(linElement, "InvoicedQuantity", "unitCode", nsCbc);
+            // lineExtension = XmlGetChildValue(linElement, "LineExtensionAmount", nsCbc);
+        }elif(UBLType == "CreditNote"){
+            invoicedQuantity = XmlGetChildValue(linElement, "CreditedQuantity", nsCbc);
+            quantityUnit = XmlGetChildAttribute(linElement, "CreditedQuantity", "unitCode", nsCbc);
+            // lineExtension = XmlGetChildValue(linElement, "LineExtensionAmount", nsCbc);
+        }
         lineExtension = XmlGetChildValue(linElement, "LineExtensionAmount", nsCbc);
         
-        // Item data
-        invoiceLinesItem = XmlGetElements(xDoc, "//cac:Item", nsCac);
-        itemName = XmlGetChildValue(invoiceLinesItem[i], "Name", nsCbc);
 
-        itemDescription = XmlGetChildValue(invoiceLinesItem[i], "Description", nsCbc);
+
+        // Item data
+        invoiceLineItem = XmlGetChild(linElement, "Item", nsCac);
+        itemName = XmlGetChildValue(invoiceLineItem, "Name", nsCbc);
+
+        ItemID = XmlGetChildValue(linElement, "ID", nsCbc);
+
+        invoiceLineExtensionAmount  = XmlGetChildValue(linElement, "LineExtensionAmount", nsCbc);
+        invoiceLineExtensionAmountCurrency  = XmlGetChildAttribute(linElement, "LineExtensionAmount", "currencyID", nsCbc);
+        invoiceLineExtensionAmountFormatted = invoiceLineExtensionAmount + " " + invoiceLineExtensionAmountCurrency;
+
+        itemDescription = XmlGetChildValue(invoiceLineItem, "Description", nsCbc);
         
         // Price
-        priceItem = XmlGetElements(xDoc, "//cac:Price", nsCac);
-        priceAmount = XmlGetChildValue(priceItem[i], "PriceAmount", nsCbc);
-        
+        priceItem = XmlGetChild(linElement, "Price", nsCac);
+        priceAmount = XmlGetChildValue(priceItem, "PriceAmount", nsCbc);
+        currencyID = XmlGetChildAttribute(priceItem, "PriceAmount", "currencyID", nsCbc);
+        priceAndPriceType = priceAmount + " " + currencyID;
+
         // Tax
-        classifiedTaxCategoryItem = XmlGetElements(xDoc, "//cac:Item/cac:ClassifiedTaxCategory", nsCac);
-        taxPercent = XmlGetChildValue(classifiedTaxCategoryItem[i], "Percent", nsCbc);  
-        taxCategoryID = XmlGetChildValue(classifiedTaxCategoryItem[i], "ID", nsCbc);
+        classifiedTaxCategoryItem = XmlGetChild(invoiceLineItem, "ClassifiedTaxCategory", nsCac);
+        taxPercent = XmlGetChildValue(classifiedTaxCategoryItem, "Percent", nsCbc);  
+        taxCategoryID = XmlGetChildValue(classifiedTaxCategoryItem, "ID", nsCbc);
+
+        taxschemeItem = XmlGetChild(classifiedTaxCategoryItem, "TaxScheme", nsCac);
+        taxSchemeID = XmlGetChildValue(taxschemeItem, "ID", nsCbc);
+        taxCategoryIDAndTaxSchemeID = taxCategoryID + "-" + taxSchemeID;
      
         // Format values
-        lineNum = int(lineID);
-        quantity = double(invoicedQuantity);
-        unitPrice = double(priceAmount);
-        lineTotal = double(lineExtension);
-        taxRate = double(taxPercent);
+        // lineNum = int(lineID);
+        // quantity = double(invoicedQuantity);
+        // unitPrice = double(priceAmount);
+        // lineTotal = double(lineExtension);
+        // taxRate = double(taxPercent);
         
         // Product info
-        SellersItemIdentificationItem = XmlGetElements(xDoc, "//cac:Item/cac:SellersItemIdentification", nsCac);
-        productCode = XmlGetChildValue(SellersItemIdentificationItem[i], "ID", nsCbc);
+        SellersItemIdentificationItem = XmlGetChild(invoiceLineItem, "SellersItemIdentification", nsCac);
+        productCode = XmlGetChildValue(SellersItemIdentificationItem, "ID", nsCbc);
         productName = (itemName != "" ? itemName : itemDescription);
         unit = (quantityUnit != "" ? quantityUnit : "kom");
+        OutputReport(detailReportArtcles);
 
-        // Output line
-        OutputReport(detailReport);
-    }
+        // -------------------- INVOICE DETAILS LINES --------------------    
+        // Setup detail subreport(7) for line details
+        
+        baseQuantity  = XmlGetChildValue(priceItem, "BaseQuantity", nsCbc);
+        baseQuantityUnitCode = XmlGetChildAttribute(priceItem, "BaseQuantity", "unitCode", nsCbc);
+        
+        allowanceChargeItem = XmlGetChild(linElement, "AllowanceCharge", nsCac);
+        allowanceChargeReason = XmlGetChildValue(allowanceChargeItem, "AllowanceChargeReason", nsCbc);
+        
+        allowanceChargeAmount = XmlGetChildValue(allowanceChargeItem, "Amount", nsCbc);
+        allowanceChargeAmountCurrency  = XmlGetChildAttribute(allowanceChargeItem, "Amount", "currencyID", nsCbc);
+        allowanceChargeAmountFormatted = allowanceChargeAmount + " " + allowanceChargeAmountCurrency;
+        
+        allowanceChargeBaseAmount = XmlGetChildValue(allowanceChargeItem, "BaseAmount", nsCbc);
+        allowanceChargeBaseAmountCurrency  = XmlGetChildAttribute(allowanceChargeItem, "BaseAmount", "currencyID", nsCbc);
+        allowanceChargeBaseAmountFormatted = allowanceChargeBaseAmount + " " + allowanceChargeBaseAmountCurrency;
+
+        commodityClassificationItem = XmlGetChild(invoiceLineItem, "CommodityClassification", nsCac);
+        itemClassificationCode = XmlGetChildValue(commodityClassificationItem, "ItemClassificationCode", nsCbc);
+        itemClassificationCodeListID = XmlGetChildAttribute(commodityClassificationItem, "ItemClassificationCode", "listID", nsCbc);
+        SellersItemIdentificationID = XmlGetChildValue(SellersItemIdentificationItem, "ID", nsCac);
+        invoiceLineNote = XmlGetChildValue(linElement, "Note", nsCbc);
+
     
+        OutputReport(detailReportArticlesDetails);
+    }
+
+    // -------------------- PROCESS TAX SUBTOTALS --------------------
+
+    // Setup detail subreport 2
+    detailReportPDV = SetupReport(strtrim(tpath()) + "repx\\" + "wxeracunprint_subreportPDV.repx", reportHandle);
+    
+    for (i = 0; i < taxSubtotalCount; i++) {
+        taxSubtotal = taxSubtotals[i];
+          
+        taxableAmount = XmlGetChildValue(taxSubtotal, "TaxableAmount", nsCbc);
+        taxableAmountCurrencyID = XmlGetChildAttribute(taxSubtotal, "TaxableAmount", "currencyID", nsCbc);
+        taxableAmountFormatted = taxableAmount + " " + taxableAmountCurrencyID;
+        
+        TaxCategoryItem = XmlGetChild(taxSubtotal, "TaxCategory", nsCac);
+        taxPercentPDV = XmlGetChildValue(TaxCategoryItem, "Percent", nsCbc);
+        taxExemptionReasonPDV = XmlGetChildValue(TaxCategoryItem, "TaxExemptionReason", nsCbc);
+
+        taxAmountPDV  = XmlGetChildValue(taxSubtotal, "TaxAmount", nsCbc);
+        taxAmountPDVCurrencyID = XmlGetChildAttribute(taxSubtotal, "TaxAmount", "currencyID", nsCbc);
+        taxAmountPDVFormatted = taxAmountPDV + " " + taxAmountPDVCurrencyID;
+
+        taxschemePDVItem = XmlGetChild(TaxCategoryItem, "TaxScheme", nsCac);
+        taxSchemePDVID = XmlGetChildValue(taxschemePDVItem, "ID", nsCbc);
+        taxCategoryPDVID = XmlGetChildValue(TaxCategoryItem, "ID", nsCbc);
+        taxCategoryPDVIDAndTaxSchemeID = taxCategoryPDVID + "-" + taxSchemePDVID;
+
+        OutputReport(detailReportPDV);
+    }
+    // -------------------- PROCESS HR TAX SUBTOTALS --------------------
+
+    // Setup detail subreport 3
+    detailReportHRPDV = SetupReport(strtrim(tpath()) + "repx\\" + "wxeracunprint_subreportHRPDV.repx", reportHandle);
+    
+    for (i = 0; i < taxHRSubtotalsCount; i++) {
+        taxHRSubtotal = taxHRSubtotals[i];
+          
+        HRtaxableAmount = XmlGetChildValue(taxHRSubtotal, "TaxableAmount", nsCbc);
+        HRtaxableAmountCurrencyID = XmlGetChildAttribute(taxHRSubtotal, "TaxableAmount", "currencyID", nsCbc);
+        HRtaxableAmountFormatted = HRtaxableAmount + " " + HRtaxableAmountCurrencyID;
+        
+        HRTaxCategoryItem = XmlGetChild(taxHRSubtotal, "HRTaxCategory", nsHrextac);
+        HRtaxNamePDV = XmlGetChildValue(HRTaxCategoryItem, "Name", nsCbc);
+        HRtaxPercentPDV = XmlGetChildValue(HRTaxCategoryItem, "Percent", nsCbc);
+        HRtaxExemptionReasonPDV = XmlGetChildValue(HRTaxCategoryItem, "TaxExemptionReason", nsCbc);
+       
+        HRtaxAmountPDV  = XmlGetChildValue(taxHRSubtotal, "TaxAmount", nsCbc);
+        HRtaxAmountPDVCurrencyID = XmlGetChildAttribute(taxHRSubtotal, "TaxAmount", "currencyID", nsCbc);
+        HRtaxAmountPDVFormatted = HRtaxAmountPDV + " " + HRtaxAmountPDVCurrencyID;
+
+        HRtaxschemePDVItem = XmlGetChild(HRTaxCategoryItem, "HRTaxScheme", nsHrextac);
+        HRtaxSchemePDVID = XmlGetChildValue(HRtaxschemePDVItem, "ID", nsCbc);
+        HRtaxCategoryPDVID = XmlGetChildValue(HRTaxCategoryItem, "ID", nsCbc);
+        HRtaxCategoryPDVIDAndTaxSchemeID = HRtaxCategoryPDVID + "-" + HRtaxSchemePDVID;
+
+        OutputReport(detailReportHRPDV);
+    }
+    // -------------------- PROCESS PAYEE FINANCIAL ACCOUNTS (IBAN) --------------------
+
+    // Setup detail subreport 4
+    detailReportIBAN = SetupReport(strtrim(tpath()) + "repx\\" + "wxeracunprint_subreportIBAN.repx", reportHandle);
+    
+    for (i = 0; i < payeeFinancialAccountCount; i++) {
+        payeeFinancialAccount = payeeFinancialAccounts[i];
+
+        payeeFinancialAccountID = XmlGetChildValue(payeeFinancialAccount, "ID", nsCbc);
+        payeeFinancialAccountName = XmlGetChildValue(payeeFinancialAccount, "Name", nsCbc);
+
+        OutputReport(detailReportIBAN);
+    }
+
+    // -------------------- NOTES --------------------
+    
+    // Setup detail subreport 5
+    detailReportNotes = SetupReport(strtrim(tpath()) + "repx\\" + "wxeracunprint_subreportNote.repx", reportHandle);
+     
+    notesArray = XmlGetElements(xDoc, "cbc:Note", nsCbc);
+    notesArrayCount = Size(notesArray);
+    
+    for (i = 0; i < notesArrayCount; i++) {
+        note = XmlGetElementValue(notesArray[i]);
+        OutputReport(detailReportNotes);
+    }
+
+    // -------------------- ATTACHMENTS --------------------
+    
+    // Setup detail subreport 6
+    detailReportAttachments = SetupReport(strtrim(tpath()) + "repx\\" + "wxeracunprint_subreportAttachments.repx", reportHandle);
+    
+    additionalDocuments = XmlGetElements(xDoc, "cac:AdditionalDocumentReference", nsCac);
+    additionalDocumentsCount = Size(additionalDocuments);
+    PrilogCount = 0;
+    for (i = 0; i < additionalDocumentsCount; i++) {
+        additionalDocument = additionalDocuments[i];
+
+        documentReferenceID = XmlGetChildValue(additionalDocument, "ID", nsCbc);
+        documentDescription = XmlGetChildValue(additionalDocument, "DocumentDescription", nsCbc);
+        additionalDocumentItem = XmlGetChild(additionalDocument, "Attachment", nsCac);
+        embeddedDocumentBinaryObjectFileName = XmlGetChildAttribute(additionalDocumentItem, "EmbeddedDocumentBinaryObject","filename", nsCbc);
+        embeddedDocumentBinaryObjectMimeCode = XmlGetChildAttribute(additionalDocumentItem, "EmbeddedDocumentBinaryObject","mimeCode", nsCbc);
+        PrilogCount++;
+        OutputReport(detailReportAttachments);
+    }
+
     return true;
 }
 
@@ -374,11 +762,11 @@ function LoadCreditNote(xDoc) {
     return false;
 }
 
-function LoadDebitNote(xDoc) {
-    // Similar to LoadInvoice but for DebitNote
-    MessageBox("DebitNote tip dokumenta - u razvoju.");
-    return false;
-}
+// function LoadDebitNote(xDoc) {
+//     // Similar to LoadInvoice but for DebitNote
+//     MessageBox("DebitNote tip dokumenta - u razvoju.");
+//     return false;
+// }
 
 // -------------------- HELPER FUNCTIONS --------------------
 
@@ -416,4 +804,3 @@ function ParseDouble(str) {
 
 // -------------------- MAIN ENTRY POINT --------------------
 
-InitializeGUI();

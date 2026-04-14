@@ -2453,7 +2453,7 @@ namespace WpfCSCS
 			{
 				return;
 			}
-			if (((Control)e.NewFocus) != null)
+			if ((e.NewFocus is Control) && (Control)e.NewFocus != null)
 				LastObjWidgetName = ((Control)e.NewFocus).Name;
 
 			if ((Control)sender is Button)

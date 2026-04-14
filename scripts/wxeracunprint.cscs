@@ -1,6 +1,88 @@
 ﻿// ========================================================================
 // WXeracunPrint.cscs - Croatian UBL 2.1 E-Invoice XML Viewer & Printer
 // ========================================================================
+// OVERVIEW:
+// This script is a complete  e-invoice processing system that parses UBL 2.1
+// XML documents (specifically Croatian AuraSoft outgoing invoices) and generates
+// formatted multi-part reports for viewing, printing, and PDF export.
+//
+// PRIMARY FUNCTIONS:
+// 1. LoadInvoiceFromXML(xmlPath) - Entry point for XML loading and parsing
+// 2. LoadDocument(xDoc, UBLType) - Main data extraction and report generation
+// 3. InitializeGUI() - Sets up interactive GUI for file selection
+//
+// DATA FLOW:
+// xmlPath (file) -> ReadAllText() -> XmlParse() -> LoadDocument() -> 
+// XmlGetValue/XmlGetElements/XmlGetChild* (extract data) -> 
+// SetupReport() + OutputReport() (populate report) -> PrintReport/ExportReport
+//
+// ENTRY MODES:
+// 1. INTERACTIVE: Run without params -> InitializeGUI() loads wxeracunprint.xaml GUI
+// 2. COMMAND-LINE: Pass xmlPath param -> Direct load and print
+//
+// PARAMETER SUPPORT:
+// PARAM xmlPath - Optional XML file path for direct loading
+// PARAM pdfPath - Optional PDF export path (currently parsed but not used)
+//
+// KEY DATA STRUCTURES:
+// - xDoc: Parsed XDocument (XPath-queryable XML structure)
+// - invoiceLines[]: Array of InvoiceLine elements
+// - taxSubtotals[]: Array of tax breakdown records
+// - payeeFinancialAccounts[]: Array of IBAN/bank accounts
+// - Namespace variables: nsCbc, nsCac, nsExt, nsHrextac (UBL URI mappings)
+//
+// REPORT STRUCTURE:
+// Main Report: wxeracunprint_main.repx (header info, supplier, customer, totals)
+// ├─ Detail Report 1: WXeracunprint_SubreportArticles.repx (invoice lines)
+// │  └─ Detail Report 1a: wxeracunprint_subreportArticlesDetails.repx (line details)
+// ├─ Detail Report 2: wxeracunprint_subreportPDV.repx (standard tax subtotals)
+// ├─ Detail Report 3: wxeracunprint_subreportHRPDV.repx (HR-specific taxes)
+// ├─ Detail Report 4: wxeracunprint_subreportIBAN.repx (payment bank accounts)
+// ├─ Detail Report 5: wxeracunprint_subreportNote.repx (invoice notes)
+// └─ Detail Report 6: wxeracunprint_subreportAttachments.repx (binary attachments)
+//
+// NAMESPACE SUPPORT:
+// Supports UBL 2.1 standard namespaces:
+// - cbc (CommonBasicComponents): Simple typed fields (ID, Name, Amount, etc.)
+// - cac (CommonAggregateComponents): Complex structures (Party, Address, etc.)
+// - ext (CommonExtensionComponents): Extension mechanisms
+// - hrextac: Croatian AuraSoft-specific tax fields and calculations
+//
+// DOCUMENT TYPES SUPPORTED:
+// - Invoice (Račun)
+// - CreditNote (Dobropis)
+// - DebitNote (Terećenje) [structure in place, message not implemented]
+//
+// EXTRACTED DATA CATEGORIES:
+// HEADER: invoiceID, dates (issue, due, taxPoint), type, currency
+// SUPPLIER: name, registration, ID, address, VAT, contact, endpoint
+// CUSTOMER: name, registration, ID, address, VAT, contact, email, endpoint
+// PAYMENT: means code, payment ID, instruction, bank accounts (IBAN)
+// DELIVERY: party info, address, location ID, delivery date
+// TAX: standard totals, line-item taxes, HR-specific tax extensions
+// MONETARY: line extension, tax-exclusive/inclusive, allowances, charges, prepaid, payable
+// LINE ITEMS: ID, quantity, unit, description, price, tax rate, commodity class
+// ADDITIONAL: notes, attachments (binary documents with metadata)
+//
+// ERROR HANDLING:
+// - Validates XML parsing (returns error string on failure)
+// - Validates report templates against schema
+// - MessageBox alerts for user interaction
+// - Try-catch for exception handling with user feedback
+//
+// GLOBAL STATE:
+// xmlFilePath - Currently loaded file path (used for PDF export naming)
+// reportHandle - Active report object handle (0 = uninitialized)
+// detailReport* variables - Subreport handles (cleaned up in OnCloseClick)
+//
+// DEPENDENCIES:
+// - CSCS.Math.dll (imported at runtime)
+// - wxeracunprint.xaml (WPF GUI markup)
+// - 8 .repx report template files (located in scripts/repx/ subdirectory)
+// - XML Functions: XmlParse, XmlGetRootName, XmlGetValue, XmlGetElements,
+//   XmlGetChild, XmlGetChildValue, XmlGetChildAttribute, XmlGetElementValue
+//
+// ========================================================================
 
 // Global variables
 xmlFilePath = "";

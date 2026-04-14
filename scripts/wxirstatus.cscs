@@ -1210,6 +1210,9 @@ function AddFinalRacunToFilteredArrays(iFinal){
 //-----------------------------------------------------------
 
 function datagridListaRacuna@select(){
+    
+    Cursor("wait");
+
     try{
         invoiceArray = GetSelectedGridRow("datagridListaRacuna");
         
@@ -1244,6 +1247,8 @@ function datagridListaRacuna@select(){
         // !!! LOG !!!
         exit;
     }
+
+    Cursor("dflt");
 }
 
 

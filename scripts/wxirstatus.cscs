@@ -1205,36 +1205,46 @@ function AddFinalRacunToFilteredArrays(iFinal){
     arrayFilteredRbr[RbrFiltered] = ++RbrFiltered;
 }
 
+
+
+//-----------------------------------------------------------
+
 function datagridListaRacuna@select(){
-    invoiceArray = GetSelectedGridRow("datagridListaRacuna");
-    invoiceID = invoiceArray[11];
-
-    tempXmlFolder = FILESPATH + "IRStatus\\" + "TempXml\\";
-    if (!Exists(tempXmlFolder)) {
-        MkDir(tempXmlFolder);
-    }
-
-    if(invoiceID != ""){
-        if(PROVIDER == "MER" || PROVIDER == "MERDEMO"){
-            isDownloaded = MER_DownloadTempXml(invoiceID);   
-        } elif(PROVIDER == "FINA" || PROVIDER == "FINADEMO"){
-            isDownloaded = FINA_DownloadTempXml(invoiceID);  
-        } else {
-            MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA, MERDEMO, FINADEMO");
-            exit;
+    try{
+        invoiceArray = GetSelectedGridRow("datagridListaRacuna");
+        
+        if(Size(invoiceArray) <=  11){
+            return;
         }
-    }
 
-    //pozvat wxeracunprint.cscs skriptu
-    if(isDownloaded){
-        CHAIN strtrim(tpath())+"\\wxeracunprint.cscs" WITH xmlFilePath, pdfFilePath;
+        invoiceID = invoiceArray[11];
+
+        tempFolder = FILESPATH + "IRStatus\\" + "Temp\\" + userCode + "\\";
+        if (!Exists(tempFolder)) {
+            MkDir(tempFolder);
+        }
+
+        if(invoiceID != ""){
+            if(PROVIDER == "MER" || PROVIDER == "MERDEMO"){
+                isDownloaded = MER_DownloadTempXml(invoiceID);   
+            } elif(PROVIDER == "FINA" || PROVIDER == "FINADEMO"){
+                isDownloaded = FINA_DownloadTempXml(invoiceID);  
+            } else {
+                MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA, MERDEMO, FINADEMO");
+                exit;
+            }
+
+            //pozvat wxeracunprint.cscs skriptu
+            if(isDownloaded){
+                CHAIN strtrim(tpath())+"\\wxeracunprint.cscs" NEWRUNTIME WITH xmlFilePath, pdfFilePath;
+            }
+        }
+    }catch(ex){
+        MessageBox("Greška prilikom selektiranja računa:\n" + ex);
+        // !!! LOG !!!
+        exit;
     }
 }
-
-function MER_DownloadTempXml(_invoiceID){
-    Mbox("TREBA IMPLEMENTIRATI!");
-}
-
 
 
 function FINA_DownloadTempXml(_invoiceID){
@@ -1256,8 +1266,9 @@ function FINA_DownloadTempXml(_invoiceID){
             return false;
         }
 
-        xmlFilePath = tempXmlFolder + "temp.xml";
-        pdfFilePath = tempXmlFolder + "temp.pdf";
+        uuid = UUID();
+        xmlFilePath = tempFolder + uuid + ".xml";
+        pdfFilePath = tempFolder + uuid + ".pdf";
 
         //Save XML
         SaveFile(ack["ItemContent"], xmlFilePath);
@@ -1275,3 +1286,21 @@ function FINA_DownloadTempXml(_invoiceID){
     }
 }
 
+function MER_DownloadTempXml(_invoiceID){
+    Mbox("TREBA IMPLEMENTIRATI!");
+}
+
+
+
+function wxirstatus_OnClose(){
+    // Cleanup temp files
+    try{
+        tempFolder = FILESPATH + "IRStatus\\" + "Temp\\" + userCode + "\\";
+        if(Exists(tempFolder)){
+            Delete(tempFolder);
+        }
+    }catch(ex){
+        MessageBox("Greška prilikom čišćenja temp foldera:\n" + ex);
+        // !!! LOG !!!
+    }
+}

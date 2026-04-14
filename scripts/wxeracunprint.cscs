@@ -2,13 +2,24 @@
 // WXeracunPrint.cscs - Croatian UBL 2.1 E-Invoice XML Viewer & Printer
 // ========================================================================
 
-PARAM xmlPath,pdfPath;
-
-Import(strTrim(mpath()) + "CSCS.Math.dll");
-
 // Global variables
 xmlFilePath = "";
 reportHandle = 0;
+
+
+PARAM xmlPath,pdfPath;
+if(xmlPath != "" && Exists(xmlPath)){
+    LoadInvoiceFromXML(xmlPath);
+    PrintReport(reportHandle, 1);
+}
+else{
+    InitializeGUI();
+}
+
+
+Import(strTrim(mpath()) + "CSCS.Math.dll");
+
+
 
 // -------------------- INITIALIZE GUI --------------------
 function InitializeGUI() {
@@ -711,4 +722,3 @@ function ParseDouble(str) {
 
 // -------------------- MAIN ENTRY POINT --------------------
 
-InitializeGUI();

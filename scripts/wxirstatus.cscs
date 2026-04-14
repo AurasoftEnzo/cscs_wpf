@@ -18,7 +18,7 @@ DEFINE arrayWinxOibKupca type a size 11 array 10000;
 
 DEFINE arrayWinxStatusRacuna type a size 100 array 10000;
 
-DEFINE arrayWinxDatumSlanja type a size 10 array 10000;
+DEFINE arrayWinxDatumSlanja type d size 8 array 10000;
 
 
 //provider arrays
@@ -28,7 +28,7 @@ DEFINE arrayProviderOibKupca type a size 11 array 10000;
 DEFINE arrayProviderStatusRacuna type a size 100 array 10000;
 // DEFINE arrayProviderDatumIzdavanja type a size 10 array 10000;
 DEFINE arrayProviderDatumIzdavanja type d size 8 array 10000;
-DEFINE arrayProviderDatumKnjizenja type a size 10 array 10000;
+DEFINE arrayProviderDatumKnjizenja type d size 8 array 10000;
 DEFINE arrayProviderBrojRacuna type a size 50 array 10000;
 
 DEFINE arrayProviderBrojRacunaFina type a size 50 array 10000;
@@ -52,7 +52,7 @@ DEFINE arrayFinalOibKupca type a size 11 array 10000;
 DEFINE arrayFinalStatusRacuna type a size 100 array 10000;
 // DEFINE arrayFinalDatumIzdavanja type a size 10 array 10000;
 DEFINE arrayFinalDatumIzdavanja type d size 8 array 10000;
-DEFINE arrayFinalDatumKnjizenja type a size 10 array 10000;
+DEFINE arrayFinalDatumKnjizenja type d size 8 array 10000;
 DEFINE arrayFinalBrojRacuna type a size 50 array 10000;
 
 DEFINE arrayFinalBrojRacunaFina type a size 50 array 10000;
@@ -67,7 +67,7 @@ DEFINE arrayFinalPlaceno type a size 50 array 10000;
 DEFINE arrayFinalZaPlacanje type n size 14 dec 2 array 10000;
 
 
-DEFINE arrayFinalDatumSlanja type a size 10 array 10000;
+DEFINE arrayFinalDatumSlanja type d size 8 array 10000;
 
 
 // display (filtered) arrays
@@ -77,7 +77,7 @@ DEFINE arrayFilteredOibKupca type a size 11 array 10000;
 DEFINE arrayFilteredStatusRacuna type a size 100 array 10000;
 // DEFINE arrayFilteredDatumIzdavanja type a size 10 array 10000;
 DEFINE arrayFilteredDatumIzdavanja type d size 8 array 10000;
-DEFINE arrayFilteredDatumKnjizenja type a size 10 array 10000;
+DEFINE arrayFilteredDatumKnjizenja type d size 8 array 10000;
 DEFINE arrayFilteredBrojRacuna type a size 50 array 10000;
 
 DEFINE arrayFilteredBrojRacunaFina type a size 50 array 10000;
@@ -92,7 +92,7 @@ DEFINE arrayFilteredPlaceno type a size 50 array 10000;
 DEFINE arrayFilteredZaPlacanje type n size 14 dec 2 array 10000;
 
 
-DEFINE arrayFilteredDatumSlanja type a size 10 array 10000;
+DEFINE arrayFilteredDatumSlanja type d size 8 array 10000;
 //-----------------------------------------------------------
 
 DEFINE OIBFilter type a size 20;
@@ -123,16 +123,21 @@ doubleToday = Math.Trunc(DateTimeToDouble(dtNow));
 FilterDateFrom = DoubleToDateTime(doubleToday - 30).ToString("yyyy-MM-dd");
 FilterDateTo = DoubleToDateTime(doubleToday + 7).ToString("yyyy-MM-dd");
 
+
+lastFilterDateFrom = FilterDateFrom;
+lastFilterDateTo = FilterDateTo;
+prikazano = false;
+
 //-----------------------------------------------------------
 function DisableBtns(){
     SetWidgetOptions("btnPrikazi", "IsEnabled", "false");
-    SetWidgetOptions("btnOsvjezi", "IsEnabled", "false");
+    // SetWidgetOptions("btnOsvjezi", "IsEnabled", "false");
     SetWidgetOptions("Export2XLSX", "IsEnabled", "false");
 }
 
 function EnableBtns(){
     SetWidgetOptions("btnPrikazi", "IsEnabled", "true");
-    SetWidgetOptions("btnOsvjezi", "IsEnabled", "true");
+    // SetWidgetOptions("btnOsvjezi", "IsEnabled", "true");
     SetWidgetOptions("Export2XLSX", "IsEnabled", "true");
 }
 //-----------------------------------------------------------
@@ -779,10 +784,10 @@ function AddRacunToProviderArrays(supplierName, supplierId, datumIzdavanja, datu
     arrayProviderKupac[RbrProvider] = supplierName;
     arrayProviderOibKupca[RbrProvider] = supplierId;
     arrayProviderStatusRacuna[RbrProvider] = statusRacuna;
-    // arrayProviderDatumIzdavanja[RbrProvider] = datumIzdavanja.ToString("dd/MM/yy");
-    arrayProviderDatumKnjizenja[RbrProvider] = datumKnjizenja.ToString("dd/MM/yy");
+    
+    arrayProviderDatumKnjizenja[RbrProvider] = datumKnjizenja;
     arrayProviderDatumIzdavanja[RbrProvider] = datumIzdavanja;
-    // arrayProviderDatumKnjizenja[RbrProvider] = DateTime(datumKnjizenja);
+
     arrayProviderBrojRacuna[RbrProvider] = supplierInvoiceId;
     
     arrayProviderIdRacunaPosrednika[RbrProvider] = eRacunBrojRacuna;
@@ -817,7 +822,7 @@ function AddRacunToWinxArrays(brojRacuna, kupac, oibKupca, datumSlanja, statusRa
     arrayWinxKupac[RbrWinx] = kupac;
     arrayWinxOibKupca[RbrWinx] = oibKupca;
 
-    arrayWinxDatumSlanja[RbrWinx] = datumSlanja.ToString("yyyy-MM-dd") == "1900-01-01" ? "" : datumSlanja.ToString("dd/MM/yy");
+    arrayWinxDatumSlanja[RbrWinx] = datumSlanja.ToString("yyyy-MM-dd") == "1900-01-01" ? "" : datumSlanja;
     
     arrayWinxStatusRacuna[RbrWinx] = statusRacuna;
 
@@ -939,26 +944,36 @@ function JoinProviderRacunToFinalArrays(iFinal, iProvider){
 //-----------------------------------------------------------
 
 function btnPrikazi@clicked(){
-    cntr1 = 0;
-    RbrWinx = 0;
-    RbrProvider = 0;
-    RbrFinal = 0;
-
-    progress = 0;
-
     cursor("wait");
     DisplayArray("datagridListaRacuna", "close");
     DisableBtns();
     // SetWidgetOptions("StatusLabel", "Content", "Preuzimam listu izlaznih e-računa.");
     // SetWidgetOptions("StatusLabel2", "Content", "Molim pričekajte...");
 
-    AsyncCall("prikazi", "prikaziEnd");   
+    AsyncCall("prikazi", "prikaziEnd");
 }
 
 function prikazi(){
-    getWinxList();
-    getProviderList();
-    joinDataWithWinx();
+    if(lastFilterDateFrom.ToString("yyyy-MM-dd") != FilterDateFrom.ToString("yyyy-MM-dd") 
+    || lastFilterDateTo.ToString("yyyy-MM-dd") != FilterDateTo.ToString("yyyy-MM-dd") 
+    || prikazano == false){
+
+        cntr1 = 0;
+        RbrWinx = 0;
+        RbrProvider = 0;
+        RbrFinal = 0;
+
+        progress = 0;
+        
+        getWinxList();
+        getProviderList();
+        joinDataWithWinx();  
+
+        lastFilterDateTo = FilterDateTo;
+        lastFilterDateFrom = FilterDateFrom;
+        prikazano = true;
+    }
+    
     RunOnMain("btnOsvjezi@clicked");
 }
 
@@ -1127,6 +1142,8 @@ function EndExport2XLSX(){
     }
 }
 
+//-----------------------------------------------------------
+
 function btnOsvjezi@clicked(){
     try{
         Cursor("wait");
@@ -1239,7 +1256,7 @@ function datagridListaRacuna@select(){
 
             //pozvat wxeracunprint.cscs skriptu
             if(isDownloaded){
-                CHAIN strtrim(tpath())+"\\wxeracunprint.cscs" NEWRUNTIME WITH xmlFilePath, pdfFilePath;
+                CHAIN strtrim(tpath())+"\\wxeracunprint.cscs" WITH xmlFilePath, pdfFilePath;
             }
         }
     }catch(ex){

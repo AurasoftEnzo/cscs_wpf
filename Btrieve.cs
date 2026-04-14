@@ -7487,17 +7487,19 @@ $@"EXECUTE sp_executesql N'
                                 case "DateTime":
                                     if (defVar.Size == 8)
                                     {
-                                        if (DateTime.TryParseExact(current.AsString(), "dd/MM/yy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTime))
-                                        {
-                                            currentRow[column.Key] = dateTime;
-                                        }
+                                        //if (DateTime.TryParseExact(current.AsString(), "dd/MM/yy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTime))
+                                        //{
+                                        //    currentRow[column.Key] = dateTime;
+                                        //}
+                                        currentRow[column.Key] = current.DateTime;
                                     }
                                     else if (defVar.Size == 10)
                                     {
-                                        if (DateTime.TryParseExact(current.AsString(), "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTime))
-                                        {
-                                            currentRow[column.Key] = dateTime;
-                                        }
+                                        //if (DateTime.TryParseExact(current.AsString(), "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTime))
+                                        //{
+                                        //    currentRow[column.Key] = dateTime;
+                                        //}
+                                        currentRow[column.Key] = current.DateTime;
                                     }
                                     break;
                                 case "TimeSpan":

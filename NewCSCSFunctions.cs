@@ -163,6 +163,7 @@ namespace WpfCSCS
             interpreter.RegisterFunction("FINA_B2B_ECHO_BUYER", new FINA_B2B_ECHO_BUYERFunction());
             interpreter.RegisterFunction("FINA_GET_B2B_INCOMING_INVOICE_LIST", new FINA_GET_B2B_INCOMING_INVOICE_LISTFunction());
             interpreter.RegisterFunction("FINA_GET_B2B_INCOMING_INVOICE", new FINA_GET_B2B_INCOMING_INVOICEFunction());
+            interpreter.RegisterFunction("FINA_GET_B2B_OUTGOING_INVOICE", new FINA_GET_B2B_OUTGOING_INVOICEFunction());
             interpreter.RegisterFunction("FINA_CHANGE_B2B_INCOMING_INVOICE_STATUS", new FINA_CHANGE_B2B_INCOMING_INVOICE_STATUSFunction());
             interpreter.RegisterFunction("FINA_CHANGE_B2B_OUTGOING_INVOICE_STATUS", new FINA_CHANGE_B2B_OUTGOING_INVOICE_STATUSFunction());
             interpreter.RegisterFunction("FINA_GET_B2B_OUTGOING_INVOICE_LIST", new FINA_GET_B2B_OUTGOING_INVOICE_LISTFunction());
@@ -5970,6 +5971,38 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
 
                 messageId,
                 buyerId,
+                invoiceId);
+
+            return resVar;
+        }
+    }
+    
+    class FINA_GET_B2B_OUTGOING_INVOICEFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 8, m_name);
+
+            var endpoint = Utils.GetSafeString(args, 0);
+            var dnsIdentity = Utils.GetSafeString(args, 1);
+            var serviceCertificatePath = Utils.GetSafeString(args, 2);
+            var clientCertificatePath = Utils.GetSafeString(args, 3);
+            var clientCertificatePassword = Utils.GetSafeString(args, 4);
+
+            var messageId = Utils.GetSafeString(args, 5);
+            var supplierId = Utils.GetSafeString(args, 6);
+            var invoiceId = Utils.GetSafeString(args, 7);
+
+            Variable resVar = new Fiskalizacija2.FINA.B2BIncoming.GetOutgoingInvoice().Send(
+                endpoint,
+                dnsIdentity,
+                serviceCertificatePath,
+                clientCertificatePath,
+                clientCertificatePassword,
+
+                messageId,
+                supplierId,
                 invoiceId);
 
             return resVar;

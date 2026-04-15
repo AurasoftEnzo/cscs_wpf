@@ -1,4 +1,6 @@
-﻿Import(strTrim(mpath()) + "CSCS.Math.dll");
+﻿include(strtrim(tpath()) + "wxeracunprintlib.cscs");
+
+Import(strTrim(mpath()) + "CSCS.Math.dll");
 
 CreateWindow(strTrim(tpath()) + "wxirstatus.xaml", strTrim(ipath()) + "icons\\" + "wxirstatus.ico");
 // CreateWindow(strTrim(tpath()) + "wxirstatus.xaml");
@@ -974,18 +976,27 @@ function prikazi(){
         prikazano = true;
     }
     
-    RunOnMain("btnOsvjezi@clicked");
+    // RunOnMain("btnOsvjezi@clicked");
+    filter();
 }
 
 function prikaziEnd(){
-    // cursor("dflt");
+    if(RbrFiltered != 0){
+        DisplayArraySetup("datagridListaRacuna", counterFld: cntr1, activeElements: RbrFiltered, maxElements: 10000);
+    }
+    EnableBtns();
+    Cursor("dflt");
+
+    SetWidgetOptions("btnPrikazi", "Content", "Prikaži");
+
     // if(RbrFinal != 0){
     //     DisplayArraySetup("datagridListaRacuna", counterFld: cntr1, activeElements: RbrFinal, maxElements: 10000);
     // }
     // EnableBtns();
     // SetWidgetOptions("StatusLabel", "Content", "");
     // SetWidgetOptions("StatusLabel2", "Content", "");
-    SetWidgetOptions("btnPrikazi", "Content", "Prikaži");
+
+    
 }
 
 function LogResponse(responseCode, response) {
@@ -1142,20 +1153,18 @@ function EndExport2XLSX(){
     }
 }
 
-//-----------------------------------------------------------
+// function btnOsvjezi@clicked(){
+//     try{
+//         // Cursor("wait");
+//         // DisableBtns();
+//         // DisplayArray("datagridListaRacuna", "close");
 
-function btnOsvjezi@clicked(){
-    try{
-        Cursor("wait");
-        DisableBtns();
-        DisplayArray("datagridListaRacuna", "close");
-
-        AsyncCall("filter", "endFilter");
-    }catch(ex){
-        MessageBox("Greška prilikom osvježavanja:\n" + ex);
-        // !!! LOG !!!
-    }
-}
+//         AsyncCall("filter", "endFilter");
+//     }catch(ex){
+//         MessageBox("Greška prilikom osvježavanja:\n" + ex);
+//         // !!! LOG !!!
+//     }
+// }
 
 function filter(){
     RbrFiltered = 0;
@@ -1187,13 +1196,6 @@ function filter(){
     }
 }
 
-function endFilter(){
-    if(RbrFiltered != 0){
-        DisplayArraySetup("datagridListaRacuna", counterFld: cntr1, activeElements: RbrFiltered, maxElements: 10000);
-    }
-    EnableBtns();
-    Cursor("dflt");
-}
 
 function AddFinalRacunToFilteredArrays(iFinal){
     arrayFilteredKupac[RbrFiltered] = arrayFinalKupac[iFinal];
@@ -1256,7 +1258,15 @@ function datagridListaRacuna@select(){
 
             //pozvat wxeracunprint.cscs skriptu
             if(isDownloaded){
-                CHAIN strtrim(tpath())+"\\wxeracunprint.cscs" WITH xmlFilePath, pdfFilePath;
+                printScriptPath = tpath()+"wxeracunprint.cscs";
+                // CHAIN printScriptPath NEWRUNTIME WITH xmlFilePath pdfFilePath;
+
+                reportHandle = 0;
+                LoadInvoiceFromXML(xmlFilePath);
+                PrintReport(reportHandle, 1);
+
+
+                //RunExec(tpath()+"wxeracunprint.cscs", xmlFilePath, pdfFilePath);
             }
         }
     }catch(ex){

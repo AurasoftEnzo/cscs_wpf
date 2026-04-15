@@ -1,6 +1,7 @@
 //using CefSharp.DevTools.FedCm;
 using CSCS.InterpreterManager;
 using LiveChartsCore.SkiaSharpView.WPF;
+using Microsoft.Extensions.Primitives;
 using SplitAndMerge;
 using System;
 using System.Collections.Generic;
@@ -6916,12 +6917,18 @@ namespace WpfCSCS
 			while (script.StillValid() && script.TryCurrent() != end)
 			{
 				var token = Utils.GetBodyBetween(script, '\0', ' ', end);
-				if (token.Equals(Constants.WITH, StringComparison.OrdinalIgnoreCase) && sb.ToString().Last() == replaceChar)
+
+                if (token.Equals(Constants.WITH, StringComparison.OrdinalIgnoreCase) && sb.ToString().Last() == replaceChar)
 				{
 					sb.Remove(sb.Length - 1, 1);
 					sb.Append(" " + token + " ");
 				}
-				else
+                else if (token.Equals(Constants.NEWRUNTIME, StringComparison.OrdinalIgnoreCase) && sb.ToString().Last() == replaceChar)
+                {
+                    sb.Remove(sb.Length - 1, 1);
+                    sb.Append(" " + token + ",");
+                }
+                else
 				{
 					sb.Append(token + replaceChar);
 				}

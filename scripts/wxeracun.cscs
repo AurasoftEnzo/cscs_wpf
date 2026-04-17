@@ -1957,12 +1957,18 @@ function GenerateUBLXml() {
                 PKFK_TAX_TARIFA = "S";
                 taxName = "HR:PDV" + FormatNum(NKPR_LN_PRNPR, 0, ".", formatNumOption);
             }
-            //elif (PKFK_TAX_TARIFA == "AE") {
-            //    taxName = "HR:"+PKFK_TAX_TARIFA;
-            //}    
+            elif (PKFK_TAX_TARIFA == "POVNAK") {
+                PKFK_TAX_TARIFA = "E";
+                taxName = "HR:" + PKFK_TAX_TARIFA;
+            }    
+            elif (PKFK_TAX_TARIFA == "PP") {
+                PKFK_TAX_TARIFA = "E";
+                taxName = "HR:" + PKFK_TAX_TARIFA;
+            }    
             else{
+                //primjer izvoz gdje je kategorija G
                 //PKFK_TAX_TARIFA = "E";
-                taxName = "HR:"+PKFK_TAX_TARIFA;
+                taxName = "HR:"+ P KFK_TAX_TARIFA;
             }    
             exemptReason = "";
             if (PKFK_TAX_DOBOPC != "" && nkpr_ln_prnpr == 0) {

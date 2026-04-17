@@ -22,6 +22,9 @@ DEFINE arrayWinxStatusRacuna type a size 100 array 10000;
 
 DEFINE arrayWinxDatumSlanja type d size 8 array 10000;
 
+DEFINE arrayWinxDatumIzdavanja type d size 8 array 10000;
+DEFINE arrayWinxDatumKnjizenja type d size 8 array 10000;
+
 
 //provider arrays
 DEFINE arrayProviderRbr type i size 100 array 10000;
@@ -153,6 +156,8 @@ function EnableBtns(){
 function wxirstatus_onDisplay(){
     cursor("wait");
     
+    filterStatusSve = true;
+
     filterStatusNijePoslan = true;
     filterStatusInterniRacun = true;
     filterStatusNijeUSustavuPdva = true;
@@ -164,6 +169,16 @@ function wxirstatus_onDisplay(){
     filterStatusPlacanjeZaprimljeno = true;
     filterStatusDjelomicnoPlaceno = true;
     filterStatusPlaceno = true;
+
+    filterStatusFiskaliziranDa = true;
+    filterStatusFiskaliziranNe = true;
+    filterStatusFiskaliziranGreska = true;
+    filterStatusFiskaliziranPrazno = true;
+    
+    filterStatusNaplacenDa = true;
+    filterStatusNaplacenNe = true;
+    filterStatusNaplacenGreska = true;
+    filterStatusNaplacenPrazno = true;
 
     // OIBFilter = "";
 
@@ -187,6 +202,37 @@ function wxirstatus_onDisplay(){
     EnableBtns();
     // SetWidgetOptions("StatusLabel", "Content", "");
     // SetWidgetOptions("StatusLabel2", "Content", "");
+}
+
+function cbSve@clicked(){
+    if(filterStatusSve){
+        cbBool = true;        
+    }
+    else{
+        cbBool = false;
+    }
+
+    filterStatusNijePoslan = cbBool;
+    filterStatusInterniRacun = cbBool;
+    filterStatusNijeUSustavuPdva = cbBool;
+    filterStatusIzvoz = cbBool;
+    filterStatusZaprimljen = cbBool;
+    filterStatusPotvrdenoZaprimanje = cbBool;
+    filterStatusPrihvacen = cbBool;
+    filterStatusOdbijen = cbBool;
+    filterStatusPlacanjeZaprimljeno = cbBool;
+    filterStatusDjelomicnoPlaceno = cbBool;
+    filterStatusPlaceno = cbBool;
+
+    filterStatusFiskaliziranDa = cbBool;
+    filterStatusFiskaliziranNe = cbBool;
+    filterStatusFiskaliziranGreska = cbBool;
+    filterStatusFiskaliziranPrazno = cbBool;
+
+    filterStatusNaplacenDa = cbBool;
+    filterStatusNaplacenNe = cbBool;
+    filterStatusNaplacenGreska = cbBool;
+    filterStatusNaplacenPrazno = cbBool;
 }
 
 // RbrX = 0;
@@ -813,7 +859,7 @@ function AddRacunToProviderArrays(supplierName, supplierId, datumIzdavanja, datu
     arrayProviderRbr[RbrProvider] = ++RbrProvider;
 }
 
-function AddRacunToWinxArrays(brojRacuna, kupac, oibKupca, datumSlanja, statusRacuna){
+function AddRacunToWinxArrays(brojRacuna, kupac, oibKupca, datumSlanja, statusRacuna, datumIzdavanja, datumKnjizenja){
     // arrayKupac[Rbr] = supplierName;
     // arrayOibKupca[Rbr] = supplierId;
     // arrayStatusRacuna[Rbr] = statusRacuna;
@@ -827,6 +873,9 @@ function AddRacunToWinxArrays(brojRacuna, kupac, oibKupca, datumSlanja, statusRa
     arrayWinxDatumSlanja[RbrWinx] = datumSlanja.ToString("yyyy-MM-dd") == "1900-01-01" ? "" : datumSlanja;
     
     arrayWinxStatusRacuna[RbrWinx] = statusRacuna;
+    
+    arrayWinxDatumIzdavanja[RbrWinx] = datumIzdavanja.ToString("yyyy-MM-dd") == "1900-01-01" ? "" : datumIzdavanja;
+    arrayWinxDatumKnjizenja[RbrWinx] = datumKnjizenja.ToString("yyyy-MM-dd") == "1900-01-01" ? "" : datumKnjizenja;
 
     // arrayIdRacunaPosrednika[Rbr] = eRacunBrojRacuna;
 
@@ -864,7 +913,9 @@ function getWinxList(){
                 WHEN nkpr_gl_cuscod = sy_sp_vl_firma OR nkpr_gl_oznaka = 'VN' THEN 'Interni račun'
                 WHEN nksc_tax_dn = 'X' OR nksc_tax_dn = '' THEN 'Nije u sustavu PDV-a'
                 ELSE 'Nije poslan' 
-            END as StatusRacuna
+            END as StatusRacuna,
+            NKPR_GL_INVDTE,
+            NKPR_GL_ESD
             FROM " + databaseName + ".dbo.NKPRINV 
             LEFT JOIN " + databaseName + ".dbo.KPSYSTEM on 1 = 1
             left join NKSCPART ON NKSC_PARTCODE = NKPR_GL_CUSCOD
@@ -880,7 +931,9 @@ function getWinxList(){
                 sqlResult[i][1].trim(), // kupac
                 sqlResult[i][2].trim(),  // OIB kupca
                 sqlResult[i][3],  // datum slanja
-                sqlResult[i][4]   // status racuna
+                sqlResult[i][4],   // status racuna
+                sqlResult[i][5],   // datum izdavanja
+                sqlResult[i][6]    // datum knjizenja
             );
             Progress(1);
         }
@@ -915,7 +968,20 @@ function CopyWinxArraysToFinalArrays(){
 
         arrayFinalStatusRacuna[i] = arrayWinxStatusRacuna[i];
 
+        arrayFinalDatumIzdavanja[i] = arrayWinxDatumIzdavanja[i];
+        arrayFinalDatumKnjizenja[i] = arrayWinxDatumKnjizenja[i];
+
         arrayFinalRbr[i] = arrayWinxRbr[i];
+
+        //--
+
+        arrayFinalBrojRacunaFina[i] = ""; // arrayWinxBrojRacuna[i];
+        arrayFinalBrojRacunaMer[i] = ""; // arrayWinxBrojRacuna[i];
+        arrayFinalIdRacunaPosrednika[i] = "";
+        arrayFinalStatusFiskalizacije[i] = "";
+        arrayFinalReportPaymentStatus[i] = "";
+        arrayFinalPlaceno[i] = "";
+        arrayFinalZaPlacanje[i] = 0; // ???
     }
 }
 
@@ -1176,7 +1242,8 @@ function filter(){
         }
 
         //filter by status
-        if((filterStatusNijePoslan && arrayFinalStatusRacuna[iFinal] == "Nije poslan")
+        if(
+            (filterStatusNijePoslan && arrayFinalStatusRacuna[iFinal] == "Nije poslan")
             || (filterStatusInterniRacun && arrayFinalStatusRacuna[iFinal] == "Interni račun")
             || (filterStatusNijeUSustavuPdva && arrayFinalStatusRacuna[iFinal] == "Nije u sustavu PDV-a")
             || (filterStatusIzvoz && arrayFinalStatusRacuna[iFinal] == "Izvoz")
@@ -1190,6 +1257,16 @@ function filter(){
             || (filterStatusPlacanjeZaprimljeno && arrayFinalStatusRacuna[iFinal] == "Plaćanje zaprimljeno")
             || (filterStatusDjelomicnoPlaceno && arrayFinalStatusRacuna[iFinal] == "Djelomično plaćeno")
             || (filterStatusPlaceno && arrayFinalStatusRacuna[iFinal] == "Plaćeno")
+
+            || (filterStatusFiskaliziranDa && arrayFinalStatusFiskalizacije[iFinal].StartsWith("Da"))
+            || (filterStatusFiskaliziranNe && arrayFinalStatusFiskalizacije[iFinal].StartsWith("NE"))
+            || (filterStatusFiskaliziranGreska && arrayFinalStatusFiskalizacije[iFinal] != "" && !arrayFinalStatusFiskalizacije[iFinal].StartsWith("Da") && !arrayFinalStatusFiskalizacije[iFinal].StartsWith("NE"))
+            || (filterStatusFiskaliziranPrazno && arrayFinalStatusFiskalizacije[iFinal] == "")
+            
+            || (filterStatusNaplacenDa && arrayFinalReportPaymentStatus[iFinal].StartsWith("Da"))
+            || (filterStatusNaplacenNe && arrayFinalReportPaymentStatus[iFinal].StartsWith("NE"))
+            || (filterStatusNaplacenGreska && arrayFinalReportPaymentStatus[iFinal] != "" && !arrayFinalReportPaymentStatus[iFinal].StartsWith("Da") && !arrayFinalReportPaymentStatus[iFinal].StartsWith("NE"))
+            || (filterStatusNaplacenPrazno && arrayFinalReportPaymentStatus[iFinal] == "")
         ){
             AddFinalRacunToFilteredArrays(iFinal);
         }

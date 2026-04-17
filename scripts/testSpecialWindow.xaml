@@ -1,0 +1,64 @@
+﻿<Window 
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Test Special Window" Height="500" Width="900"
+        Background="#F5F5F5">
+
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="#007ACC"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#005A9E"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="5,0"/>
+            <Setter Property="Margin" Value="0,5,0,15"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="20">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="250" />
+        </Grid.ColumnDefinitions>
+
+        <GroupBox Header="Records View" Grid.Column="0" Margin="0,0,10,0">
+            <DataGrid x:Name="grid1" 
+                      AutoGenerateColumns="True" 
+                      AlternatingRowBackground="#F0F0F0"
+                      GridLinesVisibility="None"
+                      BorderThickness="1"
+                      BorderBrush="#DDDDDD"/>
+        </GroupBox>
+
+        <StackPanel Grid.Column="1" VerticalAlignment="Top">
+
+            <TextBlock Text="Configuration" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+
+            <Button x:Name="btn1" Content="Button 1" Margin="0,0,0,10"/>
+            <Button x:Name="btn2" Content="Button 2" Margin="0,0,0,20"/>
+
+            <Separator Margin="0,0,0,20"/>
+
+            <TextBlock Text="Variable 1 Name:" FontWeight="SemiBold"/>
+            <TextBox x:Name="tb1" Text="Value 1"/>
+
+            <TextBlock Text="Variable 2 Name:" FontWeight="SemiBold"/>
+            <TextBox x:Name="tb2" Text="Value 2"/>
+
+        </StackPanel>
+    </Grid>
+</Window>

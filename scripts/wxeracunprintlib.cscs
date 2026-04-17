@@ -205,17 +205,6 @@ function LoadDocument(xDoc, UBLType) {
 
     // -------------------- SETUP REPORT --------------------
     
-    // Validate template
-    errors = ValidateReportTemplate(strtrim(tpath()) + "repx\\" + "WXeracunPrint_main.repx");
-    
-    if (Size(errors) > 0) {
-        MessageBox("Greška validacije predloška e-računa!");
-        for (i = 0; i < Size(errors); i++) {
-            MSG("  - " + errors[i]);
-        }
-        return false;
-    }
-    
     // Cleanup previous report if exists
     if (reportHandle != 0) {
         DisposeReport(reportHandle);
@@ -259,11 +248,16 @@ function LoadDocument(xDoc, UBLType) {
     bankAccount = payeeAccountID;
     bankName = payeeAccountName;
     
-    // Amounts
-    // subtotal = double(lineExtensionAmount);
-    // taxTotal = double(taxAmount);
-    // total = double(payableAmount);
+    // Validate main report template before processing lines
+    errors = ValidateReportTemplate(strtrim(tpath()) + "repx\\" + "WXeracunPrint_main.repx");
     
+    if (Size(errors) > 0) {
+        MessageBox("Greška validacije predloška e-računa!");
+        for (i = 0; i < Size(errors); i++) {
+            MSG("  - " + errors[i]);
+        }
+        return false;
+    }
     // Add main invoice record
     OutputReport(reportHandle);
     

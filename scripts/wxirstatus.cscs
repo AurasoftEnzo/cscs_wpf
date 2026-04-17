@@ -31,7 +31,6 @@ DEFINE arrayProviderRbr type i size 100 array 10000;
 DEFINE arrayProviderKupac type a size 500 array 10000;
 DEFINE arrayProviderOibKupca type a size 11 array 10000;
 DEFINE arrayProviderStatusRacuna type a size 100 array 10000;
-// DEFINE arrayProviderDatumIzdavanja type a size 10 array 10000;
 DEFINE arrayProviderDatumIzdavanja type d size 8 array 10000;
 DEFINE arrayProviderDatumKnjizenja type d size 8 array 10000;
 DEFINE arrayProviderBrojRacuna type a size 50 array 10000;
@@ -44,7 +43,6 @@ DEFINE arrayProviderStatusFiskalizacije type a size 50 array 10000;
 DEFINE arrayProviderReportPaymentStatus type a size 50 array 10000;
 
 DEFINE arrayProviderPlaceno type a size 50 array 10000;
-// DEFINE arrayProviderZaPlacanje type a size 50 array 10000;
 DEFINE arrayProviderZaPlacanje type n size 14 dec 2 array 10000;
 
 // DEFINE arrayKupacUAMS type a size 50 array 10000;
@@ -55,7 +53,6 @@ DEFINE arrayFinalRbr type i size 100 array 10000;
 DEFINE arrayFinalKupac type a size 500 array 10000;
 DEFINE arrayFinalOibKupca type a size 11 array 10000;
 DEFINE arrayFinalStatusRacuna type a size 100 array 10000;
-// DEFINE arrayFinalDatumIzdavanja type a size 10 array 10000;
 DEFINE arrayFinalDatumIzdavanja type d size 8 array 10000;
 DEFINE arrayFinalDatumKnjizenja type d size 8 array 10000;
 DEFINE arrayFinalBrojRacuna type a size 50 array 10000;
@@ -68,7 +65,6 @@ DEFINE arrayFinalStatusFiskalizacije type a size 50 array 10000;
 DEFINE arrayFinalReportPaymentStatus type a size 50 array 10000;
 
 DEFINE arrayFinalPlaceno type a size 50 array 10000;
-// DEFINE arrayFinalZaPlacanje type a size 50 array 10000;
 DEFINE arrayFinalZaPlacanje type n size 14 dec 2 array 10000;
 
 
@@ -80,7 +76,6 @@ DEFINE arrayFilteredRbr type i size 100 array 10000;
 DEFINE arrayFilteredKupac type a size 500 array 10000;
 DEFINE arrayFilteredOibKupca type a size 11 array 10000;
 DEFINE arrayFilteredStatusRacuna type a size 100 array 10000;
-// DEFINE arrayFilteredDatumIzdavanja type a size 10 array 10000;
 DEFINE arrayFilteredDatumIzdavanja type d size 8 array 10000;
 DEFINE arrayFilteredDatumKnjizenja type d size 8 array 10000;
 DEFINE arrayFilteredBrojRacuna type a size 50 array 10000;
@@ -93,7 +88,6 @@ DEFINE arrayFilteredStatusFiskalizacije type a size 50 array 10000;
 DEFINE arrayFilteredReportPaymentStatus type a size 50 array 10000;
 
 DEFINE arrayFilteredPlaceno type a size 50 array 10000;
-// DEFINE arrayFilteredZaPlacanje type a size 50 array 10000;
 DEFINE arrayFilteredZaPlacanje type n size 14 dec 2 array 10000;
 
 
@@ -112,7 +106,8 @@ function Progress(increment){
 
 function UpdateProgress(){
     SetWidgetOptions("btnPrikazi", "Content", FormatNum(progressPercent, 0, ",") + "%");
-} 
+}
+
 //-----------------------------------------------------------
 
 DEFINE FilterDateFrom type d size 10;
@@ -134,6 +129,7 @@ lastFilterDateTo = FilterDateTo;
 prikazano = false;
 
 //-----------------------------------------------------------
+
 function DisableBtns(){
     SetWidgetOptions("btnPrikazi", "IsEnabled", "false");
     // SetWidgetOptions("btnOsvjezi", "IsEnabled", "false");
@@ -180,9 +176,8 @@ function wxirstatus_onDisplay(){
     filterStatusNaplacenGreska = true;
     filterStatusNaplacenPrazno = true;
 
-    // OIBFilter = "";
-
     DisableBtns();
+
     // SetWidgetOptions("StatusLabel", "Content", "Preuzimam listu izlaznih e-računa.");
     // SetWidgetOptions("StatusLabel2", "Content", "Molim pričekajte...");
 
@@ -190,8 +185,8 @@ function wxirstatus_onDisplay(){
         init();
         SetWindowOptions("wxirstatusWindow", "title", "Pregled statusa izlaznih e-računa(" + PROVIDER + ") za " + KPSY_COMP_NAME);
         // ✅ Enable sorting and resizing programmatically
-        SetWidgetOptions("datagridListaRacuna", "CanUserSortColumns", "true");
-        SetWidgetOptions("datagridListaRacuna", "CanUserResizeColumns", "true");
+        // SetWidgetOptions("datagridListaRacuna", "CanUserSortColumns", "true");
+        // SetWidgetOptions("datagridListaRacuna", "CanUserResizeColumns", "true");
     }catch(ex){
         MessageBox("Greška pri inicijalizaciji:\n" + ex);
         // ??? LOG? ne?
@@ -364,7 +359,7 @@ function init(){
 
     // KPSYMSTR
     sqlQueryString = " SELECT TOP 1 KPSY_REZERVA, KPSY_COMP_NAME, KPSY_COMP_ADD1, KPSY_GL_RETEARN, KPSY_COMP_CSZ, KPSY_COMP_ZIP,
-                    KPSY_COMP_JMBFI, KPSY_COMP_PHONE, KPSY_COMP_EMAIL, KPSY_PO_FREIGHT, KPSY_REZERVAX,KPSY_FISCAL_YR,
+                    KPSY_COMP_JMBFI, KPSY_COMP_PHONE, KPSY_COMP_EMAIL, KPSY_PO_FREIGHT, KPSY_REZERVAX, KPSY_FISCAL_YR,
                     KPSY_DOM_VALUTA
                         FROM " + databaseName + ".dbo.KPSYMSTR";
     try

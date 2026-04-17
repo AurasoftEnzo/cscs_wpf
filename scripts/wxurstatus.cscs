@@ -1,17 +1,22 @@
-﻿Import(strTrim(mpath()) + "CSCS.Math.dll");
+﻿include(strtrim(tpath()) + "wxeracunprintlib.cscs");
+
+Import(strTrim(mpath()) + "CSCS.Math.dll");
 
 CreateWindow(strTrim(tpath()) + "wxurstatus.xaml", strTrim(ipath()) + "icons\\" + "wxurstatus.ico");
 // CreateWindow(strTrim(tpath()) + "wxurstatus.xaml");
 
 DEFINE Rbr type i;
+DEFINE RbrFiltered type i;
+
 DEFINE cntr1 type i;
 
+//provider arrays
 DEFINE arrayRbr type i size 100 array 10000;
 DEFINE arrayDobavljac type a size 500 array 10000;
 DEFINE arrayOibDobavljaca type a size 11 array 10000;
 DEFINE arrayStatusRacuna type a size 100 array 10000;
-DEFINE arrayDatumIzdavanja type a size 10 array 10000;
-DEFINE arrayDatumPDVa type a size 10 array 10000;
+DEFINE arrayDatumIzdavanja type d size 8 array 10000;
+DEFINE arrayDatumPDVa type d size 8 array 10000;
 DEFINE arrayBrojRacuna type a size 50 array 10000;
 
 DEFINE arrayBrojRacunaFina type a size 50 array 10000;
@@ -20,6 +25,47 @@ DEFINE arrayBrojRacunaMer type a size 50 array 10000;
 DEFINE arrayIdRacunaPosrednika type a size 50 array 10000;
 DEFINE arrayStatusFiskalizacije type a size 50 array 10000;
 DEFINE arrayReportRejectionStatus type a size 50 array 10000;
+
+DEFINE arrayGlNum type n size 10 array 10000;
+DEFINE arrayBrPon type n size 10 array 10000;
+
+
+//filtered arrays
+DEFINE arrayFilteredRbr type i size 100 array 10000;
+DEFINE arrayFilteredDobavljac type a size 500 array 10000;
+DEFINE arrayFilteredOibDobavljaca type a size 11 array 10000;
+DEFINE arrayFilteredStatusRacuna type a size 100 array 10000;
+DEFINE arrayFilteredDatumIzdavanja type d size 8 array 10000;
+DEFINE arrayFilteredDatumPDVa type d size 8 array 10000;
+DEFINE arrayFilteredBrojRacuna type a size 50 array 10000;
+
+DEFINE arrayFilteredBrojRacunaFina type a size 50 array 10000;
+DEFINE arrayFilteredBrojRacunaMer type a size 50 array 10000;
+
+DEFINE arrayFilteredIdRacunaPosrednika type a size 50 array 10000;
+DEFINE arrayFilteredStatusFiskalizacije type a size 50 array 10000;
+DEFINE arrayFilteredReportRejectionStatus type a size 50 array 10000;
+
+DEFINE arrayFilteredGlNum type n size 10 array 10000;
+DEFINE arrayFilteredBrPon type n size 10 array 10000;
+
+//-----------------------------------------------------------
+
+DEFINE OIBFilter type a size 20;
+
+//-----------------------------------------------------------
+
+function Progress(increment){
+    progress += increment;
+    progressPercent = (progress / progressMax) * 100;
+    RunOnMain("UpdateProgress");
+}
+
+function UpdateProgress(){
+    SetWidgetOptions("btnPrikazi", "Content", FormatNum(progressPercent, 0, ",") + "%");
+} 
+
+//-----------------------------------------------------------
 
 DEFINE FilterDateFrom type d size 10;
 DEFINE FilterDateTo type d size 10;
@@ -35,13 +81,66 @@ FilterDateFrom = DoubleToDateTime(doubleToday - 30).ToString("yyyy-MM-dd");
 FilterDateTo = DoubleToDateTime(doubleToday + 7).ToString("yyyy-MM-dd");
 
 
+lastFilterDateFrom = FilterDateFrom;
+lastFilterDateTo = FilterDateTo;
+prikazano = false;
+
+//-----------------------------------------------------------
+
+function DisableBtns(){
+    SetWidgetOptions("btnPrikazi", "IsEnabled", "false");
+    // SetWidgetOptions("btnOsvjezi", "IsEnabled", "false");
+    SetWidgetOptions("Export2XLSX", "IsEnabled", "false");
+}
+
+function EnableBtns(){
+    SetWidgetOptions("btnPrikazi", "IsEnabled", "true");
+    // SetWidgetOptions("btnOsvjezi", "IsEnabled", "true");
+    SetWidgetOptions("Export2XLSX", "IsEnabled", "true");
+}
+//-----------------------------------------------------------
+
+
 // savedXmlFilesList = {};
 
 function wxurstatus_onDisplay(){
     cursor("wait");
-    SetWidgetOptions("btnPrikazi", "IsEnabled", "false");
-    SetWidgetOptions("StatusLabel", "Content", "Preuzimam listu ulaznih e-računa.");
-    SetWidgetOptions("StatusLabel2", "Content", "Molim pričekajte...");
+    
+    filterStatusSve = true;
+
+    // filterStatusNijePoslan = true;
+    // filterStatusInterniRacun = true;
+    // filterStatusNijeUSustavuPdva = true;
+    // filterStatusIzvoz = true;
+
+    filterStatusLikvidiran = true;
+    filterStatusNijeLikvidiran = true;
+
+    filterStatusZaprimljen = true;
+    filterStatusPotvrdenoZaprimanje = true;
+    
+    filterStatusPrihvacen = true;
+    filterStatusOdbijen = true;
+    
+    filterStatusPlacanjeZaprimljeno = true;
+    filterStatusDjelomicnoPlaceno = true;
+    filterStatusPlaceno = true;
+
+    filterStatusFiskaliziranDa = true;
+    filterStatusFiskaliziranNe = true;
+    filterStatusFiskaliziranGreska = true;
+    filterStatusFiskaliziranPrazno = true;
+    
+    filterStatusOdbijenDa = true;
+    filterStatusOdbijenNe = true;
+    filterStatusOdbijenGreska = true;
+    filterStatusOdbijenPrazno = true;
+
+    DisableBtns();
+
+    // SetWidgetOptions("btnPrikazi", "IsEnabled", "false");
+    // SetWidgetOptions("StatusLabel", "Content", "Preuzimam listu ulaznih e-računa.");
+    // SetWidgetOptions("StatusLabel2", "Content", "Molim pričekajte...");
 
     try{
         init();
@@ -53,9 +152,47 @@ function wxurstatus_onDisplay(){
     }
     
     cursor("dflt");
-    SetWidgetOptions("btnPrikazi", "IsEnabled", "true");
-    SetWidgetOptions("StatusLabel", "Content", "");
-    SetWidgetOptions("StatusLabel2", "Content", "");
+    // SetWidgetOptions("btnPrikazi", "IsEnabled", "true");
+    // SetWidgetOptions("StatusLabel", "Content", "");
+    // SetWidgetOptions("StatusLabel2", "Content", "");
+    EnableBtns();
+}
+
+function cbSve@clicked(){
+    if(filterStatusSve){
+        cbBool = true;        
+    }
+    else{
+        cbBool = false;
+    }
+
+    // filterStatusNijePoslan = cbBool;
+    // filterStatusInterniRacun = cbBool;
+    // filterStatusNijeUSustavuPdva = cbBool;
+    // filterStatusIzvoz = cbBool;
+    
+    filterStatusLikvidiran = cbBool;
+    filterStatusNijeLikvidiran = cbBool;
+
+    filterStatusZaprimljen = cbBool;
+    filterStatusPotvrdenoZaprimanje = cbBool;
+    
+    filterStatusPrihvacen = cbBool;
+    filterStatusOdbijen = cbBool;
+    
+    filterStatusPlacanjeZaprimljeno = cbBool;
+    filterStatusDjelomicnoPlaceno = cbBool;
+    filterStatusPlaceno = cbBool;
+
+    filterStatusFiskaliziranDa = cbBool;
+    filterStatusFiskaliziranNe = cbBool;
+    filterStatusFiskaliziranGreska = cbBool;
+    filterStatusFiskaliziranPrazno = cbBool;
+
+    filterStatusOdbijenDa = cbBool;
+    filterStatusOdbijenNe = cbBool;
+    filterStatusOdbijenGreska = cbBool;
+    filterStatusOdbijenPrazno = cbBool;
 }
 
 function init(){
@@ -141,7 +278,7 @@ function init(){
 
     // KPSYMSTR
     sqlQueryString = " SELECT TOP 1 KPSY_REZERVA, KPSY_COMP_NAME, KPSY_COMP_ADD1, KPSY_GL_RETEARN, KPSY_COMP_CSZ, KPSY_COMP_ZIP,
-                    KPSY_COMP_JMBFI, KPSY_COMP_PHONE, KPSY_COMP_EMAIL, KPSY_PO_FREIGHT, KPSY_REZERVAX,KPSY_FISCAL_YR
+                    KPSY_COMP_JMBFI, KPSY_COMP_PHONE, KPSY_COMP_EMAIL, KPSY_PO_FREIGHT, KPSY_REZERVAX, KPSY_FISCAL_YR
                         FROM " + databaseName + ".dbo.KPSYMSTR";
     try
     {
@@ -249,6 +386,8 @@ function GetListFINA(){
 
 
         if(!Contains(ack, "ErrorCode")){
+            progressMax = Size(ack["InvoiceList"]);
+
             // MSG("U listi je " + Size(ack["InvoiceList"]) + " računa za preuzimanje sa FINA servera.");
             for(i = 0; i < Size(ack["InvoiceList"]); i++){
                 // MSG(ack["InvoiceList"][i]);
@@ -266,6 +405,12 @@ function GetListFINA(){
                     statusCode = "Prihvaćen";
                 }elif(statusCode == "REJECTED"){
                     statusCode = "Odbijen";
+                }elif(statusCode == "PAYMENT_RECEIVED"){
+                    statusCode = "Plaćanje zaprimljeno";
+                }elif(statusCode == "PAYMENT_PARTIALLY_FULFILLED"){
+                    statusCode = "Djelomično plaćeno";
+                }elif(statusCode == "PAYMENT_FULFILLED"){
+                    statusCode = "Plaćeno";
                 }
 
                 // !!! datumi (2)
@@ -296,12 +441,15 @@ function GetListFINA(){
                     fiskStatus = "?";
                     reportRejectionStatus = "?";
                 }else{
+
+                    Progress(1);
+
                     if(Contains(fiskStatusAck, "FiskStatus")){
                         fiskStatus = fiskStatusAck["FiskStatus"];
                         if(fiskStatus == "True"){
-                            fiskStatus = "Da (" + fiskStatusAck["FiskStatusTimestamp"] + ")";                         
+                            fiskStatus = "Da (" + fiskStatusAck["FiskStatusTimestamp"].Split(" ")[0] + ")";                         
                         }elif(fiskStatus == "False"){
-                            fiskStatus = "NE! (" + fiskStatusAck["FiskStatusTimestamp"] + ")";
+                            fiskStatus = "NE! (" + fiskStatusAck["FiskStatusTimestamp"].Split(" ")[0] + ")";
                         }
                     }else{
                         fiskStatus = "";
@@ -310,16 +458,18 @@ function GetListFINA(){
                     if(Contains(fiskStatusAck, "ReportRejectionStatus")){
                         reportRejectionStatus = fiskStatusAck["ReportRejectionStatus"];
                         if(reportRejectionStatus == "True"){
-                            reportRejectionStatus = "Da (" + fiskStatusAck["ReportRejectionStatusTimestamp"] + ")";
+                            reportRejectionStatus = "Da (" + fiskStatusAck["ReportRejectionStatusTimestamp"].Split(" ")[0] + ")";
                         }elif(reportRejectionStatus == "False"){
-                            reportRejectionStatus = "NE! (" + fiskStatusAck["ReportRejectionStatusTimestamp"] + ")";
+                            reportRejectionStatus = "NE! (" + fiskStatusAck["ReportRejectionStatusTimestamp"].Split(" ")[0] + ")";
                         }
                     }else{
                         reportRejectionStatus = "";
                     }
                 }
 
-                AddRacunToArrays(supplierName, supplierId, statusCode, datumIzdavanja, datumPdva, supplierInvoiceId, invoiceId, fiskStatus, reportRejectionStatus);
+                sqlResultNKNAERGL = GetNKPRINVFromSQL(invoiceId, supplierInvoiceId, supplierId);
+
+                AddRacunToArrays(supplierName, supplierId, statusCode, datumIzdavanja, datumPdva, supplierInvoiceId, invoiceId, fiskStatus, reportRejectionStatus, sqlResultNKNAERGL[1][0].trim(), sqlResultNKNAERGL[1][1].trim());
             }
         }else{
             Mbox("ack[\"ErrorCode\"]" + ack["ErrorCode"] + "\nack[\"ErrorText\"]" + ack["ErrorText"] + "\nack[\"ErrorMessage\"]" + ack["ErrorMessage"]);
@@ -328,6 +478,27 @@ function GetListFINA(){
         Mbox("A: Nepoznata greška:\n" + ex);
         LogException(ex); // !!!
         exit;
+    }
+}
+
+function GetNKPRINVFromSQL(invoiceId, supplierInvoiceId, supplierId){
+    sqlQueryString = "SELECT TOP 1 NKPR_GL_NUM, NKPR_GL_BRPON FROM " + databaseName + ".dbo.NKNAERGL WHERE NKPR_GL_POSRED = @p1 OR(NKPR_GL_DESC = @p2 AND NKPR_GL_JMBG = @p3) ORDER BY ID DESC";
+    sqlParams = {};
+    sqlParams.Add({"@p1", invoiceId});
+    sqlParams.Add({"@p2", supplierInvoiceId});
+    sqlParams.Add({"@p3", supplierId});
+
+    try{
+        sqlResult = sqlQuery(sqlQueryString, sqlParams);
+        if(Size(sqlResult) > 1){
+            return sqlResult;
+        }else{
+            return {{"", ""}, {"", ""}};
+        }
+    }catch(ex){
+        Mbox("Greška prilikom dohvata NKPR_GL_NUM iz baze:\n" + ex);
+        LogException(ex); // !!!
+        return {{"", ""}, {"", ""}};
     }
 }
 
@@ -401,7 +572,7 @@ function GetListMERSuccess(trackingId, responseCode, res) {
                 racunObject["StatusName"] + "(" + racunObject["StatusId"] + ")",
                 Substring(racunObject["Sent"], 0, 10), // datum
                 "", // datum
-                racunObject["DocumentNr"]
+                racunObject["DocumentNr"],
                 racunObject["ElectronicId"],
                 "", // fiskStatus
                 "" // reportPaymentStatus
@@ -429,19 +600,22 @@ function GetListMERFailure(trackingId, responseCode, res) {
 }
 
 
-function AddRacunToArrays(supplierName, supplierId, statusRacuna, datumIzdavanja, datumPdva, supplierInvoiceId, eRacunBrojRacuna, fiskStatus, reportRejectionStatus){
+function AddRacunToArrays(supplierName, supplierId, statusRacuna, datumIzdavanja, datumPdva, supplierInvoiceId, eRacunBrojRacuna, fiskStatus, reportRejectionStatus, glNum, brPon){
     
     arrayDobavljac[Rbr] = supplierName;
     arrayOibDobavljaca[Rbr] = supplierId;
     arrayStatusRacuna[Rbr] = statusRacuna;
-    arrayDatumIzdavanja[Rbr] = datumIzdavanja.ToString("dd/MM/yy");
-    arrayDatumPDVa[Rbr] = datumPdva.ToString("dd/MM/yy");
+    arrayDatumIzdavanja[Rbr] = datumIzdavanja;
+    arrayDatumPDVa[Rbr] = datumPdva;
     arrayBrojRacuna[Rbr] = supplierInvoiceId;
     
     arrayIdRacunaPosrednika[Rbr] = eRacunBrojRacuna;
     
     arrayStatusFiskalizacije[Rbr] = fiskStatus;
     arrayReportRejectionStatus[Rbr] = reportRejectionStatus;
+
+    arrayGlNum[Rbr] = glNum;
+    arrayBrPon[Rbr] = brPon;
 
     arrayRbr[Rbr] = ++Rbr;
 }
@@ -450,33 +624,48 @@ function AddRacunToArrays(supplierName, supplierId, statusRacuna, datumIzdavanja
 //-----------------------------------------------------------
 
 function btnPrikazi@clicked(){
-    cntr1 = 0;
-    Rbr = 0;
-    TEMP_Rbr = 0;
-    DisplayArray("datagridListaRacuna", "close");
-
-    cursor("wait");
-    SetWidgetOptions("btnPrikazi", "IsEnabled", "false");
-    SetWidgetOptions("StatusLabel", "Content", "Preuzimam listu ulaznih e-računa.");
-    SetWidgetOptions("StatusLabel2", "Content", "Molim pričekajte...");
-
-    AsyncCall("startGetLista", "end");   
-}
-
-function startGetLista(){
     
-    getList();
+    cursor("wait");
+
+    DisplayArray("datagridListaRacuna", "close");
+    DisableBtns();
+    
+    // SetWidgetOptions("btnPrikazi", "IsEnabled", "false");
+    // SetWidgetOptions("StatusLabel", "Content", "Preuzimam listu ulaznih e-računa.");
+    // SetWidgetOptions("StatusLabel2", "Content", "Molim pričekajte...");
+
+    AsyncCall("prikazi", "prikaziEnd");   
 }
 
-function end(){
-    cursor("dflt");
-    if(Rbr != 0){
-        DisplayArraySetup("datagridListaRacuna", counterFld: cntr1, activeElements: Rbr, maxElements: 10000);
+function prikazi(){
+    if(lastFilterDateFrom.ToString("yyyy-MM-dd") != FilterDateFrom.ToString("yyyy-MM-dd") 
+    || lastFilterDateTo.ToString("yyyy-MM-dd") != FilterDateTo.ToString("yyyy-MM-dd") 
+    || prikazano == false){
+
+        cntr1 = 0;
+        Rbr = 0;
+        
+        progress = 0;
+        
+        getList(); 
+
+        lastFilterDateTo = FilterDateTo;
+        lastFilterDateFrom = FilterDateFrom;
+        prikazano = true;
     }
     
-    SetWidgetOptions("btnPrikazi", "IsEnabled", "true");
-    SetWidgetOptions("StatusLabel", "Content", "");
-    SetWidgetOptions("StatusLabel2", "Content", "");
+    // RunOnMain("btnOsvjezi@clicked");
+    filter();
+}
+
+function prikaziEnd(){
+    if(RbrFiltered != 0){
+        DisplayArraySetup("datagridListaRacuna", counterFld: cntr1, activeElements: RbrFiltered, maxElements: 10000);
+    }
+    EnableBtns();
+    Cursor("dflt");
+
+    SetWidgetOptions("btnPrikazi", "Content", "Prikaži");
 }
 
 
@@ -490,7 +679,7 @@ function LogResponse(responseCode, response) {
     try {
         SaveFile(appendText, logFilePath, "a");        
     } catch (ex) {
-        Mbox("CRITICAL: Cannot write to log file: " + logPath + "\nError: " + ex);
+        Mbox("CRITICAL: Cannot write to log file: " + logFilePath + "\nError: " + ex);
     }
 }
 
@@ -543,8 +732,8 @@ function Export2XLSX@clicked(){
 
     cursor("wait");
     SetWidgetOptions("Export2XLSX", "IsEnabled", "false");
-    SetWidgetOptions("StatusLabel", "Content", "Export u XLSX je u tijeku...");
-    SetWidgetOptions("StatusLabel2", "Content", "Molim pričekajte...");
+    // SetWidgetOptions("StatusLabel", "Content", "Export u XLSX je u tijeku...");
+    // SetWidgetOptions("StatusLabel2", "Content", "Molim pričekajte...");
 
     AsyncCall("StartExport2XLSX", "EndExport2XLSX");
 }
@@ -578,6 +767,7 @@ function StartExport2XLSX(){
         XCellWriteString(1, 8, 1, "Fiskaliziran?");
         XCellWriteString(1, 9, 1, "Status odbijanja");
         XCellWriteString(1, 10, 1, "ID racuna");
+        XCellWriteString(1, 11, 1, "Broj dokumenta");
 
         // Header style
         for(col = 1; col <= 10; col++){
@@ -587,19 +777,20 @@ function StartExport2XLSX(){
         }
 
         // Data rows
-        for(i = 0; i < Rbr; i++){
+        for(i = 0; i < RbrFiltered; i++){
             row = i + 2;
 
-            XCellWriteInteger(1, 1, row, arrayRbr[i]);
-            XCellWriteString(1, 2, row, arrayDobavljac[i]);
-            XCellWriteString(1, 3, row, arrayOibDobavljaca[i]);
-            XCellWriteString(1, 4, row, arrayStatusRacuna[i]);
-            XCellWriteString(1, 5, row, arrayDatumIzdavanja[i]);
-            XCellWriteString(1, 6, row, arrayDatumPDVa[i]);
-            XCellWriteString(1, 7, row, arrayBrojRacuna[i]);
-            XCellWriteString(1, 8, row, arrayStatusFiskalizacije[i]);
-            XCellWriteString(1, 9, row, arrayReportRejectionStatus[i]);
-            XCellWriteString(1, 10, row, arrayIdRacunaPosrednika[i]);
+            XCellWriteInteger(1, 1, row, arrayFilteredRbr[i]);
+            XCellWriteString(1, 2, row, arrayFilteredDobavljac[i]);
+            XCellWriteString(1, 3, row, arrayFilteredOibDobavljaca[i]);
+            XCellWriteString(1, 4, row, arrayFilteredStatusRacuna[i]);
+            XCellWriteString(1, 5, row, arrayFilteredDatumIzdavanja[i]);
+            XCellWriteString(1, 6, row, arrayFilteredDatumPDVa[i]);
+            XCellWriteString(1, 7, row, arrayFilteredBrojRacuna[i]);
+            XCellWriteString(1, 8, row, arrayFilteredStatusFiskalizacije[i]);
+            XCellWriteString(1, 9, row, arrayFilteredReportRejectionStatus[i]);
+            XCellWriteString(1, 10, row, arrayFilteredIdRacunaPosrednika[i]);
+            XCellWriteString(1, 11, row, arrayFilteredGlNum[i]);
         }
 
         XColumnsAutoFit(1);
@@ -614,8 +805,8 @@ function StartExport2XLSX(){
 function EndExport2XLSX(){
     cursor("dflt");
     SetWidgetOptions("Export2XLSX", "IsEnabled", "true");
-    SetWidgetOptions("StatusLabel", "Content", "");
-    SetWidgetOptions("StatusLabel2", "Content", "");
+    // SetWidgetOptions("StatusLabel", "Content", "");
+    // SetWidgetOptions("StatusLabel2", "Content", "");
 
     if(exportErrorText != ""){
         Mbox("Greška kod exporta u XLSX:\n" + exportErrorText);
@@ -630,3 +821,83 @@ function EndExport2XLSX(){
         }
     }
 }
+
+//-----------------------------------------------------------
+
+function filter(){
+    RbrFiltered = 0;
+
+    for(iRbr = 0; iRbr < Rbr; iRbr++){
+
+        if(OIBFilter.trim() != "" && OIBFilter.trim() != arrayOibDobavljaca[iRbr].trim()){
+            continue;
+        }
+
+        //filter by status
+        if(
+            // (filterStatusNijePoslan && arrayStatusRacuna[iRbr] == "Nije poslan")
+            // || (filterStatusInterniRacun && arrayStatusRacuna[iRbr] == "Interni račun")
+            // || (filterStatusNijeUSustavuPdva && arrayStatusRacuna[iRbr] == "Nije u sustavu PDV-a")
+            // || (filterStatusIzvoz && arrayStatusRacuna[iRbr] == "Izvoz")
+
+            (filterStatusLikvidiran && arrayGlNum[iRbr] != "")
+            || (filterStatusNijeLikvidiran && arrayGlNum[iRbr] == "")
+
+            || (filterStatusZaprimljen && arrayStatusRacuna[iRbr] == "Zaprimljen")
+            || (filterStatusPotvrdenoZaprimanje && arrayStatusRacuna[iRbr] == "Potvrđeno zaprimanje")
+
+            || (filterStatusPrihvacen && arrayStatusRacuna[iRbr] == "Prihvaćen")
+            || (filterStatusOdbijen && arrayStatusRacuna[iRbr] == "Odbijen")
+
+            || (filterStatusPlacanjeZaprimljeno && arrayStatusRacuna[iRbr] == "Plaćanje zaprimljeno")
+            || (filterStatusDjelomicnoPlaceno && arrayStatusRacuna[iRbr] == "Djelomično plaćeno")
+            || (filterStatusPlaceno && arrayStatusRacuna[iRbr] == "Plaćeno")
+
+            || (filterStatusFiskaliziranDa && arrayStatusFiskalizacije[iRbr].StartsWith("Da"))
+            || (filterStatusFiskaliziranNe && arrayStatusFiskalizacije[iRbr].StartsWith("NE"))
+            || (filterStatusFiskaliziranGreska && arrayStatusFiskalizacije[iRbr] != "" && !arrayStatusFiskalizacije[iRbr].StartsWith("Da") && !arrayStatusFiskalizacije[iRbr].StartsWith("NE"))
+            || (filterStatusFiskaliziranPrazno && arrayStatusFiskalizacije[iRbr] == "")
+            
+            || (filterStatusOdbijenDa && arrayReportRejectionStatus[iRbr].StartsWith("Da"))
+            || (filterStatusOdbijenNe && arrayReportRejectionStatus[iRbr].StartsWith("NE"))
+            || (filterStatusOdbijenGreska && arrayReportRejectionStatus[iRbr] != "" && !arrayReportRejectionStatus[iRbr].StartsWith("Da") && !arrayReportRejectionStatus[iRbr].StartsWith("NE"))
+            || (filterStatusOdbijenPrazno && arrayReportRejectionStatus[iRbr] == "")
+        ){
+            AddRacunToFilteredArrays(iRbr);
+        }
+    }
+}
+
+
+function AddRacunToFilteredArrays(iRbr){
+    arrayFilteredDobavljac[RbrFiltered] = arrayDobavljac[iRbr];
+    arrayFilteredOibDobavljaca[RbrFiltered] = arrayOibDobavljaca[iRbr];
+    arrayFilteredStatusRacuna[RbrFiltered] = arrayStatusRacuna[iRbr];
+    arrayFilteredDatumIzdavanja[RbrFiltered] = arrayDatumIzdavanja[iRbr];
+    arrayFilteredDatumPDVa[RbrFiltered] = arrayDatumPDVa[iRbr];
+    arrayFilteredBrojRacuna[RbrFiltered] = arrayBrojRacuna[iRbr];
+    arrayFilteredIdRacunaPosrednika[RbrFiltered] = arrayIdRacunaPosrednika[iRbr];
+    arrayFilteredStatusFiskalizacije[RbrFiltered] = arrayStatusFiskalizacije[iRbr];
+    arrayFilteredReportRejectionStatus[RbrFiltered] = arrayReportRejectionStatus[iRbr];
+    
+    //arrayFilteredKupacUAMS[RbrFiltered] = arrayKupacUAMS[iRbr];
+
+    if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
+        arrayFilteredBrojRacunaMer[RbrFiltered] = arrayBrojRacunaMer[iRbr];
+    } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
+        arrayFilteredBrojRacunaFina[RbrFiltered] = arrayBrojRacunaFina[iRbr];
+    } else {
+        MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA, MERDEMO, FINADEMO");
+        exit;
+    }
+
+    arrayFilteredGlNum[RbrFiltered] = double(arrayGlNum[iRbr]);
+    arrayFilteredBrPon[RbrFiltered] = double(arrayBrPon[iRbr]);
+
+    arrayFilteredRbr[RbrFiltered] = ++RbrFiltered;
+}
+
+
+
+//-----------------------------------------------------------
+

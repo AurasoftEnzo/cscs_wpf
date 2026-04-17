@@ -174,13 +174,13 @@ namespace WpfCSCS
                     }
 
 
-                    return new Variable(modalwin.Instance.Tag.ToString());
+                    return new Variable(modalwin.Instance?.Tag?.ToString());
                 }
                 else
                 {
                     MessageBox.Show($"The file {NameOrPathOfXamlForm} does not exist! Closing program.");
                     Environment.Exit(0);
-                    return null;
+                    return Variable.EmptyInstance;
                 }
             }
             else return null;

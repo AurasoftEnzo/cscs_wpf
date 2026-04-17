@@ -1,6 +1,7 @@
-﻿using DevExpress.XtraReports.UI;
+﻿using DevExpress.Xpf.Printing;
 using DevExpress.XtraPrinting.Caching;
-using DevExpress.Xpf.Printing;
+using DevExpress.XtraReports.UI;
+using DevExpress.XtraRichEdit.Fields.Expression;
 using SplitAndMerge;
 using System;
 using System.Collections.Generic;
@@ -301,34 +302,68 @@ namespace WpfCSCS.Reporting.DevExpressReportingNew
         #region Enhanced Functions
 
         /// <summary>
-        /// VALIDATE_REPORT_TEMPLATE(templatePath, [requiredFields])
+        /// VALIDATE_REPORT_TEMPLATE(templatePath)
         /// Returns array of error messages (empty if valid)
         /// </summary>
         private Variable ValidateTemplate()
         {
             List<Variable> args = _script.GetFunctionArgs();
             Utils.CheckArgs(args.Count, 1, m_name);
+            List<string> errors = new List<string>();
+            Variable result = new Variable(Variable.VarType.ARRAY);
 
             string templatePath = Utils.GetSafeString(args, 0);
-            List<string> requiredFields = new List<string>();
-
-            if (args.Count > 1)
+            if (!File.Exists(templatePath))
             {
-                string fieldList = Utils.GetSafeString(args, 1);
-                requiredFields = fieldList.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(f => f.Trim()).ToList();
+                errors.Add("Template file not found: " + templatePath);
+                result.Tuple.Add(new Variable(errors[0]));
+                return result;
             }
 
-            List<string> errors = ReportValidator.ValidateTemplate(templatePath, requiredFields);
+            XtraReport report = new XtraReport();
+            report.LoadLayout(templatePath);
+            List<string> templateFields = ReportValidator.GetTemplateFields(report);
 
-            // Return as CSCS array
-            Variable result = new Variable(Variable.VarType.ARRAY);
+
+            foreach (var templateField in templateFields)
+            {
+                var variableValue = _script.InterpreterInstance.GetVariable(templateField);
+                if (variableValue == null)
+                {
+                    errors.Add($"Required field not found in template: {templateField}");
+                }
+            }
+
             foreach (var error in errors)
             {
                 result.Tuple.Add(new Variable(error));
             }
 
             return result;
+
+            //List<Variable> args = _script.GetFunctionArgs();
+            //Utils.CheckArgs(args.Count, 1, m_name);
+
+            //string templatePath = Utils.GetSafeString(args, 0);
+            //List<string> requiredFields = new List<string>();
+
+            //if (args.Count > 1)
+            //{
+            //    string fieldList = Utils.GetSafeString(args, 1);
+            //    requiredFields = fieldList.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries)
+            //        .Select(f => f.Trim()).ToList();
+            //}
+
+            //List<string> errors = ReportValidator.ValidateTemplate(templatePath, requiredFields);
+
+            //// Return as CSCS array
+            //Variable result = new Variable(Variable.VarType.ARRAY);
+            //foreach (var error in errors)
+            //{
+            //    result.Tuple.Add(new Variable(error));
+            //}
+
+            //return result;
         }
 
         /// <summary>

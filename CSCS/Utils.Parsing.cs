@@ -1423,7 +1423,7 @@ namespace SplitAndMerge
                             extracted += script.CurrentAndForward();
                         }
                     var rest = script.Rest;
-                    extracted += GetBodyBetween(script, Constants.START_ARG, Constants.END_ARG, Constants.END_STATEMENT);
+                    extracted += GetBodyBetween(script, Constants.START_ARG, Constants.END_ARG, Constants.END_STATEMENT,false, extracted);
                 }
                 else
                 {
@@ -1570,7 +1570,7 @@ namespace SplitAndMerge
         }
 
         public static string GetBodyBetween(ParsingScript script, char open = Constants.START_ARG,
-                                            char close = Constants.END_ARG, char end = '\0', bool stopIfBraces0 = false)
+                                            char close = Constants.END_ARG, char end = '\0', bool stopIfBraces0 = false, string winForm = "")
         {
             // We are supposed to be one char after the beginning of the string, i.e.
             // we must not have the opening char as the first one.
@@ -1580,6 +1580,7 @@ namespace SplitAndMerge
             bool inQuotes1 = false;
             bool inQuotes2 = false;
             bool checkBraces = true;
+            bool isWinForm = false;
             char prev = Constants.EMPTY;
             char prevprev = Constants.EMPTY;
 
@@ -1604,8 +1605,11 @@ namespace SplitAndMerge
                         inQuotes = inQuotes1 = !inQuotes1;
                     }
                 }
-
-                if (string.IsNullOrWhiteSpace(ch.ToString()) && sb.Length == 0)
+                if (winForm.ToLower() == "#winform")
+                {
+                    isWinForm = true;
+                }
+                if (!isWinForm && string.IsNullOrWhiteSpace(ch.ToString()) && sb.Length == 0)
                 {
                     continue;
                 }

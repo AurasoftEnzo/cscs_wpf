@@ -1,0 +1,128 @@
+//════════════════════════════════════════════════════════════════
+// EVENT SYNTAX
+// Window events can be written 2 ways:
+//
+// 1. WITHOUT parameters:
+//    function windowName_EventName() { }
+//
+// 2. WITH parameters:
+//    function windowName_EventName(sender, args) { }
+//
+// Example:
+//   function testSpecialWindow_OnStart() { }
+//   function testSpecialWindow_OnStart(sender, args) { }
+//════════════════════════════════════════════════════════════════
+
+//════════════════════════════════════════════════════════════════
+// WINDOW LIFECYCLE EVENTS
+// These events fire automatically in this order when a window is
+// created, displayed, used, and closed. Each event lets you run
+// custom code at specific points in the window's lifetime.
+//════════════════════════════════════════════════════════════════
+
+// EVENT 1: OnOpen
+// Fires first, when the window object is created
+// Window exists but is not yet visible or ready
+// Use this to: Initialize variables and set defaults
+
+// EVENT 2: OnInit
+// Fires after OnOpen, when OS creates the window handle
+// Window is recognized by the operating system
+// Use this to: Load settings and configure window properties
+
+// EVENT 3: OnActivated
+// Fires when window gets focus (user clicks it)
+// Window becomes the active/foreground window
+// Use this to: Resume operations, refresh data
+
+// EVENT 4: OnStart
+// Fires when all controls and UI are loaded
+// Window layout is complete, controls exist and are ready
+// Use this to: Load data, populate controls, setup UI
+
+// EVENT 5: OnDisplay
+// Fires when window is rendered and visible on screen
+// User can now see the window and all its content
+// Use this to: Show welcome messages, start animations
+
+// EVENT 6: OnDeactivated
+// Fires when window loses focus (user clicks another window)
+// This window is no longer active but still visible
+// Use this to: Pause operations, save temporary state
+
+// EVENT 7: OnClosing
+// Fires BEFORE window closes - LAST CHANCE TO STOP IT
+// User clicked close button, but window hasn't closed yet
+// Return true = cancel close (window stays open)
+// Return false = allow close (window closes)
+// Use this to: Ask to save changes, prevent accidental close
+
+
+// EVENT 8: OnClose
+// Fires AFTER window closes - POINT OF NO RETURN
+// Window is closed and no longer visible or interactive
+// Use this to: Save final state, cleanup, exit if main window
+
+// EVENT 9: OnUnload
+// Fires last when window is removed from memory
+// Final opportunity to release resources
+// Use this to: Close connections, dispose objects, free memory
+
+
+CreateWindow(strTrim(tpath()) +"testSpecialWindow.xaml");
+//#WINFORM testSpecialWindow;
+
+// 1. First event - Window object created
+function testSpecialWindow_OnOpen(){
+    Print("1. OPEN - Window created, starting");
+}
+
+// 2. Native window handle created (OS level)
+function testSpecialWindow_onInit(){
+    Print("2. INIT - Window handle ready");
+}
+
+// 3. Occurs when a window becomes the foreground window.
+function testSpecialWindow_OnActivated(){
+    Print("3. ACTIVATED - Window is now active/focused");
+}
+
+// 4. Window loaded with all controls
+function testSpecialWindow_onStart(){
+    Print("4. START - Window loaded, controls ready");
+}
+
+// 5. Window rendered and visible on screen
+function testSpecialWindow_OnDisplay(){
+    Print("5. DISPLAY - Window visible, you can see it now");
+}
+
+// 6. Window loses focus (user clicks another window)
+function testSpecialWindow_OnDeactivated(){
+    Print("6. DEACTIVATED - Window lost focus");
+}
+
+// 7. User clicks close button (last chance to stop closing)
+function testSpecialWindow_OnClosing(){
+    Print("7. CLOSING - About to close, can cancel here if needed");
+    return false; // return true to cancel closing
+}
+
+// 8. Window is closed 
+function testSpecialWindow_onClose(){
+    Print("8. CLOSE - Window is closed");
+}
+
+// 9. Window is unloading from memory
+function testSpecialWindow_OnUnload(){
+    Print("9. UNLOAD - Window removing from memory");
+}
+
+// Button clicks
+function btn1@clicked(){
+    MessageBox("Button 1 clicked");
+}
+
+function btn2@clicked(){
+    MessageBox("Button 2 clicked");
+}

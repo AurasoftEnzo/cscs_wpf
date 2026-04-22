@@ -1,7 +1,7 @@
 // -----------------------------------------------------------
 // WXeInvoiceGet.cscs - UBL XML Outgoing Invoice Import
 // -----------------------------------------------------------
-// Purpose: Import UBL XML outgoing invoices into NKPRERGL/NKPRERLN
+// Purpose: Import UBL XML outgoing invoices into NKPRINV/NKPRINVL
 // Entry:   WXeInvoiceGet_onDisplay()
 // Mirror:  wxeracunget.cscs (incoming); customer/supplier sides swapped
 // -----------------------------------------------------------
@@ -115,6 +115,7 @@ function init(){
     //ERPID = "";
     SISTEM_RADA = "";
     APP_RADI = "";
+    USE_ASCONTO = "";
 
     if(size(sqlResult) > 1){
         for(i = 1; i < Size(sqlResult); i++){
@@ -125,6 +126,7 @@ function init(){
             //elif(sqlResult[i][0].trim() == "ERPID")  { ERPID    = sqlResult[i][1].trim(); }
             elif(sqlResult[i][0].trim() == "SISTEM_RADA")  { SISTEM_RADA    = sqlResult[i][1].trim(); }
             elif(sqlResult[i][0].trim() == "APP_RADI")  { APP_RADI    = sqlResult[i][1].trim(); }
+            elif(sqlResult[i][0].trim() == "USE_ASCONTO")  { USE_ASCONTO    = sqlResult[i][1].trim(); }
         }
     }
 
@@ -137,6 +139,13 @@ function init(){
             exit;
         }
     }
+
+    if(USE_ASCONTO == "D"){
+        useAsconto = true;
+    }else{
+        useAsconto = false;
+    }
+
     // KPSYMSTR
     sqlQueryString = " SELECT TOP 1 KPSY_REZERVA, KPSY_COMP_NAME, KPSY_COMP_ADD1, KPSY_GL_RETEARN, KPSY_COMP_CSZ, KPSY_COMP_ZIP,
                     KPSY_COMP_JMBFI, KPSY_COMP_PHONE, KPSY_COMP_EMAIL, KPSY_PO_FREIGHT, KPSY_REZERVAX, KPSY_FISCAL_YR
@@ -163,12 +172,18 @@ function init(){
     }
 }
 
-function BeginSqlTransaction()   { SqlNonQuery("BEGIN TRANSACTION;"); }
-function CommitSqlTransaction()  { SqlNonQuery("COMMIT TRANSACTION;"); }
-function RollbackSqlTransaction(){ SqlNonQuery("IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;"); }
+// function BeginSqlTransaction()   { SqlNonQuery("BEGIN TRANSACTION;"); }
+// function CommitSqlTransaction()  { SqlNonQuery("COMMIT TRANSACTION;"); }
+// function RollbackSqlTransaction(){ SqlNonQuery("IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;"); }
 
 // -----------------------------------------------------------
 function btnPrikazi@clicked(){
+    cntr1 = 0;
+    Rbr = 0;
+    TEMP_Rbr = 0;
+
+    DisplayArray("datagridListaRacuna", "close");
+
     cursor("wait");
     SetWidgetOptions("btnPrikazi", "IsEnabled", "false");
     SetWidgetOptions("StatusLabel", "Content", "Dohvaćam listu izlaznih e-računa...");
@@ -228,6 +243,35 @@ function getList(){
     }
 }
 
+// 123-90-1 -> 90100123
+function TransformInvoiceNumberToAurasoftFormat(supplierInvoiceId){
+    if(useAsconto == false){
+        return supplierInvoiceId;
+    }
+
+    try{
+        parts = supplierInvoiceId.Split("-");
+        
+        part0 = parts[0];
+        part1 = parts[1];
+        part2 = parts[2];
+
+
+        parts0Length = part0.length;
+
+        while(parts0Length < 5){
+            part0 = "0" + part0;
+            parts0Length = part0.length;
+        }
+        
+        final = part1 + part2 + part0;
+
+        return final;
+    }catch(ex){
+        return supplierInvoiceId;
+    }
+}
+
 function GetListFINA(){
     try{
         ack = FINA_GET_B2B_OUTGOING_INVOICE_LIST(
@@ -245,9 +289,14 @@ function GetListFINA(){
         if(ack["AckStatusCode"] == 10){
             if(!Contains(ack, "ErrorCode")){
                 for(i = 0; i < Size(ack["InvoiceList"]); i++){
-                    customerName = ack["InvoiceList"][i]["CustomerRegistrationName"];
-                    customerId   = ack["InvoiceList"][i]["CustomerId"];
-                    customerInvoiceId = ack["InvoiceList"][i]["SupplierInvoiceID"];
+                    // if(i==10){
+                    //     break;
+                    // }
+                    customerName = ack["InvoiceList"][i]["BuyerRegistrationName"];
+                    customerId   = ack["InvoiceList"][i]["BuyerID"];
+                    customerId = customerId.Replace("9934:", "");
+                    // supplierInvoiceId = TransformInvoiceNumberToAurasoftFormat(ack["InvoiceList"][i]["SupplierInvoiceID"]);                
+                    supplierInvoiceId = ack["InvoiceList"][i]["SupplierInvoiceID"];
                     invoiceId = ack["InvoiceList"][i]["InvoiceID"];
 
                     datumIzdavanja = ack["InvoiceList"][i]["InvoiceIssueDate"];
@@ -255,7 +304,7 @@ function GetListFINA(){
                     datumPdva = ack["InvoiceList"][i]["InvoiceDate"];
                     datumPdva = Substring(datumPdva, 0, 8);
 
-                    AddRacunToArrays(customerName, customerId, datumIzdavanja, datumPdva, customerInvoiceId, invoiceId);
+                    AddRacunToArrays(customerName, customerId, datumIzdavanja, datumPdva, supplierInvoiceId, invoiceId);
                 }
             }else{
                 logText = "ErrorCode:\n" + ack["ErrorCode"] +
@@ -371,15 +420,17 @@ function CheckTempListInDB(){
     }
 
     for(invoiceIdCounter = 0; invoiceIdCounter < numOfInvoices; invoiceIdCounter++){
-        sqlQueryString = "SELECT COUNT(*) FROM " + databaseName + ".dbo.NKPRERGL WHERE NKPR_GL_POSRED = @p1";
+        sqlQueryString = "SELECT COUNT(*) FROM " + databaseName + ".dbo.NKPRINV WHERE NKPR_GL_DESC = @p1"; // OR ...
         sqlParams = {};
-        sqlParams.Add({"@p1", TEMP_arrayInovoiceID[invoiceIdCounter]});
+        // sqlParams.Add({"@p1", TEMP_arrayInovoiceID[invoiceIdCounter]});
+        sqlParams.Add({"@p1", TEMP_arrayBrojRacuna[invoiceIdCounter]});
         sqlResult = sqlQuery(sqlQueryString, sqlParams);
         if (Size(sqlResult) > 1){
             count = sqlResult[1][0];
             if(count > 0 && TEMP_arrayKupac[invoiceIdCounter] != "FILE"){
                 continue;
-            }else{
+            }
+            else{
                 arrayKupac[Rbr]           = TEMP_arrayKupac[invoiceIdCounter];
                 arrayOibKupca[Rbr]        = TEMP_arrayOibKupca[invoiceIdCounter];
                 arrayDatumIzdavanja[Rbr]  = TEMP_arrayDatumIzdavanja[invoiceIdCounter];
@@ -577,6 +628,37 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
             return;
         }
 
+        if(IsSupplierInvoiceNumberInDb()){
+            IR_DUPLI_DirectoryPath = FILESPATH + "IR\\" + "Dupli\\";
+            if (!Exists(IR_DUPLI_DirectoryPath)) { MkDir(IR_DUPLI_DirectoryPath); }
+
+            //move xml
+            xmlPathInNEW      = IR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".xml";
+            xmlPathInDUPLI = IR_DUPLI_DirectoryPath + xmlFilenameWithoutExtension + ".xml";
+            if(Exists(xmlPathInNEW)){
+                try{
+                    if(Exists(xmlPathInDUPLI)){ Delete(xmlPathInDUPLI); }
+                    Move(xmlPathInNEW, xmlPathInDUPLI);
+                } catch(aa){
+                    MBox("Greška prilikom premještanja XML datoteke: " + aa);
+                }
+            }
+
+            //move pdf
+            pdfPathInNEW      = IR_NEW_DirectoryPath + xmlFilenameWithoutExtension + ".pdf";
+            pdfPathInDUPLI = IR_DUPLI_DirectoryPath + xmlFilenameWithoutExtension + ".pdf";
+            if(Exists(pdfPathInNEW)){
+                try{
+                    if(Exists(pdfPathInDUPLI)){ Delete(pdfPathInDUPLI); }
+                    Move(pdfPathInNEW, pdfPathInDUPLI);
+                } catch(aa){
+                    MBox("Greška prilikom premještanja PDF datoteke: " + aa);
+                }
+            }
+            
+            return;
+        }
+
         if (!ValidateFiscalYear(NKPR_GL_ESD)) {
             Mbox("Račun ID " + NKPR_GL_POSRED + " se ne može importirati jer datum isporuke (" + NKPR_GL_ESD + ") ne pripada fiskalnoj godini " + year(KPSY_FISCAL_YR) + ".");
             return;
@@ -603,7 +685,7 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
         transactionStarted = false;
 
         try{
-            BeginSqlTransaction();
+            transactionHndl = SqlBeginTransaction();
             transactionStarted = true;
 
             if (!ExtractAndSaveNotes(docData)) {
@@ -623,7 +705,7 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
                 throw "Greška prilikom unosa stavki računa";
             }
 
-            CommitSqlTransaction();
+            SqlCommitTransaction(transactionHndl);
             transactionStarted = false;
 
             // Move XML to IMPORTED folder
@@ -635,7 +717,7 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
         } catch(error) {
             if (transactionStarted) {
                 try {
-                    RollbackSqlTransaction();
+                    SqlRollbackTransaction(transactionHndl); 
                 } catch(rollbackError) {
                     Mbox("Greška pri rollback transakcije: " + rollbackError);
                 }
@@ -647,6 +729,21 @@ function importUBLXmlFromDict(xmlContent, _invoiceId, xmlFilenameWithoutExtensio
     } catch(error) {
         Mbox("Greška prilikom uvoza XML datoteke: " + error);
         return;
+    }
+}
+
+//NKPR_GL_DESC
+function IsSupplierInvoiceNumberInDb(){
+    sqlQueryString = "select COUNT(*) from " + strtrim(databaseName) + ".dbo.NKPRINV WHERE NKPR_GL_DESC = '" + NKPR_GL_DESC + "'";
+    sqlRes = sqlQuery(sqlQueryString);
+    if (size(sqlRes) > 1){
+        count = sqlRes[1][0];
+        if(count > 0){
+            return true;
+        }
+        else{
+            return false;
+        }
     }
 }
 
@@ -694,8 +791,8 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         glDesc = GetNodeText(docData["ID"]);
         //treba sistemsky podatak iz NKSYSYCO da li firma koristi programe od Aura Softa za slanje e-računa,
         //onda treba iz glDesc izvlačiti broj računa koji je poslan na providera (sastavljen od 3 segmenta i pretvoriti u integer), a originalni broj računa staviti u NKPR_GL_DESC
-        //ako e-računi nisu formirani sa Aura Softovim programima, onda se u NKPR_GL_NUMJCD stavlja slijedeći broj iz table NKPRERGL + 1, a u NKPR_GL_DESC se stavlja broj računa iz glDesc (ako je duži od 40 znakova, onda se u NKPR_GL_DESC stavlja samo prvih 40 znakova, a ostatak se dodaje na memoX)
-        NKPR_GL_NUMJCD = GetNextRecordId("NKPRERGL"); // outgoing invoice number (our number)
+        //ako e-računi nisu formirani sa Aura Softovim programima, onda se u NKPR_GL_NUMJCD stavlja slijedeći broj iz table NKPRINV + 1, a u NKPR_GL_DESC se stavlja broj računa iz glDesc (ako je duži od 40 znakova, onda se u NKPR_GL_DESC stavlja samo prvih 40 znakova, a ostatak se dodaje na memoX)
+        NKPR_GL_NUMJCD = GetNextRecordId("NKPRINV"); // outgoing invoice number (our number)
         if(glDesc.length > 40){
             NKPR_GL_DESC = string(Substring(glDesc, 0, 40));
             memoX += "Originalni broj izlaznog računa: " + glDesc + "\n";
@@ -734,6 +831,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
 
         NKPR_GL_SIFDVZ = GetNodeText(docData["DocumentCurrencyCode"]);
 
+
         // --- AccountingCustomerParty = PARTNER (buyer) for outgoing invoices ---
         custParty = GetNodeText(docData["AccountingCustomerParty"]);
         if (custParty != null && custParty != "") {
@@ -741,15 +839,17 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             if (Contains(custParty, "Party")) {
                 custPartyData = GetNodeText(custParty["Party"]);
             }
-
+      
             OIBCust = ""; GLNCust = "";
-            companyIDEndpointID = custPartyData["EndpointID"];
+
+            companyIDEndpointID = custPartyData["EndpointID"];         
 
             if(companyIDEndpointID["@attributes"]["schemeID"] == "9934"){
                 OIBCust = GetNodeText(companyIDEndpointID);
+         
             } elif(companyIDEndpointID["@attributes"]["schemeID"] == "0088"){
                 GLNCust = GetNodeText(companyIDEndpointID);
-
+          
                 if(Contains(custPartyData, "PartyIdentification")){
                     if(ArrayOrDict(custPartyData["PartyIdentification"]) == "array"){
                         for(PIArrCntr = 0; PIArrCntr < Size(custPartyData["PartyIdentification"]); PIArrCntr++){
@@ -778,7 +878,7 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                     }
                 }
             }
-
+   
             // Customer name
             custName = "";
             if (Contains(custPartyData, "PartyLegalEntity")) {
@@ -799,19 +899,19 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
             }
 
             // Check if already imported
-            sqlQueryString = "select NKPR_GL_BRPON, NKPR_GL_JMBG, NKPR_GL_DESC, NKPR_GL_POSRED from " + strtrim(databaseName) + ".dbo.NKPRERGL WHERE NKPR_GL_NUMJCD = '" + NKPR_GL_NUMJCD + "'";
+            sqlQueryString = "select NKPR_GL_JMBG, NKPR_GL_DESC, NKPR_GL_POSRED from " + strtrim(databaseName) + ".dbo.NKPRINV WHERE NKPR_GL_NUM = '" + NKPR_GL_NUMJCD + "'";
             sqlOIBInvoicenum = sqlQuery(sqlQueryString);
             if (size(sqlOIBInvoicenum) > 1){
                 if(copyIndicator == 0 || copyIndicator == "false"){
                     if(sqlOIBInvoicenum[1][3].trim() == ""){
-                        sqlStringInsertElectronicId = "UPDATE " + databaseName + ".dbo.NKPRERGL " +
+                        sqlStringInsertElectronicId = "UPDATE " + databaseName + ".dbo.NKPRINV " +
                                 "SET NKPR_GL_POSRED = @p1 " +
-                                "WHERE NKPR_GL_NUMJCD = @p2 AND NKPR_GL_POSRED = '';";
+                                "WHERE NKPR_GL_NUM = @p2 AND NKPR_GL_POSRED = '';";
                         sqlParams = {};
                         sqlParams.Add({"@p1", NKPR_GL_POSRED});
                         sqlParams.Add({"@p2", NKPR_GL_NUMJCD});
                         try{
-                            updateRes = SqlNonQuery(sqlStringInsertElectronicId, sqlParams);
+                            updateRes = SqlNonQuery(sqlStringInsertElectronicId, sqlParams, 60, transactionHndl);
                             if (updateRes == 0) { throw "Nije ažuriran niti jedan redak"; }
                         }catch(ex){ Mbox("Greška ažuriranja ID-a posrednika:\n" + ex); }
                     }
@@ -841,11 +941,11 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
 
         NKPR_GL_CUSCOD = "";
         if (OIBCust != "") {
-            sqlQueryString = "select NKSC_PARTCODE, NKSC_PARTNAME, NKSC_RO, NKSC_ADD1, NKSC_CITY, NKSC_ZIP, NKSC_drzava, NKSC_SIFRA from " + strtrim(databaseName) + ".dbo.NKSCPART WHERE NKSC_SIFRA = '" + OIBCust + "' AND (NKSC_CUST_VEND = 'K' || NKSC_CUST_VEND = '')";
+            sqlQueryString = "select NKSC_PARTCODE, NKSC_PARTNAME, NKSC_RO, NKSC_ADD1, NKSC_CITY, NKSC_ZIP, NKSC_drzava, NKSC_SIFRA from " + strtrim(databaseName) + ".dbo.NKSCPART WHERE NKSC_SIFRA = '" + OIBCust + "' AND (NKSC_CUST_VEND = 'K' OR NKSC_CUST_VEND = '')";
             try{ sqlPartner = sqlQuery(sqlQueryString); }
             catch(ex){ Mbox("Greška čitanja NKSCPART:\n" + ex); }
         } elif (GLNCust != "") {
-            sqlQueryString = "select NKSC_PARTCODE, NKSC_PARTNAME, NKSC_RO, NKSC_ADD1, NKSC_CITY, NKSC_ZIP, NKSC_drzava, NKSC_SIFRA from " + strtrim(databaseName) + ".dbo.NKSCPART WHERE NKSC_SOP = '" + GLNCust + "' AND (NKSC_CUST_VEND = 'K' || NKSC_CUST_VEND = '')";
+            sqlQueryString = "select NKSC_PARTCODE, NKSC_PARTNAME, NKSC_RO, NKSC_ADD1, NKSC_CITY, NKSC_ZIP, NKSC_drzava, NKSC_SIFRA from " + strtrim(databaseName) + ".dbo.NKSCPART WHERE NKSC_SOP = '" + GLNCust + "' AND (NKSC_CUST_VEND = 'K' OR NKSC_CUST_VEND = '')";
             try{ sqlPartner = sqlQuery(sqlQueryString); }
             catch(ex){ Mbox("Greška čitanja NKSCPART:\n" + ex); }
         } else {
@@ -1006,7 +1106,9 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
 function SaveMemoX(){
     NKPR_GL_BROPIS2 = 0;
     if(MemoX != ""){
-        NKPR_GL_BROPIS2 = SaveNoteToNKNAOPIS(MemoX);
+        
+        nextNoteNum++;
+        NKPR_GL_BROPIS2 = SaveNoteToKPPROPIS(MemoX);
         if (NKPR_GL_BROPIS2 == 0) {
             throw "Greška pri spremanju MemoX napomene";
         }
@@ -1014,14 +1116,14 @@ function SaveMemoX(){
 }
 
 // -----------------------------------------------------------
-function SaveNoteToNKNAOPIS(noteText) {
+function SaveNoteToKPPROPIS(noteText) {
     if (noteText == "" || noteText == null) { return 0; }
 
-    sql_max_note = "SELECT ISNULL(MAX(KPPR_OP_BROJ), 0) AS maxNum FROM " + databaseName + ".dbo.NKNAOPIS";
-    maxRes = sqlQuery(sql_max_note);
+    // sql_max_note = "SELECT ISNULL(MAX(KPPR_OP_BROJ), 0) AS maxNum FROM " + databaseName + ".dbo.KPPROPIS";
+    // maxRes = sqlQuery(sql_max_note);
 
-    nextNoteNum = 1;
-    if (Size(maxRes) >= 2) { nextNoteNum = maxRes[1][0] + 1; }
+    // nextNoteNum = 1;
+    // if (Size(maxRes) >= 2) { nextNoteNum = maxRes[1][0] + 1; }
 
     noteLength  = noteText.length;
     chunkSize   = 75;
@@ -1033,13 +1135,13 @@ function SaveNoteToNKNAOPIS(noteText) {
         currentChunkSize = (remainingLength > chunkSize) ? chunkSize : remainingLength;
         chunk = Substring(noteText, startPos, currentChunkSize);
 
-        sql_insert_note = "INSERT INTO " + databaseName + ".dbo.NKNAOPIS (KPPR_OP_BROJ, KPPR_OP_LIN, KPPR_OP_TEXT) VALUES (@p1, @p2, @p3);";
+        sql_insert_note = "INSERT INTO " + databaseName + ".dbo.KPPROPIS (KPPR_OP_BROJ, KPPR_OP_LIN, KPPR_OP_TEXT) VALUES (@p1, @p2, @p3);";
         sqlParams = {};
         sqlParams.Add({"@p1", nextNoteNum});
         sqlParams.Add({"@p2", lineNum});
         sqlParams.Add({"@p3", chunk});
 
-        result = SqlNonQuery(sql_insert_note, sqlParams);
+        result = SqlNonQuery(sql_insert_note, sqlParams, 60, transactionHndl);
         if (result == 0) { throw "Failed to insert note chunk at line " + lineNum; }
 
         startPos += chunkSize;
@@ -1056,11 +1158,19 @@ function ExtractAndSaveNotes(docData) {
 
     if (!Contains(docData, "Note")) { return true; }
 
+    sql_max_note = "SELECT ISNULL(MAX(KPPR_OP_BROJ), 0) AS maxNum FROM " + databaseName + ".dbo.KPPROPIS";
+    maxRes = sqlQuery(sql_max_note);
+
+    nextNoteNum = 1;
+    if (Size(maxRes) >= 2) { nextNoteNum = maxRes[1][0]; }
+
     if (ArrayOrDict(docData["Note"]) == "array") {
         for (i = 0; i < Size(docData["Note"]); i++) {
+            nextNoteNum++;
             ProcessSingleNote(docData["Note"][i], i + 1);
         }
     } else {
+        nextNoteNum++;
         ProcessSingleNote(docData["Note"], 1);
     }
     return true;
@@ -1070,7 +1180,7 @@ function ProcessSingleNote(noteNode, noteIndex) {
     noteText = GetNodeText(noteNode);
     if(noteText.Type != "STRING"){ return; }
 
-    noteNum = SaveNoteToNKNAOPIS(noteText);
+    noteNum = SaveNoteToKPPROPIS(noteText);
     if (noteNum == 0) { throw "Greška pri spremanju napomene broj " + noteIndex; }
 
     if(noteIndex == 1){       NKPR_GL_BROPIS  = noteNum; }
@@ -1169,15 +1279,15 @@ function ExtractSingleLineFromDict(lineDict, quantityElementName) {
 }
 
 // -----------------------------------------------------------
-// Import header data into NKPRERGL (outgoing invoice table)
+// Import header data into NKPRINV (outgoing invoice table)
 // -----------------------------------------------------------
 function ImportHeaderDataToERGL(docType) {
     try{
-        newRecordId   = GetNextRecordId("NKPRERGL");
-        NKPR_GL_BRPON = newRecordId;
+        newRecordId   = GetNextRecordId("NKPRINV");
+        NKPR_GL_NUM = newRecordId;
 
-        sql_insert  = "INSERT INTO " + databaseName + ".dbo.NKPRERGL (";
-        sql_insert += "NKPR_GL_BRPON, NKPR_GL_NUMJCD, NKPR_GL_OZNAKA, NKPR_GL_INVDTE, NKPR_GL_TIMECR, ";
+        sql_insert  = "INSERT INTO " + databaseName + ".dbo.NKPRINV (";
+        sql_insert += "NKPR_GL_NUM, NKPR_GL_NUMJCD, NKPR_GL_OZNAKA, NKPR_GL_INVDTE, NKPR_GL_TIMECR, ";
         sql_insert += "NKPR_GL_DVO, NKPR_GL_NOKAM, NKPR_GL_ESD, NKPR_GL_SIFDVZ, ";
         sql_insert += "NKPR_GL_JMBG, NKPR_GL_CUSNME, NKPR_GL_CUSA1, NKPR_GL_CUSCTY, ";
         sql_insert += "NKPR_GL_CUSZIP, NKPR_GL_CUSST, NKPR_GL_CUSCOD, ";
@@ -1188,7 +1298,7 @@ function ImportHeaderDataToERGL(docType) {
         sql_insert += "NKPR_GL_BROPIS, NKPR_GL_BROPIS1, NKPR_GL_BROPIS2, NKPR_GL_REZ3, NKPR_GL_DATECR, NKPR_GL_DRZAVA, ";
         sql_insert += "NKPR_GL_POSRED, NKPR_GL_PICTHDR, NKPR_GL_PICTFTR, NKPR_GL_DATJCD, NKPR_GL_INVCD";
         sql_insert += ") VALUES (";
-        sql_insert += "@brpon, @numjcd, @docType, @invDate, @timeCreated, ";
+        sql_insert += "@glnum, @numjcd, @docType, @invDate, @timeCreated, ";
         sql_insert += "@dvo, @nokam, @taxPointDate, @currency, ";
         sql_insert += "@custOIB, @custName, @custAddress, @custCity, ";
         sql_insert += "@custZip, @custState, @custCode, ";
@@ -1201,7 +1311,7 @@ function ImportHeaderDataToERGL(docType) {
         sql_insert += ");";
 
         sqlParams = {};
-        sqlParams.Add({"@brpon", newRecordId});
+        sqlParams.Add({"@glnum", newRecordId});
         sqlParams.Add({"@numjcd", NKPR_GL_NUMJCD}); // OUR outgoing invoice number
         sqlParams.Add({"@docType", NKPR_GL_OZNAKA});
         sqlParams.Add({"@invDate", NKPR_GL_INVDTE});
@@ -1258,7 +1368,7 @@ function ImportHeaderDataToERGL(docType) {
         sqlParams.Add({"@datjcd", Now("yyyy-MM-dd")});
         sqlParams.Add({"@invcd", NKPR_GL_INVCD});
 
-        result = SqlNonQuery(sql_insert, sqlParams);
+        result = SqlNonQuery(sql_insert, sqlParams, 60, transactionHndl);
         if (result > 0) { return newRecordId; }
         else { throw "SQL insert neuspješan"; }
 
@@ -1282,7 +1392,7 @@ function ImportLineItemsToERLN(recordId, lineItems) {
             if(!Contains(lineData, "NKPR_LN_PDISC"))   { lineData["NKPR_LN_PDISC"]   = 0; }
             if(!Contains(lineData, "NKPR_LN_BROPI"))   { lineData["NKPR_LN_BROPI"]   = 0; }
 
-            sql_insert  = "INSERT INTO " + databaseName + ".dbo.NKPRERLN (";
+            sql_insert  = "INSERT INTO " + databaseName + ".dbo.NKPRINVL (";
             sql_insert += "NKPR_LN_INVNM, NKPR_LN_BR_LN, NKPR_LN_PQTY, NKPR_LN_AMT, ";
             sql_insert += "NKPR_LN_PCODE, NKPR_LN_PDESC, NKPR_LN_JEDMJ, ";
             sql_insert += "NKPR_LN_PPRCE, NKPR_LN_PRNPR, NKPR_LN_TXBLE, ";
@@ -1295,7 +1405,7 @@ function ImportLineItemsToERLN(recordId, lineItems) {
             sql_insert += ");";
 
             sqlParams = {};
-            sqlParams.Add({"@recordId", NKPR_GL_BRPON});
+            sqlParams.Add({"@recordId", NKPR_GL_NUM});
             sqlParams.Add({"@lineNum", i + 1});
             sqlParams.Add({"@qty", lineData["NKPR_LN_PQTY"]});
             sqlParams.Add({"@amount", lineData["NKPR_LN_AMT"]});
@@ -1317,19 +1427,19 @@ function ImportLineItemsToERLN(recordId, lineItems) {
             if (Contains(lineData, "NKPR_LN_SASTAV")) { lineAttachmentId = lineData["NKPR_LN_SASTAV"]; }
             sqlParams.Add({"@attachmentId", lineAttachmentId});
 
-            result = SqlNonQuery(sql_insert, sqlParams);
+            result = SqlNonQuery(sql_insert, sqlParams, 60, transactionHndl);
             if (result == 0) { throw "Greška prilikom unosa stavke " + (i + 1); }
         }
 
         // Extra attachment reference lines
         if(Size(restOfAttachments) > 0) {
             for(attNum = 0; attNum < Size(restOfAttachments); attNum++){
-                sql_insert  = "INSERT INTO " + databaseName + ".dbo.NKPRERLN (";
+                sql_insert  = "INSERT INTO " + databaseName + ".dbo.NKPRINVL (";
                 sql_insert += "NKPR_LN_INVNM, NKPR_LN_SASTAV, NKPR_LN_BR_LN, NKPR_LN_MA_US, NKPR_LN_PCODE, NKPR_LN_PDESC) VALUES (";
                 sql_insert += "@recordId, @sastav, @brLn, @MaUs, @PCode, @PDesc);";
 
                 sqlParams = {};
-                sqlParams.Add({"@recordId", NKPR_GL_BRPON});
+                sqlParams.Add({"@recordId", NKPR_GL_NUM});
                 sqlParams.Add({"@sastav", restOfAttachments[attNum]});
                 numOfLines++;
                 sqlParams.Add({"@brLn", numOfLines});
@@ -1337,7 +1447,7 @@ function ImportLineItemsToERLN(recordId, lineItems) {
                 sqlParams.Add({"@PCode", "\\"});
                 sqlParams.Add({"@PDesc", "Prilog broj " + (attNum + 1)});
 
-                result = SqlNonQuery(sql_insert, sqlParams);
+                result = SqlNonQuery(sql_insert, sqlParams, 60, transactionHndl);
                 if (result == 0) { throw "Greška unosa linije s referencom na attachment."; }
             }
         }
@@ -1352,12 +1462,12 @@ function ImportLineItemsToERLN(recordId, lineItems) {
                 brOpi1 = 0;
                 if(noteNum + 1 < Size(restOfNotes)) { brOpi1 = restOfNotes[noteNum + 1]; }
 
-                sql_insert  = "INSERT INTO " + databaseName + ".dbo.NKPRERLN (";
+                sql_insert  = "INSERT INTO " + databaseName + ".dbo.NKPRINVL (";
                 sql_insert += "NKPR_LN_INVNM, NKPR_LN_BROPI, NKPR_LN_BROPI1, NKPR_LN_BR_LN, NKPR_LN_MA_US, NKPR_LN_PCODE, NKPR_LN_PDESC) VALUES (";
                 sql_insert += "@recordId, @brOpi, @brOpi1, @brLn, @MaUs, @PCode, @PDesc);";
 
                 sqlParams = {};
-                sqlParams.Add({"@recordId", NKPR_GL_BRPON});
+                sqlParams.Add({"@recordId", NKPR_GL_NUM});
                 sqlParams.Add({"@brOpi", brOpi});
                 sqlParams.Add({"@brOpi1", brOpi1});
                 numOfLines++;
@@ -1366,7 +1476,7 @@ function ImportLineItemsToERLN(recordId, lineItems) {
                 sqlParams.Add({"@PCode", "\\"});
                 sqlParams.Add({"@PDesc", "Bilješka"});
 
-                result = SqlNonQuery(sql_insert, sqlParams);
+                result = SqlNonQuery(sql_insert, sqlParams, 60, transactionHndl);
                 if (result == 0) { throw "Greška unosa linije s referencom na note."; }
 
                 noteNum += 2;
@@ -1381,12 +1491,12 @@ function ImportLineItemsToERLN(recordId, lineItems) {
 }
 
 // -----------------------------------------------------------
-function GetNextRecordId(tableName) {
-    sql_max = "SELECT isnull(MAX(NKPR_GL_BRPON),0) AS lastNum FROM " + databaseName + ".dbo." + tableName;
-    result  = sqlQuery(sql_max);
-    if (Size(result) >= 2 && result[1][0] != 0) { return (result[1][0] + 1); }
-    return 1;
-}
+// function GetNextRecordId(tableName) {
+//     sql_max = "SELECT isnull(MAX(NKPR_GL_NUM),0) AS lastNum FROM " + databaseName + ".dbo." + tableName;
+//     result  = sqlQuery(sql_max);
+//     if (Size(result) >= 2 && result[1][0] != 0) { return (result[1][0] + 1); }
+//     return 1;
+// }
 
 // -----------------------------------------------------------
 function ExtractAndSaveAttachments(invoiceDict, docType) {
@@ -1397,12 +1507,13 @@ function ExtractAndSaveAttachments(invoiceDict, docType) {
         NKPR_GL_PICTFTR   = 0;
         attachmentCounter = 0;
 
-        if(Exists(pdfPathInIMPORTED)){
-            sql_max_pic = "SELECT ISNULL(MAX(SY_SL_NUM), 0) AS maxNum FROM " + databaseName + ".dbo.NKSYPICT";
-            maxRes      = sqlQuery(sql_max_pic);
-            nextPicNum  = 1;
-            if (Size(maxRes) >= 2) { nextPicNum = maxRes[1][0] + 1; }
+        sql_max_pic = "SELECT ISNULL(MAX(SY_SL_NUM), 0) AS maxNum FROM " + databaseName + ".dbo.NKSYPICT";
+        maxRes      = sqlQuery(sql_max_pic);
+        nextPicNum  = 1;
+        if (Size(maxRes) >= 2) { nextPicNum = maxRes[1][0]; }
 
+        if(Exists(pdfPathInIMPORTED)){
+            nextPicNum++;
             newPdfName = pdfPathInIMPORTED.Replace("p0.pdf", nextPicNum + ".pdf");
             Move(pdfPathInIMPORTED, newPdfName);
 
@@ -1414,16 +1525,18 @@ function ExtractAndSaveAttachments(invoiceDict, docType) {
             sqlParams.Add({"@p4", "D"});
             sqlParams.Add({"@p5", NKPR_GL_CUSCOD});
             sqlParams.Add({"@p6", "IR"}); // izlazni račun
-            sqlNonQuery(sql_insert_pic, sqlParams);
+            sqlNonQuery(sql_insert_pic, sqlParams, 60, transactionHndl);
             NKPR_GL_PICTHDR = nextPicNum;
         }
 
         if (Contains(docData, "AdditionalDocumentReference")) {
             if (ArrayOrDict(docData["AdditionalDocumentReference"]) == "array") {
                 for (i = 0; i < Size(docData["AdditionalDocumentReference"]); i++) {
+                    nextPicNum++;
                     ProcessSingleAttachment(docData["AdditionalDocumentReference"][i], i + 1);
                 }
             } else {
+                nextPicNum++;
                 ProcessSingleAttachment(docData["AdditionalDocumentReference"], 1);
             }
         }
@@ -1484,10 +1597,10 @@ function SaveAttachmentToDisk(base64Content, filename, description, attachmentID
         }
         attachmentCounter++;
 
-        sql_max_pic = "SELECT ISNULL(MAX(SY_SL_NUM), 0) AS maxNum FROM " + databaseName + ".dbo.NKSYPICT";
-        maxRes      = sqlQuery(sql_max_pic);
-        nextPicNum  = 1;
-        if (Size(maxRes) >= 2) { nextPicNum = maxRes[1][0] + 1; }
+        // sql_max_pic = "SELECT ISNULL(MAX(SY_SL_NUM), 0) AS maxNum FROM " + databaseName + ".dbo.NKSYPICT";
+        // maxRes      = sqlQuery(sql_max_pic);
+        // nextPicNum  = 1;
+        // if (Size(maxRes) >= 2) { nextPicNum = maxRes[1][0] + 1; }
 
         newPdfName = fullFilePath.Replace(parsefile(fullFilePath, "pfName"), nextPicNum);
         Move(fullFilePath, newPdfName);
@@ -1505,7 +1618,7 @@ function SaveAttachmentToDisk(base64Content, filename, description, attachmentID
         sqlParams.Add({"@p4", slikaIliDokument});
         sqlParams.Add({"@p5", NKPR_GL_CUSCOD});
         sqlParams.Add({"@p6", "IR"}); // izlazni račun
-        sqlNonQuery(sql_insert_pic, sqlParams);
+        sqlNonQuery(sql_insert_pic, sqlParams, 60, transactionHndl);
 
         return nextPicNum;
 
@@ -1533,7 +1646,7 @@ function LogNKSYELOG(elogStatusCode, _invoiceId, description = ""){
     VALUES (@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10);";
 
     sqlParams = {};
-    sqlParams.Add({"@p1",  NKPR_GL_BRPON});
+    sqlParams.Add({"@p1",  NKPR_GL_NUM});
     sqlParams.Add({"@p2",  NKPR_GL_INVDTE});
     sqlParams.Add({"@p3",  elogStatusCode.Upper()});
     sqlParams.Add({"@p4",  userCode});
@@ -1588,15 +1701,22 @@ function UnescapeFromXml(text) {
     return text;
 }
 
-function GetNodeText(node) {
-    if (node == null || node == "") { return ""; }
-    if (ArrayOrDict(node) == "dict") {
-        if (Contains(node, "@text")) {
-            return UnescapeFromXml(node["@text"]);
-        }
+// function GetNodeText(node) {
+//     if (node == null || node == "") { return ""; }
+//     if (ArrayOrDict(node) == "dict") {
+//         if (Contains(node, "@text")) {
+//             return UnescapeFromXml(node["@text"]);
+//         }
+//         return node;
+//     }
+//     return UnescapeFromXml(string(node));
+// }
+function GetNodeText(node){
+    if (Contains(node, "@text")) {
+        return UnescapeFromXml(node["@text"]);
+    } else {
         return node;
     }
-    return UnescapeFromXml(string(node));
 }
 
 function WriteLog(operation, logText, responseCode = 0) {
@@ -1634,7 +1754,7 @@ function end(){
 // Helper function to get next record ID
 //this is single user version; for multiuser one, it must be modified with a kind of locking scheme
 function GetNextRecordId(tableName) {
-    sql_max = "SELECT isnull(MAX(NKPR_GL_NUMJCD),0) AS lastNum FROM " + databaseName + ".dbo." + tableName;
+    sql_max = "SELECT isnull(MAX(NKPR_GL_NUM),0) AS lastNum FROM " + databaseName + ".dbo." + tableName;
     result = sqlQuery(sql_max);
     if (Size(result) >= 2 && result[1][0] != 0) {
         return (result[1][0] + 1);

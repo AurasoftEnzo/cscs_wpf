@@ -445,7 +445,7 @@ function GenerateUBLXml() {
     if(profileID == "P9"){
         //CreditNote
         // formatNumOption = "abs";
-        formatNumOption = "";
+        formatNumOption = "inv";
     }else{
         formatNumOption = "";
     }
@@ -1001,7 +1001,7 @@ function GenerateUBLXml() {
                     refContent = Substring(note, refStartPos + 5, refEndPos - refStartPos - 5);
                     
                     // Split by comma and process each reference
-                    refNumbers = Split(refContent, ",");
+                    refNumbers = refContent.Split(",");
                     for (refIdx = 0; refIdx < Size(refNumbers); refIdx++) {
                         refNum = refNumbers[refIdx].trim();
                         if (refNum != "" && refNum != "0") {

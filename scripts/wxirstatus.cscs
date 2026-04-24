@@ -101,6 +101,9 @@ DEFINE OIBFilter type a size 20;
 function Progress(increment){
     progress += increment;
     progressPercent = (progress / progressMax) * 100;
+    if(progressPercent > 100){
+        progressPercent = 100;
+    }
     RunOnMain("UpdateProgress");
 }
 
@@ -998,7 +1001,9 @@ function joinDataWithWinx(){
         
         Progress(1);
 
-        lookupFiskStatus(indexRacunaFinal);
+        if(arrayFinalIdRacunaPosrednika[indexRacunaFinal] != ""){
+            lookupFiskStatus(indexRacunaFinal);
+        }
 
         Progress(1);
     }
@@ -1016,7 +1021,7 @@ function lookupFiskStatus(_indexRacunaFinal){
 
         UUID(), // messageId
         "9934:" + companyOIB, // OIB primatelja (VLASTITI) // !!! stavit pravi OIB iz baze
-        arrayFinalBrojRacuna[_indexRacunaFinal]
+        arrayFinalIdRacunaPosrednika[_indexRacunaFinal]
     );
 
     if(Contains(fiskStatusAck, "ErrorCode")){

@@ -157,12 +157,12 @@ function refreshList(){
             kpkn_iznos as iznosRacuna,
             pi_pr_iznos as PlaceniIznos 
             FROM " + databaseName + ".dbo.NKPIPROM 
-            LEFT_JOIN " + databaseName + ".dbo.KPKNIZRN ON pi_pr_brdok= kpkn_redbr 
-            LEFT_JOIN " + databaseName + ".dbo.NKSCPART ON KPKN_PARTNR = NKSC_PARTCODE 
+            LEFT JOIN " + databaseName + ".dbo.KPKNIZRN ON pi_pr_brdok= kpkn_redbr 
+            LEFT JOIN " + databaseName + ".dbo.NKSCPART ON KPKN_PARTNR = NKSC_PARTCODE 
             WHERE month(pi_pr_date) = kpkn_redbr 
-            WHERE month(pi_pr_date) = @month 
+            AND month(pi_pr_date) = @month 
             AND year(pi_pr_date) = @year 
-            AND pi_pr_dp IN ( 'P','U')
+            AND pi_pr_dp IN ('P','U')
             ORDER BY pi_pr_date, pi_pr_brdok";
         
     }else{

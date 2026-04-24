@@ -211,23 +211,26 @@ function cbSve@clicked(){
     filterStatusInterniRacun = cbBool;
     filterStatusNijeUSustavuPdva = cbBool;
     filterStatusIzvoz = cbBool;
+
     filterStatusZaprimljen = cbBool;
     filterStatusPotvrdenoZaprimanje = cbBool;
+    
     filterStatusPrihvacen = cbBool;
     filterStatusOdbijen = cbBool;
+    
     filterStatusPlacanjeZaprimljeno = cbBool;
     filterStatusDjelomicnoPlaceno = cbBool;
     filterStatusPlaceno = cbBool;
 
-    filterStatusFiskaliziranDa = cbBool;
-    filterStatusFiskaliziranNe = cbBool;
-    filterStatusFiskaliziranGreska = cbBool;
-    filterStatusFiskaliziranPrazno = cbBool;
+    // filterStatusFiskaliziranDa = cbBool;
+    // filterStatusFiskaliziranNe = cbBool;
+    // filterStatusFiskaliziranGreska = cbBool;
+    // filterStatusFiskaliziranPrazno = cbBool;
 
-    filterStatusNaplacenDa = cbBool;
-    filterStatusNaplacenNe = cbBool;
-    filterStatusNaplacenGreska = cbBool;
-    filterStatusNaplacenPrazno = cbBool;
+    // filterStatusNaplacenDa = cbBool;
+    // filterStatusNaplacenNe = cbBool;
+    // filterStatusNaplacenGreska = cbBool;
+    // filterStatusNaplacenPrazno = cbBool;
 }
 
 // RbrX = 0;
@@ -526,6 +529,8 @@ function GetListFINA_B2B(){
                     invoiceId
                 );
 
+                Progress(1);
+
                 if(Contains(fiskStatusAck, "ErrorCode")){
                     // fiskStatus = "?";
                     // reportPaymentStatus = "?";
@@ -535,9 +540,6 @@ function GetListFINA_B2B(){
                     
                     // !!! spremit error u neki LOG
                 }else{
-
-                    Progress(1);
-
                     if(Contains(fiskStatusAck, "FiskStatus")){
                         fiskStatus = fiskStatusAck["FiskStatus"];
                         if(fiskStatus == "True"){
@@ -625,6 +627,11 @@ function GetListFINA_B2B(){
 
                 AddRacunToProviderArrays(buyerName, buyerId, datumIzdavanja, datumKnjizenja, aurasoftFormatSupplierInvoiceId, invoiceId, statusCode, fiskStatus, reportPaymentStatus, /*placeno*/ "0", invoicePayableAmount /*, kupacUAMS*/);
             }
+
+            joinDataWithWinx();
+
+            // RunOnMain("btnOsvjezi@clicked");
+            filter();
         }else{
             MessageBox("ack[\"ErrorCode\"] = " + ack["ErrorCode"] + "\nack[\"ErrorText\"] = " + ack["ErrorText"] + "\nack[\"ErrorMessage\"] = " + ack["ErrorMessage"]);
         }
@@ -789,6 +796,13 @@ function GetListMERSuccess(trackingId, responseCode, res) {
 
             racunObject = DeserializeJson(resParts[i]);
             
+            // function AddRacunToProviderArrays( 
+            //     supplierName, supplierId, datumIzdavanja, datumKnjizenja,
+            //      supplierInvoiceId, eRacunBrojRacuna, statusRacuna,
+            //       fiskStatus, reportPaymentStatus,
+            //        placeno = "", invoicePayableAmount = "" /*, kupacUAMS*/
+            //        ){
+            
             AddRacunToProviderArrays(
                 racunObject["RecipientBusinessName"],
                 racunObject["RecipientBusinessNumber"],
@@ -796,11 +810,19 @@ function GetListMERSuccess(trackingId, responseCode, res) {
                 "", // racunObject["Sent"], // datum
                 TransformInvoiceNumberToAurasoftFormat(racunObject["DocumentNr"]),
                 racunObject["ElectronicId"],
-                racunObject["StatusName"] + "(" + racunObject["StatusId"] + ")",
+                racunObject["StatusName"] + "(" + racunObject["StatusId"] + ")", // <----
                 "", // fiskStatus
-                "" // reportPaymentStatus
+                "", // reportPaymentStatus
+                0, // placeno
+                0 // invoicePayableAmount
             );
+
+            Progress(1);
         }
+
+        joinDataWithWinx();
+        
+        filter();
     }
     catch(ex){
         MessageBox("MERSuccess - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
@@ -1030,15 +1052,13 @@ function prikazi(){
         
         getWinxList();
         getProviderList();
-        joinDataWithWinx();  
 
         lastFilterDateTo = FilterDateTo;
         lastFilterDateFrom = FilterDateFrom;
         prikazano = true;
+    }else{
+        filter();
     }
-    
-    // RunOnMain("btnOsvjezi@clicked");
-    filter();
 }
 
 function prikaziEnd(){
@@ -1238,30 +1258,37 @@ function filter(){
 
         //filter by status
         if(
-            (filterStatusNijePoslan && arrayFinalStatusRacuna[iFinal] == "Nije poslan")
-            || (filterStatusInterniRacun && arrayFinalStatusRacuna[iFinal] == "Interni račun")
-            || (filterStatusNijeUSustavuPdva && arrayFinalStatusRacuna[iFinal] == "Nije u sustavu PDV-a")
-            || (filterStatusIzvoz && arrayFinalStatusRacuna[iFinal] == "Izvoz")
+            (
+                (filterStatusNijePoslan && arrayFinalStatusRacuna[iFinal] == "Nije poslan")
+                || (filterStatusInterniRacun && arrayFinalStatusRacuna[iFinal] == "Interni račun")
+                || (filterStatusNijeUSustavuPdva && arrayFinalStatusRacuna[iFinal] == "Nije u sustavu PDV-a")
+                || (filterStatusIzvoz && arrayFinalStatusRacuna[iFinal] == "Izvoz")
 
-            || (filterStatusZaprimljen && arrayFinalStatusRacuna[iFinal] == "Zaprimljen")
-            || (filterStatusPotvrdenoZaprimanje && arrayFinalStatusRacuna[iFinal] == "Potvrđeno zaprimanje")
+                || (filterStatusZaprimljen && arrayFinalStatusRacuna[iFinal] == "Zaprimljen")
+                || (filterStatusPotvrdenoZaprimanje && arrayFinalStatusRacuna[iFinal] == "Potvrđeno zaprimanje")
 
-            || (filterStatusPrihvacen && arrayFinalStatusRacuna[iFinal] == "Prihvaćen")
-            || (filterStatusOdbijen && arrayFinalStatusRacuna[iFinal] == "Odbijen")
+                || (filterStatusPrihvacen && arrayFinalStatusRacuna[iFinal] == "Prihvaćen")
+                || (filterStatusOdbijen && arrayFinalStatusRacuna[iFinal] == "Odbijen")
 
-            || (filterStatusPlacanjeZaprimljeno && arrayFinalStatusRacuna[iFinal] == "Plaćanje zaprimljeno")
-            || (filterStatusDjelomicnoPlaceno && arrayFinalStatusRacuna[iFinal] == "Djelomično plaćeno")
-            || (filterStatusPlaceno && arrayFinalStatusRacuna[iFinal] == "Plaćeno")
-
-            || (filterStatusFiskaliziranDa && arrayFinalStatusFiskalizacije[iFinal].StartsWith("Da"))
-            || (filterStatusFiskaliziranNe && arrayFinalStatusFiskalizacije[iFinal].StartsWith("NE"))
-            || (filterStatusFiskaliziranGreska && arrayFinalStatusFiskalizacije[iFinal] != "" && !arrayFinalStatusFiskalizacije[iFinal].StartsWith("Da") && !arrayFinalStatusFiskalizacije[iFinal].StartsWith("NE"))
-            || (filterStatusFiskaliziranPrazno && arrayFinalStatusFiskalizacije[iFinal] == "")
+                || (filterStatusPlacanjeZaprimljeno && arrayFinalStatusRacuna[iFinal] == "Plaćanje zaprimljeno")
+                || (filterStatusDjelomicnoPlaceno && arrayFinalStatusRacuna[iFinal] == "Djelomično plaćeno")
+                || (filterStatusPlaceno && arrayFinalStatusRacuna[iFinal] == "Plaćeno")
+            )
+            && 
+            (
+                (filterStatusFiskaliziranDa && arrayFinalStatusFiskalizacije[iFinal].StartsWith("Da"))
+                || (filterStatusFiskaliziranNe && arrayFinalStatusFiskalizacije[iFinal].StartsWith("NE"))
+                || (filterStatusFiskaliziranGreska && arrayFinalStatusFiskalizacije[iFinal] != "" && !arrayFinalStatusFiskalizacije[iFinal].StartsWith("Da") && !arrayFinalStatusFiskalizacije[iFinal].StartsWith("NE"))
+                || (filterStatusFiskaliziranPrazno && arrayFinalStatusFiskalizacije[iFinal] == "")
+            )
+            &&
+            (
+                (filterStatusNaplacenDa && arrayFinalReportPaymentStatus[iFinal].StartsWith("Da"))
+                || (filterStatusNaplacenNe && arrayFinalReportPaymentStatus[iFinal].StartsWith("NE"))
+                || (filterStatusNaplacenGreska && arrayFinalReportPaymentStatus[iFinal] != "" && !arrayFinalReportPaymentStatus[iFinal].StartsWith("Da") && !arrayFinalReportPaymentStatus[iFinal].StartsWith("NE"))
+                || (filterStatusNaplacenPrazno && arrayFinalReportPaymentStatus[iFinal] == "")
+            )
             
-            || (filterStatusNaplacenDa && arrayFinalReportPaymentStatus[iFinal].StartsWith("Da"))
-            || (filterStatusNaplacenNe && arrayFinalReportPaymentStatus[iFinal].StartsWith("NE"))
-            || (filterStatusNaplacenGreska && arrayFinalReportPaymentStatus[iFinal] != "" && !arrayFinalReportPaymentStatus[iFinal].StartsWith("Da") && !arrayFinalReportPaymentStatus[iFinal].StartsWith("NE"))
-            || (filterStatusNaplacenPrazno && arrayFinalReportPaymentStatus[iFinal] == "")
         ){
             AddFinalRacunToFilteredArrays(iFinal);
         }
@@ -1284,14 +1311,14 @@ function AddFinalRacunToFilteredArrays(iFinal){
     arrayFilteredZaPlacanje[RbrFiltered] = arrayFinalZaPlacanje[iFinal];
     //arrayFilteredKupacUAMS[RbrFiltered] = arrayFinalKupacUAMS[iFinal];
 
-    if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
-        arrayFilteredBrojRacunaMer[RbrFiltered] = arrayFinalBrojRacunaMer[iFinal];
-    } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
-        arrayFilteredBrojRacunaFina[RbrFiltered] = arrayFinalBrojRacunaFina[iFinal];
-    } else {
-        MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA, MERDEMO, FINADEMO");
-        exit;
-    }
+    // if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
+    //     arrayFilteredBrojRacunaMer[RbrFiltered] = arrayFinalBrojRacunaMer[iFinal];
+    // } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
+    //     arrayFilteredBrojRacunaFina[RbrFiltered] = arrayFinalBrojRacunaFina[iFinal];
+    // } else {
+    //     MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA, MERDEMO, FINADEMO");
+    //     exit;
+    // }
 
     arrayFilteredRbr[RbrFiltered] = ++RbrFiltered;
 }

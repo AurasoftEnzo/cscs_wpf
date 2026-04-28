@@ -25,6 +25,9 @@ DEFINE arrayWinxDatumSlanja type d size 8 array 10000;
 DEFINE arrayWinxDatumIzdavanja type d size 8 array 10000;
 DEFINE arrayWinxDatumKnjizenja type d size 8 array 10000;
 
+DEFINE arrayWinxIdRacunaPosrednika type a size 50 array 10000;
+DEFINE arrayWinxZaPlacanje type n size 14 dec 2 array 10000;
+
 
 //provider arrays
 DEFINE arrayProviderRbr type i size 100 array 10000;
@@ -401,11 +404,16 @@ function init(){
         KPSY_FISCAL_YR = sqlResult[1][11];
         KPSY_DOM_VALUTA = sqlResult[1][12].trim();
     } 
+
+    getProviderConfig();
+
+    if (PROVIDER != "MER" && PROVIDER != "MERDEMO" && PROVIDER != "FINA" && PROVIDER != "FINADEMO") {
+        MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA");
+        exit;
+    }
 }
 
-//-----------------------------------------------------------
-
-function getProviderList(){
+function getProviderConfig(){
     try {
         sql_erac = "SELECT
                 ERAC_REZ1, ERAC_SERVER, ERAC_SERVERT, ERAC_USER, ERAC_PASS, ERAC_USERT, ERAC_PASST, ERAC_DESC 
@@ -436,21 +444,19 @@ function getProviderList(){
         
         companyOIB = substring(KPSY_REZERVA, 0, 11).trim();
 
-        if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
-            GetListMER();
-        } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
-            GetListFINA_B2B();
-            //GetListFINA_B2G();
-        } else {
-            MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA");
-            exit;
-        }
+        
     } catch (ex) {
         MessageBox("Greška u preuzimanju sa provider-a " + PROVIDER + ": " + ex);
         // !!! LOG !!!
         exit;
     }
 }
+
+//-----------------------------------------------------------
+
+// function getProviderList(){
+    
+// }
 
 function GetListFINA_B2B(){
     // GET INCOMING INVOICE LIST
@@ -759,6 +765,17 @@ function TransformInvoiceNumberToAurasoftFormat(supplierInvoiceId){
     }
 }
 
+// 90100123 -> 123-90-1 
+function TransformFromAurasoftInvoiceId(aurasoftInvoiceId, keep000Prefix = false){
+    if(keep000Prefix){
+        invoiceNumber = substring(aurasoftInvoiceId, 3, 5);
+    }else{
+        invoiceNumber = int(substring(aurasoftInvoiceId, 3, 5));
+    }
+     
+    return invoiceNumber + "-" + substring(aurasoftInvoiceId, 0, 2) + "-" + substring(aurasoftInvoiceId, 2, 1);
+}
+
 function GetListMER(){
     // statusId = 40; // sent(and received)
     // statusId = 30; // sent(not received)
@@ -895,7 +912,7 @@ function AddRacunToProviderArrays(supplierName, supplierId, datumIzdavanja, datu
     arrayProviderRbr[RbrProvider] = ++RbrProvider;
 }
 
-function AddRacunToWinxArrays(brojRacuna, kupac, oibKupca, datumSlanja, statusRacuna, datumIzdavanja, datumKnjizenja){
+function AddRacunToWinxArrays(brojRacuna, kupac, oibKupca, datumSlanja, statusRacuna, datumIzdavanja, datumKnjizenja, electronicId, zaPlacanje = 0){
     // arrayKupac[Rbr] = supplierName;
     // arrayOibKupca[Rbr] = supplierId;
     // arrayStatusRacuna[Rbr] = statusRacuna;
@@ -912,6 +929,10 @@ function AddRacunToWinxArrays(brojRacuna, kupac, oibKupca, datumSlanja, statusRa
     
     arrayWinxDatumIzdavanja[RbrWinx] = datumIzdavanja.ToString("yyyy-MM-dd") == "1900-01-01" ? "" : datumIzdavanja;
     arrayWinxDatumKnjizenja[RbrWinx] = datumKnjizenja.ToString("yyyy-MM-dd") == "1900-01-01" ? "" : datumKnjizenja;
+
+
+    arrayWinxZaPlacanje[RbrWinx] = zaPlacanje;
+    arrayWinxIdRacunaPosrednika[RbrWinx] = electronicId;
 
     // arrayIdRacunaPosrednika[Rbr] = eRacunBrojRacuna;
 
@@ -951,7 +972,9 @@ function getWinxList(){
                 ELSE 'Nije poslan' 
             END as StatusRacuna,
             NKPR_GL_INVDTE,
-            NKPR_GL_ESD
+            NKPR_GL_ESD,
+            NKPR_GL_POSRED,
+            NKPR_GL_TOTAL
             FROM " + databaseName + ".dbo.NKPRINV 
             LEFT JOIN " + databaseName + ".dbo.KPSYSTEM on 1 = 1
             left join NKSCPART ON NKSC_PARTCODE = NKPR_GL_CUSCOD
@@ -959,7 +982,7 @@ function getWinxList(){
             ORDER BY NKPR_GL_NUM";
         sqlResult = SqlQuery(sql);
         
-        progressMax = (Size(sqlResult) - 1) * (1 + 1/*fina fisk status*/ + 1/*joining arrays*/);
+        progressMax = (Size(sqlResult) - 1) * (1 + 1);
 
         for(i = 1; i < Size(sqlResult); i++){
             AddRacunToWinxArrays(
@@ -969,7 +992,9 @@ function getWinxList(){
                 sqlResult[i][3],  // datum slanja
                 sqlResult[i][4],   // status racuna
                 sqlResult[i][5],   // datum izdavanja
-                sqlResult[i][6]    // datum knjizenja
+                sqlResult[i][6],   // datum knjizenja
+                sqlResult[i][7],   // electronicId
+                sqlResult[i][8]    // zaPlacanje
             );
             Progress(1);
         }
@@ -1136,8 +1161,21 @@ function prikazi(){
         progress = 0;
         
         getWinxList();
-        getProviderList();
+        // getProviderList(); // old
 
+        if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
+            getInvoiceStatusesFromMer();
+            // GetListMER(); // ??? 
+        } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
+            getInvoiceStatusesFromFina();
+            filter();
+            // GetListFINA_B2B();
+            //GetListFINA_B2G();
+        } else {
+            MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA");
+            exit;
+        }
+        
         lastFilterDateTo = FilterDateTo;
         lastFilterDateFrom = FilterDateFrom;
         prikazano = true;
@@ -1163,6 +1201,227 @@ function prikaziEnd(){
     // SetWidgetOptions("StatusLabel2", "Content", "");
 
     
+}
+
+function getInvoiceStatusesFromMer(){
+    // statusId = 40; // sent(and received)
+    // statusId = 30; // sent(not received)
+    
+    try {
+            
+        for(iMer = 0; iMer < RbrWinx; iMer++){
+            aurasoftInvoiceNumber = arrayWinxBrojRacuna[iMer];
+            jsonPayload = '{"Username": "' + ERAC_USER + 
+                        '", "Password": "' + ERAC_PASS + 
+                        '", "CompanyId": "' + companyOIB + 
+                        '", "SoftwareId": "' + ERAC_DESC + 
+                        // '", "StatusId": "' + statusId + // not mandatory
+                        // '", "From": "' + FilterDateFrom.ToString("yyyy-MM-dd") + 
+                        // '", "To": "' + FilterDateTo.ToString("yyyy-MM-dd") + 'T23:59:59' +
+                        '", "InvoiceNumber": "' + TransformFromAurasoftInvoiceId(aurasoftInvoiceNumber, false) + 
+                        '", "InvoiceYear": "' + arrayWinxDatumKnjizenja[iMer].ToString("yyyy") +
+                        '"}';
+            
+            // SaveFile(jsonPayload);
+            
+            apiUrl = ERAC_SERVER + "apis/v2/queryDocumentProcessStatusOutbox"; 
+            jsonResponse = WebRequest("POST", apiUrl, jsonPayload, iMer, "getInvoiceStatusesFromMerSuccess", "getInvoiceStatusesFromMerFailure", "application/json", null, 1000 * 20, false);
+        }
+        
+        Wait();
+        filter();
+
+    } catch (ex) {
+        MessageBox("Greška prilikom API poziva: " + ex);
+        // !!! LOG !!!
+        exit;
+    }
+}
+
+function getInvoiceStatusesFromMerSuccess(_trackingId1, responseCode, res) {
+    // MSG("MERSuccess"); // REMOVE
+
+    try{
+        res = res.ReplaceAndTrim("[", "", "]", "");
+        LogResponse(responseCode, "getInvoiceStatusesFromMerSuccess - tackingId: " + _trackingId1 + ", račun: " + arrayWinxBrojRacuna[_trackingId1] + "\n" + res);     
+
+        resObject = DeserializeJson(res);
+
+        if(!Contains(resObject, "DocumentProcessStatusName")){
+            //nije pronađen račun?
+            getInvoiceStatusesFromMer2(_trackingId1);
+        }else{
+            arrayWinxStatusRacuna[int(_trackingId1)] = resObject["DocumentProcessStatusName"];
+                
+            Progress(1);
+
+            if(_trackingId1 == RbrWinx - 1){
+                Signal();
+            }
+        }
+    }
+    catch(ex){
+        MessageBox("MERSuccess - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        // LogNKSYELOG(); // !!! LOG !!!
+        exit;
+    }
+}
+
+function getInvoiceStatusesFromMer2(_iMer){
+    jsonPayload = '{"Username": "' + ERAC_USER + 
+                '", "Password": "' + ERAC_PASS + 
+                '", "CompanyId": "' + companyOIB + 
+                '", "SoftwareId": "' + ERAC_DESC + 
+                // '", "StatusId": "' + statusId + // not mandatory
+                // '", "From": "' + FilterDateFrom.ToString("yyyy-MM-dd") + 
+                // '", "To": "' + FilterDateTo.ToString("yyyy-MM-dd") + 'T23:59:59' +
+                '", "InvoiceNumber": "' + TransformFromAurasoftInvoiceId(arrayWinxBrojRacuna[_iMer], true) + 
+                '", "InvoiceYear": "' + arrayWinxDatumKnjizenja[_iMer].ToString("yyyy") +
+                '"}';
+    
+    // MSG(jsonPayload);
+    
+    apiUrl = ERAC_SERVER + "apis/v2/queryDocumentProcessStatusOutbox"; 
+    jsonResponse = WebRequest("POST", apiUrl, jsonPayload, _iMer, "getInvoiceStatusesFromMerSuccess2", "getInvoiceStatusesFromMerFailure", "application/json", null, 1000 * 20, false);
+}
+
+
+function getInvoiceStatusesFromMerSuccess2(_trackingId2, responseCode, res) {
+    try{
+        res = res.ReplaceAndTrim("[", "", "]", "");
+        LogResponse(responseCode, "getInvoiceStatusesFromMerSuccess2 - tackingId: " + _trackingId2 + ", račun: " + arrayWinxBrojRacuna[_trackingId2] + "\n" + res);     
+
+        resObject = DeserializeJson(res);
+
+        if(!Contains(resObject, "DocumentProcessStatusName")){
+            //nije pronađen račun?
+        }else{
+            arrayWinxStatusRacuna[int(_trackingId2)] = resObject["DocumentProcessStatusName"];
+        }
+
+        Progress(1);
+
+        if(_trackingId2 == RbrWinx - 1){
+            Signal();
+        }
+    }
+    catch(ex){
+        MessageBox("MERFailureFailure - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        // !!! LOG !!!
+        exit;
+    }
+}
+
+
+function getInvoiceStatusesFromMerFailure(trackingId, responseCode, res) {
+    MSG("MERFailure");
+
+    try{
+        LogResponse(responseCode, "getInvoiceStatusesFromMerFailure - tackingId: " + trackingId + ", račun: " + arrayWinxBrojRacuna[trackingId] + "\n" + res);     
+
+        Progress(1);
+
+        if(trackingId == RbrWinx - 1){
+            Signal();
+        }
+    }
+    catch(ex){
+        MessageBox("MERFailure - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        // !!! LOG !!!
+        exit;
+    }
+}
+
+//-----------------------------------------------------------
+
+function getInvoiceStatusesFromFina(){
+    try{
+        for(iRbrWinx = 0; iRbrWinx < RbrWinx; iRbrWinx++){
+            Progress(1);
+
+            statusAck = FINA_GET_B2B_OUTGOING_INVOICE_STATUS(
+                ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",
+                ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
+                CERTPATH + ERAC_USERT, // servisni certifikat
+                CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
+                ERAC_PASS, // password za p12 certifikat
+                "9500095", // ERPID
+
+                UUID(), // messageId
+                "9934:" + companyOIB, // OIB primatelja (VLASTITI) // !!! stavit pravi OIB iz baze
+                TransformFromAurasoftInvoiceId(arrayWinxBrojRacuna[iRbrWinx], false), // supplierInvoiceId
+                arrayWinxDatumKnjizenja[iRbrWinx].ToString("yyyy") //datumKnjizenja.ToString("yyyy") // fiskalna godina / invoiceYear
+            );
+
+            if(!Contains(statusAck, "ErrorCode")){
+                if(Contains(statusAck, "DocumentStatuses") && Size(statusAck["DocumentStatuses"]) > 0){
+                    lastIndex = Size(statusAck["DocumentStatuses"]) - 1;
+                    lastStatus = statusAck["DocumentStatuses"][lastIndex]["StatusText"];
+                    if(lastStatus == "RECEIVED"){
+                        lastStatus = "Zaprimljen";
+                    }elif(lastStatus == "RECEIVING_CONFIRMED"){
+                        lastStatus = "Potvrđeno zaprimanje";
+                    }elif(lastStatus == "APPROVED"){
+                        lastStatus = "Prihvaćen";
+                    }elif(lastStatus == "REJECTED"){
+                        lastStatus = "Odbijen";
+                    }elif(lastStatus == "PAYMENT_RECEIVED"){
+                        lastStatus = "Plaćanje zaprimljeno";
+                    }elif(lastStatus == "PAYMENT_PARTIALLY_FULFILLED"){
+                        lastStatus = "Djelomično plaćeno";
+                    }elif(lastStatus == "PAYMENT_FULFILLED"){
+                        lastStatus = "Plaćeno";
+                    }
+
+                    arrayWinxStatusRacuna[iRbrWinx] = lastStatus;
+                }
+            }else{
+                statusAck = FINA_GET_B2B_OUTGOING_INVOICE_STATUS(
+                    ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService",
+                    ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
+                    CERTPATH + ERAC_USERT, // servisni certifikat
+                    CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
+                    ERAC_PASS, // password za p12 certifikat
+                    "9500095", // ERPID
+
+                    UUID(), // messageId
+                    "9934:" + companyOIB, // OIB primatelja (VLASTITI) // !!! stavit pravi OIB iz baze
+                    TransformFromAurasoftInvoiceId(arrayWinxBrojRacuna[iRbrWinx], true), // supplierInvoiceId
+                    arrayWinxDatumKnjizenja[iRbrWinx].ToString("yyyy") //datumKnjizenja.ToString("yyyy") // fiskalna godina / invoiceYear
+                );
+
+                if(!Contains(statusAck, "ErrorCode")){
+                    if(Contains(statusAck, "DocumentStatuses") && Size(statusAck["DocumentStatuses"]) > 0){
+                        lastIndex = Size(statusAck["DocumentStatuses"]) - 1;
+                        lastStatus = statusAck["DocumentStatuses"][lastIndex]["StatusText"];
+                        if(lastStatus == "RECEIVED"){
+                            lastStatus = "Zaprimljen";
+                        }elif(lastStatus == "RECEIVING_CONFIRMED"){
+                            lastStatus = "Potvrđeno zaprimanje";
+                        }elif(lastStatus == "APPROVED"){
+                            lastStatus = "Prihvaćen";
+                        }elif(lastStatus == "REJECTED"){
+                            lastStatus = "Odbijen";
+                        }elif(lastStatus == "PAYMENT_RECEIVED"){
+                            lastStatus = "Plaćanje zaprimljeno";
+                        }elif(lastStatus == "PAYMENT_PARTIALLY_FULFILLED"){
+                            lastStatus = "Djelomično plaćeno";
+                        }elif(lastStatus == "PAYMENT_FULFILLED"){
+                            lastStatus = "Plaćeno";
+                        }
+
+                        arrayWinxStatusRacuna[iRbrWinx] = lastStatus;
+                    }
+                }else{
+                    // ništa, ostaje status iz baze
+                }
+            }
+        }
+    }catch(ex){
+        MessageBox("Greška prilikom dohvata statusa računa od providera:\n" + ex);
+        // !!! LOG !!!
+        exit;
+    }
 }
 
 function LogResponse(responseCode, response) {
@@ -1335,6 +1594,85 @@ function EndExport2XLSX(){
 function filter(){
     RbrFiltered = 0;
 
+    for(iWinx = 0; iWinx < RbrWinx; iWinx++){
+
+        if(OIBFilter.trim() != "" && OIBFilter.trim() != arrayWinxOibKupca[iWinx].trim()){
+            continue;
+        }
+
+        //filter by status
+        if(
+            ( true ||
+                (filterStatusNijePoslan && arrayWinxStatusRacuna[iWinx] == "Nije poslan")
+                || (filterStatusInterniRacun && arrayWinxStatusRacuna[iWinx] == "Interni račun")
+                || (filterStatusNijeUSustavuPdva && arrayWinxStatusRacuna[iWinx] == "Nije u sustavu PDV-a")
+                || (filterStatusIzvoz && arrayWinxStatusRacuna[iWinx] == "Izvoz")
+
+                || (filterStatusZaprimljen && arrayWinxStatusRacuna[iWinx] == "Zaprimljen")
+                || (filterStatusPotvrdenoZaprimanje && arrayWinxStatusRacuna[iWinx] == "Potvrđeno zaprimanje")
+
+                || (filterStatusPrihvacen && arrayWinxStatusRacuna[iWinx] == "Prihvaćen")
+                || (filterStatusOdbijen && arrayWinxStatusRacuna[iWinx] == "Odbijen")
+
+                || (filterStatusPlacanjeZaprimljeno && arrayWinxStatusRacuna[iWinx] == "Plaćanje zaprimljeno")
+                || (filterStatusDjelomicnoPlaceno && arrayWinxStatusRacuna[iWinx] == "Djelomično plaćeno")
+                || (filterStatusPlaceno && arrayWinxStatusRacuna[iWinx] == "Plaćeno")
+            )
+            // && 
+            // (
+            //     (filterStatusFiskaliziranDa && arrayWinxStatusFiskalizacije[iWinx].StartsWith("Da"))
+            //     || (filterStatusFiskaliziranNe && arrayWinxStatusFiskalizacije[iWinx].StartsWith("NE"))
+            //     || (filterStatusFiskaliziranGreska && arrayWinxStatusFiskalizacije[iWinx] != "" && !arrayWinxStatusFiskalizacije[iWinx].StartsWith("Da") && !arrayWinxStatusFiskalizacije[iWinx].StartsWith("NE"))
+            //     || (filterStatusFiskaliziranPrazno && arrayWinxStatusFiskalizacije[iWinx] == "")
+            // )
+            // &&
+            // (
+            //     (filterStatusNaplacenDa && arrayWinxReportPaymentStatus[iWinx].StartsWith("Da"))
+            //     || (filterStatusNaplacenNe && arrayWinxReportPaymentStatus[iWinx].StartsWith("NE"))
+            //     || (filterStatusNaplacenGreska && arrayWinxReportPaymentStatus[iWinx] != "" && !arrayWinxReportPaymentStatus[iWinx].StartsWith("Da") && !arrayWinxReportPaymentStatus[iWinx].StartsWith("NE"))
+            //     || (filterStatusNaplacenPrazno && arrayWinxReportPaymentStatus[iWinx] == "")
+            // )
+            
+        ){
+            AddWinxRacunToFilteredArrays(iWinx);
+        }
+    }
+}
+
+
+function AddWinxRacunToFilteredArrays(iWinx){
+    arrayFilteredKupac[RbrFiltered] = arrayWinxKupac[iWinx];
+    arrayFilteredOibKupca[RbrFiltered] = arrayWinxOibKupca[iWinx];
+    arrayFilteredStatusRacuna[RbrFiltered] = arrayWinxStatusRacuna[iWinx];
+    arrayFilteredDatumIzdavanja[RbrFiltered] = arrayWinxDatumIzdavanja[iWinx];
+    arrayFilteredDatumKnjizenja[RbrFiltered] = arrayWinxDatumKnjizenja[iWinx];
+    arrayFilteredDatumSlanja[RbrFiltered] = arrayWinxDatumSlanja[iWinx];
+    arrayFilteredBrojRacuna[RbrFiltered] = arrayWinxBrojRacuna[iWinx];
+    arrayFilteredIdRacunaPosrednika[RbrFiltered] = arrayWinxIdRacunaPosrednika[iWinx];
+    // arrayFilteredStatusFiskalizacije[RbrFiltered] = arrayWinxStatusFiskalizacije[iWinx];
+    // arrayFilteredReportPaymentStatus[RbrFiltered] = arrayWinxReportPaymentStatus[iWinx];
+    // arrayFilteredPlaceno[RbrFiltered] = arrayWinxPlaceno[iWinx];
+
+    arrayFilteredZaPlacanje[RbrFiltered] = arrayWinxZaPlacanje[iWinx];
+    
+    //arrayFilteredKupacUAMS[RbrFiltered] = arrayWinxKupacUAMS[iWinx];
+
+    // if (PROVIDER == "MER" || PROVIDER == "MERDEMO") {
+    //     arrayFilteredBrojRacunaMer[RbrFiltered] = arrayWinxBrojRacunaMer[iWinx];
+    // } elif (PROVIDER == "FINA" || PROVIDER == "FINADEMO") {
+    //     arrayFilteredBrojRacunaFina[RbrFiltered] = arrayWinxBrojRacunaFina[iWinx];
+    // } else {
+    //     MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA, MERDEMO, FINADEMO");
+    //     exit;
+    // }
+
+    arrayFilteredRbr[RbrFiltered] = ++RbrFiltered;
+}
+
+
+function filter_OLD(){
+    RbrFiltered = 0;
+
     for(iFinal = 0; iFinal < RbrFinal; iFinal++){
 
         if(OIBFilter.trim() != "" && OIBFilter.trim() != arrayFinalOibKupca[iFinal].trim()){
@@ -1381,7 +1719,7 @@ function filter(){
 }
 
 
-function AddFinalRacunToFilteredArrays(iFinal){
+function AddFinalRacunToFilteredArrays_OLD(iFinal){
     arrayFilteredKupac[RbrFiltered] = arrayFinalKupac[iFinal];
     arrayFilteredOibKupca[RbrFiltered] = arrayFinalOibKupca[iFinal];
     arrayFilteredStatusRacuna[RbrFiltered] = arrayFinalStatusRacuna[iFinal];

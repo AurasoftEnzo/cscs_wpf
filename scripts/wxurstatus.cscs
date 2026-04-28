@@ -58,6 +58,9 @@ DEFINE OIBFilter type a size 20;
 function Progress(increment){
     progress += increment;
     progressPercent = (progress / progressMax) * 100;
+    if(progressPercent > 100){
+        progressPercent = 100;
+    }
     RunOnMain("UpdateProgress");
 }
 
@@ -572,13 +575,13 @@ function GetListMERSuccess(trackingId, responseCode, res) {
             // MSG(racunObject);
             
             sqlResultNKNAERGL = GetNKNAERGLFromSQL(racunObject["ElectronicId"], racunObject["DocumentNr"], racunObject["SenderBusinessNumber"]);
-
+// msg(racunObject);
             AddRacunToArrays(
                 racunObject["SenderBusinessName"],
                 racunObject["SenderBusinessNumber"],
-                "Zaprimljen", // racunObject["StatusName"] + "(" + racunObject["StatusId"] + ")",
-                Substring(racunObject["Sent"], 0, 10), // datum
-                "", // datum
+                racunObject["StatusName"] + "(" + racunObject["StatusId"] + ")",
+                "", //DateTime(Substring(racunObject["Issued"], 0, 10), "yyyy-MM-dd"), // datum izdavanja
+                "", // DateTime("1900-01-01", "yyyy-MM-dd"), // datum PDVa
                 racunObject["DocumentNr"],
                 racunObject["ElectronicId"],
                 "", // fiskStatus
@@ -620,6 +623,7 @@ function AddRacunToArrays(supplierName, supplierId, statusRacuna, datumIzdavanja
     arrayStatusRacuna[Rbr] = statusRacuna;
     arrayDatumIzdavanja[Rbr] = datumIzdavanja;
     arrayDatumPDVa[Rbr] = datumPdva;
+    // msg(arrayDatumPDVa[Rbr].toString("dd-MM-yy"));
     arrayBrojRacuna[Rbr] = supplierInvoiceId;
     
     arrayIdRacunaPosrednika[Rbr] = eRacunBrojRacuna;

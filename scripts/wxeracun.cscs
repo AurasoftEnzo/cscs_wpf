@@ -795,7 +795,7 @@ function GenerateUBLXml() {
                 xml += "                    <hrextac:HRTaxCategory>\n";
                 xml += "                        <cbc:ID>S</cbc:ID>\n";
                 xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
-                xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".", formatNumOption) + "</cbc:Percent>\n";
+                xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".", "abs") + "</cbc:Percent>\n";
                 xml += "                        <hrextac:HRTaxScheme>\n";
                 xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
                 xml += "                        </hrextac:HRTaxScheme>\n";
@@ -812,7 +812,7 @@ function GenerateUBLXml() {
                 xml += "                    <hrextac:HRTaxCategory>\n";
                 xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
                 xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
-                xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".", formatNumOption) + "</cbc:Percent>\n";
+                xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".", "abs") + "</cbc:Percent>\n";
                 if (exemptReason != ""){
                     xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
                 }   
@@ -828,7 +828,7 @@ function GenerateUBLXml() {
                 xml += "                    <hrextac:HRTaxCategory>\n";
                 xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
                 xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
-                xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".", formatNumOption) + "</cbc:Percent>\n";
+                xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".", "abs") + "</cbc:Percent>\n";
                 if (exemptReason != ""){
                     xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
                 }   
@@ -844,7 +844,7 @@ function GenerateUBLXml() {
                 xml += "                    <hrextac:HRTaxCategory>\n";
                 xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
                 xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
-                xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".", formatNumOption) + "</cbc:Percent>\n";
+                xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".", "abs") + "</cbc:Percent>\n";
                 if (exemptReason != ""){
                     xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
                 }   
@@ -861,7 +861,7 @@ function GenerateUBLXml() {
                 xml += "                    <hrextac:HRTaxCategory>\n";
                 xml += "                        <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n";
                 xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n"; //HR-BT-22
-                xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".", formatNumOption) + "</cbc:Percent>\n";
+                xml += "                        <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".", "abs") + "</cbc:Percent>\n";
                 if (exemptReason != ""){
                     xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n"; //HR-BT-20
                 }   
@@ -1646,7 +1646,7 @@ function GenerateUBLXml() {
             xml += "                    <cac:TaxCategory>\n";
             xml += "                        <cbc:ID>S</cbc:ID>\n"; // All PDV variants use 'S' category
             //xml += "                        <cbc:Name>" + taxName + "</cbc:Name>\n";
-            xml += "                        <cbc:Percent>" + FormatNum(taxRate, 0, ".", formatNumOption) + "</cbc:Percent>\n";
+            xml += "                        <cbc:Percent>" + FormatNum(taxRate, 0, ".", "abs") + "</cbc:Percent>\n";
             xml += "                        <cac:TaxScheme>\n";
             xml += "                            <cbc:ID>" + taxSchemeID + "</cbc:ID>\n";
             xml += "                        </cac:TaxScheme>\n";
@@ -1659,7 +1659,7 @@ function GenerateUBLXml() {
             xml += "                    <cac:TaxCategory>\n";
             xml += "                        <cbc:ID>" + categoryID + "</cbc:ID>\n";
             //xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
-            xml += "                        <cbc:Percent>" + FormatNum(taxRate, 0, ".", formatNumOption) + "</cbc:Percent>\n";
+            xml += "                        <cbc:Percent>" + FormatNum(taxRate, 0, ".", "abs") + "</cbc:Percent>\n";
             if (exemptReason != ""){
                 xml += "                        <cbc:TaxExemptionReason>" + taxName + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
             }   
@@ -1674,7 +1674,7 @@ function GenerateUBLXml() {
             xml += "                    <cac:TaxCategory>\n";
             xml += "                        <cbc:ID>" + "E" + "</cbc:ID>\n";
             //xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
-            xml += "                        <cbc:Percent>" + FormatNum(taxRate, 0, ".", formatNumOption) + "</cbc:Percent>\n";
+            xml += "                        <cbc:Percent>" + FormatNum(taxRate, 0, ".", "abs") + "</cbc:Percent>\n";
             if (exemptReason != ""){
                 xml += "                        <cbc:TaxExemptionReason>" + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
             }   
@@ -1690,7 +1690,7 @@ function GenerateUBLXml() {
             xml += "                    <cac:TaxCategory>\n";
             xml += "                        <cbc:ID>" + categoryID + "</cbc:ID>\n";
             //xml += "                        <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
-            xml += "                        <cbc:Percent>" + FormatNum(taxRate, 0, ".", formatNumOption) + "</cbc:Percent>\n";
+            xml += "                        <cbc:Percent>" + FormatNum(taxRate, 0, ".", "abs") + "</cbc:Percent>\n";
             if (exemptReason != ""){
                 xml += "                        <cbc:TaxExemptionReason>" + taxName + EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n";
             }   
@@ -1955,7 +1955,7 @@ function GenerateUBLXml() {
         if (PKFK_TAX_TIP == ""){
             if(SUBSTRING(PKFK_TAX_TARIFA, 0, 3) == "PDV") {
                 PKFK_TAX_TARIFA = "S";
-                taxName = "HR:PDV" + FormatNum(NKPR_LN_PRNPR, 0, ".", formatNumOption);
+                taxName = "HR:PDV" + FormatNum(NKPR_LN_PRNPR, 0, ".", "abs");
             }
             elif (PKFK_TAX_TARIFA == "POVNAK") {
                 PKFK_TAX_TARIFA = "E";
@@ -1968,7 +1968,7 @@ function GenerateUBLXml() {
             else{
                 //primjer izvoz gdje je kategorija G
                 //PKFK_TAX_TARIFA = "E";
-                taxName = "HR:"+ P KFK_TAX_TARIFA;
+                taxName = "HR:"+ PKFK_TAX_TARIFA;
             }    
             exemptReason = "";
             if (PKFK_TAX_DOBOPC != "" && nkpr_ln_prnpr == 0) {
@@ -1988,7 +1988,7 @@ function GenerateUBLXml() {
             xml += "    <cac:ClassifiedTaxCategory>\n";
             xml += "      <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n"; //BT-151
             xml += "      <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
-            xml += "      <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".", formatNumOption) + "</cbc:Percent>\n";
+            xml += "      <cbc:Percent>" + FormatNum(NKPR_LN_PRNPR, 0, ".", "abs") + "</cbc:Percent>\n";
             if (exemptReason != ""){
                 xml += "                        <cbc:TaxExemptionReason>" + "#" + taxName +"#"+ EscapeForXml(exemptReason) + "</cbc:TaxExemptionReason>\n"; //BT-120
             }   
@@ -2010,12 +2010,12 @@ function GenerateUBLXml() {
             }
             if(SUBSTRING(PKFK_TAX_TARIFA, 0, 3) == "PDV") {
                 PKFK_TAX_TARIFA = "S";
-                taxName = "HR:PDV" + FormatNum(PKFK_TAX_STOPA, 0, ".", formatNumOption);
+                taxName = "HR:PDV" + FormatNum(PKFK_TAX_STOPA, 0, ".", "abs");
             }
             xml += "    <cac:ClassifiedTaxCategory>\n";
             xml += "      <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n"; //BT-151
             xml += "      <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
-            xml += "      <cbc:Percent>" + FormatNum(PKFK_TAX_STOPA, 0, ".", formatNumOption) + "</cbc:Percent>\n";
+            xml += "      <cbc:Percent>" + FormatNum(PKFK_TAX_STOPA, 0, ".", "abs") + "</cbc:Percent>\n";
             taxSchemeID = "VAT";
             xml += "      <cac:TaxScheme><cbc:ID>" + taxSchemeID + "</cbc:ID></cac:TaxScheme>\n";
             xml += "    </cac:ClassifiedTaxCategory>\n";
@@ -2035,7 +2035,7 @@ function GenerateUBLXml() {
             xml += "    <cac:ClassifiedTaxCategory>\n";
             xml += "      <cbc:ID>" + PKFK_TAX_TARIFA + "</cbc:ID>\n"; //BT-151
             xml += "      <cbc:Name>" + EscapeForXml(taxName) + "</cbc:Name>\n";
-            xml += "      <cbc:Percent>" + FormatNum(PKFK_TAX_STOPA, 0, ".", formatNumOption) + "</cbc:Percent>\n";
+            xml += "      <cbc:Percent>" + FormatNum(PKFK_TAX_STOPA, 0, ".", "abs") + "</cbc:Percent>\n";
             taxSchemeID = "LOC";
             xml += "      <cac:TaxScheme><cbc:ID>" + taxSchemeID + "</cbc:ID></cac:TaxScheme>\n";
             xml += "    </cac:ClassifiedTaxCategory>\n";
@@ -2046,7 +2046,7 @@ function GenerateUBLXml() {
 
         // Price
         xml += "  <cac:Price>\n";
-        xml += "    <cbc:PriceAmount currencyID=\"EUR\">" + FormatNum(NKPR_LN_PPRCE, 4, ".", formatNumOption) + "</cbc:PriceAmount>\n";
+        xml += "    <cbc:PriceAmount currencyID=\"EUR\">" + FormatNum(NKPR_LN_PPRCE, 4, ".", "abs") + "</cbc:PriceAmount>\n";
         xml += "    <cbc:BaseQuantity unitCode=\"" + GetUNUnitCode(NKPR_LN_JEDMJ) + "\">1.00</cbc:BaseQuantity>\n";
         xml += "  </cac:Price>\n";
 

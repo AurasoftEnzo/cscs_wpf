@@ -153,51 +153,84 @@ function LoadDocument(xDoc, UBLType) {
     // -------------------- HR MONETARY TOTALS --------------------
     taxExclusiveAmountHR = XmlGetValue(xDoc, "ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/hrextac:HRFISK20Data/hrextac:HRLegalMonetaryTotal/cbc:TaxExclusiveAmount", nsCbc);
     HRLegalMonetaryTotalArray = XmlGetElements(xDoc, "ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/hrextac:HRFISK20Data/hrextac:HRLegalMonetaryTotal", nsHrextac);
-    lineExtensionAmountHRCurrencyID = XmlGetChildAttribute(HRLegalMonetaryTotalArray[0], "TaxExclusiveAmount", "currencyID", nsCbc);
-    taxExclusiveAmountHRFormatted = taxExclusiveAmountHR + " " + lineExtensionAmountHRCurrencyID;
+    taxExclusiveAmountHRFormatted = "";
+    outOfScopeOfVATAmountHRFormatted = "";
+    if(Size(HRLegalMonetaryTotalArray) > 0){
+        lineExtensionAmountHRCurrencyID = XmlGetChildAttribute(HRLegalMonetaryTotalArray[0], "TaxExclusiveAmount", "currencyID", nsCbc);
+        taxExclusiveAmountHRFormatted = taxExclusiveAmountHR + " " + lineExtensionAmountHRCurrencyID;
 
-    outOfScopeOfVATAmountHR = XmlGetValue(xDoc, "ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/hrextac:HRFISK20Data/hrextac:HRLegalMonetaryTotal/hrextac:OutOfScopeOfVATAmount", nsHrextac);
-    outOfScopeOfVATAmountHRCurrencyID = XmlGetChildAttribute(HRLegalMonetaryTotalArray[0], "OutOfScopeOfVATAmount", "currencyID", nsHrextac);
-    outOfScopeOfVATAmountHRFormatted = outOfScopeOfVATAmountHR + " " + outOfScopeOfVATAmountHRCurrencyID;
+        outOfScopeOfVATAmountHR = XmlGetValue(xDoc, "ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/hrextac:HRFISK20Data/hrextac:HRLegalMonetaryTotal/hrextac:OutOfScopeOfVATAmount", nsHrextac);
+        outOfScopeOfVATAmountHRCurrencyID = XmlGetChildAttribute(HRLegalMonetaryTotalArray[0], "OutOfScopeOfVATAmount", "currencyID", nsHrextac);
+        outOfScopeOfVATAmountHRFormatted = outOfScopeOfVATAmountHR + " " + outOfScopeOfVATAmountHRCurrencyID;
+    }
+
+
 
     TaxAmountHR = XmlGetValue(xDoc, "ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/hrextac:HRFISK20Data/hrextac:HRTaxTotal/cbc:TaxAmount", nsCbc);
     HRTaxTotalArray = XmlGetElements(xDoc, "ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/hrextac:HRFISK20Data/hrextac:HRTaxTotal", nsHrextac);
-    taxTotalHRCurrencyID = XmlGetChildAttribute(HRTaxTotalArray[0], "TaxAmount", "currencyID", nsCbc);
-    taxAmountHRFormatted = TaxAmountHR + " " + taxTotalHRCurrencyID;
+    taxAmountHRFormatted = "";
+    if(Size(HRTaxTotalArray) > 0){
+        taxTotalHRCurrencyID = XmlGetChildAttribute(HRTaxTotalArray[0], "TaxAmount", "currencyID", nsCbc);
+        taxAmountHRFormatted = TaxAmountHR + " " + taxTotalHRCurrencyID;
+    }
 
     // -------------------- MONETARY TOTALS --------------------
     LegalMonetaryTotalArray = XmlGetElements(xDoc, "cac:LegalMonetaryTotal", nsCac);
     lineExtensionAmountCurrencyID = XmlGetChildAttribute(LegalMonetaryTotalArray[0], "LineExtensionAmount", "currencyID", nsCbc);
     lineExtensionAmount = XmlGetValue(xDoc, "cac:LegalMonetaryTotal/cbc:LineExtensionAmount", nsCbc);
-    lineExtensionAmountFormatted = lineExtensionAmount + " " + lineExtensionAmountCurrencyID;
+    lineExtensionAmountFormatted = "";
+    if(Size(LegalMonetaryTotalArray) > 0){
+        lineExtensionAmountFormatted = lineExtensionAmount + " " + lineExtensionAmountCurrencyID;
+    }
 
     taxExclusiveAmountCurrencyID = XmlGetChildAttribute(LegalMonetaryTotalArray[0], "TaxExclusiveAmount", "currencyID", nsCbc);
     taxExclusiveAmount = XmlGetValue(xDoc, "cac:LegalMonetaryTotal/cbc:TaxExclusiveAmount", nsCbc);
-    taxExclusiveAmountFormatted = taxExclusiveAmount + " " + taxExclusiveAmountCurrencyID;
+    taxExclusiveAmountFormatted = "";
+    if(Size(LegalMonetaryTotalArray) > 0){
+        taxExclusiveAmountFormatted = taxExclusiveAmount + " " + taxExclusiveAmountCurrencyID;
+    }
 
     taxInclusiveAmountCurrencyID = XmlGetChildAttribute(LegalMonetaryTotalArray[0], "TaxInclusiveAmount", "currencyID", nsCbc);
     taxInclusiveAmount = XmlGetValue(xDoc, "cac:LegalMonetaryTotal/cbc:TaxInclusiveAmount", nsCbc);
-    taxInclusiveAmountFormatted = taxInclusiveAmount + " " + taxInclusiveAmountCurrencyID;
+    taxInclusiveAmountFormatted = "";
+    if(Size(LegalMonetaryTotalArray) > 0){
+        taxInclusiveAmountFormatted = taxInclusiveAmount + " " + taxInclusiveAmountCurrencyID;
+    }
 
     allowanceTotalAmountCurrencyID = XmlGetChildAttribute(LegalMonetaryTotalArray[0], "AllowanceTotalAmount", "currencyID", nsCbc);
     allowanceTotalAmount = XmlGetValue(xDoc, "cac:LegalMonetaryTotal/cbc:AllowanceTotalAmount", nsCbc);
-    allowanceTotalAmountFormatted = allowanceTotalAmount + " " + allowanceTotalAmountCurrencyID;
+    allowanceTotalAmountFormatted = "";
+    if(Size(LegalMonetaryTotalArray) > 0){
+        allowanceTotalAmountFormatted = allowanceTotalAmount + " " + allowanceTotalAmountCurrencyID;
+    }
 
     chargeTotalAmountCurrencyID = XmlGetChildAttribute(LegalMonetaryTotalArray[0], "ChargeTotalAmount", "currencyID", nsCbc);
     chargeTotalAmount = XmlGetValue(xDoc, "cac:LegalMonetaryTotal/cbc:ChargeTotalAmount", nsCbc);
-    chargeTotalAmountFormatted = chargeTotalAmount + " " + chargeTotalAmountCurrencyID;
+    chargeTotalAmountFormatted = "";
+    if(Size(LegalMonetaryTotalArray) > 0){
+        chargeTotalAmountFormatted = chargeTotalAmount + " " + chargeTotalAmountCurrencyID;
+    }
 
     prepaidAmount = XmlGetValue(xDoc, "cac:LegalMonetaryTotal/cbc:PrepaidAmount", nsCbc);
     prepaidAmountCurrencyID = XmlGetChildAttribute(LegalMonetaryTotalArray[0], "PrepaidAmount", "currencyID", nsCbc);
-    prepaidAmountFormatted = prepaidAmount + " " + prepaidAmountCurrencyID;
+    prepaidAmountFormatted = "";
+    if(Size(LegalMonetaryTotalArray) > 0){
+        prepaidAmountFormatted = prepaidAmount + " " + prepaidAmountCurrencyID;
+    }
 
     payableRoundingAmount = XmlGetValue(xDoc, "cac:LegalMonetaryTotal/cbc:PayableRoundingAmount", nsCbc);
     payableRoundingAmountCurrencyID = XmlGetChildAttribute(LegalMonetaryTotalArray[0], "PayableRoundingAmount", "currencyID", nsCbc);
-    payableRoundingAmountFormatted = payableRoundingAmount + " " + payableRoundingAmountCurrencyID;
+    payableRoundingAmountFormatted = "";
+    if(Size(LegalMonetaryTotalArray) > 0){
+        payableRoundingAmountFormatted = payableRoundingAmount + " " + payableRoundingAmountCurrencyID;
+    }
 
     payableAmount = XmlGetValue(xDoc, "cac:LegalMonetaryTotal/cbc:PayableAmount", nsCbc);
     payableAmountCurrencyID = XmlGetChildAttribute(LegalMonetaryTotalArray[0], "PayableAmount", "currencyID", nsCbc);
-    payableAmountFormatted = payableAmount + " " + payableAmountCurrencyID;
+    payableAmountFormatted = "";
+    if(Size(LegalMonetaryTotalArray) > 0){
+        payableAmountFormatted = payableAmount + " " + payableAmountCurrencyID;
+    }
 
     // -------------------- INVOICE LINES --------------------
     invoiceLines = XmlGetElements(xDoc, "cac:" + UBLType + "Line", nsCac);

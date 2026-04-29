@@ -29,6 +29,8 @@ DEFINE arrayReportRejectionStatus type a size 50 array 10000;
 DEFINE arrayGlNum type n size 10 array 10000;
 DEFINE arrayBrPon type n size 10 array 10000;
 
+DEFINE arrayZaPlacanje type n size 14 dec 2 array 10000;
+
 
 //filtered arrays
 DEFINE arrayFilteredRbr type i size 100 array 10000;
@@ -48,6 +50,8 @@ DEFINE arrayFilteredReportRejectionStatus type a size 50 array 10000;
 
 DEFINE arrayFilteredGlNum type n size 10 array 10000;
 DEFINE arrayFilteredBrPon type n size 10 array 10000;
+
+DEFINE arrayFilteredZaPlacanje type n size 14 dec 2 array 10000;
 
 //-----------------------------------------------------------
 
@@ -387,7 +391,7 @@ function GetListFINA(){
         // MSG("ack = " + ack);
        
         // MSG("ackStatusText = " + ack["ackstatustext"]);
-
+        // SaveFile(ack["InvoiceList"]);
 
         if(!Contains(ack, "ErrorCode")){
             progressMax = Size(ack["InvoiceList"]);
@@ -426,6 +430,8 @@ function GetListFINA(){
                 // datumPdva = Substring(datumPdva, 0, 8);
 
                 supplierInvoiceId = ack["InvoiceList"][i]["SupplierInvoiceID"];
+                invoicePayableAmount = ack["InvoiceList"][i]["InvoicePayableAmount"];
+
 
                 fiskStatusAck = FINA_GET_B2B_INCOMING_INVOICE_FISK_STATUS(
                     ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
@@ -472,7 +478,7 @@ function GetListFINA(){
 
                 sqlResultNKNAERGL = GetNKNAERGLFromSQL(invoiceId, supplierInvoiceId, supplierId);
 
-                AddRacunToArrays(supplierName, supplierId, statusCode, datumIzdavanja, datumPdva, supplierInvoiceId, invoiceId, fiskStatus, reportRejectionStatus, sqlResultNKNAERGL[1][0].trim(), sqlResultNKNAERGL[1][1].trim());
+                AddRacunToArrays(supplierName, supplierId, statusCode, datumIzdavanja, datumPdva, supplierInvoiceId, invoiceId, fiskStatus, reportRejectionStatus, sqlResultNKNAERGL[1][0].trim(), sqlResultNKNAERGL[1][1].trim(), invoicePayableAmount);
             }
 
             // RunOnMain("btnOsvjezi@clicked");
@@ -587,7 +593,8 @@ function GetListMERSuccess(trackingId, responseCode, res) {
                 "", // fiskStatus
                 "", // reportPaymentStatus
                 sqlResultNKNAERGL[1][0].trim(), //glNum 
-                sqlResultNKNAERGL[1][1].trim()  //brPon
+                sqlResultNKNAERGL[1][1].trim(),  //brPon
+                0
             );
 
             Progress(1);
@@ -616,7 +623,7 @@ function GetListMERFailure(trackingId, responseCode, res) {
 }
 
 
-function AddRacunToArrays(supplierName, supplierId, statusRacuna, datumIzdavanja, datumPdva, supplierInvoiceId, eRacunBrojRacuna, fiskStatus, reportRejectionStatus, glNum, brPon){
+function AddRacunToArrays(supplierName, supplierId, statusRacuna, datumIzdavanja, datumPdva, supplierInvoiceId, eRacunBrojRacuna, fiskStatus, reportRejectionStatus, glNum, brPon, iznos){
     
     arrayDobavljac[Rbr] = supplierName;
     arrayOibDobavljaca[Rbr] = supplierId;
@@ -633,6 +640,8 @@ function AddRacunToArrays(supplierName, supplierId, statusRacuna, datumIzdavanja
 
     arrayGlNum[Rbr] = double(glNum);
     arrayBrPon[Rbr] = double(brPon);
+
+    arrayZaPlacanje[Rbr] = double(string(iznos).Replace(",", "."));
 
     arrayRbr[Rbr] = ++Rbr;
 }
@@ -854,7 +863,7 @@ function filter(){
         }
 
         //filter by status
-        if(
+        if( true ||
             // (filterStatusNijePoslan && arrayStatusRacuna[iRbr] == "Nije poslan")
             // || (filterStatusInterniRacun && arrayStatusRacuna[iRbr] == "Interni račun")
             // || (filterStatusNijeUSustavuPdva && arrayStatusRacuna[iRbr] == "Nije u sustavu PDV-a")
@@ -922,6 +931,8 @@ function AddRacunToFilteredArrays(iRbr){
     arrayFilteredGlNum[RbrFiltered] = double(arrayGlNum[iRbr]);
     arrayFilteredBrPon[RbrFiltered] = double(arrayBrPon[iRbr]);
 
+    arrayFilteredZaPlacanje[RbrFiltered] = arrayZaPlacanje[iRbr];
+
     arrayFilteredRbr[RbrFiltered] = ++RbrFiltered;
 }
 
@@ -929,3 +940,172 @@ function AddRacunToFilteredArrays(iRbr){
 
 //-----------------------------------------------------------
 
+
+function datagridListaRacuna@select(){
+    
+    Cursor("wait");
+
+    try{
+        invoiceArray = GetSelectedGridRow("datagridListaRacuna");
+
+        // if(invoiceArray[4] == "Nije poslan" || invoiceArray[4] == "Interni račun" || invoiceArray[4] == "Nije u sustavu PDV-a" || invoiceArray[4] == "Izvoz"){
+        //     Mbox("Račun nije poslan posredniku i nije moguće preuzimanje i ispis računa.");
+        //     Cursor("dflt");
+        //     return;
+        // }
+
+        if(Size(invoiceArray) <= 12){
+            return;
+        }
+
+        invoiceID = invoiceArray[12];
+
+        tempFolder = FILESPATH + "URStatus\\" + "Temp\\" + userCode + "\\";
+        if (!Exists(tempFolder)) {
+            MkDir(tempFolder);
+        }
+
+        if(invoiceID != ""){
+            if(PROVIDER == "MER" || PROVIDER == "MERDEMO"){
+                isDownloaded = MER_DownloadTempXml(invoiceID);   
+            } elif(PROVIDER == "FINA" || PROVIDER == "FINADEMO"){
+                isDownloaded = FINA_DownloadTempXml(invoiceID); 
+
+                //pozvat wxeracunprint.cscs skriptu
+                if(isDownloaded){
+                    printScriptPath = tpath()+"wxeracunprint.cscs";
+                    // CHAIN printScriptPath NEWRUNTIME WITH xmlFilePath pdfFilePath;
+
+                    reportHandle = 0;
+                    LoadInvoiceFromXML(xmlFilePath);
+                    PrintReport(reportHandle, 1);
+
+                    //RunExec(tpath()+"wxeracunprint.cscs", xmlFilePath, pdfFilePath);
+                }
+            } else {
+                MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA, MERDEMO, FINADEMO");
+                exit;
+            }
+        }
+    }catch(ex){
+        MessageBox("Greška prilikom selektiranja računa:\n" + ex);
+        // !!! LOG !!!
+        exit;
+    }
+
+    Cursor("dflt");
+}
+
+
+function FINA_DownloadTempXml(_invoiceID){
+    try{
+        ack = FINA_GET_B2B_INCOMING_INVOICE(
+            ERAC_SERVER + "B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService",
+            ERAC_DESC, // "e-invoice" / NE "e-racun-winx" !
+            CERTPATH + ERAC_USERT, // servisni certifikat
+            CERTPATH + ERAC_PASST, // p12 certifikat (klijentski)
+            ERAC_PASS, // password za p12 certifikat
+
+            UUID(), // messageId
+            "9934:" + companyOIB, // OIB primatelja (VLASTITI)
+            _invoiceID // invoiceId
+        );
+
+        if(Contains(ack, "ErrorCode")){
+            Mbox("Greška pri preuzimanju računa " + _invoiceId + ":\n" + "ack:" + "\n" + ack);
+            return false;
+        }
+
+        uuid = UUID();
+        xmlFilePath = tempFolder + uuid + ".xml";
+        pdfFilePath = tempFolder + uuid + ".pdf";
+
+        //Save XML
+        SaveFile(ack["ItemContent"], xmlFilePath);
+
+        // Save PDF
+        if(Contains(ack, "Base64PdfDocumentString")){
+            Base642File(ack["Base64PdfDocumentString"], pdfFilePath);
+        }
+
+        return true;
+    }catch(ex){
+        Mbox("Račun " + _invoiceID + "\nNepoznata greška:\n" + ex);
+        LogException(ex); // !!! 
+        return false;
+    }
+}
+
+//--- MeR --------------------------------------------------------
+
+function MER_DownloadTempXml(_invoiceID){
+    jsonPayload = '{"Username": "' + ERAC_USER + '", "Password": "' + ERAC_PASS + '", "CompanyId": "' + companyOIB + '", "SoftwareId": "' + ERAC_DESC + '", "ElectronicId": "' + _invoiceID + '"}';
+    WebRequest("POST", ERAC_SERVER + "apis/v2/receive", jsonPayload, _invoiceID, "MERReceiveRacunSuccess", "MERReceiveRacunFailure", "application/json", null, 1000 * 20, false);           
+    
+    Wait();
+
+    //pozvat wxeracunprint.cscs skriptu
+    if(isDownloaded){
+        printScriptPath = tpath()+"wxeracunprint.cscs";
+        // CHAIN printScriptPath NEWRUNTIME WITH xmlFilePath pdfFilePath;
+
+        reportHandle = 0;
+        LoadInvoiceFromXML(xmlFilePath);
+        PrintReport(reportHandle, 1);
+
+        //RunExec(tpath()+"wxeracunprint.cscs", xmlFilePath, pdfFilePath);
+    }
+}
+
+function MERReceiveRacunSuccess(trackingId, responseCode, res) {
+    try{
+        LogResponse(responseCode, res);
+
+        uuid = UUID();
+        xmlFilePath = tempFolder + uuid + ".xml";
+
+        SaveFile(res, xmlFilePath);
+
+        isDownloaded = true;
+        Signal();
+    }catch(ex){
+        isDownloaded = false;
+        Signal();
+        
+        Mbox("MERReceiveRacunSuccess - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        // !!! LOG !!!
+    }
+    
+}
+
+function MERReceiveRacunFailure(trackingId, responseCode, res) {
+    try{
+        isDownloaded = false;
+        Signal();
+
+        Mbox("Račun " + _invoiceID + "\nNepoznata greška");
+        LogResponse(responseCode, res);  
+    }
+    catch(ex){
+        isDownloaded = false;
+        Signal();
+
+        Mbox("MERReceiveRacunFailure - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        // !!! LOG !!!
+    }
+}
+
+//-----------------------------------------------------------
+
+function wxurstatus_OnClose(){
+    // Cleanup temp files
+    try{
+        tempFolder = FILESPATH + "URStatus\\" + "Temp\\" + userCode + "\\";
+        if(Exists(tempFolder)){
+            Delete(tempFolder);
+        }
+    }catch(ex){
+        MessageBox("Greška prilikom čišćenja temp foldera:\n" + ex);
+        // !!! LOG !!!
+    }
+}

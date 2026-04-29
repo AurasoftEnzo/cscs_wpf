@@ -1954,8 +1954,16 @@ function datagridListaRacuna@select(){
 
     try{
         invoiceArray = GetSelectedGridRow("datagridListaRacuna");
-        
-        if(Size(invoiceArray) <=  11){
+
+        if(invoiceArray[4] == "Nije poslan" || invoiceArray[4] == "Interni račun" || invoiceArray[4] == "Nije u sustavu PDV-a" || invoiceArray[4] == "Izvoz"){
+            
+            Mbox("Račun nije poslan posredniku i nije moguće preuzimanje i ispis računa.");
+            
+            Cursor("dflt");
+            return;
+        }
+
+        if(Size(invoiceArray) <= 11){
             return;
         }
 
@@ -1971,22 +1979,21 @@ function datagridListaRacuna@select(){
                 isDownloaded = MER_DownloadTempXml(invoiceID);   
             } elif(PROVIDER == "FINA" || PROVIDER == "FINADEMO"){
                 isDownloaded = FINA_DownloadTempXml(invoiceID);  
+
+                //pozvat wxeracunprint.cscs skriptu
+                if(isDownloaded){
+                    printScriptPath = tpath()+"wxeracunprint.cscs";
+                    // CHAIN printScriptPath NEWRUNTIME WITH xmlFilePath pdfFilePath;
+
+                    reportHandle = 0;
+                    LoadInvoiceFromXML(xmlFilePath);
+                    PrintReport(reportHandle, 1);
+
+                    //RunExec(tpath()+"wxeracunprint.cscs", xmlFilePath, pdfFilePath);
+                }
             } else {
                 MessageBox("Nepoznat provider: " + PROVIDER + ". Podržani su: MER, FINA, MERDEMO, FINADEMO");
                 exit;
-            }
-
-            //pozvat wxeracunprint.cscs skriptu
-            if(isDownloaded){
-                printScriptPath = tpath()+"wxeracunprint.cscs";
-                // CHAIN printScriptPath NEWRUNTIME WITH xmlFilePath pdfFilePath;
-
-                reportHandle = 0;
-                LoadInvoiceFromXML(xmlFilePath);
-                PrintReport(reportHandle, 1);
-
-
-                //RunExec(tpath()+"wxeracunprint.cscs", xmlFilePath, pdfFilePath);
             }
         }
     }catch(ex){
@@ -2038,11 +2045,66 @@ function FINA_DownloadTempXml(_invoiceID){
     }
 }
 
+//--- MeR --------------------------------------------------------
+
 function MER_DownloadTempXml(_invoiceID){
-    Mbox("TREBA IMPLEMENTIRATI!");
+    jsonPayload = '{"Username": "' + ERAC_USER + '", "Password": "' + ERAC_PASS + '", "CompanyId": "' + companyOIB + '", "SoftwareId": "' + ERAC_DESC + '", "ElectronicId": "' + _invoiceID + '"}';
+    WebRequest("POST", ERAC_SERVER + "apis/v2/receive", jsonPayload, _invoiceID, "MERReceiveRacunSuccess", "MERReceiveRacunFailure", "application/json", null, 1000 * 20, false);           
+
+    Wait();
+
+    //pozvat wxeracunprint.cscs skriptu
+    if(isDownloaded){
+        printScriptPath = tpath()+"wxeracunprint.cscs";
+        // CHAIN printScriptPath NEWRUNTIME WITH xmlFilePath pdfFilePath;
+
+        reportHandle = 0;
+        LoadInvoiceFromXML(xmlFilePath);
+        PrintReport(reportHandle, 1);
+
+        //RunExec(tpath()+"wxeracunprint.cscs", xmlFilePath, pdfFilePath);
+    }
 }
 
+function MERReceiveRacunSuccess(trackingId, responseCode, res) {
+    try{
+        LogResponse(responseCode, res);
 
+        uuid = UUID();
+        xmlFilePath = tempFolder + uuid + ".xml";
+
+        SaveFile(res, xmlFilePath);
+
+        isDownloaded = true;
+        Signal();
+    }catch(ex){
+        isDownloaded = false;
+        Signal();
+        
+        Mbox("MERReceiveRacunSuccess - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        // !!! LOG !!!
+    }
+    
+}
+
+function MERReceiveRacunFailure(trackingId, responseCode, res) {
+    try{
+        isDownloaded = false;
+        Signal();
+
+        Mbox("Račun " + _invoiceID + "\nNepoznata greška");
+        LogResponse(responseCode, res);  
+    }
+    catch(ex){
+        isDownloaded = false;
+        Signal();
+
+        Mbox("MERReceiveRacunFailure - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        // !!! LOG !!!
+    }
+}
+
+//-----------------------------------------------------------
 
 function wxirstatus_OnClose(){
     // Cleanup temp files

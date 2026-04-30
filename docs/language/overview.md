@@ -65,7 +65,7 @@ The documentation is divided into these sections:
 - widgets and window events,
 - custom WPF controls,
 - access to data and Btrieve's functions,
-The SQL function.
+- The SQL function.
 - reporting and DevExpress '.repx' templates,
 - XML and auxiliary functions,
 - Forms and verified examples.

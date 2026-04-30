@@ -250,4 +250,6 @@ Problem: The existence of a 'main()' entry point should not be assumed.
 - Do not use the Python indent style as a substitute for curly braces.
 - Do not omit ';'.
 - Do not assume that the GUI code is executed outside of event functions.
+- The DataContext in XAML must match the prefix used in the event handler (e.g., btn in btn@OnClick).
+- For click events to work, each XAML control MUST have a Name property. The name can be anything, but it must exist and be unique within the XAML.
 - Prefer 'DEFINE' and documented functions instead of implicit patterns.

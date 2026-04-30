@@ -24,15 +24,15 @@ Subreport enables a hierarchical structure of the report, e.g.:
 
 - The subreport is set in the '.repx' designer as 'XRSubreport'.
 - Logical linking is done via 'SetupReport(subReportPath, parentReportHandle)'.
-- The parent-child relationship is built through integer handles [file:104].
-- When shutting down the report, the deepest child reports are disposed of first, and then the parent [file:104].
+- The parent-child relationship is built through integer handles .
+- When shutting down the report, the deepest child reports are disposed of first, and then the parent .
 
 ## Designer setup
 
 In the main report:
 - add a 'subreport' control,
 - set the 'Name',
-- Leave 'ReportSourceUrl' blank if the connection will be done by the [file:104] script.
+- Leave 'ReportSourceUrl' blank if the connection will be done by the  script.
 
 ## SetupReport for parent and child
 
@@ -47,7 +47,7 @@ detailReportHandle = SetupReport("DetailReport.repx", invoiceReportHandle);
 ### Meaning
 
 - the first argument is the '.repx' file of the subreport,
-- The second argument is Handle parent report [File:104].
+- The second argument is Handle parent report .
 
 ## Typical hierarchy
 
@@ -64,7 +64,7 @@ A typical pattern is:
 2. load the first subreport with the parent handle,
 3. load the second subreport with the handle of the first subreport,
 4. set parameters to the appropriate level,
-5. call 'OutputReport' on the handle that represents the data level you are filling in [file:104].
+5. call 'OutputReport' on the handle that represents the data level you are filling in .
 
 ## Example hierarchy script
 
@@ -108,7 +108,7 @@ OutputReport(reportHandle3);
 - Each child report must be linked to parent handle.
 - Data should be sent to the appropriate level of the report.
 - Header/global parameters usually go to the main report.
-- Detail lines usually go to child or grandchild report [file:104].
+- Detail lines usually go to child or grandchild report .
 
 ## Validation before linking
 
@@ -130,7 +130,7 @@ if (Size(errors) > 0) {
 If there are multiple levels:
 1. First of all, the most in-depth sub-report.
 2. And then there's his parent.
-3. at the end of the root report [file:104].
+3. at the end of the root report .
 
 ### Example
 
@@ -186,7 +186,7 @@ DisposeReport(reportHandle);
 - Sending data to the wrong report level.
 - The expectation that 'XRSubreport' itself knows where to retrieve data without 'SetupReport'.
 - Disposal in the wrong order.
-- Mixing root report parameters and detailed child report fields [file:104].
+- Mixing root report parameters and detailed child report fields.
 
 ## AI notes
 

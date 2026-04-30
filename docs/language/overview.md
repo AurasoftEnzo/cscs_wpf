@@ -76,7 +76,7 @@ When AI generates CSCS_WPF code, these principles should be adhered to:
 
 - use only documented syntax,
 - prefer 'DEFINE' over implicit declarations,
-- po tovati event-driven model,
+- respect event-driven model,
 - do not invent event names, controls and report fields,
 - Use existing forms for windows, database and reporting.
 

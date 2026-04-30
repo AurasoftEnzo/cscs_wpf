@@ -414,13 +414,21 @@ function setChartByMonth()
     sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkprinvl ON nkpr_gl_num = nkpr_ln_invnm";
     sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkmkarti ON nkpr_ln_pcode= arti_artikl";
     sql_str += " WHERE nkpr_gl_cuscod <> '" + vlFirma + "' AND nkpr_gl_invcd IN ('B', 'D') AND year(" + getDatumString() + ") = " + ovagod_h; //BETWEEN '"+sqlDate(od_danaLG)+"' AND '"+sqlDate(do_danaLG)+"'"  ";
+	if (do_mjeseca)
+	{
+		sql_str +=" AND month(nkpr_gl_esd)<=  " + mjesec_h  ;
+	}
+	else 
+	{
+		sql_str += " AND month(nkpr_gl_esd) =  " + mjesec_h;
+	}
     filterPart();
     sql_str += " GROUP BY CONVERT(varchar(6)," + getDatumString() + ",112)";
     sql_str += " ORDER BY CONVERT(varchar(6)," + getDatumString() + ",112);";
     
     try
     {
-        //SaveFile(sql_str);
+        SaveFile(sql_str);
         queryResult = sqlquery(SQL_str);
     }
     catch(exc)

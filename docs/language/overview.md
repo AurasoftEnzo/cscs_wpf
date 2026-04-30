@@ -33,7 +33,7 @@ Language is event-driven. In a typical program, the entry point is not the class
 
 A program usually starts in one of two ways:
 
-1. By calling 'CreateWindow(strTrim(tpath()) +"myXaml.xaml")` --- > Preferred option!!!
+1. By calling 'CreateWindow(fullXamlPath)' --- > Preferred option!!!
 2. 'WINFORM myWindow' directive
 
 If there are more than one 'WINFORM' directives, the start window is listed first. Other XAML windows can also be used to check XAML code.

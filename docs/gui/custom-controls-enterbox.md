@@ -161,7 +161,7 @@ function enterbox1@TextChange() {
 - 'FieldName' does not match the actual variable.
 - The name of the event function does not match the 'Name' property of the control.
 - The use of non-existent event names.
-- Assuming that 'before' and 'post' have no return value.
+- Assuming that 'pre' and 'post' have no return value.
 - Relying on an implicit variable without 'DEFINE', although explicit definition is recommended.
 
 ## AI notes

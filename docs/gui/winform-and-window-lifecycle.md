@@ -81,15 +81,15 @@ A typical sequence of events is:
 
 | Event | Order | Frequency | Purpose |
 |---|---|---|---|
-| 'OnOpen' | 1 | once | window object created |
-| 'OnInit' | 2 | once | Native Window Handle is ready |
-| 'OnActivated' | 3 | multiple | Window Gets Focus |
-| 'OnStart' | 4 | once | Controls are loaded and ready |
-| 'OnDisplay' | 5 | once | window is displayed to the user |
+| `OnOpen` | 1 | once | window object created |
+| `OnInit` | 2 | once | Native Window Handle is ready |
+| `OnActivated` | 3 | multiple | Window Gets Focus |
+| `OnStart` | 4 | once | Controls are loaded and ready |
+| `OnDisplay` | 5 | once | window is displayed to the user |
 | `OnDeactivated` | after display | multiple | prozor gubi fokus |
-| 'OnClosing' | before close | once | Last Chance to Cancel Lockdown |
-| 'OnClose' | after closing | once | the window is closed |
-| 'OnUnload' | last | once | Cleanup & Resource Release |
+| `OnClosing` | before close | once | Last Chance to Cancel Lockdown |
+| `OnClose` | after closing | once | the window is closed |
+| `OnUnload` | last | once | Cleanup & Resource Release |
 
 ## Recommended usage by event
 

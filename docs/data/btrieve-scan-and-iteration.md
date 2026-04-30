@@ -1,5 +1,5 @@
-SCAN is important because AI often makes mistakes about start values, while conditions, for filters, and scope limits. The documentation clearly states that SCAN fills the buffer at each iteration, uses the order key, can filter via for stringSQL, stop via while stringC, and limit the number of records with scope n 20; Break and continue are supported.WpfCSCS-UPUTE-3.docx
-text
+SCAN is important because AI often makes mistakes about start values, while conditions, for filters, and scope limits. The documentation clearly states that SCAN fills the buffer at each iteration, uses the order key, can filter via for stringSQL, stop via while stringC, and limit the number of records with scope n 20; Break and continue are supported.
+
 ---
 title: Btrieve Scan and Iteration
 module: data

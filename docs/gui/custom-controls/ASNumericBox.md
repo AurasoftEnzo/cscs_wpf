@@ -1,5 +1,5 @@
-NumericBox is similar to EnterBox, but has more rules around the numeric format, number of decimals, and value limits. That is why it is useful to document it separately.WpfCSCS-UPUTE-3.docx
-text
+NumericBox is similar to EnterBox, but has more rules around the numeric format, number of decimals, and value limits. That is why it is useful to document it separately.
+
 ---
 title: NumericBox Control
 module: gui

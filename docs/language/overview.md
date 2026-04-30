@@ -1,5 +1,5 @@
-This document serves as an "entry point" for AI and developers. It should be briefly explained what CSCS_WPF is, how it is conceived and what are the main functional units of the language.WpfCSCS-UPUTE-3.docx
-text
+This document serves as an "entry point" for AI and developers. It should be briefly explained what CSCS_WPF is, how it is conceived and what are the main functional units of the language.
+
 ---
 title: CSCS_WPF Overview
 module: language

@@ -1,5 +1,5 @@
-This document should separate the report parameters from ordinary field binding. In the manual, it is clearly shown that the parameter is created in .repx, then used in the Parameters.someName expression, and from the script it is filled via SetReportParameter; retrieval goes via GetReportParameter.WpfCSCS-UPUTE-3.docx
-text
+This document should separate the report parameters from ordinary field binding. In the manual, it is clearly shown that the parameter is created in .repx, then used in the Parameters.someName expression, and from the script it is filled via SetReportParameter; retrieval goes via GetReportParameter.
+
 ---
 title: Report Parameters
 module: reporting

@@ -1,5 +1,5 @@
-This document is especially important because without it, AI will often make mistakes in the order of events, the name of the event handler, and the location of data initialization or UI logic.WpfCSCS-UPUTE-3.docx
-text
+This document is especially important because without it, AI will often make mistakes in the order of events, the name of the event handler, and the location of data initialization or UI logic.
+
 ---
 title: WINFORM and Window Lifecycle
 module: gui

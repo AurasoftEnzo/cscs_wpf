@@ -1,5 +1,5 @@
-This document is crucial for AI report script generation. It must clearly describe the order of work with .repx templates and how the data is filled into the report.WpfCSCS-UPUTE-3.docx
-text
+This document is crucial for AI report script generation. It must clearly describe the order of work with .repx templates and how the data is filled into the report.
+
 ---
 title: Reporting Lifecycle
 module: reporting

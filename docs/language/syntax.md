@@ -1,5 +1,5 @@
 This is the most important document for prompt context. Its purpose is for the AI to be given strict syntax rules and basic patterns that it must not violate. 
-text
+
 ---
 title: CSCS_WPF Syntax
 module: language

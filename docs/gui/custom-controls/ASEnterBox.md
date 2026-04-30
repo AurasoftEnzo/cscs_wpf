@@ -1,13 +1,12 @@
-This document should explain to the AI how EnterBox is declared in XAML, how it binds to a variable, and what events are allowed.WpfCSCS-UPUTE-3.docx
-text
----
-title: EnterBox Control
+This document should explain to the AI how EnterBox is declared in XAML, how it binds to a variable, and what events are allowed.
+
+title: ASEnterBox Control
 module: gui
-topic: custom-control
+topic: custom-controls
 applies_to: CSCS_WPF
 version: 1
 source: internal manual
----
+
 
 # EnterBox Control
 
@@ -19,7 +18,7 @@ The control is intended for the input and validation of text data, with the abil
 
 ## Use when
 
-You need a text value.
+- You need a text value.
 - the textbox should be linked to the script variable,
 - react to clicking a button, entering the control, exiting the control or changing the text,
 - The length and/or casing of the entry should be limited.
@@ -43,8 +42,8 @@ In XAML, a control from a custom control library is used, e.g. 'wcl:ASEnterBox'.
 | `BorderBrush` | Brush | no | Border color|
 | `CornerRadius` | float | no | Corner radius of textbox and button |
 | `ButtonBackground` | Brush | no | Button Background |
-| `BackgroundBrush` | Brush | no | Background color |
-| `ForegroundBrush` | Brush | no | Foreground color |
+| `Background` | Brush | no | Background color |
+| `Foreground` | Brush | no | Foreground color |
 | `FontWeight` | FontWeight | no | Font Weight |
 
 ## Event naming
@@ -63,9 +62,9 @@ The names must exactly match the name of the control.
 | Event | When fired | Typical use | Return value |
 |---|---|---|---|
 | `clicked` | Click on the optional button | auxiliary action, lookup, selection | none |
-| `before` | when entering the control | Preparation of validation, input requirement | 'true/false' |
-| `fast` | out of control | Post-Entry Validation | 'true/false' |
-| `TextChange` | when changing the text | Live Reaction to Intake | none |
+| `pre` | when attempting to enter the control | Preparation of validation, input requirement | 'true/false' |
+| `post` | when attempting to leave the control | Post-Entry Validation | 'true/false' |
+| `TextChange` | when changing the text | Live Reaction to input | none |
 
 ## XAML example
 
@@ -89,7 +88,7 @@ The names must exactly match the name of the control.
             Size="8"
             ButtonSize="150"
             Case="Normal"
-            KeyTraps="F2 enterbox1clicked F3 somethingelse"
+            KeyTraps="F2|enterbox1@clicked|F3|somethingelse"
             Height="60"
             Width="400"
             Margin="50,100,0,0"
@@ -120,6 +119,7 @@ function somethingelse() {
 
 function enterbox1@pre() {
     a = 2;
+    a++;
     MessageBox("PRE");
     MessageBox(a);
 
@@ -133,6 +133,7 @@ function enterbox1@pre() {
 
 function enterbox1@post() {
     b = 2;
+    b++;
     MessageBox("POST");
     MessageBox(b);
 
@@ -162,7 +163,6 @@ function enterbox1@TextChange() {
 - The name of the event function does not match the 'Name' property of the control.
 - The use of non-existent event names.
 - Assuming that 'pre' and 'post' have no return value.
-- Relying on an implicit variable without 'DEFINE', although explicit definition is recommended.
 
 ## AI notes
 

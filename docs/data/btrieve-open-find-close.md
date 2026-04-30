@@ -1,5 +1,5 @@
-This document should clearly explain to the AI how to open a table, how to read a record, how to check for an error, and how to close a handle. In the attached manual, OPENV returns the integer handle, FINDV performs fetch according to the options f/l/n/p/m/g, CLOSEV closes the work with the table, and FLERR returns the status of the last Btrie operation.WpfCSCS-UPUTE-3.docx
-text
+This document should clearly explain to the AI how to open a table, how to read a record, how to check for an error, and how to close a handle. In the attached manual, OPENV returns the integer handle, FINDV performs fetch according to the options f/l/n/p/m/g, CLOSEV closes the work with the table, and FLERR returns the status of the last Btrie operation.
+
 ---
 title: Btrieve Open, Find, Close
 module: data

@@ -1,5 +1,5 @@
-This document should be a short AI "fast context". The attached instructions clearly show the key rules: CSCSWPF is an event-driven language based on C/WPF ideas, the initial input is CreateWindow or WINFORM, WINFORM and MAIMENA are the only commands allowed outside of the event, execution goes in two passes, DEFINE is the recommended way to define, SqlQuery result is not defined with DEFINE, all commands end with ;, parser does not use indentation,  elif means else if, and blocks for if, while, for, try necessarily use {}.WpfCSCS-UPUTE-3.docx
-text
+This document should be a short AI "fast context". The attached instructions clearly show the key rules: CSCSWPF is an event-driven language based on C/WPF ideas, the initial input is CreateWindow or WINFORM, WINFORM and MAIMENA are the only commands allowed outside of the event, execution goes in two passes, DEFINE is the recommended way to define, SqlQuery result is not defined with DEFINE, all commands end with ;, parser does not use indentation,  elif means else if, and blocks for if, while, for, try necessarily use {}.
+
 ---
 title: CSCS_WPF Syntax Cheatsheet
 module: ai

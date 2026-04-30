@@ -1,13 +1,14 @@
-This document should explain how the subreport is physically placed in .repx and how it logically connects in the script via SetupReport(subreport, parentHandle). The manual clearly emphasizes that subreports are connected via parent handle and that disposal is done in reverse order.WpfCSCS-UPUTE-3.docx
-text
----
+This document should explain how the subreport is physically placed in .repx and how it logically connects in the script via SetupReport(subreport, parentHandle). The manual clearly emphasizes that subreports are connected via parent handle and that disposal is done in reverse order.
+
+
 title: Report Subreports
 module: reporting
 topic: subreports
 applies_to: CSCS_WPF
 version: 1
 source: internal manual
----
+
+
 
 # Report Subreports
 

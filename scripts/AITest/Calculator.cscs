@@ -1,0 +1,98 @@
+DEFINE displayText type a size 30;
+DEFINE firstOperand type r;
+DEFINE pendingOperator type a size 3;
+DEFINE newEntry type i;
+DEFINE hasDecimal type i;
+DEFINE secondOperand type r;
+DEFINE calcResult type r;
+
+displayText = "0";
+firstOperand = 0;
+pendingOperator = "";
+newEntry = 1;
+hasDecimal = 0;
+secondOperand = 0;
+calcResult = 0;
+
+CreateWindow(strTrim(tpath()) + "AITest\\" + "Calculator.xaml");
+
+function pressDigit(digit) {
+    if (newEntry == 1) {
+        displayText = digit;
+        newEntry = 0;
+        hasDecimal = 0;
+    } elif (displayText == "0" && hasDecimal == 0) {
+        displayText = digit;
+    } else {
+        displayText = displayText + digit;
+    }
+}
+
+function pressDecimal() {
+    if (newEntry == 1) {
+        displayText = "0.";
+        newEntry = 0;
+        hasDecimal = 1;
+    } elif (hasDecimal == 0) {
+        displayText = displayText + ".";
+        hasDecimal = 1;
+    }
+}
+
+function pressOperator(op) {
+    firstOperand = displayText;
+    pendingOperator = op;
+    newEntry = 1;
+    hasDecimal = 0;
+}
+
+function computeResult() {
+    secondOperand = displayText;
+    if (pendingOperator == "+") {
+        calcResult = firstOperand + secondOperand;
+    } elif (pendingOperator == "-") {
+        calcResult = firstOperand - secondOperand;
+    } elif (pendingOperator == "*") {
+        calcResult = firstOperand * secondOperand;
+    } elif (pendingOperator == "/") {
+        if (secondOperand == 0) {
+            displayText = "Error";
+            pendingOperator = "";
+            newEntry = 1;
+            return;
+        }
+        calcResult = firstOperand / secondOperand;
+    } else {
+        return;
+    }
+    displayText = string(calcResult);
+    pendingOperator = "";
+    newEntry = 1;
+    hasDecimal = 0;
+}
+
+function btn0@clicked() { pressDigit("0"); }
+function btn1@clicked() { pressDigit("1"); }
+function btn2@clicked() { pressDigit("2"); }
+function btn3@clicked() { pressDigit("3"); }
+function btn4@clicked() { pressDigit("4"); }
+function btn5@clicked() { pressDigit("5"); }
+function btn6@clicked() { pressDigit("6"); }
+function btn7@clicked() { pressDigit("7"); }
+function btn8@clicked() { pressDigit("8"); }
+function btn9@clicked() { pressDigit("9"); }
+
+function btnDecimal@clicked() { pressDecimal(); }
+function btnAdd@clicked()     { pressOperator("+"); }
+function btnSub@clicked()     { pressOperator("-"); }
+function btnMul@clicked()     { pressOperator("*"); }
+function btnDiv@clicked()     { pressOperator("/"); }
+function btnEquals@clicked()  { computeResult(); }
+
+function btnClear@clicked() {
+    displayText = "0";
+    firstOperand = 0;
+    pendingOperator = "";
+    newEntry = 1;
+    hasDecimal = 0;
+}

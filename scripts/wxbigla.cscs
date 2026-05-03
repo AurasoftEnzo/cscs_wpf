@@ -1,0 +1,627 @@
+include(strTrim(tpath()) + "wxsy_lib.cscs");
+Import(strTrim(mpath()) + "CSCS.Math.dll");
+
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbigla_inc_lists.cscs") : strTrim(tpath()) + "wxbigla_inc_lists.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbigla_inc_a.cscs") : strTrim(tpath()) + "wxbigla_inc_a.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbigla_inc_b.cscs") : strTrim(tpath()) + "wxbigla_inc_b.cscs");
+
+CreateWindow(strTrim(tpath()) + "wxbigla.xaml");
+
+// -----------------------------------------------------------------------
+// Window events
+// -----------------------------------------------------------------------
+
+function wxbigla_OnClose()
+{
+    save_logs("I", userCode, WhoAmI());
+}
+
+function Wxbigla_onDisplay()
+{
+    args = CommandLineArgs();
+    if (Size(args) > 2)
+    {
+        companyCode = args[2];
+        userCode = args[3];
+        CoSet(companyCode);
+    }
+    else
+    {
+        companyCode = Substring(CoGet(), 1, 2);
+    }
+
+        companyCode= "T4"; //temporary hardcode for testing
+
+
+    save_logs("U", userCode, WhoAmI());
+
+    sqlQueryString = "SELECT SY_CC_USER, SY_CC_YEAR, SY_CC_DBASE FROM " + strtrim(CommonDBGet()) + ".dbo.NKSYCCYR WHERE SY_CC_CODE = '" + companyCode + "'";
+    try
+    {
+        sqlResult = sqlQuery(sqlQueryString);
+    }
+    catch(exc)
+    {
+        MessageBox(exc);
+    }
+
+    if (ffile(strTrim(tpath()) + "CompanyLogo.jpg", 'f') == "CompanyLogo.jpg")
+    {
+        setimage("Logo", strTrim(tpath()) + "CompanyLogo.jpg");
+    }
+    else
+    {
+        if (ffile(strTrim(tpath()) + "AuraSoftLogo.png", 'f') == "AuraSoftLogo.png")
+        {
+            setimage("Logo", strTrim(tpath()) + "AuraSoftLogo.png");
+        }
+    }
+
+    if (Size(sqlResult) > 1)
+    {
+        imeFirme = sqlResult[1][0].trim();
+        ovagod_h = sqlResult[1][1].trim();
+        trenutnaGodinaBaza = sqlResult[1][2].trim();
+    }
+    else
+    {
+        MessageBox("Nema postavki za kompaniju '" + companyCode + "' u tablici NKSYCCYR.");
+        imeFirme = companyCode;
+        ovagod_h = now("yyyy");
+        trenutnaGodinaBaza = CommonDBGet();
+    }
+
+    lani_h = string(int(ovagod_h) - 1);
+
+    // Previous year database
+    sqlQueryString = "SELECT SY_CC_DBASE FROM " + CommonDBGet() + ".dbo.NKSYCCYR WHERE SY_CC_USER = '" + imeFirme + "' AND SY_CC_YEAR = '" + lani_h + "'";
+    try
+    {
+        sqlResult = sqlQuery(sqlQueryString);
+        if (Size(sqlResult) > 1)
+        {
+            proslaGodinaBaza = sqlResult[1][0].trim();
+        }
+    }
+    catch(exc)
+    {
+        proslaGodinaBaza = trenutnaGodinaBaza;
+    }
+
+    // Company name from master
+    sqlQueryString = "SELECT TOP 1 kpsy_comp_name FROM " + trenutnaGodinaBaza + ".[dbo].[KPSYMSTR]";
+    try
+    {
+        sqlResult = sqlQuery(sqlQueryString);
+        if (Size(sqlResult) > 1)
+        {
+            nazivFirme = sqlResult[1][0].trim();
+        }
+    }
+    catch(exc)
+    {
+        nazivFirme = imeFirme;
+    }
+
+    SetWindowOptions("wxbiglaWindow", "title", "Dashboard - Opća knjiga za " + nazivFirme + " - " + ovagod_h + ". godina");
+    SetWidgetOptions("CompName", "Text", nazivFirme);
+
+    // Default month range: full year or up-to-current-month
+    if (int(ovagod_h) < int(now("yyyy")))
+    {
+        mjesecOd = "1";
+        mjesecDo = "12";
+    }
+    else
+    {
+        mjesecOd = "1";
+        mjesecDo = string(int(now("MM")));
+    }
+
+    konto_od = "";
+    konto_do = "";
+    pripremljeno = false;
+
+    setFocus("gbPripremi");
+}
+
+// -----------------------------------------------------------------------
+// Button enable/disable
+// -----------------------------------------------------------------------
+
+function DisableButtons()
+{
+    SetWidgetOptions("gbPripremi",  "IsEnabled", "false");
+    SetWidgetOptions("gbPrihodi",   "IsEnabled", "false");
+    SetWidgetOptions("gbRashodi",   "IsEnabled", "false");
+    SetWidgetOptions("gbExit",      "IsEnabled", "false");
+}
+
+function EnableButtons()
+{
+    SetWidgetOptions("gbPripremi",  "IsEnabled", "true");
+    SetWidgetOptions("gbPrihodi",   "IsEnabled", "true");
+    SetWidgetOptions("gbRashodi",   "IsEnabled", "true");
+    SetWidgetOptions("gbExit",      "IsEnabled", "true");
+}
+
+// -----------------------------------------------------------------------
+// gbPripremi - main prepare button
+// -----------------------------------------------------------------------
+
+function gbPripremi@clicked()
+{
+    DisableButtons();
+    cursor("wait");
+    AsyncCall("setKpiData", "callSetMonthlyData");
+}
+
+function callSetMonthlyData()
+{
+    AsyncCall("setMonthlyData", "end");
+}
+
+function end()
+{
+    cursor("dflt");
+    pripremljeno = true;
+    EnableButtons();
+}
+
+// -----------------------------------------------------------------------
+// setKpiData  (runs on background thread)
+// Queries P&L and Balance Sheet data for current and previous year,
+// computes all 10 KPIs, then marshals UI update to main thread.
+// -----------------------------------------------------------------------
+
+function setKpiData()
+{
+    // -- P&L query: Class 4,5,6,7 + account 9500-9599
+    // Exclude year-closing entries (zatv_klas='D') and opening balances (poc_st='D')
+    // Separate queries: OG from trenutnaGodinaBaza, LG from proslaGodinaBaza
+    plSelect = "SELECT";
+    plSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,1)='6' THEN CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS revenue,";
+    plSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,1)='7' THEN CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS fin_income,";
+    plSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,1)='4' THEN CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS opex,";
+    plSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,1)='5' THEN CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS fin_exp,";
+    plSelect += " ROUND(SUM(CASE WHEN gk_pr_konto >= '9500' AND gk_pr_konto < '9600' THEN CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS net_income";
+
+    // Current year P&L
+    sql_str = plSelect;
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKGKPROM";
+    sql_str += " WHERE YEAR(gk_pr_date) = " + ovagod_h;
+    sql_str += " AND ISNULL(gk_pr_zatv_klas,'') <> 'D'";
+    sql_str += " AND ISNULL(gk_pr_poc_stanj,'') <> 'D'";
+    sql_str += " AND MONTH(gk_pr_date) BETWEEN " + mjesecOd + " AND " + mjesecDo;
+    filterGLPart();
+    try
+    {
+        plResultOG = sqlQuery(sql_str);
+    }
+    catch(exc)
+    {
+        MessageBox("Greška P&L upita (OG): " + exc);
+        RunOnMain("end");
+        return;
+    }
+
+    // Previous year P&L
+    sql_str = plSelect;
+    sql_str += " FROM " + proslaGodinaBaza + ".dbo.NKGKPROM";
+    sql_str += " WHERE YEAR(gk_pr_date) = " + lani_h;
+    sql_str += " AND ISNULL(gk_pr_zatv_klas,'') <> 'D'";
+    sql_str += " AND ISNULL(gk_pr_poc_stanj,'') <> 'D'";
+    sql_str += " AND MONTH(gk_pr_date) BETWEEN " + mjesecOd + " AND " + mjesecDo;
+    filterGLPart();
+    try
+    {
+        plResultLG = sqlQuery(sql_str);
+    }
+    catch(exc)
+    {
+        MessageBox("Greška P&L upita (LG): " + exc);
+        RunOnMain("end");
+        return;
+    }
+
+    // Parse P&L results (single aggregate row per query; cols: revenue, fin_income, opex, fin_exp, net_income)
+    pl_revenue_og = 0;    pl_revenue_lg = 0;
+    pl_fin_income_og = 0; pl_fin_income_lg = 0;
+    pl_opex_og = 0;       pl_opex_lg = 0;
+    pl_fin_exp_og = 0;    pl_fin_exp_lg = 0;
+    pl_net_og = 0;        pl_net_lg = 0;
+
+    if (Size(plResultOG) > 1)
+    {
+        pl_revenue_og    = plResultOG[1][0];
+        pl_fin_income_og = plResultOG[1][1];
+        pl_opex_og       = plResultOG[1][2];
+        pl_fin_exp_og    = plResultOG[1][3];
+        pl_net_og        = plResultOG[1][4];
+    }
+    if (Size(plResultLG) > 1)
+    {
+        pl_revenue_lg    = plResultLG[1][0];
+        pl_fin_income_lg = plResultLG[1][1];
+        pl_opex_lg       = plResultLG[1][2];
+        pl_fin_exp_lg    = plResultLG[1][3];
+        pl_net_lg        = plResultLG[1][4];
+    }
+    // -- Balance sheet query: Class 1,2,3 + sub-ranges
+    // Include opening balances (poc_st='D'), exclude year-closing (zatv_klas='D')
+    // Separate queries: OG from trenutnaGodinaBaza, LG from proslaGodinaBaza
+    bsSelect = "SELECT";
+    bsSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,1)='1' THEN CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS current_assets,";
+    bsSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,1)='2' THEN CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS liabilities,";
+    bsSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,1)='3' THEN CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS equity,";
+    bsSelect += " ROUND(SUM(CASE WHEN gk_pr_konto >= '1000' AND gk_pr_konto < '1300' THEN CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS quick_assets,";
+    bsSelect += " ROUND(SUM(CASE WHEN gk_pr_konto >= '1200' AND gk_pr_konto < '1300' THEN CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS ar,";
+    bsSelect += " ROUND(SUM(CASE WHEN gk_pr_konto >= '3100' AND gk_pr_konto < '4000' THEN CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS inventory";
+
+    // Current year BS
+    sql_str = bsSelect;
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKGKPROM";
+    sql_str += " WHERE YEAR(gk_pr_date) = " + ovagod_h;
+    sql_str += " AND ISNULL(gk_pr_zatv_klas,'') <> 'D'";
+    try
+    {
+        bsResultOG = sqlQuery(sql_str);
+    }
+    catch(exc)
+    {
+        MessageBox("Greška BS upita (OG): " + exc);
+        RunOnMain("end");
+        return;
+    }
+
+    // Previous year BS
+    sql_str = bsSelect;
+    sql_str += " FROM " + proslaGodinaBaza + ".dbo.NKGKPROM";
+    sql_str += " WHERE YEAR(gk_pr_date) = " + lani_h;
+    sql_str += " AND ISNULL(gk_pr_zatv_klas,'') <> 'D'";
+    try
+    {
+        bsResultLG = sqlQuery(sql_str);
+    }
+    catch(exc)
+    {
+        MessageBox("Greška BS upita (LG): " + exc);
+        RunOnMain("end");
+        return;
+    }
+
+    // Parse BS results (single aggregate row per query; cols: current_assets, liabilities, equity, quick_assets, ar, inventory)
+    bs_current_assets_og = 0; bs_current_assets_lg = 0;
+    bs_liab_og = 0;           bs_liab_lg = 0;
+    bs_equity_og = 0;         bs_equity_lg = 0;
+    bs_quick_og = 0;          bs_quick_lg = 0;
+    bs_ar_og = 0;             bs_ar_lg = 0;
+    bs_inventory_og = 0;      bs_inventory_lg = 0;
+
+    if (Size(bsResultOG) > 1)
+    {
+        bs_current_assets_og = bsResultOG[1][0];
+        bs_liab_og           = bsResultOG[1][1];
+        bs_equity_og         = bsResultOG[1][2];
+        bs_quick_og          = bsResultOG[1][3];
+        bs_ar_og             = bsResultOG[1][4];
+        bs_inventory_og      = bsResultOG[1][5];
+    }
+    if (Size(bsResultLG) > 1)
+    {
+        bs_current_assets_lg = bsResultLG[1][0];
+        bs_liab_lg           = bsResultLG[1][1];
+        bs_equity_lg         = bsResultLG[1][2];
+        bs_quick_lg          = bsResultLG[1][3];
+        bs_ar_lg             = bsResultLG[1][4];
+        bs_inventory_lg      = bsResultLG[1][5];
+    }
+
+    // ---- Compute KPIs ----
+
+    // A1 - Gross Profit = Revenue - COGS (Class 4)
+    kpi_a1_og = pl_revenue_og - pl_opex_og;
+    kpi_a1_lg = pl_revenue_lg - pl_opex_lg;
+
+    // A2 - Net Profit Margin % = net_income / revenue * 100
+    kpi_a2_og = pl_revenue_og != 0 ? Math.Round(pl_net_og / pl_revenue_og * 100, 2) : 0;
+    kpi_a2_lg = pl_revenue_lg != 0 ? Math.Round(pl_net_lg / pl_revenue_lg * 100, 2) : 0;
+    // A3 - Current Ratio = current_assets / liabilities
+    kpi_a3_og = bs_liab_og != 0 ? Math.Round(bs_current_assets_og / bs_liab_og, 4) : 0;
+    kpi_a3_lg = bs_liab_lg != 0 ? Math.Round(bs_current_assets_lg / bs_liab_lg, 4) : 0;
+    // A4 - Quick Ratio = quick_assets / liabilities
+    kpi_a4_og = bs_liab_og != 0 ? Math.Round(bs_quick_og / bs_liab_og, 4) : 0;
+    kpi_a4_lg = bs_liab_lg != 0 ? Math.Round(bs_quick_lg / bs_liab_lg, 4) : 0;
+    // A5 - ROE % = net_income / equity * 100
+    kpi_a5_og = bs_equity_og != 0 ? Math.Round(pl_net_og / bs_equity_og * 100, 2) : 0;
+    kpi_a5_lg = bs_equity_lg != 0 ? Math.Round(pl_net_lg / bs_equity_lg * 100, 2) : 0;
+    // A6 - AR Turnover = revenue / avg_ar  (using single year AR as approximation)
+    kpi_a6_og = bs_ar_og != 0 ? Math.Round(pl_revenue_og / bs_ar_og, 2) : 0;
+    kpi_a6_lg = bs_ar_lg != 0 ? Math.Round(pl_revenue_lg / bs_ar_lg, 2) : 0;
+    // A7 - Inventory Turnover = opex / avg_inventory
+    kpi_a7_og = bs_inventory_og != 0 ? Math.Round(pl_opex_og / bs_inventory_og, 2) : 0;
+    kpi_a7_lg = bs_inventory_lg != 0 ? Math.Round(pl_opex_lg / bs_inventory_lg, 2) : 0;
+    // A8 - Debt-to-Equity = liabilities / equity
+    kpi_a8_og = bs_equity_og != 0 ? Math.Round(bs_liab_og / bs_equity_og, 4) : 0;
+    kpi_a8_lg = bs_equity_lg != 0 ? Math.Round  (bs_liab_lg / bs_equity_lg, 4) : 0;
+    // A9 - Revenue Growth YoY %
+    kpi_a9_og = pl_revenue_lg != 0 ? Math.Round((pl_revenue_og - pl_revenue_lg) / pl_revenue_lg * 100, 2) : 0;
+
+    // A10 - OpEx Ratio % = opex / revenue * 100
+    kpi_a10_og = pl_revenue_og != 0 ? Math.Round(pl_opex_og / pl_revenue_og * 100, 2) : 0;
+    kpi_a10_lg = pl_revenue_lg != 0 ? Math.Round(pl_opex_lg / pl_revenue_lg * 100, 2) : 0;
+    // ---- Format display strings ----
+    kpi_a1_og_str = format(kpi_a1_og, "N0");
+    kpi_a1_lg_str = format(kpi_a1_lg, "N0");
+    kpi_a2_og_str = format(kpi_a2_og, "N2") + " %";
+    kpi_a2_lg_str = format(kpi_a2_lg, "N2") + " %";
+    kpi_a3_og_str = format(kpi_a3_og, "N2");
+    kpi_a3_lg_str = format(kpi_a3_lg, "N2");
+    kpi_a4_og_str = format(kpi_a4_og, "N2");
+    kpi_a4_lg_str = format(kpi_a4_lg, "N2");
+    kpi_a5_og_str = format(kpi_a5_og, "N2") + " %";
+    kpi_a5_lg_str = format(kpi_a5_lg, "N2") + " %";
+    kpi_a6_og_str = format(kpi_a6_og, "N2");
+    kpi_a6_lg_str = format(kpi_a6_lg, "N2");
+    kpi_a7_og_str = format(kpi_a7_og, "N2");
+    kpi_a7_lg_str = format(kpi_a7_lg, "N2");
+    kpi_a8_og_str = format(kpi_a8_og, "N4");
+    kpi_a8_lg_str = format(kpi_a8_lg, "N4");
+    kpi_a9_og_str = format(kpi_a9_og, "N2") + " %";
+    kpi_a10_og_str = format(kpi_a10_og, "N2") + " %";
+    kpi_a10_lg_str = format(kpi_a10_lg, "N2") + " %";
+
+    // ---- Trend flags:  higher = better for A1,A2,A3,A4,A5,A6,A7,A9
+    //                    lower  = better for A8,A10  ----
+    kpi_a1_trend  = kpi_a1_og  > kpi_a1_lg  ? "+" : (kpi_a1_og  < kpi_a1_lg  ? "-" : "=");
+    kpi_a2_trend  = kpi_a2_og  > kpi_a2_lg  ? "+" : (kpi_a2_og  < kpi_a2_lg  ? "-" : "=");
+    kpi_a3_trend  = kpi_a3_og  > kpi_a3_lg  ? "+" : (kpi_a3_og  < kpi_a3_lg  ? "-" : "=");
+    kpi_a4_trend  = kpi_a4_og  > kpi_a4_lg  ? "+" : (kpi_a4_og  < kpi_a4_lg  ? "-" : "=");
+    kpi_a5_trend  = kpi_a5_og  > kpi_a5_lg  ? "+" : (kpi_a5_og  < kpi_a5_lg  ? "-" : "=");
+    kpi_a6_trend  = kpi_a6_og  > kpi_a6_lg  ? "+" : (kpi_a6_og  < kpi_a6_lg  ? "-" : "=");
+    kpi_a7_trend  = kpi_a7_og  > kpi_a7_lg  ? "+" : (kpi_a7_og  < kpi_a7_lg  ? "-" : "=");
+    kpi_a8_trend  = kpi_a8_og  < kpi_a8_lg  ? "+" : (kpi_a8_og  > kpi_a8_lg  ? "-" : "="); // lower = better
+    kpi_a9_trend  = kpi_a9_og  > 0           ? "+" : (kpi_a9_og  < 0           ? "-" : "=");
+    kpi_a10_trend = kpi_a10_og < kpi_a10_lg  ? "+" : (kpi_a10_og > kpi_a10_lg  ? "-" : "="); // lower = better
+
+    RunOnMain("displayKpiValues");
+}
+
+// -----------------------------------------------------------------------
+// setMonthlyData  (runs on background thread via callSetMonthlyData)
+// Queries monthly totals for Prihodi (Class 6+7) and Rashodi (Class 4+5)
+// from both databases. Fills the four monthly arrays for the chart modals.
+// -----------------------------------------------------------------------
+
+function setMonthlyData()
+{
+    // Initialise all arrays to 0
+    for (m = 0; m < 12; m++)
+    {
+        arrayPrihodiOG[m] = 0;
+        arrayPrihodiLG[m] = 0;
+        arrayRashodiOG[m] = 0;
+        arrayRashodiLG[m] = 0;
+    }
+
+    // ---- Prihodi OG  (Class 6 + 7, credit = income)  ----
+    sql_str  = "SELECT MONTH(gk_pr_date) AS mj,";
+    sql_str += " ROUND(SUM(CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE -gk_pr_iznos END),0) AS iznos";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKGKPROM";
+    sql_str += " WHERE YEAR(gk_pr_date) = " + ovagod_h;
+    sql_str += " AND LEFT(gk_pr_konto,1) IN ('6','7')";
+    sql_str += " AND ISNULL(gk_pr_zatv_klas,'') <> 'D'";
+    sql_str += " AND ISNULL(gk_pr_poc_stanj,'') <> 'D'";
+    sql_str += " GROUP BY MONTH(gk_pr_date) ORDER BY MONTH(gk_pr_date)";
+    try
+    {
+        sqlMjRes = sqlQuery(sql_str);
+        if (Size(sqlMjRes) > 1)
+        {
+            for (i = 1; i < Size(sqlMjRes); i++)
+            {
+                mjessec = int(sqlMjRes[i][0]);
+                arrayPrihodiOG[mjessec - 1] = sqlMjRes[i][1];
+            }
+        }
+    }
+    catch(exc)
+    {
+        MessageBox("Greška prihodi OG: " + exc);
+    }
+
+    // ---- Prihodi LG  (Class 6 + 7)  ----
+    sql_str  = "SELECT MONTH(gk_pr_date) AS mj,";
+    sql_str += " ROUND(SUM(CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE -gk_pr_iznos END),0) AS iznos";
+    sql_str += " FROM " + proslaGodinaBaza + ".dbo.NKGKPROM";
+    sql_str += " WHERE YEAR(gk_pr_date) = " + lani_h;
+    sql_str += " AND LEFT(gk_pr_konto,1) IN ('6','7')";
+    sql_str += " AND ISNULL(gk_pr_zatv_klas,'') <> 'D'";
+    sql_str += " AND ISNULL(gk_pr_poc_stanj,'') <> 'D'";
+    sql_str += " GROUP BY MONTH(gk_pr_date) ORDER BY MONTH(gk_pr_date)";
+    try
+    {
+        sqlMjRes = sqlQuery(sql_str);
+        if (Size(sqlMjRes) > 1)
+        {
+            for (i = 1; i < Size(sqlMjRes); i++)
+            {
+                mjessec = int(sqlMjRes[i][0]);
+                arrayPrihodiLG[mjessec - 1] = sqlMjRes[i][1];
+            }
+        }
+    }
+    catch(exc)
+    {
+        MessageBox("Greška prihodi LG: " + exc);
+    }
+
+    // ---- Rashodi OG  (Class 4 + 5, debit = expense)  ----
+    sql_str  = "SELECT MONTH(gk_pr_date) AS mj,";
+    sql_str += " ROUND(SUM(CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END),0) AS iznos";
+    sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKGKPROM";
+    sql_str += " WHERE YEAR(gk_pr_date) = " + ovagod_h;
+    sql_str += " AND LEFT(gk_pr_konto,1) IN ('4','5')";
+    sql_str += " AND ISNULL(gk_pr_zatv_klas,'') <> 'D'";
+    sql_str += " AND ISNULL(gk_pr_poc_stanj,'') <> 'D'";
+    sql_str += " GROUP BY MONTH(gk_pr_date) ORDER BY MONTH(gk_pr_date)";
+    try
+    {
+        sqlMjRes = sqlQuery(sql_str);
+        if (Size(sqlMjRes) > 1)
+        {
+            for (i = 1; i < Size(sqlMjRes); i++)
+            {
+                mjessec = int(sqlMjRes[i][0]);
+                arrayRashodiOG[mjessec - 1] = sqlMjRes[i][1];
+            }
+        }
+    }
+    catch(exc)
+    {
+        MessageBox("Greška rashodi OG: " + exc);
+    }
+
+    // ---- Rashodi LG  (Class 4 + 5)  ----
+    sql_str  = "SELECT MONTH(gk_pr_date) AS mj,";
+    sql_str += " ROUND(SUM(CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END),0) AS iznos";
+    sql_str += " FROM " + proslaGodinaBaza + ".dbo.NKGKPROM";
+    sql_str += " WHERE YEAR(gk_pr_date) = " + lani_h;
+    sql_str += " AND LEFT(gk_pr_konto,1) IN ('4','5')";
+    sql_str += " AND ISNULL(gk_pr_zatv_klas,'') <> 'D'";
+    sql_str += " AND ISNULL(gk_pr_poc_stanj,'') <> 'D'";
+    sql_str += " GROUP BY MONTH(gk_pr_date) ORDER BY MONTH(gk_pr_date)";
+    try
+    {
+        sqlMjRes = sqlQuery(sql_str);
+        if (Size(sqlMjRes) > 1)
+        {
+            for (i = 1; i < Size(sqlMjRes); i++)
+            {
+                mjessec = int(sqlMjRes[i][0]);
+                arrayRashodiLG[mjessec - 1] = sqlMjRes[i][1];
+            }
+        }
+    }
+    catch(exc)
+    {
+        MessageBox("Greška rashodi LG: " + exc);
+    }
+}
+
+// -----------------------------------------------------------------------
+// displayKpiValues  (runs on main thread via RunOnMain)
+// Sets all KPI label text values and trend ellipse colors
+// -----------------------------------------------------------------------
+
+function displayKpiValues()
+{
+
+    // A1
+    SetWidgetOptions("lblA1_og", "Content", kpi_a1_og_str);
+    SetWidgetOptions("lblA1_lg", "Content", lani_h + ": " + kpi_a1_lg_str);
+    //setTrendEllipse("EllipseA1", kpi_a1_trend);
+    // A2
+    SetWidgetOptions("lblA2_og", "Content", kpi_a2_og_str);
+    SetWidgetOptions("lblA2_lg", "Content", lani_h + ": " + kpi_a2_lg_str);
+    //setTrendEllipse("EllipseA2", kpi_a2_trend);
+    // A3
+    SetWidgetOptions("lblA3_og", "Content", kpi_a3_og_str);
+    SetWidgetOptions("lblA3_lg", "Content", lani_h + ": " + kpi_a3_lg_str);
+    //setTrendEllipse("EllipseA3", kpi_a3_trend);
+
+    // A4
+    SetWidgetOptions("lblA4_og", "Content", kpi_a4_og_str);
+    SetWidgetOptions("lblA4_lg", "Content", lani_h + ": " + kpi_a4_lg_str);
+    //setTrendEllipse("EllipseA4", kpi_a4_trend);
+
+    // A5
+    SetWidgetOptions("lblA5_og", "Content", kpi_a5_og_str);
+    SetWidgetOptions("lblA5_lg", "Content", lani_h + ": " + kpi_a5_lg_str);
+    //setTrendEllipse("EllipseA5", kpi_a5_trend);
+
+    // A6
+    SetWidgetOptions("lblA6_og", "Content", kpi_a6_og_str);
+    SetWidgetOptions("lblA6_lg", "Content", lani_h + ": " + kpi_a6_lg_str);
+    //setTrendEllipse("EllipseA6", kpi_a6_trend);
+
+    // A7
+    SetWidgetOptions("lblA7_og", "Content", kpi_a7_og_str);
+    SetWidgetOptions("lblA7_lg", "Content", lani_h + ": " + kpi_a7_lg_str);
+    //setTrendEllipse("EllipseA7", kpi_a7_trend);
+
+    // A8
+    SetWidgetOptions("lblA8_og", "Content", kpi_a8_og_str);
+    SetWidgetOptions("lblA8_lg", "Content", lani_h + ": " + kpi_a8_lg_str);
+    //setTrendEllipse("EllipseA8", kpi_a8_trend);
+
+    // A9
+    SetWidgetOptions("lblA9_og", "Content", kpi_a9_og_str);
+    SetWidgetOptions("lblA9_lg", "Content", lani_h + " → " + ovagod_h);
+    //setTrendEllipse("EllipseA9", kpi_a9_trend);
+
+    // A10
+    SetWidgetOptions("lblA10_og", "Content", kpi_a10_og_str);
+    SetWidgetOptions("lblA10_lg", "Content", lani_h + ": " + kpi_a10_lg_str);
+    //setTrendEllipse("EllipseA10", kpi_a10_trend);
+}
+
+// trend: '+' = green, '-' = red, '=' = gray
+function setTrendEllipse(ellipseName, trend)
+{
+    if (trend == "+")
+    {
+        SetWidgetOptions(ellipseName, "Fill", "#27AE60");
+    }
+    elif (trend == "-")
+    {
+        SetWidgetOptions(ellipseName, "Fill", "#E74C3C");
+    }
+    else
+    {
+        SetWidgetOptions(ellipseName, "Fill", "#95A5A6");
+    }
+}
+
+// -----------------------------------------------------------------------
+// gbExit
+// -----------------------------------------------------------------------
+
+// -----------------------------------------------------------------------
+// gbPrihodi / gbRashodi - open monthly chart modal windows
+// -----------------------------------------------------------------------
+
+function gbPrihodi@clicked()
+{
+    if (pripremljeno)
+    {
+        result = modalWindow(strTrim(tpath()) + "wxbiglaa.xaml");
+    }
+    else
+    {
+        MessageBox("Molim pripremite osnovne podatke prije nastavka!");
+        setFocus("gbPripremi");
+    }
+}
+
+function gbRashodi@clicked()
+{
+    if (pripremljeno)
+    {
+        result = modalWindow(strTrim(tpath()) + "wxbiglab.xaml");
+    }
+    else
+    {
+        MessageBox("Molim pripremite osnovne podatke prije nastavka!");
+        setFocus("gbPripremi");
+    }
+}
+
+// -----------------------------------------------------------------------
+// gbExit
+// -----------------------------------------------------------------------
+
+function gbExit@clicked()
+{
+    CloseWindow("wxbiglaWindow");
+}

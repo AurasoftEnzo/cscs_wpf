@@ -1,0 +1,51 @@
+    // -------------------------------------------------------------------
+    // WXBIGLA - Inc B
+    // Modal window: Rashodi po Mjesecima  (wxbiglab.xaml)
+    // Arrays arrayRashodiOG / arrayRashodiLG are pre-filled by setMonthlyData()
+    // -------------------------------------------------------------------
+
+    function wxbiglab_onDisplay()
+    {
+        cursor("wait");
+        displayChartRashodi();
+        cursor("dflt");
+    }
+
+    // ------------------------------------------------------------------
+    // displayChartRashodi - renders two-series bar chart (OG vs LG)
+    // ------------------------------------------------------------------
+    function displayChartRashodi()
+    {
+        SetWindowOptions("wxbiglaWindowB", "title",
+            "Rashodi po Mjesecima  —  " + ovagod_h + " vs " + lani_h + "  |  " + nazivFirme);
+
+        Chart("ChartRashodi", "init");
+
+        // LG series first so it appears behind OG in legend
+        Chart("ChartRashodi", "values", "bar", arrayRashodiLG, lani_h);
+        Chart("ChartRashodi", "values", "bar", arrayRashodiOG, ovagod_h);
+
+        Chart("ChartRashodi", "SeparatorStep", 1);
+        Chart("ChartRashodi", "TooltipDecimalPlaces", 0);
+
+        // LG = grey, OG = orange-red
+        Chart("ChartRashodi", "Color.Series", { "#7E909A", "#EA6A47" });
+
+        Chart("ChartRashodi", "labels", "x", 13,
+            {"1","2","3","4","5","6","7","8","9","10","11","12"});
+
+        // Grey out future months for the current year (OG series = index 1)
+        if (int(ovagod_h) >= int(now("yyyy")))
+        {
+            lastMonthIdx = int(now("MM")) - 1;
+            for (i = lastMonthIdx + 1; i <= 11; i++)
+            {
+                Chart("ChartRashodi", "Color.Point", 1, i, "#f5c6ae");
+            }
+        }
+    }
+
+    function gbZatvoriRashodi@clicked()
+    {
+        CloseWindow("wxbiglaWindowB");
+    }

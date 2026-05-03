@@ -1,0 +1,127 @@
+[[[Scripts/WXBIGLA.XAML]]]
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:wcl="clr-namespace:WpfControlsLibrary;assembly=WpfControlsLibrary"
+        xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+        mc:Ignorable="d"
+        Title="General Ledger KPI Dashboard"
+        Height="750" Width="1200" MinHeight="600" MinWidth="960"
+        WindowStartupLocation="CenterScreen" ResizeMode="CanResize"
+        Background="#f5f5f5" Name="wxbiglaWindow">
+    <Viewbox Stretch="Uniform">
+        <Grid Width="1160" Margin="15" Background="#e0e0e0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Filter Panel -->
+            <Rectangle Fill="#ffffff" RadiusX="6" RadiusY="6" Margin="0,0,0,10" Grid.Row="0" Height="70"/>
+            <StackPanel Orientation="Horizontal" Margin="20,10" Grid.Row="0" VerticalAlignment="Center">
+                <TextBlock Text="Godina:" VerticalAlignment="Center" FontSize="14" FontWeight="Bold" Margin="0,0,5,0"/>
+                <wcl:ASEnterBox Name="ceGodina" Size="4" FieldName="ovagod_h" Width="50" Height="24" 
+                                FontSize="14" ButtonSize="0" Case="Normal" IsReadOnly="False"/>
+                
+                <TextBlock Text="Od mjeseca:" VerticalAlignment="Center" FontSize="14" FontWeight="Bold" Margin="15,0,5,0"/>
+                <ComboBox Name="cbFromMonth" Width="60" Height="24" FontSize="13"/>
+                
+                <TextBlock Text="Do mjeseca:" VerticalAlignment="Center" FontSize="14" FontWeight="Bold" Margin="15,0,5,0"/>
+                <ComboBox Name="cbToMonth" Width="60" Height="24" FontSize="13"/>
+                
+                <Button Name="btnLoad" Content="Učitaj podatke" Width="130" Height="32" Margin="20,0,0,0"
+                        FontSize="14" FontWeight="Bold" Background="#488A99" Foreground="White" BorderThickness="0"/>
+                <Button Name="btnDetails" Content="Detalji prometa" Width="130" Height="32" Margin="10,0,0,0"
+                        FontSize="14" FontWeight="Bold" Background="#6ab187" Foreground="White" BorderThickness="0"/>
+            </StackPanel>
+
+            <!-- KPI Cards Panel -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,0,0,10">
+                <WrapPanel HorizontalAlignment="Center">
+                    <!-- A1 -->
+                    <Rectangle Fill="#ffffff" RadiusX="6" RadiusY="6" Width="240" Height="140" Margin="5"/>
+                    <Border BorderBrush="#cccccc" BorderThickness="1" CornerRadius="6" Padding="12" Width="240" Height="140" Margin="5">
+                        <StackPanel>
+                            <TextBlock Text="A1: Bruto dobit" FontWeight="Bold" FontSize="15" Margin="0,0,0,8">
+                                <ToolTipService.ToolTip><ToolTip Content="Prihod (Klasa 6) - Trošak prodane robe (Klasa 4)"/></ToolTipService.ToolTip>
+                            </TextBlock>
+                            <TextBlock Name="tbA1Val" FontSize="20" FontWeight="Bold" Foreground="#333"/>
+                            <TextBlock Name="tbA1Trend" FontSize="13" Margin="0,4,0,2"/>
+                            <TextBlock Text="(Preporučeno: > 20%)" FontSize="11" FontStyle="Italic" Foreground="#888"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- A2 -->
+                    <Rectangle Fill="#ffffff" RadiusX="6" RadiusY="6" Width="240" Height="140" Margin="5"/>
+                    <Border BorderBrush="#cccccc" BorderThickness="1" CornerRadius="6" Padding="12" Width="240" Height="140" Margin="5">
+                        <StackPanel>
+                            <TextBlock Text="A2: Neto profitna marža" FontWeight="Bold" FontSize="15" Margin="0,0,0,8">
+                                <ToolTipService.ToolTip><ToolTip Content="Neto dobit (Klasa 95) / Ukupni prihod (Klasa 6)"/></ToolTipService.ToolTip>
+                            </TextBlock>
+                            <TextBlock Name="tbA2Val" FontSize="20" FontWeight="Bold" Foreground="#333"/>
+                            <TextBlock Name="tbA2Trend" FontSize="13" Margin="0,4,0,2"/>
+                            <TextBlock Text="(Preporučeno: > 5%)" FontSize="11" FontStyle="Italic" Foreground="#888"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- A3 -->
+                    <Rectangle Fill="#ffffff" RadiusX="6" RadiusY="6" Width="240" Height="140" Margin="5"/>
+                    <Border BorderBrush="#cccccc" BorderThickness="1" CornerRadius="6" Padding="12" Width="240" Height="140" Margin="5">
+                        <StackPanel>
+                            <TextBlock Text="A3: Trenutni omjer (Current)" FontWeight="Bold" FontSize="15" Margin="0,0,0,8">
+                                <ToolTipService.ToolTip><ToolTip Content="Tekuća imovina (Klasa 1) / Kratkoročne obveze (Klasa 2)"/></ToolTipService.ToolTip>
+                            </TextBlock>
+                            <TextBlock Name="tbA3Val" FontSize="20" FontWeight="Bold" Foreground="#333"/>
+                            <TextBlock Name="tbA3Trend" FontSize="13" Margin="0,4,0,2"/>
+                            <TextBlock Text="(Preporučeno: 1.2 - 2.0)" FontSize="11" FontStyle="Italic" Foreground="#888"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- A4 -->
+                    <Rectangle Fill="#ffffff" RadiusX="6" RadiusY="6" Width="240" Height="140" Margin="5"/>
+                    <Border BorderBrush="#cccccc" BorderThickness="1" CornerRadius="6" Padding="12" Width="240" Height="140" Margin="5">
+                        <StackPanel>
+                            <TextBlock Text="A4: Brzi omjer (Quick)" FontWeight="Bold" FontSize="15" Margin="0,0,0,8">
+                                <ToolTipService.ToolTip><ToolTip Content="(Novac 10 + Potraživanja 12) / Kratkoročne obveze (Klasa 2)"/></ToolTipService.ToolTip>
+                            </TextBlock>
+                            <TextBlock Name="tbA4Val" FontSize="20" FontWeight="Bold" Foreground="#333"/>
+                            <TextBlock Name="tbA4Trend" FontSize="13" Margin="0,4,0,2"/>
+                            <TextBlock Text="(Preporučeno: > 1.0)" FontSize="11" FontStyle="Italic" Foreground="#888"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- A5 -->
+                    <Rectangle Fill="#ffffff" RadiusX="6" RadiusY="6" Width="240" Height="140" Margin="5"/>
+                    <Border BorderBrush="#cccccc" BorderThickness="1" CornerRadius="6" Padding="12" Width="240" Height="140" Margin="5">
+                        <StackPanel>
+                            <TextBlock Text="A5: ROE (Povrat na kapital)" FontWeight="Bold" FontSize="15" Margin="0,0,0,8">
+                                <ToolTipService.ToolTip><ToolTip Content="Neto dobit (Klasa 95) / Kapital (Klasa 3)"/></ToolTipService.ToolTip>
+                            </TextBlock>
+                            <TextBlock Name="tbA5Val" FontSize="20" FontWeight="Bold" Foreground="#333"/>
+                            <TextBlock Name="tbA5Trend" FontSize="13" Margin="0,4,0,2"/>
+                            <TextBlock Text="(Preporučeno: > 10%)" FontSize="11" FontStyle="Italic" Foreground="#888"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- A6 -->
+                    <Rectangle Fill="#ffffff" RadiusX="6" RadiusY="6" Width="240" Height="140" Margin="5"/>
+                    <Border BorderBrush="#cccccc" BorderThickness="1" CornerRadius="6" Padding="12" Width="240" Height="140" Margin="5">
+                        <StackPanel>
+                            <TextBlock Text="A6: Dug/Kapital (D/E)" FontWeight="Bold" FontSize="15" Margin="0,0,0,8">
+                                <ToolTipService.ToolTip><ToolTip Content="Ukupne obveze (Klasa 2) / Kapital (Klasa 3)"/></ToolTipService.ToolTip>
+                            </TextBlock>
+                            <TextBlock Name="tbA6Val" FontSize="20" FontWeight="Bold" Foreground="#333"/>
+                            <TextBlock Name="tbA6Trend" FontSize="13" Margin="0,4,0,2"/>
+                            <TextBlock Text="(Preporučeno: < 1.0)" FontSize="11" FontStyle="Italic" Foreground="#888"/>
+                        </StackPanel>
+                    </Border>
+                </WrapPanel>
+            </ScrollViewer>
+
+            <!-- Chart -->
+            <lvc:CartesianChart LegendPosition="Right" Name="chartRevenue" Grid.Row="1" Margin="15,0,15,15" 
+                                Height="320" VerticalAlignment="Bottom" Background="#ffffff"/>
+        </Grid>
+    </Viewbox>
+</Window>

@@ -1,0 +1,82 @@
+    // -------------------------------------------------------------------
+    // WXBIGLA - General Ledger Dashboard
+    // Global variable declarations and filter helper
+    // -------------------------------------------------------------------
+
+    // Company / year context
+    define companyCode, userCode, imeFirme, nazivFirme type a size 20;
+    define ovagod_h, lani_h type a size 4;
+    define trenutnaGodinaBaza, proslaGodinaBaza type a size 50;
+    define pripremljeno type l;
+
+    // Month / account filter
+    define mjesecOd, mjesecDo type a size 2;
+    define konto_od, konto_do type a size 15 up;
+
+    // -------------------------------------------------------------------
+    // KPI numeric values  (_og = current year, _lg = previous year)
+    // -------------------------------------------------------------------
+    define kpi_a1_og, kpi_a1_lg type n size 16 dec 2;   // Gross Profit
+    define kpi_a2_og, kpi_a2_lg type n size 10 dec 2;   // Net Profit Margin %
+    define kpi_a3_og, kpi_a3_lg type n size 10 dec 4;   // Current Ratio
+    define kpi_a4_og, kpi_a4_lg type n size 10 dec 4;   // Quick Ratio
+    define kpi_a5_og, kpi_a5_lg type n size 10 dec 2;   // ROE %
+    define kpi_a6_og, kpi_a6_lg type n size 10 dec 2;   // AR Turnover
+    define kpi_a7_og, kpi_a7_lg type n size 10 dec 2;   // Inventory Turnover
+    define kpi_a8_og, kpi_a8_lg type n size 10 dec 4;   // Debt-to-Equity
+    define kpi_a9_og type n size 10 dec 2;               // Revenue Growth YoY %
+    define kpi_a10_og, kpi_a10_lg type n size 10 dec 2; // OpEx Ratio %
+
+    // KPI display strings
+    define kpi_a1_og_str, kpi_a1_lg_str type a size 22;
+    define kpi_a2_og_str, kpi_a2_lg_str type a size 16;
+    define kpi_a3_og_str, kpi_a3_lg_str type a size 16;
+    define kpi_a4_og_str, kpi_a4_lg_str type a size 16;
+    define kpi_a5_og_str, kpi_a5_lg_str type a size 16;
+    define kpi_a6_og_str, kpi_a6_lg_str type a size 16;
+    define kpi_a7_og_str, kpi_a7_lg_str type a size 16;
+    define kpi_a8_og_str, kpi_a8_lg_str type a size 16;
+    define kpi_a9_og_str type a size 16;
+    define kpi_a10_og_str, kpi_a10_lg_str type a size 16;
+
+    // KPI trend  '+' = improved, '-' = worsened, '=' = neutral
+    define kpi_a1_trend, kpi_a2_trend, kpi_a3_trend, kpi_a4_trend, kpi_a5_trend type a size 1;
+    define kpi_a6_trend, kpi_a7_trend, kpi_a8_trend, kpi_a9_trend, kpi_a10_trend type a size 1;
+
+    // -------------------------------------------------------------------
+    // P&L accumulators  (populated by setKpiData)
+    // -------------------------------------------------------------------
+    define pl_revenue_og, pl_revenue_lg type n size 16 dec 2;   // Class 6
+    define pl_fin_income_og, pl_fin_income_lg type n size 16 dec 2; // Class 7
+    define pl_opex_og, pl_opex_lg type n size 16 dec 2;         // Class 4
+    define pl_fin_exp_og, pl_fin_exp_lg type n size 16 dec 2;   // Class 5
+    define pl_net_og, pl_net_lg type n size 16 dec 2;           // Class 9500-9599
+
+    // Balance sheet accumulators
+    define bs_current_assets_og, bs_current_assets_lg type n size 16 dec 2;  // Class 1
+    define bs_liab_og, bs_liab_lg type n size 16 dec 2;                       // Class 2
+    define bs_equity_og, bs_equity_lg type n size 16 dec 2;                   // Class 3
+    define bs_quick_og, bs_quick_lg type n size 16 dec 2;                     // Class 1000-1299
+    define bs_ar_og, bs_ar_lg type n size 16 dec 2;                           // Class 1200-1299
+    define bs_inventory_og, bs_inventory_lg type n size 16 dec 2;             // Class 3100-3999
+
+    // -------------------------------------------------------------------
+    // Monthly arrays for bar chart modal windows (index 0..11 = Jan..Dec)
+    // -------------------------------------------------------------------
+    define arrayPrihodiOG, arrayPrihodiLG type n size 14 dec 0 array 12;     // Prihodi (Class 6+7)
+    define arrayRashodiOG, arrayRashodiLG type n size 14 dec 0 array 12;     // Rashodi (Class 4+5)
+
+    // -------------------------------------------------------------------
+    // filterGLPart - appends optional account range WHERE clauses to sql_str
+    // -------------------------------------------------------------------
+    function filterGLPart()
+    {
+        if (konto_od != "")
+        {
+            sql_str += " AND gk_pr_konto >= '" + konto_od + "'";
+        }
+        if (konto_do != "")
+        {
+            sql_str += " AND gk_pr_konto <= '" + konto_do + "'";
+        }
+    }

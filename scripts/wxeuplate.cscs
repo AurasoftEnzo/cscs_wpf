@@ -145,7 +145,7 @@ function refreshList(){
         sql = "SELECT 
             0, 
             kpkn_datem, 
-            kpkn_partnr as Partner, 
+            kpkn_partner as Partner, 
             nksc_partname as PartnerNAziv,
             nksc_sifra as OIB,
             kpkn_racun as BrRacuna, 
@@ -154,11 +154,11 @@ function refreshList(){
             month(pi_pr_date) as mjesecUplate,
             pi_pr_date as datumUplate, 
             year(pi_pr_date) as xyear,
-            kpkn_iznos as iznosRacuna,
+            kpkn_iznos_uk as iznosRacuna,
             pi_pr_iznos as PlaceniIznos 
             FROM " + databaseName + ".dbo.NKPIPROM 
             LEFT JOIN " + databaseName + ".dbo.KPKNIZRN ON pi_pr_brdok= kpkn_redbr 
-            LEFT JOIN " + databaseName + ".dbo.NKSCPART ON KPKN_PARTNR = NKSC_PARTCODE 
+            LEFT JOIN " + databaseName + ".dbo.NKSCPART ON KPKN_PARTNER = NKSC_PARTCODE 
             WHERE month(pi_pr_date) = kpkn_redbr 
             AND month(pi_pr_date) = @month 
             AND year(pi_pr_date) = @year 

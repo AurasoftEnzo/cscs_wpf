@@ -6,7 +6,6 @@ include(DownloadScripts() == true ? Download(ServerAddress() + "wxbigla_inc_a.cs
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbigla_inc_b.cscs") : strTrim(tpath()) + "wxbigla_inc_b.cscs");
 
 CreateWindow(strTrim(tpath()) + "wxbigla.xaml");
-
 // -----------------------------------------------------------------------
 // Window events
 // -----------------------------------------------------------------------
@@ -29,10 +28,7 @@ function Wxbigla_onDisplay()
     {
         companyCode = Substring(CoGet(), 1, 2);
     }
-
-        companyCode= "T4"; //temporary hardcode for testing
-
-
+    
     save_logs("U", userCode, WhoAmI());
 
     sqlQueryString = "SELECT SY_CC_USER, SY_CC_YEAR, SY_CC_DBASE FROM " + strtrim(CommonDBGet()) + ".dbo.NKSYCCYR WHERE SY_CC_CODE = '" + companyCode + "'";
@@ -343,7 +339,7 @@ function setKpiData()
     kpi_a7_lg = bs_inventory_lg != 0 ? Math.Round(pl_opex_lg / bs_inventory_lg, 2) : 0;
     // A8 - Debt-to-Equity = liabilities / equity
     kpi_a8_og = bs_equity_og != 0 ? Math.Round(bs_liab_og / bs_equity_og, 4) : 0;
-    kpi_a8_lg = bs_equity_lg != 0 ? Math.Round  (bs_liab_lg / bs_equity_lg, 4) : 0;
+    kpi_a8_lg = bs_equity_lg != 0 ? Math.Round(bs_liab_lg / bs_equity_lg, 4) : 0;
     // A9 - Revenue Growth YoY %
     kpi_a9_og = pl_revenue_lg != 0 ? Math.Round((pl_revenue_og - pl_revenue_lg) / pl_revenue_lg * 100, 2) : 0;
 
@@ -351,25 +347,39 @@ function setKpiData()
     kpi_a10_og = pl_revenue_og != 0 ? Math.Round(pl_opex_og / pl_revenue_og * 100, 2) : 0;
     kpi_a10_lg = pl_revenue_lg != 0 ? Math.Round(pl_opex_lg / pl_revenue_lg * 100, 2) : 0;
     // ---- Format display strings ----
-    kpi_a1_og_str = format(kpi_a1_og, "N0");
-    kpi_a1_lg_str = format(kpi_a1_lg, "N0");
-    kpi_a2_og_str = format(kpi_a2_og, "N2") + " %";
-    kpi_a2_lg_str = format(kpi_a2_lg, "N2") + " %";
-    kpi_a3_og_str = format(kpi_a3_og, "N2");
-    kpi_a3_lg_str = format(kpi_a3_lg, "N2");
-    kpi_a4_og_str = format(kpi_a4_og, "N2");
-    kpi_a4_lg_str = format(kpi_a4_lg, "N2");
-    kpi_a5_og_str = format(kpi_a5_og, "N2") + " %";
-    kpi_a5_lg_str = format(kpi_a5_lg, "N2") + " %";
-    kpi_a6_og_str = format(kpi_a6_og, "N2");
-    kpi_a6_lg_str = format(kpi_a6_lg, "N2");
-    kpi_a7_og_str = format(kpi_a7_og, "N2");
-    kpi_a7_lg_str = format(kpi_a7_lg, "N2");
-    kpi_a8_og_str = format(kpi_a8_og, "N4");
-    kpi_a8_lg_str = format(kpi_a8_lg, "N4");
-    kpi_a9_og_str = format(kpi_a9_og, "N2") + " %";
-    kpi_a10_og_str = format(kpi_a10_og, "N2") + " %";
-    kpi_a10_lg_str = format(kpi_a10_lg, "N2") + " %";
+    Format("kpi_a1_og", "nofd", recv: "kpi_a1_og_str");
+    Format("kpi_a1_lg", "nofd", recv: "kpi_a1_lg_str");
+
+    Format("kpi_a2_og", "nofd", recv: "kpi_a2_og_str");
+    kpi_a2_og_str = kpi_a2_og_str += " %";
+
+    Format("kpi_a2_lg", "nofd", recv: "kpi_a2_lg_str");
+    kpi_a2_lg_str = kpi_a2_lg_str += " %";
+
+    Format("kpi_a3_og", "nofd", recv: "kpi_a3_og_str");
+    Format("kpi_a3_lg", "nofd", recv: "kpi_a3_lg_str");
+    Format("kpi_a4_og", "nofd", recv: "kpi_a4_og_str");
+    Format("kpi_a4_lg", "nofd", recv: "kpi_a4_lg_str");
+
+    Format("kpi_a5_og", "nofd", recv: "kpi_a5_og_str");
+    kpi_a5_og_str = kpi_a5_og_str += " %";
+
+    Format("kpi_a5_lg", "nofd", recv: "kpi_a5_lg_str");
+    kpi_a5_lg_str = kpi_a5_lg_str += " %";
+
+    Format("kpi_a6_og", "nofd", recv: "kpi_a6_og_str");
+    Format("kpi_a6_lg", "nofd", recv: "kpi_a6_lg_str");
+    Format("kpi_a7_og", "nofd", recv: "kpi_a7_og_str");
+    Format("kpi_a7_lg", "nofd", recv: "kpi_a7_lg_str");
+    Format("kpi_a8_og", "nofd", recv: "kpi_a8_og_str");
+    Format("kpi_a8_lg", "nofd", recv: "kpi_a8_lg_str");
+
+    Format("kpi_a9_og", "nofd", recv: "kpi_a9_og_str");
+    kpi_a9_og_str = kpi_a9_og_str += " %";
+    Format("kpi_a10_og", "nofd", recv: "kpi_a10_og_str");
+    kpi_a10_og_str = kpi_a10_og_str += " %";
+    Format("kpi_a10_lg", "nofd", recv: "kpi_a10_lg_str");
+    kpi_a10_lg_str = kpi_a10_lg_str += " %";
 
     // ---- Trend flags:  higher = better for A1,A2,A3,A4,A5,A6,A7,A9
     //                    lower  = better for A8,A10  ----
@@ -520,50 +530,50 @@ function displayKpiValues()
     // A1
     SetWidgetOptions("lblA1_og", "Content", kpi_a1_og_str);
     SetWidgetOptions("lblA1_lg", "Content", lani_h + ": " + kpi_a1_lg_str);
-    //setTrendEllipse("EllipseA1", kpi_a1_trend);
+    setTrendEllipse("EllipseA1", kpi_a1_trend);
     // A2
     SetWidgetOptions("lblA2_og", "Content", kpi_a2_og_str);
     SetWidgetOptions("lblA2_lg", "Content", lani_h + ": " + kpi_a2_lg_str);
-    //setTrendEllipse("EllipseA2", kpi_a2_trend);
+    setTrendEllipse("EllipseA2", kpi_a2_trend);
     // A3
     SetWidgetOptions("lblA3_og", "Content", kpi_a3_og_str);
     SetWidgetOptions("lblA3_lg", "Content", lani_h + ": " + kpi_a3_lg_str);
-    //setTrendEllipse("EllipseA3", kpi_a3_trend);
+    setTrendEllipse("EllipseA3", kpi_a3_trend);
 
     // A4
     SetWidgetOptions("lblA4_og", "Content", kpi_a4_og_str);
     SetWidgetOptions("lblA4_lg", "Content", lani_h + ": " + kpi_a4_lg_str);
-    //setTrendEllipse("EllipseA4", kpi_a4_trend);
+    setTrendEllipse("EllipseA4", kpi_a4_trend);
 
     // A5
     SetWidgetOptions("lblA5_og", "Content", kpi_a5_og_str);
     SetWidgetOptions("lblA5_lg", "Content", lani_h + ": " + kpi_a5_lg_str);
-    //setTrendEllipse("EllipseA5", kpi_a5_trend);
+    setTrendEllipse("EllipseA5", kpi_a5_trend);
 
     // A6
     SetWidgetOptions("lblA6_og", "Content", kpi_a6_og_str);
     SetWidgetOptions("lblA6_lg", "Content", lani_h + ": " + kpi_a6_lg_str);
-    //setTrendEllipse("EllipseA6", kpi_a6_trend);
+    setTrendEllipse("EllipseA6", kpi_a6_trend);
 
     // A7
     SetWidgetOptions("lblA7_og", "Content", kpi_a7_og_str);
     SetWidgetOptions("lblA7_lg", "Content", lani_h + ": " + kpi_a7_lg_str);
-    //setTrendEllipse("EllipseA7", kpi_a7_trend);
+    setTrendEllipse("EllipseA7", kpi_a7_trend);
 
     // A8
     SetWidgetOptions("lblA8_og", "Content", kpi_a8_og_str);
     SetWidgetOptions("lblA8_lg", "Content", lani_h + ": " + kpi_a8_lg_str);
-    //setTrendEllipse("EllipseA8", kpi_a8_trend);
+    setTrendEllipse("EllipseA8", kpi_a8_trend);
 
     // A9
     SetWidgetOptions("lblA9_og", "Content", kpi_a9_og_str);
     SetWidgetOptions("lblA9_lg", "Content", lani_h + " → " + ovagod_h);
-    //setTrendEllipse("EllipseA9", kpi_a9_trend);
+    setTrendEllipse("EllipseA9", kpi_a9_trend);
 
     // A10
     SetWidgetOptions("lblA10_og", "Content", kpi_a10_og_str);
     SetWidgetOptions("lblA10_lg", "Content", lani_h + ": " + kpi_a10_lg_str);
-    //setTrendEllipse("EllipseA10", kpi_a10_trend);
+    setTrendEllipse("EllipseA10", kpi_a10_trend);
 }
 
 // trend: '+' = green, '-' = red, '=' = gray
@@ -571,15 +581,15 @@ function setTrendEllipse(ellipseName, trend)
 {
     if (trend == "+")
     {
-        SetWidgetOptions(ellipseName, "Fill", "#27AE60");
+        SetWidgetOptions(ellipseName, "Color", "#27AE60");
     }
     elif (trend == "-")
     {
-        SetWidgetOptions(ellipseName, "Fill", "#E74C3C");
+        SetWidgetOptions(ellipseName, "Color", "#E74C3C");
     }
     else
     {
-        SetWidgetOptions(ellipseName, "Fill", "#95A5A6");
+        SetWidgetOptions(ellipseName, "Color", "#95A5A6");
     }
 }
 
@@ -621,7 +631,21 @@ function gbRashodi@clicked()
 // gbExit
 // -----------------------------------------------------------------------
 
-function gbExit@clicked()
-{
-    CloseWindow("wxbiglaWindow");
+function gbExit@clicked(){
+    // save_logs("I", userCode, WhoAmI());
+
+    if(Size(args) > 2)
+    {
+        //comming from tas
+        // quit;
+        CloseWindow(strtrim(tpath()) + "wxbigla.xaml");
+    }
+    else
+    {    
+        //comming from mainmenu
+        quit;
+    }
+
+    // CloseWindow(strtrim(tpath()) + "wxbigla.xaml");
+    // quit();
 }

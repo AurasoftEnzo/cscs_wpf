@@ -33,6 +33,7 @@
 
         Chart("ChartRashodi", "labels", "x", 13,
             {"1","2","3","4","5","6","7","8","9","10","11","12"});
+        Chart("ChartRashodi", "Color.labels", "White");
 
         // Grey out future months for the current year (OG series = index 1)
         if (int(ovagod_h) >= int(now("yyyy")))
@@ -47,5 +48,5 @@
 
     function gbZatvoriRashodi@clicked()
     {
-        CloseWindow("wxbiglaWindowB");
+        CloseWindow(strtrim(tpath()) + "wxbiglab.xaml");
     }

@@ -1,5 +1,4 @@
 This document should separate the report parameters from ordinary field binding. In the manual, it is clearly shown that the parameter is created in .repx, then used in the Parameters.someName expression, and from the script it is filled via SetReportParameter; retrieval goes via GetReportParameter.
-
 ---
 title: Report Parameters
 module: reporting
@@ -27,7 +26,7 @@ Report parameters are used for one-time or global values such as:
 - The parameter is first defined in the '.repx' template.
 - In the report designer, it is used through the expression 'Parameters.parameterName'.
 - In the script, it is populated via 'SetReportParameter'.
-- The parameter can also be read via 'GetReportParameter' [file:104].
+- The parameter can also be read via 'GetReportParameter' .
 
 ## When to use parameters
 
@@ -44,13 +43,13 @@ In the report designer:
 2. Right-click on **Parameters**,
 3. add a new parameter,
 4. Give a name and type,
-5. set 'Show in parameters panel = false' [file:104] if necessary.
+5. set 'Show in parameters panel = false'  if necessary.
 
 ## Use parameter in .repx
 
 For a control such as 'XRLabel':
 - "Tag" can be left empty,
-- the control expression uses 'Parameters.parameterName' [file:104].
+- the control expression uses 'Parameters.parameterName' .
 
 ### Example expression
 
@@ -60,7 +59,7 @@ Parameters.reportPrintingPerson
 
 ## SetReportParameter
 
-'SetReportParameter' sets the value of the existing report parameter [file:104].
+'SetReportParameter' sets the value of the existing report parameter .
 
 ### Syntax
 
@@ -85,7 +84,7 @@ SetReportParameter(reportHandle, "reportPrintingPerson", reportPrintingPerson);
 
 ## GetReportParameter
 
-'GetReportParameter' retrieves the current value of the report parameter [file:104].
+'GetReportParameter' retrieves the current value of the report parameter .
 
 ### Syntax
 
@@ -131,7 +130,7 @@ SetReportParameter(reportHandle, "logoPath", logoPath);
 - Type: `String`
 - `Show in parameters panel = false`
 - Add label to `ReportHeader`
-- Set label expression to `Parameters.reportPrintingPerson` [file:104]
+- Set label expression to `Parameters.reportPrintingPerson` 
 
 ### CSCS_WPF script
 
@@ -146,7 +145,7 @@ SetReportParameter(reportHandle, "reportPrintingPerson", reportPrintingPerson);
 
 - Add parameter: `logoPath`
 - Add `PictureBox`
-- Set expression to `Parameters.logoPath` [file:104]
+- Set expression to `Parameters.logoPath` 
 
 ### CSCS_WPF script
 
@@ -171,7 +170,7 @@ SetReportParameter(reportHandle, "logoPath", logoPath);
 - Using 'SetReportParameter' for a parameter that is not defined in '.repx'.
 - Expecting the parameter to automatically fill in the detail rows to be generated via 'OutputReport'.
 - Mixing 'Tag' field bindings and 'Parameters.*' expressions.
-- AI invents parameters that don't exist in template [file:104].
+- AI invents parameters that don't exist in template .
 
 ## AI notes
 

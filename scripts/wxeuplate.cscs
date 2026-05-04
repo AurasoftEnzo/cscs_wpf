@@ -144,7 +144,7 @@ function refreshList(){
     if(substring(KPSY_COMP_JMBFI, 0, 1) == "9"){
         sql = "SELECT 
             0, 
-            kpkn_datem, 
+            kpkn_datum, 
             kpkn_partner as Partner, 
             nksc_partname as PartnerNAziv,
             nksc_sifra as OIB,
@@ -155,16 +155,17 @@ function refreshList(){
             pi_pr_date as datumUplate, 
             year(pi_pr_date) as xyear,
             kpkn_iznos_uk as iznosRacuna,
-            pi_pr_iznos as PlaceniIznos 
+            pi_pr_iznos as PlaceniIznos,
+            year(kpkn_datum) as yearIsporuke
             FROM " + databaseName + ".dbo.NKPIPROM 
             LEFT JOIN " + databaseName + ".dbo.KPKNIZRN ON pi_pr_brdok= kpkn_redbr 
             LEFT JOIN " + databaseName + ".dbo.NKSCPART ON KPKN_PARTNER = NKSC_PARTCODE 
-            WHERE month(pi_pr_date) = kpkn_redbr 
-            AND month(pi_pr_date) = @month 
+            WHERE month(pi_pr_date) = @month 
             AND year(pi_pr_date) = @year 
             AND pi_pr_dp IN ('P','U')
+            AND kpkn_datum >= '2026-01-01'
             ORDER BY pi_pr_date, pi_pr_brdok";
-        
+
     }else{
         sql = "     WITH racuni AS (
                     SELECT kpsp_ztv_code, 

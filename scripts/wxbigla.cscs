@@ -4,6 +4,7 @@ Import(strTrim(mpath()) + "CSCS.Math.dll");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbigla_inc_lists.cscs") : strTrim(tpath()) + "wxbigla_inc_lists.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbigla_inc_a.cscs") : strTrim(tpath()) + "wxbigla_inc_a.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbigla_inc_b.cscs") : strTrim(tpath()) + "wxbigla_inc_b.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbigla_inc_c.cscs") : strTrim(tpath()) + "wxbigla_inc_c.cscs");
 
 CreateWindow(strTrim(tpath()) + "wxbigla.xaml");
 // -----------------------------------------------------------------------
@@ -130,6 +131,7 @@ function DisableButtons()
     SetWidgetOptions("gbPripremi",  "IsEnabled", "false");
     SetWidgetOptions("gbPrihodi",   "IsEnabled", "false");
     SetWidgetOptions("gbRashodi",   "IsEnabled", "false");
+    SetWidgetOptions("gbDodatni",   "IsEnabled", "false");
     SetWidgetOptions("gbExit",      "IsEnabled", "false");
 }
 
@@ -138,6 +140,7 @@ function EnableButtons()
     SetWidgetOptions("gbPripremi",  "IsEnabled", "true");
     SetWidgetOptions("gbPrihodi",   "IsEnabled", "true");
     SetWidgetOptions("gbRashodi",   "IsEnabled", "true");
+    SetWidgetOptions("gbDodatni",   "IsEnabled", "true");
     SetWidgetOptions("gbExit",      "IsEnabled", "true");
 }
 
@@ -180,7 +183,9 @@ function setKpiData()
     plSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,1)='7' THEN CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS fin_income,";
     plSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,1)='4' THEN CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS opex,";
     plSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,1)='5' THEN CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS fin_exp,";
-    plSelect += " ROUND(SUM(CASE WHEN gk_pr_konto >= '9500' AND gk_pr_konto < '9600' THEN CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS net_income";
+    plSelect += " ROUND(SUM(CASE WHEN gk_pr_konto >= '9500' AND gk_pr_konto < '9600' THEN CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS net_income,";
+    plSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,2)='51' THEN CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS interest_exp,";
+    plSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,2)='42' THEN CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS depreciation";
 
     // Current year P&L
     sql_str = plSelect;
@@ -220,28 +225,34 @@ function setKpiData()
         return;
     }
 
-    // Parse P&L results (single aggregate row per query; cols: revenue, fin_income, opex, fin_exp, net_income)
-    pl_revenue_og = 0;    pl_revenue_lg = 0;
-    pl_fin_income_og = 0; pl_fin_income_lg = 0;
-    pl_opex_og = 0;       pl_opex_lg = 0;
-    pl_fin_exp_og = 0;    pl_fin_exp_lg = 0;
-    pl_net_og = 0;        pl_net_lg = 0;
+    // Parse P&L results (cols: 0=revenue, 1=fin_income, 2=opex, 3=fin_exp, 4=net_income, 5=interest_exp, 6=depreciation)
+    pl_revenue_og = 0;       pl_revenue_lg = 0;
+    pl_fin_income_og = 0;    pl_fin_income_lg = 0;
+    pl_opex_og = 0;          pl_opex_lg = 0;
+    pl_fin_exp_og = 0;       pl_fin_exp_lg = 0;
+    pl_net_og = 0;           pl_net_lg = 0;
+    pl_interest_exp_og = 0;  pl_interest_exp_lg = 0;
+    pl_depreciation_og = 0;  pl_depreciation_lg = 0;
 
     if (Size(plResultOG) > 1)
     {
-        pl_revenue_og    = plResultOG[1][0];
-        pl_fin_income_og = plResultOG[1][1];
-        pl_opex_og       = plResultOG[1][2];
-        pl_fin_exp_og    = plResultOG[1][3];
-        pl_net_og        = plResultOG[1][4];
+        pl_revenue_og      = plResultOG[1][0];
+        pl_fin_income_og   = plResultOG[1][1];
+        pl_opex_og         = plResultOG[1][2];
+        pl_fin_exp_og      = plResultOG[1][3];
+        pl_net_og          = plResultOG[1][4];
+        pl_interest_exp_og = plResultOG[1][5];
+        pl_depreciation_og = plResultOG[1][6];
     }
     if (Size(plResultLG) > 1)
     {
-        pl_revenue_lg    = plResultLG[1][0];
-        pl_fin_income_lg = plResultLG[1][1];
-        pl_opex_lg       = plResultLG[1][2];
-        pl_fin_exp_lg    = plResultLG[1][3];
-        pl_net_lg        = plResultLG[1][4];
+        pl_revenue_lg      = plResultLG[1][0];
+        pl_fin_income_lg   = plResultLG[1][1];
+        pl_opex_lg         = plResultLG[1][2];
+        pl_fin_exp_lg      = plResultLG[1][3];
+        pl_net_lg          = plResultLG[1][4];
+        pl_interest_exp_lg = plResultLG[1][5];
+        pl_depreciation_lg = plResultLG[1][6];
     }
     // -- Balance sheet query: Class 1,2,3 + sub-ranges
     // Include opening balances (poc_st='D'), exclude year-closing (zatv_klas='D')
@@ -252,7 +263,9 @@ function setKpiData()
     bsSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,1)='3' THEN CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS equity,";
     bsSelect += " ROUND(SUM(CASE WHEN gk_pr_konto >= '1000' AND gk_pr_konto < '1300' THEN CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS quick_assets,";
     bsSelect += " ROUND(SUM(CASE WHEN gk_pr_konto >= '1200' AND gk_pr_konto < '1300' THEN CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS ar,";
-    bsSelect += " ROUND(SUM(CASE WHEN gk_pr_konto >= '3100' AND gk_pr_konto < '4000' THEN CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS inventory";
+    bsSelect += " ROUND(SUM(CASE WHEN gk_pr_konto >= '3100' AND gk_pr_konto < '4000' THEN CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS inventory,";
+    bsSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,1)='0' THEN CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS fixed_assets,";
+    bsSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,2)='22' THEN CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS ap";
 
     // Current year BS
     sql_str = bsSelect;
@@ -286,13 +299,15 @@ function setKpiData()
         return;
     }
 
-    // Parse BS results (single aggregate row per query; cols: current_assets, liabilities, equity, quick_assets, ar, inventory)
+    // Parse BS results (cols: 0=current_assets, 1=liabilities, 2=equity, 3=quick_assets, 4=ar, 5=inventory, 6=fixed_assets, 7=ap)
     bs_current_assets_og = 0; bs_current_assets_lg = 0;
     bs_liab_og = 0;           bs_liab_lg = 0;
     bs_equity_og = 0;         bs_equity_lg = 0;
     bs_quick_og = 0;          bs_quick_lg = 0;
     bs_ar_og = 0;             bs_ar_lg = 0;
     bs_inventory_og = 0;      bs_inventory_lg = 0;
+    bs_fixed_assets_og = 0;   bs_fixed_assets_lg = 0;
+    bs_ap_og = 0;             bs_ap_lg = 0;
 
     if (Size(bsResultOG) > 1)
     {
@@ -302,6 +317,8 @@ function setKpiData()
         bs_quick_og          = bsResultOG[1][3];
         bs_ar_og             = bsResultOG[1][4];
         bs_inventory_og      = bsResultOG[1][5];
+        bs_fixed_assets_og   = bsResultOG[1][6];
+        bs_ap_og             = bsResultOG[1][7];
     }
     if (Size(bsResultLG) > 1)
     {
@@ -311,6 +328,8 @@ function setKpiData()
         bs_quick_lg          = bsResultLG[1][3];
         bs_ar_lg             = bsResultLG[1][4];
         bs_inventory_lg      = bsResultLG[1][5];
+        bs_fixed_assets_lg   = bsResultLG[1][6];
+        bs_ap_lg             = bsResultLG[1][7];
     }
 
     // ---- Compute KPIs ----
@@ -393,6 +412,63 @@ function setKpiData()
     kpi_a8_trend  = kpi_a8_og  < kpi_a8_lg  ? "+" : (kpi_a8_og  > kpi_a8_lg  ? "-" : "="); // lower = better
     kpi_a9_trend  = kpi_a9_og  > 0           ? "+" : (kpi_a9_og  < 0           ? "-" : "=");
     kpi_a10_trend = kpi_a10_og < kpi_a10_lg  ? "+" : (kpi_a10_og > kpi_a10_lg  ? "-" : "="); // lower = better
+
+    // ---- Compute B-series KPIs ----
+
+    // B1 - Rast troškova % = (opex_og - opex_lg) / opex_lg * 100  (lower = better)
+    kpi_b1_og = pl_opex_lg != 0 ? Math.Round((pl_opex_og - pl_opex_lg) / pl_opex_lg * 100, 2) : 0;
+    kpi_b1_trend = kpi_b1_og < 0 ? "+" : (kpi_b1_og > 0 ? "-" : "=");
+
+    // B2 - Kamatno pokriće = EBIT / interest_exp
+    // EBIT = net_income + interest_exp  (add back interest to get operating profit)
+    ebit_og = pl_net_og + pl_interest_exp_og;
+    ebit_lg = pl_net_lg + pl_interest_exp_lg;
+    kpi_b2_og = pl_interest_exp_og != 0 ? Math.Round(ebit_og / pl_interest_exp_og, 2) : 0;
+    kpi_b2_lg = pl_interest_exp_lg != 0 ? Math.Round(ebit_lg / pl_interest_exp_lg, 2) : 0;
+    kpi_b2_trend = kpi_b2_og > kpi_b2_lg ? "+" : (kpi_b2_og < kpi_b2_lg ? "-" : "=");
+
+    // B3 - Obrtaj dugotrajne imovine = revenue / fixed_assets
+    kpi_b3_og = bs_fixed_assets_og != 0 ? Math.Round(pl_revenue_og / bs_fixed_assets_og, 2) : 0;
+    kpi_b3_lg = bs_fixed_assets_lg != 0 ? Math.Round(pl_revenue_lg / bs_fixed_assets_lg, 2) : 0;
+    kpi_b3_trend = kpi_b3_og > kpi_b3_lg ? "+" : (kpi_b3_og < kpi_b3_lg ? "-" : "=");
+
+    // B4 - CCC = DZO + DSO - DPO  (days, lower = better)
+    // DZO = (inventory / opex) * 365
+    // DSO = (ar / revenue) * 365
+    // DPO = (ap / opex) * 365
+    dio_og = pl_opex_og    != 0 ? bs_inventory_og / pl_opex_og    * 365 : 0;
+    dso_og = pl_revenue_og != 0 ? bs_ar_og        / pl_revenue_og * 365 : 0;
+    dpo_og = pl_opex_og    != 0 ? bs_ap_og        / pl_opex_og    * 365 : 0;
+    kpi_b4_og = Math.Round(dio_og + dso_og - dpo_og, 1);
+
+    dio_lg = pl_opex_lg    != 0 ? bs_inventory_lg / pl_opex_lg    * 365 : 0;
+    dso_lg = pl_revenue_lg != 0 ? bs_ar_lg        / pl_revenue_lg * 365 : 0;
+    dpo_lg = pl_opex_lg    != 0 ? bs_ap_lg        / pl_opex_lg    * 365 : 0;
+    kpi_b4_lg = Math.Round(dio_lg + dso_lg - dpo_lg, 1);
+    kpi_b4_trend = kpi_b4_og < kpi_b4_lg ? "+" : (kpi_b4_og > kpi_b4_lg ? "-" : "="); // lower = better
+
+    // B5 - ROA = net_income / total_assets * 100
+    b5_total_assets_og = bs_fixed_assets_og + bs_current_assets_og;
+    b5_total_assets_lg = bs_fixed_assets_lg + bs_current_assets_lg;
+    kpi_b5_og = b5_total_assets_og != 0 ? Math.Round(pl_net_og / b5_total_assets_og * 100, 2) : 0;
+    kpi_b5_lg = b5_total_assets_lg != 0 ? Math.Round(pl_net_lg / b5_total_assets_lg * 100, 2) : 0;
+    kpi_b5_trend = kpi_b5_og > kpi_b5_lg ? "+" : (kpi_b5_og < kpi_b5_lg ? "-" : "=");
+
+    // B6 - EBITDA Margin = EBITDA / revenue * 100
+    // EBITDA = EBIT + Depreciation  (ebit_og already computed above)
+    ebitda_og = ebit_og + pl_depreciation_og;
+    ebitda_lg = ebit_lg + pl_depreciation_lg;
+    kpi_b6_og = pl_revenue_og != 0 ? Math.Round(ebitda_og / pl_revenue_og * 100, 2) : 0;
+    kpi_b6_lg = pl_revenue_lg != 0 ? Math.Round(ebitda_lg / pl_revenue_lg * 100, 2) : 0;
+    kpi_b6_trend = kpi_b6_og > kpi_b6_lg ? "+" : (kpi_b6_og < kpi_b6_lg ? "-" : "=");
+
+    // ---- Format B-series display strings ----
+    kpi_b1_og_str  = format(kpi_b1_og,  "N2") + " %";
+    kpi_b2_og_str  = format(kpi_b2_og,  "N2");    kpi_b2_lg_str  = format(kpi_b2_lg,  "N2");
+    kpi_b3_og_str  = format(kpi_b3_og,  "N2");    kpi_b3_lg_str  = format(kpi_b3_lg,  "N2");
+    kpi_b4_og_str  = format(kpi_b4_og,  "N1") + " d";  kpi_b4_lg_str  = format(kpi_b4_lg,  "N1") + " d";
+    kpi_b5_og_str  = format(kpi_b5_og,  "N2") + " %";  kpi_b5_lg_str  = format(kpi_b5_lg,  "N2") + " %";
+    kpi_b6_og_str  = format(kpi_b6_og,  "N2") + " %";  kpi_b6_lg_str  = format(kpi_b6_lg,  "N2") + " %";
 
     RunOnMain("displayKpiValues");
 }
@@ -596,6 +672,19 @@ function setTrendEllipse(ellipseName, trend)
 // -----------------------------------------------------------------------
 // gbExit
 // -----------------------------------------------------------------------
+
+function gbDodatni@clicked()
+{
+    if (pripremljeno)
+    {
+        result = modalWindow(strTrim(tpath()) + "wxbiglac.xaml");
+    }
+    else
+    {
+        MessageBox("Molim pripremite osnovne podatke prije nastavka!");
+        setFocus("gbPripremi");
+    }
+}
 
 // -----------------------------------------------------------------------
 // gbPrihodi / gbRashodi - open monthly chart modal windows

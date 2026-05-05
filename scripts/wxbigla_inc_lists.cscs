@@ -61,6 +61,34 @@
     define bs_inventory_og, bs_inventory_lg type n size 16 dec 2;             // Class 3100-3999
 
     // -------------------------------------------------------------------
+    // Extended accumulators for B-series KPIs
+    // -------------------------------------------------------------------
+    define bs_fixed_assets_og, bs_fixed_assets_lg type n size 16 dec 2;  // Class 0 (fixed assets gross)
+    define bs_ap_og, bs_ap_lg type n size 16 dec 2;                       // Class 22 (AP)
+    define pl_interest_exp_og, pl_interest_exp_lg type n size 16 dec 2;  // Class 51 (interest)
+    define pl_depreciation_og, pl_depreciation_lg type n size 16 dec 2;  // Class 42 (depreciation)
+
+    // B-series KPI numeric values
+    define kpi_b1_og type n size 10 dec 2;                               // Rast troškova %
+    define kpi_b2_og, kpi_b2_lg type n size 10 dec 2;                   // Kamatno pokriće
+    define kpi_b3_og, kpi_b3_lg type n size 10 dec 2;                   // Obrtaj dugotrajne imovine
+    define kpi_b4_og, kpi_b4_lg type n size 10 dec 1;                   // CCC (days)
+    define kpi_b5_og, kpi_b5_lg type n size 10 dec 2;                   // ROA %
+    define kpi_b6_og, kpi_b6_lg type n size 10 dec 2;                   // EBITDA marža %
+
+    // B-series display strings
+    define kpi_b1_og_str type a size 16;
+    define kpi_b2_og_str, kpi_b2_lg_str type a size 16;
+    define kpi_b3_og_str, kpi_b3_lg_str type a size 16;
+    define kpi_b4_og_str, kpi_b4_lg_str type a size 16;
+    define kpi_b5_og_str, kpi_b5_lg_str type a size 16;
+    define kpi_b6_og_str, kpi_b6_lg_str type a size 16;
+
+    // B-series trend flags
+    define kpi_b1_trend, kpi_b2_trend, kpi_b3_trend type a size 1;
+    define kpi_b4_trend, kpi_b5_trend, kpi_b6_trend type a size 1;
+
+    // -------------------------------------------------------------------
     // Monthly arrays for bar chart modal windows (index 0..11 = Jan..Dec)
     // -------------------------------------------------------------------
     define arrayPrihodiOG, arrayPrihodiLG type n size 14 dec 0 array 12;     // Prihodi (Class 6+7)

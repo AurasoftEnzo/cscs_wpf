@@ -1,0 +1,53 @@
+    // -------------------------------------------------------------------
+    // WXBIGLA - Inc C
+    // Modal window: Dodatni pokazatelji B1–B6  (wxbiglac.xaml)
+    // All B-series KPI values are pre-computed by setKpiData()
+    // -------------------------------------------------------------------
+
+    function wxbiglac_onDisplay()
+    {
+        SetWindowOptions("wxbiglaWindowC", "title",
+            "Dodatni pokazatelji  —  " + ovagod_h + " / " + lani_h + "  |  " + nazivFirme);
+        displayKpiValuesB();
+    }
+
+    // ------------------------------------------------------------------
+    // displayKpiValuesB - sets all 6 B-series KPI labels + trend ellipses
+    // ------------------------------------------------------------------
+    function displayKpiValuesB()
+    {
+        // B1 - Rast troškova (YoY cost growth, current year only)
+        SetWidgetOptions("lblB1_og", "Content", kpi_b1_og_str);
+        SetWidgetOptions("lblB1_lg", "Content", lani_h + " → " + ovagod_h);
+        setTrendEllipse("EllipseB1", kpi_b1_trend);
+
+        // B2 - Kamatno pokriće
+        SetWidgetOptions("lblB2_og", "Content", kpi_b2_og_str);
+        SetWidgetOptions("lblB2_lg", "Content", lani_h + ": " + kpi_b2_lg_str);
+        setTrendEllipse("EllipseB2", kpi_b2_trend);
+
+        // B3 - Obrtaj dugotrajne imovine
+        SetWidgetOptions("lblB3_og", "Content", kpi_b3_og_str);
+        SetWidgetOptions("lblB3_lg", "Content", lani_h + ": " + kpi_b3_lg_str);
+        setTrendEllipse("EllipseB3", kpi_b3_trend);
+
+        // B4 - Cash Conversion Cycle
+        SetWidgetOptions("lblB4_og", "Content", kpi_b4_og_str);
+        SetWidgetOptions("lblB4_lg", "Content", lani_h + ": " + kpi_b4_lg_str);
+        setTrendEllipse("EllipseB4", kpi_b4_trend);
+
+        // B5 - ROA
+        SetWidgetOptions("lblB5_og", "Content", kpi_b5_og_str);
+        SetWidgetOptions("lblB5_lg", "Content", lani_h + ": " + kpi_b5_lg_str);
+        setTrendEllipse("EllipseB5", kpi_b5_trend);
+
+        // B6 - EBITDA Margin
+        SetWidgetOptions("lblB6_og", "Content", kpi_b6_og_str);
+        SetWidgetOptions("lblB6_lg", "Content", lani_h + ": " + kpi_b6_lg_str);
+        setTrendEllipse("EllipseB6", kpi_b6_trend);
+    }
+
+    function gbZatvoriDodatni@clicked()
+    {
+        CloseWindow("wxbiglaWindowC");
+    }

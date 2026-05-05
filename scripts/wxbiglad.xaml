@@ -1,0 +1,183 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:wcl="clr-namespace:WpfControlsLibrary;assembly=WpfControlsLibrary"
+        mc:Ignorable="d"
+        Name="wxbigladWindow"
+        Title="Detalji KPI"
+        Height="620"
+        Width="900"
+        WindowStartupLocation="CenterScreen"
+        MinHeight="480" MinWidth="680"
+        Background="#2C3E50">
+
+    <Window.Resources>
+        <Style x:Key="FlatButtonStyle" TargetType="Button">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="4"
+                                Padding="8,4">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Opacity" Value="0.85"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Opacity" Value="0.70"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Viewbox Stretch="Uniform">
+        <Grid Width="880" Height="590" Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="46"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="44"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Border Grid.Row="0"
+                    Background="#1A252F"
+                    CornerRadius="6,6,0,0"
+                    Padding="14,0">
+                <DockPanel>
+                    <Label x:Name="lblDrillCount"
+                           DockPanel.Dock="Right"
+                           Content=""
+                           Foreground="#7F8C8D"
+                           FontFamily="Lato" FontSize="12"
+                           VerticalAlignment="Center"
+                           Margin="0,0,4,0"
+                           Padding="0"/>
+                    <TextBlock x:Name="lblDrillTitle"
+                               Text="Detalji"
+                               Foreground="White"
+                               FontFamily="Lato" FontSize="17" FontWeight="Bold"
+                               VerticalAlignment="Center"/>
+                </DockPanel>
+            </Border>
+
+            <!-- DataGrid area -->
+            <Border Grid.Row="1" Background="#263646" Padding="6,6,6,4">
+                <DataGrid x:Name="dgDrillDown"
+                          IsReadOnly="True"
+                          AutoGenerateColumns="False"
+                          GridLinesVisibility="Horizontal"
+                          HorizontalGridLinesBrush="#3D5166"
+                          RowHeight="22"
+                          FontSize="13"
+                          FontFamily="Lato"
+                          Background="#1E2F3D"
+                          RowBackground="#1E2F3D"
+                          AlternatingRowBackground="#243444"
+                          Foreground="White"
+                          HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Auto"
+                          BorderThickness="0"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          CanUserResizeRows="False"
+                          SelectionMode="Single"
+                          TabIndex="1">
+                    <DataGrid.Resources>
+                        <Style TargetType="{x:Type DataGridColumnHeader}">
+                            <Setter Property="Background" Value="#1A3A5C"/>
+                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="FontSize" Value="13"/>
+                            <Setter Property="FontWeight" Value="Bold"/>
+                            <Setter Property="BorderBrush" Value="#2C3E50"/>
+                            <Setter Property="BorderThickness" Value="0,0,1,0"/>
+                            <Setter Property="Padding" Value="6,4"/>
+                        </Style>
+                        <Style TargetType="{x:Type DataGridRow}">
+                            <Setter Property="Foreground" Value="White"/>
+                        </Style>
+                    </DataGrid.Resources>
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="Rbr." Width="44">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <wcl:ASGridCell FieldName="dd_rbr_ar"
+                                                    HorizontalContentAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="Konto" Width="110">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <wcl:ASGridCell FieldName="dd_konto_ar"
+                                                    HorizontalContentAlignment="Left"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="Naziv konta" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <wcl:ASGridCell FieldName="dd_naziv_ar"
+                                                    HorizontalContentAlignment="Left"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="Datum" Width="95">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <wcl:ASGridCell FieldName="dd_datum_ar"
+                                                    HorizontalContentAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="Duguje" Width="120">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <wcl:ASGridCell FieldName="dd_duguje_ar"
+                                                    HorizontalContentAlignment="Right"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="Potražuje" Width="120">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <wcl:ASGridCell FieldName="dd_potrazuje_ar"
+                                                    HorizontalContentAlignment="Right"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+
+            <!-- Footer -->
+            <Border Grid.Row="2"
+                    Background="#1A252F"
+                    CornerRadius="0,0,6,6"
+                    Padding="10,0">
+                <DockPanel>
+                    <Button x:Name="gbZatvoriDrillDown"
+                            DockPanel.Dock="Right"
+                            Content="Zatvori"
+                            Style="{StaticResource FlatButtonStyle}"
+                            Background="#AC3E31"
+                            Foreground="White"
+                            FontFamily="Lato" FontSize="15"
+                            Height="30" Width="90"
+                            TabIndex="2"/>
+                    <TextBlock Text="Dvoklikom na redak odaberite stavku za analizu."
+                               Foreground="#555E66"
+                               FontFamily="Lato" FontSize="11" FontStyle="Italic"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0"/>
+                </DockPanel>
+            </Border>
+        </Grid>
+    </Viewbox>
+</Window>

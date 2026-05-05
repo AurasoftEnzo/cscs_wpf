@@ -80,3 +80,42 @@
         CloseWindow(strtrim(tpath()) + "wxbiglac.xaml");
     }
 
+    // -----------------------------------------------------------------------
+    // Drill-down handlers for B-series KPI cards (GroupBox double-click)
+    // -----------------------------------------------------------------------
+    function gbDrillB1@Clicked()
+    {
+        dd_kpi_title    = "B1 — Rast troškova";
+        dd_konto_filter = "LEFT(gk_pr_konto,1) IN ('4','5')";
+        modalWindow(strTrim(tpath()) + "wxbiglad.xaml");
+    }
+    function gbDrillB2@Clicked()
+    {
+        dd_kpi_title    = "B2 — Kamatno pokriće";
+        dd_konto_filter = "LEFT(gk_pr_konto,2)='51'";
+        modalWindow(strTrim(tpath()) + "wxbiglad.xaml");
+    }
+    function gbDrillB3@Clicked()
+    {
+        dd_kpi_title    = "B3 — Obrtaj dugotrajne imovine";
+        dd_konto_filter = "LEFT(gk_pr_konto,1) IN ('0','6')";
+        modalWindow(strTrim(tpath()) + "wxbiglad.xaml");
+    }
+    function gbDrillB4@Clicked()
+    {
+        dd_kpi_title    = "B4 — Cash Conversion Cycle";
+        dd_konto_filter = "(gk_pr_konto >= '1200' AND gk_pr_konto < '1300') OR (gk_pr_konto >= '3100' AND gk_pr_konto < '4000') OR LEFT(gk_pr_konto,2)='22'";
+        modalWindow(strTrim(tpath()) + "wxbiglad.xaml");
+    }
+    function gbDrillB5@Clicked()
+    {
+        dd_kpi_title    = "B5 — Prinos na imovinu (ROA)";
+        dd_konto_filter = "LEFT(gk_pr_konto,1) IN ('0','1','4','5','6','7')";
+        modalWindow(strTrim(tpath()) + "wxbiglad.xaml");
+    }
+    function gbDrillB6@Clicked()
+    {
+        dd_kpi_title    = "B6 — EBITDA marža";
+        dd_konto_filter = "LEFT(gk_pr_konto,1) IN ('4','5','6','7')";
+        modalWindow(strTrim(tpath()) + "wxbiglad.xaml");
+    }

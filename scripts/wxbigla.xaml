@@ -36,6 +36,21 @@
             <Setter Property="CornerRadius" Value="4" />
             <Setter Property="BorderThickness" Value="0,0,0,1" />
         </Style>
+        <!-- Transparent GroupBox overlay – double-click opens KPI drill-down -->
+        <Style x:Key="DrillOverlayStyle" TargetType="GroupBox">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="GroupBox">
+                        <Border Background="Transparent"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Panel.ZIndex" Value="10"/>
+            <Setter Property="ToolTip" Value="Dvaput kliknite za detalje konta"/>
+        </Style>
     </Window.Resources>
 
     <Viewbox Stretch="Fill">
@@ -250,6 +265,7 @@
                                    FontFamily="Lato" FontSize="10" Foreground="#2ECC71"
                                    HorizontalAlignment="Right" Margin="0,2,0,0" FontStyle="Italic"/>
                     </Grid>
+                    <GroupBox x:Name="gbDrillA1" Style="{StaticResource DrillOverlayStyle}"/>
                 </Grid>
 
                 <!-- A2  Net Profit Margin -->
@@ -290,6 +306,7 @@
                                    FontFamily="Lato" FontSize="10" Foreground="#2ECC71"
                                    HorizontalAlignment="Right" Margin="0,2,0,0" FontStyle="Italic"/>
                     </Grid>
+                    <GroupBox x:Name="gbDrillA2" Style="{StaticResource DrillOverlayStyle}"/>
                 </Grid>
 
                 <!-- A3  Current Ratio -->
@@ -330,6 +347,7 @@
                                    FontFamily="Lato" FontSize="10" Foreground="#2ECC71"
                                    HorizontalAlignment="Right" Margin="0,2,0,0" FontStyle="Italic"/>
                     </Grid>
+                    <GroupBox x:Name="gbDrillA3" Style="{StaticResource DrillOverlayStyle}"/>
                 </Grid>
 
                 <!-- A4  Quick Ratio -->
@@ -369,6 +387,7 @@
                         <TextBlock Grid.Row="3" Text="Preporučeno: &gt; 1.0"
                                    FontFamily="Lato" FontSize="10" Foreground="#2ECC71"
                                    HorizontalAlignment="Right" Margin="0,2,0,0" FontStyle="Italic"/>                    </Grid>
+                    <GroupBox x:Name="gbDrillA4" Style="{StaticResource DrillOverlayStyle}"/>
                 </Grid>
 
                 <!-- A5  ROE -->
@@ -409,6 +428,7 @@
                                    FontFamily="Lato" FontSize="10" Foreground="#2ECC71"
                                    HorizontalAlignment="Right" Margin="0,2,0,0" FontStyle="Italic"/>
                     </Grid>
+                    <GroupBox x:Name="gbDrillA5" Style="{StaticResource DrillOverlayStyle}"/>
                 </Grid>
 
                 <!-- A6  AR Turnover -->
@@ -449,6 +469,7 @@
                                    FontFamily="Lato" FontSize="10" Foreground="#2ECC71"
                                    HorizontalAlignment="Right" Margin="0,2,0,0" FontStyle="Italic"/>
                     </Grid>
+                    <GroupBox x:Name="gbDrillA6" Style="{StaticResource DrillOverlayStyle}"/>
                 </Grid>
 
                 <!-- A7  Inventory Turnover -->
@@ -489,6 +510,7 @@
                                    FontFamily="Lato" FontSize="10" Foreground="#2ECC71"
                                    HorizontalAlignment="Right" Margin="0,2,0,0" FontStyle="Italic"/>
                     </Grid>
+                    <GroupBox x:Name="gbDrillA7" Style="{StaticResource DrillOverlayStyle}"/>
                 </Grid>
 
                 <!-- A8  Debt-to-Equity -->
@@ -529,6 +551,7 @@
                                    FontFamily="Lato" FontSize="10" Foreground="#F39C12"
                                    HorizontalAlignment="Right" Margin="0,2,0,0" FontStyle="Italic"/>
                     </Grid>
+                    <GroupBox x:Name="gbDrillA8" Style="{StaticResource DrillOverlayStyle}"/>
                 </Grid>
 
                 <!-- A9  Revenue Growth YoY -->
@@ -569,6 +592,7 @@
                                    FontFamily="Lato" FontSize="10" Foreground="#2ECC71"
                                    HorizontalAlignment="Right" Margin="0,2,0,0" FontStyle="Italic"/>
                     </Grid>
+                    <GroupBox x:Name="gbDrillA9" Style="{StaticResource DrillOverlayStyle}"/>
                 </Grid>
 
                 <!-- A10  OpEx Ratio -->
@@ -607,6 +631,7 @@
                                Padding="0" />                        <TextBlock Grid.Row="3" Text="Preporučeno: &lt; 80 %"
                                    FontFamily="Lato" FontSize="10" Foreground="#F39C12"
                                    HorizontalAlignment="Right" Margin="0,2,0,0" FontStyle="Italic"/>                    </Grid>
+                    <GroupBox x:Name="gbDrillA10" Style="{StaticResource DrillOverlayStyle}"/>
                 </Grid>
 
             </Grid>

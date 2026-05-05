@@ -36,6 +36,21 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+        <!-- Transparent GroupBox overlay – double-click opens KPI drill-down -->
+        <Style x:Key="DrillOverlayStyle" TargetType="GroupBox">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="GroupBox">
+                        <Border Background="Transparent"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Panel.ZIndex" Value="10"/>
+            <Setter Property="ToolTip" Value="Dvaput kliknite za detalje konta"/>
+        </Style>
     </Window.Resources>
 
     <Viewbox Stretch="Uniform">
@@ -108,6 +123,7 @@
                                        FontFamily="Lato" FontSize="10" Foreground="#F39C12"
                                        HorizontalAlignment="Right" Margin="0,2,0,0" FontStyle="Italic"/>
                         </Grid>
+                        <GroupBox x:Name="gbDrillB1" Style="{StaticResource DrillOverlayStyle}"/>
                     </Grid>
 
                     <!-- B2  Kamatno pokriće (Interest Coverage) -->
@@ -148,6 +164,7 @@
                                        FontFamily="Lato" FontSize="10" Foreground="#2ECC71"
                                        HorizontalAlignment="Right" Margin="0,2,0,0" FontStyle="Italic"/>
                         </Grid>
+                        <GroupBox x:Name="gbDrillB2" Style="{StaticResource DrillOverlayStyle}"/>
                     </Grid>
 
                     <!-- B3  Obrtaj dugotrajne imovine (Fixed Asset Turnover) -->
@@ -188,6 +205,7 @@
                                        FontFamily="Lato" FontSize="10" Foreground="#2ECC71"
                                        HorizontalAlignment="Right" Margin="0,2,0,0" FontStyle="Italic"/>
                         </Grid>
+                        <GroupBox x:Name="gbDrillB3" Style="{StaticResource DrillOverlayStyle}"/>
                     </Grid>
 
                     <!-- B4  Cash Conversion Cycle (CCC) -->
@@ -228,6 +246,7 @@
                                        FontFamily="Lato" FontSize="10" Foreground="#F39C12"
                                        HorizontalAlignment="Right" Margin="0,2,0,0" FontStyle="Italic"/>
                         </Grid>
+                        <GroupBox x:Name="gbDrillB4" Style="{StaticResource DrillOverlayStyle}"/>
                     </Grid>
 
                     <!-- B5  Return on Assets (ROA) -->
@@ -268,6 +287,7 @@
                                        FontFamily="Lato" FontSize="10" Foreground="#2ECC71"
                                        HorizontalAlignment="Right" Margin="0,2,0,0" FontStyle="Italic"/>
                         </Grid>
+                        <GroupBox x:Name="gbDrillB5" Style="{StaticResource DrillOverlayStyle}"/>
                     </Grid>
 
                     <!-- B6  EBITDA Margin -->
@@ -308,6 +328,7 @@
                                        FontFamily="Lato" FontSize="10" Foreground="#2ECC71"
                                        HorizontalAlignment="Right" Margin="0,2,0,0" FontStyle="Italic"/>
                         </Grid>
+                        <GroupBox x:Name="gbDrillB6" Style="{StaticResource DrillOverlayStyle}"/>
                     </Grid>
 
                 </Grid>

@@ -5,6 +5,7 @@ include(DownloadScripts() == true ? Download(ServerAddress() + "wxbigla_inc_list
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbigla_inc_a.cscs") : strTrim(tpath()) + "wxbigla_inc_a.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbigla_inc_b.cscs") : strTrim(tpath()) + "wxbigla_inc_b.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxbigla_inc_c.cscs") : strTrim(tpath()) + "wxbigla_inc_c.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxbigla_inc_d.cscs") : strTrim(tpath()) + "wxbigla_inc_d.cscs");
 
 CreateWindow(strTrim(tpath()) + "wxbigla.xaml");
 // -----------------------------------------------------------------------
@@ -737,4 +738,80 @@ function gbExit@clicked(){
 
     // CloseWindow(strtrim(tpath()) + "wxbigla.xaml");
     // quit();
+}
+
+// -----------------------------------------------------------------------
+// Drill-down handlers  (GroupBox double-click on each KPI card)
+// Sets dd_kpi_title + dd_konto_filter, then opens wxbiglad.xaml modal
+// -----------------------------------------------------------------------
+function openDrillDown()
+{
+    if (!pripremljeno)
+    {
+        MessageBox("Najprije pritisnite 'Pripremi' za učitavanje podataka.");
+        setFocus("gbPripremi");
+        return;
+    }
+    modalWindow(strTrim(tpath()) + "wxbiglad.xaml");
+}
+
+function gbDrillA1@Clicked()
+{
+    dd_kpi_title     = "A1 — Bruto dobit";
+    dd_konto_filter  = "LEFT(gk_pr_konto,1) IN ('4','6')";
+    openDrillDown();
+}
+function gbDrillA2@Clicked()
+{
+    dd_kpi_title     = "A2 — Neto marža";
+    dd_konto_filter  = "LEFT(gk_pr_konto,1) IN ('4','5','6','7')";
+    openDrillDown();
+}
+function gbDrillA3@Clicked()
+{
+    dd_kpi_title     = "A3 — Tekuća likvidnost";
+    dd_konto_filter  = "LEFT(gk_pr_konto,1) IN ('1','2')";
+    openDrillDown();
+}
+function gbDrillA4@Clicked()
+{
+    dd_kpi_title     = "A4 — Brza likvidnost";
+    dd_konto_filter  = "LEFT(gk_pr_konto,1) IN ('1','2')";
+    openDrillDown();
+}
+function gbDrillA5@Clicked()
+{
+    dd_kpi_title     = "A5 — Povrat na kapital (ROE)";
+    dd_konto_filter  = "LEFT(gk_pr_konto,1) IN ('3','9')";
+    openDrillDown();
+}
+function gbDrillA6@Clicked()
+{
+    dd_kpi_title     = "A6 — Obrtaj potraživanja";
+    dd_konto_filter  = "(gk_pr_konto >= '1200' AND gk_pr_konto < '1300') OR LEFT(gk_pr_konto,1)='6'";
+    openDrillDown();
+}
+function gbDrillA7@Clicked()
+{
+    dd_kpi_title     = "A7 — Obrtaj zaliha";
+    dd_konto_filter  = "(gk_pr_konto >= '3100' AND gk_pr_konto < '4000') OR LEFT(gk_pr_konto,1)='4'";
+    openDrillDown();
+}
+function gbDrillA8@Clicked()
+{
+    dd_kpi_title     = "A8 — Zaduženost (D/E)";
+    dd_konto_filter  = "LEFT(gk_pr_konto,1) IN ('2','3')";
+    openDrillDown();
+}
+function gbDrillA9@Clicked()
+{
+    dd_kpi_title     = "A9 — Rast prihoda (YoY)";
+    dd_konto_filter  = "LEFT(gk_pr_konto,1) IN ('6','7')";
+    openDrillDown();
+}
+function gbDrillA10@Clicked()
+{
+    dd_kpi_title     = "A10 — Udio troškova";
+    dd_konto_filter  = "LEFT(gk_pr_konto,1) IN ('4','5','6')";
+    openDrillDown();
 }

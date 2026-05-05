@@ -1,0 +1,110 @@
+    // -------------------------------------------------------------------
+    // WXBIGLA - Inc D
+    // Drill-down modal: GL transactions for a KPI  (wxbiglad.xaml)
+    // Called after setting:  dd_kpi_title  and  dd_konto_filter
+    // -------------------------------------------------------------------
+
+    function wxbiglad_onDisplay()
+    {
+        SetWindowOptions("wxbigladWindow", "title",
+            dd_kpi_title + "  —  " + ovagod_h + "  |  " + nazivFirme);
+        SetWidgetOptions("lblDrillTitle", "Content", dd_kpi_title);
+        SetWidgetOptions("lblDrillCount", "Content", "");
+    }
+
+    function wxbiglad_onStart()
+    {
+        cursor("wait");
+        loadDrillDownData();
+        displayDrillDownData();
+        cursor("dflt");
+    }
+
+    // ------------------------------------------------------------------
+    // loadDrillDownData - query NKGKPROM for the relevant transactions
+    // ------------------------------------------------------------------
+    function loadDrillDownData()
+    {
+        // Clear arrays
+        for (i = 0; i < 500; i++)
+        {
+            dd_rbr_ar[i]       = 0;
+            dd_konto_ar[i]     = "";
+            dd_naziv_ar[i]     = "";
+            dd_datum_ar[i]     = "";
+            dd_duguje_ar[i]    = 0;
+            dd_potrazuje_ar[i] = 0;
+        }
+
+        mjOd = int(mjesecOd);
+        mjDo = int(mjesecDo);
+        sql_str  = "SELECT TOP 500";
+        sql_str += "  gk_pr_konto,";
+        sql_str += "  ISNULL(gk_ac_opis, '') AS naziv,";
+        //sql_str += "  CONVERT(varchar(10), gk_pr_date, 23) AS datum,";
+        sql_str += "  isnull(sum(CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE 0 END),0) AS duguje,";
+        sql_str += "  isnull(sum(CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE 0 END),0) AS potrazuje";
+        sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKGKPROM";
+        sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.NKGKACCT ON gk_ac_konto = gk_pr_konto";
+        sql_str += " WHERE YEAR(gk_pr_date) = " + ovagod_h;
+        sql_str += " AND MONTH(gk_pr_date) BETWEEN " + mjOd + " AND " + mjDo;
+        sql_str += " AND (" + dd_konto_filter + ")";
+
+        // Respect the global account-range filter (konto_od / konto_do)
+        if (konto_od != "")
+        {
+            sql_str += " AND gk_pr_konto >= '" + konto_od + "'";
+        }
+        if (konto_do != "")
+        {
+            sql_str += " AND gk_pr_konto <= '" + konto_do + "'";
+        }
+
+        sql_str += " GROUP BY gk_pr_konto,gk_ac_opis"; //, gk_pr_date";
+        sql_str += " ORDER BY gk_pr_konto"; //, gk_pr_date";
+
+        try
+        {
+            sqlResult = sqlQuery(sql_str);
+        }
+        catch(exc)
+        {
+            MessageBox("Greška pri učitavanju podataka:\n" + exc);
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // displayDrillDownData - fill arrays and wire up DataGrid
+    // ------------------------------------------------------------------
+    function displayDrillDownData()
+    {
+        rowCount = 0;
+        if (Size(sqlResult) > 1)
+        {
+            rowCount = Size(sqlResult) - 1;
+            for (i = 1; i <= rowCount; i++)
+            {
+                dd_rbr_ar[i - 1]       = i;
+                dd_konto_ar[i - 1]     = sqlResult[i][0];
+                dd_naziv_ar[i - 1]     = sqlResult[i][1];
+                //dd_datum_ar[i - 1]     = sqlResult[i][2];
+                dd_duguje_ar[i - 1]    = sqlResult[i][2];
+                dd_potrazuje_ar[i - 1] = sqlResult[i][3];
+            }
+        }
+
+        //cntLabel = rowCount > 0 ? "Stavki: " + rowCount + (rowCount == 500 ? " (max)" : "") : "Nema podataka";
+           cntLabel= 500; //maknuti!!! ova linija iznad ne radi!
+        SetWidgetOptions("lblDrillCount", "Content", cntLabel);
+        DisplayArray("dgDrillDown", "close");
+        if (rowCount > 0)
+        {
+            DisplayArraySetup("dgDrillDown", counterFld: dd_cntr,
+                              activeElements: rowCount, maxElements: 500);
+        }
+    }
+
+    function gbZatvoriDrillDown@clicked()
+    {
+        CloseWindow(strtrim(tpath()) + "wxbiglad.xaml");
+    }

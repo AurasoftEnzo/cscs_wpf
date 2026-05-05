@@ -95,6 +95,20 @@
     define arrayRashodiOG, arrayRashodiLG type n size 14 dec 0 array 12;     // Rashodi (Class 4+5)
 
     // -------------------------------------------------------------------
+    // Drill-down arrays  (double-click on any KPI card → GL transactions)
+    // -------------------------------------------------------------------
+    define dd_kpi_title type a size 80;          // KPI label shown in modal header
+    define dd_konto_filter type a size 300;      // SQL WHERE fragment (account filter)
+    define dd_cntr type n size 6 dec 0;          // DisplayArraySetup counter
+
+    define dd_rbr_ar type n size 6 dec 0 array 500;
+    define dd_konto_ar type a size 15 array 500;
+    define dd_naziv_ar type a size 80 array 500;
+    define dd_datum_ar type a size 12 array 500;
+    define dd_duguje_ar type n size 16 dec 2 array 500;
+    define dd_potrazuje_ar type n size 16 dec 2 array 500;
+
+    // -------------------------------------------------------------------
     // filterGLPart - appends optional account range WHERE clauses to sql_str
     // -------------------------------------------------------------------
     function filterGLPart()

@@ -1,5 +1,3 @@
-This document should be a short AI "fast context". The attached instructions clearly show the key rules: CSCSWPF is an event-driven language based on C/WPF ideas, the initial input is CreateWindow or WINFORM, WINFORM and MAIMENA are the only commands allowed outside of the event, execution goes in two passes, DEFINE is the recommended way to define, SqlQuery result is not defined with DEFINE, all commands end with ;, parser does not use indentation,  elif means else if, and blocks for if, while, for, try necessarily use {}.
-
 ---
 title: CSCS_WPF Syntax Cheatsheet
 module: ai
@@ -39,13 +37,13 @@ Everything else should be in events or functions.
 
 ## Two-pass execution
 
-The execution of the script works in two passes:
+The inernal execution of the script works in two passes:
 1. the first pass processes 'DEFINE' declarations and functions,
 2. The second pass executes the rest of the script .
 
 ## Variable definition
 
-Although it is possible to define variables implicitly, the recommended way is to explicitly 'DEFINE' .
+It is possible to define variables implicitly. Alternatively, it is possible to define variables explicitly, using 'DEFINE' language token. Using 'DEFINE' to declare arrays is mandatory.
 
 ### Important exception
 
@@ -155,6 +153,7 @@ Typical order of window events:
 ```internal-script
 WINFORM scripts\\mainWindow;
 
+//defining variables with DEFINE token is optional (except for arrays)!
 DEFINE tableHndl type i;
 DEFINE reportHandle type i;
 DEFINE customerCode type a size 20;
@@ -190,7 +189,7 @@ function btnSearchclicked() {
 ## Common mistakes
 
 - Omitted ';'.
-- `if` bez `{}`.
+- `if` without `{}`.
 - Code outside the allowed event/function context.
 - Wrong name of the event handler.
 - 'SqlQuery' result defined by 'DEFINE'.

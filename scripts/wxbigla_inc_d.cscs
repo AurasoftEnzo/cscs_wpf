@@ -39,13 +39,13 @@
         mjOd = int(mjesecOd);
         mjDo = int(mjesecDo);
         sql_str  = "SELECT TOP 500";
-        sql_str += "  gk_pr_konto,";
+        sql_str += "  substring(gk_pr_konto, 1, 3) AS gk_pr_konto,";
         sql_str += "  ISNULL(gk_ac_opis, '') AS naziv,";
         //sql_str += "  CONVERT(varchar(10), gk_pr_date, 23) AS datum,";
         sql_str += "  isnull(sum(CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE 0 END),0) AS duguje,";
         sql_str += "  isnull(sum(CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE 0 END),0) AS potrazuje";
         sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKGKPROM";
-        sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.NKGKACCT ON gk_ac_konto = gk_pr_konto";
+        sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.NKGKACCT ON gk_ac_konto = substring(gk_pr_konto,1,3)";
         sql_str += " WHERE YEAR(gk_pr_date) = " + ovagod_h;
         sql_str += " AND MONTH(gk_pr_date) BETWEEN " + mjOd + " AND " + mjDo;
         sql_str += " AND (" + dd_konto_filter + ")";
@@ -60,7 +60,7 @@
             sql_str += " AND gk_pr_konto <= '" + konto_do + "'";
         }
 
-        sql_str += " GROUP BY gk_pr_konto,gk_ac_opis"; //, gk_pr_date";
+        sql_str += " GROUP BY substring(gk_pr_konto,1,3),gk_ac_opis"; //, gk_pr_date";
         sql_str += " ORDER BY gk_pr_konto"; //, gk_pr_date";
 
         try

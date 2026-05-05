@@ -310,6 +310,16 @@ namespace WpfCSCS
                         cartesianWidget.YAxes.First().LabelsPaint = newColor;
                         cartesianWidget.LegendTextPaint = newColor;
                     }
+                    else if (optionString == "color.gridlines")
+                    {
+                        var newColor = new SolidColorPaint( SkiaSharp.SKColor.Parse(ToHex((Color)ColorConverter.ConvertFromString(valueVariable.String))));
+
+                        // Horizontal lines come from Y axis
+                        cartesianWidget.YAxes.First().SeparatorsPaint = newColor;
+
+                        // Remove vertical lines
+                        cartesianWidget.XAxes.First().SeparatorsPaint = null;
+                    }
                     else if (optionString == "text.seriesnames")
                     {
                         var parameter = Utils.GetSafeString(args, 2);

@@ -910,7 +910,7 @@ function setWeekComparison()
     RunOnMain("setWeekComparison1");
     
 	//danas = "20" + substring(danas_h, 6, 2) + "-" + substring(danas_h, 3,2) + "-" + substring(danas_h, 0, 2);//("yyyy-MM-dd");
-    danas = substring(danas_h, 6, 4) + "-" + substring(danas_h, 3,2) + "-" + substring(danas_h, 0, 2);//("yyyy-MM-dd");
+    // danas = substring(danas_h, 6, 4) + "-" + substring(danas_h, 3,2) + "-" + substring(danas_h, 0, 2);//("yyyy-MM-dd");
     //MessageBox(danas_h);
     //MessageBox("aaaa: "+danas+"  "+danas_h);    
 	sql_str = "SELECT TOP 2 CONVERT(char(10), wk_firstofWeek,103) as prviutjednu,";
@@ -987,7 +987,7 @@ function setWeekComparison()
 		sql_str  += " AND b.nkpr_gl_cuscod = '" + partner + "'";
 	}
     */
-	sql_str  += " AND ((wk_ISOWeek = datepart(ISO_week , '" + danas +"')) OR (wk_ISOWeek = datepart(ISO_week , '" + danas+"')-1)) AND year('"+danas+"') = wk_year";
+	sql_str  += " AND ((wk_ISOWeek = datepart(ISO_week , '" + danas_h.ToString("yyyy-MM-dd") +"')) OR (wk_ISOWeek = datepart(ISO_week , '" + danas_h.ToString("yyyy-MM-dd") +"')-1)) AND year('"+danas_h.ToString("yyyy-MM-dd")+"') = wk_year";
 	sql_str  += " GROUP BY [wk_FirstOfWeek]";
 	sql_str  += " ORDER BY [wk_FirstOfWeek] DESC";
     //SaveFile(sql_str);
@@ -1118,7 +1118,7 @@ function setSalesRatio(){
         sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKKSINVG"; // b ON a.[Wk_Date] = DATEADD(month , DATEDIFF(month , 0 , b.nkpr_gl_orddte) , 0) AND year(b.nkpr_gl_orddte)='" + (int(ovagod_h) - 1) + "' ";
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.nkscpart ON KS_IG_KUPAC = nksc_partcode";
         
-        sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.NKKSINVL ON KS_IG_RACUN = KS_IL_RACUN AND ks_il_otprem<> 0 AND ks_ig_pracun <> 0";
+        sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.NKKSINVL ON KS_IG_RACUN = KS_IL_RACUN AND ks_ig_pracun <> 0";
         sql_str += " LEFT JOIN "+trenutnaGodinaBaza+".dbo.nkmkarti ON KS_IL_PCODE = arti_artikl";
         sql_str += " WHERE 1=1 AND year(KS_IG_DATUM) = " + ovagod_h; //BETWEEN '"+sqlDate(od_danaLG)+"' AND '"+sqlDate(do_danaLG)+"'"  ";
         filterPart2();

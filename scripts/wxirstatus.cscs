@@ -173,8 +173,10 @@ function wxirstatus_onDisplay(){
     filterStatusPrihvacen = true;
     filterStatusOdbijen = true;
     filterStatusPlacanjeZaprimljeno = true;
-    filterStatusDjelomicnoPlaceno = true;
-    filterStatusPlaceno = true;
+    // filterStatusDjelomicnoPlaceno = true;
+    // filterStatusPlaceno = true;
+    filterStatusOstalo = true;
+
 
     filterStatusFiskaliziranDa = true;
     filterStatusFiskaliziranNe = true;
@@ -229,8 +231,9 @@ function cbSve@clicked(){
     filterStatusOdbijen = cbBool;
     
     filterStatusPlacanjeZaprimljeno = cbBool;
-    filterStatusDjelomicnoPlaceno = cbBool;
-    filterStatusPlaceno = cbBool;
+    // filterStatusDjelomicnoPlaceno = cbBool;
+    // filterStatusPlaceno = cbBool;
+    filterStatusOstalo = cbBool;
 
     // filterStatusFiskaliziranDa = cbBool;
     // filterStatusFiskaliziranNe = cbBool;
@@ -1267,6 +1270,28 @@ function getInvoiceStatusesFromMer(){
     }
 }
 
+function SwitchMerStatus(originalStatus){
+    if(originalStatus == "Zaprimljen"){
+        return "Zaprimljen";
+    }elif(originalStatus == "Potvrda zaprimanja"){
+        return "Potvrđeno zaprimanje";
+    }elif(originalStatus == "Prihvaćen"){
+        return "Prihvaćen";
+    }elif(originalStatus == "Odbijen"){
+        return "Odbijen";
+    }elif(originalStatus == "Djelomično plaćeno"){
+        return "Plaćanje zaprimljeno";
+    }elif(originalStatus == "Plaćeno u potpunosti"){
+        return "Plaćanje zaprimljeno";
+    }elif(originalStatus == "Plaćanje zaprimljeno"){
+        return "Plaćanje zaprimljeno";
+    }elif(originalStatus == "null"){
+        return "null";
+    }else{
+        return originalStatus;
+    }
+}
+
 function getInvoiceStatusesFromMerSuccess(_trackingId1, responseCode, res) {
     // MSG("MERSuccess"); // REMOVE
 
@@ -1280,7 +1305,8 @@ function getInvoiceStatusesFromMerSuccess(_trackingId1, responseCode, res) {
             //nije pronađen račun?
             getInvoiceStatusesFromMer2(_trackingId1);
         }else{
-            arrayWinxStatusRacuna[int(_trackingId1)] = resObject["DocumentProcessStatusName"];
+            merStatus = SwitchMerStatus(resObject["DocumentProcessStatusName"]);
+            arrayWinxStatusRacuna[int(_trackingId1)] = merStatus;
                 
             Progress(1);
 
@@ -1290,7 +1316,7 @@ function getInvoiceStatusesFromMerSuccess(_trackingId1, responseCode, res) {
         }
     }
     catch(ex){
-        MessageBox("MERSuccess - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        MessageBox("getInvoiceStatusesFromMerSuccess - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
         // LogNKSYELOG(); // !!! LOG !!!
         exit;
     }
@@ -1325,7 +1351,8 @@ function getInvoiceStatusesFromMerSuccess2(_trackingId2, responseCode, res) {
         if(!Contains(resObject, "DocumentProcessStatusName")){
             //nije pronađen račun?
         }else{
-            arrayWinxStatusRacuna[int(_trackingId2)] = resObject["DocumentProcessStatusName"];
+            merStatus = SwitchMerStatus(resObject["DocumentProcessStatusName"]);
+            arrayWinxStatusRacuna[int(_trackingId2)] = merStatus;
         }
 
         Progress(1);
@@ -1800,7 +1827,7 @@ function filter(){
 
         //filter by status
         if(
-            ( true ||
+            (
                 (filterStatusNijePoslan && arrayWinxStatusRacuna[iWinx] == "Nije poslan")
                 || (filterStatusInterniRacun && arrayWinxStatusRacuna[iWinx] == "Interni račun")
                 || (filterStatusNijeUSustavuPdva && arrayWinxStatusRacuna[iWinx] == "Nije u sustavu PDV-a")
@@ -1813,16 +1840,31 @@ function filter(){
                 || (filterStatusOdbijen && arrayWinxStatusRacuna[iWinx] == "Odbijen")
 
                 || (filterStatusPlacanjeZaprimljeno && arrayWinxStatusRacuna[iWinx] == "Plaćanje zaprimljeno")
-                || (filterStatusDjelomicnoPlaceno && arrayWinxStatusRacuna[iWinx] == "Djelomično plaćeno")
-                || (filterStatusPlaceno && arrayWinxStatusRacuna[iWinx] == "Plaćeno")
+                || (filterStatusPlacanjeZaprimljeno && arrayWinxStatusRacuna[iWinx] == "Djelomično plaćeno")
+                || (filterStatusPlacanjeZaprimljeno && arrayWinxStatusRacuna[iWinx] == "Plaćeno")
+                || (filterStatusOstalo 
+                    && arrayWinxStatusRacuna[iWinx] != "Nije poslan"
+                    && arrayWinxStatusRacuna[iWinx] != "Interni račun"
+                    && arrayWinxStatusRacuna[iWinx] != "Nije u sustavu PDV-a"
+                    && arrayWinxStatusRacuna[iWinx] != "Izvoz"
+                    && arrayWinxStatusRacuna[iWinx] != "Zaprimljen"
+                    && arrayWinxStatusRacuna[iWinx] != "Potvrđeno zaprimanje"
+                    && arrayWinxStatusRacuna[iWinx] != "Prihvaćen"
+                    && arrayWinxStatusRacuna[iWinx] != "Odbijen"
+                    && arrayWinxStatusRacuna[iWinx] != "Plaćanje zaprimljeno"
+                    && arrayWinxStatusRacuna[iWinx] != "Djelomično plaćeno"
+                    && arrayWinxStatusRacuna[iWinx] != "Plaćeno")
             )
-            // && 
-            // (
-            //     (filterStatusFiskaliziranDa && arrayWinxStatusFiskalizacije[iWinx].StartsWith("Da"))
-            //     || (filterStatusFiskaliziranNe && arrayWinxStatusFiskalizacije[iWinx].StartsWith("NE"))
-            //     || (filterStatusFiskaliziranGreska && arrayWinxStatusFiskalizacije[iWinx] != "" && !arrayWinxStatusFiskalizacije[iWinx].StartsWith("Da") && !arrayWinxStatusFiskalizacije[iWinx].StartsWith("NE"))
-            //     || (filterStatusFiskaliziranPrazno && arrayWinxStatusFiskalizacije[iWinx] == "")
-            // )
+            && 
+            (
+                (filterStatusFiskaliziranDa && arrayWinxStatusFiskalizacije[iWinx].StartsWith("Da"))
+                || (filterStatusFiskaliziranDa && arrayWinxStatusFiskalizacije[iWinx].StartsWith("Uspjeh"))
+
+                || (filterStatusFiskaliziranNe && !arrayWinxStatusFiskalizacije[iWinx].StartsWith("Da") && !arrayWinxStatusFiskalizacije[iWinx].StartsWith("Uspjeh"))
+
+                // || (filterStatusFiskaliziranGreska && arrayWinxStatusFiskalizacije[iWinx] != "" && !arrayWinxStatusFiskalizacije[iWinx].StartsWith("Da") && !arrayWinxStatusFiskalizacije[iWinx].StartsWith("NE"))
+                // || (filterStatusFiskaliziranPrazno && arrayWinxStatusFiskalizacije[iWinx] == "")
+            )
             // &&
             // (
             //     (filterStatusNaplacenDa && arrayWinxReportPaymentStatus[iWinx].StartsWith("Da"))

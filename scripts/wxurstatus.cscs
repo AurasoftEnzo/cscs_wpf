@@ -130,13 +130,14 @@ function wxurstatus_onDisplay(){
     filterStatusOdbijen = true;
     
     filterStatusPlacanjeZaprimljeno = true;
-    filterStatusDjelomicnoPlaceno = true;
-    filterStatusPlaceno = true;
+    // filterStatusDjelomicnoPlaceno = true;
+    // filterStatusPlaceno = true;
+    filterStatusOstalo = true;
 
     filterStatusFiskaliziranDa = true;
     filterStatusFiskaliziranNe = true;
-    filterStatusFiskaliziranGreska = true;
-    filterStatusFiskaliziranPrazno = true;
+    // filterStatusFiskaliziranGreska = true;
+    // filterStatusFiskaliziranPrazno = true;
     
     filterStatusOdbijenDa = true;
     filterStatusOdbijenNe = true;
@@ -178,8 +179,8 @@ function cbSve@clicked(){
     // filterStatusNijeUSustavuPdva = cbBool;
     // filterStatusIzvoz = cbBool;
     
-    filterStatusLikvidiran = cbBool;
-    filterStatusNijeLikvidiran = cbBool;
+    // filterStatusLikvidiran = cbBool;
+    // filterStatusNijeLikvidiran = cbBool;
 
 
     filterStatusZaprimljen = cbBool;
@@ -189,8 +190,9 @@ function cbSve@clicked(){
     filterStatusOdbijen = cbBool;
     
     filterStatusPlacanjeZaprimljeno = cbBool;
-    filterStatusDjelomicnoPlaceno = cbBool;
-    filterStatusPlaceno = cbBool;
+    // filterStatusDjelomicnoPlaceno = cbBool;
+    // filterStatusPlaceno = cbBool;
+    filterStatusOstalo = cbBool;
 
     // filterStatusFiskaliziranDa = cbBool;
     // filterStatusFiskaliziranNe = cbBool;
@@ -555,6 +557,30 @@ function GetListMER(){
     }
 }
 
+function SwitchMerStatus(originalStatus){
+    if(originalStatus == "Zaprimljen"){
+        return "Zaprimljen";
+    }elif(originalStatus == "Potvrda zaprimanja"){
+        return "Potvrđeno zaprimanje";
+    }elif(originalStatus == "Prihvaćen"){
+        return "Prihvaćen";
+    }elif(originalStatus == "Odbijen"){
+        return "Odbijen";
+    }elif(originalStatus == "Djelomično plaćeno"){
+        return "Plaćanje zaprimljeno";
+    }elif(originalStatus == "Plaćeno u potpunosti"){
+        return "Plaćanje zaprimljeno";
+    }elif(originalStatus == "Plaćanje zaprimljeno"){
+        return "Plaćanje zaprimljeno";
+    }elif(originalStatus == "Plaćen"){
+        return "Plaćanje zaprimljeno";
+    }elif(originalStatus == "null"){
+        return "null";
+    }else{
+        return originalStatus;
+    }
+}
+
 function GetListMERSuccess(trackingId, responseCode, res) {
     // MSG("MERSuccess"); // REMOVE
 
@@ -581,7 +607,9 @@ function GetListMERSuccess(trackingId, responseCode, res) {
             // MSG(racunObject);
             
             sqlResultNKNAERGL = GetNKNAERGLFromSQL(racunObject["ElectronicId"], racunObject["DocumentNr"], racunObject["SenderBusinessNumber"]);
-// msg(racunObject);
+
+            
+            
             AddRacunToArrays(
                 racunObject["SenderBusinessName"],
                 racunObject["SenderBusinessNumber"],
@@ -597,9 +625,48 @@ function GetListMERSuccess(trackingId, responseCode, res) {
                 0
             );
 
+            
+        }
+
+
+        for(iMer = 0; iMer < Rbr; iMer++){
+            electronicId = arrayIdRacunaPosrednika[iMer];
+
+            //poslovni status računa
+            jsonPayload = '{"Username": "' + ERAC_USER + 
+                '", "Password": "' + ERAC_PASS + 
+                '", "CompanyId": "' + companyOIB + 
+                '", "SoftwareId": "' + ERAC_DESC + 
+                // '", "StatusId": "' + statusId + // not mandatory
+                // '", "From": "' + FilterDateFrom.ToString("yyyy-MM-dd") + 
+                // '", "To": "' + FilterDateTo.ToString("yyyy-MM-dd") + 'T23:59:59' +
+                '", "ElectronicId": "' + electronicId + 
+                '"}';
+            
+            // SaveFile(jsonPayload);
+            
+            apiUrl = ERAC_SERVER + "apis/v2/queryDocumentProcessStatusInbox";
+            jsonResponse = WebRequest("POST", apiUrl, jsonPayload, iMer, "getInvoiceStatusesFromMerSuccess", "getInvoiceStatusesFromMerFailure", "application/json", null, 1000 * 20, false);
+            
+            
+            //status fiskalizacije
+            jsonPayload = '{"Username": "' + ERAC_USER + 
+                        '", "Password": "' + ERAC_PASS + 
+                        '", "CompanyId": "' + companyOIB + 
+                        '", "SoftwareId": "' + ERAC_DESC + 
+                        '", "MessageType": "1",' + //POŠILJATELJ - 0 / PRIMATELJ - 1
+                        '"ElectronicId": "' + electronicId + 
+                        '"}';
+            
+            // SaveFile(jsonPayload);
+            
+            apiUrl = ERAC_SERVER + "api/fiscalization/statusInbox"; 
+            jsonResponse = WebRequest("POST", apiUrl, jsonPayload, iMer, "getFiskStatusFromMerSuccess", "getFiskStatusFromMerFailure", "application/json", null, 1000 * 20, false);
+
             Progress(1);
         }
 
+        Wait();
         filter();
     }
     catch(ex){
@@ -622,6 +689,168 @@ function GetListMERFailure(trackingId, responseCode, res) {
     }
 }
 
+function getInvoiceStatusesFromMerSuccess(_trackingId1, responseCode, res){
+    // MSG("MERSuccess"); // REMOVE
+
+    try{
+        res = res.ReplaceAndTrim("[", "", "]", "");
+        LogResponse(responseCode, "getInvoiceStatusesFromMerSuccess - tackingId: " + _trackingId1 + ", račun: " + arrayBrojRacuna[_trackingId1] + "\n" + res);     
+
+        resObject = DeserializeJson(res);
+
+        if(!Contains(resObject, "DocumentProcessStatusName")){
+            //nije pronađen račun?
+            // getInvoiceStatusesFromMer2(_trackingId1);
+        }else{
+            merStatus = SwitchMerStatus(resObject["DocumentProcessStatusName"]);
+            arrayStatusRacuna[int(_trackingId1)] = merStatus;
+                
+            // Progress(1);
+
+            // if(_trackingId1 == RbrWinx - 1){
+            //     Signal();
+            // }
+        }
+    }
+    catch(ex){
+        MessageBox("getInvoiceStatusesFromMerSuccess - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        // LogNKSYELOG(); // !!! LOG !!!
+        exit;
+    }
+}
+
+function getInvoiceStatusesFromMerFailure(trackingId, responseCode, res){
+    MSG("MERFailure");
+
+    try{
+        LogResponse(responseCode, "getInvoiceStatusesFromMerFailure - tackingId: " + trackingId + ", račun: " + arrayBrojRacuna[trackingId] + "\n" + res);     
+
+        // Progress(1);
+
+        // if(trackingId == RbrWinx - 1){
+        //     Signal();
+        // }
+    }
+    catch(ex){
+        MessageBox("MERFailure - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        // !!! LOG !!!
+        exit;
+    }
+}
+
+//--- FISK STATUS MeR --------------------------------------------------------
+
+function getFiskStatusFromMerSuccess(_iMer, responseCode, res){
+    // MSG("MERSuccess"); // REMOVE
+
+    try{
+        LogResponse(responseCode, "getFiskStatusFromMerSuccess - tackingId: " + _iMer + ", račun: " + arrayIdRacunaPosrednika[_iMer] + "\n" + res);
+
+        status = "";
+        statusDescription = "";
+        errorCode = "None";
+        errorCodeDescription = "";
+        dateOfFiscalizationString = "";
+
+        StatusFiskalizacijeText = "";
+
+        res = res.ReplaceAndTrim("[", "", "]", "");
+        if(res != ""){
+            racunObject = DeserializeJson(res);
+
+            if(Contains(racunObject, "messages")){
+                if (ArrayOrDict(racunObject["messages"]) == "array") {
+                    lastMsgIndex = Size(racunObject["messages"]) - 1;
+                    msgObject = racunObject["messages"][lastMsgIndex];
+                } else {
+                    msgObject = racunObject["messages"];
+                }
+                                
+
+                if(Contains(msgObject, "status")){
+                    status = msgObject["status"];
+                }
+
+                if(Contains(msgObject, "statusDescription")){
+                    statusDescription = msgObject["statusDescription"];
+                }
+
+                if(Contains(msgObject, "errorCode")){
+                    errorCode = msgObject["errorCode"];
+                }
+                
+                if(Contains(msgObject, "errorCodeDescription")){
+                    errorCodeDescription = msgObject["errorCodeDescription"];
+                }
+
+                if(Contains(msgObject, "dateOfFiscalization")){
+                    dateOfFiscalizationString = msgObject["dateOfFiscalization"].Substring(0, 10);
+                }
+            }
+        }
+
+        if(statusDescription != ""){
+            StatusFiskalizacijeText = statusDescription + " (" + dateOfFiscalizationString + ")";
+        }elif(errorCode != "None"){
+            StatusFiskalizacijeText = errorCode + " (" + errorCodeDescription + ")";
+        }
+
+        arrayStatusFiskalizacije[int(_iMer)] = StatusFiskalizacijeText;
+
+                    // resParts = res.Split("},{");
+
+                    // // MSG("Size(resParts) = " + Size(resParts));
+                    
+                    // for(i = 0; i < Size(resParts); i++){
+                    //     if(i == 0){
+                    //         resParts[i] = resParts[i] + "}";
+                    //     }
+                    //     elif(i == Size(resParts) - 1){
+                    //         resParts[i] = "{" + resParts[i];
+                    //     }
+                    //     else{
+                    //         resParts[i] = "{" + resParts[i] + "}";
+                    //     }
+
+                    //     messageObject = DeserializeJson(resParts[i]);
+                        //...
+                    // }
+        
+        // Progress(1);
+
+        if(_iMer == Rbr - 1){
+            Signal();
+        }
+    }
+    catch(ex){
+        MessageBox("getFiskStatusFromMerSuccess - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        // LogNKSYELOG(); // !!! LOG !!!
+        exit;
+    }
+}
+
+function getFiskStatusFromMerFailure(_iMer, responseCode, res){
+    MSG("getFiskStatusFromMerFailure");
+
+    try{
+        LogResponse(responseCode, "getFiskStatusFromMerFailure - tackingId: " + _iMer + ", račun: " + arrayIdRacunaPosrednika[_iMer] + "\n" + res);     
+
+        // Progress(1);
+
+        if(_iMer == Rbr - 1){
+            Signal();
+        }
+    }
+    catch(ex){
+        MessageBox("getFiskStatusFromMerFailure - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        // !!! LOG !!!
+        exit;
+    }
+}
+
+//-----------------------------------------------------------
+//-----------------------------------------------------------
+//-----------------------------------------------------------
 
 function AddRacunToArrays(supplierName, supplierId, statusRacuna, datumIzdavanja, datumPdva, supplierInvoiceId, eRacunBrojRacuna, fiskStatus, reportRejectionStatus, glNum, brPon, iznos){
     
@@ -863,7 +1092,7 @@ function filter(){
         }
 
         //filter by status
-        if( true ||
+        if(
             // (filterStatusNijePoslan && arrayStatusRacuna[iRbr] == "Nije poslan")
             // || (filterStatusInterniRacun && arrayStatusRacuna[iRbr] == "Interni račun")
             // || (filterStatusNijeUSustavuPdva && arrayStatusRacuna[iRbr] == "Nije u sustavu PDV-a")
@@ -882,23 +1111,38 @@ function filter(){
                 || (filterStatusOdbijen && arrayStatusRacuna[iRbr] == "Odbijen")
 
                 || (filterStatusPlacanjeZaprimljeno && arrayStatusRacuna[iRbr] == "Plaćanje zaprimljeno")
-                || (filterStatusDjelomicnoPlaceno && arrayStatusRacuna[iRbr] == "Djelomično plaćeno")
-                || (filterStatusPlaceno && arrayStatusRacuna[iRbr] == "Plaćeno")
+                || (filterStatusPlacanjeZaprimljeno && arrayStatusRacuna[iRbr] == "Djelomično plaćeno")
+                || (filterStatusPlacanjeZaprimljeno && arrayStatusRacuna[iRbr] == "Plaćeno")
+                || (filterStatusOstalo 
+                    // && arrayStatusRacuna[iRbr] != "Nije poslan"
+                    // && arrayStatusRacuna[iRbr] != "Interni račun"
+                    // && arrayStatusRacuna[iRbr] != "Nije u sustavu PDV-a"
+                    // && arrayStatusRacuna[iRbr] != "Izvoz"
+                    && arrayStatusRacuna[iRbr] != "Zaprimljen"
+                    && arrayStatusRacuna[iRbr] != "Potvrđeno zaprimanje"
+                    && arrayStatusRacuna[iRbr] != "Prihvaćen"
+                    && arrayStatusRacuna[iRbr] != "Odbijen"
+                    && arrayStatusRacuna[iRbr] != "Plaćanje zaprimljeno"
+                    && arrayStatusRacuna[iRbr] != "Djelomično plaćeno"
+                    && arrayStatusRacuna[iRbr] != "Plaćeno")
             )
             &&
             (
                 (filterStatusFiskaliziranDa && arrayStatusFiskalizacije[iRbr].StartsWith("Da"))
-                || (filterStatusFiskaliziranNe && arrayStatusFiskalizacije[iRbr].StartsWith("NE"))
-                || (filterStatusFiskaliziranGreska && arrayStatusFiskalizacije[iRbr] != "" && !arrayStatusFiskalizacije[iRbr].StartsWith("Da") && !arrayStatusFiskalizacije[iRbr].StartsWith("NE"))
-                || (filterStatusFiskaliziranPrazno && arrayStatusFiskalizacije[iRbr] == "")
+                || (filterStatusFiskaliziranDa && arrayStatusFiskalizacije[iRbr].StartsWith("Uspjeh"))
+
+                || (filterStatusFiskaliziranNe && !arrayStatusFiskalizacije[iRbr].StartsWith("Da") && !arrayStatusFiskalizacije[iRbr].StartsWith("Uspjeh"))
+
+                // || (filterStatusFiskaliziranGreska && arrayStatusFiskalizacije[iRbr] != "" && !arrayStatusFiskalizacije[iRbr].StartsWith("Da") && !arrayStatusFiskalizacije[iRbr].StartsWith("NE"))
+                // || (filterStatusFiskaliziranPrazno && arrayStatusFiskalizacije[iRbr] == "")
             )
-            &&
-            (
-                (filterStatusOdbijenDa && arrayReportRejectionStatus[iRbr].StartsWith("Da"))
-                || (filterStatusOdbijenNe && arrayReportRejectionStatus[iRbr].StartsWith("NE"))
-                || (filterStatusOdbijenGreska && arrayReportRejectionStatus[iRbr] != "" && !arrayReportRejectionStatus[iRbr].StartsWith("Da") && !arrayReportRejectionStatus[iRbr].StartsWith("NE"))
-                || (filterStatusOdbijenPrazno && arrayReportRejectionStatus[iRbr] == "")
-            )
+            // &&
+            // (
+            //     (filterStatusOdbijenDa && arrayReportRejectionStatus[iRbr].StartsWith("Da"))
+            //     || (filterStatusOdbijenNe && arrayReportRejectionStatus[iRbr].StartsWith("NE"))
+            //     || (filterStatusOdbijenGreska && arrayReportRejectionStatus[iRbr] != "" && !arrayReportRejectionStatus[iRbr].StartsWith("Da") && !arrayReportRejectionStatus[iRbr].StartsWith("NE"))
+            //     || (filterStatusOdbijenPrazno && arrayReportRejectionStatus[iRbr] == "")
+            // )
         ){
             AddRacunToFilteredArrays(iRbr);
         }

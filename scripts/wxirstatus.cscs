@@ -984,7 +984,7 @@ function getWinxList(){
             NKPR_GL_TOTAL
             FROM " + databaseName + ".dbo.NKPRINV 
             LEFT JOIN " + databaseName + ".dbo.KPSYSTEM on 1 = 1
-            left join NKSCPART ON NKSC_PARTCODE = NKPR_GL_CUSCOD
+            left join  " + databaseName + ".dbo.NKSCPART ON NKSC_PARTCODE = NKPR_GL_CUSCOD
             WHERE NKPR_GL_INVDTE BETWEEN '" + FilterDateFrom + "' AND '" + FilterDateTo + "' 
             ORDER BY NKPR_GL_NUM";
         sqlResult = SqlQuery(sql);

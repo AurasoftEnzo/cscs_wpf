@@ -6,287 +6,367 @@
         xmlns:local="clr-namespace:WpfCSCS"
         mc:Ignorable="d"
         Title="Pregled statusa izlaznih e-računa"
-        Height="670"
+        Height="700"
         Width="1000"
         ResizeMode="CanMinimize"
         WindowStartupLocation="CenterScreen"
-        Name="wxirstatusWindow">
-    <Grid>
+        Name="wxirstatusWindow"
+        Background="#1A2535">
 
-        <DataGrid 
-                GridLinesVisibility="All"
-          HorizontalGridLinesBrush="#FFD7D6D6"
-                  VerticalGridLinesBrush="#FFD7D6D6"
-                  CanUserReorderColumns="True"
-            CanUserSortColumns="True"
-          Background="White"
-          Margin="0,14,0,0"
-          IsReadOnly="true"
-        RowHeight="22"
-          FontSize="15"
-          x:Name="datagridListaRacuna"
-          HorizontalScrollBarVisibility="Auto"
-          VerticalScrollBarVisibility="Auto"
-                    BorderBrush="DarkGray"
-            BorderThickness="1"
-         Height="410" Width="960"  VerticalAlignment="Top" HorizontalAlignment="Center"
-            FrozenColumnCount="2"
-            AlternationCount="2"
-            AlternatingRowBackground="AliceBlue"
-            >
-            <DataGrid.Resources>
-                <Style TargetType="{x:Type DataGridColumnHeader}">
-                    <Setter Property="Background"
-                    Value="#FF22A69E" />
-                    <Setter Property="Foreground"
-                    Value="White" />
-                    <Setter Property="FontSize" Value="17"/>
+    <Window.Resources>
 
-                    <Setter Property="BorderBrush" Value="White"/>
-                    <Setter Property="BorderThickness" Value="1"/>
-                </Style>
-            </DataGrid.Resources>
-            <DataGrid.Columns>
-                <DataGridTemplateColumn Header="R. br." 
-                                Width="50">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <wcl:ASGridCell FieldName="arrayFilteredRbr" CanUserSort="True"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+        <!-- Flat rounded button -->
+        <Style x:Key="FlatBtn" TargetType="Button">
+            <Setter Property="Foreground"   Value="White"/>
+            <Setter Property="FontFamily"   Value="Segoe UI"/>
+            <Setter Property="Cursor"       Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="6"
+                                Padding="10,4">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Opacity" Value="0.82"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Opacity" Value="0.65"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
 
-                <DataGridTemplateColumn Header="Br. računa"
-                Width="80">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <wcl:ASGridCell FieldName="arrayFilteredBrojRacuna" CanUserSort="True"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+        <!-- CheckBox – light text on dark background -->
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground"              Value="#C8D0DA"/>
+            <Setter Property="FontFamily"              Value="Segoe UI"/>
+            <Setter Property="FontSize"                Value="12.5"/>
+            <Setter Property="Margin"                  Value="0,3,14,0"/>
+            <Setter Property="Cursor"                  Value="Hand"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
 
-                <DataGridTemplateColumn Header="Kupac"
-                                Width="200">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <wcl:ASGridCell Name="columnKupac" FieldName="arrayFilteredKupac" CanUserSort="True"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+        <!-- Section heading (orange accent) -->
+        <Style x:Key="SectionHeader" TargetType="TextBlock">
+            <Setter Property="Foreground"   Value="#E67E22"/>
+            <Setter Property="FontFamily"   Value="Segoe UI"/>
+            <Setter Property="FontSize"     Value="12"/>
+            <Setter Property="FontWeight"   Value="SemiBold"/>
+            <Setter Property="Margin"       Value="0,0,0,6"/>
+        </Style>
 
-                <DataGridTemplateColumn Header="OIB kupca"
-                    Width="120">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <wcl:ASGridCell FieldName="arrayFilteredOibKupca" HorizontalContentAlignment="Center" CanUserSort="True"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+    </Window.Resources>
 
-                <DataGridTemplateColumn Header="Status računa"
-                    Width="160">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <wcl:ASGridCell FieldName="arrayFilteredStatusRacuna" CanUserSort="True" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+    <!-- ================================================================
+         Root: 3 rows – DataGrid | Action bar | Filter panel
+         ================================================================ -->
+    <Grid Margin="10,8,10,8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>          <!-- DataGrid -->
+            <RowDefinition Height="Auto"/>       <!-- Action bar -->
+            <RowDefinition Height="Auto"/>       <!-- Filter -->
+        </Grid.RowDefinitions>
 
-                <DataGridTemplateColumn Header="Dat. izdav."
-                                Width="80">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <wcl:ASGridCell Name="columnDatumIzdavanja" FieldName="arrayFilteredDatumIzdavanja" HorizontalContentAlignment="Center" CanUserSort="True" EditLength="8"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+        <!-- ============================================================
+             ROW 0 – DataGrid
+             ============================================================ -->
+        <Border Grid.Row="0"
+                Background="#263646"
+                CornerRadius="8"
+                Margin="0,0,0,8"
+                Padding="1">
+            <DataGrid x:Name="datagridListaRacuna"
+                      GridLinesVisibility="Horizontal"
+                      HorizontalGridLinesBrush="#2D4057"
+                      CanUserReorderColumns="True"
+                      CanUserSortColumns="True"
+                      Background="Transparent"
+                      IsReadOnly="True"
+                      RowHeight="23"
+                      FontSize="13"
+                      FontFamily="Segoe UI"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto"
+                      BorderThickness="0"
+                      FrozenColumnCount="2"
+                      AlternationCount="2"
+                      RowBackground="#1E2F3D"
+                      AlternatingRowBackground="#243444"
+                      Foreground="#D0D8E4"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      CanUserResizeRows="False"
+                      SelectionMode="Single">
+                <DataGrid.Resources>
+                    <Style TargetType="{x:Type DataGridColumnHeader}">
+                        <Setter Property="Background"       Value="#1A3A5C"/>
+                        <Setter Property="Foreground"       Value="White"/>
+                        <Setter Property="FontSize"         Value="13"/>
+                        <Setter Property="FontWeight"       Value="SemiBold"/>
+                        <Setter Property="FontFamily"       Value="Segoe UI"/>
+                        <Setter Property="BorderBrush"      Value="#2C3E50"/>
+                        <Setter Property="BorderThickness"  Value="0,0,1,0"/>
+                        <Setter Property="Padding"          Value="8,5"/>
+                    </Style>
+                    <Style TargetType="{x:Type DataGridRow}">
+                        <Setter Property="Foreground" Value="#D0D8E4"/>
+                    </Style>
+                </DataGrid.Resources>
+                <DataGrid.Columns>
 
-                <DataGridTemplateColumn Header="Dat. knjiž."
-                            Width="80">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <wcl:ASGridCell FieldName="arrayFilteredDatumKnjizenja" HorizontalContentAlignment="Center" CanUserSort="True" EditLength="8"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="R. br." Width="50">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="arrayFilteredRbr" CanUserSort="True"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
-                <DataGridTemplateColumn Header="Dat. slanja"
-                            Width="80">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <wcl:ASGridCell FieldName="arrayFilteredDatumSlanja" HorizontalContentAlignment="Center" CanUserSort="True" EditLength="8"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Br. računa" Width="85">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="arrayFilteredBrojRacuna" CanUserSort="True"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
-                <DataGridTemplateColumn Header="Fiskaliziran?"
-                    Width="160">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <wcl:ASGridCell FieldName="arrayFilteredStatusFiskalizacije" CanUserSort="True"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Kupac" Width="200">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell Name="columnKupac" FieldName="arrayFilteredKupac" CanUserSort="True"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
-                
-                <DataGridTemplateColumn Header="Izvješteno plaćanje?"
-                    Width="160">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <wcl:ASGridCell FieldName="arrayFilteredReportPaymentStatus" CanUserSort="True"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="OIB kupca" Width="120">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="arrayFilteredOibKupca"
+                                                HorizontalContentAlignment="Center" CanUserSort="True"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
+                    <DataGridTemplateColumn Header="Status računa" Width="155">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="arrayFilteredStatusRacuna" CanUserSort="True"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
-                <!--<DataGridTemplateColumn Header="Plaćeno"
-    Width="100">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <wcl:ASGridCell FieldName="arrayFilteredPlaceno" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>-->
+                    <DataGridTemplateColumn Header="Dat. izdav." Width="85">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell Name="columnDatumIzdavanja"
+                                                FieldName="arrayFilteredDatumIzdavanja"
+                                                HorizontalContentAlignment="Center"
+                                                CanUserSort="True" EditLength="8"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
+                    <DataGridTemplateColumn Header="Dat. knjiž." Width="85">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="arrayFilteredDatumKnjizenja"
+                                                HorizontalContentAlignment="Center"
+                                                CanUserSort="True" EditLength="8"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
-                <DataGridTemplateColumn Header="Iznos"
-    Width="100">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <wcl:ASGridCell FieldName="arrayFilteredZaPlacanje" HorizontalContentAlignment="Right" CanUserSort="True"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Dat. slanja" Width="85">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="arrayFilteredDatumSlanja"
+                                                HorizontalContentAlignment="Center"
+                                                CanUserSort="True" EditLength="8"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
+                    <DataGridTemplateColumn Header="Fiskaliziran?" Width="120">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="arrayFilteredStatusFiskalizacije" CanUserSort="True"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
-                <!--<DataGridTemplateColumn Header="Kupac u AMS-u"
-    Width="100">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <wcl:ASGridCell FieldName="arrayFilteredKupacUAMS" HorizontalContentAlignment="Center"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>-->
+                    <DataGridTemplateColumn Header="Izvješteno plaćanje?" Width="145">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="arrayFilteredReportPaymentStatus" CanUserSort="True"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
+                    <DataGridTemplateColumn Header="Iznos" Width="105">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="arrayFilteredZaPlacanje"
+                                                HorizontalContentAlignment="Right" CanUserSort="True"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
-                <DataGridTemplateColumn Header="ID računa"
-    Width="100">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <wcl:ASGridCell FieldName="arrayFilteredIdRacunaPosrednika" HorizontalContentAlignment="Center" CanUserSort="True"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="ID računa" Width="100">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="arrayFilteredIdRacunaPosrednika"
+                                                HorizontalContentAlignment="Center" CanUserSort="True"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
-            </DataGrid.Columns>
-        </DataGrid>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
 
-        <Button
-            Content="Prikaži"
-            Name="btnPrikazi"
-            FontSize="35"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
-            Margin="310,434,0,0"
-            Width="385"
-            Height="70" 
-            TabIndex="2"
-            />
+        <!-- ============================================================
+             ROW 1 – Action bar  (Od / Do dates · Prikaži · Export)
+             ============================================================ -->
+        <Border Grid.Row="1"
+                Background="#263646"
+                CornerRadius="8"
+                Margin="0,0,0,8"
+                Padding="14,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>   <!-- dates -->
+                    <ColumnDefinition Width="*"/>      <!-- Prikaži centre -->
+                    <ColumnDefinition Width="Auto"/>   <!-- Export right -->
+                </Grid.ColumnDefinitions>
 
-        <Button
-            Content="Export2XLSX"
-            Name="Export2XLSX"
-            FontSize="22"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
-            Margin="760,434,0,0"
-            Width="210"
-            Height="70" 
-            IsTabStop="False"/>
+                <!-- Date range -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Od:" Foreground="#BDC3C7" FontFamily="Segoe UI" FontSize="14"
+                               VerticalAlignment="Center" Margin="0,0,7,0"/>
+                    <wcl:ASDateEditer x:Name="dateEditerFrom"
+                                      DataContext="FilterDateFrom"
+                                      DisplaySize="8" DisplayDate="01/01/26" ButtonWidth="20"
+                                      FontSize="14" TabIndex="0"
+                                      Width="125" Height="28"
+                                      VerticalAlignment="Center" Margin="0,0,22,0"/>
+                    <TextBlock Text="Do:" Foreground="#BDC3C7" FontFamily="Segoe UI" FontSize="14"
+                               VerticalAlignment="Center" Margin="0,0,7,0"/>
+                    <wcl:ASDateEditer x:Name="dateEditerTo"
+                                      DataContext="FilterDateTo"
+                                      DisplaySize="8" DisplayDate="01/01/26" ButtonWidth="20"
+                                      FontSize="14" TabIndex="1"
+                                      Width="125" Height="28"
+                                      VerticalAlignment="Center"/>
+                </StackPanel>
 
-        <!--<Label Content="" Name="StatusLabel" FontSize="25" HorizontalContentAlignment="Center" Height="50" Width="775" Margin="110,534,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-        <Label Content="" Name="StatusLabel2" FontSize="25" HorizontalContentAlignment="Center" Height="45" Width="775" Margin="110,579,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>-->
+                <!-- Prikaži -->
+                <Button Grid.Column="1"
+                        Name="btnPrikazi"
+                        Content="Prikaži"
+                        Style="{StaticResource FlatBtn}"
+                        Background="#1A6B3C"
+                        FontSize="19" FontWeight="Bold"
+                        Height="42" Width="240"
+                        TabIndex="2"
+                        HorizontalAlignment="Center"/>
 
-        <!--<Image x:Name="asImage" DataContext="Sat" Height="90" Width="100" Margin="680,534,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"
-               IsTabStop="False"/>-->
+                <!-- Export -->
+                <Button Grid.Column="2"
+                        Name="Export2XLSX"
+                        Content="Export → XLSX"
+                        Style="{StaticResource FlatBtn}"
+                        Background="#2E4A6E"
+                        FontSize="14" FontWeight="SemiBold"
+                        Height="42" Width="155"
+                        IsTabStop="False"/>
+            </Grid>
+        </Border>
 
-        <wcl:ASDateEditer
-            DisplaySize="8"
-            DisplayDate="01/01/26"
-            ButtonWidth="19"
-            x:Name="dateEditerFrom"
-            DataContext="FilterDateFrom"
-            FontSize="20"
-            TabIndex="0"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top" Margin="70,434,0,0" Width="130" Height="30" />
-        <Label Content="Od:" FontSize="20" HorizontalContentAlignment="Center" Height="35" Width="65" Margin="10,429,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+        <!-- ============================================================
+             ROW 2 – Filter panel
+             ============================================================ -->
+        <Border Grid.Row="2"
+                Background="#263646"
+                CornerRadius="8"
+                Padding="14,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="120"/>   <!-- OIB + Sve -->
+                    <ColumnDefinition Width="*"/>     <!-- Statusi -->
+                    <ColumnDefinition Width="100"/>   <!-- Fiskaliziran -->
+                    <ColumnDefinition Width="110"/>   <!-- Naplaćen -->
+                </Grid.ColumnDefinitions>
 
-        <wcl:ASDateEditer
-            DisplaySize="8"
-            DisplayDate="01/01/26"
-            ButtonWidth="19"
-            x:Name="dateEditerTo"
-            DataContext="FilterDateTo"
-            FontSize="20"
-            TabIndex="1"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top" Margin="70,474,0,0" Width="130" Height="30" />
-        <Label Content="Do:" FontSize="20" HorizontalContentAlignment="Center" Height="35" Width="65" Margin="10,469,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                <!-- Col 0 · OIB & Sve -->
+                <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                    <TextBlock Text="Filtriranje" Style="{StaticResource SectionHeader}"/>
+                    <TextBlock Text="OIB:" Foreground="#7F8C8D" FontFamily="Segoe UI"
+                               FontSize="12" Margin="0,0,0,3"/>
+                    <TextBox Name="tbOIBFilter"
+                             DataContext="OIBFilter"
+                             Text=""
+                             FontSize="13" FontFamily="Segoe UI"
+                             Background="#1E2F3D" Foreground="White"
+                             CaretBrush="White"
+                             BorderBrush="#3D5166" BorderThickness="1"
+                             Padding="4,2"
+                             Width="96" Height="24"
+                             HorizontalAlignment="Left"/>
+                    <CheckBox Content="Sve" DataContext="filterStatusSve" x:Name="cbSve" Margin="0,10,0,0"/>
+                </StackPanel>
 
+                <!-- Col 1 · Statusi (WrapPanel so they flow naturally) -->
+                <StackPanel Grid.Column="1" Margin="0,0,10,0">
+                    <TextBlock Text="Statusi:" Style="{StaticResource SectionHeader}"/>
+                    <WrapPanel Orientation="Horizontal">
+                        <CheckBox Content="Nije poslan"
+                                  DataContext="filterStatusNijePoslan"          Name="cbNijePoslan"/>
+                        <CheckBox Content="Interni račun"
+                                  DataContext="filterStatusInterniRacun"        Name="cbInterniRacun"/>
+                        <CheckBox Content="Nije u sustavu PDV-a"
+                                  DataContext="filterStatusNijeUSustavuPdva"  x:Name="cbNijeUSustavuPdva"/>
+                        <CheckBox Content="Izvoz"
+                                  DataContext="filterStatusIzvoz"             x:Name="cbIzvoz"/>
+                        <CheckBox Content="Zaprimljen"
+                                  DataContext="filterStatusZaprimljen"           Name="cbZaprimljen"/>
+                        <CheckBox Content="Potvrđeno zaprimanje"
+                                  DataContext="filterStatusPotvrdenoZaprimanje"  Name="cbPotvrdenoZaprimanje"/>
+                        <CheckBox Content="Prihvaćen"
+                                  DataContext="filterStatusPrihvacen"            Name="cbPrihvacen"/>
+                        <CheckBox Content="Odbijen"
+                                  DataContext="filterStatusOdbijen"              Name="cbOdbijen"/>
+                        <CheckBox Content="Plaćanje zaprimljeno"
+                                  DataContext="filterStatusPlacanjeZaprimljeno"  Name="cbPlacanjeZaprimljeno"/>
+                        <CheckBox Content="Ostalo"
+                                  DataContext="filterStatusOstalo"               Name="cbOstalo"/>
+                    </WrapPanel>
+                </StackPanel>
 
+                <!-- Col 2 · Fiskaliziran -->
+                <StackPanel Grid.Column="2" Margin="0,0,8,0">
+                    <TextBlock Text="Fiskaliziran:" Style="{StaticResource SectionHeader}"/>
+                    <CheckBox Content="Da" DataContext="filterStatusFiskaliziranDa" x:Name="cbFiskaliziranDa"/>
+                    <CheckBox Content="Ne" DataContext="filterStatusFiskaliziranNe" x:Name="cbFiskaliziranNe"/>
+                </StackPanel>
 
+                <!-- Col 3 · Naplaćen -->
+                <StackPanel Grid.Column="3">
+                    <TextBlock Text="Naplaćen:" Style="{StaticResource SectionHeader}"/>
+                    <CheckBox Content="Da"     DataContext="filterStatusNaplacenDa"     x:Name="cbNaplacenDa"/>
+                    <CheckBox Content="Ne"     DataContext="filterStatusNaplacenNe"     x:Name="cbNaplacenNe"/>
+                    <CheckBox Content="Greška" DataContext="filterStatusNaplacenGreska" x:Name="cbNaplacenGreska"/>
+                    <CheckBox Content="Prazno" DataContext="filterStatusNaplacenPrazno" x:Name="cbNaplacenPrazno"/>
+                </StackPanel>
 
-        <!-- FILTER -->
-        <Border BorderBrush="DarkGray" Background="AliceBlue" BorderThickness="1" Margin="10,514,10,10"/>
-        <Label Content="Filtriranje" FontWeight="Bold" FontSize="20" HorizontalAlignment="Left" Margin="15,514,0,0" VerticalAlignment="Top" Height="40" Width="110"/>
-        <Label Content="OIB:" FontSize="20" HorizontalAlignment="Left" Margin="15,579,0,0" VerticalAlignment="Top" Height="40" Width="45"/>
-        <TextBox DataContext="OIBFilter" FontSize="16" Name="tbOIBFilter" HorizontalAlignment="Left" Margin="60,589,0,0" TextWrapping="NoWrap" Text="" VerticalAlignment="Top" Width="130" Height="25"/>
-        <Label Content="Statusi:" FontWeight="Bold" FontSize="20" HorizontalAlignment="Left" Margin="205,514,0,0" VerticalAlignment="Top" Height="40" Width="85"/>
-
-        <CheckBox Content="Zaprimljen" DataContext="filterStatusZaprimljen" Name="cbZaprimljen" HorizontalAlignment="Left" Margin="378,544,0,0" VerticalAlignment="Top"/>
-        <CheckBox Content="Potvrđeno zaprimanje" DataContext="filterStatusPotvrdenoZaprimanje" Name="cbPotvrdenoZaprimanje" HorizontalAlignment="Left" Margin="378,560,0,0" VerticalAlignment="Top"/>
-
-        <CheckBox Content="Nije poslan" DataContext="filterStatusNijePoslan" Name="cbNijePoslan" HorizontalAlignment="Left" Margin="225,553,0,0" VerticalAlignment="Top"/>
-        <CheckBox Content="Interni račun" DataContext="filterStatusInterniRacun" Name="cbInterniRacun" HorizontalAlignment="Left" Margin="225,570,0,0" VerticalAlignment="Top"/>
-
-        <CheckBox Content="Prihvaćen" DataContext="filterStatusPrihvacen" Name="cbPrihvacen" HorizontalAlignment="Left" Margin="378,586,0,0" VerticalAlignment="Top"/>
-        <CheckBox Content="Odbijen" DataContext="filterStatusOdbijen" Name="cbOdbijen" HorizontalAlignment="Left" Margin="378,602,0,0" VerticalAlignment="Top"/>
-
-        <CheckBox Content="Plaćanje zaprimljeno" DataContext="filterStatusPlacanjeZaprimljeno" Name="cbPlacanjeZaprimljeno" HorizontalAlignment="Left" Margin="527,555,0,0" VerticalAlignment="Top"/>
-        <!--<CheckBox Content="Djelomično plaćeno" DataContext="filterStatusDjelomicnoPlaceno" Name="cbDjelomicnoPlaceno" HorizontalAlignment="Left" Margin="527,572,0,0" VerticalAlignment="Top"/>-->
-        <!--<CheckBox Content="Plaćeno" DataContext="filterStatusPlaceno" Name="cbPlaceno" HorizontalAlignment="Left" Margin="527,589,0,0" VerticalAlignment="Top"/>-->
-        <CheckBox Content="Ostalo" DataContext="filterStatusOstalo" Name="cbOstalo" HorizontalAlignment="Left" Margin="527,589,0,0" VerticalAlignment="Top"/>
-
-        <CheckBox Content="Nije u sustavu PDV-a" DataContext="filterStatusNijeUSustavuPdva" x:Name="cbNijeUSustavuPdva" HorizontalAlignment="Left" Margin="225,586,0,0" VerticalAlignment="Top"/>
-        <CheckBox Content="Izvoz" DataContext="filterStatusIzvoz" x:Name="cbIzvoz" HorizontalAlignment="Left" Margin="225,602,0,0" VerticalAlignment="Top"/>
-
-        <Label Content="Fiskaliziran:" FontWeight="Bold" FontSize="20" HorizontalAlignment="Left" Margin="645,514,0,0" VerticalAlignment="Top" Height="40" Width="134"/>
-        <CheckBox Content="Da" DataContext="filterStatusFiskaliziranDa" x:Name="cbFiskaliziranDa" HorizontalAlignment="Left" Margin="706,549,0,0" VerticalAlignment="Top"/>
-        <CheckBox Content="Ne" DataContext="filterStatusFiskaliziranNe" x:Name="cbFiskaliziranNe" HorizontalAlignment="Left" Margin="706,566,0,0" VerticalAlignment="Top"/>
-        <!--<CheckBox Content="Greška" DataContext="filterStatusFiskaliziranGreska" x:Name="cbFiskaliziranGreska" HorizontalAlignment="Left" Margin="706,583,0,0" VerticalAlignment="Top"/>-->
-        <!--<CheckBox Content="Prazno" DataContext="filterStatusFiskaliziranPrazno" x:Name="cbFiskaliziranPrazno" HorizontalAlignment="Left" Margin="706,599,0,0" VerticalAlignment="Top"/>-->
-
-        <Label Content="Naplaćen:" FontWeight="Bold" FontSize="20" HorizontalAlignment="Left" Margin="789,514,0,0" VerticalAlignment="Top" Height="40" Width="134"/>
-        <CheckBox Content="Da" DataContext="filterStatusNaplacenDa" x:Name="cbNaplacenDa" HorizontalAlignment="Left" Margin="837,548,0,0" VerticalAlignment="Top"/>
-        <CheckBox Content="Ne" DataContext="filterStatusNaplacenNe" x:Name="cbNaplacenNe" HorizontalAlignment="Left" Margin="837,565,0,0" VerticalAlignment="Top"/>
-        <CheckBox Content="Greška" DataContext="filterStatusNaplacenGreska" x:Name="cbNaplacenGreska" HorizontalAlignment="Left" Margin="837,582,0,0" VerticalAlignment="Top"/>
-        <CheckBox Content="Prazno" DataContext="filterStatusNaplacenPrazno" x:Name="cbNaplacenPrazno" HorizontalAlignment="Left" Margin="837,598,0,0" VerticalAlignment="Top"/>
-
-        <CheckBox Content="Sve" DataContext="filterStatusSve" x:Name="cbSve" HorizontalAlignment="Left" Margin="288,528,0,0" VerticalAlignment="Top"/>
-
-
-        <!--<Button
-            Content="Osvježi"
-            x:Name="btnOsvjezi"
-            FontSize="25"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
-            Margin="695,559,0,0"
-            Width="275"
-            Height="55" />-->
-        <!--<CheckBox Content="CheckBox" HorizontalAlignment="Left" Margin="84,569,0,0" VerticalAlignment="Top"/>-->
-
+            </Grid>
+        </Border>
 
     </Grid>
 </Window>

@@ -10,132 +10,239 @@
         Width="1000"
         ResizeMode="CanMinimize"
         WindowStartupLocation="CenterScreen"
-        Name="wxeracungetWindow">
-    <Grid>
+        Name="wxeracungetWindow"
+        Background="#1A2535">
 
-        <DataGrid GridLinesVisibility="Horizontal"
-          HorizontalGridLinesBrush="#FFD7D6D6"
-          Background="White"
-          Margin="0,14,0,0"
-          IsReadOnly="true"
-        RowHeight="22"
-          FontSize="15"
-          x:Name="datagridListaRacuna"
-          HorizontalScrollBarVisibility="Auto"
-          VerticalScrollBarVisibility="Auto"
-          TabIndex="4" 
-            BorderBrush="DarkGray"
-            BorderThickness="1"
-         Height="410" Width="960"  VerticalAlignment="Top" HorizontalAlignment="Center"
-                  >
-            <DataGrid.Resources>
-                <Style TargetType="{x:Type DataGridColumnHeader}">
-                    <Setter Property="Background"
-                    Value="#FFA72222" />
-                    <Setter Property="Foreground"
-                    Value="White" />
-                    <Setter Property="FontSize" Value="17"/>
+    <Window.Resources>
 
-                    <Setter Property="BorderBrush" Value="White"/>
-                    <Setter Property="BorderThickness" Value="1"/>
-                </Style>
-            </DataGrid.Resources>
-            <DataGrid.Columns>
-                <DataGridTemplateColumn Header="R. br."
-                                Width="50">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <wcl:ASGridCell FieldName="arrayRbr" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Dobavljač"
-                                Width="200">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <wcl:ASGridCell FieldName="arrayDobavljac" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="OIB dobavljača"
-                                    Width="160">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <wcl:ASGridCell FieldName="arrayOibDobavljaca" HorizontalContentAlignment="Center"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Dat. izdavanja"
-                                Width="110">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <wcl:ASGridCell FieldName="arrayDatumIzdavanja" HorizontalContentAlignment="Center"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Dat. PDV-a"
-                            Width="110">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <wcl:ASGridCell FieldName="arrayDatumPDVa" HorizontalContentAlignment="Center"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Broj računa"
-                                Width="200">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <wcl:ASGridCell FieldName="arrayBrojRacuna"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+        <!-- Flat rounded button -->
+        <Style x:Key="FlatBtn" TargetType="Button">
+            <Setter Property="Foreground"      Value="White"/>
+            <Setter Property="FontFamily"      Value="Segoe UI"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="6"
+                                Padding="10,4">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Opacity" Value="0.82"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Opacity" Value="0.65"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
 
+    </Window.Resources>
 
-            </DataGrid.Columns>
-        </DataGrid>
+    <!-- ================================================================
+         Root: 3 rows – DataGrid | Action bar | Status row
+         ================================================================ -->
+    <Grid Margin="10,8,10,8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>     <!-- DataGrid -->
+            <RowDefinition Height="Auto"/>  <!-- Action bar -->
+            <RowDefinition Height="Auto"/>  <!-- Status -->
+        </Grid.RowDefinitions>
 
-        
+        <!-- ============================================================
+             ROW 0 – DataGrid
+             ============================================================ -->
+        <Border Grid.Row="0"
+                Background="#263646"
+                CornerRadius="8"
+                Margin="0,0,0,8"
+                Padding="1">
+            <DataGrid x:Name="datagridListaRacuna"
+                      GridLinesVisibility="Horizontal"
+                      HorizontalGridLinesBrush="#2D4057"
+                      CanUserReorderColumns="True"
+                      CanUserSortColumns="True"
+                      Background="Transparent"
+                      IsReadOnly="True"
+                      RowHeight="23"
+                      FontSize="13"
+                      FontFamily="Segoe UI"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto"
+                      BorderThickness="0"
+                      AlternationCount="2"
+                      RowBackground="#1E2F3D"
+                      AlternatingRowBackground="#243444"
+                      Foreground="#D0D8E4"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      CanUserResizeRows="False"
+                      SelectionMode="Single"
+                      TabIndex="4">
+                <DataGrid.Resources>
+                    <!-- Dark red header – visually distinct from other XAML windows -->
+                    <Style TargetType="{x:Type DataGridColumnHeader}">
+                        <Setter Property="Background"      Value="#5C1A1A"/>
+                        <Setter Property="Foreground"      Value="White"/>
+                        <Setter Property="FontSize"        Value="13"/>
+                        <Setter Property="FontWeight"      Value="SemiBold"/>
+                        <Setter Property="FontFamily"      Value="Segoe UI"/>
+                        <Setter Property="BorderBrush"     Value="#3D0F0F"/>
+                        <Setter Property="BorderThickness" Value="0,0,1,0"/>
+                        <Setter Property="Padding"         Value="8,5"/>
+                    </Style>
+                    <Style TargetType="{x:Type DataGridRow}">
+                        <Setter Property="Foreground" Value="#D0D8E4"/>
+                    </Style>
+                </DataGrid.Resources>
+                <DataGrid.Columns>
 
-        <Label Content="" Name="StatusLabel" FontSize="25" HorizontalContentAlignment="Center" Height="50" Width="790" Margin="110,534,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-        <Label Content="" Name="StatusLabel2" FontSize="25" HorizontalContentAlignment="Center" Height="45" Width="785" Margin="110,579,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                    <DataGridTemplateColumn Header="R. br." Width="50">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="arrayRbr"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
-        <Image x:Name="asImage" DataContext="Sat" Height="90" Width="100" Margin="680,534,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-        <wcl:ASDateEditer
-            DisplaySize="8"
-            DisplayDate="01/01/26"
-            ButtonWidth="19"
-            Name="dateEditerFrom"
-            DataContext="FilterDateFrom"
-            FontSize="20"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top" Margin="85,439,0,0" Width="130" Height="30" />
-        <Label Content="Od:" FontSize="20" HorizontalContentAlignment="Center" Height="35" Width="65" Margin="25,434,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-        <wcl:ASDateEditer
-            DisplaySize="8"
-            DisplayDate="01/01/26"
-            ButtonWidth="19"
-            Name="dateEditerTo"
-            DataContext="FilterDateTo"
-            FontSize="20"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top" Margin="85,479,0,0" Width="130" Height="30" />
-        <Label Content="Do:" FontSize="20" HorizontalContentAlignment="Center" Height="35" Width="65" Margin="25,474,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                    <DataGridTemplateColumn Header="Dobavljač" Width="220">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="arrayDobavljac"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
-        <Button
-    
-    Content="Prikaži"
-        Name="btnPrikazi"
-        FontSize="35"
-        HorizontalAlignment="Left"
-        VerticalAlignment="Top" Margin="270,439,0,0" Width="280" Height="70" />
-        
-        
-        <Button
-            
-            Content="Preuzmi"
-            x:Name="btnPreuzmi"
-            FontSize="35"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top" Margin="610,439,0,0" Width="355" Height="70" />
+                    <DataGridTemplateColumn Header="OIB dobavljača" Width="160">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="arrayOibDobavljaca"
+                                                HorizontalContentAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Header="Dat. izdavanja" Width="110">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="arrayDatumIzdavanja"
+                                                HorizontalContentAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Header="Dat. PDV-a" Width="110">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="arrayDatumPDVa"
+                                                HorizontalContentAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Header="Broj računa" Width="*">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <wcl:ASGridCell FieldName="arrayBrojRacuna"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <!-- ============================================================
+             ROW 1 – Action bar  (Od / Do · Prikaži · Preuzmi · Clock)
+             ============================================================ -->
+        <Border Grid.Row="1"
+                Background="#263646"
+                CornerRadius="8"
+                Margin="0,0,0,8"
+                Padding="14,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>   <!-- dates -->
+                    <ColumnDefinition Width="*"/>      <!-- Prikaži centre -->
+                    <ColumnDefinition Width="Auto"/>   <!-- Preuzmi + clock right -->
+                </Grid.ColumnDefinitions>
+
+                <!-- Date range -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Od:" Foreground="#BDC3C7" FontFamily="Segoe UI" FontSize="14"
+                               VerticalAlignment="Center" Margin="0,0,7,0"/>
+                    <wcl:ASDateEditer Name="dateEditerFrom"
+                                      DataContext="FilterDateFrom"
+                                      DisplaySize="8" DisplayDate="01/01/26" ButtonWidth="20"
+                                      FontSize="14" TabIndex="0"
+                                      Width="125" Height="28"
+                                      VerticalAlignment="Center" Margin="0,0,22,0"/>
+                    <TextBlock Text="Do:" Foreground="#BDC3C7" FontFamily="Segoe UI" FontSize="14"
+                               VerticalAlignment="Center" Margin="0,0,7,0"/>
+                    <wcl:ASDateEditer Name="dateEditerTo"
+                                      DataContext="FilterDateTo"
+                                      DisplaySize="8" DisplayDate="01/01/26" ButtonWidth="20"
+                                      FontSize="14" TabIndex="1"
+                                      Width="125" Height="28"
+                                      VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Prikaži -->
+                <Button Grid.Column="1"
+                        Name="btnPrikazi"
+                        Content="Prikaži"
+                        Style="{StaticResource FlatBtn}"
+                        Background="#1A6B3C"
+                        FontSize="19" FontWeight="Bold"
+                        Height="42" Width="240"
+                        TabIndex="2"
+                        HorizontalAlignment="Center"/>
+
+                <!-- Preuzmi + clock -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="btnPreuzmi"
+                            Content="Preuzmi"
+                            Style="{StaticResource FlatBtn}"
+                            Background="#6B1C1C"
+                            FontSize="19" FontWeight="Bold"
+                            Height="42" Width="180"
+                            TabIndex="3"
+                            Margin="0,0,10,0"/>
+                    <Image x:Name="asImage" DataContext="Sat"
+                           Height="38" Width="42"
+                           VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ============================================================
+             ROW 2 – Status labels
+             ============================================================ -->
+        <Border Grid.Row="2"
+                Background="#263646"
+                CornerRadius="8"
+                Padding="14,6">
+            <StackPanel>
+                <Label Name="StatusLabel"
+                       Content=""
+                       FontSize="16" FontFamily="Segoe UI"
+                       Foreground="#C8D0DA"
+                       HorizontalContentAlignment="Center"
+                       Height="30" Padding="0"/>
+                <Label Name="StatusLabel2"
+                       Content=""
+                       FontSize="16" FontFamily="Segoe UI"
+                       Foreground="#C8D0DA"
+                       HorizontalContentAlignment="Center"
+                       Height="30" Padding="0"/>
+            </StackPanel>
+        </Border>
+
     </Grid>
 </Window>

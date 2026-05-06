@@ -1,246 +1,251 @@
-This document is especially important because without it, AI will often make mistakes in the order of events, the name of the event handler, and the location of data initialization or UI logic.
-
----
 title: WINFORM and Window Lifecycle
 module: gui
 topic: window-lifecycle
 applies_to: CSCS_WPF
 version: 1
-source: internal manual
 ---
 
 # WINFORM and Window Lifecycle
 
 ## Purpose
+This document describes how CSCS_WPF windows are created and how special window lifecycle events are mapped to script functions.
 
-This document describes how CSCS_WPF run WPF/XAML windows and in what order window events are invoked.
+## Use when
+- Creating a new GUI screen.
+- Deciding where initialization code should run.
+- Handling focus, activation, or window closing logic.
+- Preventing window close in validation scenarios.
 
-## Entry via WINFORM
-
-The initial window can be set by the 'WINFORM' directive.
-
-## Example
-
-```internal-script
-WINFORM mainWindow;---> mainWindow.xmal file
-```
-
-If there is more than one 'WINFORM' directive, the first window listed is considered the initial window. Other windows can be used for validation or auxiliary scenarios.
-
-## Alternative entry
-
-Instead of 'WINFORM', the initial window can also be opened with the 'CreateWindow(...)`.
-
-## Events overview
-
-Each window has its own events. An event handler is defined as a function whose name is derived from:
-
-'windowName + eventName'
-
-Examples:
-- `mainWindowOnOpen`
-- `mainWindowOnInit`
-- `mainWindowOnStart`
-- `mainWindowOnDisplay`
-
-## Event signatures
-
-There are two forms:
-
-### Without parameters
+## Main concepts
+A CSCS_WPF window can be started by calling `CreateWindow(...)` or by using the `WINFORM` directive.  
+Special lifecycle events are triggered automatically during the window lifetime and are mapped to functions named using the pattern:
 
 ```internal-script
-function mainWindow_OnStart() {
-    MessageBox("started");
-}
+function <windowName>_OnOpen
+function <windowName>_OnInit
+function <windowName>_OnActivated
+function <windowName>_OnStart
+function <windowName>_OnDisplay
+function <windowName>_OnDeactivated
+function <windowName>_OnClosing
+function <windowName>_OnClose
+function <windowName>_OnUnload
 ```
 
-### With parameters
+## Entry points
+
+### `CreateWindow(...)`
+Use `CreateWindow(...)` when the window is created explicitly from script code.
 
 ```internal-script
-function mainWindow_OnStart(sender, args) {
-    MessageBox("started");
-}
+CreateWindow(strTrim(tpath()) + "testSpecialWindow.xaml");
 ```
 
-## Window lifecycle order
+### `WINFORM`
+Use `WINFORM` when the window is declared as a form entry directive.
 
-A typical sequence of events is:
+## Important rule
+`WINFORM` and `MAIMENU` are special directives and are allowed outside event functions.  
+Application logic should normally be placed inside functions and event handlers, not as free-standing script statements.
 
-1. `OnOpen`
-2. `OnInit`
-3. `OnActivated`
-4. `OnStart`
-5. `OnDisplay`
-6. `OnDeactivated`
-7. `OnClosing`
-8. `OnClose`
-9. `OnUnload`
+## Event naming rules
+Window lifecycle event functions are named as:
 
-## Event meaning
+```text
+<windowName>On<EventName>
+```
 
-| Event | Order | Frequency | Purpose |
+Example for a window named `testSpecialWindow`:
+
+```internal-script
+function testSpecialWindow_OnOpen
+function testSpecialWindow_OnInit
+function testSpecialWindow_OnActivated
+function testSpecialWindow_OnStart
+function testSpecialWindow_OnDisplay
+function testSpecialWindow_OnDeactivated
+function testSpecialWindow_OnClosing
+function testSpecialWindow_OnClose
+function testSpecialWindow_OnUnload
+```
+
+## Event order
+
+| Order | Event | Frequency | Purpose |
 |---|---|---|---|
-| `OnOpen` | 1 | once | window object created |
-| `OnInit` | 2 | once | Native Window Handle is ready |
-| `OnActivated` | 3 | multiple | Window Gets Focus |
-| `OnStart` | 4 | once | Controls are loaded and ready |
-| `OnDisplay` | 5 | once | window is displayed to the user |
-| `OnDeactivated` | after display | multiple | prozor gubi fokus |
-| `OnClosing` | before close | once | Last Chance to Cancel Lockdown |
-| `OnClose` | after closing | once | the window is closed |
-| `OnUnload` | last | once | Cleanup & Resource Release |
+| 1 | `OnOpen` | Once | Window object created, initial setup starts |
+| 2 | `OnInit` | Once | Native/window handle is ready |
+| 3 | `OnActivated` | Multiple | Window becomes active / gets focus |
+| 4 | `OnStart` | Once | Controls are loaded and ready |
+| 5 | `OnDisplay` | Once | Window is rendered and visible |
+| 6 | `OnDeactivated` | Multiple | Window loses focus |
+| 7 | `OnClosing` | Once per close attempt | Last chance to cancel close |
+| 8 | `OnClose` | Once | Window is closed |
+| 9 | `OnUnload` | Once | Resources should be released |
 
-## Recommended usage by event
+## Event details
 
-### UnOpen
-
+### `OnOpen`
 Use for:
-- initialization of variables,
-- setting the initial values,
-- preparation of auxiliary structures.
+- initialize variables,
+- set default values,
+- prepare data structures.
 
-```internal-script
-function mainWindow_OnOpen() {
-    MessageBox("window object created");
-}
-```
+Do not use it for:
+- control manipulation that requires fully loaded widgets.
 
-### OnInit
-
+### `OnInit`
 Use for:
-- setting the properties of the window,
-- loading application settings,
-- Configuration of handle-dependent logic.
+- window-level configuration,
+- loading settings,
+- preparing handle-dependent behavior.
 
-```internal-script
-function mainWindow_OnInit() {
-    MessageBox("window handle ready");
-}
-```
-
-### OnStart
-
+### `OnActivated`
 Use for:
-- data loading,
-- initialization of controls,
-- binding and setup of the user interface.
+- refresh on focus,
+- resume paused operations,
+- restart timers or background refresh.
 
-```internal-script
-function mainWindow_OnStart() {
-    MessageBox("controls loaded");
-}
-```
+This event may fire multiple times.
 
-### OnDisplay
-
+### `OnStart`
 Use for:
-- display messages to the user,
+- loading data,
+- populating controls,
+- binding data sources,
+- initial UI setup that requires loaded controls.
+
+This is usually the safest place for initial data loading.
+
+### `OnDisplay`
+Use for:
 - final visual adjustments,
-- actions that only make sense when the AI is visible.
+- showing welcome/info messages,
+- starting animations or visible effects.
+
+### `OnDeactivated`
+Use for:
+- saving temporary state,
+- pausing operations,
+- stopping timers when focus is lost.
+
+This event may fire multiple times.
+
+### `OnClosing`
+Use for:
+- unsaved changes checks,
+- validation before close,
+- confirmation dialogs.
+
+This is the only lifecycle event that uses a return value to control the close process.
+
+### `OnClose`
+Use for:
+- final logging,
+- post-close cleanup,
+- application exit logic for the main window.
+
+### `OnUnload`
+Use for:
+- disposing objects,
+- freeing resources,
+- closing connections,
+- final memory cleanup.
+
+## Return value behavior
+
+### `OnClosing`
+`OnClosing` can control whether the window is allowed to close.
 
 ```internal-script
-function mainWindow_OnDisplay() {
-    MessageBox("window visible");
-}
-```
-
-### OnClosing
-
-This event is special because it can return a value.
-
-- 'true' can cancel the closure,
-- 'false' allows closure.
-
-```internal-script
-function mainWindow_OnClosing() {
-    MessageBox("about to close");
+function testSpecialWindowOnClosing
+{
+    // Return false => do not cancel closing
     return false;
 }
 ```
 
-Here's an example of how to prevent closure:
-
 ```internal-script
-function mainWindow_OnClosing() {
-    MessageBox("cannot close yet");
+function testSpecialWindowOnClosing
+{
+    // Return true => cancel closing
     return true;
 }
 ```
 
-### OnClose
-
-Use for:
-- log recording,
-- final preparation of the situation,
-- Final business actions after closing.
-
-### OnUnload
-
-Use for:
-- release of resources,
-Close the connection.
-- Cleanup of objects and memory.
-
 ## Complete example
 
 ```internal-script
-WINFORM testSpecialWindow.xaml;
+CreateWindow(strTrim(tpath()) + "testSpecialWindow.xaml");
 
-function testSpecialWindow_OnOpen() {
-    Print("1. OPEN - Window created");
+function testSpecialWindow_OnOpen
+{
+    Print("1. OPEN - Window created, starting");
 }
 
-function testSpecialWindow_OnInit() {
-    Print("2. INIT - Handle ready");
+function testSpecialWindow_OnInit
+{
+    Print("2. INIT - Window handle ready");
 }
 
-function testSpecialWindow_OnActivated() {
-    Print("3. ACTIVATED - Window active");
+function testSpecialWindow_OnActivated
+{
+    Print("3. ACTIVATED - Window is now active/focused");
 }
 
-function testSpecialWindow_OnStart() {
-    Print("4. START - Controls ready");
+function testSpecialWindow_OnStart
+{
+    Print("4. START - Window loaded, controls ready");
 }
 
-function testSpecialWindow_OnDisplay() {
+function testSpecialWindow_OnDisplay
+{
     Print("5. DISPLAY - Window visible");
 }
 
-function testSpecialWindow_OnDeactivated() {
+function testSpecialWindow_OnDeactivated
+{
     Print("6. DEACTIVATED - Window lost focus");
 }
 
-function testSpecialWindow_OnClosing() {
+function testSpecialWindow_OnClosing
+{
     Print("7. CLOSING - About to close");
     return false;
 }
 
-function testSpecialWindow_OnClose() {
-    Print("8. CLOSE - Window closed");
+function testSpecialWindow_OnClose
+{
+    Print("8. CLOSE - Window is closed");
 }
 
-function testSpecialWindow_OnUnload() {
-    Print("9. UNLOAD - Cleanup");
+function testSpecialWindow_OnUnload
+{
+    Print("9. UNLOAD - Window removed from memory");
 }
 ```
 
-## Modal window note
-
-In modal windows, the owner window can be disabled at 'OnStart' and re-enabled at 'OnUnload'.
+## Typical workflow
+1. Create the window with `CreateWindow(...)` or `WINFORM`.
+2. Initialize variables in `OnOpen`.
+3. Configure the window in `OnInit`.
+4. Load and bind data in `OnStart`.
+5. Do visual-only finalization in `OnDisplay`.
+6. Validate unsaved changes in `OnClosing`.
+7. Free resources in `OnUnload`.
 
 ## Common mistakes
-
-- Using the wrong name of the event function.
-- Initializing controls too early, before 'OnStart'.
-- Display of UI messages in 'OnOpen' instead of 'OnDisplay'.
-- Forget that 'OnClosing' uses a return value.
-- Assume that all events are executed only once.
+- Loading control-dependent data too early in `OnOpen`.
+- Putting main initialization logic in `OnDisplay` instead of `OnStart`.
+- Forgetting that `OnActivated` and `OnDeactivated` can execute multiple times.
+- Returning a value from events other than `OnClosing`.
+- Assuming free-standing script code should replace event-driven logic.
 
 ## AI notes
+- Prefer `OnStart` for initial control population and data loading.
+- Use `OnDisplay` only for visual or user-facing actions after the window is visible.
+- Do not invent lifecycle event names.
+- Only `OnClosing` should return a value to control close cancellation.
+- If the window name is `myWindow`, event names must start with `myWindowOn...`.
+```
 
-- Do not invent events that are not documented.
-- To initialize data, prefer 'OnStart'.
-- For the final visual steps, use 'OnDisplay'.
-- To protect against closing, use 'OnClosing' with a return value.
-- The name of the event handler must match the window name from the XAML/project logic.

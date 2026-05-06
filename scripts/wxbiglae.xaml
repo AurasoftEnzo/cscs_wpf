@@ -4,13 +4,13 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:wcl="clr-namespace:WpfControlsLibrary;assembly=WpfControlsLibrary"
         mc:Ignorable="d"
-        Name="wxbigladWindow"
-        Title="Detalji KPI"
-        Height="620"
-        Width="900"
+        Name="wxbiglaeWindow"
+        Title="Cijeli prikaz konta"
+        Height="500"
+        Width="700"
         WindowStartupLocation="CenterScreen"
         MinHeight="480" MinWidth="680"
-        Background="#2C3E50">
+        Background="#2E2A47">
 
     <Window.Resources>
         <Style x:Key="FlatButtonStyle" TargetType="Button">
@@ -47,20 +47,20 @@
 
             <!-- Header -->
             <Border Grid.Row="0"
-                    Background="#1A252F"
+                    Background="#1F1B36"
                     CornerRadius="6,6,0,0"
                     Padding="14,0">
                 <DockPanel>
-                    <Label x:Name="lblDrillCount"
+                    <Label x:Name="lblDrillCountNew"
                            DockPanel.Dock="Right"
                            Content=""
-                           Foreground="#7F8C8D"
+                           Foreground="#A29BFE"
                            FontFamily="Lato" FontSize="12"
                            VerticalAlignment="Center"
                            Margin="0,0,4,0"
                            Padding="0"/>
-                    <TextBlock x:Name="lblDrillTitle"
-                               Text="Detalji sintetičkog konta"
+                    <TextBlock x:Name="lblDrillTitleNew"
+                               Text="Detalji analitičkog konta"
                                Foreground="White"
                                FontFamily="Lato" FontSize="17" FontWeight="Bold"
                                VerticalAlignment="Center"/>
@@ -68,26 +68,27 @@
             </Border>
 
             <!-- DataGrid area -->
-            <Border Grid.Row="1" Background="#263646" Padding="6,6,6,4">
-                <DataGrid x:Name="dgDrillDown"
+            <Border Grid.Row="1" Background="#262240" Padding="6,6,6,4">
+                <DataGrid x:Name="dgDrillDownNew"
                           IsReadOnly="True"
                           AutoGenerateColumns="False"
                           GridLinesVisibility="Horizontal"
-                          HorizontalGridLinesBrush="#3D5166"
+                          HorizontalGridLinesBrush="#3A3560"
                           RowHeight="22"
                           FontSize="13"
                           FontFamily="Lato"
-                          Background="#1E2F3D"
-                          RowBackground="#1E2F3D"
-                          AlternatingRowBackground="#243444"
+                          Background="#1B1830"
+                          RowBackground="#1B1830"
+                          AlternatingRowBackground="#231F3D"
                           Foreground="White"
+                          AlternationCount="2"
                           HorizontalScrollBarVisibility="Auto"
                           VerticalScrollBarVisibility="Auto"
                           BorderThickness="0"
                           CanUserAddRows="False"
                           CanUserDeleteRows="False"
                           CanUserResizeRows="False"
-                          SelectionMode="Single"
+                          FrozenColumnCount="2"
                           TabIndex="1">
                     <DataGrid.Resources>
                         <Style TargetType="{x:Type DataGridColumnHeader}">
@@ -128,14 +129,14 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <!-- <DataGridTemplateColumn Header="Datum" Width="95">
+                        <DataGridTemplateColumn Header="Datum" Width="95">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <wcl:ASGridCell FieldName="dd_datum_ar"
                                                     HorizontalContentAlignment="Center"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn> -->
+                        </DataGridTemplateColumn>
                         <DataGridTemplateColumn Header="Duguje" Width="120">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
@@ -158,11 +159,11 @@
 
             <!-- Footer -->
             <Border Grid.Row="2"
-                    Background="#1A252F"
+                    Background="#8A84C1"
                     CornerRadius="0,0,6,6"
                     Padding="10,0">
                 <DockPanel>
-                    <Button x:Name="gbZatvoriDrillDown"
+                    <Button x:Name="gbZatvoriDrillDownNew"
                             DockPanel.Dock="Right"
                             Content="Zatvori"
                             Style="{StaticResource FlatButtonStyle}"
@@ -172,7 +173,7 @@
                             Height="30" Width="90"
                             TabIndex="2"/>
                     <TextBlock Text="Dvoklikom na redak odaberite stavku za analizu."
-                               Foreground="#555E66"
+                               Foreground="#8A84C1"
                                FontFamily="Lato" FontSize="11" FontStyle="Italic"
                                VerticalAlignment="Center"
                                Margin="0,0,8,0"/>

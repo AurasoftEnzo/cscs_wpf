@@ -30,8 +30,8 @@ If there are multiple 'WINFORM' directives, the first window listed is the initi
 ## Code allowed outside events
 
 Outside the event, only the following are allowed:
-- `WINFORM`
-- `MAIMENU` 
+- `#WINFORM`
+- `#MAIMENU` 
 
 Everything else should be in events or functions.
 
@@ -41,9 +41,9 @@ The inernal execution of the script works in two passes:
 1. the first pass processes 'DEFINE' declarations and functions,
 2. The second pass executes the rest of the script .
 
-## Variable definition
+## Variable declaration/initialization
 
-It is possible to define variables implicitly. Alternatively, it is possible to define variables explicitly, using 'DEFINE' language token. Using 'DEFINE' to declare arrays is mandatory.
+It is preferred to define variables implicitly, without DEFINE. Alternatively, it is possible to define variables explicitly, using 'DEFINE' language token. Using 'DEFINE' to declare arrays is mandatory when those arrays should be displayed in DataGrid using DisplayArraySetup function.
 
 ### Important exception
 
@@ -61,7 +61,6 @@ Control structures:
 - `if / elif / else`
 - `while`
 - `for`
-- `for each`
 - `try / catch`
 - `break`
 - `continue` 
@@ -76,7 +75,7 @@ And for one statement, curly brackets are required in the control structures .
 if (x > 0) {
     MessageBox("positive");
 }
-alif (x == 0) {
+elif (x == 0) {
     MessageBox("zero");
 }
 else {

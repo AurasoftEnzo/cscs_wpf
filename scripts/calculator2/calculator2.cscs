@@ -1,0 +1,139 @@
+CreateWindow(strTrim(tpath()) + "calculator2\\" + "calculator2.xaml");
+
+// --- State variables ---
+DEFINE displayStr type a size 20;
+DEFINE currentNum type r;
+DEFINE decimalFactor type r;
+DEFINE hasDecimal type l;
+DEFINE firstOperand type r;
+DEFINE pendingOp type a size 3;
+DEFINE newEntry type l;
+
+// --- Window initialisation ---
+function calculator2_OnStart(){
+    displayStr    = "0";
+    currentNum    = 0;
+    decimalFactor = 1;
+    hasDecimal    = false;
+    firstOperand  = 0;
+    pendingOp     = "";
+    newEntry      = true;
+}
+
+// --- Shared digit handler ---
+function pressDigit(d){
+    if(newEntry == true){
+        currentNum    = d;
+        displayStr    = d.ToString();
+        hasDecimal    = false;
+        decimalFactor = 1;
+        newEntry      = false;
+    }
+    else{
+        if(hasDecimal == true){
+            decimalFactor = decimalFactor * 0.1;
+            currentNum    = currentNum + d * decimalFactor;
+        }
+        else{
+            currentNum = currentNum * 10 + d;
+        }
+        displayStr = displayStr + d.ToString();
+    }
+}
+
+// --- Digit buttons ---
+function btn0clicked(){ pressDigit(0); }
+function btn1clicked(){ pressDigit(1); }
+function btn2clicked(){ pressDigit(2); }
+function btn3clicked(){ pressDigit(3); }
+function btn4clicked(){ pressDigit(4); }
+function btn5clicked(){ pressDigit(5); }
+function btn6clicked(){ pressDigit(6); }
+function btn7clicked(){ pressDigit(7); }
+function btn8clicked(){ pressDigit(8); }
+function btn9clicked(){ pressDigit(9); }
+
+// --- Decimal point ---
+function btnDotclicked(){
+    if(hasDecimal == false){
+        if(newEntry == true){
+            currentNum = 0;
+            displayStr = "0.";
+            newEntry   = false;
+        }
+        else{
+            displayStr = displayStr + ".";
+        }
+        hasDecimal    = true;
+        decimalFactor = 1;
+    }
+}
+
+// --- Shared operator handler ---
+function pressOp(op){
+    firstOperand = currentNum;
+    pendingOp    = op;
+    newEntry     = true;
+}
+
+// --- Operator buttons ---
+function btnAddclicked(){ pressOp("+"); }
+function btnSubclicked(){ pressOp("-"); }
+function btnMulclicked(){ pressOp("*"); }
+function btnDivclicked(){ pressOp("/"); }
+
+// --- Sign toggle ---
+function btnSignclicked(){
+    currentNum = currentNum * -1;
+    displayStr = currentNum.ToString();
+}
+
+// --- Percent ---
+function btnPercentclicked(){
+    currentNum = currentNum / 100;
+    displayStr = currentNum.ToString();
+}
+
+// --- Equals ---
+function btnEqualsclicked(){
+    if(pendingOp == ""){
+        return;
+    }
+
+    result = 0;
+
+    if(pendingOp == "+"){
+        result = firstOperand + currentNum;
+    }
+    elif(pendingOp == "-"){
+        result = firstOperand - currentNum;
+    }
+    elif(pendingOp == "*"){
+        result = firstOperand * currentNum;
+    }
+    elif(pendingOp == "/"){
+        if(currentNum == 0){
+            displayStr = "Error";
+            newEntry   = true;
+            return;
+        }
+        result = firstOperand / currentNum;
+    }
+
+    displayStr   = result.ToString();
+    currentNum   = result;
+    firstOperand = result;
+    pendingOp    = "";
+    newEntry     = true;
+}
+
+// --- Clear ---
+function btnClearclicked(){
+    displayStr    = "0";
+    currentNum    = 0;
+    decimalFactor = 1;
+    hasDecimal    = false;
+    firstOperand  = 0;
+    pendingOp     = "";
+    newEntry      = true;
+}

@@ -1,4 +1,4 @@
-This document should explain to the AI how EnterBox is declared in XAML, how it binds to a variable, and what events are allowed.
+This document should explain to the AI how ASEnterBox is declared in XAML, how it binds to a variable, and what events are allowed.
 
 title: ASEnterBox Control
 module: gui
@@ -12,7 +12,7 @@ source: internal manual
 
 ## Purpose
 
-'EnterBox' is a custom WPF control for entering text values. It consists of a text section and an optional button.
+'ASEnterBox' is a custom WPF control for entering text values. It consists of a text section and an optional button.
 
 The control is intended for the input and validation of text data, with the ability to link to CSCS_WPF variable and define events.
 
@@ -74,14 +74,14 @@ The names must exactly match the name of the control.
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:wcl="clr-namespace:WpfControlsLibrary; assembly=WpfControlsLibrary"
+    xmlns:wcl="clr-namespace:WpfControlsLibrary;assembly=WpfControlsLibrary"
     mc:Ignorable="d"
     Title="EnterBox Example"
     Height="300"
     Width="500">
 
     <Grid>
-        <wcl:EnterBox
+        <wcl:ASEnterBox
             Name="enterbox1"
             FieldName="myvariable"
             Text="lalalala"
@@ -168,5 +168,5 @@ function enterbox1@TextChange() {
 
 - Do not invent additional control properties.
 - Do not assume WPF events outside of documented CSCS_WPF forms.
-- For 'EnterBox' use only documented events 'clicked', 'pre', 'post', 'TextChange'.
+- For 'ASEnterBox' use only documented events 'clicked', 'pre', 'post', 'TextChange'.
 - 'FieldName' should be bound to CSCS_WPF variable, not to an arbitrary C# property.

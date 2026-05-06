@@ -1,7 +1,7 @@
-NumericBox is similar to EnterBox, but has more rules around the numeric format, number of decimals, and value limits. That is why it is useful to document it separately.
+ASNumericBox is similar to EnterBox, but has more rules around the numeric format, number of decimals, and value limits. That is why it is useful to document it separately.
 
 ---
-title: NumericBox Control
+title: ASNumericBox Control
 module: gui
 topic: custom-control
 applies_to: CSCS_WPF
@@ -9,11 +9,11 @@ version: 1
 source: internal manual
 ---
 
-# NumericBox Control
+# ASNumericBox Control
 
 ## Purpose
 
-'NumericBox' is a custom WPF control for entering numeric values. It consists of a numeric textbox and an optional button.
+'ASNumericBox' is a custom WPF control for entering numeric values. It consists of a numeric textbox and an optional button.
 
 The control supports length limit, number of decimals, range of allowed values, and display of thousands.
 
@@ -78,14 +78,14 @@ If 'Name="numbox1"', the expected events are:
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:wcl="clr-namespace:WpfControlsLibrary; assembly=WpfControlsLibrary"
+    xmlns:wcl="clr-namespace:WpfControlsLibrary;assembly=WpfControlsLibrary"
     mc:Ignorable="d"
     Title="NumericBox Example"
     Height="300"
     Width="500">
 
     <Grid>
-        <wcl:NumericBox
+        <wcl:ASNumericBox
             Name="numbox1"
             FieldName="variable1"
             Text="123353.22"
@@ -95,7 +95,7 @@ If 'Name="numbox1"', the expected events are:
             MaxValue="100"
             ButtonSize="150"
             Thousands="True"
-            KeyTraps="F2 numbox1clicked F3 somethingelse"
+            KeyTraps="F2|numbox1@clicked|F3|somethingelse"
             Height="60"
             Width="400"
             Margin="50,100,0,0"
@@ -172,7 +172,7 @@ function numbox1@TextChange() {
 
 ## AI notes
 
-- For numeric input, prefer 'NumericBox' instead of 'EnterBox'.
+- For numeric input, prefer 'ASNumericBox' instead of 'EnterBox'.
 - Do not use undocumented property names.
 - Do not assume that 'Text' carries a final validated value without 'post' logic.
 - Use 'FieldName' + 'DEFINE' as the standard form.

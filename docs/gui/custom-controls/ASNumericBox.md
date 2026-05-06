@@ -66,8 +66,8 @@ If 'Name="numbox1"', the expected events are:
 | Event | When fired | Typical use | Return value |
 |---|---|---|---|
 | `clicked` | Click the button | auxiliary numerical action | none |
-| `before` | Entry into control | Preparation or prohibition of entry | 'true/false' |
-| `fast` | Out of Control | Numerical Value Validation | 'true/false' |
+| `pre` | Entry into control | Preparation or prohibition of entry | 'true/false' |
+| `post` | Out of Control | Numerical Value Validation | 'true/false' |
 | `TextChange` | Change Text | Live Input Processing | none |
 
 ## XAML example

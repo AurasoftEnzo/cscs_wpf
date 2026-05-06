@@ -168,5 +168,5 @@ function enterbox1@TextChange() {
 
 - Do not invent additional control properties.
 - Do not assume WPF events outside of documented CSCS_WPF forms.
-- For 'ASEnterBox' use only documented events 'clicked', 'pre', 'post', 'TextChange'.
+- For 'ASEnterBox' use only documented events '@clicked', '@pre', '@post', '@TextChange'.
 - 'FieldName' should be bound to CSCS_WPF variable, not to an arbitrary C# property.

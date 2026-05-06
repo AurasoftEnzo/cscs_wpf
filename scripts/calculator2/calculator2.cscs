@@ -42,19 +42,19 @@ function pressDigit(d){
 }
 
 // --- Digit buttons ---
-function btn0clicked(){ pressDigit(0); }
-function btn1clicked(){ pressDigit(1); }
-function btn2clicked(){ pressDigit(2); }
-function btn3clicked(){ pressDigit(3); }
-function btn4clicked(){ pressDigit(4); }
-function btn5clicked(){ pressDigit(5); }
-function btn6clicked(){ pressDigit(6); }
-function btn7clicked(){ pressDigit(7); }
-function btn8clicked(){ pressDigit(8); }
-function btn9clicked(){ pressDigit(9); }
+function btn0@clicked(){ pressDigit(0); }
+function btn1@clicked(){ pressDigit(1); }
+function btn2@clicked(){ pressDigit(2); }
+function btn3@clicked(){ pressDigit(3); }
+function btn4@clicked(){ pressDigit(4); }
+function btn5@clicked(){ pressDigit(5); }
+function btn6@clicked(){ pressDigit(6); }
+function btn7@clicked(){ pressDigit(7); }
+function btn8@clicked(){ pressDigit(8); }
+function btn9@clicked(){ pressDigit(9); }
 
 // --- Decimal point ---
-function btnDotclicked(){
+function btnDot@clicked(){
     if(hasDecimal == false){
         if(newEntry == true){
             currentNum = 0;
@@ -77,25 +77,25 @@ function pressOp(op){
 }
 
 // --- Operator buttons ---
-function btnAddclicked(){ pressOp("+"); }
-function btnSubclicked(){ pressOp("-"); }
-function btnMulclicked(){ pressOp("*"); }
-function btnDivclicked(){ pressOp("/"); }
+function btnAdd@clicked(){ pressOp("+"); }
+function btnSub@clicked(){ pressOp("-"); }
+function btnMul@clicked(){ pressOp("*"); }
+function btnDiv@clicked(){ pressOp("/"); }
 
 // --- Sign toggle ---
-function btnSignclicked(){
+function btnSign@clicked(){
     currentNum = currentNum * -1;
     displayStr = currentNum.ToString();
 }
 
 // --- Percent ---
-function btnPercentclicked(){
+function btnPercent@clicked(){
     currentNum = currentNum / 100;
     displayStr = currentNum.ToString();
 }
 
 // --- Equals ---
-function btnEqualsclicked(){
+function btnEquals@clicked(){
     if(pendingOp == ""){
         return;
     }
@@ -128,7 +128,7 @@ function btnEqualsclicked(){
 }
 
 // --- Clear ---
-function btnClearclicked(){
+function btnClear@clicked(){
     displayStr    = "0";
     currentNum    = 0;
     decimalFactor = 1;

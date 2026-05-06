@@ -161,7 +161,7 @@ function mainWindowOnStart() {
     customerCode = "C-001";
 }
 
-function btnSearchclicked() {
+function btnSearch@clicked() {
     tableHndl = OPENV("CUSTOMERS", "DB1");
     FINDV(tableHndl, "m", "customerCode", customerCode);
 

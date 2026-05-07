@@ -4,13 +4,13 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:wcl="clr-namespace:WpfControlsLibrary;assembly=WpfControlsLibrary"
         mc:Ignorable="d"
-        Name="wxbiglaeWindow"
-        Title="Cijeli prikaz konta"
-        Height="550"
-        Width="750"
+        Name="wxbiglafWindow"
+        Title="Cijeli prikaz prometa"
+        Height="500"
+        Width="700"
         WindowStartupLocation="CenterScreen"
         MinHeight="480" MinWidth="680"
-        Background="#2E2A47">
+        Background="#0F172A">
 
     <Window.Resources>
         <Style x:Key="FlatButtonStyle" TargetType="Button">
@@ -47,20 +47,20 @@
 
             <!-- Header -->
             <Border Grid.Row="0"
-                    Background="#1F1B36"
+                    Background="#111827"
                     CornerRadius="6,6,0,0"
                     Padding="14,0">
                 <DockPanel>
-                    <Label x:Name="lblDrillCountNew"
+                    <Label x:Name="lblDrillCountKonto"
                            DockPanel.Dock="Right"
                            Content=""
-                           Foreground="#A29BFE"
+                           Foreground="#38BDF8"
                            FontFamily="Lato" FontSize="12"
                            VerticalAlignment="Center"
                            Margin="0,0,4,0"
                            Padding="0"/>
-                    <TextBlock x:Name="lblDrillTitleNew"
-                               Text="Detalji po analitičom kontu"
+                    <TextBlock x:Name="lblDrillTitleKonto"
+                               Text="Detalji analitičkog konta"
                                Foreground="White"
                                FontFamily="Lato" FontSize="17" FontWeight="Bold"
                                VerticalAlignment="Center"/>
@@ -68,18 +68,18 @@
             </Border>
 
             <!-- DataGrid area -->
-            <Border Grid.Row="1" Background="#262240" Padding="6,6,6,4">
-                <DataGrid x:Name="dgDrillDownNew"
+            <Border Grid.Row="1" Background="#1E293B" Padding="6,6,6,4">
+                <DataGrid x:Name="dgDrillDownKonto"
                           IsReadOnly="True"
                           AutoGenerateColumns="False"
                           GridLinesVisibility="Horizontal"
-                          HorizontalGridLinesBrush="#3A3560"
+                          HorizontalGridLinesBrush="#334155"
                           RowHeight="22"
                           FontSize="13"
                           FontFamily="Lato"
-                          Background="#1B1830"
-                          RowBackground="#1B1830"
-                          AlternatingRowBackground="#231F3D"
+                          Background="#0F172A"
+                          RowBackground="#0F172A"
+                          AlternatingRowBackground="#172033"
                           Foreground="White"
                           AlternationCount="2"
                           HorizontalScrollBarVisibility="Auto"
@@ -92,11 +92,11 @@
                           TabIndex="1">
                     <DataGrid.Resources>
                         <Style TargetType="{x:Type DataGridColumnHeader}">
-                            <Setter Property="Background" Value="#1A3A5C"/>
+                            <Setter Property="Background" Value="#2563EB"/>
                             <Setter Property="Foreground" Value="White"/>
                             <Setter Property="FontSize" Value="13"/>
                             <Setter Property="FontWeight" Value="Bold"/>
-                            <Setter Property="BorderBrush" Value="#2C3E50"/>
+                            <Setter Property="BorderBrush" Value="#1E40AF"/>
                             <Setter Property="BorderThickness" Value="0,0,1,0"/>
                             <Setter Property="Padding" Value="6,4"/>
                         </Style>
@@ -159,24 +159,25 @@
 
             <!-- Footer -->
             <Border Grid.Row="2"
-                    Background="#8A84C1"
+                    Background="#111827"
                     CornerRadius="0,0,6,6"
                     Padding="10,0">
                 <DockPanel>
-                    <Button x:Name="gbZatvoriDrillDownNew"
+                    <Button x:Name="gbZatvoriDrillDownKonto"
                             DockPanel.Dock="Right"
                             Content="Zatvori"
                             Style="{StaticResource FlatButtonStyle}"
                             Background="#AC3E31"
                             Foreground="White"
+                            HorizontalAlignment="Right"
                             FontFamily="Lato" FontSize="15"
                             Height="30" Width="90"
                             TabIndex="2"/>
-                    <TextBlock Text="Dvoklikom na redak odaberite stavku za analizu."
-                               Foreground="White"
+                    <!-- <TextBlock Text="Dvoklikom na redak odaberite stavku za analizu."
+                               Foreground="#8A84C1"
                                FontFamily="Lato" FontSize="11" FontStyle="Italic"
                                VerticalAlignment="Center"
-                               Margin="0,0,8,0"/>
+                               Margin="0,0,8,0"/> -->
                 </DockPanel>
             </Border>
         </Grid>

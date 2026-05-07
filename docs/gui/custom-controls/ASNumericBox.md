@@ -1,74 +1,70 @@
-ASNumericBox is similar to EnterBox, but has more rules around the numeric format, number of decimals, and value limits. That is why it is useful to document it separately.
-
+```md
 ---
-title: ASNumericBox Control
+title: NumericBox Control
 module: gui
 topic: custom-control
 applies_to: CSCS_WPF
 version: 1
-source: internal manual
 ---
 
-# ASNumericBox Control
+# NumericBox Control
 
 ## Purpose
-
-'ASNumericBox' is a custom WPF control for entering numeric values. It consists of a numeric textbox and an optional button.
-
-The control supports length limit, number of decimals, range of allowed values, and display of thousands.
+`NumericBox` is a custom WPF control used for numeric entry.  
+It combines a numeric textbox with an optional button and supports numeric formatting, range limits, and validation events.
 
 ## Use when
+- Entering numeric values.
+- Binding a numeric script variable to a custom control.
+- Restricting decimal precision.
+- Enforcing min/max values.
+- Showing thousand separators on focus loss.
 
-You need a numerical value.
-- Range validation is required,
-- need to display thousands after losing focus,
-- needs a reaction to a button click or a change in value.
+## Main concepts
+`NumericBox` is provided by `WpfControlsLibrary.dll`.  
+Its text portion binds to a numeric variable through `FieldName`.  
+The control supports:
+- numeric size and decimal precision,
+- optional button,
+- min/max limits,
+- thousands formatting,
+- pre/post/text-change events,
+- key traps [file:104].
 
-## Attached properties
+## Supported properties
 
-| Property | Type | Required | Description |
-|---|---|---|---|
-| `Thousands` | bool | well | Display thousands after losing focus |
-| `Size` | int | yes | Maximum number of characters including minus sign and decimal separator |
-| `Dec` | int | well | Maximum number of decimals |
-| `MinValue` | double | well | Minimum permissible value |
-| `MaxValue` | double | well | maximum allowed value |
-| `FieldName` | string | yes | name of variable for binding |
-| `Text` | string | well | Initial value |
-| `Name` | string | yes | Name of the Event Function Mapping Control |
-| `ButtonSize` | int | no | button width |
-| `KeyTraps` | string | well | Keys & Functions |
-| `FontWeight` | FontWeight | no |  Font weigth |
-| `BackgroundBrush` | Brush | no | background color |
-| `ForegroundBrush` | Brush | no | foreground color |
-| `BorderThickness` | Thickness | no | Border thickness |
-| `BorderBrush` | Brush | no | Border color |
-| `CornerRadius` | float | no | corner radius |
-| `ButtonBackground` | Brush | no | Button background |
+| Property | Type | Description |
+|---|---|---|
+| `Thousands` | bool | Show thousands separator when the control loses focus |
+| `Size` | int | Maximum total symbol count |
+| `Dec` | int | Maximum number of decimal digits |
+| `MinValue` | double | Minimum allowed value |
+| `MaxValue` | double | Maximum allowed value |
+| `FieldName` | string | Bound numeric variable name |
+| `Text` | string | Initial text |
+| `Name` | string | Base event name |
+| `ButtonSize` | int | Optional button width |
+| `KeyTraps` | string | Key-function pairs |
+| `FontWeight` | FontWeight | Font weight |
+| `BackgroundBrush` | Brush | Background color |
+| `ForegroundBrush` | Brush | Foreground color |
+| `BorderThickness` | Thickness | Border thickness |
+| `BorderBrush` | Brush | Border color |
+| `CornerRadius` | float | Corner roundness |
+| `ButtonBackground` | Brush | Button background color |
 
-## Validation behavior
-
-- 'MinValue' and 'MaxValue' are checked when exiting the control.
-- If the entered value exceeds the allowed limits, the value can be set to '0'.
-- 'Thousands=True' specifies the formatted display after loss of focus.
+## Range behavior
+When the entered value is outside `MinValue` / `MaxValue`, documented behavior states that after losing focus the value is reset to `0` [file:104].
 
 ## Event naming
+If the control `Name` is `numbox1`, the following event functions may exist:
 
-If 'Name="numbox1"', the expected events are:
-
-- `numbox1@clicked`
-- `numbox1@pre`
-- `numbox1@post`
-- `numbox1@TextChange`
-
-## Event meaning
-
-| Event | When fired | Typical use | Return value |
-|---|---|---|---|
-| `clicked` | Click the button | auxiliary numerical action | none |
-| `pre` | Entry into control | Preparation or prohibition of entry | 'true/false' |
-| `post` | Out of Control | Numerical Value Validation | 'true/false' |
-| `TextChange` | Change Text | Live Input Processing | none |
+```internal-script
+function numbox1clicked
+function numbox1pre
+function numbox1post
+function numbox1TextChange
+```
 
 ## XAML example
 
@@ -80,22 +76,22 @@ If 'Name="numbox1"', the expected events are:
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:wcl="clr-namespace:WpfControlsLibrary;assembly=WpfControlsLibrary"
     mc:Ignorable="d"
-    Title="NumericBox Example"
+    Title="NumericBoxExample"
     Height="300"
     Width="500">
 
     <Grid>
-        <wcl:ASNumericBox
+        <wcl:NumericBox
             Name="numbox1"
             FieldName="variable1"
-            Text="123353.22"
             Size="9"
             Dec="2"
             MinValue="-100"
             MaxValue="100"
+            Text="123353,22"
             ButtonSize="150"
             Thousands="True"
-            KeyTraps="F2|numbox1@clicked|F3|somethingelse"
+            KeyTraps="F2numbox1clickedF3somethingelse"
             Height="60"
             Width="400"
             Margin="50,100,0,0"
@@ -109,70 +105,77 @@ If 'Name="numbox1"', the expected events are:
 ## Script example
 
 ```internal-script
-DEFINE variable1 type n size 9 dec 2;
+DEFINE variable1 TYPE N SIZE 9 DEC 2;
 variable1 = 91919;
 
 CreateWindow(strTrim(tpath()) + "numericBox.xaml");
 
-function numbox1@clicked() {
+function numbox1clicked
+{
     MessageBox(variable1);
     variable1 = 55555;
 }
 
-function somethingelse() {
+function somethingelse
+{
     MessageBox("Something else!");
 }
 
-function numbox1@pre() {
-    a = 2;
+a = 2;
+function numbox1pre
+{
     MessageBox("PRE");
-    MessageBox(a);
-
-    if (a % 2 == 0) {
+    a--;
+    if (a % 2 == 0)
+    {
         return false;
     }
-    else {
+    else
+    {
         return true;
     }
 }
 
-function numbox1@post() {
-    b = 2;
+b = 2;
+function numbox1post
+{
     MessageBox("POST");
-    MessageBox(b);
-
-    if (b % 2 == 0) {
+    b--;
+    if (b % 2 == 0)
+    {
         return false;
     }
-    else {
+    else
+    {
         return true;
     }
 }
 
-function numbox1@TextChange() {
+function numbox1TextChange
+{
     MessageBox("textChanged");
 }
 ```
 
-## Behavioral notes
-
-- 'FieldName' must refer to a numeric variable.
-- 'Size' and 'Dec' together define the allowed format.
-- 'Thousands' affects the view, but does not change the business logic of the value.
-- 'MinValue' and 'MaxValue' are used to limit the range.
-- The button is optional and tied to 'ButtonSize'.
+## Typical workflow
+1. Define a numeric variable with `DEFINE ... TYPE N`.
+2. Bind it using `FieldName`.
+3. Set `Size` and `Dec` according to storage rules.
+4. Use `MinValue` and `MaxValue` for range enforcement.
+5. Use `Thousands=True` when formatted display is desired after focus loss.
+6. Use `pre`/`post` events for focus validation and `clicked` for helper logic.
 
 ## Common mistakes
-
-- Binding to a variable of the wrong type.
-- Inconsistency between 'Size', 'Dec' and expected business range.
-- Assuming that validation is done immediately at each character, although limits are typically checked at the exit of the control.
-- Wrong name of the event handler.
-- Inventing additional attached properties.
+- Binding `NumericBox` to a non-numeric variable.
+- `Size` and `Dec` inconsistent with expected numeric format.
+- Assuming `MinValue`/`MaxValue` only warn; documented behavior resets to `0`.
+- Using undocumented key names in `KeyTraps`.
+- Expecting free-form text behavior from a numeric control.
 
 ## AI notes
-
-- For numeric input, prefer 'ASNumericBox' instead of 'EnterBox'.
-- Do not use undocumented property names.
-- Do not assume that 'Text' carries a final validated value without 'post' logic.
-- Use 'FieldName' + 'DEFINE' as the standard form.
+- Prefer `TYPE N SIZE ... DEC ...` variables for `NumericBox`.
+- Keep `Size`, `Dec`, `MinValue`, and `MaxValue` aligned.
+- Use `Thousands=True` only when user-facing formatted display is desired.
+- Do not generate `NumericBox` for non-numeric business fields.
+- Preserve exact event names derived from the XAML `Name`.
+```

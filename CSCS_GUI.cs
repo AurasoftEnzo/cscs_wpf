@@ -2874,6 +2874,13 @@ namespace WpfCSCS
 
                 CacheControl(content as FrameworkElement, win, controls);
             }
+            else if (content is WrapPanel)
+            {
+                var wrap = content as WrapPanel;
+                children = wrap.Children.Cast<UIElement>().ToList();
+
+                CacheControl(content as FrameworkElement, win, controls);
+            }
             else if (content is DockPanel)
             {
                 var dock = content as DockPanel;
@@ -2962,6 +2969,13 @@ namespace WpfCSCS
 
                     var stackpanelControl = child as StackPanel;
 					CacheChildren(stackpanelControl.Children.Cast<UIElement>().ToList(), controls, win);
+				}
+				else if (child is WrapPanel)
+				{
+                    CacheControl(child as FrameworkElement, win, controls);
+
+                    var wrappanelControl = child as WrapPanel;
+					CacheChildren(wrappanelControl.Children.Cast<UIElement>().ToList(), controls, win);
 				}
                 else if (child is DockPanel)
                 {

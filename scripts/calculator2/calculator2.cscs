@@ -81,6 +81,27 @@ function btnAdd@clicked(){ pressOp("+"); }
 function btnSub@clicked(){ pressOp("-"); }
 function btnMul@clicked(){ pressOp("*"); }
 function btnDiv@clicked(){ pressOp("/"); }
+function btnPow@clicked(){ pressOp("pow"); }
+function btnNthRoot@clicked(){ pressOp("nrt"); }
+
+// --- Immediate unary: square ---
+function btnSq@clicked(){
+    currentNum = currentNum * currentNum;
+    displayStr = currentNum.ToString();
+    newEntry   = true;
+}
+
+// --- Immediate unary: square root ---
+function btnSqrt@clicked(){
+    if(currentNum < 0){
+        displayStr = "Error";
+        newEntry   = true;
+        return;
+    }
+    currentNum = Sqrt(currentNum);
+    displayStr = currentNum.ToString();
+    newEntry   = true;
+}
 
 // --- Sign toggle ---
 function btnSign@clicked(){
@@ -118,6 +139,17 @@ function btnEquals@clicked(){
             return;
         }
         result = firstOperand / currentNum;
+    }
+    elif(pendingOp == "pow"){
+        result = Pow(firstOperand, currentNum);
+    }
+    elif(pendingOp == "nrt"){
+        if(currentNum == 0){
+            displayStr = "Error";
+            newEntry   = true;
+            return;
+        }
+        result = Pow(firstOperand, 1.0 / currentNum);
     }
 
     displayStr   = result.ToString();

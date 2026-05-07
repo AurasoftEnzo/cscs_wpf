@@ -429,17 +429,17 @@ namespace WpfCSCS
 			}
 			return win;
 		}
+        public Window GetParentWindow(ParsingScript script)
+        {
+            if (script?.ParentScript?.Filename is string filename &&
+                File2Window.TryGetValue(filename, out Window win))
+            {
+                return win;
+            }
 
-		public Window GetParentWindow(ParsingScript script)
-		{
-			if (script.ParentScript != null &&
-				File2Window.TryGetValue(script.ParentScript.Filename, out Window win))
-			{
-				return win;
-			}
-			return CSCS_GUI.MainWindow;
-		}
-		public Window GetScriptWindow(ParsingScript script)
+            return CSCS_GUI.MainWindow;
+        }
+        public Window GetScriptWindow(ParsingScript script)
 		{
 			if (script != null && !string.IsNullOrWhiteSpace(script.Filename) &&
 				File2Window.TryGetValue(script.Filename, out Window win))

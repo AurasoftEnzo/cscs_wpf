@@ -49,7 +49,7 @@
         sql_str += " FROM " + trenutnaGodinaBaza + ".dbo.NKGKPROM";
         sql_str += " LEFT JOIN " + trenutnaGodinaBaza + ".dbo.NKGKACCT ON gk_ac_konto = gk_pr_konto";
         sql_str += " WHERE YEAR(gk_pr_date) = " + ovagod_h;
-        sql_str += " AND substring(gk_pr_konto, 1, 3) = '" + invoiceArray[1].trim() + "'";
+        sql_str += " AND substring(gk_pr_konto, 1, 3) = '" + invoiceArray[1].trim() + "'"; 
         sql_str += " AND MONTH(gk_pr_date) BETWEEN " + mjOd + " AND " + mjDo;
         sql_str += " AND (" + dd_konto_filter + ")";
 
@@ -124,7 +124,6 @@
     function gbZatvoriDrillDownNew@clicked()
     {
         CloseWindow(strtrim(tpath()) + "wxbiglae.xaml");
-        ShowWindow(strtrim(tpath()) + "wxbiglad.xaml");
         // quit;
     }
 

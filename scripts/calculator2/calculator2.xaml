@@ -6,7 +6,7 @@
     xmlns:wcl="clr-namespace:WpfControlsLibrary;assembly=WpfControlsLibrary"
     mc:Ignorable="d"
     Title="Calculator"
-    Height="520"
+    Height="600"
     Width="320"
     ResizeMode="NoResize"
     Background="#1C1C1E">
@@ -50,6 +50,7 @@
     <Grid Margin="8">
         <Grid.RowDefinitions>
             <RowDefinition Height="110"/>
+            <RowDefinition Height="*"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="*"/>
@@ -104,5 +105,11 @@
         <Button Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" Name="btn0"      Content="0" Style="{StaticResource CalcBtn}"/>
         <Button Grid.Row="5" Grid.Column="2"                      Name="btnDot"    Content="." Style="{StaticResource CalcBtn}"/>
         <Button Grid.Row="5" Grid.Column="3"                      Name="btnEquals" Content="=" Style="{StaticResource OpBtn}"/>
+
+        <!-- Row 6: x²  √  xʸ  ʸ√x -->
+        <Button Grid.Row="6" Grid.Column="0" Name="btnSq"      Content="x²"  Style="{StaticResource TopBtn}"/>
+        <Button Grid.Row="6" Grid.Column="1" Name="btnSqrt"    Content="√"   Style="{StaticResource TopBtn}"/>
+        <Button Grid.Row="6" Grid.Column="2" Name="btnPow"     Content="xʸ"  Style="{StaticResource OpBtn}"/>
+        <Button Grid.Row="6" Grid.Column="3" Name="btnNthRoot" Content="ʸ√x" Style="{StaticResource OpBtn}"/>
     </Grid>
 </Window>

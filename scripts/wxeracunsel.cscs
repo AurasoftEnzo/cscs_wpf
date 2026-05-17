@@ -1,157 +1,278 @@
 Import(strTrim(mpath()) + "CSCS.Math.dll");
 
+CreateWindow(strTrim(tpath()) + "wxeracunsel.xaml", strTrim(ipath()) + "icons\\" + "wxeracunget.ico");
+
 okImage = strtrim(ipath())+"eRacunOk.png";
 errorImage = strtrim(ipath())+"eRacunError.png";
 
-args = CommandLineArgs(); 
-if(Size(args) > 1){
-    companyCode = args[2]; // e.g. Y3
-    if(companyCode != ""){  
-        CoSet(companyCode);
-    }else{
-        MessageBox("Nedostaje šifra tvrtke u argumentima.");
-        exit;
-    }    
-    userCode = args[3]; // e.g. ANA
-    if(userCode != ""){  
-    }else{  
-        MessageBox("Nedostaje šifra korisnika u argumentima.");
-        exit;
-    }    
-    invNum = args[4]; // e.g. 90100002
-    if(invNum != 0){  
-    }else{  
-        MessageBox("Nedostaje broj računa u argumentima.");
-        exit;
-    }    
-    attachmentPdfPath = args[5]; // e.g. C:\Temp\90100002.pdf
-    if (attachmentPdfPath != ""){     
-    }else{
-        MessageBox("Nedostaje putanja PDF privitka u argumentima.");
+DEFINE cntr1 type i;
+DEFINE Rbr type i;
+
+DEFINE arraySelekt type l array 10000;
+DEFINE arrayRbr type i size 100 array 10000;
+DEFINE arrayInvNum type i size 100 array 10000;
+DEFINE arrayOznaka type a size 10 array 10000;
+DEFINE arrayKupac type a size 200 array 10000;
+DEFINE arrayDatumRacuna type a size 10 array 10000;
+DEFINE arrayIznos type a size 40 array 10000;
+DEFINE arrayStatus type a size 100 array 10000;
+
+selectedCount = 0;
+sendStartedCount = 0;
+sendErrorCount = 0;
+sendSkippedCount = 0;
+
+function wxeracunsel_onDisplay(){
+    cursor("wait");
+
+    try{
+        init();
+        LoadPendingInvoices();
+        SetWindowOptions("wxeracunselWindow", "title", "Slanje izlaznih e-računa (" + PROVIDER + ") za " + KPSY_COMP_NAME);
+    }catch(ex){
+        MessageBox("Greška pri inicijalizaciji: " + ex);
         exit;
     }
-    CopyIndicator = args[6]; // 'D' - duplicate, '' - original
-    if (CopyIndicator != ""){     
+
+    cursor("dflt");
+}
+
+function init(){
+    args = CommandLineArgs();
+
+    if(Size(args) > 2){
+        companyCode = args[2];
+        if(companyCode != ""){
+            CoSet(companyCode);
+        }else{
+            MessageBox("Nedostaje šifra tvrtke u argumentima.");
+            exit;
+        }
+
+        if(Size(args) > 3){
+            userCode = args[3];
+        }else{
+            userCode = "";
+        }
     }else{
+        companyCode = Substring(CoGet(), 1, 2);
+        userCode = "";
+    }
+
+    CopyIndicator = "";
+    attachmentPdfPath = "";
+    xmlFileName = "";
+
+    sqlQueryString = "select SY_CC_USER, SY_CC_DBASE from " + strtrim(CommonDBGet()) + ".dbo.NKSYCCYR WHERE SY_CC_CODE = '" + companyCode + "'";
+    try
+    {
+        sqlResult = sqlQuery(sqlQueryString);
+    }
+    catch(exc)
+    {
+        MessageBox("NKSYCCYR reading error: " + exc);
+        exit;
+    }
+    if (size(sqlResult) > 1)
+    {
+        SY_CC_USER = sqlResult[1][0].trim();
+        databaseName = sqlResult[1][1].trim();
+    }
+
+    sqlQueryString = " SELECT TOP 1 KPSY_REZERVA, KPSY_COMP_NAME, KPSY_COMP_ADD1, KPSY_GL_RETEARN, KPSY_COMP_CSZ, KPSY_COMP_ZIP,
+                    KPSY_COMP_JMBFI, KPSY_COMP_PHONE, KPSY_COMP_EMAIL, KPSY_PO_FREIGHT, KPSY_REZERVAX,KPSY_PR_R1_R2
+                        FROM " + databaseName + ".dbo.KPSYMSTR";
+    try
+    {
+        sqlResult = sqlQuery(sqlQueryString);
+    }
+    catch(exc)
+    {
+        MessageBox("KPSYMSTR reading error: " + exc);
+        exit;
+    }
+    if (size(sqlResult) > 1)
+    {
+        KPSY_REZERVA = sqlResult[1][0].trim();
+        KPSY_COMP_NAME = sqlResult[1][1].trim();
+        KPSY_COMP_ADD1 = sqlResult[1][2].trim();
+        KPSY_GL_RETEARN = sqlResult[1][3].trim();
+        KPSY_COMP_CSZ = sqlResult[1][4].trim();
+        KPSY_COMP_ZIP = sqlResult[1][5];
+        KPSY_COMP_JMBFI = sqlResult[1][6].trim();
+        KPSY_COMP_PHONE = sqlResult[1][7].trim();
+        KPSY_COMP_EMAIL = sqlResult[1][8].trim();
+        KPSY_PO_FREIGHT = substring(sqlResult[1][9], 0, 2).trim();
+        KPSY_REZERVAX = sqlResult[1][10].trim();
+        KPSY_PR_R1_R2 = sqlResult[1][11].trim();
+        supOIB = Substring(KPSY_REZERVA, 0, 11).trim();
+        if(supOIB.Length != 11){
+            MessageBox("OIB tvrtke nije ispravan: " + supOIB);
+            exit;
+        }
+    }
+
+    FILESPATH = "";
+    PROVIDER = "";
+    SCHEMASPATH = "";
+    CERTPATH = "";
+
+    sqlQueryString = " SELECT NKSYS_FIELD, NKSYS_VALUE 
+        FROM " + databaseName + ".dbo.NKSYSYCO 
+        WHERE NKSYS_MODUL = 'WKSY'
+        AND NKSYS_GRUP = 'ERACUN'";
+    try
+    {
+        sqlResult = sqlQuery(sqlQueryString);
+    }
+    catch(exc)
+    {
+        MessageBox("NKSYSYCO reading error: " + exc);
+        exit;
+    }
+    if (size(sqlResult) > 1)
+    {
+        for(i = 1; i < Size(sqlResult); i++){
+            if(sqlResult[i][0].trim() == "FILESPATH"){
+                FILESPATH = sqlResult[i][1].trim();
+            }
+            elif(sqlResult[i][0].trim() == "PROVIDER")
+            {
+                PROVIDER = sqlResult[i][1].trim().Upper();
+            }elif(sqlResult[i][0].trim() == "SCHEMASPATH")
+            {
+                SCHEMASPATH = sqlResult[i][1].trim();
+            }elif(sqlResult[i][0].trim() == "CERTPATH"){
+                CERTPATH = sqlResult[i][1].trim();
+            }
+        }
+    }
+}
+
+function ClearInvoiceArrays(){
+    cntr1 = 0;
+    Rbr = 0;
+    selectedCount = 0;
+    sendStartedCount = 0;
+    sendErrorCount = 0;
+    sendSkippedCount = 0;
+    DisplayArray("datagridListaRacuna", "close");
+}
+
+function LoadPendingInvoices(){
+    ClearInvoiceArrays();
+    SetWidgetOptions("btnPosalji", "IsEnabled", "false");
+    SetWidgetOptions("StatusLabel", "Content", "Učitavanje računa za slanje.");
+    SetWidgetOptions("StatusLabel2", "Content", "Molim pričekajte...");
+
+    sql_sel = "SELECT NKPR_GL_NUM, NKPR_GL_OZNAKA, NKPR_GL_CUSNME, " +
+              "CONVERT(VARCHAR(10), NKPR_GL_INVDTE, 23) AS NKPR_GL_INVDTE, " +
+              "NKPR_GL_TOTAL, ISNULL(NKPR_GL_RTS, '') AS NKPR_GL_RTS " +
+              "FROM " + databaseName + ".dbo.NKPRINV " +
+              "WHERE ISNULL(NKPR_GL_RTS, '') <> 'E' " +
+              "AND CONVERT(VARCHAR(10), NKPR_GL_DATPRI, 23) = '1900-01-01' " +
+              "ORDER BY NKPR_GL_INVDTE, NKPR_GL_NUM;";
+
+    try{
+        selRes = sqlQuery(sql_sel);
+    }catch(ex){
+        MessageBox("Greška pri čitanju table računa NKPRINV: " + ex);
+        exit;
+    }
+
+    if(Size(selRes) > 1){
+        for(i = 1; i < Size(selRes); i++){
+            arraySelekt[Rbr] = true;
+            arrayRbr[Rbr] = Rbr + 1;
+            arrayInvNum[Rbr] = selRes[i][0];
+            arrayOznaka[Rbr] = selRes[i][1].trim();
+            arrayKupac[Rbr] = selRes[i][2].trim();
+            arrayDatumRacuna[Rbr] = selRes[i][3].trim();
+            arrayIznos[Rbr] = FormatNum(selRes[i][4], 2, ".", "");
+            arrayStatus[Rbr] = "Nije poslano";
+            Rbr = Rbr + 1;
+        }
+    }
+
+    if(Rbr > 0){
+        DisplayArraySetup("datagridListaRacuna", counterFld: cntr1, activeElements: Rbr, maxElements: 10000);
+        SetWidgetOptions("btnPosalji", "IsEnabled", "true");
+        SetWidgetOptions("StatusLabel", "Content", "Pronađeno računa za slanje: " + Rbr);
+        SetWidgetOptions("StatusLabel2", "Content", "Zadano su svi računi označeni za slanje.");
+    }else{
+        SetWidgetOptions("StatusLabel", "Content", "Nema računa za slanje.");
+        SetWidgetOptions("StatusLabel2", "Content", "");
+    }
+}
+
+function btnPosalji@clicked(){
+    selectedCount = 0;
+    for(i = 0; i < Rbr; i++){
+        if(arraySelekt[i]){
+            selectedCount = selectedCount + 1;
+        }
+    }
+
+    if(selectedCount == 0){
+        MessageBox("Nema označenih računa za slanje.");
+        return;
+    }
+
+    cursor("wait");
+    SetWidgetOptions("btnPosalji", "IsEnabled", "false");
+    SetWidgetOptions("btnIzlaz", "IsEnabled", "false");
+    SetWidgetOptions("StatusLabel", "Content", "Pokretanje slanja označenih e-računa.");
+    SetWidgetOptions("StatusLabel2", "Content", "Označeno računa: " + selectedCount);
+
+    AsyncCall("SendSelectedInvoices", "endSendSelectedInvoices");
+}
+
+function SendSelectedInvoices(){
+    sendStartedCount = 0;
+    sendErrorCount = 0;
+    sendSkippedCount = 0;
+
+    for(i = 0; i < Rbr; i++){
+        if(!arraySelekt[i]){
+            arrayStatus[i] = "Preskočeno";
+            sendSkippedCount = sendSkippedCount + 1;
+            continue;
+        }
+
+        invNum = arrayInvNum[i];
         CopyIndicator = "";
-    }
-}else{
-    MessageBox("Nedostaju argumenti komandne linije.");
-    exit;
-}   
+        attachmentPdfPath = FILESPATH + "IR\\" + String(invNum) + ".pdf";
+        xmlFileName = "";
 
-// NKSYCCYR
-sqlQueryString = "select SY_CC_USER, SY_CC_DBASE from " + strtrim(CommonDBGet()) + ".dbo.NKSYCCYR WHERE SY_CC_CODE = '" + companyCode + "'";
-try
-{
-    sqlResult = sqlQuery(sqlQueryString);
-}
-catch(exc)
-{
-    MessageBox("NKSYCCYR reading error: " + exc);
-    exit;
-}
-if (size(sqlResult) > 1)
-{
-    // imeFirme = sqlResult[1][0].trim(); // KAMEND
-    // ovagod_h = sqlResult[1][1].trim(); // 2022
-    SY_CC_USER = sqlResult[1][0].trim(); // KAMEND
-    databaseName = sqlResult[1][1].trim(); // ime baze
-}    
-  
-
-
-// KPSYMSTR
-sqlQueryString = " SELECT TOP 1 KPSY_REZERVA, KPSY_COMP_NAME, KPSY_COMP_ADD1, KPSY_GL_RETEARN, KPSY_COMP_CSZ, KPSY_COMP_ZIP,
-                KPSY_COMP_JMBFI, KPSY_COMP_PHONE, KPSY_COMP_EMAIL, KPSY_PO_FREIGHT, KPSY_REZERVAX,KPSY_PR_R1_R2
-                    FROM " + databaseName + ".dbo.KPSYMSTR";
-try
-{
-    sqlResult = sqlQuery(sqlQueryString);
-}
-catch(exc)
-{
-    MessageBox("KPSYMSTR reading error: " + exc);
-    exit;
-}
-if (size(sqlResult) > 1)
-{
-    // proslaGodina = (int(ovagod_h) - 1);
-    // nazivFirme = sqlResult[1][0].trim();
-    // kpsy_po_freight= sqlResult[1][1].trim();
-    // fiscal_yr = sqlResult[1][2];
-    // local = sqlResult[1][3];
-
-    KPSY_REZERVA = sqlResult[1][0].trim();
-    KPSY_COMP_NAME = sqlResult[1][1].trim();
-    KPSY_COMP_ADD1 = sqlResult[1][2].trim();
-    KPSY_GL_RETEARN = sqlResult[1][3].trim();
-    KPSY_COMP_CSZ = sqlResult[1][4].trim();
-    KPSY_COMP_ZIP = sqlResult[1][5];
-    KPSY_COMP_JMBFI = sqlResult[1][6].trim();
-    KPSY_COMP_PHONE = sqlResult[1][7].trim();
-    KPSY_COMP_EMAIL = sqlResult[1][8].trim();
-    KPSY_PO_FREIGHT = substring(sqlResult[1][9], 0, 2).trim();
-    KPSY_REZERVAX = sqlResult[1][10].trim(); // Supplier GLN
-    KPSY_PR_R1_R2 = sqlResult[1][11].trim(); // PDV ID za R1/R2 izvještaje
-    supOIB = Substring(KPSY_REZERVA, 0, 11).trim(); // OIB
-    if(supOIB.Length != 11){
-        MessageBox("OIB tvrtke nije ispravan: " + supOIB);
-        exit;
-    }
-    //supOIBParts = supOIB.split(" ");
-    //supOIB = supOIBParts[0].trim();
-} 
-
-
-
-// NKSYSYCO
-sqlQueryString = " SELECT NKSYS_FIELD, NKSYS_VALUE 
-    FROM " + databaseName + ".dbo.NKSYSYCO 
-    WHERE NKSYS_MODUL = 'WKSY'
-    AND NKSYS_GRUP = 'ERACUN'";
-try
-{
-    sqlResult = sqlQuery(sqlQueryString);
-}
-catch(exc)
-{
-    MessageBox("NKSYSYCO reading error: " + exc);
-    exit;
-}
-if (size(sqlResult) > 1)
-{
-    for(i = 1; i < Size(sqlResult); i++){
-        if(sqlResult[i][0].trim() == "FILESPATH"){
-            FILESPATH = sqlResult[i][1].trim();
+        if(!GenerateUBLXml()){
+            arrayStatus[i] = "Greška pri generiranju";
+            sendErrorCount = sendErrorCount + 1;
+            continue;
         }
-        elif(sqlResult[i][0].trim() == "PROVIDER")
-        {
-            PROVIDER = sqlResult[i][1].trim().Upper();
-        }elif(sqlResult[i][0].trim() == "SCHEMASPATH")
-        {
-            SCHEMASPATH = sqlResult[i][1].trim();
-        }elif(sqlResult[i][0].trim() == "CERTPATH"){
-            CERTPATH = sqlResult[i][1].trim();
+
+        if(NKSC_REZ9 == "E"){
+            SendERacun();
+            arrayStatus[i] = "Poslano na obradu";
+            sendStartedCount = sendStartedCount + 1;
+        }else{
+            arrayStatus[i] = "Kupac nije za e-račun";
+            sendSkippedCount = sendSkippedCount + 1;
         }
     }
-} 
-
-xmlFileName = "";
-
-// generate xml
-if(!GenerateUBLXml()){
-    // MessageBox("Greška pri generiranju UBL XML-a za račun " + invNum + "!");    
-    exit;
-}elif(NKSC_REZ9 == "E"){
-    //LogNKSYELOG("A");
-    //send xml
-    // MessageBox("AAA ŠALJEM XML ZA RAČUN " + invNum);
-    SendERacun(); 
-    // MessageBox("BBB POSLAN XML ZA RAČUN " + invNum); 
 }
 
-exit;
+function endSendSelectedInvoices(){
+    cursor("dflt");
+    DisplayArraySetup("datagridListaRacuna", counterFld: cntr1, activeElements: Rbr, maxElements: 10000);
+    SetWidgetOptions("btnPosalji", "IsEnabled", "true");
+    SetWidgetOptions("btnIzlaz", "IsEnabled", "true");
+    SetWidgetOptions("StatusLabel", "Content", "Pokrenuto slanje računa: " + sendStartedCount + ", grešaka: " + sendErrorCount + ", preskočeno: " + sendSkippedCount);
+    SetWidgetOptions("StatusLabel2", "Content", "Status u retku prikazuje rezultat pokretanja slanja.");
+}
+
+function btnIzlaz@clicked(){
+    exit;
+}
 
 
 
@@ -2591,7 +2712,7 @@ function SendToFINA_2() {
             false                       // justFire
         );
         // SaveResponseLog(response, "FINA");
-    //MSG("CCCC: Response from FINA:\n\n" + response);
+    MSG("CCCC: Response from FINA:\n\n" + response);
 
         // ackStatus = ExtractXML(response, "AckStatus");
         // zki = ExtractXML(response, "ZKI");

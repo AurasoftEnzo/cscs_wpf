@@ -38,10 +38,23 @@ Variables can be defined:
 - explicitly via "DEFINE"
 
 The recommended approach for professional code is to define it explicitly.
+## Types
+
+Variables types when defined explicitly:
+- typa a - string
+- type n - float (8 byte)
+- type i - small integer (2 bytes)
+- type r - integer (4 bytes)
+- type b - byte (1 byte)
+- type d - date
+- type t - time
+- type l - logic (boolean)
+
 
 ## Example: explicit definition
 
 ```internal-script
+DEFINE name type a size 20;
 DEFINE total type r;
 total = 100.50;
 MessageBox(total);

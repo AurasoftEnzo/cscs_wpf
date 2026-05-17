@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<XtraReportsLayoutSerializer SerializerVersion="18.2.14.0" Ref="0" ControlType="DevExpress.XtraReports.UI.XtraReport, DevExpress.XtraReports.v18.2, Version=18.2.14.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" Name="WXeracunprint_SubreportIBAN" Margins="100, 346, 0, 0" PaperKind="A4" PageWidth="827" PageHeight="1169" Version="18.2">
+  <Bands>
+    <Item1 Ref="1" ControlType="ReportHeaderBand" Name="ReportHeader" HeightF="69.7916641">
+      <Controls>
+        <Item1 Ref="2" ControlType="XRLabel" Name="label1" Text="Naziv računa za plaćanje" TextAlignment="MiddleLeft" SizeF="171.930145,25" LocationFloat="209.069855, 44.7916679" Font="Arial, 9pt" Padding="5,0,0,0,100" Borders="All">
+          <StylePriority Ref="3" UseBorders="false" />
+        </Item1>
+        <Item2 Ref="4" ControlType="XRLabel" Name="lblIbanLabel" Text="Identifikator računa plaćanja (IBAN)" TextAlignment="MiddleLeft" SizeF="210,25" LocationFloat="0, 44.7916641" Font="Arial, 9pt" Padding="5,0,0,0,100" Borders="All">
+          <StylePriority Ref="5" UseBorders="false" />
+        </Item2>
+        <Item3 Ref="6" ControlType="XRLabel" Name="lblIbanTitle" Text="TRANSAKCIJSKI RAČUN" TextAlignment="MiddleLeft" SizeF="381,25" LocationFloat="0, 22.3958321" Font="Arial, 10pt, style=Bold" BackColor="Gainsboro" Padding="5,0,0,0,100">
+          <StylePriority Ref="7" UseBackColor="false" />
+        </Item3>
+      </Controls>
+    </Item1>
+    <Item2 Ref="8" ControlType="DetailBand" Name="Detail" HeightF="26.5625019">
+      <Controls>
+        <Item1 Ref="9" ControlType="XRLabel" Name="label2" TextAlignment="MiddleLeft" SizeF="171.930145,25" LocationFloat="209.069855, 2.54313159E-06" Font="Arial, 9pt, style=Bold" Borders="All" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="payeeFinancialAccountName">
+          <ExpressionBindings>
+            <Item1 Ref="10" Expression="[payeeFinancialAccountName]" PropertyName="Text" EventName="BeforePrint" />
+          </ExpressionBindings>
+          <StylePriority Ref="11" UseBorders="false" />
+        </Item1>
+        <Item2 Ref="12" ControlType="XRLabel" Name="valIban" TextAlignment="MiddleLeft" SizeF="210,25" LocationFloat="1.48029731E-14, 2.54313159E-06" Font="Arial, 9pt, style=Bold" Borders="All" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="payeeFinancialAccountID">
+          <ExpressionBindings>
+            <Item1 Ref="13" Expression="[payeeFinancialAccountID]" PropertyName="Text" EventName="BeforePrint" />
+          </ExpressionBindings>
+          <StylePriority Ref="14" UseBorders="false" />
+        </Item2>
+      </Controls>
+    </Item2>
+    <Item3 Ref="15" ControlType="TopMarginBand" Name="TopMargin1" HeightF="0" />
+    <Item4 Ref="16" ControlType="BottomMarginBand" Name="BottomMargin1" HeightF="0" />
+  </Bands>
+</XtraReportsLayoutSerializer>

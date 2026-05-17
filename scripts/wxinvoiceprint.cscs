@@ -1,0 +1,123 @@
+include(strtrim(tpath()) + "wxinvoiceprintlib.cscs");
+
+Import(strTrim(mpath()) + "CSCS.Math.dll");
+
+invoiceNumInput = "";
+reportHandle = 0;
+
+InitializeGUI();
+
+function InitializeGUI() {
+    CreateWindow(strtrim(tpath()) + "wxinvoiceprint.xaml");
+    SetWidgetOptions("btnPrint", "IsEnabled", "false");
+    SetWidgetOptions("btnExportPDF", "IsEnabled", "false");
+    SetWidgetOptions("lblStatus", "Text", "Spremno. Unesite broj računa za ispis.");
+}
+
+function wxinvoiceprint_onDisplay() {
+    try {
+        InitDatabaseContext();
+        SetWidgetOptions("lblStatus", "Text", "Spremno. Unesite broj računa za ispis.");
+    } catch (ex) {
+        MessageBox("Greška pri inicijalizaciji: " + ex);
+        exit;
+    }
+}
+
+function btnLoad@clicked(){
+    OnLoadClick();
+}
+
+function btnExportPDF@clicked(){
+    OnExportPDFClick();
+}
+
+function btnPrint@clicked(){
+    OnPrintClick();
+}
+
+function btnClose@clicked(){
+    OnCloseClick();
+}
+
+function txtInvoiceNum@TextChange(){
+    path = GetWidgetOptions("txtInvoiceNum", "Text");
+    invoiceNumInput = path.Trim();
+    if (invoiceNumInput != "") {
+        SetWidgetOptions("btnLoad", "IsEnabled", "true");
+    } else {
+        SetWidgetOptions("btnLoad", "IsEnabled", "false");
+        SetWidgetOptions("btnPrint", "IsEnabled", "false");
+        SetWidgetOptions("btnExportPDF", "IsEnabled", "false");
+    }
+}
+
+function OnLoadClick() {
+    invoiceNumInput = GetWidgetOptions("txtInvoiceNum", "Text").Trim();
+    if (invoiceNumInput == "") {
+        MessageBox("Unesite broj računa.");
+        return;
+    }
+
+    SetWidgetOptions("lblStatus", "Text", "Učitavanje računa iz baze...");
+
+    if (LoadInvoiceFromDB(invoiceNumInput)) {
+        SetWidgetOptions("lblStatus", "Text", "Račun " + invoiceNumInput + " uspješno učitan i spreman za ispis.");
+        SetWidgetOptions("btnExportPDF", "IsEnabled", "true");
+        SetWidgetOptions("btnPrint", "IsEnabled", "true");
+    } else {
+        SetWidgetOptions("lblStatus", "Text", "GREŠKA: Nije moguće učitati račun " + invoiceNumInput + ".");
+        SetWidgetOptions("btnExportPDF", "IsEnabled", "false");
+        SetWidgetOptions("btnPrint", "IsEnabled", "false");
+    }
+}
+
+function OnPrintClick() {
+    if (reportHandle == 0) {
+        MessageBox("Najprije učitajte račun.");
+        return;
+    }
+
+    SetWidgetOptions("lblStatus", "Text", "Priprema za ispis...");
+
+    try {
+        PrintReport(reportHandle, 1);
+        SetWidgetOptions("lblStatus", "Text", "Pregled prije ispisa prikazan.");
+    } catch (ex) {
+        SetWidgetOptions("lblStatus", "Text", "GREŠKA pri prikazu: " + ex);
+        MessageBox("GREŠKA pri prikazu računa:\n" + ex);
+    }
+}
+
+function OnExportPDFClick() {
+    if (reportHandle == 0) {
+        MessageBox("Najprije učitajte račun.");
+        return;
+    }
+
+    title = "Spremi kao PDF";
+    initialDir = "";
+    defaultName = "Racun_" + loadedInvoiceNum + "_export.pdf";
+    defaultExt = ".pdf";
+    filter = "PDF Datoteke (*.pdf)|*.pdf";
+
+    pdfPath = SaveFileDialog(title, initialDir, defaultName, defaultExt, filter);
+
+    if (pdfPath != "") {
+        SetWidgetOptions("lblStatus", "Text", "Izvoz u PDF...");
+
+        try {
+            ExportReport(reportHandle, "PDF", pdfPath);
+            SetWidgetOptions("lblStatus", "Text", "PDF uspješno izvezen: " + pdfPath);
+            MessageBox("PDF računa uspješno izvezen:\n" + pdfPath);
+        } catch (ex) {
+            SetWidgetOptions("lblStatus", "Text", "GREŠKA pri izvozu PDF-a: " + ex);
+            MessageBox("GREŠKA pri izvozu PDF-a:\n" + ex);
+        }
+    }
+}
+
+function OnCloseClick() {
+    DisposeInvoiceReports();
+    CloseWindow(strtrim(tpath()) + "wxinvoiceprint.xaml");
+}

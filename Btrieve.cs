@@ -8545,7 +8545,14 @@ $@"EXECUTE sp_executesql N'
 
                                 if (Gui.DEFINES.TryGetValue(Gui.Btrieve.gridsArrayClass[gridName].tags[i].ToLower(), out DefineVariable defVar))
                                 {
-                                    itemArray[i] = defVar.Tuple[(int)lineCntrDefVar.Value].AsString();
+                                    if(defVar.DefType.ToLower() == "l")
+                                    {
+                                        itemArray[i] = defVar.Tuple[(int)lineCntrDefVar.Value].AsBool();
+                                    }
+                                    else
+                                    {
+                                        itemArray[i] = defVar.Tuple[(int)lineCntrDefVar.Value].AsString();
+                                    }
                                 }
                             }
 

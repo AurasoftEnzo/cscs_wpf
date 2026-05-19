@@ -13,37 +13,37 @@
 CreateWindow(strTrim(tpath()) + "wxaimanager.xaml");
 
 // ---- Settings -----------------------------------------------
-DEFINE aiProvider       type a size 30;
-DEFINE aiApiKey         type a size 500;
-DEFINE aiBaseUrl        type a size 300;
-DEFINE aiModel          type a size 100;
-DEFINE aiSystemPrompt   type a size 3000;
+DEFINE aiProvider type a size 30;
+DEFINE aiApiKey type a size 500;
+DEFINE aiBaseUrl type a size 300;
+DEFINE aiModel type a size 100;
+DEFINE aiSystemPrompt type a size 3000;
 DEFINE aiTemperatureStr type a size 10;
-DEFINE aiMaxTokensStr   type a size 10;
+DEFINE aiMaxTokensStr type a size 10;
 DEFINE settingsFilePath type a size 400;
 
 // ---- Current conversation -----------------------------------
-DEFINE msgCount         type i;
-DEFINE msgRole          type a size 20  array 200;
-DEFINE msgContent       type a size 5000 array 200;
+DEFINE msgCount type i;
+DEFINE msgRole type a size 20  array 200;
+DEFINE msgContent type a size 5000 array 200;
 
 // ---- Conversation history (session) -------------------------
-DEFINE histCount        type i;
-DEFINE histLineCntr     type r;
-DEFINE histActive       type r;
-DEFINE histMax          type r;
-DEFINE arrayHistDate    type a size 30   array 50;
-DEFINE arrayHistTitle   type a size 150  array 50;
-DEFINE arrayHistText    type a size 20000 array 50;
+DEFINE histCount type i;
+DEFINE histLineCntr type r;
+DEFINE histActive type r;
+DEFINE histMax type r;
+DEFINE arrayHistDate type a size 30 array 50;
+DEFINE arrayHistTitle type a size 150 array 50;
+DEFINE arrayHistText type a size 20000 array 50;
 
 // ---- State --------------------------------------------------
-DEFINE isWaiting        type l;
-DEFINE settingsOpen     type l;
+DEFINE isWaiting type l;
+DEFINE settingsOpen type l;
 
 // ---- Async API temp storage ---------------------------------
-DEFINE apiLastResponse  type a size 20000;
-DEFINE apiLastCode      type i;
-DEFINE apiLastError     type a size 500;
+DEFINE apiLastResponse type a size 20000;
+DEFINE apiLastCode type i;
+DEFINE apiLastError type a size 500;
 
 
 // =============================================================
@@ -75,8 +75,9 @@ function wxaimanager_OnStart() {
     settingsOpen     = false;
 
     // --- populate provider ComboBox ---
-    SetWidgetOptions("cbProvider", "Items", "OpenAI|Ollama|Azure OpenAI|OpenRouter|Custom");
-    SetWidgetOptions("cbProvider", "Text", aiProvider);
+    comboItems2 = {"OpenAI","Ollama","Azure OpenAI","OpenRouter","Custom"};
+    AddWidgetData("cbProvider", comboItems2);
+    // SetWidgetOptions("cbProvider", "Text", aiProvider);
 
     // --- apply saved settings to UI ---
     SetWidgetOptions("txtModel",        "Text", aiModel);
@@ -87,10 +88,10 @@ function wxaimanager_OnStart() {
     SetWidgetOptions("txtMaxTokens",    "Text", aiMaxTokensStr);
 
     // --- hide settings panel initially ---
-    SetWidgetOptions("panelSettings", "Visibility", "Collapsed");
+    SetWidgetOptions("panelSettings", "Visible", false); // should be Collapsed 
 
     // --- history grid ---
-    DisplayArraySetup("datagridHistory", histLineCntr, histActive, histMax);
+    DisplayArraySetup("datagridHistory", counterFld: histLineCntr, activeElements: histActive, maxElements: histMax);
 
     // --- status ---
     SetStatus("Spreman. Unesite poruku i pritisnite Pošalji.");
@@ -151,11 +152,11 @@ function btnNewChat@clicked() {
 
 function btnSettings@clicked() {
     if (settingsOpen) {
-        SetWidgetOptions("panelSettings", "Visibility", "Collapsed");
+        SetWidgetOptions("panelSettings", "Visible", false);
         settingsOpen = false;
         SetWidgetOptions("btnSettings", "Content", "Postavke");
     } else {
-        SetWidgetOptions("panelSettings", "Visibility", "Visible");
+        SetWidgetOptions("panelSettings", "Visible", true);
         settingsOpen = true;
         SetWidgetOptions("btnSettings", "Content", "Zatvori postavke");
     }
@@ -163,7 +164,7 @@ function btnSettings@clicked() {
 
 function btnSaveSettings@clicked() {
     SaveSettings();
-    SetWidgetOptions("panelSettings", "Visibility", "Collapsed");
+    SetWidgetOptions("panelSettings", "Visible", false);
     settingsOpen = false;
     SetWidgetOptions("btnSettings", "Content", "Postavke");
     UpdateProviderLabel();
@@ -400,12 +401,14 @@ function BuildApiPayload() {
 
 function EscapeForJson(str) {
     // Order matters: backslash must be first
-    result = str.Replace("\\", "\\\\");
-    result = result.Replace("\"", "\\\"");
-    result = result.Replace("\n", "\\n");
-    result = result.Replace("\r", "");
-    result = result.Replace("\t", "\\t");
-    return result;
+    MSG(1);
+    // result = str.Replace("\\", "\\\\");
+    // MSG(2);
+    // result = result.Replace("\"", "\\\"");
+    // result = result.Replace("\n", "\\n");
+    // result = result.Replace("\r", "");
+    // result = result.Replace("\t", "\\t");
+    return "result";
 }
 
 
@@ -538,7 +541,8 @@ function LoadSettings() {
             } elif (key == "model") {
                 aiModel = val;
             } elif (key == "systemprompt") {
-                aiSystemPrompt = val.Replace("\\n", "\n");
+                msg("aaaaa");
+                // aiSystemPrompt = val.Replace("\\n", "\n");
             } elif (key == "temperature") {
                 aiTemperatureStr = val;
             } elif (key == "maxtokens") {
@@ -553,7 +557,7 @@ function LoadSettings() {
 function SaveSettings() {
     // All variables are kept in sync by DataContext bindings – read them directly.
 
-    sysEscaped = aiSystemPrompt.Replace("\n", "\\n");
+    // sysEscaped = aiSystemPrompt.Replace("\n", "\\n");
 
     content  = "provider|"     + aiProvider      + "\n";
     content  = content + "apikey|"       + aiApiKey        + "\n";

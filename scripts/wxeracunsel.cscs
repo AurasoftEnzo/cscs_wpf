@@ -212,9 +212,9 @@ function LoadPendingInvoices(){
               " AND nkpr_gl_sifdvz = '" + KPSY_DOM_VALUTA + "'" +
               " AND nkpr_gl_cuscod <> '" + SY_SP_VL_FIRMA + "'" +
               " AND nkpr_gl_oznaka NOT IN ('V', 'N')" +
-              " AND nksc_rez9 IN ('P', 'F', 'E')" +
-              " AND nksc_rez10 IN ('E', 'H')" +
-              " AND (nksc_tax_dn IN ('', 'X') AND year(" + KPSY_FISCAL_YR.ToString("yyyy-MM-dd") + ") >= 2027 OR nksc_tax_dn NOT IN ('', 'X'))" +
+              " AND nksc_rez9 IN ('E', 'H')" +
+              " AND nksc_rez10 IN ('P', 'F', 'E')" +
+              " AND ((nksc_tax_dn IN ('', 'X') AND year(" + KPSY_FISCAL_YR.ToString("yyyy-MM-dd") + ") >= 2027) OR nksc_tax_dn NOT IN ('', 'X'))" +
               " ORDER BY NKPR_GL_INVDTE, NKPR_GL_NUM;";
 
     try{
@@ -294,7 +294,7 @@ function SendSelectedInvoices(){
             continue;
         }
 
-        if(NKSC_REZ9 == "E"){
+        if(NKSC_REZ10 == "P"){
             SendERacun();
             arrayStatus[i] = "Poslano na obradu";
             sendStartedCount = sendStartedCount + 1;

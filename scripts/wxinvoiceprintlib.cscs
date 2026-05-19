@@ -117,7 +117,7 @@ function LoadInvoiceFromDB(invoiceNum) {
 }
 
 function LoadCompanyData() {
-    sqlQueryString = " SELECT TOP 1 KPSY_REZERVA, KPSY_COMP_NAME, KPSY_COMP_ADD1, KPSY_GL_RETEARN, KPSY_COMP_CSZ, KPSY_COMP_ZIP, KPSY_COMP_JMBFI, KPSY_COMP_PHONE, KPSY_COMP_EMAIL, KPSY_PO_FREIGHT, KPSY_REZERVAX, KPSY_PR_R1_R2 FROM " + databaseName + ".dbo.KPSYMSTR";
+    sqlQueryString = " SELECT TOP 1 KPSY_REZERVA, KPSY_COMP_NAME, KPSY_COMP_ADD1, KPSY_GL_RETEARN, KPSY_COMP_CSZ, KPSY_COMP_ZIP, KPSY_COMP_JMBFI, KPSY_COMP_PHONE, KPSY_COMP_EMAIL, KPSY_PO_FREIGHT, KPSY_REZERVAX, KPSY_PR_R1_R2, kpsy_ar_modelpl  FROM " + databaseName + ".dbo.KPSYMSTR";
     sqlResult = sqlQuery(sqlQueryString);
     if (Size(sqlResult) < 2) {
         MessageBox("KPSYMSTR reading error.");
@@ -136,11 +136,12 @@ function LoadCompanyData() {
     KPSY_PO_FREIGHT = Substring(sqlResult[1][9], 0, 2).trim();
     KPSY_REZERVAX = sqlResult[1][10].trim();
     KPSY_PR_R1_R2 = sqlResult[1][11].trim();
+    KPSY_AR_MODELP = sqlResult[1][12].trim();
     supOIB = Substring(KPSY_REZERVA, 0, 11).trim();
 }
 
 function LoadHeaderAndSetup(invoiceNum) {
-    sql_hdr = "SELECT NKPR_GL_NUM, NKPR_GL_OZNAKA, NKPR_GL_BROTP, NKPR_GL_REZ1, NKPR_GL_REZ3, CONVERT(VARCHAR(10), NKPR_GL_INVDTE, 23) as NKPR_GL_INVDTE, CONVERT(VARCHAR(8), NKPR_GL_TIMECR, 20) as NKPR_GL_TIMECR, CONVERT(VARCHAR(10), NKPR_GL_DVO, 23) as NKPR_GL_DVO, NKPR_GL_NOKAM, NKPR_GL_ROKPL, CONVERT(VARCHAR(10), NKPR_GL_ESD, 23) as NKPR_GL_ESD, NKPR_GL_PICTHDR, NKPR_GL_PICTFTR, NKPR_GL_CUSNME, NKPR_GL_JMBG, NKPR_GL_CUSA1, NKPR_GL_RO, NKPR_GL_CUSCTY, NKPR_GL_CUSZIP, NKPR_GL_DRZAVA, NKPR_GL_SIF_PL, NKPR_GL_MODEL, NKPR_GL_POZIV, NKPR_GL_RZRVA1, NKPR_GL_TOTAL, NKPR_GL_CUSORD, NKPR_GL_CUSST, NKPR_GL_ENTBY, NKPR_GL_BROPIS, NKPR_GL_BROPIS1, CONVERT(varchar(10), DATEADD(DAY, NKPR_GL_NOKAM + NKPR_GL_ROKPL, NKPR_GL_DVO), 23) as NKPR_GL_DUE_DATE, NKPR_GL_SCONTO, NKPR_GL_DANSC, NKPR_GL_REZ3, NKPR_GL_SHPCOD, NKPR_GL_SHPNME, NKPR_GL_SHPRO, NKPR_GL_SHPA1, NKPR_GL_SHPZIP, NKPR_GL_SHPCTY, NKPR_GL_SHPST, NKPR_GL_UGOVOR, NKPR_GL_CUSCOD, NKPR_GL_RNALOG, NKPR_GL_EMAIL, SUBSTRING(NKSP_AD_REZ,37,13) as NKSP_AD_GLN, SUBSTRING(NKSP_AD_REZ,51,20) as NKSP_AD_OBJED, NKSC_SOP, NKSC_POSREDNIK, NKSC_REZ10, NKSC_TAX_DN, substring(NKSC_REZ, 42, 10) as POSREDNIK, NKSC_REZ9, PKKU_PP_OPIS FROM " + databaseName + ".dbo.NKPRINV LEFT JOIN " + databaseName + ".dbo.NKSCPART ON NKPR_GL_CUSCOD = NKSC_PARTCODE LEFT JOIN " + databaseName + ".dbo.NKSPADRS ON NKPR_GL_CUSCOD = NKSP_AD_CODE AND NKPR_GL_SHPCOD = NKSP_AD_CODEINT LEFT JOIN " + databaseName + ".dbo.PKKUPPUG ON NKPR_GL_UGOVOR = PKKU_PP_BROJ WHERE NKPR_GL_NUM = @p1;";
+    sql_hdr = "SELECT NKPR_GL_NUM, NKPR_GL_OZNAKA, NKPR_GL_BROTP, NKPR_GL_REZ1, NKPR_GL_REZ3, CONVERT(VARCHAR(10), NKPR_GL_INVDTE, 23) as NKPR_GL_INVDTE, CONVERT(VARCHAR(8), NKPR_GL_TIMECR, 20) as NKPR_GL_TIMECR, CONVERT(VARCHAR(10), NKPR_GL_DVO, 23) as NKPR_GL_DVO, NKPR_GL_NOKAM, NKPR_GL_ROKPL, CONVERT(VARCHAR(10), NKPR_GL_ESD, 23) as NKPR_GL_ESD, NKPR_GL_PICTHDR, NKPR_GL_PICTFTR, NKPR_GL_CUSNME, NKPR_GL_JMBG, NKPR_GL_CUSA1, NKPR_GL_RO, NKPR_GL_CUSCTY, NKPR_GL_CUSZIP, NKPR_GL_DRZAVA, NKPR_GL_SIF_PL, NKPR_GL_MODEL, NKPR_GL_POZIV, NKPR_GL_RZRVA1, NKPR_GL_TOTAL, NKPR_GL_CUSORD, NKPR_GL_CUSST, NKPR_GL_ENTBY, NKPR_GL_BROPIS, NKPR_GL_BROPIS1, CONVERT(varchar(10), DATEADD(DAY, NKPR_GL_NOKAM + NKPR_GL_ROKPL, NKPR_GL_DVO), 23) as NKPR_GL_DUE_DATE, NKPR_GL_SCONTO, NKPR_GL_DANSC, NKPR_GL_REZ3, NKPR_GL_SHPCOD, NKPR_GL_SHPNME, NKPR_GL_SHPRO, NKPR_GL_SHPA1, NKPR_GL_SHPZIP, NKPR_GL_SHPCTY, NKPR_GL_SHPST, NKPR_GL_UGOVOR, NKPR_GL_CUSCOD, NKPR_GL_RNALOG, NKPR_GL_EMAIL, SUBSTRING(NKSP_AD_REZ,37,13) as NKSP_AD_GLN, SUBSTRING(NKSP_AD_REZ,51,20) as NKSP_AD_OBJED, NKSC_SOP, NKSC_POSREDNIK, NKSC_REZ10, NKSC_TAX_DN, substring(NKSC_REZ, 42, 10) as POSREDNIK, NKSC_REZ9, PKKU_PP_OPIS,NKPR_GL_SIFDVZ,NKPR_GL_DESC FROM " + databaseName + ".dbo.NKPRINV LEFT JOIN " + databaseName + ".dbo.NKSCPART ON NKPR_GL_CUSCOD = NKSC_PARTCODE LEFT JOIN " + databaseName + ".dbo.NKSPADRS ON NKPR_GL_CUSCOD = NKSP_AD_CODE AND NKPR_GL_SHPCOD = NKSP_AD_CODEINT LEFT JOIN " + databaseName + ".dbo.PKKUPPUG ON NKPR_GL_UGOVOR = PKKU_PP_BROJ WHERE NKPR_GL_NUM = @p1;";
     sqlParams = {};
     sqlParams.Add({"@p1", invoiceNum});
     hdrRes = sqlQuery(sql_hdr, sqlParams);
@@ -203,6 +204,8 @@ function LoadHeaderAndSetup(invoiceNum) {
     POSREDNIK = hdrRes[1][51].trim();
     NKSC_REZ9 = hdrRes[1][52].trim();
     PKKU_PP_OPIS = hdrRes[1][53].trim();
+    nkpr_gl_sifdvz = hdrRes[1][54].trim();
+    nkpr_gl_desc = hdrRes[1][55].trim();
 
     if (POSREDNIK != "") {
         PROVIDER = POSREDNIK;
@@ -547,6 +550,106 @@ function LoadReportFromCurrentInvoice() {
 
 function PopulateHeaderVariables() {
     endpointSupplierIDSchemeID = "9934";
+
+    sqlQueryString = " SELECT TOP 1 sy_cc_user FROM " + CommonDBGet() + ".[dbo].[nksyccyr] WHERE SY_CC_CODE = '" + companyCode + "'";
+    try
+    {
+        sqlResult = sqlQuery(sqlQueryString);
+    }
+    catch(exc)
+    {
+        MessageBox(exc);
+    }
+    iniFilename = strtrim(sqlResult[1][0]) + ".ini";
+    iniFilename = string(wpath()) + iniFilename;
+
+    if(regedit("regOpen", iniFilename, "rtFile")){
+        logoImagePath = regedit("regReadStr", 'COMPANY', 'LogoZnak');
+        regedit("regClose");
+    }else{
+        MessageBox("Datoteka " + iniFilename + " nije dostupna.");
+        quit;
+    }
+    
+    pcl_glava= 'HRVHUB30';
+    pcl_valuta   = nkpr_gl_sifdvz;
+    pcl_iznos = StrReplace(StrReplace(String(nkpr_gl_total), ".", ""), ",", "");
+    currentLength = pcl_iznos.length();
+    if (currentLength < 15) {
+        padCount = 15 - currentLength;
+        paddedAmount = "";
+        for (i = 0; i < padCount; i++) {
+            paddedAmount += "0";
+        }
+        pcl_iznos = paddedAmount + pcl_iznos;
+    }
+    
+    pcl_imePlati = nkpr_gl_cusnme;
+    pcl_adrPlati = nkpr_gl_cusa1;
+    pcl_ctyPlati = nkpr_gl_cuscty;
+    pcl_imePrimi = kpsy_comp_name;
+    pcl_adrPrimi = kpsy_comp_add1;
+    pcl_ctyPrimi = kpsy_comp_csz;
+
+    KPSYSTEMQuery = "SELECT TOP 1 SY_SY_OZN_BANKE,SY_SP_VL_FIRMA FROM " + databaseName + ".dbo.KPSYSTEM;";
+    KPSYSTEMResult = sqlQuery(KPSYSTEMQuery);
+    if (Size(KPSYSTEMResult) > 1) {
+        sy_sy_ozn_banke = KPSYSTEMResult[1][0].trim();
+        sy_sp_vl_firma = KPSYSTEMResult[1][1].trim();
+    }
+
+    if (nkpr_gl_rzrva1 == "") {
+    nkpr_gl_rzrva1 = sy_sy_ozn_banke;
+    }
+
+    ziro = "";
+    if (nkpr_gl_rzrva1 != "" && sy_sp_vl_firma != "") {
+    sql_ziro = "SELECT NKSC_ZR_REZ, NKSC_ZR_KONTO FROM " + databaseName + ".dbo.NKSCZIRO WHERE NKSC_ZR_CODE = " + sy_sp_vl_firma + " AND NKSC_ZR_BANKA = '" + nkpr_gl_rzrva1 + "';";
+    ziroRes = sqlQuery(sql_ziro);
+
+    if (Size(ziroRes) >= 2) {
+        ziro = Substring(ziroRes[1][0].trim(), 0, 30);
+        if (ziro == "") {
+            ziro = ziroRes[1][1].trim();
+        }
+    } else {
+        ziro = "";
+    }
+    } else {
+    ziro = "";
+    }
+    pcl_iban = StrReplace(ziro,' ','')
+   
+    if(NKPR_GL_MODEL != ''){
+        pcl_model = kpsy_po_freight*nkpr_gl_model;
+    }
+    else{
+        pcl_model = kpsy_po_freight*KPSY_AR_MODELP;
+    }
+    pcl_pnb      = nkpr_gl_poziv;
+    pcl_namjena  = '';
+    pcl_opis     = nkpr_gl_desc;
+    if (pcl_opis ==''){
+        pcl_opis = "Račun broj : " + NKPR_GL_NUM;
+    }
+    dlmt = "\n";
+
+    QRparametar = pcl_glava + dlmt +
+              pcl_valuta + dlmt +
+              pcl_iznos + dlmt +
+              pcl_imePlati + dlmt +
+              pcl_adrPlati + dlmt +
+              pcl_ctyPlati + dlmt +
+              pcl_imePrimi + dlmt +
+              pcl_adrPrimi + dlmt +
+              pcl_ctyPrimi + dlmt +
+              pcl_iban + dlmt +
+              pcl_model + dlmt +
+              pcl_pnb + dlmt +
+              pcl_namjena + dlmt +
+              pcl_opis;
+
+    invoiceQRcode = UTF8HRChars(QRparametar);
     supplierEndpointID = supOIB;
     supplierPartyID = "9934:" + supOIB;
     supplierName = KPSY_COMP_NAME;

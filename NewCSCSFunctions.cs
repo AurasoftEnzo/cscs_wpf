@@ -152,6 +152,9 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.SortA, new SortAFunction());
 
 
+            interpreter.RegisterFunction(Constants.UTF8HRChars, new UTF8HRCharsFunction());
+
+
 
             // FINA B2B OUTGOING
             interpreter.RegisterFunction("FINA_B2B_ECHO", new FINA_B2B_ECHOFunction());
@@ -269,6 +272,9 @@ namespace WpfCSCS
 
             public const string Notification = "Notification";
             public const string SortA = "SortA";
+
+
+            public const string UTF8HRChars = "UTF8HRChars";
         }
     }
 
@@ -5628,6 +5634,30 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
             }
 
             return names;
+        }
+    }
+
+    public class UTF8HRCharsFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+
+            var text = Utils.GetSafeString(args, 0);
+
+            text = text.Replace("Č", (0xC48C).ToString());
+            text = text.Replace("č", (0xC48D).ToString());
+            text = text.Replace("Ć", (0xC486).ToString());
+            text = text.Replace("ć", (0xC487).ToString());
+            text = text.Replace("Đ", (0xC490).ToString());
+            text = text.Replace("đ", (0xC491).ToString());
+            text = text.Replace("Š", (0xC5A0).ToString());
+            text = text.Replace("š", (0xC5A1).ToString());
+            text = text.Replace("Ž", (0xC5BD).ToString());
+            text = text.Replace("ž", (0xC5BE).ToString());
+
+            return new Variable(text);
         }
     }
 

@@ -8,7 +8,10 @@
 //    - Conversation history (session)
 //    - Configurable system prompt, temperature, max tokens
 //    - Settings saved to local config file
+//    - SQL Server persistence (ChatSession / ChatMessage / ChatChunk)
 // ============================================================
+
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxaimanager_SQL.cscs") : strTrim(tpath()) + "wxaimanager_sql.cscs");
 
 CreateWindow(strTrim(tpath()) + "wxaimanager.xaml");
 
@@ -52,6 +55,12 @@ DEFINE apiLastError type a size 500;
 
 function wxaimanager_OnStart() {
     settingsFilePath = strTrim(tpath()) + "wxaimanager_cfg.txt";
+
+    // --- SQL persistence setup ---
+    WXAI_DB        = "WXAIMANAGER_CHATS";
+    chatUserId     = 1;      // TODO: replace with actual user ID from your login context
+    chatSqlEnabled = true;
+    SQL_InitNewSession();
 
     // --- defaults ---
     aiProvider       = "OpenAI";
@@ -135,6 +144,9 @@ function btnSend@clicked() {
 
     // Display user message
     AppendToDisplay("Vas", inputText);
+
+    // Persist user message to SQL
+    SQL_SaveUserMessage(inputText);
 
     // Clear input
     SetWidgetOptions("txtInput", "Text", "");
@@ -321,6 +333,29 @@ function ProcessAIResponse() {
                     label = "AI (" + aiModelUsed + ")";
                 }
                 AppendToDisplay(label, content);
+
+                // Extract finish_reason and token usage for SQL logging
+                finishReason = "";
+                if (Contains(choice, "finish_reason")) {
+                    finishReason = choice["finish_reason"];
+                }
+                promptTokens     = 0;
+                completionTokens = 0;
+                totalTokens      = 0;
+                if (Contains(responseObj, "usage")) {
+                    usageObj = responseObj["usage"];
+                    if (Contains(usageObj, "prompt_tokens")) {
+                        promptTokens = int(usageObj["prompt_tokens"]);
+                    }
+                    if (Contains(usageObj, "completion_tokens")) {
+                        completionTokens = int(usageObj["completion_tokens"]);
+                    }
+                    if (Contains(usageObj, "total_tokens")) {
+                        totalTokens = int(usageObj["total_tokens"]);
+                    }
+                }
+                SQL_SaveAssistantMessage(content, finishReason, promptTokens, completionTokens, totalTokens);
+
                 SetStatus("Odgovor primljen.");
             }
         } else {
@@ -440,6 +475,7 @@ function RefreshChatDisplay() {
 }
 
 function StartNewChat() {
+    SQL_InitNewSession();
     chatDisplayText = "";
     msgCount = 0;
     ShowWelcome();
@@ -502,7 +538,8 @@ function LoadHistoryItem(idx) {
 
 function UpdateHistoryGrid() {
     histActive = histCount;
-    DisplayArraySetup("datagridHistory", histLineCntr, histActive, histMax);
+    //DisplayArraySetup("datagridHistory", histLineCntr, histActive, histMax);
+    DisplayArraySetup("datagridHistory", counterFld: histLineCntr, activeElements: histActive, maxElements: histMax);
 }
 
 

@@ -1,0 +1,287 @@
+// ============================================================
+//  WXAIMANAGER_SQL.CSCS
+//  SQL Server persistence layer for AI Manager
+//  Database: WXAIMANAGER_CHATS
+//
+//  Included by wxaimanager.cscs via:
+//    include(DownloadScripts() == true
+//        ? Download(ServerAddress() + "wxaimanager_SQL.cscs")
+//        : strTrim(tpath()) + "wxaimanager_sql.cscs");
+//
+//  Tables:
+//    dbo.ChatSession  – one row per conversation thread
+//    dbo.ChatMessage  – one row per message (user / assistant)
+//    dbo.ChatChunk    – one row per message for future indexing
+//
+//  Integration points in wxaimanager.cscs:
+//    wxaimanager_OnStart()   → WXAI_DB = "WXAIMANAGER_CHATS"; chatUserId = 1; chatSqlEnabled = true;
+//    StartNewChat()          → SQL_InitNewSession();
+//    btnSend@clicked()       → SQL_SaveUserMessage(inputText);
+//    ProcessAIResponse()     → SQL_SaveAssistantMessage(content, finishReason, promptTok, complTok, totalTok);
+//    SQL_UpdateSessionSummary(text) – optional, call when you want to write a summary
+// ============================================================
+
+// ---- SQL-layer state variables (shared with main script) ----
+DEFINE currentSessionId type r;   // ChatSession.ChatSessionId  (0 = not yet created)
+DEFINE chatMsgOrder type r;   // MessageOrder counter within the current session
+DEFINE chatUserId type r;   // ChatSession.UserId  (set in OnStart; default = 1)
+DEFINE chatSqlEnabled type l;   // false after a connection error → silently skip SQL
+
+// DB name prefix (assigned in wxaimanager_OnStart)
+DEFINE WXAI_DB type a size 50;
+
+
+// =============================================================
+//  INIT
+// =============================================================
+
+// Call at the start of every new chat (StartNewChat / btnNewChat / btnClearChat).
+function SQL_InitNewSession() {
+    currentSessionId = 0;
+    chatMsgOrder     = 0;
+}
+
+
+// =============================================================
+//  SESSION
+// =============================================================
+
+// Inserts a new ChatSession row on the first message of a conversation.
+// titleHint – first user message text (used as session title, max 200 chars).
+// Sets currentSessionId on success; disables SQL on error.
+function SQL_EnsureSession(titleHint) {
+    if (!chatSqlEnabled) {
+        return;
+    }
+    if (currentSessionId != 0) {
+        return;    // session already created
+    }
+
+    try {
+        title = titleHint;
+        if (title.length > 197) {
+            title = Substring(title, 0, 197) + "...";
+        }
+
+        sqlParams = {};
+        sqlParams.Add({"@p1", chatUserId});
+        sqlParams.Add({"@p2", aiModel});
+        sqlParams.Add({"@p3", title});
+        sqlParams.Add({"@p4", aiProvider});
+
+        sessSql = "INSERT INTO " + WXAI_DB + ".dbo.ChatSession "
+                + "(UserId, ModelName, Title, SourceApp) "
+                + "OUTPUT INSERTED.ChatSessionId "
+                + "VALUES (@p1, @p2, @p3, @p4)";
+
+        sessRes = sqlQuery(sessSql, sqlParams);
+
+        if (Size(sessRes) > 1) {
+            currentSessionId = int(sessRes[1][0]);
+        } else {
+            // Fallback: if OUTPUT INSERTED did not return a result set,
+            // retrieve the identity on the same connection.
+            idRes = sqlQuery("SELECT CAST(SCOPE_IDENTITY() AS INT) AS newId");
+            if (Size(idRes) > 1) {
+                currentSessionId = int(idRes[1][0]);
+            }
+        }
+
+        if (currentSessionId == 0) {
+            MSG("SQL_EnsureSession: ChatSessionId not retrieved – disabling SQL.");
+            chatSqlEnabled = false;
+        }
+
+    } catch (ex) {
+        MSG("SQL_EnsureSession error: " + ex);
+        chatSqlEnabled = false;
+    }
+}
+
+
+// Updates LastActivityAtUtc to now. Called after every assistant reply.
+function SQL_UpdateSessionActivity() {
+    if (!chatSqlEnabled) {
+        return;
+    }
+    if (currentSessionId == 0) {
+        return;
+    }
+    try {
+        sqlParams = {};
+        sqlParams.Add({"@p1", currentSessionId});
+
+        updSql = "UPDATE " + WXAI_DB + ".dbo.ChatSession "
+               + "SET LastActivityAtUtc = SYSUTCDATETIME() "
+               + "WHERE ChatSessionId = @p1";
+
+        sqlQuery(updSql, sqlParams);
+
+    } catch (ex) {
+        MSG("SQL_UpdateSessionActivity error: " + ex);
+    }
+}
+
+
+// Optional: stores a text summary on the session row (e.g. after long conversation).
+function SQL_UpdateSessionSummary(summary) {
+    if (!chatSqlEnabled) {
+        return;
+    }
+    if (currentSessionId == 0) {
+        return;
+    }
+    try {
+        sqlParams = {};
+        sqlParams.Add({"@p1", summary});
+        sqlParams.Add({"@p2", currentSessionId});
+
+        updSql = "UPDATE " + WXAI_DB + ".dbo.ChatSession "
+               + "SET SummaryText = @p1, LastActivityAtUtc = SYSUTCDATETIME() "
+               + "WHERE ChatSessionId = @p2";
+
+        sqlQuery(updSql, sqlParams);
+
+    } catch (ex) {
+        MSG("SQL_UpdateSessionSummary error: " + ex);
+    }
+}
+
+
+// =============================================================
+//  MESSAGES
+// =============================================================
+
+// On send: ensure session exists, then insert a 'user' ChatMessage + ChatChunk.
+function SQL_SaveUserMessage(text) {
+    if (!chatSqlEnabled) {
+        return;
+    }
+
+    // Create session on first message (title = first user input)
+    SQL_EnsureSession(text);
+
+    if (currentSessionId == 0) {
+        return;
+    }
+
+    chatMsgOrder = chatMsgOrder + 1;
+
+    try {
+        sqlParams = {};
+        sqlParams.Add({"@p1", currentSessionId});
+        sqlParams.Add({"@p2", chatMsgOrder});
+        sqlParams.Add({"@p3", text});
+
+        msgSql = "INSERT INTO " + WXAI_DB + ".dbo.ChatMessage "
+               + "(ChatSessionId, MessageOrder, RoleCode, MessageText, ContentType) "
+               + "OUTPUT INSERTED.ChatMessageId "
+               + "VALUES (@p1, @p2, 'user', @p3, 'text')";
+
+        msgRes = sqlQuery(msgSql, sqlParams);
+
+        newMsgId = 0;
+        if (Size(msgRes) > 1) {
+            newMsgId = int(msgRes[1][0]);
+        } else {
+            idRes2 = sqlQuery("SELECT CAST(SCOPE_IDENTITY() AS INT) AS newId");
+            if (Size(idRes2) > 1) {
+                newMsgId = int(idRes2[1][0]);
+            }
+        }
+
+        if (newMsgId > 0) {
+            SQL_InsertChunk(currentSessionId, newMsgId, 1, text);
+        }
+
+    } catch (ex) {
+        MSG("SQL_SaveUserMessage error: " + ex);
+    }
+}
+
+
+// On assistant complete: insert 'assistant' ChatMessage, update session, insert ChatChunk.
+// finishReason  – e.g. "stop", "length" (empty string stored as NULL via NULLIF)
+// promptTok / complTok / totalTok – 0 stored as NULL via NULLIF when not available
+function SQL_SaveAssistantMessage(text, finishReason, promptTok, complTok, totalTok) {
+    if (!chatSqlEnabled) {
+        return;
+    }
+    if (currentSessionId == 0) {
+        return;
+    }
+
+    chatMsgOrder = chatMsgOrder + 1;
+
+    try {
+        sqlParams = {};
+        sqlParams.Add({"@p1", currentSessionId});
+        sqlParams.Add({"@p2", chatMsgOrder});
+        sqlParams.Add({"@p3", text});
+        sqlParams.Add({"@p4", finishReason});
+        sqlParams.Add({"@p5", promptTok});
+        sqlParams.Add({"@p6", complTok});
+        sqlParams.Add({"@p7", totalTok});
+
+        // NULLIF(@p4,'')  converts empty finishReason  -> NULL
+        // NULLIF(@p5,0)   converts 0 token counts      -> NULL
+        msgSql = "INSERT INTO " + WXAI_DB + ".dbo.ChatMessage "
+               + "(ChatSessionId, MessageOrder, RoleCode, MessageText, ContentType, "
+               + " FinishReason, PromptTokens, CompletionTokens, TotalTokens) "
+               + "OUTPUT INSERTED.ChatMessageId "
+               + "VALUES (@p1, @p2, 'assistant', @p3, 'text', "
+               + " NULLIF(@p4,''), NULLIF(@p5,0), NULLIF(@p6,0), NULLIF(@p7,0))";
+
+        msgRes = sqlQuery(msgSql, sqlParams);
+
+        newMsgId = 0;
+        if (Size(msgRes) > 1) {
+            newMsgId = int(msgRes[1][0]);
+        } else {
+            idRes3 = sqlQuery("SELECT CAST(SCOPE_IDENTITY() AS INT) AS newId");
+            if (Size(idRes3) > 1) {
+                newMsgId = int(idRes3[1][0]);
+            }
+        }
+
+        // Update session timestamp
+        SQL_UpdateSessionActivity();
+
+        // Chunk for future indexing / search
+        if (newMsgId > 0) {
+            SQL_InsertChunk(currentSessionId, newMsgId, 1, text);
+        }
+
+    } catch (ex) {
+        MSG("SQL_SaveAssistantMessage error: " + ex);
+    }
+}
+
+
+// =============================================================
+//  CHUNKS
+// =============================================================
+
+// Inserts one ChatChunk per message (simple 1:1 mapping).
+// Split into multiple chunks here if content exceeds your embedding window size.
+function SQL_InsertChunk(sessId, msgId, chunkOrd, chunkTxt) {
+    if (!chatSqlEnabled) {
+        return;
+    }
+    try {
+        sqlParams = {};
+        sqlParams.Add({"@p1", sessId});
+        sqlParams.Add({"@p2", msgId});
+        sqlParams.Add({"@p3", chunkOrd});
+        sqlParams.Add({"@p4", chunkTxt});
+
+        chunkSql = "INSERT INTO " + WXAI_DB + ".dbo.ChatChunk "
+                 + "(ChatSessionId, ChatMessageId, ChunkOrder, ChunkText, ChunkType) "
+                 + "VALUES (@p1, @p2, @p3, @p4, 'message')";
+
+        sqlQuery(chunkSql, sqlParams);
+
+    } catch (ex) {
+        MSG("SQL_InsertChunk error: " + ex);
+    }
+}

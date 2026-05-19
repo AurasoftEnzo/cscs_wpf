@@ -1,0 +1,618 @@
+// ============================================================
+//  WXAIMANAGER.CSCS
+//  AI Chat Manager – CSCS_WPF implementation
+//
+//
+//  Features:
+//    - Multi-provider AI chat (OpenAI, Ollama, Azure OpenAI, OpenRouter)
+//    - Conversation history (session)
+//    - Configurable system prompt, temperature, max tokens
+//    - Settings saved to local config file
+// ============================================================
+
+CreateWindow(strTrim(tpath()) + "wxaimanager.xaml");
+
+// ---- Settings -----------------------------------------------
+DEFINE aiProvider       type a size 30;
+DEFINE aiApiKey         type a size 500;
+DEFINE aiBaseUrl        type a size 300;
+DEFINE aiModel          type a size 100;
+DEFINE aiSystemPrompt   type a size 3000;
+DEFINE aiTemperatureStr type a size 10;
+DEFINE aiMaxTokensStr   type a size 10;
+DEFINE settingsFilePath type a size 400;
+
+// ---- Current conversation -----------------------------------
+DEFINE msgCount         type i;
+DEFINE msgRole          type a size 20  array 200;
+DEFINE msgContent       type a size 5000 array 200;
+
+// ---- Conversation history (session) -------------------------
+DEFINE histCount        type i;
+DEFINE histLineCntr     type r;
+DEFINE histActive       type r;
+DEFINE histMax          type r;
+DEFINE arrayHistDate    type a size 30   array 50;
+DEFINE arrayHistTitle   type a size 150  array 50;
+DEFINE arrayHistText    type a size 20000 array 50;
+
+// ---- State --------------------------------------------------
+DEFINE isWaiting        type l;
+DEFINE settingsOpen     type l;
+
+// ---- Async API temp storage ---------------------------------
+DEFINE apiLastResponse  type a size 20000;
+DEFINE apiLastCode      type i;
+DEFINE apiLastError     type a size 500;
+
+
+// =============================================================
+//  WINDOW LIFECYCLE
+// =============================================================
+
+function wxaimanager_OnStart() {
+    settingsFilePath = strTrim(tpath()) + "wxaimanager_cfg.txt";
+
+    // --- defaults ---
+    aiProvider       = "OpenAI";
+    aiApiKey         = "";
+    aiBaseUrl        = "https://api.openai.com/v1";
+    aiModel          = "gpt-4o-mini";
+    aiSystemPrompt   = "You are a helpful assistant.";
+    aiTemperatureStr = "0.7";
+    aiMaxTokensStr   = "2000";
+
+    LoadSettings();
+
+    // --- chat state ---
+    chatDisplayText  = "";
+    msgCount         = 0;
+    histCount        = 0;
+    histMax          = 50;
+    histActive       = 0;
+    histLineCntr     = 0;
+    isWaiting        = false;
+    settingsOpen     = false;
+
+    // --- populate provider ComboBox ---
+    SetWidgetOptions("cbProvider", "Items", "OpenAI|Ollama|Azure OpenAI|OpenRouter|Custom");
+    SetWidgetOptions("cbProvider", "Text", aiProvider);
+
+    // --- apply saved settings to UI ---
+    SetWidgetOptions("txtModel",        "Text", aiModel);
+    SetWidgetOptions("txtApiKey",       "Text", aiApiKey);
+    SetWidgetOptions("txtBaseUrl",      "Text", aiBaseUrl);
+    SetWidgetOptions("txtSystemPrompt", "Text", aiSystemPrompt);
+    SetWidgetOptions("txtTemperature",  "Text", aiTemperatureStr);
+    SetWidgetOptions("txtMaxTokens",    "Text", aiMaxTokensStr);
+
+    // --- hide settings panel initially ---
+    SetWidgetOptions("panelSettings", "Visibility", "Collapsed");
+
+    // --- history grid ---
+    DisplayArraySetup("datagridHistory", histLineCntr, histActive, histMax);
+
+    // --- status ---
+    SetStatus("Spreman. Unesite poruku i pritisnite Pošalji.");
+    UpdateProviderLabel();
+
+    // --- welcome ---
+    ShowWelcome();
+}
+
+function wxaimanager_OnDisplay() {
+    // intentionally empty
+}
+
+function wxaimanager_OnClose() {
+    // intentionally empty – history is in-memory only
+}
+
+
+// =============================================================
+//  BUTTON EVENTS
+// =============================================================
+
+function btnSend@clicked() {
+    if (isWaiting) {
+        return;
+    }
+
+    // aiProvider, aiModel and userInput are kept in sync via DataContext bindings
+    inputText = userInput;
+    inputText = inputText.Trim();
+
+    if (inputText == "") {
+        SetStatus("Unesite poruku za slanje.");
+        return;
+    }
+
+    // Add user message
+    msgRole[msgCount]    = "user";
+    msgContent[msgCount] = inputText;
+    msgCount++;
+
+    // Display user message
+    AppendToDisplay("Vas", inputText);
+
+    // Clear input
+    SetWidgetOptions("txtInput", "Text", "");
+
+    // Send to AI
+    SendToAI();
+}
+
+function btnNewChat@clicked() {
+    if (msgCount > 0) {
+        SaveCurrentChatToHistory();
+    }
+    StartNewChat();
+}
+
+function btnSettings@clicked() {
+    if (settingsOpen) {
+        SetWidgetOptions("panelSettings", "Visibility", "Collapsed");
+        settingsOpen = false;
+        SetWidgetOptions("btnSettings", "Content", "Postavke");
+    } else {
+        SetWidgetOptions("panelSettings", "Visibility", "Visible");
+        settingsOpen = true;
+        SetWidgetOptions("btnSettings", "Content", "Zatvori postavke");
+    }
+}
+
+function btnSaveSettings@clicked() {
+    SaveSettings();
+    SetWidgetOptions("panelSettings", "Visibility", "Collapsed");
+    settingsOpen = false;
+    SetWidgetOptions("btnSettings", "Content", "Postavke");
+    UpdateProviderLabel();
+    SetStatus("Postavke su uspješno spremljene.");
+}
+
+function btnClearChat@clicked() {
+    if (msgCount > 0) {
+        SaveCurrentChatToHistory();
+    }
+    StartNewChat();
+}
+
+// Provider ComboBox change
+// aiProvider is kept in sync via DataContext="aiProvider" on the ComboBox.
+function cbProvider@change(sender, args) {
+    UpdateBaseUrlForProvider();
+    UpdateProviderLabel();
+}
+
+
+// =============================================================
+//  HISTORY DATAGRID
+// =============================================================
+
+function datagridHistory@select() {
+    try {
+        rowData = GetSelectedGridRow("datagridHistory");
+
+        if (Size(rowData) < 2) {
+            return;
+        }
+
+        selectedDate = rowData[0];
+
+        // Find matching history entry by date (unique key)
+        for (i = 0; i < histCount; i++) {
+            if (arrayHistDate[i] == selectedDate) {
+                LoadHistoryItem(i);
+                return;
+            }
+        }
+    } catch (ex) {
+        SetStatus("Greška pri učitavanju razgovora: " + ex);
+    }
+}
+
+
+// =============================================================
+//  API CALL
+// =============================================================
+
+function SendToAI() {
+    try {
+        // All settings variables are kept in sync via DataContext bindings on the
+        // respective TextBox/ComboBox controls – just read them directly.
+
+        if (aiBaseUrl == "") {
+            SetStatus("Greška: Base URL nije postavljen. Provjerite postavke.");
+            return;
+        }
+
+        // Build endpoint URL
+        // OpenAI-compatible: POST /chat/completions
+        endpoint = aiBaseUrl;
+        if (!endpoint.EndsWith("/")) {
+            endpoint = endpoint + "/";
+        }
+        endpoint = endpoint + "chat/completions";
+
+        // Build JSON payload
+        jsonBody = BuildApiPayload();
+
+        SetUIBusy(true);
+        SetStatus("Šaljem zahtjev AI-u...");
+
+        // Pass API key as bearer token (param 4)
+        // For Ollama / no-auth providers, leave as empty string
+        authToken = "";
+        if (aiApiKey != "") {
+            authToken = "Bearer " + aiApiKey;
+        }
+
+        WebRequest("POST", endpoint, jsonBody, authToken,
+                   "SendMessageSuccess", "SendMessageFailure",
+                   "application/json", null, 120000, false);
+
+    } catch (ex) {
+        SetUIBusy(false);
+        SetStatus("Greška pri slanju zahtjeva: " + ex);
+        AppendToDisplay("GREŠKA", ex);
+    }
+}
+
+// ----- Async callbacks ---------------------------------------
+
+function SendMessageSuccess(trackingId, responseCode, res) {
+    apiLastResponse = res;
+    apiLastCode     = responseCode;
+    RunOnMain("ProcessAIResponse");
+}
+
+function SendMessageFailure(trackingId, responseCode, res) {
+    apiLastResponse = res;
+    apiLastCode     = responseCode;
+    RunOnMain("ProcessAIError");
+}
+
+// Main-thread handlers ----------------------------------------
+
+function ProcessAIResponse() {
+    try {
+        if (apiLastCode != 200) {
+            ProcessAIError();
+            return;
+        }
+
+        responseObj = DeserializeJson(apiLastResponse);
+
+        // Check for error object in response
+        if (Contains(responseObj, "error")) {
+            errObj = responseObj["error"];
+            if (Contains(errObj, "message")) {
+                errMsg = errObj["message"];
+            } else {
+                errMsg = "Nepoznata API greška";
+            }
+            AppendToDisplay("API GREŠKA", errMsg);
+            SetUIBusy(false);
+            SetStatus("API greška: " + errMsg);
+            return;
+        }
+
+        // Standard OpenAI chat completions response
+        if (Contains(responseObj, "choices")) {
+            choices = responseObj["choices"];
+            if (Size(choices) > 0) {
+                choice    = choices[0];
+                msgObj    = choice["message"];
+                content   = msgObj["content"];
+                aiModelUsed = "";
+                if (Contains(responseObj, "model")) {
+                    aiModelUsed = responseObj["model"];
+                }
+
+                // Store in conversation
+                msgRole[msgCount]    = "assistant";
+                msgContent[msgCount] = content;
+                msgCount++;
+
+                // Display
+                label = "AI";
+                if (aiModelUsed != "") {
+                    label = "AI (" + aiModelUsed + ")";
+                }
+                AppendToDisplay(label, content);
+                SetStatus("Odgovor primljen.");
+            }
+        } else {
+            AppendToDisplay("AI (raw)", apiLastResponse);
+            SetStatus("Odgovor primljen (format nepoznat).");
+        }
+
+    } catch (ex) {
+        AppendToDisplay("GREŠKA parsiranja", ex + "\n\nSirovi odgovor:\n" + apiLastResponse);
+        SetStatus("Greška parsiranja odgovora: " + ex);
+    }
+
+    SetUIBusy(false);
+}
+
+function ProcessAIError() {
+    errDetail = "HTTP " + apiLastCode;
+    if (apiLastResponse != "") {
+        // Try to extract error message from JSON
+        try {
+            errObj = DeserializeJson(apiLastResponse);
+            if (Contains(errObj, "error")) {
+                inner = errObj["error"];
+                if (Contains(inner, "message")) {
+                    errDetail = inner["message"];
+                }
+            }
+        } catch (ex) {
+            //errDetail = errDetail + " – " + apiLastResponse;
+            errDetail = errDetail + " - " + apiLastResponse;
+        }
+    }
+    AppendToDisplay("API GREŠKA", errDetail);
+    SetUIBusy(false);
+    SetStatus("API greška: " + errDetail);
+}
+
+
+// =============================================================
+//  JSON PAYLOAD BUILDER
+// =============================================================
+
+function BuildApiPayload() {
+    temp = aiTemperatureStr;
+    if (temp == "") {
+        temp = "0.7";
+    }
+    maxTok = aiMaxTokensStr;
+    if (maxTok == "") {
+        maxTok = "2000";
+    }
+
+    payload = '{"model": "' + aiModel + '",';
+    payload = payload + '"temperature": ' + temp + ',';
+    payload = payload + '"max_tokens": ' + maxTok + ',';
+    payload = payload + '"messages": [';
+
+    firstMsg = true;
+
+    // System prompt
+    if (aiSystemPrompt != "") {
+        payload   = payload + '{"role": "system", "content": "' + EscapeForJson(aiSystemPrompt) + '"}';
+        firstMsg = false;
+    }
+
+    // Conversation messages
+    for (i = 0; i < msgCount; i++) {
+        if (!firstMsg) {
+            payload = payload + ',';
+        }
+        payload  = payload + '{"role": "' + msgRole[i] + '", "content": "' + EscapeForJson(msgContent[i]) + '"}';
+        firstMsg = false;
+    }
+
+    payload = payload + ']}';
+    return payload;
+}
+
+function EscapeForJson(str) {
+    // Order matters: backslash must be first
+    result = str.Replace("\\", "\\\\");
+    result = result.Replace("\"", "\\\"");
+    result = result.Replace("\n", "\\n");
+    result = result.Replace("\r", "");
+    result = result.Replace("\t", "\\t");
+    return result;
+}
+
+
+// =============================================================
+//  CHAT DISPLAY
+// =============================================================
+
+function ShowWelcome() {
+    chatDisplayText = "-------------------------------------------\n";
+    //chatDisplayText = chatDisplayText + "  AI Manager – CSCS_WPF\n";
+    chatDisplayText = chatDisplayText + "  AI Manager - CSCS_WPF\n";
+    chatDisplayText = chatDisplayText + "  Provider: " + aiProvider + "  |  Model: " + aiModel + "\n";
+    chatDisplayText = chatDisplayText + "-------------------------------------------\n";
+    chatDisplayText = chatDisplayText + "  Unesite poruku u polje ispod i pritisnite Pošalji.\n";
+    chatDisplayText = chatDisplayText + "  Za promjenu API ključa i modela koristite Postavke.\n";
+    chatDisplayText = chatDisplayText + "-------------------------------------------\n\n";
+    RefreshChatDisplay();
+}
+
+function AppendToDisplay(role, content) {
+    ts = Now("HH:mm:ss");
+    chatDisplayText = chatDisplayText + "[" + role + "] " + ts + "\n";
+    chatDisplayText = chatDisplayText + content + "\n\n";
+    RefreshChatDisplay();
+}
+
+function RefreshChatDisplay() {
+    SetWidgetOptions("txtChat", "Text", chatDisplayText);
+}
+
+function StartNewChat() {
+    chatDisplayText = "";
+    msgCount = 0;
+    ShowWelcome();
+    SetStatus("Novi razgovor pokrenut.");
+}
+
+
+// =============================================================
+//  HISTORY
+// =============================================================
+
+function SaveCurrentChatToHistory() {
+    if (msgCount == 0) {
+        return;
+    }
+    if (histCount >= 50) {
+        // Shift history (drop oldest)
+        for (i = 0; i < 49; i++) {
+            arrayHistDate[i]  = arrayHistDate[i + 1];
+            arrayHistTitle[i] = arrayHistTitle[i + 1];
+            arrayHistText[i]  = arrayHistText[i + 1];
+        }
+        histCount = 49;
+    }
+
+    ts    = Now("dd.MM. HH:mm");
+    title = "";
+    // Use first user message as title (max 60 chars)
+    for (i = 0; i < msgCount; i++) {
+        if (msgRole[i] == "user") {
+            title = msgContent[i];
+            if (title.length > 60) {
+                title = Substring(title, 0, 57) + "...";
+            }
+            break;
+        }
+    }
+    if (title == "") {
+        title = "(razgovor bez poruke)";
+    }
+
+    arrayHistDate[histCount]  = ts;
+    arrayHistTitle[histCount] = title;
+    arrayHistText[histCount]  = chatDisplayText;
+    histCount++;
+
+    UpdateHistoryGrid();
+}
+
+function LoadHistoryItem(idx) {
+    if (idx < 0 || idx >= histCount) {
+        return;
+    }
+    chatDisplayText = arrayHistText[idx];
+    // Reset message array (history is read-only – cannot continue)
+    msgCount = 0;
+    RefreshChatDisplay();
+    SetStatus("Učitan prošli razgovor od " + arrayHistDate[idx] + ". Novi razgovor za nastavak.");
+}
+
+function UpdateHistoryGrid() {
+    histActive = histCount;
+    DisplayArraySetup("datagridHistory", histLineCntr, histActive, histMax);
+}
+
+
+// =============================================================
+//  SETTINGS
+// =============================================================
+
+function LoadSettings() {
+    try {
+        if (!Exists(settingsFilePath)) {
+            return;
+        }
+        content = ReadFile(settingsFilePath);
+        if (content == "" || content == null) {
+            return;
+        }
+        lines = content.Split("\n");
+        for (i = 0; i < Size(lines); i++) {
+            line = lines[i].Trim();
+            if (line == "") {
+                continue;
+            }
+            pipeIdx = line.IndexOf("|");
+            if (pipeIdx < 0) {
+                continue;
+            }
+            key = Substring(line, 0, pipeIdx).Trim();
+            val = Substring(line, pipeIdx + 1, line.length - pipeIdx - 1).Trim();
+
+            if (key == "provider") {
+                aiProvider = val;
+            } elif (key == "apikey") {
+                aiApiKey = val;
+            } elif (key == "baseurl") {
+                aiBaseUrl = val;
+            } elif (key == "model") {
+                aiModel = val;
+            } elif (key == "systemprompt") {
+                aiSystemPrompt = val.Replace("\\n", "\n");
+            } elif (key == "temperature") {
+                aiTemperatureStr = val;
+            } elif (key == "maxtokens") {
+                aiMaxTokensStr = val;
+            }
+        }
+    } catch (ex) {
+        // File may not exist on first run – ignore
+    }
+}
+
+function SaveSettings() {
+    // All variables are kept in sync by DataContext bindings – read them directly.
+
+    sysEscaped = aiSystemPrompt.Replace("\n", "\\n");
+
+    content  = "provider|"     + aiProvider      + "\n";
+    content  = content + "apikey|"       + aiApiKey        + "\n";
+    content  = content + "baseurl|"      + aiBaseUrl       + "\n";
+    content  = content + "model|"        + aiModel         + "\n";
+    content  = content + "systemprompt|" + sysEscaped      + "\n";
+    content  = content + "temperature|"  + aiTemperatureStr + "\n";
+    content  = content + "maxtokens|"    + aiMaxTokensStr  + "\n";
+
+    try {
+        SaveFile(content, settingsFilePath, "");
+    } catch (ex) {
+        MessageBox("Greška pri spremanju postavki:\n" + ex);
+    }
+}
+
+
+// =============================================================
+//  UI HELPERS
+// =============================================================
+
+function SetUIBusy(busy) {
+    isWaiting = busy;
+    if (busy) {
+        SetWidgetOptions("btnSend",     "IsEnabled", "false");
+        SetWidgetOptions("btnSend",     "Content",   "Čekam...");
+        SetWidgetOptions("btnNewChat",  "IsEnabled", "false");
+        Cursor("wait");
+    } else {
+        SetWidgetOptions("btnSend",     "IsEnabled", "true");
+        SetWidgetOptions("btnSend",     "Content",   "Pošalji");
+        SetWidgetOptions("btnNewChat",  "IsEnabled", "true");
+        Cursor("dflt");
+    }
+}
+
+function SetStatus(msg) {
+    SetWidgetOptions("lblStatus", "Content", msg);
+}
+
+function UpdateProviderLabel() {
+    SetWidgetOptions("lblProviderInfo", "Content", aiProvider + " / " + aiModel);
+}
+
+function UpdateBaseUrlForProvider() {
+    prov = aiProvider;
+    if (prov == "OpenAI") {
+        SetWidgetOptions("txtBaseUrl", "Text", "https://api.openai.com/v1");
+        aiBaseUrl = "https://api.openai.com/v1";
+    } elif (prov == "Ollama") {
+        SetWidgetOptions("txtBaseUrl", "Text", "http://localhost:11434/v1");
+        aiBaseUrl = "http://localhost:11434/v1";
+    } elif (prov == "OpenRouter") 
+    {
+        SetWidgetOptions("txtBaseUrl", "Text", "https://openrouter.ai/api/v1");
+        aiBaseUrl = "https://openrouter.ai/api/v1";
+    }
+}
+// Azure OpenAI and Custom: user sets URL manually
+
+// Note: widget values are read via DataContext-bound script variables.
+// SetWidgetOptions is used only for write operations and non-bound controls.

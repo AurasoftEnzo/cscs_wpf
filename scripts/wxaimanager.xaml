@@ -1,0 +1,480 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:wcl="clr-namespace:WpfControlsLibrary;assembly=WpfControlsLibrary"
+        xmlns:local="clr-namespace:WpfCSCS"
+        mc:Ignorable="d"
+        Title="AI Manager"
+        Height="780"
+        Width="1200"
+        MinHeight="600"
+        MinWidth="900"
+        ResizeMode="CanResize"
+        WindowStartupLocation="CenterScreen"
+        Name="wxaimanagerWindow"
+        Background="#1A2535">
+
+    <Window.Resources>
+
+        <!-- Flat rounded button -->
+        <Style x:Key="FlatBtn" TargetType="Button">
+            <Setter Property="Foreground"      Value="White"/>
+            <Setter Property="FontFamily"      Value="Segoe UI"/>
+            <Setter Property="FontSize"        Value="12.5"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding"         Value="10,6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="5"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Opacity" Value="0.82"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Opacity" Value="0.65"/>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.4"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Dark TextBox style -->
+        <Style x:Key="DarkTextBox" TargetType="TextBox">
+            <Setter Property="Background"    Value="#1E2F3D"/>
+            <Setter Property="Foreground"    Value="#D0D8E4"/>
+            <Setter Property="CaretBrush"    Value="White"/>
+            <Setter Property="BorderBrush"   Value="#3D5066"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding"       Value="6,4"/>
+            <Setter Property="FontFamily"    Value="Segoe UI"/>
+            <Setter Property="FontSize"      Value="12.5"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <!-- Section heading (orange accent) -->
+        <Style x:Key="SectionHeader" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#E67E22"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize"   Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin"     Value="0,0,0,5"/>
+        </Style>
+
+        <!-- Small muted label -->
+        <Style x:Key="MutedLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#7F8C8D"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize"   Value="11.5"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- Dark ComboBox -->
+        <Style TargetType="ComboBox">
+            <Setter Property="Background"  Value="#1E2F3D"/>
+            <Setter Property="Foreground"  Value="#D0D8E4"/>
+            <Setter Property="BorderBrush" Value="#3D5066"/>
+            <Setter Property="FontFamily"  Value="Segoe UI"/>
+            <Setter Property="FontSize"    Value="12.5"/>
+            <Setter Property="Height"      Value="28"/>
+        </Style>
+
+    </Window.Resources>
+
+    <!-- ================================================================
+         Root grid: 4 rows
+           0 – Toolbar
+           1 – Content (sidebar + chat area)
+           2 – Settings panel (collapsed by default)
+           3 – Status bar
+         ================================================================ -->
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>   <!-- Toolbar       -->
+            <RowDefinition Height="*"/>      <!-- Content       -->
+            <RowDefinition Height="Auto"/>   <!-- Settings      -->
+            <RowDefinition Height="Auto"/>   <!-- Status bar    -->
+        </Grid.RowDefinitions>
+
+        <!-- ============================================================
+             ROW 0 – Toolbar
+             ============================================================ -->
+        <Border Grid.Row="0"
+                Background="#263646"
+                CornerRadius="8"
+                Padding="12,8"
+                Margin="0,0,0,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>    <!-- Provider/Model -->
+                    <ColumnDefinition Width="*"/>       <!-- Title          -->
+                    <ColumnDefinition Width="Auto"/>    <!-- Buttons        -->
+                </Grid.ColumnDefinitions>
+
+                <!-- Provider and Model selectors -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Provider:" Style="{StaticResource MutedLabel}" Margin="0,0,6,0"/>
+                    <ComboBox Name="cbProvider"
+                              DataContext="aiProvider"
+                              Width="130"
+                              Margin="0,0,14,0"
+                              VerticalAlignment="Center"/>
+
+                    <TextBlock Text="Model:" Style="{StaticResource MutedLabel}" Margin="0,0,6,0"/>
+                    <TextBox Name="txtModel"
+                             DataContext="aiModel"
+                             Style="{StaticResource DarkTextBox}"
+                             Width="180"
+                             Margin="0,0,0,0"
+                             ToolTip="Unesite naziv modela (npr. gpt-4o-mini, llama3, ...)"/>
+                </StackPanel>
+
+                <!-- Title -->
+                <TextBlock Grid.Column="1"
+                           Text="AI Manager"
+                           Foreground="White"
+                           FontFamily="Segoe UI"
+                           FontSize="16"
+                           FontWeight="SemiBold"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+
+                <!-- Action buttons -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Name="btnNewChat"
+                            Content="Novi razgovor"
+                            Style="{StaticResource FlatBtn}"
+                            Background="#27AE60"
+                            Width="120"
+                            Height="30"
+                            Margin="0,0,8,0"/>
+                    <Button Name="btnSettings"
+                            Content="Postavke"
+                            Style="{StaticResource FlatBtn}"
+                            Background="#2980B9"
+                            Width="90"
+                            Height="30"
+                            Margin="0,0,8,0"/>
+                    <Button Name="btnClearChat"
+                            Content="Obriši"
+                            Style="{StaticResource FlatBtn}"
+                            Background="#C0392B"
+                            Width="65"
+                            Height="30"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ============================================================
+             ROW 1 – Content: sidebar + chat
+             ============================================================ -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220"/>    <!-- Sidebar -->
+                <ColumnDefinition Width="8"/>      <!-- Spacer  -->
+                <ColumnDefinition Width="*"/>      <!-- Chat    -->
+            </Grid.ColumnDefinitions>
+
+            <!-- Sidebar: history -->
+            <Border Grid.Column="0"
+                    Background="#263646"
+                    CornerRadius="8"
+                    Padding="8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0"
+                               Text="Prošli razgovori"
+                               Style="{StaticResource SectionHeader}"
+                               Margin="2,2,0,8"/>
+
+                    <DataGrid Grid.Row="1"
+                              Name="datagridHistory"
+                              Background="Transparent"
+                              IsReadOnly="True"
+                              AutoGenerateColumns="False"
+                              HeadersVisibility="Column"
+                              BorderThickness="0"
+                              RowHeight="26"
+                              FontSize="11.5"
+                              FontFamily="Segoe UI"
+                              Foreground="#C8D0DA"
+                              RowBackground="#1E2F3D"
+                              AlternatingRowBackground="#243444"
+                              GridLinesVisibility="Horizontal"
+                              HorizontalGridLinesBrush="#2D4057"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              CanUserResizeRows="False"
+                              CanUserSortColumns="False"
+                              SelectionMode="Single"
+                              HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Auto">
+                        <DataGrid.Resources>
+                            <Style TargetType="{x:Type DataGridColumnHeader}">
+                                <Setter Property="Background"   Value="#1A2535"/>
+                                <Setter Property="Foreground"   Value="#E67E22"/>
+                                <Setter Property="FontWeight"   Value="SemiBold"/>
+                                <Setter Property="FontSize"     Value="11"/>
+                                <Setter Property="Padding"      Value="4,4"/>
+                                <Setter Property="BorderBrush"  Value="#2D4057"/>
+                                <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                            </Style>
+                        </DataGrid.Resources>
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="Datum" Width="68">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBox Name="tbHistDate"
+                                                 Tag="arrayHistDate"
+                                                 IsReadOnly="True"
+                                                 Background="Transparent"
+                                                 BorderThickness="0"
+                                                 Foreground="#7F8C8D"
+                                                 FontSize="10.5"
+                                                 Padding="2,1"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="Razgovor" Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBox Name="tbHistTitle"
+                                                 Tag="arrayHistTitle"
+                                                 IsReadOnly="True"
+                                                 Background="Transparent"
+                                                 BorderThickness="0"
+                                                 Foreground="#C8D0DA"
+                                                 FontSize="11.5"
+                                                 Padding="2,1"
+                                                 TextWrapping="NoWrap"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Border>
+
+            <!-- Main chat area -->
+            <Border Grid.Column="2"
+                    Background="#263646"
+                    CornerRadius="8"
+                    Padding="1">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>      <!-- Chat display -->
+                        <RowDefinition Height="Auto"/>   <!-- Input area   -->
+                    </Grid.RowDefinitions>
+
+                    <!-- Chat transcript (read-only) -->
+                    <TextBox Grid.Row="0"
+                             Name="txtChat"
+                             IsReadOnly="True"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="True"
+                             Background="#1A2535"
+                             Foreground="#D0D8E4"
+                             FontFamily="Consolas, Courier New, monospace"
+                             FontSize="13"
+                             TextBlock.LineHeight="20"
+                             BorderThickness="0"
+                             Padding="14,10"
+                             VerticalScrollBarVisibility="Auto"
+                             HorizontalScrollBarVisibility="Disabled"
+                             VerticalAlignment="Stretch"/>
+
+                    <!-- Input area -->
+                    <Border Grid.Row="1"
+                            Background="#1E2F3D"
+                            CornerRadius="0,0,7,7"
+                            Padding="10,8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBox Grid.Column="0"
+                                     Name="txtInput"
+                                     DataContext="userInput"
+                                     TextWrapping="Wrap"
+                                     AcceptsReturn="True"
+                                     MinHeight="62"
+                                     MaxHeight="130"
+                                     Background="#263646"
+                                     Foreground="White"
+                                     CaretBrush="White"
+                                     BorderBrush="#3D5066"
+                                     BorderThickness="1"
+                                     Padding="10,8"
+                                     FontFamily="Segoe UI"
+                                     FontSize="13"
+                                     VerticalScrollBarVisibility="Auto"
+                                     ToolTip="Unesite poruku i pritisnite Pošalji (ili Ctrl+Enter)"/>
+
+                            <StackPanel Grid.Column="1"
+                                        Orientation="Vertical"
+                                        Margin="10,0,0,0"
+                                        VerticalAlignment="Bottom">
+                                <Button Name="btnSend"
+                                        Content="Pošalji"
+                                        Style="{StaticResource FlatBtn}"
+                                        Background="#E67E22"
+                                        Width="90"
+                                        Height="38"
+                                        FontSize="13"
+                                        FontWeight="SemiBold"
+                                        Margin="0,0,0,6"/>
+                                <Button Name="btnAbort"
+                                        Content="Prekini"
+                                        Style="{StaticResource FlatBtn}"
+                                        Background="#555F6A"
+                                        Width="90"
+                                        Height="22"
+                                        FontSize="11"
+                                        IsEnabled="False"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                </Grid>
+            </Border>
+
+        </Grid>
+
+        <!-- ============================================================
+             ROW 2 – Settings panel (collapsed by default)
+             ============================================================ -->
+        <Border Grid.Row="2"
+                Name="panelSettings"
+                Background="#263646"
+                CornerRadius="8"
+                Padding="14,12"
+                Margin="0,8,0,0"
+                Visibility="Collapsed">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Column 0: API Key + Base URL + Temperature -->
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="API Ključ:" Style="{StaticResource SectionHeader}"/>
+                    <TextBox Name="txtApiKey"
+                             DataContext="aiApiKey"
+                             Style="{StaticResource DarkTextBox}"
+                             Margin="0,0,0,10"
+                             ToolTip="Vaš OpenAI / OpenRouter / Azure API ključ. Ostavite prazno za Ollama."/>
+
+                    <TextBlock Text="Base URL:" Style="{StaticResource SectionHeader}"/>
+                    <TextBox Name="txtBaseUrl"
+                             DataContext="aiBaseUrl"
+                             Style="{StaticResource DarkTextBox}"
+                             Margin="0,0,0,10"
+                             ToolTip="Npr. https://api.openai.com/v1  ili  http://localhost:11434/v1"/>
+
+                    <TextBlock Text="Temperature (0.0 – 2.0):" Style="{StaticResource SectionHeader}"/>
+                    <TextBox Name="txtTemperature"
+                             DataContext="aiTemperatureStr"
+                             Style="{StaticResource DarkTextBox}"
+                             Width="80"
+                             HorizontalAlignment="Left"
+                             ToolTip="Vrijednosti: 0.0 = deterministički, 1.0 = uravnoteženo, 2.0 = kreativno"/>
+
+                    <TextBlock Text="Max Tokens:" Style="{StaticResource SectionHeader}" Margin="0,10,0,5"/>
+                    <TextBox Name="txtMaxTokens"
+                             DataContext="aiMaxTokensStr"
+                             Style="{StaticResource DarkTextBox}"
+                             Width="80"
+                             HorizontalAlignment="Left"
+                             ToolTip="Maksimalan broj tokena u odgovoru (npr. 2000, 4096)"/>
+                </StackPanel>
+
+                <!-- Column 2: System Prompt -->
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="Sistemski prompt (System Prompt):" Style="{StaticResource SectionHeader}"/>
+                    <TextBox Name="txtSystemPrompt"
+                             DataContext="aiSystemPrompt"
+                             Style="{StaticResource DarkTextBox}"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="True"
+                             Height="130"
+                             VerticalScrollBarVisibility="Auto"
+                             VerticalContentAlignment="Top"
+                             ToolTip="Uputa AI-u o načinu odgovaranja. Npr: You are a helpful assistant."/>
+
+                    <TextBlock Margin="0,10,0,4"
+                               Foreground="#7F8C8D"
+                               FontFamily="Segoe UI"
+                               FontSize="11"
+                               TextWrapping="Wrap">
+                        Primjeri modela: gpt-4o-mini · gpt-4o · gpt-3.5-turbo (OpenAI)&#x0a;llama3 · mistral · codellama (Ollama)&#x0a;meta-llama/... · anthropic/... (OpenRouter)
+                    </TextBlock>
+                </StackPanel>
+
+                <!-- Column 4: Save button -->
+                <StackPanel Grid.Column="4" VerticalAlignment="Center">
+                    <Button Name="btnSaveSettings"
+                            Content="Spremi postavke"
+                            Style="{StaticResource FlatBtn}"
+                            Background="#27AE60"
+                            Width="140"
+                            Height="44"
+                            FontSize="13"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ============================================================
+             ROW 3 – Status bar
+             ============================================================ -->
+        <Border Grid.Row="3"
+                Background="#263646"
+                CornerRadius="8"
+                Padding="12,5"
+                Margin="0,8,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Label Grid.Column="0"
+                       Name="lblStatus"
+                       Content="Inicijalizacija..."
+                       Foreground="#C8D0DA"
+                       FontFamily="Segoe UI"
+                       FontSize="12"
+                       Padding="0"/>
+
+                <TextBlock Grid.Column="1"
+                           Name="lblProviderInfo"
+                           Text="- / -"
+                           Foreground="#7F8C8D"
+                           FontFamily="Segoe UI"
+                           FontSize="11.5"
+                           VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+    </Grid>
+</Window>

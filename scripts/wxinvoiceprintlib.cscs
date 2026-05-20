@@ -583,13 +583,21 @@ function PopulateHeaderVariables() {
         }
         pcl_iznos = paddedAmount + pcl_iznos;
     }
-    
-    pcl_imePlati = nkpr_gl_cusnme;
-    pcl_adrPlati = nkpr_gl_cusa1;
-    pcl_ctyPlati = nkpr_gl_cuscty;
-    pcl_imePrimi = kpsy_comp_name;
-    pcl_adrPrimi = kpsy_comp_add1;
-    pcl_ctyPrimi = kpsy_comp_csz;
+
+    // pcl_imePlati = nkpr_gl_cusnme;
+    // pcl_adrPlati = nkpr_gl_cusa1;
+    // pcl_ctyPlati = nkpr_gl_cuscty;
+    // pcl_imePrimi = kpsy_comp_name;
+    // pcl_adrPrimi = kpsy_comp_add1;
+    // pcl_ctyPrimi = kpsy_comp_csz;
+
+    pcl_imePlati = TrimIfLessThan(nkpr_gl_cusnme,30);
+    pcl_adrPlati = TrimIfLessThan(nkpr_gl_cusa1,27);
+    pcl_ctyPlati = TrimIfLessThan(nkpr_gl_cuscty,27);
+    pcl_imePrimi = TrimIfLessThan(kpsy_comp_name,25);
+    pcl_adrPrimi = TrimIfLessThan(kpsy_comp_add1,25);
+    pcl_ctyPrimi = TrimIfLessThan(kpsy_comp_csz,27);
+   
 
     KPSYSTEMQuery = "SELECT TOP 1 SY_SY_OZN_BANKE,SY_SP_VL_FIRMA FROM " + databaseName + ".dbo.KPSYSTEM;";
     KPSYSTEMResult = sqlQuery(KPSYSTEMQuery);
@@ -632,6 +640,8 @@ function PopulateHeaderVariables() {
     if (pcl_opis ==''){
         pcl_opis = "Račun broj : " + NKPR_GL_NUM;
     }
+    pcl_opis = TrimIfLessThan(pcl_opis, 35);
+    
     dlmt = "\n";
 
     QRparametar = pcl_glava + dlmt +
@@ -705,6 +715,12 @@ function PopulateHeaderVariables() {
     } else {
         deliveryLocationIDformatted = deliveryLocationID;
     }
+}
+function TrimIfLessThan(strvalue, maxLength) {
+    if (strvalue.length > maxLength) {
+        strvalue = Substring(strvalue, 0, maxLength);
+    }
+    return strvalue;
 }
 
 function BuildLinesSubreport() {
@@ -819,6 +835,10 @@ function BuildAttachmentsSubreport() {
             AddAttachmentFromPicture(NKPR_LN_SASTAV, "Linija " + NKPR_LN_BR_LN + ".: ");
         }
     }
+    if (PrilogCount == 0) {
+        SetReportControlProperty(reportHandle,"WXeracunprint_subreportAttachments","Visible",false);
+    }
+
 }
 
 function AddAttachmentFromPicture(picNum, prefixText) {

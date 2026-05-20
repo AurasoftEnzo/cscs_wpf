@@ -742,6 +742,7 @@ function BuildLinesSubreport() {
         priceAndPriceType = FormatNum(NKPR_LN_PPRCE, 4, ".", "abs");
         baseQuantity = "1.00";
         baseQuantityUnitCode = quantityUnit;
+        formattedBaseQuantity = baseQuantity + " " + baseQuantityUnitCode;
 
         lineTaxInfo = GetLineTaxInfo(NKPR_LN_TXBLE, NKPR_LN_PRNPR);
         taxPercent = lineTaxInfo["taxPercent"];
@@ -751,12 +752,13 @@ function BuildLinesSubreport() {
         SellersItemIdentificationID = artInfo["sellerId"];
         itemClassificationCode = artInfo["classCode"];
         itemClassificationCodeListID = artInfo["classListId"];
+        formattedItemClassificationCode = itemClassificationCodeListID + " " + itemClassificationCode;
 
         grossAmount = NKPR_LN_PQTY * NKPR_LN_PPRCE;
         lineDiscountAmount = NKPR_LN_POPL;
         if (lineDiscountAmount > 0) {
-            allowanceChargeAmountFormatted = FormatAmount(lineDiscountAmount) + " EUR";
-            allowanceChargeBaseAmountFormatted = FormatAmount(grossAmount) + " EUR";
+            allowanceChargeAmountFormatted ="Iznos popusta: " + FormatAmount(lineDiscountAmount) + " EUR";
+            allowanceChargeBaseAmountFormatted ="Osnovica: " + FormatAmount(grossAmount) + " EUR";
             allowanceChargeReason = "Popust na stavku";
         } else {
             allowanceChargeAmountFormatted = "";

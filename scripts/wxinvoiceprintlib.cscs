@@ -641,7 +641,7 @@ function PopulateHeaderVariables() {
         pcl_opis = "Račun broj : " + NKPR_GL_NUM;
     }
     pcl_opis = TrimIfLessThan(pcl_opis, 35);
-    
+
     dlmt = "\n";
 
     QRparametar = pcl_glava + dlmt +
@@ -668,6 +668,7 @@ function PopulateHeaderVariables() {
     supplierCity = KPSY_COMP_CSZ;
     supplierPostalZone = String(KPSY_COMP_ZIP);
     supplierCountry = GetCompanyCountryCode();
+    supplierCityPostaleZoneCountry = supplierPostalZone + ", " + supplierCity + ", " + supplierCountry;
     if (KPSY_PR_R1_R2 == "XX" || KPSY_PR_R1_R2 == "") {
         supplierVAT = supOIB;
         supplierTaxScheme = "FRE";
@@ -678,6 +679,7 @@ function PopulateHeaderVariables() {
     supplierContactName = KPSY_COMP_PHONE;
     supplierSellerContactName = KPSY_USER_NAZIV;
     supplierSellerContactID = UserOib;
+    supplierSellerContactNameContactID = "Oznaka operatera: " + supplierSellerContactName + " OIB operatera: " + supplierSellerContactID;
 
     fullName = NKPR_GL_CUSNME.trim();
     fullName += (NKPR_GL_RO != "" ? " " + NKPR_GL_RO : "");
@@ -696,6 +698,7 @@ function PopulateHeaderVariables() {
     customerCity = NKPR_GL_CUSCTY;
     customerPostalZone = String(NKPR_GL_CUSZIP);
     customerCountry = NKPR_GL_DRZAVA;
+    customerCityPostaleZoneCountry =  customerPostalZone + ", " + customerCity + ", " + customerCountry;
     customerVAT = NKPR_GL_CUSST + NKPR_GL_JMBG;
     customerTaxScheme = "VAT";
     customerContactName = "";
@@ -724,8 +727,8 @@ function TrimIfLessThan(strvalue, maxLength) {
 }
 
 function BuildLinesSubreport() {
-    detailReportArtcles = SetupReport(strtrim(tpath()) + "repx\\" + "wxeracunprint_SubreportArticles.repx", reportHandle);
-    detailReportArticlesDetails = SetupReport(strtrim(tpath()) + "repx\\" + "wxeracunprint_subreportArticlesDetails.repx", detailReportArtcles);
+    detailReportArtcles = SetupReport(strtrim(tpath()) + "repx\\" + "wxinvoiceprint_SubreportArticles.repx", reportHandle);
+    detailReportArticlesDetails = SetupReport(strtrim(tpath()) + "repx\\" + "wxinvoiceprint_subreportArticlesDetails.repx", detailReportArtcles);
 
     for (i = 1; i < Size(linRes); i++) {
         FillInvoiceLine(i);
@@ -735,8 +738,8 @@ function BuildLinesSubreport() {
         invoicedQuantity = InvoicedQuantity;
         quantityUnit = GetUNUnitCode(NKPR_LN_JEDMJ);
         invoiceLineExtensionAmount = NKPR_LN_AMT;
-        invoiceLineExtensionAmountFormatted = FormatAmount(NKPR_LN_AMT) + " EUR";
-        priceAndPriceType = FormatNum(NKPR_LN_PPRCE, 4, ".", "abs") + " EUR";
+        invoiceLineExtensionAmountFormatted = FormatAmount(NKPR_LN_AMT);
+        priceAndPriceType = FormatNum(NKPR_LN_PPRCE, 4, ".", "abs");
         baseQuantity = "1.00";
         baseQuantityUnitCode = quantityUnit;
 

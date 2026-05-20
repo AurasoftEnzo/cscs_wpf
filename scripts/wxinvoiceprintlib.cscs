@@ -708,8 +708,9 @@ function PopulateHeaderVariables() {
     deliveryPartyStreet = NKPR_GL_SHPA1;
     deliveryPartyCity = NKPR_GL_SHPCTY;
     deliveryPartyPostalZone = NKPR_GL_SHPZIP;
-    deliveryLocationID = NKSP_AD_GLN;
     deliveryPartyIdentificationCode = NKPR_GL_SHPST;
+    deliveryPartyCityPostalZoneIdentificationCode = deliveryPartyPostalZone + ", " + deliveryPartyCity + ", " + deliveryPartyIdentificationCode;
+    deliveryLocationID = NKSP_AD_GLN;
     actualDeliveryDate = "";
     actualDeliveryDateformatted = "";
     deliverySchemaID = (deliveryLocationID != "" ? "0088" : "");
@@ -773,7 +774,7 @@ function BuildLinesSubreport() {
 }
 
 function BuildTaxSubreport() {
-    detailReportPDV = SetupReport(strtrim(tpath()) + "repx\\" + "wxeracunprint_subreportPDV.repx", reportHandle);
+    detailReportPDV = SetupReport(strtrim(tpath()) + "repx\\" + "wxinvoiceprint_subreportPDV.repx", reportHandle);
     for (i = 1; i < Size(taxRes2); i++) {
         row = taxRes2[i];
         totalTaxAmount = row[0];
@@ -791,7 +792,7 @@ function BuildTaxSubreport() {
 }
 
 function BuildHrTaxSubreport() {
-    detailReportHRPDV = SetupReport(strtrim(tpath()) + "repx\\" + "wxeracunprint_subreportHRPDV.repx", reportHandle);
+    detailReportHRPDV = SetupReport(strtrim(tpath()) + "repx\\" + "wxinvoiceprint_subreportHRPDV.repx", reportHandle);
     for (i = 1; i < Size(taxRes2); i++) {
         row = taxRes2[i];
         originalTarifa = row[3].trim();
@@ -807,7 +808,7 @@ function BuildHrTaxSubreport() {
 }
 
 function BuildIbanSubreport() {
-    detailReportIBAN = SetupReport(strtrim(tpath()) + "repx\\" + "wxeracunprint_subreportIBAN.repx", reportHandle);
+    detailReportIBAN = SetupReport(strtrim(tpath()) + "repx\\" + "wxinvoiceprint_subreportIBAN.repx", reportHandle);
     if (payeeFinancialAccountCount > 0) {
         payeeFinancialAccountID = payeeAccountID;
         payeeFinancialAccountName = payeeAccountName;
@@ -816,16 +817,16 @@ function BuildIbanSubreport() {
 }
 
 function BuildNotesSubreport() {
-    detailReportNotes = SetupReport(strtrim(tpath()) + "repx\\" + "wxeracunprint_subreportNote.repx", reportHandle);
+    detailReportNotes = SetupReport(strtrim(tpath()) + "repx\\" + "wxinvoiceprint_subreportNote.repx", reportHandle);
     if (note != "") {
         OutputReport(detailReportNotes);
     }else{
-        SetReportControlProperty(reportHandle, "WXeracunprint_subreportNote", "Visible", false);
+        SetReportControlProperty(reportHandle, "wxinvoiceprint_subreportNote", "Visible", false);
     }
 }
 
 function BuildAttachmentsSubreport() {
-    detailReportAttachments = SetupReport(strtrim(tpath()) + "repx\\" + "wxeracunprint_subreportAttachments.repx", reportHandle);
+    detailReportAttachments = SetupReport(strtrim(tpath()) + "repx\\" + "wxinvoiceprint_subreportAttachments.repx", reportHandle);
     PrilogCount = 0;
 
     if (NKPR_GL_PICTHDR != 0) {
@@ -841,7 +842,7 @@ function BuildAttachmentsSubreport() {
         }
     }
     if (PrilogCount == 0) {
-        SetReportControlProperty(reportHandle,"WXeracunprint_subreportAttachments","Visible",false);
+        SetReportControlProperty(reportHandle,"wxinvoiceprint_subreportAttachments","Visible",false);
     }
 
 }

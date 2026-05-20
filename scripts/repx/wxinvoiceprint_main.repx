@@ -234,148 +234,136 @@
             </Item7>
           </Controls>
         </Item1>
-        <Item2 Ref="118" ControlType="XRSubreport" Name="WXeracunprint_SubreportHRPDV" CanShrink="true" SizeF="762.5,36.4583321" LocationFloat="13.0869341, 84.71872" />
-        <Item3 Ref="119" ControlType="XRSubreport" Name="WXeracunprint_subreportAttachments" CanShrink="true" SizeF="764.9851,24.088541" LocationFloat="8.347432, 611.3146" />
-        <Item4 Ref="120" ControlType="XRSubreport" Name="WXeracunprint_subreportNote" CanShrink="true" SizeF="764.9851,24.088541" LocationFloat="9.510579, 585" />
-        <Item5 Ref="121" ControlType="XRPanel" Name="panel3" SizeF="380,176.198853" LocationFloat="394.4957, 421.5762" BackColor="Transparent" Borders="None">
+        <Item2 Ref="118" ControlType="XRSubreport" Name="wxinvoiceprint_subreportHRPDV" CanShrink="true" SizeF="762.5,36.4583321" LocationFloat="13.0869341, 84.71872" />
+        <Item3 Ref="119" ControlType="XRSubreport" Name="wxinvoiceprint_subreportAttachments" CanShrink="true" SizeF="764.9851,24.088541" LocationFloat="10.4778643, 591.6387" />
+        <Item4 Ref="120" ControlType="XRSubreport" Name="wxinvoiceprint_subreportNote" CanShrink="true" SizeF="764.9851,24.088541" LocationFloat="10.4778643, 566" />
+        <Item5 Ref="121" ControlType="XRPanel" Name="panel3" SizeF="380,143.791443" LocationFloat="394.4957, 421.5762" BackColor="Transparent" Borders="None">
           <Controls>
-            <Item1 Ref="122" ControlType="XRBarCode" Name="barCode2" AutoModule="true" ShowText="false" SizeF="185.713058,54.5326538" LocationFloat="0, 121.6662" Padding="10,10,0,0,100" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="invoiceQRcode">
+            <Item1 Ref="122" ControlType="XRBarCode" Name="barCode2" AutoModule="true" ShowText="false" SizeF="185.713058,54.5326538" LocationFloat="0, 85.50226" Padding="10,10,0,0,100" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="invoiceQRcode">
               <Symbology Ref="123" Name="PDF417" Rows="9" />
             </Item1>
-            <Item2 Ref="124" ControlType="XRLabel" Name="label102" SizeF="272.645477,15" LocationFloat="106.191376, 105.424133" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="deliveryPartyIdentificationCode">
+            <Item2 Ref="124" ControlType="XRLabel" Name="label91" SizeF="328.1994,15" LocationFloat="51.8006, 65" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="deliveryPartyCityPostalZoneIdentificationCode">
               <ExpressionBindings>
-                <Item1 Ref="125" Expression="[deliveryPartyIdentificationCode]" PropertyName="Text" EventName="BeforePrint" />
+                <Item1 Ref="125" Expression="[deliveryPartyCityPostalZoneIdentificationCode]" PropertyName="Text" EventName="BeforePrint" />
               </ExpressionBindings>
             </Item2>
-            <Item3 Ref="126" ControlType="XRLabel" Name="label101" Text="ISO kod države:" SizeF="93.86904,15" LocationFloat="5, 105.424133" Font="Arial, 9pt" />
-            <Item4 Ref="127" ControlType="XRLabel" Name="label100" SizeF="286.514526,15" LocationFloat="92.3223343, 85.50226" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="deliveryPartyPostalZone">
+            <Item3 Ref="126" ControlType="XRLabel" Name="label90" Text="Mjesto:" SizeF="41.9642868,15" LocationFloat="5, 65" Font="Arial, 9pt" />
+            <Item4 Ref="127" ControlType="XRLabel" Name="label89" Text="Informacije o isporuci" TextAlignment="MiddleLeft" SizeF="380,20" LocationFloat="0, 0" Font="Arial, 9pt, style=Bold" ForeColor="White" BackColor="SlateGray" Padding="5,0,0,0,100" />
+            <Item5 Ref="128" ControlType="XRLabel" Name="label88" Text="Ime primatelja isporuke:" SizeF="134.0893,15" LocationFloat="5, 25" Font="Arial, 9pt" />
+            <Item6 Ref="129" ControlType="XRLabel" Name="label80" SizeF="239.166656,15" LocationFloat="140.833344, 25" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="deliveryPartyName">
               <ExpressionBindings>
-                <Item1 Ref="128" Expression="[deliveryPartyCity]" PropertyName="Text" EventName="BeforePrint" />
-              </ExpressionBindings>
-            </Item4>
-            <Item5 Ref="129" ControlType="XRLabel" Name="label99" Text="Poštanski broj:" SizeF="86.1913757,15" LocationFloat="5, 85.50226" Font="Arial, 9pt" />
-            <Item6 Ref="130" ControlType="XRLabel" Name="label91" SizeF="328.1994,15" LocationFloat="51.8006, 65" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="deliveryPartyCity">
-              <ExpressionBindings>
-                <Item1 Ref="131" Expression="[deliveryPartyCity]" PropertyName="Text" EventName="BeforePrint" />
+                <Item1 Ref="130" Expression="[deliveryPartyName]" PropertyName="Text" EventName="BeforePrint" />
               </ExpressionBindings>
             </Item6>
-            <Item7 Ref="132" ControlType="XRLabel" Name="label90" Text="Mjesto:" SizeF="41.9642868,15" LocationFloat="5, 65" Font="Arial, 9pt" />
-            <Item8 Ref="133" ControlType="XRLabel" Name="label89" Text="Informacije o isporuci" TextAlignment="MiddleLeft" SizeF="380,20" LocationFloat="0, 0" Font="Arial, 9pt, style=Bold" ForeColor="White" BackColor="SlateGray" Padding="5,0,0,0,100" />
-            <Item9 Ref="134" ControlType="XRLabel" Name="label88" Text="Ime primatelja isporuke:" SizeF="134.0893,15" LocationFloat="5, 25" Font="Arial, 9pt" />
-            <Item10 Ref="135" ControlType="XRLabel" Name="label80" SizeF="239.166656,15" LocationFloat="140.833344, 25" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="deliveryPartyName">
+            <Item7 Ref="131" ControlType="XRLabel" Name="label79" Text="Ulica i kućni broj:" SizeF="105,15" LocationFloat="5, 43.8392868" Font="Arial, 9pt" />
+            <Item8 Ref="132" ControlType="XRLabel" Name="label78" SizeF="268.8979,15" LocationFloat="111.1021, 43.8392868" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="deliveryPartyStreet">
               <ExpressionBindings>
-                <Item1 Ref="136" Expression="[deliveryPartyName]" PropertyName="Text" EventName="BeforePrint" />
+                <Item1 Ref="133" Expression="[deliveryPartyStreet]" PropertyName="Text" EventName="BeforePrint" />
               </ExpressionBindings>
-            </Item10>
-            <Item11 Ref="137" ControlType="XRLabel" Name="label79" Text="Ulica i kućni broj:" SizeF="105,15" LocationFloat="5, 43.8392868" Font="Arial, 9pt" />
-            <Item12 Ref="138" ControlType="XRLabel" Name="label78" SizeF="268.8979,15" LocationFloat="111.1021, 43.8392868" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="deliveryPartyStreet">
-              <ExpressionBindings>
-                <Item1 Ref="139" Expression="[deliveryPartyStreet]" PropertyName="Text" EventName="BeforePrint" />
-              </ExpressionBindings>
-            </Item12>
+            </Item8>
           </Controls>
         </Item5>
-        <Item6 Ref="140" ControlType="XRSubreport" Name="WXeracunprint_SubreportIBAN" CanShrink="true" SizeF="380,24.088541" LocationFloat="12.2106524, 507.078461" />
-        <Item7 Ref="141" ControlType="XRPanel" Name="panel2" SizeF="380,81.87873" LocationFloat="12.2106524, 421.5762" BackColor="Transparent" Borders="None">
+        <Item6 Ref="134" ControlType="XRSubreport" Name="wxinvoiceprint_subreportIBAN" CanShrink="true" SizeF="380,24.088541" LocationFloat="12.2106524, 507.078461" />
+        <Item7 Ref="135" ControlType="XRPanel" Name="panel2" SizeF="380,81.87873" LocationFloat="12.2106524, 421.5762" BackColor="Transparent" Borders="None">
           <Controls>
-            <Item1 Ref="142" ControlType="XRLabel" Name="label87" SizeF="249.166656,15" LocationFloat="130.833344, 65" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="paymentID">
+            <Item1 Ref="136" ControlType="XRLabel" Name="label87" SizeF="249.166656,15" LocationFloat="130.833344, 65" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="paymentID">
               <ExpressionBindings>
-                <Item1 Ref="143" Expression="[paymentID]" PropertyName="Text" EventName="BeforePrint" />
+                <Item1 Ref="137" Expression="[paymentID]" PropertyName="Text" EventName="BeforePrint" />
               </ExpressionBindings>
             </Item1>
-            <Item2 Ref="144" ControlType="XRLabel" Name="label86" Text="Informacije o doznaci:" SizeF="123.672623,15" LocationFloat="5, 65" Font="Arial, 9pt" />
-            <Item3 Ref="145" ControlType="XRLabel" Name="label85" Text="Upute za placanje" TextAlignment="MiddleLeft" SizeF="380,20" LocationFloat="0, 0" Font="Arial, 9pt, style=Bold" ForeColor="White" BackColor="SlateGray" Padding="5,0,0,0,100" />
-            <Item4 Ref="146" ControlType="XRLabel" Name="label84" Text="Šifra načina plaćanja:" SizeF="123.672623,15" LocationFloat="5, 25" Font="Arial, 9pt" />
-            <Item5 Ref="147" ControlType="XRLabel" Name="label83" SizeF="249.166656,15" LocationFloat="130.833344, 25" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="paymentMeansCode">
+            <Item2 Ref="138" ControlType="XRLabel" Name="label86" Text="Informacije o doznaci:" SizeF="123.672623,15" LocationFloat="5, 65" Font="Arial, 9pt" />
+            <Item3 Ref="139" ControlType="XRLabel" Name="label85" Text="Upute za plaćanje" TextAlignment="MiddleLeft" SizeF="380,20" LocationFloat="0, 0" Font="Arial, 9pt, style=Bold" ForeColor="White" BackColor="SlateGray" Padding="5,0,0,0,100" />
+            <Item4 Ref="140" ControlType="XRLabel" Name="label84" Text="Šifra načina plaćanja:" SizeF="123.672623,15" LocationFloat="5, 25" Font="Arial, 9pt" />
+            <Item5 Ref="141" ControlType="XRLabel" Name="label83" SizeF="249.166656,15" LocationFloat="130.833344, 25" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="paymentMeansCode">
               <ExpressionBindings>
-                <Item1 Ref="148" Expression="[paymentMeansCode]" PropertyName="Text" EventName="BeforePrint" />
+                <Item1 Ref="142" Expression="[paymentMeansCode]" PropertyName="Text" EventName="BeforePrint" />
               </ExpressionBindings>
             </Item5>
-            <Item6 Ref="149" ControlType="XRLabel" Name="label82" Text="Opis plaćanja:" SizeF="84.80357,15" LocationFloat="5, 43.8392868" Font="Arial, 9pt" />
-            <Item7 Ref="150" ControlType="XRLabel" Name="label81" SizeF="287.5893,15" LocationFloat="92.4107056, 43.8392868" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="instructionNote">
+            <Item6 Ref="143" ControlType="XRLabel" Name="label82" Text="Opis plaćanja:" SizeF="84.80357,15" LocationFloat="5, 43.8392868" Font="Arial, 9pt" />
+            <Item7 Ref="144" ControlType="XRLabel" Name="label81" SizeF="287.5893,15" LocationFloat="92.4107056, 43.8392868" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="instructionNote">
               <ExpressionBindings>
-                <Item1 Ref="151" Expression="[instructionNote]" PropertyName="Text" EventName="BeforePrint" />
+                <Item1 Ref="145" Expression="[instructionNote]" PropertyName="Text" EventName="BeforePrint" />
               </ExpressionBindings>
             </Item7>
           </Controls>
         </Item7>
-        <Item8 Ref="152" ControlType="XRPanel" Name="panel1" SizeF="768.5417,194.682556" LocationFloat="12.9629717, 127.473961" BackColor="Transparent" Borders="None">
+        <Item8 Ref="146" ControlType="XRPanel" Name="panel1" SizeF="768.5417,194.682556" LocationFloat="12.9629717, 127.473961" BackColor="Transparent" Borders="None">
           <Controls>
-            <Item1 Ref="153" ControlType="XRLabel" Name="label61" TextAlignment="TopRight" SizeF="324.241058,15" LocationFloat="437.291656, 137.8507" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="prepaidAmountFormatted">
+            <Item1 Ref="147" ControlType="XRLabel" Name="label61" TextAlignment="TopRight" SizeF="324.241058,15" LocationFloat="437.291656, 137.8507" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="prepaidAmountFormatted">
               <ExpressionBindings>
-                <Item1 Ref="154" Expression="[prepaidAmountFormatted]" PropertyName="Text" EventName="BeforePrint" />
+                <Item1 Ref="148" Expression="[prepaidAmountFormatted]" PropertyName="Text" EventName="BeforePrint" />
               </ExpressionBindings>
-              <StylePriority Ref="155" UseTextAlignment="false" />
+              <StylePriority Ref="149" UseTextAlignment="false" />
             </Item1>
-            <Item2 Ref="156" ControlType="XRLabel" Name="label77" Text="Placeni iznos:" SizeF="433.095245,15" LocationFloat="3.70535278, 137.8507" Font="Arial, 9pt" />
-            <Item3 Ref="157" ControlType="XRLabel" Name="label76" Text="Iznos koji dospijeva na placanje:" SizeF="433.095245,15" LocationFloat="2.41070843, 174.910721" Font="Arial, 9pt" BackColor="Gainsboro">
-              <StylePriority Ref="158" UseBackColor="false" />
+            <Item2 Ref="150" ControlType="XRLabel" Name="label77" Text="Placeni iznos:" SizeF="433.095245,15" LocationFloat="3.70535278, 137.8507" Font="Arial, 9pt" />
+            <Item3 Ref="151" ControlType="XRLabel" Name="label76" Text="Iznos koji dospijeva na placanje:" SizeF="433.095245,15" LocationFloat="2.41070843, 174.910721" Font="Arial, 9pt" BackColor="Gainsboro">
+              <StylePriority Ref="152" UseBackColor="false" />
             </Item3>
-            <Item4 Ref="159" ControlType="XRLabel" Name="label75" TextAlignment="TopRight" SizeF="328.1994,15" LocationFloat="436.7857, 174.910721" Font="Arial, 9pt" BackColor="Gainsboro" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="payableAmountFormatted">
+            <Item4 Ref="153" ControlType="XRLabel" Name="label75" TextAlignment="TopRight" SizeF="328.1994,15" LocationFloat="436.7857, 174.910721" Font="Arial, 9pt, style=Bold" BackColor="Gainsboro" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="payableAmountFormatted">
               <ExpressionBindings>
-                <Item1 Ref="160" Expression="[payableAmountFormatted]" PropertyName="Text" EventName="BeforePrint" />
+                <Item1 Ref="154" Expression="[payableAmountFormatted]" PropertyName="Text" EventName="BeforePrint" />
               </ExpressionBindings>
-              <StylePriority Ref="161" UseBackColor="false" UseTextAlignment="false" />
+              <StylePriority Ref="155" UseFont="false" UseBackColor="false" UseTextAlignment="false" />
             </Item4>
-            <Item5 Ref="162" ControlType="XRLabel" Name="label74" TextAlignment="TopRight" SizeF="324.241058,15" LocationFloat="438.258942, 156.160721" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="payableRoundingAmountFormatted">
+            <Item5 Ref="156" ControlType="XRLabel" Name="label74" TextAlignment="TopRight" SizeF="324.241058,15" LocationFloat="438.258942, 156.160721" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="payableRoundingAmountFormatted">
               <ExpressionBindings>
-                <Item1 Ref="163" Expression="[payableRoundingAmountFormatted]" PropertyName="Text" EventName="BeforePrint" />
+                <Item1 Ref="157" Expression="[payableRoundingAmountFormatted]" PropertyName="Text" EventName="BeforePrint" />
               </ExpressionBindings>
-              <StylePriority Ref="164" UseTextAlignment="false" />
+              <StylePriority Ref="158" UseTextAlignment="false" />
             </Item5>
-            <Item6 Ref="165" ControlType="XRLabel" Name="label73" Text="Iznos zaokruživanja:" SizeF="433.095245,15" LocationFloat="4.27082825, 156.160721" Font="Arial, 9pt" />
-            <Item7 Ref="166" ControlType="XRLabel" Name="label72" TextAlignment="TopRight" SizeF="326.25,15" LocationFloat="438.7351, 101.428574" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="taxAmountFormatted">
+            <Item6 Ref="159" ControlType="XRLabel" Name="label73" Text="Iznos zaokruživanja:" SizeF="433.095245,15" LocationFloat="4.27082825, 156.160721" Font="Arial, 9pt" />
+            <Item7 Ref="160" ControlType="XRLabel" Name="label72" TextAlignment="TopRight" SizeF="326.25,15" LocationFloat="438.7351, 101.428574" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="taxAmountFormatted">
               <ExpressionBindings>
-                <Item1 Ref="167" Expression="[taxAmountFormatted]" PropertyName="Text" EventName="BeforePrint" />
+                <Item1 Ref="161" Expression="[taxAmountFormatted]" PropertyName="Text" EventName="BeforePrint" />
               </ExpressionBindings>
-              <StylePriority Ref="168" UseTextAlignment="false" />
+              <StylePriority Ref="162" UseTextAlignment="false" />
             </Item7>
-            <Item8 Ref="169" ControlType="XRLabel" Name="label71" Text="Ukupni iznos PDV-a racuna: " SizeF="431.6369,15" LocationFloat="5, 101.428574" Font="Arial, 9pt" />
-            <Item9 Ref="170" ControlType="XRLabel" Name="label70" TextAlignment="TopRight" SizeF="326.25,15" LocationFloat="436.7857, 82.5" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="taxExclusiveAmountFormatted">
+            <Item8 Ref="163" ControlType="XRLabel" Name="label71" Text="Ukupni iznos PDV-a racuna: " SizeF="431.6369,15" LocationFloat="5, 101.428574" Font="Arial, 9pt" />
+            <Item9 Ref="164" ControlType="XRLabel" Name="label70" TextAlignment="TopRight" SizeF="326.25,15" LocationFloat="436.7857, 82.5" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="taxExclusiveAmountFormatted">
               <ExpressionBindings>
-                <Item1 Ref="171" Expression="[taxExclusiveAmountFormatted]" PropertyName="Text" EventName="BeforePrint" />
+                <Item1 Ref="165" Expression="[taxExclusiveAmountFormatted]" PropertyName="Text" EventName="BeforePrint" />
               </ExpressionBindings>
-              <StylePriority Ref="172" UseTextAlignment="false" />
+              <StylePriority Ref="166" UseTextAlignment="false" />
             </Item9>
-            <Item10 Ref="173" ControlType="XRLabel" Name="label69" Text="Ukupni iznos racuna bez PDV-a:" SizeF="430.505951,15" LocationFloat="5, 82.5" Font="Arial, 9pt" />
-            <Item11 Ref="174" ControlType="XRLabel" Name="label68" TextAlignment="TopRight" SizeF="326.25,15" LocationFloat="436.25, 65" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="chargeTotalAmountFormatted">
+            <Item10 Ref="167" ControlType="XRLabel" Name="label69" Text="Ukupni iznos racuna bez PDV-a:" SizeF="430.505951,15" LocationFloat="5, 82.5" Font="Arial, 9pt" />
+            <Item11 Ref="168" ControlType="XRLabel" Name="label68" TextAlignment="TopRight" SizeF="326.25,15" LocationFloat="436.25, 65" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="chargeTotalAmountFormatted">
               <ExpressionBindings>
-                <Item1 Ref="175" Expression="[chargeTotalAmountFormatted]" PropertyName="Text" EventName="BeforePrint" />
+                <Item1 Ref="169" Expression="[chargeTotalAmountFormatted]" PropertyName="Text" EventName="BeforePrint" />
+              </ExpressionBindings>
+              <StylePriority Ref="170" UseTextAlignment="false" />
+            </Item11>
+            <Item12 Ref="171" ControlType="XRLabel" Name="label67" Text="Zbroj troškova na razini dokumenta: " SizeF="430.505951,15" LocationFloat="5, 65" Font="Arial, 9pt" />
+            <Item13 Ref="172" ControlType="XRLabel" Name="label66" Text="Ukupni iznosi na razini dokumenta" TextAlignment="MiddleLeft" SizeF="762.5,20" LocationFloat="0, 0" Font="Arial, 9pt, style=Bold" ForeColor="White" BackColor="SlateGray" Padding="5,0,0,0,100" />
+            <Item14 Ref="173" ControlType="XRLabel" Name="label65" Text="Zbroj svih neto iznosa stavki:" SizeF="431.6369,15" LocationFloat="5, 25" Font="Arial, 9pt" />
+            <Item15 Ref="174" ControlType="XRLabel" Name="label64" TextAlignment="TopRight" SizeF="325.7143,15" LocationFloat="436.7857, 25" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="lineExtensionAmountFormatted">
+              <ExpressionBindings>
+                <Item1 Ref="175" Expression="[lineExtensionAmountFormatted]" PropertyName="Text" EventName="BeforePrint" />
               </ExpressionBindings>
               <StylePriority Ref="176" UseTextAlignment="false" />
-            </Item11>
-            <Item12 Ref="177" ControlType="XRLabel" Name="label67" Text="Zbroj troškova na razini dokumenta: " SizeF="430.505951,15" LocationFloat="5, 65" Font="Arial, 9pt" />
-            <Item13 Ref="178" ControlType="XRLabel" Name="label66" Text="Ukupni iznosi na razini dokumenta" TextAlignment="MiddleLeft" SizeF="762.5,20" LocationFloat="0, 0" Font="Arial, 9pt, style=Bold" ForeColor="White" BackColor="SlateGray" Padding="5,0,0,0,100" />
-            <Item14 Ref="179" ControlType="XRLabel" Name="label65" Text="Zbroj svih neto iznosa stavki:" SizeF="431.6369,15" LocationFloat="5, 25" Font="Arial, 9pt" />
-            <Item15 Ref="180" ControlType="XRLabel" Name="label64" TextAlignment="TopRight" SizeF="325.7143,15" LocationFloat="436.7857, 25" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="lineExtensionAmountFormatted">
-              <ExpressionBindings>
-                <Item1 Ref="181" Expression="[lineExtensionAmountFormatted]" PropertyName="Text" EventName="BeforePrint" />
-              </ExpressionBindings>
-              <StylePriority Ref="182" UseTextAlignment="false" />
             </Item15>
-            <Item16 Ref="183" ControlType="XRLabel" Name="label63" Text="Zbroj popusta na razini dokumenta: " SizeF="430.505951,15" LocationFloat="5, 43.8392868" Font="Arial, 9pt" />
-            <Item17 Ref="184" ControlType="XRLabel" Name="label62" TextAlignment="TopRight" SizeF="326.25,15" LocationFloat="436.7857, 43.8392868" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="allowanceTotalAmountFormatted">
+            <Item16 Ref="177" ControlType="XRLabel" Name="label63" Text="Zbroj popusta na razini dokumenta: " SizeF="430.505951,15" LocationFloat="5, 43.8392868" Font="Arial, 9pt" />
+            <Item17 Ref="178" ControlType="XRLabel" Name="label62" TextAlignment="TopRight" SizeF="326.25,15" LocationFloat="436.7857, 43.8392868" Font="Arial, 9pt" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="allowanceTotalAmountFormatted">
               <ExpressionBindings>
-                <Item1 Ref="185" Expression="[allowanceTotalAmountFormatted]" PropertyName="Text" EventName="BeforePrint" />
+                <Item1 Ref="179" Expression="[allowanceTotalAmountFormatted]" PropertyName="Text" EventName="BeforePrint" />
               </ExpressionBindings>
-              <StylePriority Ref="186" UseTextAlignment="false" />
+              <StylePriority Ref="180" UseTextAlignment="false" />
             </Item17>
-            <Item18 Ref="187" ControlType="XRLabel" Name="label60" Text="Ukupni iznos racuna s PDV-om:" SizeF="431.6369,15" LocationFloat="5, 120.915169" Font="Arial, 9pt" BackColor="Gainsboro">
-              <StylePriority Ref="188" UseBackColor="false" />
+            <Item18 Ref="181" ControlType="XRLabel" Name="label60" Text="Ukupni iznos racuna s PDV-om:" SizeF="431.6369,15" LocationFloat="5, 120.915169" Font="Arial, 9pt" BackColor="Gainsboro">
+              <StylePriority Ref="182" UseBackColor="false" />
             </Item18>
-            <Item19 Ref="189" ControlType="XRLabel" Name="label3" TextAlignment="TopRight" SizeF="326.25,15" LocationFloat="437.291656, 120.915169" Font="Arial, 9pt" BackColor="Gainsboro" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="taxInclusiveAmountFormatted">
+            <Item19 Ref="183" ControlType="XRLabel" Name="label3" TextAlignment="TopRight" SizeF="326.25,15" LocationFloat="437.291656, 120.915169" Font="Arial, 9pt" BackColor="Gainsboro" Tag_type="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Tag="taxInclusiveAmountFormatted">
               <ExpressionBindings>
-                <Item1 Ref="190" Expression="[taxInclusiveAmountFormatted]" PropertyName="Text" EventName="BeforePrint" />
+                <Item1 Ref="184" Expression="[taxInclusiveAmountFormatted]" PropertyName="Text" EventName="BeforePrint" />
               </ExpressionBindings>
-              <StylePriority Ref="191" UseBackColor="false" UseTextAlignment="false" />
+              <StylePriority Ref="185" UseBackColor="false" UseTextAlignment="false" />
             </Item19>
           </Controls>
         </Item8>
-        <Item9 Ref="192" ControlType="XRSubreport" Name="WXeracunprint_SubreportPDV" CanShrink="true" SizeF="762.5,36.4583321" LocationFloat="13.94344, 41.7407646" />
-        <Item10 Ref="193" ControlType="XRSubreport" Name="wxinvoiceprint_SubreportArticles" CanShrink="true" SizeF="762.5,36.4583321" LocationFloat="13.8235292, 1.48029731E-14" />
+        <Item9 Ref="186" ControlType="XRSubreport" Name="wxinvoiceprint_subreportPDV" CanShrink="true" SizeF="762.5,36.4583321" LocationFloat="13.94344, 41.7407646" />
+        <Item10 Ref="187" ControlType="XRSubreport" Name="wxinvoiceprint_SubreportArticles" CanShrink="true" SizeF="762.5,36.4583321" LocationFloat="13.8235292, 1.48029731E-14" />
       </Controls>
     </Item3>
-    <Item4 Ref="194" ControlType="BottomMarginBand" Name="BottomMargin" HeightF="3.33333325" />
-    <Item5 Ref="195" ControlType="PageHeaderBand" Name="PageHeader" HeightF="0" />
+    <Item4 Ref="188" ControlType="BottomMarginBand" Name="BottomMargin" HeightF="3.33333325" />
+    <Item5 Ref="189" ControlType="PageHeaderBand" Name="PageHeader" HeightF="0" />
   </Bands>
 </XtraReportsLayoutSerializer>

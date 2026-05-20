@@ -798,6 +798,8 @@ function BuildNotesSubreport() {
     detailReportNotes = SetupReport(strtrim(tpath()) + "repx\\" + "wxeracunprint_subreportNote.repx", reportHandle);
     if (note != "") {
         OutputReport(detailReportNotes);
+    }else{
+        SetReportControlProperty(reportHandle, "WXeracunprint_subreportNote", "Visible", false);
     }
 }
 

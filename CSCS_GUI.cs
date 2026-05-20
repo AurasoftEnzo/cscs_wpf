@@ -176,6 +176,7 @@ namespace SplitAndMerge
         // Advanced functions
         public const string SET_REPORT_DATASOURCE = "SetReportDataSource";
         public const string DISPOSE_REPORT = "DisposeReport";
+        public const string SET_REPORT_CONTROL_PROPERTY = "SetReportControlProperty";
 
         //public const string PRINT_SQL_REPORT = "PrintSqlReport";
 

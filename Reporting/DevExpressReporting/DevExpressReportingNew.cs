@@ -31,7 +31,8 @@ namespace WpfCSCS.Reporting.DevExpressReportingNew
         GetFields,          // Get list of fields in template
         Configure,          // Configure output options
         SetDataSource,      // Bind SQL/JSON data source
-        Dispose             // Free resources
+        Dispose,            // Free resources
+        SetControlProperty  // Set a control's property by name
     }
 
     /// <summary>
@@ -76,6 +77,7 @@ namespace WpfCSCS.Reporting.DevExpressReportingNew
             // Advanced functions
             interpreter.RegisterFunction(Constants.SET_REPORT_DATASOURCE, new ReportFunction(ReportOption.SetDataSource));
             interpreter.RegisterFunction(Constants.DISPOSE_REPORT, new ReportFunction(ReportOption.Dispose));
+            interpreter.RegisterFunction(Constants.SET_REPORT_CONTROL_PROPERTY, new ReportFunction(ReportOption.SetControlProperty));
         }
 
         protected override Variable Evaluate(ParsingScript script)
@@ -125,6 +127,9 @@ namespace WpfCSCS.Reporting.DevExpressReportingNew
 
                     case ReportOption.Dispose:
                         return DisposeReport();
+
+                    case ReportOption.SetControlProperty:
+                        return SetControlProperty();
 
                     default:
                         throw new ArgumentException($"Unknown report option: {_option}");
@@ -428,6 +433,28 @@ namespace WpfCSCS.Reporting.DevExpressReportingNew
             _reportManager.SetDataSource(reportHandle, sourceType, connectionOrData, query);
 
             return Variable.EmptyInstance;
+        }
+
+        /// <summary>
+        /// SET_REPORT_CONTROL_PROPERTY(reportHandle, controlName, propertyName, value)
+        /// Sets any property on a report control matched by Name or Tag.
+        /// controlName: the control's Name or Tag value (case-insensitive)
+        /// propertyName: e.g. "Visible", "Text", "ForeColor", "BackColor", "Font", etc.
+        /// value: string representation of the value to set
+        /// </summary>
+        private Variable SetControlProperty()
+        {
+            List<Variable> args = _script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 4, m_name);
+
+            int reportHandle = Utils.GetSafeInt(args, 0);
+            string controlName = Utils.GetSafeString(args, 1);
+            string propertyName = Utils.GetSafeString(args, 2);
+            string value = Utils.GetSafeString(args, 3);
+
+            int count = _reportManager.SetControlProperty(reportHandle, controlName, propertyName, value);
+
+            return new Variable(count);
         }
 
         /// <summary>
@@ -1393,6 +1420,114 @@ namespace WpfCSCS.Reporting.DevExpressReportingNew
         {
             // Simple JSON parsing - for production use JSON.NET or System.Text.Json
             throw new NotImplementedException("JSON data source not yet implemented");
+        }
+
+        /// <summary>
+        /// Set a property on all controls within a report that match by Name or Tag (case-insensitive).
+        /// Returns the number of controls that were updated.
+        /// Supports well-known property shortcuts: Visible, Text, ForeColor, BackColor.
+        /// Falls back to reflection for any other property name.
+        /// </summary>
+        public int SetControlProperty(int handle, string controlName, string propertyName, string value)
+        {
+            if (!_reports.TryGetValue(handle, out ReportInstance instance))
+            {
+                throw new ArgumentException($"Report handle {handle} not found");
+            }
+
+            string controlNameLower = controlName.ToLower();
+            string propertyNameLower = propertyName.ToLower();
+            int updatedCount = 0;
+
+            var allControls = instance.Report.AllControls<DevExpress.XtraReports.UI.XRControl>();
+            foreach (var ctrl in allControls)
+            {
+                bool nameMatch = string.Equals(ctrl.Name, controlName, StringComparison.OrdinalIgnoreCase);
+                //bool tagMatch = !string.IsNullOrEmpty(ctrl.Tag?.ToString()) &&
+                //                string.Equals(ctrl.Tag.ToString(), controlName, StringComparison.OrdinalIgnoreCase);
+
+                if (!nameMatch /*&& !tagMatch*/)
+                    continue;
+
+                try
+                {
+                    ApplyControlProperty(ctrl, propertyNameLower, value);
+                    updatedCount++;
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException(
+                        $"Failed to set '{propertyName}' on control '{ctrl.Name}': {ex.Message}", ex);
+                }
+            }
+
+            return updatedCount;
+        }
+
+        private void ApplyControlProperty(DevExpress.XtraReports.UI.XRControl ctrl, string propertyNameLower, string value)
+        {
+            switch (propertyNameLower)
+            {
+                case "visible":
+                    ctrl.Visible = ParseBool(value);
+                    break;
+
+                case "text":
+                    if (ctrl is XRLabel lbl)       lbl.Text = value;
+                    else if (ctrl is XRBarCode bc)  bc.Text = value;
+                    else SetViaReflection(ctrl, "Text", value);
+                    break;
+
+                case "forecolor":
+                    ctrl.ForeColor = ParseColor(value);
+                    break;
+
+                case "backcolor":
+                    ctrl.BackColor = ParseColor(value);
+                    break;
+
+                default:
+                    // Generic fallback: use reflection to find and set the property
+                    SetViaReflection(ctrl, propertyNameLower, value);
+                    break;
+            }
+        }
+
+        private void SetViaReflection(object target, string propertyName, string value)
+        {
+            var prop = target.GetType().GetProperty(
+                propertyName,
+                System.Reflection.BindingFlags.Public |
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.IgnoreCase);
+
+            if (prop == null)
+                throw new ArgumentException($"Property '{propertyName}' not found on type '{target.GetType().Name}'");
+
+            if (!prop.CanWrite)
+                throw new InvalidOperationException($"Property '{propertyName}' is read-only");
+
+            object converted = Convert.ChangeType(value, prop.PropertyType);
+            prop.SetValue(target, converted);
+        }
+
+        private static bool ParseBool(string value)
+        {
+            if (bool.TryParse(value, out bool result))
+                return result;
+            // Accept "1" / "0" as true / false
+            if (value == "1") return true;
+            if (value == "0") return false;
+            throw new FormatException($"Cannot convert '{value}' to Boolean");
+        }
+
+        private static System.Drawing.Color ParseColor(string value)
+        {
+            // Support named colors ("Red") and hex strings ("#FF0000")
+            System.Drawing.Color color = System.Drawing.ColorTranslator.FromHtml(value);
+            if (color.IsEmpty)
+                throw new FormatException($"Cannot parse color '{value}'");
+            return color;
         }
 
         /// <summary>

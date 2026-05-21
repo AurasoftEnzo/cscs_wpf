@@ -123,6 +123,7 @@ namespace WpfCSCS
             //interpreter.RegisterFunction("NixxonSignXml", new NixxonSignXmlFunction());
 
             interpreter.RegisterFunction("ReplaceInJSON", new ReplaceInJSONFunction());
+            interpreter.RegisterFunction("EscapeForJSON", new EscapeForJSONFunction());
             interpreter.RegisterFunction("IsDouble", new IsDoubleFunction());
             interpreter.RegisterFunction("FindColonIndex", new FindColonIndexFunction());
             
@@ -4756,6 +4757,25 @@ namespace WpfCSCS
             json = json.Replace("\\t", "\t");
 
             return new Variable(json);
+        }
+    }
+    
+    class EscapeForJSONFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+
+            var text = Utils.GetSafeString(args, 0);
+
+            text = text.Replace("\"", "\\\"");
+            text = text.Replace("\\", "\\\\");
+            text = text.Replace("\n", "\\n");
+            text = text.Replace("\r", "");
+            text = text.Replace("\t", "\\t");
+
+            return new Variable(text);
         }
     }
 

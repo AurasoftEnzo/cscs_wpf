@@ -434,17 +434,16 @@ function BuildApiPayload() {
     return payload;
 }
 
-function EscapeForJson(str) {
-    // Order matters: backslash must be first
-    MSG(1);
-    // result = str.Replace("\\", "\\\\");
-    // MSG(2);
-    // result = result.Replace("\"", "\\\"");
-    // result = result.Replace("\n", "\\n");
-    // result = result.Replace("\r", "");
-    // result = result.Replace("\t", "\\t");
-    return "result";
-}
+// function EscapeForJson(str) {
+//     // Order matters: backslash must be first
+    
+//     result = str.Replace("\\", "\\\\");
+//     result = result.Replace("\"", "\\\"");
+//     result = result.Replace("\n", "\\n");
+//     result = result.Replace("\r", "");
+//     result = result.Replace("\t", "\\t");
+//     return "result";
+// }
 
 
 // =============================================================
@@ -552,11 +551,7 @@ function LoadSettings() {
         if (!Exists(settingsFilePath)) {
             return;
         }
-        content = ReadFile(settingsFilePath);
-        if (content == "" || content == null) {
-            return;
-        }
-        lines = content.Split("\n");
+        lines = ReadFile(settingsFilePath);
         for (i = 0; i < Size(lines); i++) {
             line = lines[i].Trim();
             if (line == "") {
@@ -578,8 +573,7 @@ function LoadSettings() {
             } elif (key == "model") {
                 aiModel = val;
             } elif (key == "systemprompt") {
-                msg("aaaaa");
-                // aiSystemPrompt = val.Replace("\\n", "\n");
+                aiSystemPrompt = val.Replace("\\n", "\n");
             } elif (key == "temperature") {
                 aiTemperatureStr = val;
             } elif (key == "maxtokens") {
@@ -594,7 +588,7 @@ function LoadSettings() {
 function SaveSettings() {
     // All variables are kept in sync by DataContext bindings – read them directly.
 
-    // sysEscaped = aiSystemPrompt.Replace("\n", "\\n");
+    sysEscaped = aiSystemPrompt.Replace("\n", "\\n");
 
     content  = "provider|"     + aiProvider      + "\n";
     content  = content + "apikey|"       + aiApiKey        + "\n";

@@ -57,7 +57,7 @@ function wxaimanager_OnStart() {
     settingsFilePath = strTrim(tpath()) + "wxaimanager_cfg.txt";
 
     // --- SQL persistence setup ---
-    WXAI_DB        = "WXAIMANAGER_CHATS";
+    WXAI_DB        = "WXAIMANAGEMENT_CHATS";
     chatUserId     = 1;      // TODO: replace with actual user ID from your login context
     chatSqlEnabled = true;
     SQL_InitNewSession();
@@ -66,7 +66,7 @@ function wxaimanager_OnStart() {
     aiProvider       = "OpenAI";
     aiApiKey         = "";
     aiBaseUrl        = "https://api.openai.com/v1";
-    aiModel          = "gpt-4o-mini";
+    aiModel          = "GPT-4.1";
     aiSystemPrompt   = "You are a helpful assistant.";
     aiTemperatureStr = "0.7";
     aiMaxTokensStr   = "2000";
@@ -82,6 +82,7 @@ function wxaimanager_OnStart() {
     histLineCntr     = 0;
     isWaiting        = false;
     settingsOpen     = false;
+    userInput        = "";
 
     // --- populate provider ComboBox ---
     comboItems2 = {"OpenAI","Ollama","Azure OpenAI","OpenRouter","Custom"};
@@ -127,16 +128,14 @@ function btnSend@clicked() {
     if (isWaiting) {
         return;
     }
-
     // aiProvider, aiModel and userInput are kept in sync via DataContext bindings
+userInput= GetWidgetOptions("txtInput", "Text");    
     inputText = userInput;
     inputText = inputText.Trim();
-
     if (inputText == "") {
         SetStatus("Unesite poruku za slanje.");
         return;
     }
-
     // Add user message
     msgRole[msgCount]    = "user";
     msgContent[msgCount] = inputText;
@@ -144,14 +143,12 @@ function btnSend@clicked() {
 
     // Display user message
     AppendToDisplay("Vas", inputText);
-
     // Persist user message to SQL
     SQL_SaveUserMessage(inputText);
-
     // Clear input
     SetWidgetOptions("txtInput", "Text", "");
-
     // Send to AI
+    msg('User message processed, sending to AI. Current session ID: ' + currentSessionId);
     SendToAI();
 }
 
@@ -233,7 +230,6 @@ function SendToAI() {
     try {
         // All settings variables are kept in sync via DataContext bindings on the
         // respective TextBox/ComboBox controls – just read them directly.
-
         if (aiBaseUrl == "") {
             SetStatus("Greška: Base URL nije postavljen. Provjerite postavke.");
             return;
@@ -241,15 +237,15 @@ function SendToAI() {
 
         // Build endpoint URL
         // OpenAI-compatible: POST /chat/completions
+
+
         endpoint = aiBaseUrl;
         if (!endpoint.EndsWith("/")) {
             endpoint = endpoint + "/";
         }
         endpoint = endpoint + "chat/completions";
-
         // Build JSON payload
         jsonBody = BuildApiPayload();
-
         SetUIBusy(true);
         SetStatus("Šaljem zahtjev AI-u...");
 
@@ -259,10 +255,10 @@ function SendToAI() {
         if (aiApiKey != "") {
             authToken = "Bearer " + aiApiKey;
         }
-
+   
         WebRequest("POST", endpoint, jsonBody, authToken,
                    "SendMessageSuccess", "SendMessageFailure",
-                   "application/json", null, 120000, false);
+                   "application/json", "", 120000, false);
 
     } catch (ex) {
         SetUIBusy(false);
@@ -377,20 +373,24 @@ function ProcessAIError() {
         // Try to extract error message from JSON
         try {
             errObj = DeserializeJson(apiLastResponse);
+  msg ('Error response deserialized: ' + errObj);          
             if (Contains(errObj, "error")) {
                 inner = errObj["error"];
                 if (Contains(inner, "message")) {
                     errDetail = inner["message"];
                 }
             }
+    msg ('Extracted error detail: ' + errDetail);        
         } catch (ex) {
             //errDetail = errDetail + " – " + apiLastResponse;
             errDetail = errDetail + " - " + apiLastResponse;
         }
     }
+ msg ('Final error detail: ' + errDetail);   
     AppendToDisplay("API GREŠKA", errDetail);
     SetUIBusy(false);
     SetStatus("API greška: " + errDetail);
+ msg ('API error processed and displayed: ' + errDetail);   
 }
 
 

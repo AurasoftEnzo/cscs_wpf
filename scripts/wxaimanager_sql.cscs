@@ -50,32 +50,26 @@ function SQL_InitNewSession() {
 // titleHint – first user message text (used as session title, max 200 chars).
 // Sets currentSessionId on success; disables SQL on error.
 function SQL_EnsureSession(titleHint) {
+
     if (!chatSqlEnabled) {
         return;
     }
+
     if (currentSessionId != 0) {
         return;    // session already created
     }
-
     try {
         title = titleHint;
         if (title.length > 197) {
             title = Substring(title, 0, 197) + "...";
         }
-
         sqlParams = {};
         sqlParams.Add({"@p1", chatUserId});
         sqlParams.Add({"@p2", aiModel});
         sqlParams.Add({"@p3", title});
         sqlParams.Add({"@p4", aiProvider});
-
-        sessSql = "INSERT INTO " + WXAI_DB + ".dbo.ChatSession "
-                + "(UserId, ModelName, Title, SourceApp) "
-                + "OUTPUT INSERTED.ChatSessionId "
-                + "VALUES (@p1, @p2, @p3, @p4)";
-
+        sessSql = "INSERT INTO " + WXAI_DB + ".dbo.ChatSession (UserId, ModelName, Title, SourceApp) OUTPUT INSERTED.ChatSessionId VALUES (@p1, @p2, @p3, @p4)";
         sessRes = sqlQuery(sessSql, sqlParams);
-
         if (Size(sessRes) > 1) {
             currentSessionId = int(sessRes[1][0]);
         } else {

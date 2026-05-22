@@ -141,7 +141,7 @@ function LoadCompanyData() {
 }
 
 function LoadHeaderAndSetup(invoiceNum) {
-    sql_hdr = "SELECT NKPR_GL_NUM, NKPR_GL_OZNAKA, NKPR_GL_BROTP, NKPR_GL_REZ1, NKPR_GL_REZ3, CONVERT(VARCHAR(10), NKPR_GL_INVDTE, 23) as NKPR_GL_INVDTE, CONVERT(VARCHAR(8), NKPR_GL_TIMECR, 20) as NKPR_GL_TIMECR, CONVERT(VARCHAR(10), NKPR_GL_DVO, 23) as NKPR_GL_DVO, NKPR_GL_NOKAM, NKPR_GL_ROKPL, CONVERT(VARCHAR(10), NKPR_GL_ESD, 23) as NKPR_GL_ESD, NKPR_GL_PICTHDR, NKPR_GL_PICTFTR, NKPR_GL_CUSNME, NKPR_GL_JMBG, NKPR_GL_CUSA1, NKPR_GL_RO, NKPR_GL_CUSCTY, NKPR_GL_CUSZIP, NKPR_GL_DRZAVA, NKPR_GL_SIF_PL, NKPR_GL_MODEL, NKPR_GL_POZIV, NKPR_GL_RZRVA1, NKPR_GL_TOTAL, NKPR_GL_CUSORD, NKPR_GL_CUSST, NKPR_GL_ENTBY, NKPR_GL_BROPIS, NKPR_GL_BROPIS1, CONVERT(varchar(10), DATEADD(DAY, NKPR_GL_NOKAM + NKPR_GL_ROKPL, NKPR_GL_DVO), 23) as NKPR_GL_DUE_DATE, NKPR_GL_SCONTO, NKPR_GL_DANSC, NKPR_GL_REZ3, NKPR_GL_SHPCOD, NKPR_GL_SHPNME, NKPR_GL_SHPRO, NKPR_GL_SHPA1, NKPR_GL_SHPZIP, NKPR_GL_SHPCTY, NKPR_GL_SHPST, NKPR_GL_UGOVOR, NKPR_GL_CUSCOD, NKPR_GL_RNALOG, NKPR_GL_EMAIL, SUBSTRING(NKSP_AD_REZ,37,13) as NKSP_AD_GLN, SUBSTRING(NKSP_AD_REZ,51,20) as NKSP_AD_OBJED, NKSC_SOP, NKSC_POSREDNIK, NKSC_REZ10, NKSC_TAX_DN, substring(NKSC_REZ, 42, 10) as POSREDNIK, NKSC_REZ9, PKKU_PP_OPIS,NKPR_GL_SIFDVZ,NKPR_GL_DESC FROM " + databaseName + ".dbo.NKPRINV LEFT JOIN " + databaseName + ".dbo.NKSCPART ON NKPR_GL_CUSCOD = NKSC_PARTCODE LEFT JOIN " + databaseName + ".dbo.NKSPADRS ON NKPR_GL_CUSCOD = NKSP_AD_CODE AND NKPR_GL_SHPCOD = NKSP_AD_CODEINT LEFT JOIN " + databaseName + ".dbo.PKKUPPUG ON NKPR_GL_UGOVOR = PKKU_PP_BROJ WHERE NKPR_GL_NUM = @p1;";
+    sql_hdr = "SELECT NKPR_GL_NUM, NKPR_GL_OZNAKA, NKPR_GL_BROTP, NKPR_GL_REZ1, NKPR_GL_REZ3, CONVERT(VARCHAR(10), NKPR_GL_INVDTE, 23) as NKPR_GL_INVDTE, CONVERT(VARCHAR(8), NKPR_GL_TIMECR, 20) as NKPR_GL_TIMECR, CONVERT(VARCHAR(10), NKPR_GL_DVO, 23) as NKPR_GL_DVO, NKPR_GL_NOKAM, NKPR_GL_ROKPL, CONVERT(VARCHAR(10), NKPR_GL_ESD, 23) as NKPR_GL_ESD, NKPR_GL_PICTHDR, NKPR_GL_PICTFTR, NKPR_GL_CUSNME, NKPR_GL_JMBG, NKPR_GL_CUSA1, NKPR_GL_RO, NKPR_GL_CUSCTY, NKPR_GL_CUSZIP, NKPR_GL_DRZAVA, NKPR_GL_SIF_PL, NKPR_GL_MODEL, NKPR_GL_POZIV, NKPR_GL_RZRVA1, NKPR_GL_TOTAL, NKPR_GL_CUSORD, NKPR_GL_CUSST, NKPR_GL_ENTBY, NKPR_GL_BROPIS, NKPR_GL_BROPIS1, CONVERT(varchar(10), DATEADD(DAY, NKPR_GL_NOKAM + NKPR_GL_ROKPL, NKPR_GL_DVO), 23) as NKPR_GL_DUE_DATE, NKPR_GL_SCONTO, NKPR_GL_DANSC, NKPR_GL_REZ3, NKPR_GL_SHPCOD, NKPR_GL_SHPNME, NKPR_GL_SHPRO, NKPR_GL_SHPA1, NKPR_GL_SHPZIP, NKPR_GL_SHPCTY, NKPR_GL_SHPST, NKPR_GL_UGOVOR, NKPR_GL_CUSCOD, NKPR_GL_RNALOG, NKPR_GL_EMAIL, SUBSTRING(NKSP_AD_REZ,37,13) as NKSP_AD_GLN, SUBSTRING(NKSP_AD_REZ,51,20) as NKSP_AD_OBJED, NKSC_SOP, NKSC_POSREDNIK, NKSC_REZ10, NKSC_TAX_DN, substring(NKSC_REZ, 42, 10) as POSREDNIK, NKSC_REZ9, PKKU_PP_OPIS,NKPR_GL_SIFDVZ,NKPR_GL_DESC,NKPR_GL_SONUM,NKPR_GL_ORDDTE,NKPR_GL_SHPVIA FROM " + databaseName + ".dbo.NKPRINV LEFT JOIN " + databaseName + ".dbo.NKSCPART ON NKPR_GL_CUSCOD = NKSC_PARTCODE LEFT JOIN " + databaseName + ".dbo.NKSPADRS ON NKPR_GL_CUSCOD = NKSP_AD_CODE AND NKPR_GL_SHPCOD = NKSP_AD_CODEINT LEFT JOIN " + databaseName + ".dbo.PKKUPPUG ON NKPR_GL_UGOVOR = PKKU_PP_BROJ WHERE NKPR_GL_NUM = @p1;";
     sqlParams = {};
     sqlParams.Add({"@p1", invoiceNum});
     hdrRes = sqlQuery(sql_hdr, sqlParams);
@@ -206,6 +206,9 @@ function LoadHeaderAndSetup(invoiceNum) {
     PKKU_PP_OPIS = hdrRes[1][53].trim();
     nkpr_gl_sifdvz = hdrRes[1][54].trim();
     nkpr_gl_desc = hdrRes[1][55].trim();
+    nkpr_gl_sonum = hdrRes[1][56].trim();
+    nkpr_gl_orddte = hdrRes[1][57].trim();
+    nkpr_gl_shpvia = hdrRes[1][58].trim();
 
     if (POSREDNIK != "") {
         PROVIDER = POSREDNIK;
@@ -302,6 +305,7 @@ function DetermineDocumentMeta() {
     taxPointDate = (NKPR_GL_ESD != NKPR_GL_INVDTE ? NKPR_GL_ESD : "");
     customizationID = "urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0#conformant#urn:mfin.gov.hr:ext-2025:1.0";
     documentCurrencyCode = "EUR";
+    formattedProfileIDInvoiceTypeCode = ProfileID + " / " + InvoiceTypeCode;
     formattedIssueDate = SqlDateToDisplay(issueDate);
     formattedDueDate = SqlDateToDisplay(dueDate);
 }
@@ -658,8 +662,15 @@ function PopulateHeaderVariables() {
               pcl_pnb + dlmt +
               pcl_namjena + dlmt +
               pcl_opis;
-
     invoiceQRcode = UTF8HRChars(QRparametar);
+
+    offerNumber = nkpr_gl_sonum;
+    offerDate = nkpr_gl_orddte;
+    otpremnicaNumber = NKPR_GL_BROTP;
+    customerOrderNumber = NKPR_GL_CUSORD;
+    formatedScontoDanSc = NKPR_GL_SCONTO + " / " + NKPR_GL_DANSC;
+    shippingMethod = nkpr_gl_shpvia;
+
     supplierEndpointID = supOIB;
     supplierPartyID = "9934:" + supOIB;
     supplierName = KPSY_COMP_NAME;
@@ -782,8 +793,8 @@ function BuildTaxSubreport() {
         rowRate = row[2];
         originalTarifa = row[3].trim();
         exemptCode = Substring(row[4], 0, 2).trim();
-        taxableAmountFormatted = FormatAmount(totalTaxableAmount) + " EUR";
-        taxAmountPDVFormatted = FormatAmount(totalTaxAmount) + " EUR";
+        taxableAmountFormatted = FormatAmount(totalTaxableAmount);
+        taxAmountPDVFormatted = FormatAmount(totalTaxAmount);
         taxPercentPDV = FormatNum(rowRate, 0, ".", "abs");
         taxCategoryPDVIDAndTaxSchemeID = FormatTaxCategoryCode(originalTarifa) + "-VAT";
         taxExemptionReasonPDV = GetTaxExemptionReason(exemptCode);
@@ -797,9 +808,9 @@ function BuildHrTaxSubreport() {
         row = taxRes2[i];
         originalTarifa = row[3].trim();
         exemptCode = Substring(row[4], 0, 2).trim();
-        HRtaxableAmountFormatted = FormatAmount(row[1]) + " EUR";
+        HRtaxableAmountFormatted = FormatAmount(row[1]);
         HRtaxPercentPDV = FormatNum(row[2], 0, ".", "abs");
-        HRtaxAmountPDVFormatted = FormatAmount(row[0]) + " EUR";
+        HRtaxAmountPDVFormatted = FormatAmount(row[0]);
         HRtaxCategoryPDVIDAndTaxSchemeID = FormatTaxCategoryCode(originalTarifa) + "-" + GetTaxSchemeForHr(originalTarifa);
         HRtaxNamePDV = "HR:" + originalTarifa;
         HRtaxExemptionReasonPDV = GetTaxExemptionReason(exemptCode);

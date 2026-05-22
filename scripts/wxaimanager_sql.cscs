@@ -31,6 +31,130 @@ DEFINE chatSqlEnabled type l;   // false after a connection error → silently s
 DEFINE WXAI_DB type a size 50;
 
 
+function SQL_InitDatabaseAndTables(){
+    createDatabaseSql = "IF NOT EXISTS(SELECT * FROM sys.databases WHERE name = '" + WXAI_DB + "')
+                            BEGIN
+                                CREATE DATABASE " + WXAI_DB + "
+                            END;";
+
+    createSessionTableSql = "USE " + WXAI_DB + ";   
+                            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='ChatSession' and xtype='U')
+                                BEGIN
+                                    CREATE TABLE dbo.ChatSession
+                                    (
+                                        ChatSessionId           BIGINT IDENTITY(1,1) PRIMARY KEY,
+                                        TenantId                INT             NULL,
+                                        UserId                  INT             NOT NULL,
+                                        Title                   NVARCHAR(200)   NULL,
+                                        SessionType             NVARCHAR(50)    NOT NULL DEFAULT('chat'),
+                                        SourceApp               NVARCHAR(100)   NULL,
+                                        ModelName               NVARCHAR(100)   NULL,
+                                        StartedAtUtc            DATETIME2(3)    NOT NULL DEFAULT SYSUTCDATETIME(),
+                                        LastActivityAtUtc       DATETIME2(3)    NOT NULL DEFAULT SYSUTCDATETIME(),
+                                        IsClosed                BIT             NOT NULL DEFAULT(0),
+                                        SummaryText             NVARCHAR(MAX)   NULL,
+                                        MetaJson                NVARCHAR(MAX)   NULL
+                                    );
+
+                                    CREATE INDEX IX_ChatSession_User_LastActivity
+                                        ON dbo.ChatSession(UserId, LastActivityAtUtc DESC)
+                                    ;
+                                END;";
+
+    createMessageTableSql = "USE " + WXAI_DB + ";
+                            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='ChatMessage' and xtype='U')
+                                BEGIN
+                                    CREATE TABLE dbo.ChatMessage
+                                    (
+                                        ChatMessageId           BIGINT IDENTITY(1,1) PRIMARY KEY,
+                                        ChatSessionId           BIGINT          NOT NULL,
+                                        MessageOrder            INT             NOT NULL,
+                                        RoleCode                NVARCHAR(20)    NOT NULL,
+                                        MessageText             NVARCHAR(MAX)   NOT NULL,
+                                        ContentType             NVARCHAR(30)    NOT NULL DEFAULT('text'),
+                                        CreatedAtUtc            DATETIME2(3)    NOT NULL DEFAULT SYSUTCDATETIME(),
+
+                                        ParentChatMessageId     BIGINT          NULL,
+                                        PromptTokens            INT             NULL,
+                                        CompletionTokens        INT             NULL,
+                                        TotalTokens             INT             NULL,
+                                        LatencyMs               INT             NULL,
+                                        FinishReason            NVARCHAR(50)    NULL,
+                                        IsError                 BIT             NOT NULL DEFAULT(0),
+
+                                        MessageHash             VARBINARY(32)   NULL,
+                                        MetaJson                NVARCHAR(MAX)   NULL,
+
+                                        CONSTRAINT FK_ChatMessage_ChatSession
+                                            FOREIGN KEY (ChatSessionId) REFERENCES dbo.ChatSession(ChatSessionId),
+
+                                        CONSTRAINT FK_ChatMessage_Parent
+                                            FOREIGN KEY (ParentChatMessageId) REFERENCES dbo.ChatMessage(ChatMessageId),
+
+                                        CONSTRAINT UQ_ChatMessage_Session_Order
+                                            UNIQUE (ChatSessionId, MessageOrder)
+                                    );
+
+                                    CREATE INDEX IX_ChatMessage_Session_Created
+                                        ON dbo.ChatMessage(ChatSessionId, CreatedAtUtc, ChatMessageId)
+                                    ;
+
+                                    CREATE INDEX IX_ChatMessage_Role_Created
+                                        ON dbo.ChatMessage(RoleCode, CreatedAtUtc)
+                                    ;
+                                END;";
+
+    createChunkTableSql = "USE " + WXAI_DB + ";
+                            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='ChatChunk' and xtype='U')
+                                BEGIN
+                                    CREATE TABLE dbo.ChatChunk
+                                    (
+                                        ChatChunkId             BIGINT IDENTITY(1,1) PRIMARY KEY,
+                                        ChatSessionId           BIGINT          NOT NULL,
+                                        ChatMessageId           BIGINT          NULL,
+                                        ChunkOrder              INT             NOT NULL,
+                                        ChunkText               NVARCHAR(MAX)   NOT NULL,
+                                        ChunkType               NVARCHAR(30)    NOT NULL DEFAULT('message'),
+                                        CreatedAtUtc            DATETIME2(3)    NOT NULL DEFAULT SYSUTCDATETIME(),
+
+                                        TokenCount              INT             NULL,
+                                        EmbeddingStatus         NVARCHAR(20)    NOT NULL DEFAULT('pending'),
+                                        EmbeddingProvider       NVARCHAR(50)    NULL,
+                                        EmbeddingModel          NVARCHAR(100)   NULL,
+
+                                        MetaJson                NVARCHAR(MAX)   NULL,
+
+                                        CONSTRAINT FK_ChatChunk_ChatSession
+                                            FOREIGN KEY (ChatSessionId) REFERENCES dbo.ChatSession(ChatSessionId),
+
+                                        CONSTRAINT FK_ChatChunk_ChatMessage
+                                            FOREIGN KEY (ChatMessageId) REFERENCES dbo.ChatMessage(ChatMessageId),
+
+                                        CONSTRAINT UQ_ChatChunk_Message_Order
+                                            UNIQUE (ChatMessageId, ChunkOrder)
+                                    );
+
+                                    CREATE INDEX IX_ChatChunk_Session
+                                        ON dbo.ChatChunk(ChatSessionId, CreatedAtUtc)
+                                    ;
+
+                                    CREATE INDEX IX_ChatChunk_EmbeddingStatus
+                                        ON dbo.ChatChunk(EmbeddingStatus, CreatedAtUtc)
+                                    ;
+                                END;";
+
+
+    try {
+        sqlNonQuery(createDatabaseSql);
+        sqlNonQuery(createSessionTableSql);
+        sqlNonQuery(createMessageTableSql);
+        sqlNonQuery(createChunkTableSql);
+    }catch(ex) {
+        MessageBox("SQL_InitDatabaseAndTables error: " + ex);
+        return;
+    }
+}
+
 // =============================================================
 //  INIT
 // =============================================================

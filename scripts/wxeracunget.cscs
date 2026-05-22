@@ -1359,8 +1359,12 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                 if (Contains(delivery, "DeliveryParty")) {
                     deliveryParty = GetNodeText(delivery["DeliveryParty"]);
                     if (deliveryParty != null && deliveryParty != "") {
-                        deliveryPartyPartyName = GetNodeText(deliveryParty["PartyName"]);
-                        NKPR_GL_SHPNME = GetNodeText(deliveryPartyPartyName["Name"]);
+                        if(Contains(deliveryParty, "PartyName")) {
+                            deliveryPartyPartyName = GetNodeText(deliveryParty["PartyName"]);
+                            NKPR_GL_SHPNME = GetNodeText(deliveryPartyPartyName["Name"]);
+                        }else{
+                            NKPR_GL_SHPNME = "";
+                        }
                     }
                 } else {
                     deliveryParty = {};

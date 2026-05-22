@@ -58,6 +58,9 @@ function wxaimanager_OnStart() {
 
     // --- SQL persistence setup ---
     WXAI_DB        = "WXAIMANAGEMENT_CHATS";
+
+    SQL_InitDatabaseAndTables();
+
     chatUserId     = 1;      // TODO: replace with actual user ID from your login context
     chatSqlEnabled = true;
     SQL_InitNewSession();
@@ -246,6 +249,26 @@ function SendToAI() {
         endpoint = endpoint + "chat/completions";
         // Build JSON payload
         jsonBody = BuildApiPayload();
+
+
+
+        jsonBody = "
+        {
+  \"model\": \"deepseek/deepseek-v4-flash:free\",
+  \"messages\": [
+    {
+      \"role\": \"user\",
+      \"content\": \"How many r`s are in the word `strawberry?`\"
+    }
+  ]
+  
+}";
+
+        msg(jsonBody);
+        
+        
+        
+        
         SetUIBusy(true);
         SetStatus("Šaljem zahtjev AI-u...");
 
@@ -255,10 +278,15 @@ function SendToAI() {
         if (aiApiKey != "") {
             authToken = "Bearer " + aiApiKey;
         }
-   
-        WebRequest("POST", endpoint, jsonBody, authToken,
+
+        headers = {};
+        headers["Authorization"] = authToken;
+        // headers["HTTP-Referer"] = "http://localhost";
+        // headers["X-Title"] = "WpfCSCS";
+
+        WebRequest("POST", endpoint, jsonBody, "noTrackingId",
                    "SendMessageSuccess", "SendMessageFailure",
-                   "application/json", "", 120000, false);
+                   "application/json", headers, 120000, false);
 
     } catch (ex) {
         SetUIBusy(false);
@@ -271,13 +299,14 @@ function SendToAI() {
 
 function SendMessageSuccess(trackingId, responseCode, res) {
     apiLastResponse = res;
-    apiLastCode     = responseCode;
+    apiLastCode     = int(responseCode);
     RunOnMain("ProcessAIResponse");
 }
 
 function SendMessageFailure(trackingId, responseCode, res) {
     apiLastResponse = res;
-    apiLastCode     = responseCode;
+    apiLastCode     = int(responseCode);
+    MSG("API call failed with code " + responseCode + ". Response: " + res);
     RunOnMain("ProcessAIError");
 }
 
@@ -409,8 +438,8 @@ function BuildApiPayload() {
     }
 
     payload = '{"model": "' + aiModel + '",';
-    payload = payload + '"temperature": ' + temp + ',';
-    payload = payload + '"max_tokens": ' + maxTok + ',';
+    // payload = payload + '"temperature": ' + temp + ',';
+    // payload = payload + '"max_tokens": ' + maxTok + ',';
     payload = payload + '"messages": [';
 
     firstMsg = true;

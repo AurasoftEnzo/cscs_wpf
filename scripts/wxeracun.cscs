@@ -500,15 +500,15 @@ function GenerateUBLXml() {
         
         POREZ = row[0];
         OSNOVICA = row[1]; 
-        NKPR_LN_PRNPR = row[2].trim();
+        NKPR_LN_PRNPR = row[2];
         PKFK_TAX_TARIFA = row[3].trim();
         PKFK_TAX_DOBOPC = row[4].trim();
         PKFK_TAX_TIP = row[5].trim();
         PKFK_TAX_P_PORZ = row[6].trim();
-        PKFK_TAX_POR1 = row[7].trim();
-        PKFK_TAX_POR2 = row[8].trim();
+        PKFK_TAX_POR1 = row[7];
+        PKFK_TAX_POR2 = row[8];
         
-        if (PKFK_TAX_TIP == "S" && PKFK_TAX_POR1 != "" && PKFK_TAX_POR2 != "") {
+        if (PKFK_TAX_TIP == "S" && PKFK_TAX_POR1 != 0 && PKFK_TAX_POR2 != 0) {
             // This is a compound tax code (additive) - split into two individual codes
             
             // Get individual tax rates with error checking
@@ -568,7 +568,7 @@ function GenerateUBLXml() {
             newRow2.Add("");                            // PKFK_TAX_POR2 (empty for individual)
             taxRes2.Add(newRow2);
             
-        } elif (PKFK_TAX_TIP == "Z" && PKFK_TAX_POR1 != "" && PKFK_TAX_POR2 != "") {
+        } elif (PKFK_TAX_TIP == "Z" && PKFK_TAX_POR1 != 0 && PKFK_TAX_POR2 != 0) {
             // This is a compound tax code (multiplicative) - Z type: rate1 * (1 + rate2)
             
             // Get individual tax rates with error checking

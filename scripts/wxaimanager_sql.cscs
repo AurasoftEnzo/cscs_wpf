@@ -24,7 +24,7 @@
 // ---- SQL-layer state variables (shared with main script) ----
 DEFINE currentSessionId type r;   // ChatSession.ChatSessionId  (0 = not yet created)
 DEFINE chatMsgOrder type r;   // MessageOrder counter within the current session
-DEFINE chatUserId type r;   // ChatSession.UserId  (set in OnStart; default = 1)
+DEFINE chatUserId type a size 30;   // ChatSession.UserId  (set in OnStart from command-line arg)
 DEFINE chatSqlEnabled type l;   // false after a connection error → silently skip SQL
 
 // DB name prefix (assigned in wxaimanager_OnStart)
@@ -44,7 +44,7 @@ function SQL_InitDatabaseAndTables(){
                                     (
                                         ChatSessionId           BIGINT IDENTITY(1,1) PRIMARY KEY,
                                         TenantId                INT             NULL,
-                                        UserId                  INT             NOT NULL,
+                                        UserId                  NVARCHAR(50)    NOT NULL,
                                         Title                   NVARCHAR(200)   NULL,
                                         SessionType             NVARCHAR(50)    NOT NULL DEFAULT('chat'),
                                         SourceApp               NVARCHAR(100)   NULL,
@@ -152,6 +152,23 @@ function SQL_InitDatabaseAndTables(){
     }catch(ex) {
         MessageBox("SQL_InitDatabaseAndTables error: " + ex);
         return;
+    }
+
+    // --- migrate existing installations: INT UserId → NVARCHAR(50) ---
+    try {
+        migrateSql = "USE " + WXAI_DB + "; "
+                   + "IF EXISTS ("
+                   + "  SELECT * FROM INFORMATION_SCHEMA.COLUMNS "
+                   + "  WHERE TABLE_NAME = 'ChatSession' AND COLUMN_NAME = 'UserId' AND DATA_TYPE = 'int'"
+                   + ") BEGIN "
+                   + "  IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_ChatSession_User_LastActivity' AND object_id = OBJECT_ID('dbo.ChatSession')) "
+                   + "    DROP INDEX IX_ChatSession_User_LastActivity ON dbo.ChatSession; "
+                   + "  ALTER TABLE dbo.ChatSession ALTER COLUMN UserId NVARCHAR(50) NOT NULL; "
+                   + "  CREATE INDEX IX_ChatSession_User_LastActivity ON dbo.ChatSession(UserId, LastActivityAtUtc DESC); "
+                   + "END";
+        sqlNonQuery(migrateSql);
+    } catch (ex) {
+        MSG("SQL migration UserId INT→NVARCHAR error: " + ex);
     }
 }
 
@@ -402,4 +419,94 @@ function SQL_InsertChunk(sessId, msgId, chunkOrd, chunkTxt) {
     } catch (ex) {
         MSG("SQL_InsertChunk error: " + ex);
     }
+}
+
+
+// =============================================================
+//  HISTORY FROM DATABASE
+// =============================================================
+
+// Loads the most recent sessions (up to histMax) from the database,
+// most recent first, and populates the in-memory history arrays
+// (arrayHistDate / arrayHistTitle / arrayHistText / histCount).
+// Called once from wxaimanager_OnStart() after the grid is set up.
+function SQL_LoadHistoryFromDB() {
+    if (!chatSqlEnabled) {
+        return;
+    }
+
+    histCount = 0;
+
+    try {
+        sqlParams = {};
+        sqlParams.Add({"@p1", chatUserId});
+
+        // Retrieve up to histMax sessions, newest first.
+        // DATEADD converts stored UTC to local server time (matches Now() output).
+        sessSql = "SELECT TOP " + int(histMax) + " "
+                + "  s.ChatSessionId, "
+                + "  ISNULL(s.Title, ''), "
+                + "  FORMAT(DATEADD(minute, DATEDIFF(minute, GETUTCDATE(), GETDATE()), s.StartedAtUtc), 'dd.MM. HH:mm') "
+                + "FROM " + WXAI_DB + ".dbo.ChatSession s "
+                + "WHERE s.UserId = @p1 "
+                + "ORDER BY s.LastActivityAtUtc DESC";
+
+        sessResult = sqlQuery(sessSql, sqlParams);
+        sessCount  = Size(sessResult) - 1;   // row 0 = column headers
+
+        for (i = 0; i < sessCount; i++) {
+            row          = sessResult[i + 1];
+            sessionId    = int(row[0]);
+            sessionTitle = row[1];
+            sessionDate  = row[2];
+
+            if (sessionTitle == "") {
+                sessionTitle = "(razgovor bez poruke)";
+            }
+            if (sessionTitle.length > 60) {
+                sessionTitle = Substring(sessionTitle, 0, 57) + "...";
+            }
+
+            // ---- reconstruct chat display text from messages ----
+            displayText = "-------------------------------------------\n";
+            displayText = displayText + "  AI Manager - CSCS_WPF  [" + sessionDate + "]\n";
+            displayText = displayText + "-------------------------------------------\n\n";
+
+            msgParams = {};
+            msgParams.Add({"@p1", sessionId});
+
+            msgSql = "SELECT RoleCode, MessageText "
+                   + "FROM " + WXAI_DB + ".dbo.ChatMessage "
+                   + "WHERE ChatSessionId = @p1 "
+                   + "ORDER BY MessageOrder ASC";
+
+            msgResult = sqlQuery(msgSql, msgParams);
+            msgRows   = Size(msgResult) - 1;
+
+            for (j = 0; j < msgRows; j++) {
+                msgRow  = msgResult[j + 1];
+                role    = msgRow[0];
+                content = msgRow[1];
+
+                label = role == "user" ? "Vi" : "AI";
+                displayText = displayText + "[" + label + "]\n";
+                displayText = displayText + content + "\n\n";
+
+                if (displayText.length > 19800) {
+                    displayText = displayText + "...(skraćeno)\n";
+                    break;
+                }
+            }
+
+            arrayHistDate[histCount]  = sessionDate;
+            arrayHistTitle[histCount] = sessionTitle;
+            arrayHistText[histCount]  = displayText;
+            histCount++;
+        }
+
+    } catch (ex) {
+        MSG("SQL_LoadHistoryFromDB error: " + ex);
+    }
+
+    UpdateHistoryGrid();
 }

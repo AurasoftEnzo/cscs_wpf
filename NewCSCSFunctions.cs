@@ -90,6 +90,7 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.FORMAT_NUM, new FormatNumFunction());
 
             interpreter.RegisterFunction(Constants.WEB_REQUEST_MPFD, new WebRequestMPFDFunction());
+            interpreter.RegisterFunction(Constants.WEB_REQUEST2, new WebRequest2Function());
             //interpreter.RegisterFunction(Constants.MATH_RANDOM2, CSCS.Math. ???  GetRandomFunction(false));
 
             interpreter.RegisterFunction(Constants.SQLNonQuery, new SQLNonQueryFunction()); // override of SQLNonQueryFunction in Functions.SQL
@@ -207,6 +208,9 @@ namespace WpfCSCS
             interpreter.RegisterFunction("XmlGetChild", new XmlGetChildFunction());
             interpreter.RegisterFunction("XmlGetChildAttribute", new XmlGetChildAttributeFunction());
             interpreter.RegisterFunction("XmlGetElementValue", new XmlGetElementValueFunction());
+
+            interpreter.RegisterFunction("FileCopy", new FileCopyFunction());
+            interpreter.RegisterFunction("FileHash", new FileHashFunction());
         }
         public partial class Constants
         {
@@ -235,6 +239,7 @@ namespace WpfCSCS
             public const string FORMAT_NUM = "FormatNum";
 
             public const string WEB_REQUEST_MPFD = "WebRequestMPFD";
+            public const string WEB_REQUEST2 = "WebRequest2";
             //public const string MATH_RANDOM2 = "Math.Random2";
             
             public const string SQLNonQuery = "SQLNonQuery";
@@ -1343,6 +1348,232 @@ namespace WpfCSCS
         }
     }
 
+    // Drop-in replacement for WebRequest() that correctly sets custom headers
+    // (e.g. Authorization: Bearer ...) BEFORE opening the request stream.
+    // Same parameter order as WebRequest():
+    //   WebRequest2(method, url, body, trackingId, onSuccess, onFailure,
+    //               contentType, headers, timeoutMs, justFire)
+    public class WebRequest2Function : ParserFunction
+    {
+        static readonly string[] s_allowedMethods =
+            { "GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS", "TRACE" };
+
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 2, m_name);
+            string method      = args[0].AsString().ToUpper();
+            string uri         = args[1].AsString();
+            string load        = Utils.GetSafeString(args, 2);
+            string tracking    = Utils.GetSafeString(args, 3);
+            string onSuccess   = Utils.GetSafeString(args, 4);
+            string onFailure   = Utils.GetSafeString(args, 5, onSuccess);
+            string contentType = Utils.GetSafeString(args, 6, "application/x-www-form-urlencoded");
+            Variable headers   = Utils.GetSafeVariable(args, 7);
+            int timeoutMs      = Utils.GetSafeInt(args, 8, 10 * 1000);
+            bool justFire      = Utils.GetSafeInt(args, 9) > 0;
+
+            if (!s_allowedMethods.Contains(method))
+                throw new ArgumentException("Unknown web request method: " + method);
+
+            if (justFire)
+            {
+                Task.Run(() => ProcessWebRequest(uri, method, load, onSuccess, onFailure,
+                                                 tracking, contentType, headers));
+                return Variable.EmptyInstance;
+            }
+            return ProcessWebRequest(uri, method, load, onSuccess, onFailure,
+                                     tracking, contentType, headers);
+        }
+
+        protected override async Task<Variable> EvaluateAsync(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 2, m_name);
+            string method      = args[0].AsString().ToUpper();
+            string uri         = args[1].AsString();
+            string load        = Utils.GetSafeString(args, 2);
+            string tracking    = Utils.GetSafeString(args, 3);
+            string onSuccess   = Utils.GetSafeString(args, 4);
+            string onFailure   = Utils.GetSafeString(args, 5, onSuccess);
+            string contentType = Utils.GetSafeString(args, 6, "application/x-www-form-urlencoded");
+            Variable headers   = Utils.GetSafeVariable(args, 7);
+            int timeoutMs      = Utils.GetSafeInt(args, 8, 10 * 1000);
+            bool justFire      = Utils.GetSafeInt(args, 9) > 0;
+
+            if (!s_allowedMethods.Contains(method))
+                throw new ArgumentException("Unknown web request method: " + method);
+
+            return await ProcessWebRequestAsync(uri, method, load, onSuccess, onFailure,
+                                                tracking, contentType, headers, timeoutMs, justFire);
+        }
+
+        Variable ProcessWebRequest(string uri, string method, string load,
+                                   string onSuccess, string onFailure, string tracking,
+                                   string contentType, Variable headers)
+        {
+            try
+            {
+                HttpWebRequest request = (HttpWebRequest)WebRequest.CreateHttp(uri);
+                request.Method      = method;
+                request.ContentType = contentType;
+
+                // Set headers BEFORE GetRequestStream() so they are included in the request.
+                ApplyHeaders(request, headers);
+
+                if (!string.IsNullOrWhiteSpace(load))
+                {
+                    byte[] bytes = Encoding.UTF8.GetBytes(load);
+                    request.ContentLength = bytes.Length;
+                    using (Stream requestStream = request.GetRequestStream())
+                        requestStream.Write(bytes, 0, bytes.Length);
+                }
+
+                using (HttpWebResponse resp = (HttpWebResponse)request.GetResponse())
+                using (StreamReader sr = new StreamReader(resp.GetResponseStream()))
+                {
+                    string body         = sr.ReadToEnd();
+                    string responseCode = ((int)resp.StatusCode).ToString();
+                    var res = new Variable(body);
+                    if (!string.IsNullOrWhiteSpace(onSuccess))
+                        CustomFunction.Run(InterpreterInstance, onSuccess,
+                                           new Variable(tracking), new Variable(responseCode), res);
+                    return res;
+                }
+            }
+            catch (WebException webExc)
+            {
+                string body         = ReadWebExceptionBody(webExc);
+                string responseCode = webExc.Response is HttpWebResponse r
+                                      ? ((int)r.StatusCode).ToString() : "";
+                var res = new Variable(body);
+                if (!string.IsNullOrWhiteSpace(onFailure))
+                    CustomFunction.Run(InterpreterInstance, onFailure,
+                                       new Variable(tracking), new Variable(responseCode), res);
+                return res;
+            }
+            catch (Exception exc)
+            {
+                var res = new Variable(exc.Message);
+                if (!string.IsNullOrWhiteSpace(onFailure))
+                    CustomFunction.Run(InterpreterInstance, onFailure,
+                                       new Variable(tracking), new Variable(""), res);
+                return res;
+            }
+        }
+
+        async Task<Variable> ProcessWebRequestAsync(string uri, string method, string load,
+                                                    string onSuccess, string onFailure,
+                                                    string tracking, string contentType,
+                                                    Variable headers, int timeoutMs,
+                                                    bool justFire = false)
+        {
+            try
+            {
+                HttpWebRequest request = (HttpWebRequest)WebRequest.CreateHttp(uri);
+                request.Method      = method;
+                request.ContentType = contentType;
+
+                // Set headers BEFORE GetRequestStream() so they are included in the request.
+                ApplyHeaders(request, headers);
+
+                if (!string.IsNullOrWhiteSpace(load))
+                {
+                    byte[] bytes = Encoding.UTF8.GetBytes(load);
+                    request.ContentLength = bytes.Length;
+                    using (Stream requestStream = request.GetRequestStream())
+                        requestStream.Write(bytes, 0, bytes.Length);
+                }
+
+                Task<WebResponse> responseTask = request.GetResponseAsync();
+                if (justFire)
+                    return Variable.EmptyInstance;
+
+                return await FinishRequestAsync(onSuccess, onFailure, tracking,
+                                                responseTask, timeoutMs);
+            }
+            catch (Exception exc)
+            {
+                var res = new Variable(exc.Message);
+                if (!string.IsNullOrWhiteSpace(onFailure))
+                    await CustomFunction.RunAsync(InterpreterInstance, onFailure,
+                                                  new Variable(tracking), new Variable(""), res);
+                return res;
+            }
+        }
+
+        async Task<Variable> FinishRequestAsync(string onSuccess, string onFailure,
+                                                string tracking,
+                                                Task<WebResponse> responseTask, int timeoutMs)
+        {
+            string result       = "";
+            string responseCode = "";
+            string callbackName = onSuccess;
+
+            try
+            {
+                Task timeoutTask = Task.Delay(timeoutMs);
+                Task first = await Task.WhenAny(timeoutTask, responseTask);
+                if (first == timeoutTask)
+                    throw new Exception("Timeout waiting for response.");
+
+                using (HttpWebResponse response = (HttpWebResponse)await responseTask)
+                using (StreamReader sr = new StreamReader(response.GetResponseStream()))
+                {
+                    result       = sr.ReadToEnd();
+                    responseCode = ((int)response.StatusCode).ToString();
+                    if ((int)response.StatusCode >= 400)
+                        callbackName = onFailure;
+                }
+            }
+            catch (WebException webExc)
+            {
+                result       = ReadWebExceptionBody(webExc);
+                responseCode = webExc.Response is HttpWebResponse r
+                               ? ((int)r.StatusCode).ToString() : "";
+                callbackName = onFailure;
+            }
+            catch (Exception exc)
+            {
+                result       = exc.Message;
+                callbackName = onFailure;
+            }
+
+            var res = new Variable(result);
+            if (!string.IsNullOrWhiteSpace(callbackName))
+                await CustomFunction.RunAsync(InterpreterInstance, callbackName,
+                                              new Variable(tracking),
+                                              new Variable(responseCode), res);
+            return res;
+        }
+
+        static void ApplyHeaders(HttpWebRequest request, Variable headers)
+        {
+            if (headers == null || headers.Tuple == null)
+                return;
+            foreach (string key in headers.GetKeys())
+            {
+                string value = headers.GetVariable(key).AsString();
+                request.Headers[key] = value;
+            }
+        }
+
+        static string ReadWebExceptionBody(WebException webExc)
+        {
+            if (webExc.Response == null)
+                return webExc.Message;
+            try
+            {
+                using (StreamReader sr = new StreamReader(webExc.Response.GetResponseStream()))
+                    return sr.ReadToEnd();
+            }
+            catch
+            {
+                return webExc.Message;
+            }
+        }
+    }
+
     class SQLNonQueryFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)
@@ -2158,10 +2389,13 @@ namespace WpfCSCS
 
             List<string> elements = SplitJSONArray(content);
 
-            foreach (string element in elements)
+            for (int i = 0; i < elements.Count; i++)
             {
-                Variable elementVar = ParseJSON(element.Trim());
-                arrayVar.AddVariable(elementVar);
+                Variable elementVar = ParseJSON(elements[i].Trim());
+                // Use SetHashVariable with a numeric string key so that m_dictionary.Count > 0.
+                // This prevents TrySetAsMap() from misidentifying this array as a map and
+                // destructively restructuring it (clearing child dictionaries, replacing elements).
+                arrayVar.SetHashVariable(i.ToString(), elementVar);
             }
 
             return arrayVar;
@@ -4853,6 +5087,62 @@ namespace WpfCSCS
             else
             {
                 throw new Exception("File not found: " + filePath);
+            }
+        }
+    }
+
+    // FileCopy(srcPath, destPath) → true/false
+    // Copies any file (binary-safe) to destPath, overwriting if it already exists.
+    class FileCopyFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 2, m_name);
+
+            var src  = Utils.GetSafeString(args, 0);
+            var dest = Utils.GetSafeString(args, 1);
+
+            try
+            {
+                // Ensure destination directory exists
+                string destDir = Path.GetDirectoryName(dest);
+                if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
+                    Directory.CreateDirectory(destDir);
+
+                System.IO.File.Copy(src, dest, overwrite: true);
+                return new Variable(true);
+            }
+            catch (Exception)
+            {
+                return new Variable(false);
+            }
+        }
+    }
+
+    // FileHash(filePath) → SHA-256 hex string (lowercase, 64 chars), or "" on error.
+    class FileHashFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+
+            var filePath = Utils.GetSafeString(args, 0);
+
+            try
+            {
+                using (var sha    = SHA256.Create())
+                using (var stream = System.IO.File.OpenRead(filePath))
+                {
+                    byte[] hashBytes = sha.ComputeHash(stream);
+                    return new Variable(
+                        BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant());
+                }
+            }
+            catch (Exception)
+            {
+                return new Variable("");
             }
         }
     }

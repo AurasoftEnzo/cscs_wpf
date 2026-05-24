@@ -12,6 +12,7 @@
 // ============================================================
 
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxaimanager_SQL.cscs") : strTrim(tpath()) + "wxaimanager_sql.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxaimanager_attachments.cscs") : strTrim(tpath()) + "wxaimanager_attachments.cscs");
 
 CreateWindow(strTrim(tpath()) + "wxaimanager.xaml");
 
@@ -42,6 +43,7 @@ DEFINE arrayHistText type a size 20000 array 50;
 // ---- State --------------------------------------------------
 DEFINE isWaiting type l;
 DEFINE settingsOpen type l;
+DEFINE userCode type a size 30;
 
 // ---- Async API temp storage ---------------------------------
 DEFINE apiLastResponse type a size 20000;
@@ -54,14 +56,25 @@ DEFINE apiLastError type a size 500;
 // =============================================================
 
 function wxaimanager_OnStart() {
+    // --- command-line parameters ---
+    userCode = "Nepoznati";
+    args = CommandLineArgs();
+
+    if (Size(args) > 0) {
+        userCode = args[1];   // e.g. ANA
+        if (userCode == "") {
+            userCode = "Nepoznati";
+        }
+    }
     settingsFilePath = strTrim(tpath()) + "wxaimanager_cfg.txt";
 
     // --- SQL persistence setup ---
     WXAI_DB        = "WXAIMANAGEMENT_CHATS";
 
     SQL_InitDatabaseAndTables();
+    SQL_InitAttachmentTables();
 
-    chatUserId     = 1;      // TODO: replace with actual user ID from your login context
+    chatUserId     = userCode;
     chatSqlEnabled = true;
     SQL_InitNewSession();
 
@@ -112,6 +125,9 @@ function wxaimanager_OnStart() {
 
     // --- welcome ---
     ShowWelcome();
+
+    // --- load history from DB ---
+    SQL_LoadHistoryFromDB();
 }
 
 function wxaimanager_OnDisplay() {
@@ -145,13 +161,13 @@ userInput= GetWidgetOptions("txtInput", "Text");
     msgCount++;
 
     // Display user message
-    AppendToDisplay("Vas", inputText);
+    AppendToDisplay("Vi", inputText);
     // Persist user message to SQL
     SQL_SaveUserMessage(inputText);
     // Clear input
     SetWidgetOptions("txtInput", "Text", "");
     // Send to AI
-    msg('User message processed, sending to AI. Current session ID: ' + currentSessionId);
+    //msg('User message processed, sending to AI. Current session ID: ' + currentSessionId);
     SendToAI();
 }
 
@@ -183,11 +199,23 @@ function btnSaveSettings@clicked() {
     SetStatus("Postavke su uspješno spremljene.");
 }
 
+function btnCancelSettings@clicked() {
+    SetWidgetOptions("panelSettings", "Visible", false);
+    settingsOpen = false;
+    SetWidgetOptions("btnSettings", "Content", "Postavke");
+    LoadSettings();   // restore controls to last-saved values
+    SetStatus("Promjene postavki odbačene.");
+}
+
 function btnClearChat@clicked() {
     if (msgCount > 0) {
         SaveCurrentChatToHistory();
     }
     StartNewChat();
+}
+
+function btnAddAttachment@clicked() {
+    Attachment_SelectAndUpload();
 }
 
 // Provider ComboBox change
@@ -249,26 +277,6 @@ function SendToAI() {
         endpoint = endpoint + "chat/completions";
         // Build JSON payload
         jsonBody = BuildApiPayload();
-
-
-
-        jsonBody = "
-        {
-  \"model\": \"deepseek/deepseek-v4-flash:free\",
-  \"messages\": [
-    {
-      \"role\": \"user\",
-      \"content\": \"How many r`s are in the word `strawberry?`\"
-    }
-  ]
-  
-}";
-
-        msg(jsonBody);
-        
-        
-        
-        
         SetUIBusy(true);
         SetStatus("Šaljem zahtjev AI-u...");
 
@@ -284,9 +292,9 @@ function SendToAI() {
         // headers["HTTP-Referer"] = "http://localhost";
         // headers["X-Title"] = "WpfCSCS";
 
-        WebRequest("POST", endpoint, jsonBody, "noTrackingId",
-                   "SendMessageSuccess", "SendMessageFailure",
-                   "application/json", headers, 120000, false);
+        WebRequest2("POST", endpoint, jsonBody, "noTrackingId",
+                    "SendMessageSuccess", "SendMessageFailure",
+                    "application/json", headers, 120000, false);
 
     } catch (ex) {
         SetUIBusy(false);
@@ -307,6 +315,8 @@ function SendMessageFailure(trackingId, responseCode, res) {
     apiLastResponse = res;
     apiLastCode     = int(responseCode);
     MSG("API call failed with code " + responseCode + ". Response: " + res);
+    //SaveFile(res,"c:\\winx\\api_error_response.txt");
+
     RunOnMain("ProcessAIError");
 }
 
@@ -334,24 +344,21 @@ function ProcessAIResponse() {
             SetStatus("API greška: " + errMsg);
             return;
         }
-
         // Standard OpenAI chat completions response
         if (Contains(responseObj, "choices")) {
             choices = responseObj["choices"];
-            if (Size(choices) > 0) {
+           if (Size(choices) > 0) {
                 choice    = choices[0];
-                msgObj    = choice["message"];
+                msgObj    = choice["message"]; 
                 content   = msgObj["content"];
                 aiModelUsed = "";
                 if (Contains(responseObj, "model")) {
                     aiModelUsed = responseObj["model"];
                 }
-
                 // Store in conversation
                 msgRole[msgCount]    = "assistant";
                 msgContent[msgCount] = content;
                 msgCount++;
-
                 // Display
                 label = "AI";
                 if (aiModelUsed != "") {
@@ -380,7 +387,6 @@ function ProcessAIResponse() {
                     }
                 }
                 SQL_SaveAssistantMessage(content, finishReason, promptTokens, completionTokens, totalTokens);
-
                 SetStatus("Odgovor primljen.");
             }
         } else {
@@ -402,24 +408,20 @@ function ProcessAIError() {
         // Try to extract error message from JSON
         try {
             errObj = DeserializeJson(apiLastResponse);
-  msg ('Error response deserialized: ' + errObj);          
             if (Contains(errObj, "error")) {
                 inner = errObj["error"];
                 if (Contains(inner, "message")) {
                     errDetail = inner["message"];
                 }
             }
-    msg ('Extracted error detail: ' + errDetail);        
         } catch (ex) {
             //errDetail = errDetail + " – " + apiLastResponse;
             errDetail = errDetail + " - " + apiLastResponse;
         }
     }
- msg ('Final error detail: ' + errDetail);   
     AppendToDisplay("API GREŠKA", errDetail);
     SetUIBusy(false);
     SetStatus("API greška: " + errDetail);
- msg ('API error processed and displayed: ' + errDetail);   
 }
 
 
@@ -541,6 +543,8 @@ function SaveCurrentChatToHistory() {
             break;
         }
     }
+
+
     if (title == "") {
         title = "(razgovor bez poruke)";
     }
@@ -548,6 +552,7 @@ function SaveCurrentChatToHistory() {
     arrayHistDate[histCount]  = ts;
     arrayHistTitle[histCount] = title;
     arrayHistText[histCount]  = chatDisplayText;
+
     histCount++;
 
     UpdateHistoryGrid();
@@ -565,6 +570,10 @@ function LoadHistoryItem(idx) {
 }
 
 function UpdateHistoryGrid() {
+    //if (histCount == 0) {
+    //    histLineCntr = 1;
+    //    histActive = 1;
+    //}
     histActive = histCount;
     //DisplayArraySetup("datagridHistory", histLineCntr, histActive, histMax);
     DisplayArraySetup("datagridHistory", counterFld: histLineCntr, activeElements: histActive, maxElements: histMax);

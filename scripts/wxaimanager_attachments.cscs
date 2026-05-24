@@ -1,0 +1,482 @@
+// ============================================================
+//  WXAIMANAGER_ATTACHMENTS.CSCS
+//  Attachment management for AI Manager
+//  Database: WXAIMANAGEMENT_CHATS
+//
+//  Included by wxaimanager.cscs via:
+//    include(... + "wxaimanager_attachments.cscs");
+//
+//  Tables managed here:
+//    dbo.ChatAttachment  – file metadata + disk path + SHA-256 hash
+//    dbo.Document        – extracted text (set by parser; for .txt immediate)
+//    dbo.DocumentChunk   – text chunks with page/section info + embedding status
+//
+//  Workflow:
+//    1. btnAddAttachment@clicked()      → Attachment_SelectAndUpload()
+//       - OpenFile() dialog, FileCopy() to storage, FileHash(), INSERT ChatAttachment
+//       - For plain-text files: AsyncCall → Attachment_ParseTextFile()
+//       - For binary files (.pdf/.docx/...): status='uploaded', background parser picks up
+//
+//    2. Attachment_ParseTextFile(id, path, name)   [async]
+//       - ReadAllText(), INSERT Document (ExtractStatus='extracted')
+//       - Calls Attachment_ChunkDocument() inline
+//       - Sets ChatAttachment.AttachmentStatus = 'indexed'
+//
+//    3. Attachment_ChunkDocument(docId, sessId, text)
+//       - Splits text into ATTACH_CHUNK_SIZE-char chunks
+//       - INSERT DocumentChunk (CharStart, CharEnd, PageFrom=PageTo=1, SectionPath='')
+//       - ChunkHash computed in SQL via HASHBYTES('SHA2_256', ...)
+//       - EmbeddingStatus = 'pending'  (embedding service reads these rows)
+//
+//    4. Embedding service (external):
+//       - Reads DocumentChunk WHERE EmbeddingStatus='pending'
+//       - Sets EmbeddingStatus='embedded', EmbeddingModel, VectorStore, VectorId
+// ============================================================
+
+// ---- Attachment state variables (shared with main script) --
+DEFINE attachmentStorageRoot type a size 500;   // disk folder for stored files
+DEFINE lastAttachmentId      type r;            // ID of most-recently uploaded attachment
+DEFINE ATTACH_CHUNK_SIZE     type r;            // characters per DocumentChunk (set in init)
+
+
+// =============================================================
+//  TABLE INITIALIZATION
+//  Called from wxaimanager_OnStart() after SQL_InitDatabaseAndTables()
+// =============================================================
+
+function SQL_InitAttachmentTables() {
+    if (!chatSqlEnabled) {
+        return;
+    }
+
+    // Storage directory for attachment files
+    attachmentStorageRoot = strTrim(tpath()) + "attachments\\";
+    ATTACH_CHUNK_SIZE     = 800;
+
+    if (!DIR_EXISTS(attachmentStorageRoot)) {
+        MAKE_DIR(attachmentStorageRoot);
+    }
+
+    // ---- ChatAttachment -----------------------------------------
+    createAttachmentSql =
+          "USE " + WXAI_DB + "; "
+        + "IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='ChatAttachment' AND xtype='U') "
+        + "BEGIN "
+        + "  CREATE TABLE dbo.ChatAttachment ( "
+        + "    ChatAttachmentId   BIGINT IDENTITY(1,1) PRIMARY KEY, "
+        + "    ChatSessionId      BIGINT           NOT NULL, "
+        + "    ChatMessageId      BIGINT           NULL, "
+        + "    UploadedByUserId   NVARCHAR(30)     NOT NULL, "
+        + "    OriginalFileName   NVARCHAR(260)    NOT NULL, "
+        + "    StoredFileName     NVARCHAR(260)    NOT NULL, "
+        + "    FileExtension      NVARCHAR(20)     NULL, "
+        + "    MimeType           NVARCHAR(100)    NULL, "
+        + "    FileSizeBytes      BIGINT           NOT NULL, "
+        + "    StorageProvider    NVARCHAR(30)     NOT NULL DEFAULT('disk'), "
+        + "    StoragePath        NVARCHAR(1000)   NOT NULL, "
+        + "    Sha256Hash         VARCHAR(64)      NULL, "
+        + "    AttachmentStatus   NVARCHAR(30)     NOT NULL DEFAULT('uploaded'), "
+        + "    IsDeleted          BIT              NOT NULL DEFAULT(0), "
+        + "    CreatedAtUtc       DATETIME2(3)     NOT NULL DEFAULT SYSUTCDATETIME(), "
+        + "    ProcessedAtUtc     DATETIME2(3)     NULL, "
+        + "    MetaJson           NVARCHAR(MAX)    NULL, "
+        + "    CONSTRAINT FK_ChatAttachment_ChatSession "
+        + "      FOREIGN KEY (ChatSessionId) REFERENCES dbo.ChatSession(ChatSessionId), "
+        + "    CONSTRAINT FK_ChatAttachment_ChatMessage "
+        + "      FOREIGN KEY (ChatMessageId) REFERENCES dbo.ChatMessage(ChatMessageId) "
+        + "  ); "
+        + "  CREATE INDEX IX_ChatAttachment_ChatSession "
+        + "    ON dbo.ChatAttachment(ChatSessionId, CreatedAtUtc DESC); "
+        + "  CREATE INDEX IX_ChatAttachment_Status "
+        + "    ON dbo.ChatAttachment(AttachmentStatus, CreatedAtUtc); "
+        + "END;";
+
+    // ---- Document -----------------------------------------------
+    createDocumentSql =
+          "USE " + WXAI_DB + "; "
+        + "IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Document' AND xtype='U') "
+        + "BEGIN "
+        + "  CREATE TABLE dbo.Document ( "
+        + "    DocumentId             BIGINT IDENTITY(1,1) PRIMARY KEY, "
+        + "    ChatAttachmentId       BIGINT           NOT NULL, "
+        + "    DocumentType           NVARCHAR(30)     NOT NULL DEFAULT('attachment'), "
+        + "    Title                  NVARCHAR(300)    NULL, "
+        + "    SourceLanguageCode     NVARCHAR(10)     NULL, "
+        + "    ExtractStatus          NVARCHAR(30)     NOT NULL DEFAULT('pending'), "
+        + "    ExtractedText          NVARCHAR(MAX)    NULL, "
+        + "    ExtractedTextLength    INT              NULL, "
+        + "    PageCount              INT              NULL, "
+        + "    ParserName             NVARCHAR(100)    NULL, "
+        + "    ParserVersion          NVARCHAR(50)     NULL, "
+        + "    CreatedAtUtc           DATETIME2(3)     NOT NULL DEFAULT SYSUTCDATETIME(), "
+        + "    ExtractedAtUtc         DATETIME2(3)     NULL, "
+        + "    MetaJson               NVARCHAR(MAX)    NULL, "
+        + "    CONSTRAINT FK_Document_ChatAttachment "
+        + "      FOREIGN KEY (ChatAttachmentId) REFERENCES dbo.ChatAttachment(ChatAttachmentId), "
+        + "    CONSTRAINT UQ_Document_ChatAttachment UNIQUE (ChatAttachmentId) "
+        + "  ); "
+        + "  CREATE INDEX IX_Document_ExtractStatus "
+        + "    ON dbo.Document(ExtractStatus, CreatedAtUtc); "
+        + "END;";
+
+    // ---- DocumentChunk ------------------------------------------
+    createDocChunkSql =
+          "USE " + WXAI_DB + "; "
+        + "IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='DocumentChunk' AND xtype='U') "
+        + "BEGIN "
+        + "  CREATE TABLE dbo.DocumentChunk ( "
+        + "    DocumentChunkId    BIGINT IDENTITY(1,1) PRIMARY KEY, "
+        + "    DocumentId         BIGINT           NOT NULL, "
+        + "    ChatSessionId      BIGINT           NOT NULL, "
+        + "    ChunkOrder         INT              NOT NULL, "
+        + "    ChunkType          NVARCHAR(30)     NOT NULL DEFAULT('text'), "
+        + "    ChunkText          NVARCHAR(MAX)    NOT NULL, "
+        + "    CharStart          INT              NULL, "
+        + "    CharEnd            INT              NULL, "
+        + "    TokenCount         INT              NULL, "
+        + "    PageFrom           INT              NULL, "
+        + "    PageTo             INT              NULL, "
+        + "    SectionPath        NVARCHAR(500)    NULL, "
+        + "    EmbeddingStatus    NVARCHAR(30)     NOT NULL DEFAULT('pending'), "
+        + "    EmbeddingModel     NVARCHAR(100)    NULL, "
+        + "    VectorStore        NVARCHAR(50)     NULL, "
+        + "    VectorId           NVARCHAR(200)    NULL, "
+        + "    ChunkHash          VARCHAR(64)      NULL, "
+        + "    CreatedAtUtc       DATETIME2(3)     NOT NULL DEFAULT SYSUTCDATETIME(), "
+        + "    EmbeddedAtUtc      DATETIME2(3)     NULL, "
+        + "    MetaJson           NVARCHAR(MAX)    NULL, "
+        + "    CONSTRAINT FK_DocumentChunk_Document "
+        + "      FOREIGN KEY (DocumentId) REFERENCES dbo.Document(DocumentId), "
+        + "    CONSTRAINT FK_DocumentChunk_ChatSession "
+        + "      FOREIGN KEY (ChatSessionId) REFERENCES dbo.ChatSession(ChatSessionId), "
+        + "    CONSTRAINT UQ_DocumentChunk_Document_Order UNIQUE (DocumentId, ChunkOrder) "
+        + "  ); "
+        + "  CREATE INDEX IX_DocumentChunk_Document "
+        + "    ON dbo.DocumentChunk(DocumentId, ChunkOrder); "
+        + "  CREATE INDEX IX_DocumentChunk_Session "
+        + "    ON dbo.DocumentChunk(ChatSessionId, CreatedAtUtc DESC); "
+        + "  CREATE INDEX IX_DocumentChunk_EmbeddingStatus "
+        + "    ON dbo.DocumentChunk(EmbeddingStatus, CreatedAtUtc); "
+        + "  CREATE INDEX IX_DocumentChunk_VectorId "
+        + "    ON dbo.DocumentChunk(VectorId) WHERE VectorId IS NOT NULL; "
+        + "END;";
+
+    try {
+        sqlNonQuery(createAttachmentSql);
+        sqlNonQuery(createDocumentSql);
+        sqlNonQuery(createDocChunkSql);
+    } catch (ex) {
+        MSG("SQL_InitAttachmentTables error: " + ex);
+    }
+}
+
+
+// =============================================================
+//  MIME TYPE LOOKUP
+// =============================================================
+
+function Attachment_MimeType(ext) {
+    extL = StrLower(ext);
+    if (extL == ".txt")  { return "text/plain"; }
+    if (extL == ".md")   { return "text/markdown"; }
+    if (extL == ".csv")  { return "text/csv"; }
+    if (extL == ".log")  { return "text/plain"; }
+    if (extL == ".xml")  { return "application/xml"; }
+    if (extL == ".json") { return "application/json"; }
+    if (extL == ".html" || extL == ".htm") { return "text/html"; }
+    if (extL == ".pdf")  { return "application/pdf"; }
+    if (extL == ".docx") { return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"; }
+    if (extL == ".xlsx") { return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"; }
+    if (extL == ".pptx") { return "application/vnd.openxmlformats-officedocument.presentationml.presentation"; }
+    if (extL == ".doc")  { return "application/msword"; }
+    if (extL == ".xls")  { return "application/vnd.ms-excel"; }
+    if (extL == ".zip")  { return "application/zip"; }
+    if (extL == ".png")  { return "image/png"; }
+    if (extL == ".jpg" || extL == ".jpeg") { return "image/jpeg"; }
+    return "application/octet-stream";
+}
+
+
+// =============================================================
+//  SELECT AND UPLOAD
+//  Opens an OpenFileDialog, copies the file to the storage
+//  directory, records it in ChatAttachment, then triggers
+//  text extraction for plain-text formats.
+// =============================================================
+
+function Attachment_SelectAndUpload() {
+    if (!chatSqlEnabled) {
+        SetStatus("SQL nije dostupan – prilog nije pohranjen.");
+        return;
+    }
+    if (currentSessionId == 0) {
+        // Start a session stub so we have a ChatSessionId
+        SQL_EnsureSession("(prilog bez poruke)");
+        if (currentSessionId == 0) {
+            SetStatus("Ne mogu kreirati sesiju za prilog.");
+            return;
+        }
+    }
+
+    // --- File dialog ---
+    srcPath = OpenFile();
+    if (srcPath == "") {
+        return;   // user cancelled
+    }
+
+    // --- Extract filename from full path ---
+    fileName  = srcPath;
+    lastSlash = 0;
+    for (k = 0; k < srcPath.length; k++) {
+        ch = Substring(srcPath, k, 1);
+        if (ch == "\\" || ch == "/") {
+            lastSlash = k + 1;
+        }
+    }
+    fileName = Substring(srcPath, lastSlash, srcPath.length - lastSlash);
+
+    // --- Extract file extension (includes the dot, e.g. ".txt") ---
+    fileExt  = "";
+    lastDot  = -1;
+    for (k = 0; k < fileName.length; k++) {
+        if (Substring(fileName, k, 1) == ".") {
+            lastDot = k;
+        }
+    }
+    if (lastDot >= 0) {
+        fileExt = Substring(fileName, lastDot, fileName.length - lastDot);
+    }
+
+    mimeType = Attachment_MimeType(fileExt);
+    fileSize = FLSZE(srcPath);
+    fileHash = FileHash(srcPath);   // SHA-256 hex via C# function
+
+    // --- Build stored filename: <8-char hash prefix>_<original name> ---
+    hashPrefix = "";
+    if (fileHash.length >= 8) {
+        hashPrefix = Substring(fileHash, 0, 8) + "_";
+    }
+    storedFileName = hashPrefix + fileName;
+    destPath       = attachmentStorageRoot + storedFileName;
+
+    // --- Copy binary file to storage directory ---
+    copyOk = FileCopy(srcPath, destPath);
+    if (!copyOk) {
+        SetStatus("Greška pri kopiranju datoteke: " + fileName);
+        MSG("Attachment_SelectAndUpload: FileCopy failed. src=" + srcPath + " dest=" + destPath);
+        return;
+    }
+
+    // --- Insert into ChatAttachment ---
+    lastAttachmentId = 0;
+    try {
+        p = {};
+        p.Add({"@sessId",      currentSessionId});
+        p.Add({"@userId",      chatUserId});
+        p.Add({"@origName",    fileName});
+        p.Add({"@storedName",  storedFileName});
+        p.Add({"@ext",         fileExt});
+        p.Add({"@mime",        mimeType});
+        p.Add({"@size",        fileSize});
+        p.Add({"@destPath",    destPath});
+        p.Add({"@hash",        fileHash});
+
+        insSql = "INSERT INTO " + WXAI_DB + ".dbo.ChatAttachment "
+               + "  (ChatSessionId, UploadedByUserId, OriginalFileName, StoredFileName, "
+               + "   FileExtension, MimeType, FileSizeBytes, "
+               + "   StorageProvider, StoragePath, Sha256Hash, AttachmentStatus) "
+               + "OUTPUT INSERTED.ChatAttachmentId "
+               + "VALUES (@sessId, @userId, @origName, @storedName, "
+               + "        @ext, @mime, @size, 'disk', @destPath, @hash, 'uploaded')";
+
+        insRes = sqlQuery(insSql, p);
+        if (Size(insRes) > 1) {
+            lastAttachmentId = int(insRes[1][0]);
+        }
+    } catch (ex) {
+        MSG("Attachment_SelectAndUpload INSERT error: " + ex);
+        SetStatus("Greška pri pohrani zapisa o prilogu.");
+        return;
+    }
+
+    if (lastAttachmentId == 0) {
+        SetStatus("Prilog kopiran, ali ID nije dobiven.");
+        return;
+    }
+
+    fileSizeKb = int(fileSize / 1024);
+    SetStatus("Prilog '" + fileName + "' dodan (" + fileSizeKb + " KB).");
+    AppendToDisplay("Sustav", "Prilog dodan: " + fileName + " (" + fileSizeKb + " KB)");
+
+    // --- Immediate text extraction for plain-text formats ---
+    extLow = StrLower(fileExt);
+    if (   extLow == ".txt"  || extLow == ".md"   || extLow == ".csv"
+        || extLow == ".log"  || extLow == ".xml"  || extLow == ".json"
+        || extLow == ".html" || extLow == ".htm") {
+        AsyncCall("Attachment_ParseTextFile", "Attachment_ParseDone",
+                  lastAttachmentId, destPath, fileName);
+    }
+    // Binary files (.pdf, .docx, ...): background parser service reads
+    // ChatAttachment rows WHERE AttachmentStatus = 'uploaded'.
+}
+
+
+// =============================================================
+//  TEXT EXTRACTION  (runs async via AsyncCall)
+//  Reads plain-text file, inserts Document row with ExtractedText,
+//  then immediately chunks the text into DocumentChunk rows.
+// =============================================================
+
+function Attachment_ParseTextFile(attachmentId, filePath, fileName) {
+    extractedText = "";
+    try {
+        extractedText = ReadAllText(filePath);
+    } catch (ex) {
+        MSG("Attachment_ParseTextFile – ReadAllText error: " + ex);
+    }
+
+    textLen  = extractedText.length;
+    newDocId = 0;
+
+    try {
+        p = {};
+        p.Add({"@attachId", attachmentId});
+        p.Add({"@title",    fileName});
+        p.Add({"@text",     extractedText});
+        p.Add({"@len",      textLen});
+
+        docSql = "INSERT INTO " + WXAI_DB + ".dbo.Document "
+               + "  (ChatAttachmentId, Title, ExtractStatus, "
+               + "   ExtractedText, ExtractedTextLength, "
+               + "   ParserName, PageCount, ExtractedAtUtc) "
+               + "OUTPUT INSERTED.DocumentId "
+               + "VALUES (@attachId, @title, 'extracted', "
+               + "        @text, @len, 'cscs-plaintext', 1, SYSUTCDATETIME())";
+
+        docRes = sqlQuery(docSql, p);
+        if (Size(docRes) > 1) {
+            newDocId = int(docRes[1][0]);
+        }
+    } catch (ex) {
+        MSG("Attachment_ParseTextFile – Document INSERT error: " + ex);
+    }
+    // Chunk the extracted text
+    if (newDocId > 0 && textLen > 0) {
+        Attachment_ChunkDocument(newDocId, currentSessionId, extractedText);
+    }
+
+    // Update attachment status to 'indexed'
+    try {
+        updP = {};
+        updP.Add({"@id", attachmentId});
+        sqlNonQuery("UPDATE " + WXAI_DB + ".dbo.ChatAttachment "
+                  + "SET AttachmentStatus = 'indexed', ProcessedAtUtc = SYSUTCDATETIME() "
+                  + "WHERE ChatAttachmentId = @id", updP);
+    } catch (ex) {
+        MSG("Attachment_ParseTextFile – status update error: " + ex);
+    }
+}
+
+// Callback on main thread after async parse finishes
+function Attachment_ParseDone() {
+    SetStatus("Prilog parsiran i indeksiran.");
+}
+
+
+// =============================================================
+//  CHUNKING
+//  Splits extractedText into fixed-size chunks of ATTACH_CHUNK_SIZE
+//  characters (no overlap). Stores each chunk in DocumentChunk with:
+//    CharStart / CharEnd  – character offsets in the full text
+//    PageFrom = PageTo = 1  – plain-text has no page structure
+//    SectionPath = ''       – section detection left to external parsers
+//    ChunkHash              – SHA2-256 of chunk text, computed in SQL
+//    EmbeddingStatus = 'pending'  – embedding service processes these
+// =============================================================
+
+function Attachment_ChunkDocument(documentId, chatSessionIdArg, extractedText) {
+    totalLen  = extractedText.length;
+    chunkOrd  = 0;
+    charStart = 0;
+
+    while (charStart < totalLen) {
+        charEnd   = charStart + ATTACH_CHUNK_SIZE;
+        if (charEnd > totalLen) {
+            charEnd = totalLen;
+        }
+
+        chunkText = Substring(extractedText, charStart, charEnd - charStart);
+
+        try {
+            cp = {};
+            cp.Add({"@docId",   documentId});
+            cp.Add({"@sessId",  chatSessionIdArg});
+            cp.Add({"@ord",     chunkOrd});
+            cp.Add({"@text",    chunkText});
+            cp.Add({"@cstart",  charStart});
+            cp.Add({"@cend",    charEnd});
+
+            chunkSql =
+                  "INSERT INTO " + WXAI_DB + ".dbo.DocumentChunk "
+                + "  (DocumentId, ChatSessionId, ChunkOrder, ChunkType, ChunkText, "
+                + "   CharStart, CharEnd, PageFrom, PageTo, SectionPath, "
+                + "   EmbeddingStatus, ChunkHash) "
+                + "VALUES (@docId, @sessId, @ord, 'text', @text, "
+                + "        @cstart, @cend, 1, 1, '', "
+                + "        'pending', "
+                + "        CONVERT(VARCHAR(64), "
+                + "          HASHBYTES('SHA2_256', CAST(@text AS NVARCHAR(MAX))), 2))";
+
+            sqlNonQuery(chunkSql, cp);
+        } catch (ex) {
+            MSG("Attachment_ChunkDocument – chunk " + chunkOrd + " error: " + ex);
+        }
+
+        chunkOrd++;
+        charStart = charEnd;
+    }
+}
+
+
+// =============================================================
+//  LIST ATTACHMENTS FOR CURRENT SESSION
+//  Appends a summary to the chat transcript.
+// =============================================================
+
+function Attachment_ListForSession() {
+    if (!chatSqlEnabled || currentSessionId == 0) {
+        return;
+    }
+
+    try {
+        lp = {};
+        lp.Add({"@sessId", currentSessionId});
+
+        listSql = "SELECT OriginalFileName, FileSizeBytes, AttachmentStatus "
+                + "FROM " + WXAI_DB + ".dbo.ChatAttachment "
+                + "WHERE ChatSessionId = @sessId AND IsDeleted = 0 "
+                + "ORDER BY CreatedAtUtc ASC";
+
+        listRes   = sqlQuery(listSql, lp);
+        listCount = Size(listRes) - 1;
+
+        if (listCount == 0) {
+            SetStatus("Nema priloženih datoteka u ovoj sesiji.");
+            return;
+        }
+
+        summary = "Priložene datoteke u sesiji:\n";
+        for (ai = 0; ai < listCount; ai++) {
+            aRow    = listRes[ai + 1];
+            aName   = aRow[0];
+            aSize   = int(int(aRow[1]) / 1024);
+            aStatus = aRow[2];
+            summary = summary + "  • " + aName + " (" + aSize + " KB, " + aStatus + ")\n";
+        }
+
+        AppendToDisplay("Sustav", summary);
+
+    } catch (ex) {
+        MSG("Attachment_ListForSession error: " + ex);
+    }
+}

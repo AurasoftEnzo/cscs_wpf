@@ -93,17 +93,15 @@
     </Window.Resources>
 
     <!-- ================================================================
-         Root grid: 4 rows
+         Root grid: 3 rows
            0 – Toolbar
-           1 – Content (sidebar + chat area)
-           2 – Settings panel (collapsed by default)
-           3 – Status bar
+           1 – Content (sidebar + chat area; settings panel overlaid inside)
+           2 – Status bar
          ================================================================ -->
     <Grid Margin="8">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>   <!-- Toolbar       -->
             <RowDefinition Height="*"/>      <!-- Content       -->
-            <RowDefinition Height="Auto"/>   <!-- Settings      -->
             <RowDefinition Height="Auto"/>   <!-- Status bar    -->
         </Grid.RowDefinitions>
 
@@ -119,7 +117,6 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>    <!-- Provider/Model -->
                     <ColumnDefinition Width="*"/>       <!-- Title          -->
-                    <ColumnDefinition Width="Auto"/>    <!-- Buttons        -->
                 </Grid.ColumnDefinitions>
 
                 <!-- Provider and Model selectors -->
@@ -150,29 +147,6 @@
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"/>
 
-                <!-- Action buttons -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Name="btnNewChat"
-                            Content="Novi razgovor"
-                            Style="{StaticResource FlatBtn}"
-                            Background="#27AE60"
-                            Width="120"
-                            Height="30"
-                            Margin="0,0,8,0"/>
-                    <Button Name="btnSettings"
-                            Content="Postavke"
-                            Style="{StaticResource FlatBtn}"
-                            Background="#2980B9"
-                            Width="90"
-                            Height="30"
-                            Margin="0,0,8,0"/>
-                    <Button Name="btnClearChat"
-                            Content="Obriši"
-                            Style="{StaticResource FlatBtn}"
-                            Background="#C0392B"
-                            Width="65"
-                            Height="30"/>
-                </StackPanel>
             </Grid>
         </Border>
 
@@ -181,9 +155,11 @@
              ============================================================ -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="220"/>    <!-- Sidebar -->
-                <ColumnDefinition Width="8"/>      <!-- Spacer  -->
-                <ColumnDefinition Width="*"/>      <!-- Chat    -->
+                <ColumnDefinition Width="280"/>    <!-- Sidebar       -->
+                <ColumnDefinition Width="8"/>      <!-- Spacer        -->
+                <ColumnDefinition Width="*"/>      <!-- Chat          -->
+                <ColumnDefinition Width="8"/>      <!-- Spacer        -->
+                <ColumnDefinition Width="120"/>    <!-- Action panel  -->
             </Grid.ColumnDefinitions>
 
             <!-- Sidebar: history -->
@@ -222,7 +198,7 @@
                               CanUserResizeRows="False"
                               CanUserSortColumns="False"
                               SelectionMode="Single"
-                              HorizontalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
                         <DataGrid.Resources>
                             <Style TargetType="{x:Type DataGridColumnHeader}">
@@ -239,29 +215,22 @@
                             <DataGridTemplateColumn Header="Datum" Width="68">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBox Name="tbHistDate"
-                                                 Tag="arrayHistDate"
-                                                 IsReadOnly="True"
-                                                 Background="Transparent"
-                                                 BorderThickness="0"
-                                                 Foreground="#7F8C8D"
-                                                 FontSize="10.5"
-                                                 Padding="2,1"/>
+                                        <wcl:ASGridCell FieldName="arrayHistDate"
+                                                        Editor="edDefault"
+                                                        EditLength="0"
+                                                        IsReadOnly="True"
+                                                        HorizontalContentAlignment="Left" />
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTemplateColumn Header="Razgovor" Width="*">
+                            <DataGridTemplateColumn Header="Razgovor" Width="*" MinWidth="120">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBox Name="tbHistTitle"
-                                                 Tag="arrayHistTitle"
-                                                 IsReadOnly="True"
-                                                 Background="Transparent"
-                                                 BorderThickness="0"
-                                                 Foreground="#C8D0DA"
-                                                 FontSize="11.5"
-                                                 Padding="2,1"
-                                                 TextWrapping="NoWrap"/>
+                                        <wcl:ASGridCell FieldName="arrayHistTitle"
+                                                        Editor="edDefault"
+                                                        EditLength="0"
+                                                        IsReadOnly="True"
+                                                        HorizontalContentAlignment="Left" />
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
@@ -355,99 +324,150 @@
                 </Grid>
             </Border>
 
+            <!-- Right action panel -->
+            <Border Grid.Column="4"
+                    Background="#263646"
+                    CornerRadius="8"
+                    Padding="8,10">
+                <StackPanel Orientation="Vertical" VerticalAlignment="Top">
+                    <Button Name="btnNewChat"
+                            Content="Novi razgovor"
+                            Style="{StaticResource FlatBtn}"
+                            Background="#27AE60"
+                            Width="104"
+                            Height="34"
+                            Margin="0,0,0,8"
+                            HorizontalAlignment="Center"/>
+                    <Button Name="btnSettings"
+                            Content="Postavke"
+                            Style="{StaticResource FlatBtn}"
+                            Background="#2980B9"
+                            Width="104"
+                            Height="34"
+                            Margin="0,0,0,8"
+                            HorizontalAlignment="Center"/>
+                    <Button Name="btnClearChat"
+                            Content="Obriši"
+                            Style="{StaticResource FlatBtn}"
+                            Background="#C0392B"
+                            Width="104"
+                            Height="34"
+                            HorizontalAlignment="Center"/>
+                    <Button Name="btnAddAttachment"
+                            Content="Prilog"
+                            Style="{StaticResource FlatBtn}"
+                            Background="#8E44AD"
+                            Width="104"
+                            Height="34"
+                            Margin="0,8,0,0"
+                            HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Settings panel: overlay at top of content row, spanning all columns.
+                 Because it shares Row 1 (*) with the sidebar and chat area it never
+                 creates a blank gap below them – datagridHistory and txtChat always
+                 fill the available height regardless of settings visibility. -->
+            <Border Grid.Column="0"
+                    Grid.ColumnSpan="5"
+                    Panel.ZIndex="10"
+                    VerticalAlignment="Top"
+                    Name="panelSettings"
+                    Background="#304D65"
+                    CornerRadius="8"
+                    Padding="14,12"
+                    Visibility="Collapsed">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Column 0: API Key + Base URL + Temperature -->
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="API Ključ:" Style="{StaticResource SectionHeader}"/>
+                        <TextBox Name="txtApiKey"
+                                 DataContext="aiApiKey"
+                                 Style="{StaticResource DarkTextBox}"
+                                 Margin="0,0,0,10"
+                                 ToolTip="Vaš OpenAI / OpenRouter / Azure API ključ. Ostavite prazno za Ollama."/>
+
+                        <TextBlock Text="Base URL:" Style="{StaticResource SectionHeader}"/>
+                        <TextBox Name="txtBaseUrl"
+                                 DataContext="aiBaseUrl"
+                                 Style="{StaticResource DarkTextBox}"
+                                 Margin="0,0,0,10"
+                                 ToolTip="Npr. https://api.openai.com/v1  ili  http://localhost:11434/v1"/>
+
+                        <TextBlock Text="Temperature (0.0 – 2.0):" Style="{StaticResource SectionHeader}"/>
+                        <TextBox Name="txtTemperature"
+                                 DataContext="aiTemperatureStr"
+                                 Style="{StaticResource DarkTextBox}"
+                                 Width="80"
+                                 HorizontalAlignment="Left"
+                                 ToolTip="Vrijednosti: 0.0 = deterministički, 1.0 = uravnoteženo, 2.0 = kreativno"/>
+
+                        <TextBlock Text="Max Tokens:" Style="{StaticResource SectionHeader}" Margin="0,10,0,5"/>
+                        <TextBox Name="txtMaxTokens"
+                                 DataContext="aiMaxTokensStr"
+                                 Style="{StaticResource DarkTextBox}"
+                                 Width="80"
+                                 HorizontalAlignment="Left"
+                                 ToolTip="Maksimalan broj tokena u odgovoru (npr. 2000, 4096)"/>
+                    </StackPanel>
+
+                    <!-- Column 2: System Prompt -->
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Sistemski prompt (System Prompt):" Style="{StaticResource SectionHeader}"/>
+                        <TextBox Name="txtSystemPrompt"
+                                 DataContext="aiSystemPrompt"
+                                 Style="{StaticResource DarkTextBox}"
+                                 TextWrapping="Wrap"
+                                 AcceptsReturn="True"
+                                 Height="130"
+                                 VerticalScrollBarVisibility="Auto"
+                                 VerticalContentAlignment="Top"
+                                 ToolTip="Uputa AI-u o načinu odgovaranja. Npr: You are a helpful assistant."/>
+
+                        <TextBlock Margin="0,10,0,4"
+                                   Foreground="#7F8C8D"
+                                   FontFamily="Segoe UI"
+                                   FontSize="11"
+                                   TextWrapping="Wrap">
+                            Primjeri modela: gpt-4o-mini · gpt-4o · gpt-3.5-turbo (OpenAI)&#x0a;llama3 · mistral · codellama (Ollama)&#x0a;meta-llama/... · anthropic/... (OpenRouter)
+                        </TextBlock>
+                    </StackPanel>
+
+                    <!-- Column 4: Save + Cancel buttons -->
+                    <StackPanel Grid.Column="4" VerticalAlignment="Center">
+                        <Button Name="btnSaveSettings"
+                                Content="Spremi postavke"
+                                Style="{StaticResource FlatBtn}"
+                                Background="#27AE60"
+                                Width="140"
+                                Height="44"
+                                FontSize="13"
+                                Margin="0,0,0,10"/>
+                        <Button Name="btnCancelSettings"
+                                Content="Odustani"
+                                Style="{StaticResource FlatBtn}"
+                                Background="#555F6A"
+                                Width="140"
+                                Height="36"
+                                FontSize="12"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
         </Grid>
 
         <!-- ============================================================
-             ROW 2 – Settings panel (collapsed by default)
+             ROW 2 – Status bar
              ============================================================ -->
         <Border Grid.Row="2"
-                Name="panelSettings"
-                Background="#263646"
-                CornerRadius="8"
-                Padding="14,12"
-                Margin="0,8,0,0"
-                Visibility="Collapsed">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="16"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="16"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <!-- Column 0: API Key + Base URL + Temperature -->
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="API Ključ:" Style="{StaticResource SectionHeader}"/>
-                    <TextBox Name="txtApiKey"
-                             DataContext="aiApiKey"
-                             Style="{StaticResource DarkTextBox}"
-                             Margin="0,0,0,10"
-                             ToolTip="Vaš OpenAI / OpenRouter / Azure API ključ. Ostavite prazno za Ollama."/>
-
-                    <TextBlock Text="Base URL:" Style="{StaticResource SectionHeader}"/>
-                    <TextBox Name="txtBaseUrl"
-                             DataContext="aiBaseUrl"
-                             Style="{StaticResource DarkTextBox}"
-                             Margin="0,0,0,10"
-                             ToolTip="Npr. https://api.openai.com/v1  ili  http://localhost:11434/v1"/>
-
-                    <TextBlock Text="Temperature (0.0 – 2.0):" Style="{StaticResource SectionHeader}"/>
-                    <TextBox Name="txtTemperature"
-                             DataContext="aiTemperatureStr"
-                             Style="{StaticResource DarkTextBox}"
-                             Width="80"
-                             HorizontalAlignment="Left"
-                             ToolTip="Vrijednosti: 0.0 = deterministički, 1.0 = uravnoteženo, 2.0 = kreativno"/>
-
-                    <TextBlock Text="Max Tokens:" Style="{StaticResource SectionHeader}" Margin="0,10,0,5"/>
-                    <TextBox Name="txtMaxTokens"
-                             DataContext="aiMaxTokensStr"
-                             Style="{StaticResource DarkTextBox}"
-                             Width="80"
-                             HorizontalAlignment="Left"
-                             ToolTip="Maksimalan broj tokena u odgovoru (npr. 2000, 4096)"/>
-                </StackPanel>
-
-                <!-- Column 2: System Prompt -->
-                <StackPanel Grid.Column="2">
-                    <TextBlock Text="Sistemski prompt (System Prompt):" Style="{StaticResource SectionHeader}"/>
-                    <TextBox Name="txtSystemPrompt"
-                             DataContext="aiSystemPrompt"
-                             Style="{StaticResource DarkTextBox}"
-                             TextWrapping="Wrap"
-                             AcceptsReturn="True"
-                             Height="130"
-                             VerticalScrollBarVisibility="Auto"
-                             VerticalContentAlignment="Top"
-                             ToolTip="Uputa AI-u o načinu odgovaranja. Npr: You are a helpful assistant."/>
-
-                    <TextBlock Margin="0,10,0,4"
-                               Foreground="#7F8C8D"
-                               FontFamily="Segoe UI"
-                               FontSize="11"
-                               TextWrapping="Wrap">
-                        Primjeri modela: gpt-4o-mini · gpt-4o · gpt-3.5-turbo (OpenAI)&#x0a;llama3 · mistral · codellama (Ollama)&#x0a;meta-llama/... · anthropic/... (OpenRouter)
-                    </TextBlock>
-                </StackPanel>
-
-                <!-- Column 4: Save button -->
-                <StackPanel Grid.Column="4" VerticalAlignment="Center">
-                    <Button Name="btnSaveSettings"
-                            Content="Spremi postavke"
-                            Style="{StaticResource FlatBtn}"
-                            Background="#27AE60"
-                            Width="140"
-                            Height="44"
-                            FontSize="13"/>
-                </StackPanel>
-            </Grid>
-        </Border>
-
-        <!-- ============================================================
-             ROW 3 – Status bar
-             ============================================================ -->
-        <Border Grid.Row="3"
                 Background="#263646"
                 CornerRadius="8"
                 Padding="12,5"

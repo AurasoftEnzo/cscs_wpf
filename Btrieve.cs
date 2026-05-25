@@ -7119,14 +7119,43 @@ $@"EXECUTE sp_executesql N'
 
                 if (Gui.Btrieve.gridsArrayClass.ContainsKey(gridName) && Gui.Btrieve.gridsArrayClass[gridName].tagsAndTypes != null && Gui.Btrieve.gridsArrayClass[gridName].tagsAndTypes.Count > 0)
                 {
-                    // Grid already initialized — just refresh data rows.
-                    // Do NOT call LoadContent() on columns here: after the first setup,
-                    // generateDataGridColumns() replaces XAML columns with FrameworkElementFactory-
-                    // built ones whose templates are not yet sealed, causing
-                    // "FrameworkElementFactory must be in a sealed template" on LoadContent().
-                    Gui.Btrieve.gridsDataTables[gridName].Clear();
-                    fillDataTable(gridName, Gui);
-                    return Variable.EmptyInstance;
+                    //Gui.DEFINES.TryGetValue(lineCntrVarName.String.ToLower(), out DefineVariable defCntrVar){
+                    //    defCntrVar = 
+                    //}
+
+                    dg = Gui.GetWidget(gridName) as DataGrid;
+                    if (dg == null)
+                    {
+                        return Variable.EmptyInstance;
+                    }
+
+                    var dgColumns = dg.Columns;
+                    for (int i = 0; i < dgColumns.Count; i++)
+                    {
+                        var column = dg.Columns.ElementAt(i);
+
+                        if (column is DataGridTemplateColumn)
+                        {
+                            var dgtc = column as DataGridTemplateColumn;
+
+                            var cell = dgtc.CellTemplate.LoadContent();
+                            if (cell is ASGridCell == false)
+                            {
+                                fillDataTable(gridName, Gui);
+                                return Variable.EmptyInstance;
+                            }
+                        }
+                    }
+
+
+                    //// Grid already initialized — just refresh data rows.
+                    //// Do NOT call LoadContent() on columns here: after the first setup,
+                    //// generateDataGridColumns() replaces XAML columns with FrameworkElementFactory-
+                    //// built ones whose templates are not yet sealed, causing
+                    //// "FrameworkElementFactory must be in a sealed template" on LoadContent().
+                    //Gui.Btrieve.gridsDataTables[gridName].Clear();
+                    //fillDataTable(gridName, Gui);
+                    //return Variable.EmptyInstance;
                 }
 
                 //------------------------------------------------------------------------

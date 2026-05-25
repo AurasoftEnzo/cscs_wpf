@@ -61,7 +61,7 @@ function wxaimanager_OnStart() {
     args = CommandLineArgs();
 
     if (Size(args) > 0) {
-        userCode = args[1];   // e.g. ANA
+        userCode = args[2];   // e.g. ANA
         if (userCode == "") {
             userCode = "Nepoznati";
         }
@@ -71,11 +71,13 @@ function wxaimanager_OnStart() {
     // --- SQL persistence setup ---
     WXAI_DB        = "WXAIMANAGEMENT_CHATS";
 
+    chatSqlEnabled = true;
+    
     SQL_InitDatabaseAndTables();
     SQL_InitAttachmentTables();
 
     chatUserId     = userCode;
-    chatSqlEnabled = true;
+    
     SQL_InitNewSession();
 
     // --- defaults ---

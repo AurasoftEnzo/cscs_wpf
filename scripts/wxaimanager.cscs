@@ -36,6 +36,8 @@ DEFINE histCount type i;
 DEFINE histLineCntr type r;
 DEFINE histActive type r;
 DEFINE histMax type r;
+
+DEFINE arrayHistChatId type a size 30 array 50;
 DEFINE arrayHistDate type a size 30 array 50;
 DEFINE arrayHistTitle type a size 150 array 50;
 DEFINE arrayHistText type a size 20000 array 50;
@@ -72,7 +74,7 @@ function wxaimanager_OnStart() {
     WXAI_DB        = "WXAIMANAGEMENT_CHATS";
 
     chatSqlEnabled = true;
-    
+
     SQL_InitDatabaseAndTables();
     SQL_InitAttachmentTables();
 
@@ -119,7 +121,8 @@ function wxaimanager_OnStart() {
     SetWidgetOptions("panelSettings", "Visible", false); // should be Collapsed 
 
     // --- history grid ---
-    DisplayArraySetup("datagridHistory", counterFld: histLineCntr, activeElements: histActive, maxElements: histMax);
+    // DisplayArray("datagridHistory", "close");
+    // DisplayArraySetup("datagridHistory", counterFld: histLineCntr, activeElements: histActive, maxElements: histMax);
 
     // --- status ---
     SetStatus("Spreman. Unesite poruku i pritisnite Pošalji.");
@@ -150,7 +153,7 @@ function btnSend@clicked() {
         return;
     }
     // aiProvider, aiModel and userInput are kept in sync via DataContext bindings
-userInput= GetWidgetOptions("txtInput", "Text");    
+    userInput= GetWidgetOptions("txtInput", "Text");    
     inputText = userInput;
     inputText = inputText.Trim();
     if (inputText == "") {
@@ -234,21 +237,30 @@ function cbProvider@change(sender, args) {
 
 function datagridHistory@select() {
     try {
-        rowData = GetSelectedGridRow("datagridHistory");
+        selectedIndex = GetWidgetOptions("datagridHistory", "SelectedIndex");
+        
+        // MSG(selectedIndex);
+        
+        // rowData = GetSelectedGridRow("datagridHistory");
 
-        if (Size(rowData) < 2) {
+        // if (Size(rowData) < 2) {
+        //     return;
+        // }
+        if (selectedIndex < 0 || selectedIndex >= histCount) {
             return;
         }
 
-        selectedDate = rowData[0];
+        // selectedDate = rowData[0];
 
-        // Find matching history entry by date (unique key)
-        for (i = 0; i < histCount; i++) {
-            if (arrayHistDate[i] == selectedDate) {
-                LoadHistoryItem(i);
-                return;
-            }
-        }
+        // // Find matching history entry by date (unique key)
+        // for (i = 0; i < histCount; i++) {
+        //     if (arrayHistDate[i] == selectedDate) {
+        //         LoadHistoryItem(i);
+        //         return;
+        //     }
+        // }
+
+        LoadHistoryItem(arrayHistChatId[selectedIndex]);
     } catch (ex) {
         SetStatus("Greška pri učitavanju razgovora: " + ex);
     }
@@ -569,16 +581,15 @@ function LoadHistoryItem(idx) {
     msgCount = 0;
     RefreshChatDisplay();
     SetStatus("Učitan prošli razgovor od " + arrayHistDate[idx] + ". Novi razgovor za nastavak.");
+    currentSessionId = idx;
 }
 
 function UpdateHistoryGrid() {
-    //if (histCount == 0) {
-    //    histLineCntr = 1;
-    //    histActive = 1;
-    //}
-    histActive = histCount;
-    //DisplayArraySetup("datagridHistory", histLineCntr, histActive, histMax);
-    DisplayArraySetup("datagridHistory", counterFld: histLineCntr, activeElements: histActive, maxElements: histMax);
+    if (histCount > 0) {
+        histActive = histCount;
+        DisplayArray("datagridHistory", "close");
+        DisplayArraySetup("datagridHistory", counterFld: histLineCntr, activeElements: histActive, maxElements: histMax);
+    }
 }
 
 

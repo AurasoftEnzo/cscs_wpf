@@ -62,7 +62,7 @@ function wxaimanager_OnStart() {
     userCode = "Nepoznati";
     args = CommandLineArgs();
 
-    if (Size(args) > 0) {
+    if (Size(args) > 2) {
         userCode = args[2];   // e.g. ANA
         if (userCode == "") {
             userCode = "Nepoznati";
@@ -241,24 +241,24 @@ function datagridHistory@select() {
         
         // MSG(selectedIndex);
         
-        // rowData = GetSelectedGridRow("datagridHistory");
+         rowData = GetSelectedGridRow("datagridHistory");
 
-        // if (Size(rowData) < 2) {
-        //     return;
-        // }
+         if (Size(rowData) < 2) {
+             return;
+         }
         if (selectedIndex < 0 || selectedIndex >= histCount) {
             return;
         }
 
-        // selectedDate = rowData[0];
+         selectedDate = rowData[0];
 
-        // // Find matching history entry by date (unique key)
-        // for (i = 0; i < histCount; i++) {
-        //     if (arrayHistDate[i] == selectedDate) {
-        //         LoadHistoryItem(i);
-        //         return;
-        //     }
-        // }
+         // Find matching history entry by date (unique key)
+         for (i = 0; i < histCount; i++) {
+             if (arrayHistDate[i] == selectedDate) {
+                 LoadHistoryItem(i);
+                 return;
+             }
+         }
 
         LoadHistoryItem(arrayHistChatId[selectedIndex]);
     } catch (ex) {
@@ -282,20 +282,59 @@ function SendToAI() {
 
         // Build endpoint URL
         // OpenAI-compatible: POST /chat/completions
-
-
         endpoint = aiBaseUrl;
         if (!endpoint.EndsWith("/")) {
             endpoint = endpoint + "/";
         }
         endpoint = endpoint + "chat/completions";
-        // Build JSON payload
-        jsonBody = BuildApiPayload();
+
+        // ---- Collect attachments for this session ----
+        textContext = "";
+        visionItems = "";
+        binaryFiles = {};
+
+        attachRes = Attachment_QueryForSend(currentSessionId);
+        attachCnt = Size(attachRes) - 1;
+
+        if (attachCnt > 0) {
+            for (ai = 0; ai < attachCnt; ai++) {
+                aRow   = attachRes[ai + 1];
+                aName  = aRow[0];   // OriginalFileName
+                aMime  = aRow[1];   // MimeType
+                aPath  = aRow[2];   // StoragePath
+                aText  = aRow[3];   // ExtractedText
+                // aStatus = aRow[4];
+
+                aKind = Attachment_ClassifyMime(aMime);
+
+                if (aKind == "text" && aText != "") {
+                    // Include extracted text as context block
+                    textContext = textContext + "[Prilog: " + aName + "]\n" + aText + "\n\n";
+                } elif (aKind == "image") {
+                    // Encode image as base64 and add as vision content entry
+                    b64 = File2Base64(aPath);
+                    if (b64 != "") {
+                        visionItems = visionItems
+                            + ',{"type":"image_url","image_url":{"url":"data:'
+                            + aMime + ';base64,' + b64 + '"}}';
+                    }
+                } else {
+                    // Binary file – collect for multipart upload
+                    binaryFiles.Add({aName, aPath, "file"});
+                }
+            }
+
+            if (textContext != "") {
+                textContext = "--- Priloženi dokumenti ---\n" + textContext + "---";
+            }
+        }
+
+        // Build JSON payload (enriched with text context and/or vision items)
+        jsonBody = BuildApiPayload(textContext, visionItems);
         SetUIBusy(true);
         SetStatus("Šaljem zahtjev AI-u...");
 
-        // Pass API key as bearer token (param 4)
-        // For Ollama / no-auth providers, leave as empty string
+        // Pass API key as bearer token; empty for Ollama / no-auth providers
         authToken = "";
         if (aiApiKey != "") {
             authToken = "Bearer " + aiApiKey;
@@ -303,12 +342,24 @@ function SendToAI() {
 
         headers = {};
         headers["Authorization"] = authToken;
-        // headers["HTTP-Referer"] = "http://localhost";
-        // headers["X-Title"] = "WpfCSCS";
 
-        WebRequest2("POST", endpoint, jsonBody, "noTrackingId",
-                    "SendMessageSuccess", "SendMessageFailure",
-                    "application/json", headers, 120000, false);
+        if (Size(binaryFiles) > 0) {
+            // ---- Multipart: JSON payload as text field + binary files ----
+            mpBody = {};
+            mpBody.Add({"request", jsonBody, "text"});
+            for (fi = 0; fi < Size(binaryFiles); fi++) {
+                bfRow = binaryFiles[fi];
+                mpBody.Add(bfRow);
+            }
+            WebRequestMPFD("POST", endpoint, mpBody, "noTrackingId",
+                           "SendMessageSuccess", "SendMessageFailure",
+                           "aiBoundary", headers, 120000, false);
+        } else {
+            // ---- Standard JSON request ----
+            WebRequest2("POST", endpoint, jsonBody, "noTrackingId",
+                        "SendMessageSuccess", "SendMessageFailure",
+                        "application/json", headers, 120000, false);
+        }
 
     } catch (ex) {
         SetUIBusy(false);
@@ -443,7 +494,11 @@ function ProcessAIError() {
 //  JSON PAYLOAD BUILDER
 // =============================================================
 
-function BuildApiPayload() {
+// textContext  – plain text extracted from text attachments (prepended to last message)
+// visionItems  – JSON snippet(s) for image_url entries, each starting with ","
+//                e.g. ,{"type":"image_url","image_url":{"url":"data:image/png;base64,..."}}
+// Pass "" for both when there are no attachments (or only binary ones).
+function BuildApiPayload(textContext, visionItems) {
     temp = aiTemperatureStr;
     if (temp == "") {
         temp = "0.7";
@@ -466,13 +521,38 @@ function BuildApiPayload() {
         firstMsg = false;
     }
 
-    // Conversation messages
-    for (i = 0; i < msgCount; i++) {
+    // Conversation messages – all but the last
+    msgLast = msgCount - 1;
+    for (i = 0; i < msgLast; i++) {
         if (!firstMsg) {
             payload = payload + ',';
         }
         payload  = payload + '{"role": "' + msgRole[i] + '", "content": "' + EscapeForJson(msgContent[i]) + '"}';
         firstMsg = false;
+    }
+
+    // Last message – enriched with attachment context / vision images
+    if (msgCount > 0) {
+        if (!firstMsg) {
+            payload = payload + ',';
+        }
+        lastRole    = msgRole[msgLast];
+        lastContent = msgContent[msgLast];
+
+        // Prepend extracted document text when present
+        if (textContext != "") {
+            lastContent = textContext + "\n\n" + lastContent;
+        }
+
+        if (visionItems != "") {
+            // Vision API format: content is a JSON array
+            payload = payload + '{"role": "' + lastRole + '", "content": ['
+                              + '{"type":"text","text":"' + EscapeForJson(lastContent) + '"}'
+                              + visionItems
+                              + ']}';
+        } else {
+            payload = payload + '{"role": "' + lastRole + '", "content": "' + EscapeForJson(lastContent) + '"}';
+        }
     }
 
     payload = payload + ']}';

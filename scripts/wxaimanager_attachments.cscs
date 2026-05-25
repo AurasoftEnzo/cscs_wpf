@@ -291,7 +291,8 @@ function Attachment_SelectAndUpload() {
 
         insRes = sqlQuery(insSql, p);
         if (Size(insRes) > 1) {
-            lastAttachmentId = int(insRes[1][0]);
+            insRow           = insRes[1];
+            lastAttachmentId = insRow[0];
         }
     } catch (ex) {
         MSG("Attachment_SelectAndUpload INSERT error: " + ex);
@@ -328,6 +329,7 @@ function Attachment_SelectAndUpload() {
 // =============================================================
 
 function Attachment_ParseTextFile(attachmentId, filePath, fileName) {
+
     extractedText = "";
     try {
         extractedText = ReadAllText(filePath);
@@ -337,7 +339,6 @@ function Attachment_ParseTextFile(attachmentId, filePath, fileName) {
 
     textLen  = extractedText.length;
     newDocId = 0;
-
     try {
         p = {};
         p.Add({"@attachId", attachmentId});
@@ -355,7 +356,8 @@ function Attachment_ParseTextFile(attachmentId, filePath, fileName) {
 
         docRes = sqlQuery(docSql, p);
         if (Size(docRes) > 1) {
-            newDocId = int(docRes[1][0]);
+            docRow   = docRes[1];
+            newDocId = docRow[0];
         }
     } catch (ex) {
         MSG("Attachment_ParseTextFile – Document INSERT error: " + ex);
@@ -364,7 +366,6 @@ function Attachment_ParseTextFile(attachmentId, filePath, fileName) {
     if (newDocId > 0 && textLen > 0) {
         Attachment_ChunkDocument(newDocId, currentSessionId, extractedText);
     }
-
     // Update attachment status to 'indexed'
     try {
         updP = {};
@@ -378,7 +379,7 @@ function Attachment_ParseTextFile(attachmentId, filePath, fileName) {
 }
 
 // Callback on main thread after async parse finishes
-function Attachment_ParseDone() {
+function Attachment_ParseDone(sender, result) {
     SetStatus("Prilog parsiran i indeksiran.");
 }
 
@@ -398,15 +399,12 @@ function Attachment_ChunkDocument(documentId, chatSessionIdArg, extractedText) {
     totalLen  = extractedText.length;
     chunkOrd  = 0;
     charStart = 0;
-
     while (charStart < totalLen) {
         charEnd   = charStart + ATTACH_CHUNK_SIZE;
         if (charEnd > totalLen) {
             charEnd = totalLen;
         }
-
         chunkText = Substring(extractedText, charStart, charEnd - charStart);
-
         try {
             cp = {};
             cp.Add({"@docId",   documentId});
@@ -415,23 +413,16 @@ function Attachment_ChunkDocument(documentId, chatSessionIdArg, extractedText) {
             cp.Add({"@text",    chunkText});
             cp.Add({"@cstart",  charStart});
             cp.Add({"@cend",    charEnd});
-
-            chunkSql =
-                  "INSERT INTO " + WXAI_DB + ".dbo.DocumentChunk "
-                + "  (DocumentId, ChatSessionId, ChunkOrder, ChunkType, ChunkText, "
-                + "   CharStart, CharEnd, PageFrom, PageTo, SectionPath, "
-                + "   EmbeddingStatus, ChunkHash) "
-                + "VALUES (@docId, @sessId, @ord, 'text', @text, "
-                + "        @cstart, @cend, 1, 1, '', "
-                + "        'pending', "
-                + "        CONVERT(VARCHAR(64), "
-                + "          HASHBYTES('SHA2_256', CAST(@text AS NVARCHAR(MAX))), 2))";
-
+            chunkSql = "INSERT INTO " + WXAI_DB + ".dbo.DocumentChunk 
+                  (DocumentId, ChatSessionId, ChunkOrder, ChunkType, ChunkText, 
+                  CharStart, CharEnd, PageFrom, PageTo, SectionPath, EmbeddingStatus) 
+                  VALUES (@docId, @sessId, @ord, 'text', @text, 
+                         @cstart, @cend, 1, 1, '', 'pending')";
             sqlNonQuery(chunkSql, cp);
         } catch (ex) {
             MSG("Attachment_ChunkDocument – chunk " + chunkOrd + " error: " + ex);
         }
-
+msg("Chunk " + chunkOrd + " processed for document " + documentId + "Ako ovaj message makneš, exception dođe! ");
         chunkOrd++;
         charStart = charEnd;
     }
@@ -478,5 +469,51 @@ function Attachment_ListForSession() {
 
     } catch (ex) {
         MSG("Attachment_ListForSession error: " + ex);
+    }
+}
+
+// =============================================================
+//  CLASSIFY MIME TYPE
+//  Returns "text", "image", or "binary"
+// =============================================================
+function Attachment_ClassifyMime(mime) {
+    mL = StrLower(mime);
+    if (mL.StartsWith("text/"))       { return "text"; }
+    if (mL.StartsWith("image/"))      { return "image"; }
+    if (mL == "application/json")     { return "text"; }
+    if (mL == "application/xml")      { return "text"; }
+    return "binary";
+}
+
+// =============================================================
+//  QUERY ATTACHMENTS FOR API SENDING
+//  Returns sqlQuery result (row 0 = header, rows 1..N = data).
+//  Columns per data row:
+//    [0] OriginalFileName
+//    [1] MimeType
+//    [2] StoragePath
+//    [3] ExtractedText  (empty string when no Document record)
+//    [4] AttachmentStatus
+// =============================================================
+function Attachment_QueryForSend(sessId) {
+    emptyRes = {};
+    if (!chatSqlEnabled || sessId == 0) {
+        return emptyRes;
+    }
+    try {
+        qp = {};
+        qp.Add({"@sessId", sessId});
+        qSql =   "SELECT a.OriginalFileName, a.MimeType, a.StoragePath, "
+               + "       ISNULL(d.ExtractedText, '') AS ExtractedText, "
+               + "       a.AttachmentStatus "
+               + "FROM " + WXAI_DB + ".dbo.ChatAttachment a "
+               + "LEFT JOIN " + WXAI_DB + ".dbo.Document d "
+               + "       ON d.ChatAttachmentId = a.ChatAttachmentId "
+               + "WHERE a.ChatSessionId = @sessId AND a.IsDeleted = 0 "
+               + "ORDER BY a.CreatedAtUtc ASC";
+        return sqlQuery(qSql, qp);
+    } catch (ex) {
+        MSG("Attachment_QueryForSend error: " + ex);
+        return emptyRes;
     }
 }

@@ -1,12 +1,15 @@
 Import(strTrim(mpath()) + "CSCS.Math.dll");
+include(strtrim(tpath()) + "wxinvoiceprintlib.cscs");
 
-CreateWindow(strTrim(tpath()) + "wxeracunsel.xaml", strTrim(ipath()) + "icons\\" + "wxeracunget.ico");
+CreateWindow(strTrim(tpath()) + "wxeracunsel.xaml", strTrim(ipath()) + "icons\\" + "wxeracun.ico");
 
 okImage = strtrim(ipath())+"eRacunOk.png";
 errorImage = strtrim(ipath())+"eRacunError.png";
 
 DEFINE cntr1 type i;
+DEFINE cntr2 type i;
 DEFINE Rbr type i;
+DEFINE ResultsRbr type i;
 
 DEFINE arraySelekt type l array 10000;
 DEFINE arrayRbr type i size 100 array 10000;
@@ -16,6 +19,15 @@ DEFINE arrayKupac type a size 200 array 10000;
 DEFINE arrayDatumRacuna type a size 10 array 10000;
 DEFINE arrayIznos type a size 40 array 10000;
 DEFINE arrayStatus type a size 100 array 10000;
+
+// array results (modal window)
+DEFINE arrayResultsRbr type i size 100 array 10000;
+DEFINE arrayResultsInvNum type i size 100 array 10000;
+DEFINE arrayResultsOznaka type a size 10 array 10000;
+DEFINE arrayResultsKupac type a size 200 array 10000;
+DEFINE arrayResultsDatumRacuna type a size 10 array 10000;
+DEFINE arrayResultsIznos type a size 40 array 10000;
+DEFINE arrayResultsStatus type a size 100 array 10000;
 
 selectedCount = 0;
 sendStartedCount = 0;
@@ -250,6 +262,8 @@ function LoadPendingInvoices(){
 }
 
 function btnPosalji@clicked(){
+    ResultsRbr = 0;
+
     selectedCount = 0;
     for(i = 0; i < Rbr; i++){
         if(arraySelekt[i]){
@@ -276,37 +290,110 @@ function SendSelectedInvoices(){
     sendErrorCount = 0;
     sendSkippedCount = 0;
 
-    for(i = 0; i < Rbr; i++){
-        if(!arraySelekt[i]){
-            arrayStatus[i] = "Preskočeno";
+    listSelected = {};
+
+    for(iSelect = 0; iSelect < Rbr; iSelect++){
+        if(!arraySelekt[iSelect]){
+            arrayStatus[iSelect] = "Preskočeno";
             sendSkippedCount = sendSkippedCount + 1;
             continue;
         }
 
-        invNum = arrayInvNum[i];
-        CopyIndicator = "";
-        attachmentPdfPath = FILESPATH + "IR\\" + String(invNum) + ".pdf";
-        xmlFileName = "";
-
-        if(!GenerateUBLXml()){
-            arrayStatus[i] = "Greška pri generiranju";
-            sendErrorCount = sendErrorCount + 1;
-            continue;
-        }
-
-        if(NKSC_REZ10 == "P"){
-            SendERacun();
-            arrayStatus[i] = "Poslano na obradu";
-            sendStartedCount = sendStartedCount + 1;
-        }else{
-            arrayStatus[i] = "Kupac nije za e-račun";
-            sendSkippedCount = sendSkippedCount + 1;
-        }
+        listSelected.Add(iSelect);
     }
+
+    lastSentIndex = 0;
+    for(index : listSelected){
+        AsyncCall("SendOneInvoice", "");
+    }
+    
+
+    DisplayResultsModal();
+}
+
+function SendOneInvoice(){
+    
+    brojRačuna = listSelected[lastSentIndex];
+    lastsentIndex++;
+    listSelected
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    if(lastSentIndex >= Size(listSelected)){
+        return;
+    }
+
+
+
+
+
+    pdfFilePath = FILESPATH + "IR\\" + "IR_" + arrayInvNum[iSelect] + ".pdf";
+
+    LoadInvoiceFromDB(arrayInvNum[iSelect]);
+    ExportReport(reportHandle, "PDF", pdfFilePath);
+
+    invNum = arrayInvNum[iSelect];
+    CopyIndicator = "";
+    attachmentPdfPath = pdfFilePath; //FILESPATH + "IR\\" + String(invNum) + ".pdf";
+    xmlFileName = "";
+
+    if(!GenerateUBLXml()){
+        arrayStatus[iSelect] = "Greška pri generiranju";
+        sendErrorCount = sendErrorCount + 1;
+        AddToResultsArrays(iSelect, "Greška pri generiranju XML-a");
+        continue;
+    }
+
+    if(NKSC_REZ10 == "P"){
+        if(SendERacun()){
+            AddToResultsArrays(iSelect, "Poslan");
+        }else{
+            AddToResultsArrays(iSelect, "Greška pri slanju");
+        }
+
+        arrayStatus[iSelect] = "Poslano na obradu";
+        sendStartedCount = sendStartedCount + 1;
+    }else{
+        arrayStatus[iSelect] = "Kupac nije za e-račun";
+        sendSkippedCount = sendSkippedCount + 1;
+    }
+}
+
+function wxeracunselresults_onDisplay(){
+    DisplayArraySetup("datagridResults", counterFld: "cntr1", activeElements: ResultsRbr, maxElements: 10000);
+}
+
+function DisplayResultsModal(){
+    ModalWindow(strtrim(tpath()) + "wxeracunselresults.xaml");
+    exit;
+}
+
+function AddToResultsArrays(iRbr, statusText){
+        arrayResultsRbr[ResultsRbr] = ResultsRbr + 1;
+        arrayResultsInvNum[ResultsRbr] = arrayInvNum[iRbr];
+        arrayResultsOznaka[ResultsRbr] = arrayOznaka[iRbr];
+        arrayResultsKupac[ResultsRbr] = arrayKupac[iRbr];
+        arrayResultsDatumRacuna[ResultsRbr] = arrayDatumRacuna[iRbr];
+        arrayResultsIznos[ResultsRbr] = arrayIznos[iRbr];
+        arrayResultsStatus[ResultsRbr] = statusText;
+        ResultsRbr = ResultsRbr + 1;
 }
 
 function endSendSelectedInvoices(){
     cursor("dflt");
+    DisplayArray("datagridListaRacuna", "close");
     DisplayArraySetup("datagridListaRacuna", counterFld: "cntr1", activeElements: Rbr, maxElements: 10000);
     SetWidgetOptions("btnPosalji", "IsEnabled", "true");
     SetWidgetOptions("btnIzlaz", "IsEnabled", "true");
@@ -2432,39 +2519,45 @@ function SendERacun(){
         
         jsonLoad = '{"Username": "' + ERAC_USER + '", "Password": "' + ERAC_PASS + '", "CompanyId": "' + supOIB + '"'/*uzet iz KPSYMSTR*/ + ', "SoftwareId": "' + ERAC_DESC + '", "File": "' + escapedXml + '"}';
 
+        merResultBool = false;
+
         webRequestResult = WebRequest("POST", ERAC_SERVER + "apis/v2/send", jsonLoad, invID,
                     "MERSuccess", "MERFailure", "application/json", null, 1000 * 20, false);
 
+        Wait();
+
+        return merResultBool;
+
         //  MSG("webRequestResult = " + webRequestResult);
     }
-    elif(PROVIDER == "EPOS" || PROVIDER == "EPOSDEMO")
-    {
-        //koristimo ePoslovanje.hr način slanja
-        SendToEPOS();
-        return;
-    }
+    // elif(PROVIDER == "EPOS" || PROVIDER == "EPOSDEMO")
+    // {
+    //     //koristimo ePoslovanje.hr način slanja
+    //     SendToEPOS();
+    //     return;
+    // }
     elif(PROVIDER == "FINA" || PROVIDER == "FINADEMO")
     {
         //koristimo FINA način slanja
         // za test koristimo račun "90100003"
         
 
-        SendToFINA();
+        return SendToFINA();
         //SendToFINA_2();
         // ...
 
-        return;
+        // return;
     }
     elif(PROVIDER == "EDITEL" || PROVIDER == "EDITELDEMO"){
         //koristimo EDITEL način slanja
         MessageBox("Slanje eRačuna putem posrednika " + PROVIDER + " nije predviđeno ovim programom.");
         // SendToEDITEL();
-        return;
+        return false;
     }
     else
     {
         MessageBox("Nepoznat tip posrednika " + ERAC_CODE + " za slanje na eRačun: " + tip);
-        return;
+        return false;
     }    
 }
 
@@ -2551,12 +2644,13 @@ function MERSuccess(_invID, responseCode, res) {
 
             // MessageBox("Dokument poslan.");
             Notification("Slanje eRačuna", "Uspješno poslan račun broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, okImage);
+            merResultBool = true;
         }
         else{
             LogException("GREŠKA slanja dokumenta.");
             Notification("Slanje eRačuna", "GREŠKA slanja računa broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, errorImage);
             // MessageBox("GREŠKA slanja dokumenta.");
-            
+            merResultBool = false;
             // LogNKSYELOG("B", 'Debug: NEPOZNATA GREŠKA'); // !!!
         }
 
@@ -2581,9 +2675,11 @@ function MERSuccess(_invID, responseCode, res) {
     catch(ex){
         // MessageBox("MERSuccessException - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
         LogException("MERSuccessException - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        merResultBool = false;
         // LogNKSYELOG();
     }
-    
+
+    Signal();    
 }
 
 function MERFailure(_invID, responseCode, res) {
@@ -2593,7 +2689,7 @@ function MERFailure(_invID, responseCode, res) {
         LogException("ResponseCode: " + responseCode + "\nresponse: " + res);
         Notification("Slanje eRačuna", "GREŠKA slanja računa broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, errorImage);
         // MSG("Slanje računa broj " + _invID + " NEUSPJEŠNO!");
-
+        merResultBool = false;
         // MessageBox("SendingFailure.ResponseCode = " + responseCode);
 
 
@@ -2618,7 +2714,11 @@ function MERFailure(_invID, responseCode, res) {
     catch(ex){
         // MessageBox("MERFailureException - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
         LogException("MERFailureException - Greška pri parsiranju odgovora poslužitelja:\n" + ex);
+        merResultBool = false;
+         // LogNKSYELOG();
     }
+
+    Signal();
 }
 
 logFilePath = "";
@@ -2908,6 +3008,8 @@ function SendToFINA() {
 
                 // MSG("Uspješno poslan dokument.\n" + "Šifra računa kod FINA-e (ack[\"InvoiceID\"]) = " + ack["InvoiceID"]);
                 Notification("Slanje eRačuna", "Uspješno poslan račun broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, okImage);
+
+                return true;
             }else{
                 LogException("ErrorCode: " + ack["ErrorCode"] + "\nErrorMessage: " + ack["ErrorMessage"]);
                 Notification("Slanje eRačuna", "GREŠKA slanja računa broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, errorImage);
@@ -2926,6 +3028,7 @@ function SendToFINA() {
         // MessageBox("Nepoznata greška:\n" + ex);
     }
     
+    return false;
 
     // // GET STATUS RAČUNA
     // try {
@@ -2993,82 +3096,82 @@ function SendToFINA() {
     // }
 
 
-    return;
-
-
-
-
-
-
-
-
-
-
-//     if (ERAC_SERVER == "") {
-//         MessageBox("Endpoint za FINA provider nije definiran u NKSYERAC.");
-//         return;
-//     }
-
-//     // Determine endpoint based on provider configuration
-//     endpoint = ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService";
     
 
-//     // 1. Prepare the XML body for the SOAP request
-//     base64Ubl = File2Base64(xmlFileName);
-// MessageBox("1111" + ": base64Ubl length = " + base64Ubl.Length);
-//     uuid = UUID();
-//     buyerOIB= "85821130368"; // !!! FINA-in OIB 
 
-//     xmlBody = "<SendB2BOutgoingInvoiceMsg xmlns='http://fina.hr/eracun/b2b/pki/SendB2BOutgoingInvoice/v0.1'>\n";
-//     xmlBody += "  <HeaderSupplier xmlns='http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1'>\n";
-//     xmlBody += "    <MessageID>" + uuid + "</MessageID>\n";
-//     xmlBody += "    <SupplierID>9934:" + supOIB + "</SupplierID>\n";
-//     xmlBody += "    <MessageType>9001</MessageType>\n";
-//     xmlBody += "  </HeaderSupplier>\n";
-//     xmlBody += "  <Data>\n";
-//     xmlBody += "    <B2BOutgoingInvoiceEnvelope>\n";
-//     xmlBody += "      <XMLStandard>UBL</XMLStandard>\n";
-//      //xmlBody += "      <SpecificationIdentifier>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0#conformant#urn:mfin.gov.hr:ext-2025:1.0</SpecificationIdentifier>\n";
-//     xmlBody += "         <SpecificationIdentifier>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0</SpecificationIdentifier>\n";
-//     xmlBody += "      <SupplierInvoiceID>" + invID + "</SupplierInvoiceID>\n";
-//     xmlBody += "      <BuyerID>9934:" + buyerOIB + "</BuyerID>\n"; // !!! tu je sada OIB od FINA-e
-//     xmlBody += "      <InvoiceEnvelope>" + base64Ubl + "</InvoiceEnvelope>\n";
-//     xmlBody += "    </B2BOutgoingInvoiceEnvelope>\n";
-//     xmlBody += "  </Data>\n";
-//     xmlBody += "</SendB2BOutgoingInvoiceMsg>\n";
 
-//     // 2. Define the SOAPAction (often empty for FINA services)
-//     soapAction = "";
-// MessageBox("2222" + ": Prepared XML Body for FINA:\n\n" + xmlBody);
-//     // 3. Call the unified CreateSOAP function
-//     try {
-//         msg(CreateAndSendSOAPMsg(xmlBody, soapAction, endpoint, ERAC_PASST, ERAC_PASS, 60));
-//         msg("exiting");
-//         exit;
 
-//         // CreateSOAP handles signing and sending the request, and returns the response.
-//         // It expects: xmlBody, soapAction, endpoint, certIdentifier, certPassword
-// MessageBox("3333" + ": Calling CreateSOAP... : "+soapAction+".... "+endpoint+".... "+ERAC_PASST+".... "+ERAC_PASS);
-//         response = CreateSOAP(
-//             xmlBody,
-//             soapAction,
-//             endpoint,
-//             ERAC_PASST, // Certificate path from NKSYERAC
-//             ERAC_PASS,   // Certificate password from NKSYERAC
-//             60
-//         );
 
-//         MSG(response);
 
-//         // // 4. Process the response
-//          if (response.StartsWith("ERROR:") || response.StartsWith("HTTP_ERROR:") || response.StartsWith("EXCEPTION:")) {
-//              FINAFailure(invID, 0, response);
-//          } else {
-//              FINASuccess(invID, 200, response);
-//          }
-//     } catch (ex) {
-//         FINAFailure(invID, 0, "Greška pri pozivu CreateSOAP funkcije: " + ex);
-//     }
+
+
+
+
+    //     if (ERAC_SERVER == "") {
+    //         MessageBox("Endpoint za FINA provider nije definiran u NKSYERAC.");
+    //         return;
+    //     }
+
+    //     // Determine endpoint based on provider configuration
+    //     endpoint = ERAC_SERVER + "SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService";
+        
+
+    //     // 1. Prepare the XML body for the SOAP request
+    //     base64Ubl = File2Base64(xmlFileName);
+    // MessageBox("1111" + ": base64Ubl length = " + base64Ubl.Length);
+    //     uuid = UUID();
+    //     buyerOIB= "85821130368"; // !!! FINA-in OIB 
+
+    //     xmlBody = "<SendB2BOutgoingInvoiceMsg xmlns='http://fina.hr/eracun/b2b/pki/SendB2BOutgoingInvoice/v0.1'>\n";
+    //     xmlBody += "  <HeaderSupplier xmlns='http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1'>\n";
+    //     xmlBody += "    <MessageID>" + uuid + "</MessageID>\n";
+    //     xmlBody += "    <SupplierID>9934:" + supOIB + "</SupplierID>\n";
+    //     xmlBody += "    <MessageType>9001</MessageType>\n";
+    //     xmlBody += "  </HeaderSupplier>\n";
+    //     xmlBody += "  <Data>\n";
+    //     xmlBody += "    <B2BOutgoingInvoiceEnvelope>\n";
+    //     xmlBody += "      <XMLStandard>UBL</XMLStandard>\n";
+    //      //xmlBody += "      <SpecificationIdentifier>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0#conformant#urn:mfin.gov.hr:ext-2025:1.0</SpecificationIdentifier>\n";
+    //     xmlBody += "         <SpecificationIdentifier>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0</SpecificationIdentifier>\n";
+    //     xmlBody += "      <SupplierInvoiceID>" + invID + "</SupplierInvoiceID>\n";
+    //     xmlBody += "      <BuyerID>9934:" + buyerOIB + "</BuyerID>\n"; // !!! tu je sada OIB od FINA-e
+    //     xmlBody += "      <InvoiceEnvelope>" + base64Ubl + "</InvoiceEnvelope>\n";
+    //     xmlBody += "    </B2BOutgoingInvoiceEnvelope>\n";
+    //     xmlBody += "  </Data>\n";
+    //     xmlBody += "</SendB2BOutgoingInvoiceMsg>\n";
+
+    //     // 2. Define the SOAPAction (often empty for FINA services)
+    //     soapAction = "";
+    // MessageBox("2222" + ": Prepared XML Body for FINA:\n\n" + xmlBody);
+    //     // 3. Call the unified CreateSOAP function
+    //     try {
+    //         msg(CreateAndSendSOAPMsg(xmlBody, soapAction, endpoint, ERAC_PASST, ERAC_PASS, 60));
+    //         msg("exiting");
+    //         exit;
+
+    //         // CreateSOAP handles signing and sending the request, and returns the response.
+    //         // It expects: xmlBody, soapAction, endpoint, certIdentifier, certPassword
+    // MessageBox("3333" + ": Calling CreateSOAP... : "+soapAction+".... "+endpoint+".... "+ERAC_PASST+".... "+ERAC_PASS);
+    //         response = CreateSOAP(
+    //             xmlBody,
+    //             soapAction,
+    //             endpoint,
+    //             ERAC_PASST, // Certificate path from NKSYERAC
+    //             ERAC_PASS,   // Certificate password from NKSYERAC
+    //             60
+    //         );
+
+    //         MSG(response);
+
+    //         // // 4. Process the response
+    //          if (response.StartsWith("ERROR:") || response.StartsWith("HTTP_ERROR:") || response.StartsWith("EXCEPTION:")) {
+    //              FINAFailure(invID, 0, response);
+    //          } else {
+    //              FINASuccess(invID, 200, response);
+    //          }
+    //     } catch (ex) {
+    //         FINAFailure(invID, 0, "Greška pri pozivu CreateSOAP funkcije: " + ex);
+    //     }
 }
 
 function EPOSSuccess(_invID, responseCode, res) {

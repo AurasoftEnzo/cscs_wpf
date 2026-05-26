@@ -1,0 +1,34 @@
+PARAM compCode,brojRacuna;
+Import(strTrim(mpath()) + "CSCS.Math.dll");
+include(strtrim(tpath()) + "wxeracunlib.cscs");
+include(strtrim(tpath()) + "wxinvoiceprintlib.cscs");
+
+
+ReadSqlBasicData(compCode);
+
+pdfFilePath = FILESPATH + "IR\\" + "IR_" + brojRacuna + ".pdf";
+
+LoadInvoiceFromDB(brojRacuna);
+ExportReport(reportHandle, "PDF", pdfFilePath);
+
+CopyIndicator = "";
+attachmentPdfPath = pdfFilePath;
+xmlFileName = "";
+
+invNum = brojRacuna;
+if(!GenerateUBLXml()){
+    LogNKSYELOG("B");
+    quit;
+}
+
+if(NKSC_REZ10 == "P"){
+    if(SendERacun()){
+        LogNKSYELOG("C");
+    }else{
+        LogNKSYELOG("B");
+    }
+}else{
+    //"Kupac nije za e-račun";
+    LogNKSYELOG("B");
+}
+quit;

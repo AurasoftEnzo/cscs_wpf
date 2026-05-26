@@ -45,12 +45,24 @@ DEFINE arrayHistText type a size 20000 array 50;
 // ---- State --------------------------------------------------
 DEFINE isWaiting type l;
 DEFINE settingsOpen type l;
+
+// ---- Token usage stats (shown in Settings panel) -----------
+DEFINE statInputTokens  type a size 30;
+DEFINE statOutputTokens type a size 30;
+DEFINE statTotalTokens  type a size 30;
 DEFINE userCode type a size 30;
+
+// ---- Auto-summarization state -----------------------------
+DEFINE sessionSummary           type a size 10000;  // SummaryText from ChatSession
+DEFINE sessionMsgsSinceSummary  type i;             // messages since last summary
+DEFINE sessionToksSinceSummary  type i;             // prompt tokens since last summary
 
 // ---- Async API temp storage ---------------------------------
 DEFINE apiLastResponse type a size 20000;
 DEFINE apiLastCode type i;
 DEFINE apiLastError type a size 500;
+DEFINE summaryApiResponse type a size 10000;
+DEFINE summaryApiCode type i;
 
 
 // =============================================================
@@ -103,6 +115,14 @@ function wxaimanager_OnStart() {
     isWaiting        = false;
     settingsOpen     = false;
     userInput        = "";
+    statInputTokens  = "---";
+    statOutputTokens = "---";
+    statTotalTokens  = "---";
+
+    // --- summarization state ---
+    sessionSummary          = "";
+    sessionMsgsSinceSummary = 0;
+    sessionToksSinceSummary = 0;
 
     // --- populate provider ComboBox ---
     comboItems2 = {"OpenAI","Ollama","Azure OpenAI","OpenRouter","Custom"};
@@ -189,6 +209,7 @@ function btnSettings@clicked() {
         settingsOpen = false;
         SetWidgetOptions("btnSettings", "Content", "Postavke");
     } else {
+        SQL_LoadTokenStats();   // refresh token usage for current provider
         SetWidgetOptions("panelSettings", "Visible", true);
         settingsOpen = true;
         SetWidgetOptions("btnSettings", "Content", "Zatvori postavke");
@@ -197,6 +218,7 @@ function btnSettings@clicked() {
 
 function btnSaveSettings@clicked() {
     SaveSettings();
+    SQL_LoadTokenStats();   // provider may have changed, refresh stats
     SetWidgetOptions("panelSettings", "Visible", false);
     settingsOpen = false;
     SetWidgetOptions("btnSettings", "Content", "Postavke");
@@ -385,6 +407,40 @@ function SendMessageFailure(trackingId, responseCode, res) {
     RunOnMain("ProcessAIError");
 }
 
+function SummarizationSuccess(trackingId, responseCode, res) {
+    summaryApiResponse = res;
+    summaryApiCode     = int(responseCode);
+    RunOnMain("ProcessSummarizationResponse");
+}
+
+function SummarizationFailure(trackingId, responseCode, res) {
+    MSG("Summarization API failed: HTTP " + responseCode);
+}
+
+function ProcessSummarizationResponse() {
+    try {
+        if (summaryApiCode != 200) {
+            MSG("Summarization response error: " + summaryApiCode);
+            return;
+        }
+        rObj = DeserializeJson(summaryApiResponse);
+        if (Contains(rObj, "choices")) {
+            choices = rObj["choices"];
+            if (Size(choices) > 0) {
+                ch       = choices[0];
+                mObj     = ch["message"];
+                newSummary = mObj["content"];
+                sessionSummary          = newSummary;
+                sessionMsgsSinceSummary = 0;
+                sessionToksSinceSummary = 0;
+                SQL_UpdateSessionSummary(newSummary);
+            }
+        }
+    } catch (ex) {
+        MSG("ProcessSummarizationResponse error: " + ex);
+    }
+}
+
 // Main-thread handlers ----------------------------------------
 
 function ProcessAIResponse() {
@@ -452,6 +508,12 @@ function ProcessAIResponse() {
                     }
                 }
                 SQL_SaveAssistantMessage(content, finishReason, promptTokens, completionTokens, totalTokens);
+
+                // Accumulate toward summary trigger (user + assistant = 2 messages)
+                sessionMsgsSinceSummary = sessionMsgsSinceSummary + 2;
+                sessionToksSinceSummary = sessionToksSinceSummary + promptTokens;
+                SQL_CheckAndTriggerSummary();
+
                 SetStatus("Odgovor primljen.");
             }
         } else {
@@ -494,52 +556,50 @@ function ProcessAIError() {
 //  JSON PAYLOAD BUILDER
 // =============================================================
 
-// textContext  – plain text extracted from text attachments (prepended to last message)
+// textContext  – plain text from text attachments / RAG document chunks
 // visionItems  – JSON snippet(s) for image_url entries, each starting with ","
-//                e.g. ,{"type":"image_url","image_url":{"url":"data:image/png;base64,..."}}
-// Pass "" for both when there are no attachments (or only binary ones).
+//
+// Payload order (per spec):
+//   1. System prompt
+//   2. SummaryText (if available) – as system message
+//   3. Last 10 previous messages  – sliding window
+//   4+5. RAG document chunks + new user prompt (last message)
 function BuildApiPayload(textContext, visionItems) {
-    temp = aiTemperatureStr;
-    if (temp == "") {
-        temp = "0.7";
-    }
-    maxTok = aiMaxTokensStr;
-    if (maxTok == "") {
-        maxTok = "2000";
-    }
-
-    payload = '{"model": "' + aiModel + '",';
-    // payload = payload + '"temperature": ' + temp + ',';
-    // payload = payload + '"max_tokens": ' + maxTok + ',';
-    payload = payload + '"messages": [';
-
+    payload  = '{"model": "' + aiModel + '", "messages": [';
     firstMsg = true;
 
-    // System prompt
+    // 1. System prompt
     if (aiSystemPrompt != "") {
-        payload   = payload + '{"role": "system", "content": "' + EscapeForJson(aiSystemPrompt) + '"}';
+        payload  = payload + '{"role": "system", "content": "' + EscapeForJson(aiSystemPrompt) + '"}';
         firstMsg = false;
     }
 
-    // Conversation messages – all but the last
-    msgLast = msgCount - 1;
-    for (i = 0; i < msgLast; i++) {
-        if (!firstMsg) {
-            payload = payload + ',';
-        }
+    // 2. Incremental summary – context for messages before the sliding window
+    if (sessionSummary != "") {
+        if (!firstMsg) { payload = payload + ','; }
+        summaryCtx = "Sažetak prethodnog razgovora:\n" + sessionSummary;
+        payload  = payload + '{"role": "system", "content": "' + EscapeForJson(summaryCtx) + '"}';
+        firstMsg = false;
+    }
+
+    // 3. Last 10 previous messages (sliding window, excludes current user message)
+    msgLast  = msgCount - 1;
+    startIdx = 0;
+    if (msgLast > 10) {
+        startIdx = msgLast - 10;
+    }
+    for (i = startIdx; i < msgLast; i++) {
+        if (!firstMsg) { payload = payload + ','; }
         payload  = payload + '{"role": "' + msgRole[i] + '", "content": "' + EscapeForJson(msgContent[i]) + '"}';
         firstMsg = false;
     }
 
-    // Last message – enriched with attachment context / vision images
+    // 4+5. RAG document chunks prepended to new user prompt (last message)
     if (msgCount > 0) {
-        if (!firstMsg) {
-            payload = payload + ',';
-        }
+        if (!firstMsg) { payload = payload + ','; }
         lastRole    = msgRole[msgLast];
         lastContent = msgContent[msgLast];
 
-        // Prepend extracted document text when present
         if (textContext != "") {
             lastContent = textContext + "\n\n" + lastContent;
         }
@@ -602,6 +662,9 @@ function StartNewChat() {
     SQL_InitNewSession();
     chatDisplayText = "";
     msgCount = 0;
+    sessionSummary          = "";
+    sessionMsgsSinceSummary = 0;
+    sessionToksSinceSummary = 0;
     ShowWelcome();
     SetStatus("Novi razgovor pokrenut.");
 }

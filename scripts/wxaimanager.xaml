@@ -223,7 +223,7 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTemplateColumn Header="Razgovor" Width="*" MinWidth="120">
+                            <DataGridTemplateColumn Header="Razgovor" Width="*" MinWidth="160">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <wcl:ASGridCell FieldName="arrayHistTitle"
@@ -315,7 +315,7 @@
                                         Background="#555F6A"
                                         Width="90"
                                         Height="22"
-                                        FontSize="11"
+                                        FontSize="9"
                                         IsEnabled="False"/>
                             </StackPanel>
                         </Grid>
@@ -378,6 +378,10 @@
                     Padding="14,12"
                     Visibility="Collapsed">
                 <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="16"/>
@@ -459,6 +463,121 @@
                                 Height="36"
                                 FontSize="12"/>
                     </StackPanel>
+
+                    <!-- Row 1: Token usage statistics for current provider -->
+                    <Border Grid.Row="1" Grid.ColumnSpan="5"
+                            Margin="0,12,0,0"
+                            Background="#22384D"
+                            CornerRadius="6"
+                            Padding="12,8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="20"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="20"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Header: "Tokeni (PROVIDER)" -->
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="Tokeni  (" Foreground="#7F8C8D"
+                                           FontFamily="Segoe UI" FontSize="12"
+                                           VerticalAlignment="Center"/>
+                                <wcl:ASEnterBox FieldName="aiProvider"
+                                               ButtonSize="0"
+                                               Foreground="#BDC3C7"
+                                               FontFamily="Segoe UI"
+                                               FontSize="12"
+                                               FontWeight="SemiBold"
+                                               Height="18"
+                                               Width="80"
+                                               Background="Transparent"
+                                               BorderBrush="Transparent"
+                                               VerticalAlignment="Center"
+                                               IsReadOnly="True"
+                                               IsTabStop="False"
+                                               Focusable="False"/>
+                                <TextBlock Text="):" Foreground="#7F8C8D"
+                                           FontFamily="Segoe UI" FontSize="12"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+
+                            <!-- Input tokens -->
+                            <Border Grid.Column="2" Background="#1E2F3D"
+                                    CornerRadius="5" Padding="12,5">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="Ulazni: " Foreground="#7F8C8D"
+                                               FontFamily="Segoe UI" FontSize="11"
+                                               VerticalAlignment="Center"/>
+                                    <wcl:ASEnterBox FieldName="statInputTokens"
+                                                   ButtonSize="0"
+                                                   Foreground="#27AE60"
+                                                   FontFamily="Segoe UI"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="13"
+                                                   Height="20"
+                                                   Width="70"
+                                                   Background="#1E2F3D"
+                                                   BorderBrush="Transparent"
+                                                   VerticalAlignment="Center"
+                                                   IsReadOnly="True"
+                                                   IsTabStop="False"
+                                                   Focusable="False"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Output tokens -->
+                            <Border Grid.Column="4" Background="#1E2F3D"
+                                    CornerRadius="5" Padding="12,5">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="Izlazni: " Foreground="#7F8C8D"
+                                               FontFamily="Segoe UI" FontSize="11"
+                                               VerticalAlignment="Center"/>
+                                    <wcl:ASEnterBox FieldName="statOutputTokens"
+                                                   ButtonSize="0"
+                                                   Foreground="#E67E22"
+                                                   FontFamily="Segoe UI"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="13"
+                                                   Height="20"
+                                                   Width="70"
+                                                   Background="#1E2F3D"
+                                                   BorderBrush="Transparent"
+                                                   VerticalAlignment="Center"
+                                                   IsReadOnly="True"
+                                                   IsTabStop="False"
+                                                   Focusable="False"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Total tokens -->
+                            <Border Grid.Column="6" Background="#1E2F3D"
+                                    CornerRadius="5" Padding="12,5">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="Ukupno: " Foreground="#7F8C8D"
+                                               FontFamily="Segoe UI" FontSize="11"
+                                               VerticalAlignment="Center"/>
+                                    <wcl:ASEnterBox FieldName="statTotalTokens"
+                                                   ButtonSize="0"
+                                                   Foreground="#3498DB"
+                                                   FontFamily="Segoe UI"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="13"
+                                                   Height="20"
+                                                   Width="70"
+                                                   Background="#1E2F3D"
+                                                   BorderBrush="Transparent"
+                                                   VerticalAlignment="Center"
+                                                   IsReadOnly="True"
+                                                   IsTabStop="False"
+                                                   Focusable="False"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Border>
                 </Grid>
             </Border>
 

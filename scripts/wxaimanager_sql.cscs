@@ -511,3 +511,161 @@ function SQL_LoadHistoryFromDB() {
 
     UpdateHistoryGrid();
 }
+
+
+// =============================================================
+//  AUTO-SUMMARIZATION
+//  Triggered after every assistant reply when:
+//    sessionMsgsSinceSummary >= 10  OR  sessionToksSinceSummary >= 6000
+//  Produces an incremental (old + new) summary stored in
+//  ChatSession.SummaryText and the in-memory sessionSummary variable.
+// =============================================================
+
+// Reads SummaryText for the given session into sessionSummary.
+// Call after loading a history item to restore the summary context.
+function SQL_LoadSessionSummary(sessId) {
+    sessionSummary = "";
+    if (!chatSqlEnabled || sessId == 0) {
+        return;
+    }
+    try {
+        qp = {};
+        qp.Add({"@sid", sessId});
+        sumSql = "SELECT ISNULL(SummaryText, '') "
+               + "FROM " + WXAI_DB + ".dbo.ChatSession "
+               + "WHERE ChatSessionId = @sid";
+        sumRes = sqlQuery(sumSql, qp);
+        if (Size(sumRes) > 1) {
+            sumRow         = sumRes[1];
+            sessionSummary = sumRow[0];
+        }
+    } catch (ex) {
+        MSG("SQL_LoadSessionSummary error: " + ex);
+    }
+}
+
+
+// Checks thresholds; fires async summarization when either is met.
+function SQL_CheckAndTriggerSummary() {
+    if (sessionMsgsSinceSummary < 10 && sessionToksSinceSummary < 6000) {
+        return;
+    }
+    if (!chatSqlEnabled || currentSessionId == 0) {
+        return;
+    }
+    SQL_FireSummarizationRequest();
+}
+
+
+// Builds the summarization payload from DB messages and fires it
+// as an async WebRequest2 call.  Callbacks: SummarizationSuccess /
+// SummarizationFailure  (defined in wxaimanager.cscs).
+function SQL_FireSummarizationRequest() {
+    try {
+        qp = {};
+        qp.Add({"@sid", currentSessionId});
+
+        // Fetch last 20 messages in ascending order
+        msgSql = "SELECT RoleCode, MessageText FROM ("
+               + "  SELECT TOP 20 RoleCode, MessageText, MessageOrder "
+               + "  FROM " + WXAI_DB + ".dbo.ChatMessage "
+               + "  WHERE ChatSessionId = @sid "
+               + "  ORDER BY MessageOrder DESC"
+               + ") sub ORDER BY MessageOrder ASC";
+
+        msgRes = sqlQuery(msgSql, qp);
+        msgCnt = Size(msgRes) - 1;
+
+        if (msgCnt == 0) {
+            return;
+        }
+
+        // Build conversation text block
+        convText = "";
+        for (si = 1; si <= msgCnt; si++) {
+            sRow   = msgRes[si];
+            sRole  = sRow[0];
+            sText  = sRow[1];
+            label  = sRole == "user" ? "Korisnik" : "Asistent";
+            convText = convText + label + ": " + sText + "\n\n";
+        }
+
+        // Summarization instruction
+        summInstr = "You are a helpful assistant. Create a concise incremental summary of the conversation below.";
+        if (sessionSummary != "") {
+            summInstr = summInstr + " Build upon the existing summary, preserving key facts, decisions and context. Keep the result concise.";
+        }
+
+        summPayload = '{"model": "' + aiModel + '", "messages": [';
+        summPayload = summPayload + '{"role": "system", "content": "' + EscapeForJson(summInstr) + '"}';
+
+        if (sessionSummary != "") {
+            prevCtx     = "Existing summary:\n" + sessionSummary;
+            summPayload = summPayload + ', {"role": "system", "content": "' + EscapeForJson(prevCtx) + '"}';
+        }
+
+        userReq     = "Please summarize the conversation below:\n\n" + convText;
+        summPayload = summPayload + ', {"role": "user", "content": "' + EscapeForJson(userReq) + '"}';
+        summPayload = summPayload + ']}';
+
+        // Build endpoint URL
+        endpoint = aiBaseUrl;
+        if (!endpoint.EndsWith("/")) {
+            endpoint = endpoint + "/";
+        }
+        endpoint = endpoint + "chat/completions";
+
+        headers = {};
+        if (aiApiKey != "") {
+            headers["Authorization"] = "Bearer " + aiApiKey;
+        }
+
+        WebRequest2("POST", endpoint, summPayload, "summary",
+                    "SummarizationSuccess", "SummarizationFailure",
+                    "application/json", headers, 60000, false);
+
+    } catch (ex) {
+        MSG("SQL_FireSummarizationRequest error: " + ex);
+    }
+}
+
+
+// =============================================================
+//  TOKEN USAGE STATISTICS
+//  Queries total PromptTokens / CompletionTokens / TotalTokens
+//  from ChatMessage rows for sessions belonging to the current
+//  provider (stored in ChatSession.SourceApp = aiProvider).
+//  Sets the global display variables statInputTokens, etc.
+// =============================================================
+function SQL_LoadTokenStats() {
+    statInputTokens  = "---";
+    statOutputTokens = "---";
+    statTotalTokens  = "---";
+
+    if (!chatSqlEnabled) {
+        return;
+    }
+
+    try {
+        qp = {};
+        qp.Add({"@prov", aiProvider});
+
+        tokSql = "SELECT ISNULL(SUM(m.PromptTokens),    0) AS InputTok, "
+               + "       ISNULL(SUM(m.CompletionTokens), 0) AS OutputTok, "
+               + "       ISNULL(SUM(m.TotalTokens),      0) AS TotalTok "
+               + "FROM " + WXAI_DB + ".dbo.ChatMessage  m "
+               + "JOIN  " + WXAI_DB + ".dbo.ChatSession s "
+               + "   ON s.ChatSessionId = m.ChatSessionId "
+               + "WHERE s.SourceApp = @prov";
+
+        tokRes = sqlQuery(tokSql, qp);
+        if (Size(tokRes) > 1) {
+            tokRow           = tokRes[1];
+            statInputTokens  = tokRow[0];
+            statOutputTokens = tokRow[1];
+            statTotalTokens  = tokRow[2];
+        }
+    } catch (ex) {
+        MSG("SQL_LoadTokenStats error: " + ex);
+    }
+}

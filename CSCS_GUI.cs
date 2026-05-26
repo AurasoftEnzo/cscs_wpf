@@ -4379,6 +4379,11 @@ namespace WpfCSCS
 				var richTextBox = widget as RichTextBox;
 				result = new TextRange(richTextBox.Document.ContentStart, richTextBox.Document.ContentEnd).Text;
 			}
+			else if (widget is TextBlock)
+			{
+				var textBlock = widget as TextBlock;
+				result = textBlock.Text;
+			}
 			else if (widget is ComboBox)
 			{
 				var comboBox = widget as ComboBox;
@@ -4550,6 +4555,14 @@ namespace WpfCSCS
 				{
 					richTextBox.Document.Blocks.Clear();
 					richTextBox.Document.Blocks.Add(new Paragraph(new Run(text)));
+				}));
+			}
+			else if (widget is TextBlock)
+			{
+				var textBlock = widget as TextBlock;
+				dispatcher.Invoke(new Action(() =>
+				{
+					textBlock.Text = text;
 				}));
 			}
 			else if (widget is ASDateEditer && !string.IsNullOrWhiteSpace(text))

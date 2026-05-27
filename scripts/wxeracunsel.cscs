@@ -26,6 +26,7 @@ DEFINE arrayResultsKupac type a size 200 array 10000;
 DEFINE arrayResultsDatumRacuna type a size 10 array 10000;
 DEFINE arrayResultsIznos type a size 40 array 10000;
 DEFINE arrayResultsStatus type a size 100 array 10000;
+DEFINE arrayResultsStatusImg type a size 300 array 10000;
 
 selectedCount = 0;
 sendStartedCount = 0;
@@ -181,7 +182,8 @@ function SendSelectedInvoices(){
 
         listSelectedIndexes.Add(iSelect);
     }    
-
+    sentCount = 0;
+    RunOnMain("setcount");
     // SetWidgetOptions("StatusLabel2", "Content", "0 / " + Size(listSelectedIndexes));
 
     ClearNKSYELOG();
@@ -206,6 +208,7 @@ function SendSelectedInvoices(){
             selRes = sqlQuery(sql1);
             if(Size(selRes) > 1){
                 sentCount = selRes[1][0];
+                RunOnMain("setcount");
                 // SetWidgetOptions("StatusLabel2", "Content", sentCount + " / " + Size(listSelectedIndexes));
             }
         }catch(ex){
@@ -220,6 +223,14 @@ function SendSelectedInvoices(){
 
         Sleep(1000);
     }
+}
+function setcount(){
+    SetWidgetOptions("StatusLabel2", "Content", sentCount + " / " + Size(listSelectedIndexes));
+}
+function endSendSelectedInvoices(){
+    cursor("dflt");
+    FillResultsArrays();
+    DisplayResultsModal();
 }
 
 function ClearNKSYELOG(){
@@ -240,20 +251,29 @@ function FillResultsArrays(){
             if(Size(selRes) > 1){
                 SY_ELOG_STATUS = selRes[1][0].trim();
                 if(SY_ELOG_STATUS == "B"){
-                    AddToResultsArrays(oneSelectedIndex, "GREŠKA PRI SLANJU");
+                    AddToResultsArrays(oneSelectedIndex, "GREŠKA PRI SLANJU", strtrim(ipath()) + "red_cross.png");
                 }elif(SY_ELOG_STATUS == "C"){
-                    AddToResultsArrays(oneSelectedIndex, "Poslano");
+                    AddToResultsArrays(oneSelectedIndex, "Poslano", strtrim(ipath()) + "green_check.png");
                 }else{
-                    AddToResultsArrays(oneSelectedIndex, "Nepoznato stanje u ELOG-u");
+                    AddToResultsArrays(oneSelectedIndex, "Nepoznato stanje u ELOG-u", strtrim(ipath()) + "red_cross.png");
                 }
             }else{
-                AddToResultsArrays(oneSelectedIndex, "GREŠKA PRI SLANJU");
+                AddToResultsArrays(oneSelectedIndex, "GREŠKA PRI SLANJU", strtrim(ipath()) + "red_cross.png");
             }
         }catch(ex){
             MessageBox("Greška pri čitanju NKSYELOG: " + ex);
             exit;
         }
     }
+}
+
+function wxeracunselresults_OnDisplay(){
+    DisplayArraySetup("datagridResults", counterFld: "cntr1", activeElements: ResultsRbr, maxElements: 10000);
+}
+
+function DisplayResultsModal(){
+    ModalWindow(strtrim(tpath()) + "wxeracunselresults.xaml");
+    exit;
 }
 
 function DeleteOneInvoiceFromNKSYELOG(_invNum){
@@ -269,33 +289,23 @@ function DeleteOneInvoiceFromNKSYELOG(_invNum){
 }
 
 function SendOneInvoice(oneIndex){
-    CHAIN strtrim(tpath())+"wxeracsendone.cscs" WITH companyCode arrayInvNum[oneIndex];
+    CHAIN strtrim(tpath())+"wxeracsendone.cscs" NEWRUNTIME WITH arrayInvNum[oneIndex] companyCode userCode SY_CC_USER databaseName NazivFirme logoImagePath KPSY_REZERVA KPSY_COMP_NAME KPSY_COMP_ADD1 KPSY_GL_RETEARN KPSY_COMP_CSZ KPSY_COMP_ZIP KPSY_COMP_JMBFI KPSY_COMP_PHONE KPSY_COMP_EMAIL KPSY_PO_FREIGHT KPSY_REZERVAX KPSY_PR_R1_R2 KPSY_DOM_VALUTA KPSY_FISCAL_YR supOIB SY_SY_SIF_DRZAV SY_SP_VL_FIRMA FILESPATH PROVIDER SCHEMASPATH CERTPATH SISTEM_RADA APP_ERACUNI ERAC_REZ1 ERAC_SERVER ERAC_SERVERT ERAC_USER ERAC_PASS ERAC_USERT ERAC_PASST ERAC_DESC ERAC_CODE;
 }
 
 function endSendOneInvoice(){
-    if(sentCount == Size(listSelectedIndexes)){
-        cursor("dflt");
-        DisplayResultsModal();
+    // if(sentCount == Size(listSelectedIndexes)){
+    //     cursor("dflt");
+    //     DisplayResultsModal();
 
-        // DisplayArraySetup("datagridListaRacuna", counterFld: "cntr1", activeElements: Rbr, maxElements: 10000);
-        // SetWidgetOptions("btnPosalji", "IsEnabled", "true");
-        // SetWidgetOptions("btnIzlaz", "IsEnabled", "true");
-        // SetWidgetOptions("StatusLabel", "Content", "Pokrenuto slanje računa: " + sendStartedCount + ", grešaka: " + sendErrorCount + ", preskočeno: " + sendSkippedCount);
-        // SetWidgetOptions("StatusLabel2", "Content", "Status u retku prikazuje rezultat pokretanja slanja.");
-    }
-    
+    //     // DisplayArraySetup("datagridListaRacuna", counterFld: "cntr1", activeElements: Rbr, maxElements: 10000);
+    //     // SetWidgetOptions("btnPosalji", "IsEnabled", "true");
+    //     // SetWidgetOptions("btnIzlaz", "IsEnabled", "true");
+    //     // SetWidgetOptions("StatusLabel", "Content", "Pokrenuto slanje računa: " + sendStartedCount + ", grešaka: " + sendErrorCount + ", preskočeno: " + sendSkippedCount);
+    //     // SetWidgetOptions("StatusLabel2", "Content", "Status u retku prikazuje rezultat pokretanja slanja.");
+    // }
 }
 
-function wxeracunselresults_onDisplay(){
-    DisplayArraySetup("datagridResults", counterFld: "cntr1", activeElements: ResultsRbr, maxElements: 10000);
-}
-
-function DisplayResultsModal(){
-    ModalWindow(strtrim(tpath()) + "wxeracunselresults.xaml");
-    exit;
-}
-
-function AddToResultsArrays(iRbr, statusText){
+function AddToResultsArrays(iRbr, statusText, statusImg){
         arrayResultsRbr[ResultsRbr] = ResultsRbr + 1;
         arrayResultsInvNum[ResultsRbr] = arrayInvNum[iRbr];
         arrayResultsOznaka[ResultsRbr] = arrayOznaka[iRbr];
@@ -303,14 +313,8 @@ function AddToResultsArrays(iRbr, statusText){
         arrayResultsDatumRacuna[ResultsRbr] = arrayDatumRacuna[iRbr];
         arrayResultsIznos[ResultsRbr] = arrayIznos[iRbr];
         arrayResultsStatus[ResultsRbr] = statusText;
+        arrayResultsStatusImg[ResultsRbr] = statusImg;
         ResultsRbr = ResultsRbr + 1;
-}
-
-function endSendSelectedInvoices(){
-    //kraj
-    cursor("dflt");
-    FillResultsArrays();
-    DisplayResultsModal();
 }
 
 function btnIzlaz@clicked(){

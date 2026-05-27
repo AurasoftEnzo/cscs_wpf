@@ -1030,14 +1030,14 @@ function GenerateUBLXml() {
     
     supCountry = SY_SY_SIF_DRZAV;
 
-    IniPath = strtrim(wpath()) + SY_CC_USER + ".ini";
-    if(!regedit("regOpen", IniPath, "rtFile")){
-        MessageBox("Datoteka " + IniPath + " nije dostupna.");
-        return false;
-    }
-    NazivFirme = regedit("regReadStr", 'COMPANY', 'NazivFirme');
-    // SavePath = regedit("regReadStr", 'EMAIL', 'EmailFilePath');
-    regedit("regClose");
+    // IniPath = strtrim(wpath()) + SY_CC_USER + ".ini";
+    // if(!regedit("regOpen", IniPath, "rtFile")){
+    //     MessageBox("Datoteka " + IniPath + " nije dostupna.");
+    //     return false;
+    // }
+    // NazivFirme = regedit("regReadStr", 'COMPANY', 'NazivFirme');
+    // // SavePath = regedit("regReadStr", 'EMAIL', 'EmailFilePath');
+    // regedit("regClose");
 
     xml += "<cac:AccountingSupplierParty>\n";
     xml += "  <cac:Party>\n";
@@ -1964,7 +1964,7 @@ function GenerateUBLXml() {
         // LogError("XSD_FAIL", "Validation failed for " + invNum, validationErrors);
         // MessageBox("XML nije prošao XSD validaciju\n\nProvjerite _XSD.err datoteku za detalje.");
         LogException("XSD_VALIDATION_FAILED");
-        Notification("Slanje eRačuna", "Interna GREŠKA u računu broj:\n" + invNum + " - " + NKPR_GL_CUSNME + "\n" + "Ispravite račun i pokušajte ponovo.", errorImage);
+        // Notification("Slanje eRačuna", "Interna GREŠKA u računu broj:\n" + invNum + " - " + NKPR_GL_CUSNME + "\n" + "Ispravite račun i pokušajte ponovo.", errorImage);
         return false;
     }
 
@@ -1985,7 +1985,7 @@ function GenerateUBLXml() {
     if(!ValidateSch(xml, schFiles, SCHEMASPATH + "schematron\\transpile.xsl", schValidationResultOutputFile)){
         // MessageBox("xml FAILED SCH validation\n\nSee _SCH.err file for details.");
         LogException("SCH_VALIDATION_FAILED");
-        Notification("Slanje eRačuna", "Interna GREŠKA u računu broj:\n" + invNum + " - " + NKPR_GL_CUSNME + "\n" + "Ispravite račun i pokušajte ponovo.", errorImage);
+        // Notification("Slanje eRačuna", "Interna GREŠKA u računu broj:\n" + invNum + " - " + NKPR_GL_CUSNME + "\n" + "Ispravite račun i pokušajte ponovo.", errorImage);
         return false;
     }
      
@@ -2170,12 +2170,12 @@ function MERSuccess(_invID, responseCode, res) {
             UpdateNKPRINVWithStatus(resObject["ElectronicId"]);
 
             // MessageBox("Dokument poslan.");
-            Notification("Slanje eRačuna", "Uspješno poslan račun broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, okImage);
+            // Notification("Slanje eRačuna", "Uspješno poslan račun broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, okImage);
             merResultBool = true;
         }
         else{
             LogException("GREŠKA slanja dokumenta.");
-            Notification("Slanje eRačuna", "GREŠKA slanja računa broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, errorImage);
+            // Notification("Slanje eRačuna", "GREŠKA slanja računa broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, errorImage);
             // MessageBox("GREŠKA slanja dokumenta.");
             merResultBool = false;
             // LogNKSYELOG("B", 'Debug: NEPOZNATA GREŠKA'); // !!!
@@ -2214,7 +2214,7 @@ function MERFailure(_invID, responseCode, res) {
 
     try{
         LogException("ResponseCode: " + responseCode + "\nresponse: " + res);
-        Notification("Slanje eRačuna", "GREŠKA slanja računa broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, errorImage);
+        // Notification("Slanje eRačuna", "GREŠKA slanja računa broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, errorImage);
         // MSG("Slanje računa broj " + _invID + " NEUSPJEŠNO!");
         merResultBool = false;
         // MessageBox("SendingFailure.ResponseCode = " + responseCode);
@@ -2525,31 +2525,31 @@ function SendToFINA() {
 
             // MSG("ack[\"Correct\"] = " + ack["Correct"]);
             if(ack["Correct"]){
-                LogNKSYELOG("A");
-                LogNKSYELOG("C");
+                // LogNKSYELOG("A");
+                // LogNKSYELOG("C");
 
                 // ako TAS ne čeka odgovor onda CSCS mora upisat status, datum i invoiceId u NKPRINV !!
                 UpdateNKPRINVWithStatus(ack["InvoiceID"]);
 
                 // MSG("Uspješno poslan dokument.\n" + "Šifra računa kod FINA-e (ack[\"InvoiceID\"]) = " + ack["InvoiceID"]);
-                Notification("Slanje eRačuna", "Uspješno poslan račun broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, okImage);
+                // Notification("Slanje eRačuna", "Uspješno poslan račun broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, okImage);
 
                 return true;
             }else{
                 LogException("ErrorCode: " + ack["ErrorCode"] + "\nErrorMessage: " + ack["ErrorMessage"]);
-                Notification("Slanje eRačuna", "GREŠKA slanja računa broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, errorImage);
+                // Notification("Slanje eRačuna", "GREŠKA slanja računa broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, errorImage);
                 // MSG("ack[\"ErrorCode\"] = " + ack["ErrorCode"]);
                 // MSG("ack[\"ErrorMessage\"] = " + ack["ErrorMessage"]);
             }
         }else{
             LogException("AckStatus: " + ack["AckStatus"] + "\nAckStatusCode: " + ack["AckStatusCode"] + "\nAckStatusText: " + ack["AckStatusText"]);
-            Notification("Slanje eRačuna", "GREŠKA slanja računa broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, errorImage);
+            // Notification("Slanje eRačuna", "GREŠKA slanja računa broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, errorImage);
             // MessageBox("AckStatusText = " + ack["AckStatusText"]);
             // MessageBox("NEUSPJEŠNO poslan RAČUN prema FINA-i!");
         }
     }catch(ex){
         LogException("Nepoznata greška:\n" + ex);
-        Notification("Slanje eRačuna", "GREŠKA slanja računa broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, errorImage);
+        // Notification("Slanje eRačuna", "GREŠKA slanja računa broj:\n" + invNum + "\n" + NKPR_GL_CUSNME, errorImage);
         // MessageBox("Nepoznata greška:\n" + ex);
     }
     
@@ -2818,8 +2818,8 @@ function LogNKSYELOG(elogStatusCode, description = ""){
     VALUES (@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);";
 
     sqlParams = {};
-    sqlParams.Add({"@p1", NKPR_GL_NUM});
-    sqlParams.Add({"@p2", NKPR_GL_INVDTE});
+    sqlParams.Add({"@p1", invNum});
+    sqlParams.Add({"@p2", "1900-01-01"});
     sqlParams.Add({"@p3", elogStatusCode.Upper()});
     sqlParams.Add({"@p4", userCode});
     sqlParams.Add({"@p5", "" });
@@ -2979,6 +2979,19 @@ function ReadSqlBasicData(companyCode){
         SY_CC_USER = sqlResult[1][0].trim();
         databaseName = sqlResult[1][1].trim();
     }
+
+
+    IniPath = strtrim(wpath()) + SY_CC_USER + ".ini";
+    if(!regedit("regOpen", IniPath, "rtFile")){
+        MessageBox("Datoteka " + IniPath + " nije dostupna.");
+        return false;
+    }
+    NazivFirme = regedit("regReadStr", 'COMPANY', 'NazivFirme');
+    logoImagePath = regedit("regReadStr", 'COMPANY', 'LogoZnak');
+    // SavePath = regedit("regReadStr", 'EMAIL', 'EmailFilePath');
+    regedit("regClose");
+    
+
 
     sqlQueryString = " SELECT TOP 1 KPSY_REZERVA, KPSY_COMP_NAME, KPSY_COMP_ADD1, KPSY_GL_RETEARN, KPSY_COMP_CSZ, KPSY_COMP_ZIP,
                     KPSY_COMP_JMBFI, KPSY_COMP_PHONE, KPSY_COMP_EMAIL, KPSY_PO_FREIGHT, KPSY_REZERVAX,KPSY_PR_R1_R2, KPSY_DOM_VALUTA, KPSY_FISCAL_YR

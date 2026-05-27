@@ -1,34 +1,47 @@
-PARAM compCode,brojRacuna;
-Import(strTrim(mpath()) + "CSCS.Math.dll");
-include(strtrim(tpath()) + "wxeracunlib.cscs");
-include(strtrim(tpath()) + "wxinvoiceprintlib.cscs");
+PARAM brojRacuna,companyCode,userCode,SY_CC_USER,databaseName,NazivFirme,logoImagePath,KPSY_REZERVA,KPSY_COMP_NAME,KPSY_COMP_ADD1,KPSY_GL_RETEARN,KPSY_COMP_CSZ,KPSY_COMP_ZIP,KPSY_COMP_JMBFI,KPSY_COMP_PHONE,KPSY_COMP_EMAIL,KPSY_PO_FREIGHT,KPSY_REZERVAX,KPSY_PR_R1_R2,KPSY_DOM_VALUTA,KPSY_FISCAL_YR,supOIB,SY_SY_SIF_DRZAV,SY_SP_VL_FIRMA,FILESPATH,PROVIDER,SCHEMASPATH,CERTPATH,SISTEM_RADA,APP_ERACUNI,ERAC_REZ1,ERAC_SERVER,ERAC_SERVERT,ERAC_USER,ERAC_PASS,ERAC_USERT,ERAC_PASST,ERAC_DESC,ERAC_CODE;
+
+try{
+    Import(strTrim(mpath()) + "CSCS.Math.dll");
+    include(strtrim(tpath()) + "wxeracunlib.cscs");
+    include(strtrim(tpath()) + "wxinvoiceprintlib.cscs");
 
 
-ReadSqlBasicData(compCode);
+    // ReadSqlBasicData(compCode);
 
-pdfFilePath = FILESPATH + "IR\\" + "IR_" + brojRacuna + ".pdf";
 
-LoadInvoiceFromDB(brojRacuna);
-ExportReport(reportHandle, "PDF", pdfFilePath);
+    // LogNKSYELOG("A");
 
-CopyIndicator = "";
-attachmentPdfPath = pdfFilePath;
-xmlFileName = "";
+    
 
-invNum = brojRacuna;
-if(!GenerateUBLXml()){
-    LogNKSYELOG("B");
-    quit;
-}
+    if(!LoadInvoiceFromDB(brojRacuna)){
+        LogNKSYELOG("B");
+        exit;
+    }
+    pdfFilePath = FILESPATH + "IR\\" + "IR_" + NKPR_GL_CUSCOD + "_" + NKPR_GL_JMBG + "_" + brojRacuna + "_s.pdf";
+    ExportReport(reportHandle, "PDF", pdfFilePath);
 
-if(NKSC_REZ10 == "P"){
-    if(SendERacun()){
-        LogNKSYELOG("C");
+    CopyIndicator = "";
+    attachmentPdfPath = pdfFilePath;
+    xmlFileName = "";
+
+    invNum = brojRacuna;
+    if(!GenerateUBLXml()){
+        LogNKSYELOG("B");
+        exit;
+    }
+
+    if(NKSC_REZ10 == "P"){
+        if(SendERacun()){
+            LogNKSYELOG("C");
+        }else{
+            LogNKSYELOG("B");
+        }
     }else{
+        //"Kupac nije za e-račun";
         LogNKSYELOG("B");
     }
-}else{
-    //"Kupac nije za e-račun";
-    LogNKSYELOG("B");
+    exit;
+}catch(ex){
+    MSG(ex);
+    exit;
 }
-quit;

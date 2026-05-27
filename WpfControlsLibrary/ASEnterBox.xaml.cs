@@ -235,9 +235,15 @@ namespace WpfControlsLibrary
                 enterBoxTextBox.BorderBrush = BorderBrush;
 
                 var tbBorder = enterBoxTextBox.Template.FindName("border", enterBoxTextBox);
-                ((Border)tbBorder).CornerRadius = new CornerRadius(CornerRadius);
+                if (tbBorder != null)
+                {
+                    ((Border)tbBorder).CornerRadius = new CornerRadius(CornerRadius);
+                }
                 var btnBorder = enterBoxButton.Template.FindName("border", enterBoxButton);
-                ((Border)btnBorder).CornerRadius = new CornerRadius(CornerRadius);
+                if (btnBorder != null)
+                {
+                    ((Border)btnBorder).CornerRadius = new CornerRadius(CornerRadius);
+                }
 
                 enterBoxButton.Width = ButtonSize;
 

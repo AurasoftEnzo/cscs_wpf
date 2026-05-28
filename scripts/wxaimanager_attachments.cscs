@@ -334,7 +334,7 @@ function Attachment_ParseTextFile(attachmentId, filePath, fileName) {
     try {
         extractedText = ReadAllText(filePath);
     } catch (ex) {
-        MSG("Attachment_ParseTextFile – ReadAllText error: " + ex);
+        MSG("Attachment_ParseTextFile - ReadAllText error: " + ex);
     }
 
     textLen  = extractedText.length;
@@ -360,7 +360,7 @@ function Attachment_ParseTextFile(attachmentId, filePath, fileName) {
             newDocId = docRow[0];
         }
     } catch (ex) {
-        MSG("Attachment_ParseTextFile – Document INSERT error: " + ex);
+        MSG("Attachment_ParseTextFile - Document INSERT error: " + ex);
     }
     // Chunk the extracted text
     if (newDocId > 0 && textLen > 0) {
@@ -374,7 +374,7 @@ function Attachment_ParseTextFile(attachmentId, filePath, fileName) {
                   + "SET AttachmentStatus = 'indexed', ProcessedAtUtc = SYSUTCDATETIME() "
                   + "WHERE ChatAttachmentId = @id", updP);
     } catch (ex) {
-        MSG("Attachment_ParseTextFile – status update error: " + ex);
+        MSG("Attachment_ParseTextFile - status update error: " + ex);
     }
 }
 
@@ -413,18 +413,19 @@ function Attachment_ChunkDocument(documentId, chatSessionIdArg, extractedText) {
             cp.Add({"@text",    chunkText});
             cp.Add({"@cstart",  charStart});
             cp.Add({"@cend",    charEnd});
-            chunkSql = "INSERT INTO " + WXAI_DB + ".dbo.DocumentChunk 
-                  (DocumentId, ChatSessionId, ChunkOrder, ChunkType, ChunkText, 
-                  CharStart, CharEnd, PageFrom, PageTo, SectionPath, EmbeddingStatus) 
-                  VALUES (@docId, @sessId, @ord, 'text', @text, 
-                         @cstart, @cend, 1, 1, '', 'pending')";
+            chunkSql = "INSERT INTO " + WXAI_DB + ".dbo.DocumentChunk "
+                     + "(DocumentId, ChatSessionId, ChunkOrder, ChunkType, ChunkText, "
+                     + "CharStart, CharEnd, PageFrom, PageTo, SectionPath, EmbeddingStatus) "
+                     + "VALUES (@docId, @sessId, @ord, 'text', @text, "
+                     + "@cstart, @cend, 1, 1, '', 'pending')";
             sqlNonQuery(chunkSql, cp);
+            chunkOrd++;
+            charStart = charEnd;
         } catch (ex) {
-            MSG("Attachment_ChunkDocument – chunk " + chunkOrd + " error: " + ex);
+            MSG("Attachment_ChunkDocument - chunk " + chunkOrd + " error: " + ex);
+            chunkOrd++;
+            charStart = charEnd;
         }
-msg("Chunk " + chunkOrd + " processed for document " + documentId + "Ako ovaj message makneš, exception dođe! ");
-        chunkOrd++;
-        charStart = charEnd;
     }
 }
 

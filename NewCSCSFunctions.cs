@@ -5003,8 +5003,8 @@ namespace WpfCSCS
 
             var text = Utils.GetSafeString(args, 0);
 
-            text = text.Replace("\"", "\\\"");
             text = text.Replace("\\", "\\\\");
+            text = text.Replace("\"", "\\\"");
             text = text.Replace("\n", "\\n");
             text = text.Replace("\r", "");
             text = text.Replace("\t", "\\t");

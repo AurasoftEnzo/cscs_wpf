@@ -1,12 +1,9 @@
-This document is very important because in reports there is a difference between a label that gets a value by Tag name, a label with an Expression, a label for multiple rows via OutputReport and a label for totals via summary expressions. The attached manual explicitly shows binding via Tag, multi-line binding in the detail band, and summary expressions such as sumSumamount and SumNKPRGLTOTAL with string format 0N2 and Summary Running settings.
-
 ---
 title: Report Label Binding
 module: reporting
 topic: label-binding
 applies_to: CSCS_WPF
 version: 1
-source: internal manual
 ---
 
 # Report Label Binding

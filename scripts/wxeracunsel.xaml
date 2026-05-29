@@ -50,22 +50,26 @@
          ================================================================ -->
     <Grid Margin="10,8,10,8">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>     <!-- DataGrid -->
             <RowDefinition Height="Auto"/>  <!-- Action bar -->
             <RowDefinition Height="Auto"/>  <!-- Status -->
         </Grid.RowDefinitions>
 
+        <Label Content="Računi za slanje:" FontSize="20" Foreground="White"/>
+
         <!-- ============================================================
              ROW 0 – DataGrid
              ============================================================ -->
-        <Border Grid.Row="0"
+        <Border Grid.Row="1"
                 Background="#263646"
                 CornerRadius="8"
                 Margin="0,0,0,8"
                 Padding="1">
             <DataGrid x:Name="datagridListaRacuna"
-                      GridLinesVisibility="Horizontal"
+                      GridLinesVisibility="All"
                       HorizontalGridLinesBrush="#2D4057"
+                      VerticalGridLinesBrush="#2D4057"
                       CanUserReorderColumns="True"
                       CanUserSortColumns="True"
                       Background="Transparent"
@@ -84,6 +88,8 @@
                       CanUserDeleteRows="False"
                       CanUserResizeRows="False"
                       SelectionMode="Single"
+                      SelectionUnit="FullRow"
+                      RowHeaderWidth="0"
                       TabIndex="2">
                 <DataGrid.Resources>
                     <!-- Dark blue header -->
@@ -103,7 +109,7 @@
                 </DataGrid.Resources>
                 <DataGrid.Columns>
 
-                    <DataGridTemplateColumn Header="Selekt" Width="60">
+                    <DataGridTemplateColumn Width="60" Header="Odabir">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <wcl:ASGridCell FieldName="arraySelekt"
@@ -146,7 +152,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn Header="Dat. računa" Width="110">
+                    <DataGridTemplateColumn Header="Dat. računa" Width="95">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <wcl:ASGridCell FieldName="arrayDatumRacuna"
@@ -164,13 +170,13 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn Header="Status" Width="*">
+                    <!--<DataGridTemplateColumn Header="Status" Width="150">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <wcl:ASGridCell FieldName="arrayStatus"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
+                    </DataGridTemplateColumn>-->
 
                 </DataGrid.Columns>
             </DataGrid>
@@ -179,7 +185,7 @@
         <!-- ============================================================
              ROW 1 – Action bar  (Pošalji · Izlaz · Clock)
              ============================================================ -->
-        <Border Grid.Row="1"
+        <Border Grid.Row="2"
                 Background="#263646"
                 CornerRadius="8"
                 Margin="0,0,0,8"
@@ -187,7 +193,7 @@
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>      <!-- Pošalji centre -->
-                    <ColumnDefinition Width="Auto"/>   <!-- Izlaz + clock right -->
+                    <!--<ColumnDefinition Width="Auto"/>   --><!-- Izlaz + clock right -->
                 </Grid.ColumnDefinitions>
 
                 <!-- Pošalji -->
@@ -202,7 +208,7 @@
                         HorizontalAlignment="Center"/>
 
                 <!-- Izlaz + clock -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
                     <Button x:Name="btnIzlaz"
                             Content="Izlaz"
                             Style="{StaticResource FlatBtn}"
@@ -211,17 +217,32 @@
                             Height="42" Width="140"
                             TabIndex="1"
                             Margin="0,0,10,0"/>
-                    <Image x:Name="asImage" DataContext="Sat"
+                    <!--<Image x:Name="asImage" DataContext="Sat"
                            Height="38" Width="42"
-                           VerticalAlignment="Center"/>
+                           VerticalAlignment="Center"/>-->
                 </StackPanel>
+
+                <CheckBox Grid.Column="0"
+                          DataContext="selektAll"
+                          Name="chkbSelektAll"
+                          Content="Odaberi sve"
+                          FontSize="14" FontFamily="Segoe UI"
+                          Foreground="#C8D0DA"
+                          VerticalAlignment="Center"
+                          HorizontalAlignment="Left"
+                          VerticalContentAlignment="Center"
+                          Margin="10,0,0,0">
+                    <CheckBox.LayoutTransform>
+                        <ScaleTransform ScaleX="1.5" ScaleY="1.5" />
+                    </CheckBox.LayoutTransform>
+                </CheckBox>
             </Grid>
         </Border>
 
         <!-- ============================================================
              ROW 2 – Status labels
              ============================================================ -->
-        <Border Grid.Row="2"
+        <Border Grid.Row="3"
                 Background="#263646"
                 CornerRadius="8"
                 Padding="14,6">

@@ -211,6 +211,7 @@ namespace WpfCSCS
 
             interpreter.RegisterFunction("FileCopy", new FileCopyFunction());
             interpreter.RegisterFunction("FileHash", new FileHashFunction());
+            interpreter.RegisterFunction("GetDirFiles", new GetDirFilesFunction());
         }
         public partial class Constants
         {
@@ -5144,6 +5145,38 @@ namespace WpfCSCS
             {
                 return new Variable("");
             }
+        }
+    }
+
+    // GetDirFiles(folderPath, pattern) → CSCS array of full file paths.
+    // pattern is optional; defaults to "*.*".
+    // Returns empty array if folder does not exist or an error occurs.
+    class GetDirFilesFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+
+            var folderPath = Utils.GetSafeString(args, 0);
+            var pattern    = Utils.GetSafeString(args, 1, "*.*");
+
+            var result = new List<Variable>();
+            try
+            {
+                if (Directory.Exists(folderPath))
+                {
+                    string[] files = Directory.GetFiles(folderPath, pattern,
+                                                        SearchOption.TopDirectoryOnly);
+                    foreach (var f in files)
+                        result.Add(new Variable(f));
+                }
+            }
+            catch (Exception)
+            {
+                // Return whatever was collected before the error
+            }
+            return new Variable(result);
         }
     }
 

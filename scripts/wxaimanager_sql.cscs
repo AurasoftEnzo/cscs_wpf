@@ -521,6 +521,41 @@ function SQL_LoadHistoryFromDB() {
 //  ChatSession.SummaryText and the in-memory sessionSummary variable.
 // =============================================================
 
+// Reloads all messages for a past session into the in-memory arrays
+// (msgRole, msgContent, msgCount) so BuildApiPayload sends the full
+// conversation context when the user continues that session.
+// Also restores chatMsgOrder to the correct next value.
+function SQL_ReloadSessionMessages(sessId) {
+    msgCount     = 0;
+    chatMsgOrder = 0;
+    if (!chatSqlEnabled || sessId == 0) {
+        return;
+    }
+    try {
+        qp = {};
+        qp.Add({"@sid", sessId});
+        mSql = "SELECT RoleCode, MessageText, MessageOrder " +
+               "FROM " + WXAI_DB + ".dbo.ChatMessage " +
+               "WHERE ChatSessionId = @sid " +
+               "ORDER BY MessageOrder ASC";
+        mRes = sqlQuery(mSql, qp);
+        rows = Size(mRes) - 1;
+        for (ri = 0; ri < rows; ri++) {
+            mRow = mRes[ri + 1];
+            if (msgCount < 200) {
+                msgRole[msgCount]    = mRow[0];
+                msgContent[msgCount] = mRow[1];
+                msgCount++;
+            }
+            chatMsgOrder = int(mRow[2]);
+        }
+        chatMsgOrder = chatMsgOrder + 1;  // next available order number
+    } catch (ex) {
+        MSG("SQL_ReloadSessionMessages error: " + ex);
+    }
+}
+
+
 // Reads SummaryText for the given session into sessionSummary.
 // Call after loading a history item to restore the summary context.
 function SQL_LoadSessionSummary(sessId) {

@@ -1,0 +1,389 @@
+// ============================================================
+//  WXAIMANAGER_WEBSEARCH.CSCS
+//  Web search context injection via Tavily Search API
+//
+//  Two modes (auto-detected from prompt):
+//    1. URL detected  → Tavily /extract  – fetches full text of that page
+//    2. No URL        → Tavily /search   – keyword search, returns top 5 results
+//
+//  Usage: tick "Koristi web pretraživanje" checkbox before send.
+// ============================================================
+
+// ---- Web search variables ----------------------------------
+DEFINE webSearchEnabled type l;
+DEFINE webSearchApiKey type a size 200;
+
+// ============================================================
+//  WebSearch_HasTemporalKeyword(text)
+//  Returns true if the prompt contains a recency/time keyword
+//  that suggests fresh web data would improve the answer.
+//  Uses Croatian stems to cover all morphological forms, e.g.:
+//    "najnovij"  → najnoviji / najnovija / najnovije / najnovijih
+//    "današnj"   → današnji / današnja / današnje
+// ============================================================
+function WebSearch_HasTemporalKeyword(text) {
+    lower = StrLower(text);
+    // Sequential checks – avoids any CSCS array-indexing quirks.
+    if (lower.Contains("najnovij"))      { return true; }  // najnoviji/a/e – latest/newest
+    if (lower.Contains("najrecentnij"))  { return true; }  // most recent
+    if (lower.Contains("danas"))         { return true; }  // today
+    if (lower.Contains("današnj"))       { return true; }  // today's (adjective forms)
+    if (lower.Contains("ovoga tjedna"))  { return true; }  // this week (genitive)
+    if (lower.Contains("ovog tjedna"))   { return true; }
+    if (lower.Contains("ovaj tjedan"))   { return true; }
+    if (lower.Contains("ove sedmice"))   { return true; }  // this week (sedmica variant)
+    if (lower.Contains("ovoga mjeseca")) { return true; }  // this month
+    if (lower.Contains("ovog mjeseca"))  { return true; }
+    if (lower.Contains("ovaj mjesec"))   { return true; }
+    if (lower.Contains("ove godine"))    { return true; }  // this year
+    if (lower.Contains("ovoj godini"))   { return true; }
+    if (lower.Contains("ova godina"))    { return true; }
+    if (lower.Contains("trenutno"))      { return true; }  // currently / right now
+    if (lower.Contains("trenutačno"))    { return true; }
+    return false;
+}
+
+// ============================================================
+//  WebSearch_Execute(query)
+//  Entry point called from SendToAI().
+//  Auto-triggers when temporal/recency keywords are detected
+//  even if the "Koristi web pretraživanje" checkbox is off.
+// ============================================================
+function WebSearch_Execute(query) {
+//msg("WebSearch_Execute: query: " + query);    
+    autoTrigger = WebSearch_HasTemporalKeyword(query);
+    wsEnabled = (webSearchEnabled == true || webSearchEnabled == 1);
+    if (!wsEnabled && !autoTrigger) {
+        return "";
+    }
+//msg("WebSearch_Execute: web search enabled, checking API key..." + webSearchApiKey);    
+    if (webSearchApiKey == "") {
+        SetStatus("Web pretraživanje: Tavily API ključ nije postavljen u Postavkama.");
+        return "";
+    }
+    if (autoTrigger && !wsEnabled) {
+        SetStatus("Web pretraživanje: automatski aktivirano (ključne riječi za aktualnost)...");
+    }
+//msg("WebSearch_Execute: web search enabled, API key present, proceeding with search...");
+    // Detect URL in the prompt → use /extract, otherwise /search
+    detectedUrl = WebSearch_ExtractUrl(query);
+//msg("WebSearch_Execute: detected URL: " + detectedUrl);
+    if (detectedUrl != "") {
+        return WebSearch_FetchUrl(detectedUrl, query);
+    }
+    return WebSearch_SearchTavily(query);
+}
+
+// ============================================================
+//  WebSearch_ExtractUrl(text)
+//  Returns first URL found in text, or "" if none.
+//  Handles: https://..., http://..., www....
+// ============================================================
+function WebSearch_ExtractUrl(text) {
+    // Find start of a URL token
+
+// msg("WebSearch_ExtractUrl: analyzing text: " + text);   
+    urlStart = -1;
+    idx = text.IndexOf("https://");
+    if (idx >= 0) { urlStart = idx; }
+    if (urlStart < 0) {
+        idx = text.IndexOf("http://");
+        if (idx >= 0) { urlStart = idx; }
+    }
+    if (urlStart < 0) {
+        idx = text.IndexOf("www.");
+        if (idx >= 0) { urlStart = idx; }
+    }
+    if (urlStart < 0) {
+        return "";
+    }
+//msg("WebSearch_ExtractUrl: potential URL found at index " + urlStart);
+    // Extract until first whitespace
+    rest = Substring(text, urlStart, text.length - urlStart);
+    spaceIdx = rest.IndexOf(" ");
+    if (spaceIdx > 0) {
+        rest = Substring(rest, 0, spaceIdx);
+    }
+    // Strip trailing punctuation (comma, period, closing paren)
+    lastCh = Substring(rest, rest.length - 1, 1);
+    if (lastCh == "." || lastCh == "," || lastCh == ")" || lastCh == "\"") {
+        rest = Substring(rest, 0, rest.length - 1);
+    }
+//msg("WebSearch_ExtractUrl: extracted URL candidate: " + rest);
+    // Prepend https:// if only www. was found
+    if (rest.StartsWith("www.")) {
+        rest = "https://" + rest;
+    }
+// msg("WebSearch_ExtractUrl: final URL extracted: " + rest);   
+    return rest;
+}
+
+// ============================================================
+//  WebSearch_FetchUrl(url, originalQuery)
+//  Calls Tavily /extract to get full page text from a URL.
+// ============================================================
+function WebSearch_FetchUrl(url, originalQuery) {
+    SetStatus("Dohvaćam stranicu: " + url + "...");
+
+    // --- PDF: check DB cache first ---
+    isPdf = StrLower(url).Contains(".pdf");
+    if (isPdf && chatSqlEnabled) {
+        cachedDocId = WebSearch_CheckPdfInDb(url);
+        if (cachedDocId > 0) {
+            cachedCtx = WebSearch_GetChunksFromDb(cachedDocId, url);
+            if (cachedCtx != "") {
+                SetStatus("PDF učitan iz baze: " + url);
+                return cachedCtx;
+            }
+        }
+    }
+
+    extractPayload = '{"api_key":"' + EscapeForJson(webSearchApiKey) + '",' +
+                     '"urls":["'    + EscapeForJson(url)             + '"]}';
+// msg("WebSearch_FetchUrl: extractPayload: " + extractPayload);
+
+    headers = {};
+
+    try {
+        rawResult = WebRequest2("POST", "https://api.tavily.com/extract",
+                                extractPayload, "", "", "",
+                                "application/json", headers, 20000, false);
+
+        if (rawResult == "") {
+            return "";
+        }
+// msg("WebSearch_FetchUrl: rawResult: " + rawResult);
+        rObj = DeserializeJson(rawResult);
+// msg("WebSearch_FetchUrl: deserialized JSON: " + rObj);
+        if (Contains(rObj, "detail")) {
+            SetStatus("Tavily extract greška: " + rObj["detail"]);
+            return "";
+        }
+
+        // Response: {"results":[{"url":"...","raw_content":"..."}],"failed_results":[]}
+        if (!Contains(rObj, "results")) {
+            return "";
+        }
+        results = rObj["results"];
+
+// msg("WebSearch_FetchUrl: results: " + results);
+        if (Size(results) == 0) {
+            SetStatus("Tavily extract: stranica nije dohvatljiva – " + url);
+            return "";
+        }
+
+        pageRow = results[0];
+        pageContent = "";
+        if (Contains(pageRow, "raw_content")) {
+            pageContent = pageRow["raw_content"];
+        }
+        if (pageContent == "") {
+            return "";
+        }
+
+        // --- Save PDF to DB before trimming ---
+        if (isPdf && chatSqlEnabled && currentSessionId > 0) {
+            WebSearch_SavePdfToDb(url, pageContent);
+        }
+
+        // Trim to 8000 chars to avoid token overload
+        if (pageContent.length > 8000) {
+            pageContent = Substring(pageContent, 0, 8000) + "\n[...sadržaj skraćen...]";
+        }
+
+        webCtx = "--- Sadržaj stranice: " + url + " ---\n";
+        webCtx = webCtx + pageContent + "\n";
+        webCtx = webCtx + "---\n";
+        return webCtx;
+
+    } catch (ex) {
+        SetStatus("Greška dohvata stranice: " + ex);
+        return "";
+    }
+}
+
+// ============================================================
+//  WebSearch_SearchTavily(query)
+//  Calls Tavily /search for keyword-based web search.
+// ============================================================
+function WebSearch_SearchTavily(query) {
+    // Trim query to 150 chars
+    searchQuery = query;
+    if (searchQuery.length > 150) {
+        searchQuery = Substring(searchQuery, 0, 150);
+    }
+
+    SetStatus("Pretražujem web: " + searchQuery + "...");
+
+    tavPayload = '{"api_key":"'  + EscapeForJson(webSearchApiKey) + '",' +
+                 '"query":"'     + EscapeForJson(searchQuery)     + '",' +
+                 '"max_results":5,' +
+                 '"include_answer":false}';
+
+    headers = {};
+
+    try {
+        rawResult = WebRequest2("POST", "https://api.tavily.com/search",
+                                tavPayload, "", "", "",
+                                "application/json", headers, 15000, false);
+
+        if (rawResult == "") {
+            return "";
+        }
+
+        rObj = DeserializeJson(rawResult);
+
+        if (Contains(rObj, "detail")) {
+            SetStatus("Tavily greška: " + rObj["detail"]);
+            return "";
+        }
+        if (!Contains(rObj, "results")) {
+            return "";
+        }
+        results = rObj["results"];
+        resCnt = Size(results);
+        if (resCnt == 0) {
+            return "";
+        }
+
+        webCtx = "--- Web pretraživanje: " + searchQuery + " ---\n";
+        for (ri = 0; ri < resCnt; ri++) {
+            row = results[ri];
+            rTitle = "";
+            rUrl = "";
+            rContent = "";
+            if (Contains(row, "title"))   { rTitle   = row["title"];   }
+            if (Contains(row, "url"))     { rUrl     = row["url"];     }
+            if (Contains(row, "content")) { rContent = row["content"]; }
+
+            webCtx = webCtx + "[" + rTitle + "]\n";
+            webCtx = webCtx + rUrl + "\n";
+            webCtx = webCtx + rContent + "\n\n";
+        }
+        webCtx = webCtx + "---\n";
+        return webCtx;
+
+    } catch (ex) {
+        SetStatus("Web pretraživanje greška: " + ex);
+        return "";
+    }
+}
+
+// ============================================================
+//  WebSearch_CheckPdfInDb(url)
+//  Returns DocumentId if a web-sourced Document for this URL
+//  already exists in the DB, otherwise returns 0.
+// ============================================================
+function WebSearch_CheckPdfInDb(url) {
+    try {
+        p = {};
+        p.Add({"@url", url});
+        chkSql = "SELECT d.DocumentId "
+               + "FROM " + WXAI_DB + ".dbo.ChatAttachment ca "
+               + "JOIN " + WXAI_DB + ".dbo.Document d "
+               + "  ON d.ChatAttachmentId = ca.ChatAttachmentId "
+               + "WHERE ca.StoragePath = @url AND ca.StorageProvider = 'web'";
+        res = sqlQuery(chkSql, p);
+        if (Size(res) > 1) {
+            return res[1][0];
+        }
+    } catch (ex) {
+        MSG("WebSearch_CheckPdfInDb error: " + ex);
+    }
+    return 0;
+}
+
+// ============================================================
+//  WebSearch_GetChunksFromDb(documentId, url)
+//  Loads all DocumentChunk rows for the given Document and
+//  returns them formatted as a context block string.
+// ============================================================
+function WebSearch_GetChunksFromDb(documentId, url) {
+    try {
+        p = {};
+        p.Add({"@docId", documentId});
+        selSql = "SELECT ChunkText "
+               + "FROM " + WXAI_DB + ".dbo.DocumentChunk "
+               + "WHERE DocumentId = @docId "
+               + "ORDER BY ChunkOrder ASC";
+        res = sqlQuery(selSql, p);
+        rowCnt = Size(res) - 1;
+        if (rowCnt <= 0) {
+            return "";
+        }
+        combined = "";
+        for (ci = 0; ci < rowCnt; ci++) {
+            combined = combined + res[ci + 1][0];
+        }
+        webCtx = "--- Sadržaj stranice (iz baze): " + url + " ---\n";
+        webCtx = webCtx + combined + "\n";
+        webCtx = webCtx + "---\n";
+        return webCtx;
+    } catch (ex) {
+        MSG("WebSearch_GetChunksFromDb error: " + ex);
+    }
+    return "";
+}
+
+// ============================================================
+//  WebSearch_SavePdfToDb(url, rawContent)
+//  Persists a web-fetched PDF text to:
+//    ChatAttachment (StorageProvider='web', StoragePath=url)
+//    → Document (DocumentType='web', ExtractStatus='extracted')
+//    → DocumentChunk rows via Attachment_ChunkDocument()
+// ============================================================
+function WebSearch_SavePdfToDb(url, rawContent) {
+    newAttachId = 0;
+    try {
+        ap = {};
+        ap.Add({"@sessId", currentSessionId});
+        ap.Add({"@userId", chatUserId});
+        ap.Add({"@url",    url});
+        ap.Add({"@size",   rawContent.length});
+        attSql = "INSERT INTO " + WXAI_DB + ".dbo.ChatAttachment "
+               + "  (ChatSessionId, UploadedByUserId, OriginalFileName, StoredFileName, "
+               + "   FileExtension, MimeType, FileSizeBytes, "
+               + "   StorageProvider, StoragePath, AttachmentStatus) "
+               + "OUTPUT INSERTED.ChatAttachmentId "
+               + "VALUES (@sessId, @userId, @url, @url, "
+               + "        '.pdf', 'application/pdf', @size, 'web', @url, 'indexed')";
+        attRes = sqlQuery(attSql, ap);
+        if (Size(attRes) > 1) {
+            newAttachId = attRes[1][0];
+        }
+    } catch (ex) {
+        MSG("WebSearch_SavePdfToDb - ChatAttachment INSERT error: " + ex);
+        return;
+    }
+    if (newAttachId == 0) {
+        return;
+    }
+
+    newDocId = 0;
+    try {
+        dp = {};
+        dp.Add({"@attachId", newAttachId});
+        dp.Add({"@url",      url});
+        dp.Add({"@text",     rawContent});
+        dp.Add({"@len",      rawContent.length});
+        docSql = "INSERT INTO " + WXAI_DB + ".dbo.Document "
+               + "  (ChatAttachmentId, DocumentType, Title, ExtractStatus, "
+               + "   ExtractedText, ExtractedTextLength, ParserName, PageCount, ExtractedAtUtc) "
+               + "OUTPUT INSERTED.DocumentId "
+               + "VALUES (@attachId, 'web', @url, 'extracted', "
+               + "        @text, @len, 'tavily-extract', 1, SYSUTCDATETIME())";
+        docRes = sqlQuery(docSql, dp);
+        if (Size(docRes) > 1) {
+            newDocId = docRes[1][0];
+        }
+    } catch (ex) {
+        MSG("WebSearch_SavePdfToDb - Document INSERT error: " + ex);
+        return;
+    }
+    if (newDocId == 0) {
+        return;
+    }
+
+    Attachment_ChunkDocument(newDocId, currentSessionId, rawContent);
+    SetStatus("PDF pohranjen u bazu: " + url);
+}

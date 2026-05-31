@@ -223,6 +223,62 @@ function Attachment_SelectAndUpload() {
     if (srcPath == "") {
         return;   // user cancelled
     }
+    Attachment_UploadOnePath(srcPath);
+}
+
+
+// =============================================================
+//  IMPORT FOLDER
+//  Opens a FolderBrowserDialog, finds all *.md files in the
+//  selected folder (non-recursive), uploads and parses each one.
+//  NOTE: every attached file's full text is sent in every prompt.
+//  Attach only files relevant to the current session to stay
+//  within the model's context window.
+// =============================================================
+
+function Attachment_ImportFolder() {
+    if (!chatSqlEnabled) {
+        SetStatus("SQL nije dostupan - prilog nije pohranjen.");
+        return;
+    }
+    if (currentSessionId == 0) {
+        SQL_EnsureSession("(mapa MD datoteka)");
+        if (currentSessionId == 0) {
+            SetStatus("Ne mogu kreirati sesiju za prilog.");
+            return;
+        }
+    }
+
+    folderPath = GetPath("", "Odaberi mapu s MD datotekama");
+    if (folderPath == "") {
+        return;
+    }
+
+    mdFiles = GetDirFiles(folderPath, "*.md");
+    mdCount = Size(mdFiles);
+    if (mdCount == 0) {
+        SetStatus("Nema .md datoteka u odabranoj mapi.");
+        return;
+    }
+
+    SetStatus("Uvozim " + mdCount + " .md datoteka iz mape...");
+    importedOk = 0;
+    for (fi = 0; fi < mdCount; fi++) {
+        onePath = mdFiles[fi];
+        Attachment_UploadOnePath(onePath);
+        importedOk++;
+    }
+    SetStatus("Uvezeno " + importedOk + " od " + mdCount + " .md datoteka.");
+}
+
+
+// =============================================================
+//  UPLOAD ONE PATH (helper used by SelectAndUpload + ImportFolder)
+//  Copies a file to storage, records ChatAttachment, triggers
+//  async text extraction for plain-text formats.
+// =============================================================
+
+function Attachment_UploadOnePath(srcPath) {
 
     // --- Extract filename from full path ---
     fileName  = srcPath;
@@ -263,7 +319,7 @@ function Attachment_SelectAndUpload() {
     copyOk = FileCopy(srcPath, destPath);
     if (!copyOk) {
         SetStatus("Greška pri kopiranju datoteke: " + fileName);
-        MSG("Attachment_SelectAndUpload: FileCopy failed. src=" + srcPath + " dest=" + destPath);
+        MSG("Attachment_UploadOnePath: FileCopy failed. src=" + srcPath + " dest=" + destPath);
         return;
     }
 
@@ -295,7 +351,7 @@ function Attachment_SelectAndUpload() {
             lastAttachmentId = insRow[0];
         }
     } catch (ex) {
-        MSG("Attachment_SelectAndUpload INSERT error: " + ex);
+        MSG("Attachment_UploadOnePath INSERT error: " + ex);
         SetStatus("Greška pri pohrani zapisa o prilogu.");
         return;
     }

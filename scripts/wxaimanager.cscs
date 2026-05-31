@@ -13,6 +13,7 @@
 
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxaimanager_SQL.cscs") : strTrim(tpath()) + "wxaimanager_sql.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxaimanager_attachments.cscs") : strTrim(tpath()) + "wxaimanager_attachments.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxaimanager_websearch.cscs") : strTrim(tpath()) + "wxaimanager_websearch.cscs");
 
 CreateWindow(strTrim(tpath()) + "wxaimanager.xaml");
 
@@ -53,9 +54,9 @@ DEFINE statTotalTokens  type a size 30;
 DEFINE userCode type a size 30;
 
 // ---- Auto-summarization state -----------------------------
-DEFINE sessionSummary           type a size 10000;  // SummaryText from ChatSession
-DEFINE sessionMsgsSinceSummary  type i;             // messages since last summary
-DEFINE sessionToksSinceSummary  type i;             // prompt tokens since last summary
+DEFINE sessionSummary type a size 10000;  // SummaryText from ChatSession
+DEFINE sessionMsgsSinceSummary type i;             // messages since last summary
+DEFINE sessionToksSinceSummary type i;             // prompt tokens since last summary
 
 // ---- Async API temp storage ---------------------------------
 DEFINE apiLastResponse type a size 20000;
@@ -63,6 +64,9 @@ DEFINE apiLastCode type i;
 DEFINE apiLastError type a size 500;
 DEFINE summaryApiResponse type a size 10000;
 DEFINE summaryApiCode type i;
+
+// ---- Web search -----------------------------------------------
+// (webSearchEnabled and webSearchApiKey are DEFINE'd in wxaimanager_websearch.cscs)
 
 
 // =============================================================
@@ -103,7 +107,7 @@ function wxaimanager_OnStart() {
     aiTemperatureStr = "0.7";
     aiMaxTokensStr   = "2000";
 
-    LoadSettings();
+    //LoadSettings();
 
     // --- chat state ---
     chatDisplayText  = "";
@@ -124,6 +128,13 @@ function wxaimanager_OnStart() {
     sessionMsgsSinceSummary = 0;
     sessionToksSinceSummary = 0;
 
+    // --- web search state ---
+    webSearchEnabled = false;
+    webSearchApiKey  = "";
+
+    LoadSettings();
+
+
     // --- populate provider ComboBox ---
     comboItems2 = {"OpenAI","Ollama","Azure OpenAI","OpenRouter","Custom"};
     AddWidgetData("cbProvider", comboItems2);
@@ -135,7 +146,8 @@ function wxaimanager_OnStart() {
     SetWidgetOptions("txtBaseUrl",      "Text", aiBaseUrl);
     SetWidgetOptions("txtSystemPrompt", "Text", aiSystemPrompt);
     SetWidgetOptions("txtTemperature",  "Text", aiTemperatureStr);
-    SetWidgetOptions("txtMaxTokens",    "Text", aiMaxTokensStr);
+    SetWidgetOptions("txtMaxTokens",       "Text", aiMaxTokensStr);
+    //SetWidgetOptions("txtWebSearchApiKey", "Text", webSearchApiKey);
 
     // --- hide settings panel initially ---
     SetWidgetOptions("panelSettings", "Visible", false); // should be Collapsed 
@@ -245,6 +257,10 @@ function btnAddAttachment@clicked() {
     Attachment_SelectAndUpload();
 }
 
+function btnImportFolder@clicked() {
+    Attachment_ImportFolder();
+}
+
 // Provider ComboBox change
 // aiProvider is kept in sync via DataContext="aiProvider" on the ComboBox.
 function cbProvider@change(sender, args) {
@@ -282,7 +298,8 @@ function datagridHistory@select() {
              }
          }
 
-        LoadHistoryItem(arrayHistChatId[selectedIndex]);
+        // Fallback: date not matched, use array index directly
+        LoadHistoryItem(selectedIndex);
     } catch (ex) {
         SetStatus("Greška pri učitavanju razgovora: " + ex);
     }
@@ -350,6 +367,18 @@ function SendToAI() {
                 textContext = "--- Priloženi dokumenti ---\n" + textContext + "---";
             }
         }
+
+        // ---- Web search context ----
+        // WebSearch_Execute handles the enabled/disabled check and temporal
+        // keyword auto-trigger internally; it returns "" when nothing is needed.
+   //msg("Web search enabled: " + webSearchEnabled);
+        webCtx = WebSearch_Execute(inputText);
+//msg("Web search context returned: " + webCtx);
+        if (webCtx != "") {
+            textContext = textContext + webCtx;
+        }
+        // Per-message toggle: reset checkbox after use
+        webSearchEnabled = false;
 
         // Build JSON payload (enriched with text context and/or vision items)
         jsonBody = BuildApiPayload(textContext, visionItems);
@@ -719,12 +748,16 @@ function LoadHistoryItem(idx) {
     if (idx < 0 || idx >= histCount) {
         return;
     }
+    sessId = arrayHistChatId[idx];   // real DB ChatSessionId
     chatDisplayText = arrayHistText[idx];
-    // Reset message array (history is read-only – cannot continue)
-    msgCount = 0;
     RefreshChatDisplay();
-    SetStatus("Učitan prošli razgovor od " + arrayHistDate[idx] + ". Novi razgovor za nastavak.");
-    currentSessionId = idx;
+    // Restore full session state so the user can continue the conversation
+    currentSessionId            = sessId;
+    SQL_ReloadSessionMessages(sessId);   // rebuild msgRole/msgContent arrays
+    SQL_LoadSessionSummary(sessId);      // restore auto-summary context
+    sessionMsgsSinceSummary = 0;
+    sessionToksSinceSummary = 0;
+    SetStatus("Nastavljam razgovor od " + arrayHistDate[idx] + ".");
 }
 
 function UpdateHistoryGrid() {
@@ -772,6 +805,14 @@ function LoadSettings() {
                 aiTemperatureStr = val;
             } elif (key == "maxtokens") {
                 aiMaxTokensStr = val;
+            } elif (key == "websearchapikey") {
+                webSearchApiKey = val;
+            } elif (key == "websearchenabled") {
+                if(val == "true" || val == "True" || val == "1") {
+                    webSearchEnabled = true;
+                } else {
+                    webSearchEnabled = false;
+                }
             }
         }
     } catch (ex) {
@@ -790,7 +831,10 @@ function SaveSettings() {
     content  = content + "model|"        + aiModel         + "\n";
     content  = content + "systemprompt|" + sysEscaped      + "\n";
     content  = content + "temperature|"  + aiTemperatureStr + "\n";
-    content  = content + "maxtokens|"    + aiMaxTokensStr  + "\n";
+    content  = content + "maxtokens|"        + aiMaxTokensStr                     + "\n";
+    content  = content + "websearchapikey|"   + webSearchApiKey                    + "\n";
+    webSearchEnabledVal = webSearchEnabled ? "1" : "0";
+    content  = content + "websearchenabled|"  + webSearchEnabledVal                + "\n";
 
     try {
         SaveFile(content, settingsFilePath, "");

@@ -278,23 +278,40 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
-                            <TextBox Grid.Column="0"
-                                     Name="txtInput"
-                                     DataContext="userInput"
-                                     TextWrapping="Wrap"
-                                     AcceptsReturn="True"
-                                     MinHeight="62"
-                                     MaxHeight="130"
-                                     Background="#263646"
-                                     Foreground="White"
-                                     CaretBrush="White"
-                                     BorderBrush="#3D5066"
-                                     BorderThickness="1"
-                                     Padding="10,8"
-                                     FontFamily="Segoe UI"
-                                     FontSize="13"
-                                     VerticalScrollBarVisibility="Auto"
-                                     ToolTip="Unesite poruku i pritisnite Pošalji (ili Ctrl+Enter)"/>
+                            <Grid Grid.Column="0">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBox Grid.Row="0"
+                                         Name="txtInput"
+                                         DataContext="userInput"
+                                         TextWrapping="Wrap"
+                                         AcceptsReturn="True"
+                                         MinHeight="62"
+                                         MaxHeight="130"
+                                         Background="#263646"
+                                         Foreground="White"
+                                         CaretBrush="White"
+                                         BorderBrush="#3D5066"
+                                         BorderThickness="1"
+                                         Padding="10,8"
+                                         FontFamily="Segoe UI"
+                                         FontSize="13"
+                                         VerticalScrollBarVisibility="Auto"
+                                         ToolTip="Unesite poruku i pritisnite Pošalji (ili Ctrl+Enter)"/>
+
+                                <CheckBox Grid.Row="1"
+                                          Name="cbWebSearch"
+                                          DataContext="webSearchEnabled"
+                                          Content="Koristi web pretraživanje"
+                                          Foreground="#7F8C8D"
+                                          FontFamily="Segoe UI"
+                                          FontSize="11"
+                                          Margin="4,5,0,2"
+                                          VerticalAlignment="Center"/>
+                            </Grid>
 
                             <StackPanel Grid.Column="1"
                                         Orientation="Vertical"
@@ -361,6 +378,14 @@
                             Height="34"
                             Margin="0,8,0,0"
                             HorizontalAlignment="Center"/>
+                    <Button Name="btnImportFolder"
+                            Content="Uvezi mapu"
+                            Style="{StaticResource FlatBtn}"
+                            Background="#6C3483"
+                            Width="104"
+                            Height="34"
+                            Margin="0,6,0,0"
+                            HorizontalAlignment="Center"/>
                 </StackPanel>
             </Border>
 
@@ -421,6 +446,12 @@
                                  Width="80"
                                  HorizontalAlignment="Left"
                                  ToolTip="Maksimalan broj tokena u odgovoru (npr. 2000, 4096)"/>
+
+                        <TextBlock Text="Tavily API ključ (web pretraživanje):" Style="{StaticResource SectionHeader}" Margin="0,10,0,5"/>
+                        <TextBox Name="txtWebSearchApiKey"
+                                 DataContext="webSearchApiKey"
+                                 Style="{StaticResource DarkTextBox}"
+                                 ToolTip="Besplatni API ključ za Tavily web pretraživanje. Registracija na: tavily.com"/>
                     </StackPanel>
 
                     <!-- Column 2: System Prompt -->

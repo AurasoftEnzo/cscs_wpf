@@ -707,14 +707,25 @@ function SaveCurrentChatToHistory() {
     if (msgCount == 0) {
         return;
     }
+    
+    // Shift existing history down by 1 (to make room at index 0)
     if (histCount >= 50) {
-        // Shift history (drop oldest)
-        for (i = 0; i < 49; i++) {
-            arrayHistDate[i]  = arrayHistDate[i + 1];
-            arrayHistTitle[i] = arrayHistTitle[i + 1];
-            arrayHistText[i]  = arrayHistText[i + 1];
+        // Drop oldest (item at position 49)
+        for (i = 49; i > 0; i--) {
+            arrayHistChatId[i] = arrayHistChatId[i-1];
+            arrayHistDate[i]   = arrayHistDate[i-1];
+            arrayHistTitle[i]  = arrayHistTitle[i-1];
+            arrayHistText[i]   = arrayHistText[i-1];
         }
-        histCount = 49;
+    } else {
+        // Shift items down (don't drop anything yet)
+        for (i = histCount; i > 0; i--) {
+            arrayHistChatId[i] = arrayHistChatId[i-1];
+            arrayHistDate[i]   = arrayHistDate[i-1];
+            arrayHistTitle[i]  = arrayHistTitle[i-1];
+            arrayHistText[i]   = arrayHistText[i-1];
+        }
+        histCount++;
     }
 
     ts    = Now("dd.MM. HH:mm");
@@ -724,22 +735,21 @@ function SaveCurrentChatToHistory() {
         if (msgRole[i] == "user") {
             title = msgContent[i];
             if (title.length > 60) {
-                title = Substring(title, 0, 57) + "...";
+                title = Substring(title, 0, 60) + "...";
             }
             break;
         }
     }
 
-
     if (title == "") {
         title = "(razgovor bez poruke)";
     }
 
-    arrayHistDate[histCount]  = ts;
-    arrayHistTitle[histCount] = title;
-    arrayHistText[histCount]  = chatDisplayText;
-
-    histCount++;
+    // Insert at index 0 (top of list)
+    arrayHistChatId[0] = currentSessionId;  // assuming this variable exists
+    arrayHistDate[0]   = ts;
+    arrayHistTitle[0]  = title;
+    arrayHistText[0]   = chatDisplayText;
 
     UpdateHistoryGrid();
 }

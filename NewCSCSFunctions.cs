@@ -212,6 +212,10 @@ namespace WpfCSCS
             interpreter.RegisterFunction("FileCopy", new FileCopyFunction());
             interpreter.RegisterFunction("FileHash", new FileHashFunction());
             interpreter.RegisterFunction("GetDirFiles", new GetDirFilesFunction());
+            interpreter.RegisterFunction("AppendChatMessage", new AppendChatMessageFunction());
+            interpreter.RegisterFunction("ClearChatMessages",  new ClearChatMessagesFunction());
+            interpreter.RegisterFunction("VoiceInputStart",    new VoiceInputStartFunction());
+            interpreter.RegisterFunction("VoiceInputStop",     new VoiceInputStopFunction());
         }
         public partial class Constants
         {
@@ -5177,6 +5181,352 @@ namespace WpfCSCS
                 // Return whatever was collected before the error
             }
             return new Variable(result);
+        }
+    }
+
+    // AppendChatMessage(role, content)
+    // Adds a styled message bubble with a copy-to-clipboard button to chatPanel.
+    // Automatically scrolls chatScrollViewer to the bottom.
+    class AppendChatMessageFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 2, m_name);
+
+            string role    = Utils.GetSafeString(args, 0);
+            string content = Utils.GetSafeString(args, 1);
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                var win = CSCS_GUI.MainWindow;
+                if (win == null) return;
+
+                var panel   = win.FindName("chatPanel")         as StackPanel;
+                var scroller = win.FindName("chatScrollViewer") as ScrollViewer;
+                if (panel == null) return;
+
+                string ts = DateTime.Now.ToString("HH:mm:ss");
+
+                // Role-specific header colour and bubble background
+                Color roleColor;
+                Color bubbleBg;
+                if (role == "Vi" || role == "user")
+                {
+                    roleColor = Color.FromRgb(0xF3, 0x9C, 0x12);        // orange – user
+                    bubbleBg  = Color.FromRgb(0x22, 0x3A, 0x52);        // lighter – user bubble
+                }
+                else if (role == "---")
+                {
+                    roleColor = Color.FromRgb(0x8A, 0x9B, 0xAB);        // grey  – system
+                    bubbleBg  = Color.FromRgb(0x1A, 0x25, 0x35);        // same as panel
+                }
+                else if (role.Contains("GRE") && (role.Contains("KA") || role.Contains("\u0160KA")))
+                {
+                    roleColor = Color.FromRgb(0xEC, 0x70, 0x63);        // red   – error
+                    bubbleBg  = Color.FromRgb(0x1A, 0x25, 0x35);        // same as panel
+                }
+                else
+                {
+                    roleColor = Color.FromRgb(0x58, 0xD6, 0x8D);        // green – AI
+                    bubbleBg  = Color.FromRgb(0x1A, 0x25, 0x35);        // same as panel
+                }
+
+                var headerBlock = new TextBlock
+                {
+                    Text       = "[" + role + "] " + ts,
+                    Foreground = new SolidColorBrush(roleColor),
+                    FontSize   = 12,
+                    FontWeight = FontWeights.Bold,
+                    Margin     = new Thickness(0, 0, 0, 4)
+                };
+
+                var contentBlock = new TextBlock
+                {
+                    Text         = content,
+                    Foreground   = new SolidColorBrush(Color.FromRgb(0xD0, 0xD8, 0xE4)),
+                    FontFamily   = new FontFamily("Times New Roman"),
+                    FontSize     = 16,
+                    TextWrapping = TextWrapping.Wrap,
+                    LineHeight   = 20
+                };
+
+                var textPanel = new StackPanel { Orientation = Orientation.Vertical };
+                textPanel.Children.Add(headerBlock);
+                textPanel.Children.Add(contentBlock);
+
+                // Copy button – captures content at creation time
+                string capturedContent = content;
+                var copyBtn = new Button
+                {
+                    Content           = "\U0001F4CB",
+                    ToolTip           = "Kopiraj poruku",
+                    FontFamily        = new FontFamily("Segoe UI Emoji"),
+                    FontSize          = 14,
+                    Width             = 28,
+                    Height            = 28,
+                    Padding           = new Thickness(0),
+                    Margin            = new Thickness(6, 0, 0, 0),
+                    VerticalAlignment = VerticalAlignment.Top,
+                    Background        = Brushes.Transparent,
+                    BorderBrush       = new SolidColorBrush(Color.FromRgb(0x4A, 0x6A, 0x85)),
+                    BorderThickness   = new Thickness(1),
+                    Foreground        = new SolidColorBrush(Color.FromRgb(0xA0, 0xB8, 0xC8)),
+                    Cursor            = System.Windows.Input.Cursors.Hand
+                };
+                copyBtn.Click += (s, e) =>
+                {
+                    try { Clipboard.SetText(capturedContent); }
+                    catch { /* ignore clipboard errors */ }
+                };
+
+                // Root grid: [text *] [button auto]
+                var rootGrid = new Grid();
+                rootGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                rootGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                Grid.SetColumn(textPanel, 0);
+                Grid.SetColumn(copyBtn,   1);
+                rootGrid.Children.Add(textPanel);
+                rootGrid.Children.Add(copyBtn);
+
+                var outerBorder = new Border
+                {
+                    Background      = new SolidColorBrush(bubbleBg),
+                    BorderBrush     = new SolidColorBrush(Color.FromRgb(0x2A, 0x3F, 0x55)),
+                    BorderThickness = new Thickness(0, 0, 0, 1),
+                    Padding         = new Thickness(14, 8, 8, 10),
+                    Child           = rootGrid
+                };
+
+                panel.Children.Add(outerBorder);
+                scroller?.ScrollToBottom();
+            });
+
+            return Variable.EmptyInstance;
+        }
+    }
+
+    // ClearChatMessages() — removes all message bubbles from chatPanel
+    class ClearChatMessagesFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            script.GetFunctionArgs();
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                var win = CSCS_GUI.MainWindow;
+                if (win == null) return;
+                var panel = win.FindName("chatPanel") as StackPanel;
+                panel?.Children.Clear();
+            });
+            return Variable.EmptyInstance;
+        }
+    }
+
+    // =========================================================
+    //  Speech-to-Text: shared recording state
+    // =========================================================
+    internal static class VoiceInputState
+    {
+        internal static volatile bool IsRecording = false;
+        internal static string TempWavPath = System.IO.Path.Combine(
+            System.IO.Path.GetTempPath(), "wxai_voice_input.wav");
+
+        [System.Runtime.InteropServices.DllImport("winmm.dll",
+            CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+        internal static extern int mciSendString(
+            string lpstrCommand,
+            System.Text.StringBuilder lpstrReturnString,
+            int uReturnLength,
+            IntPtr hwndCallback);
+    }
+
+    // VoiceInputStart()
+    // Begins microphone recording to a temp WAV file via Windows MCI.
+    class VoiceInputStartFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            script.GetFunctionArgs();
+            if (VoiceInputState.IsRecording) return Variable.EmptyInstance;
+            try
+            {
+                VoiceInputState.mciSendString("close recorder", null, 0, IntPtr.Zero);
+                VoiceInputState.mciSendString("open new type waveaudio alias recorder", null, 0, IntPtr.Zero);
+                VoiceInputState.mciSendString("set recorder time format ms", null, 0, IntPtr.Zero);
+                VoiceInputState.mciSendString("record recorder", null, 0, IntPtr.Zero);
+                VoiceInputState.IsRecording = true;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("VoiceInputStart error: " + ex.Message);
+            }
+            return Variable.EmptyInstance;
+        }
+    }
+
+    // VoiceInputStop(provider, apiKey, baseUrl, language)
+    // Stops recording, saves WAV, transcribes via Whisper API or Windows STT,
+    // then appends recognised text to txtInput and updates lblStatus.
+    class VoiceInputStopFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            string provider = Utils.GetSafeString(args, 0, "Whisper API");
+            string apiKey   = Utils.GetSafeString(args, 1);
+            string baseUrl  = Utils.GetSafeString(args, 2);
+            string language = Utils.GetSafeString(args, 3, "hr");
+
+            if (!VoiceInputState.IsRecording) return Variable.EmptyInstance;
+
+            string wavPath = VoiceInputState.TempWavPath;
+            VoiceInputState.mciSendString("stop recorder", null, 0, IntPtr.Zero);
+            if (System.IO.File.Exists(wavPath)) System.IO.File.Delete(wavPath);
+            VoiceInputState.mciSendString("save recorder \"" + wavPath + "\"", null, 0, IntPtr.Zero);
+            VoiceInputState.mciSendString("close recorder", null, 0, IntPtr.Zero);
+            VoiceInputState.IsRecording = false;
+
+            // Capture parameters for the async task
+            string capProvider = provider;
+            string capApiKey   = apiKey;
+            string capBaseUrl  = baseUrl;
+            string capLang     = language;
+
+            Task.Run(async () =>
+            {
+                string text    = "";
+                bool useWhisper = !capProvider.Equals("Windows STT", StringComparison.OrdinalIgnoreCase)
+                               && !capProvider.Equals("Windows",     StringComparison.OrdinalIgnoreCase);
+
+                if (useWhisper && !string.IsNullOrEmpty(capApiKey))
+                    text = await TranscribeWhisperAsync(capApiKey, capBaseUrl, wavPath, capLang);
+
+                if (string.IsNullOrEmpty(text))
+                    text = TranscribeWindows(wavPath, capLang);
+
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    var win = CSCS_GUI.MainWindow;
+                    if (win == null) return;
+
+                    var lbl = win.FindName("lblStatus") as System.Windows.Controls.Label;
+
+                    if (string.IsNullOrEmpty(text))
+                    {
+                        if (lbl != null) lbl.Content = "Govor nije prepoznat.";
+                        ResetVoiceButton(win);
+                        return;
+                    }
+
+                    var txtInput = win.FindName("txtInput") as System.Windows.Controls.TextBox;
+                    if (txtInput != null)
+                    {
+                        string cur = txtInput.Text;
+                        if (!string.IsNullOrEmpty(cur) && !cur.EndsWith(" ")) cur += " ";
+                        txtInput.Text = cur + text;
+                        txtInput.CaretIndex = txtInput.Text.Length;
+                        txtInput.Focus();
+                    }
+
+                    string preview = text.Length > 60 ? text.Substring(0, 57) + "..." : text;
+                    if (lbl != null) lbl.Content = "Govor prepoznat: " + preview;
+
+                    ResetVoiceButton(win);
+                });
+            });
+
+            return Variable.EmptyInstance;
+        }
+
+        static void ResetVoiceButton(System.Windows.Window win)
+        {
+            var btn = win.FindName("btnVoice") as System.Windows.Controls.Button;
+            if (btn == null) return;
+            btn.Content    = "\U0001F3A4";
+            btn.Background = new System.Windows.Media.SolidColorBrush(
+                System.Windows.Media.Color.FromRgb(0x27, 0x6A, 0x5C));
+        }
+
+        static async Task<string> TranscribeWhisperAsync(
+            string apiKey, string baseUrl, string wavPath, string language)
+        {
+            if (!System.IO.File.Exists(wavPath)) return "";
+            try
+            {
+                string endpoint = string.IsNullOrWhiteSpace(baseUrl)
+                    ? "https://api.openai.com/v1/audio/transcriptions"
+                    : baseUrl.TrimEnd('/') + "/audio/transcriptions";
+
+                using (var client = new System.Net.Http.HttpClient())
+                {
+                    client.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", "Bearer " + apiKey);
+                    client.Timeout = TimeSpan.FromSeconds(60);
+
+                    using (var form = new System.Net.Http.MultipartFormDataContent())
+                    {
+                        byte[] audioBytes = System.IO.File.ReadAllBytes(wavPath);
+                        var fileContent   = new System.Net.Http.ByteArrayContent(audioBytes);
+                        fileContent.Headers.ContentType =
+                            new System.Net.Http.Headers.MediaTypeHeaderValue("audio/wav");
+                        form.Add(fileContent, "file", "audio.wav");
+                        form.Add(new System.Net.Http.StringContent("whisper-1"), "model");
+                        if (!string.IsNullOrEmpty(language))
+                            form.Add(new System.Net.Http.StringContent(language), "language");
+
+                        var response = await client.PostAsync(endpoint, form);
+                        string json  = await response.Content.ReadAsStringAsync();
+
+                        // Parse {"text":"..."} from JSON response
+                        var m = System.Text.RegularExpressions.Regex.Match(
+                            json, "\"text\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"");
+                        if (m.Success)
+                            return System.Text.RegularExpressions.Regex.Unescape(m.Groups[1].Value);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Whisper transcription error: " + ex.Message);
+            }
+            return "";
+        }
+
+        static string TranscribeWindows(string wavPath, string language)
+        {
+            if (!System.IO.File.Exists(wavPath)) return "";
+            try
+            {
+                // Map short codes to BCP-47 tags
+                string tag = language == "hr" ? "hr-HR" :
+                             language == "en" ? "en-US" :
+                             language == "de" ? "de-DE" :
+                             language == "fr" ? "fr-FR" :
+                             language.Contains("-") ? language : language + "-" + language.ToUpper();
+
+                var culture = new System.Globalization.CultureInfo(tag);
+                using (var engine = new System.Speech.Recognition.SpeechRecognitionEngine(culture))
+                {
+                    engine.LoadGrammar(new System.Speech.Recognition.DictationGrammar());
+                    engine.SetInputToWaveFile(wavPath);
+                    var result = engine.Recognize();
+                    return result?.Text ?? "";
+                }
+            }
+            catch
+            {
+                // Fall back to default installed recognition language
+                try
+                {
+                    using (var engine = new System.Speech.Recognition.SpeechRecognitionEngine())
+                    {
+                        engine.LoadGrammar(new System.Speech.Recognition.DictationGrammar());
+                        engine.SetInputToWaveFile(wavPath);
+                        return engine.Recognize()?.Text ?? "";
+                    }
+                }
+                catch { return ""; }
+            }
         }
     }
 

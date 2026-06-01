@@ -15,6 +15,8 @@ include(DownloadScripts() == true ? Download(ServerAddress() + "wxaimanager_SQL.
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxaimanager_attachments.cscs") : strTrim(tpath()) + "wxaimanager_attachments.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxaimanager_websearch.cscs") : strTrim(tpath()) + "wxaimanager_websearch.cscs");
 
+msg(strTrim(tpath()) + "wxaimanager.xaml");
+
 CreateWindow(strTrim(tpath()) + "wxaimanager.xaml");
 
 // ---- Settings -----------------------------------------------
@@ -46,6 +48,13 @@ DEFINE arrayHistText type a size 20000 array 50;
 // ---- State --------------------------------------------------
 DEFINE isWaiting type l;
 DEFINE settingsOpen type l;
+
+// ---- Speech-to-Text (STT) settings --------------------------
+DEFINE sttProvider type a size 30;
+DEFINE sttApiKey type a size 500;
+DEFINE sttBaseUrl type a size 300;
+DEFINE sttLanguage type a size 10;
+DEFINE isRecording type l;
 
 // ---- Token usage stats (shown in Settings panel) -----------
 DEFINE statInputTokens  type a size 30;
@@ -132,6 +141,13 @@ function wxaimanager_OnStart() {
     webSearchEnabled = false;
     webSearchApiKey  = "";
 
+    // --- STT state ---
+    sttProvider = "Whisper API";
+    sttApiKey   = "";
+    sttBaseUrl  = "";
+    sttLanguage = "hr";
+    isRecording = false;
+
     LoadSettings();
 
 
@@ -148,6 +164,10 @@ function wxaimanager_OnStart() {
     SetWidgetOptions("txtTemperature",  "Text", aiTemperatureStr);
     SetWidgetOptions("txtMaxTokens",       "Text", aiMaxTokensStr);
     //SetWidgetOptions("txtWebSearchApiKey", "Text", webSearchApiKey);
+    SetWidgetOptions("txtSttProvider", "Text", sttProvider);
+    SetWidgetOptions("txtSttApiKey",   "Text", sttApiKey);
+    SetWidgetOptions("txtSttBaseUrl",  "Text", sttBaseUrl);
+    SetWidgetOptions("txtSttLanguage", "Text", sttLanguage);
 
     // --- hide settings panel initially ---
     SetWidgetOptions("panelSettings", "Visible", false); // should be Collapsed 
@@ -259,6 +279,30 @@ function btnAddAttachment@clicked() {
 
 function btnImportFolder@clicked() {
     Attachment_ImportFolder();
+}
+
+function btnVoice@clicked() {
+    if (isRecording == false) {
+        VoiceInputStart();
+        isRecording = true;
+        SetWidgetOptions("btnVoice", "Content", "⏹");
+        SetWidgetOptions("btnVoice", "Background", "#C0392B");
+        SetStatus("Snimam govor... Kliknite ⏹ za zaustavljanje.");
+    } else {
+        effApiKey = sttApiKey;
+        if (effApiKey == "") {
+            effApiKey = aiApiKey;
+        }
+        effBaseUrl = sttBaseUrl;
+        if (effBaseUrl == "") {
+            effBaseUrl = aiBaseUrl;
+        }
+        VoiceInputStop(sttProvider, effApiKey, effBaseUrl, sttLanguage);
+        isRecording = false;
+        SetWidgetOptions("btnVoice", "Content", "🎤");
+        SetWidgetOptions("btnVoice", "Background", "#276A5C");
+        SetStatus("Prepisujem govor...");
+    }
 }
 
 // Provider ComboBox change
@@ -665,26 +709,19 @@ function BuildApiPayload(textContext, visionItems) {
 // =============================================================
 
 function ShowWelcome() {
-    chatDisplayText = "-------------------------------------------\n";
-    //chatDisplayText = chatDisplayText + "  AI Manager – CSCS_WPF\n";
-    chatDisplayText = chatDisplayText + "  AI Manager - CSCS_WPF\n";
-    chatDisplayText = chatDisplayText + "  Provider: " + aiProvider + "  |  Model: " + aiModel + "\n";
-    chatDisplayText = chatDisplayText + "-------------------------------------------\n";
-    chatDisplayText = chatDisplayText + "  Unesite poruku u polje ispod i pritisnite Pošalji.\n";
-    chatDisplayText = chatDisplayText + "  Za promjenu API ključa i modela koristite Postavke.\n";
-    chatDisplayText = chatDisplayText + "-------------------------------------------\n\n";
-    RefreshChatDisplay();
+    welcomeMsg = "  AI Manager - CSCS_WPF\n";
+    welcomeMsg = welcomeMsg + "  Provider: " + aiProvider + "  |  Model: " + aiModel + "\n";
+    welcomeMsg = welcomeMsg + "  Unesite poruku u polje ispod i pritisnite Posalji.\n";
+    welcomeMsg = welcomeMsg + "  Za promjenu API kljuca i modela koristite Postavke.";
+    AppendChatMessage("---", welcomeMsg);
 }
 
 function AppendToDisplay(role, content) {
-    ts = Now("HH:mm:ss");
-    chatDisplayText = chatDisplayText + "[" + role + "] " + ts + "\n";
-    chatDisplayText = chatDisplayText + content + "\n\n";
-    RefreshChatDisplay();
+    AppendChatMessage(role, content);
 }
 
 function RefreshChatDisplay() {
-    SetWidgetOptions("txtChat", "Text", chatDisplayText);
+    // no-op: display is now live via AppendChatMessage
 }
 
 function StartNewChat() {
@@ -694,6 +731,7 @@ function StartNewChat() {
     sessionSummary          = "";
     sessionMsgsSinceSummary = 0;
     sessionToksSinceSummary = 0;
+    ClearChatMessages();
     ShowWelcome();
     SetStatus("Novi razgovor pokrenut.");
 }
@@ -759,14 +797,23 @@ function LoadHistoryItem(idx) {
         return;
     }
     sessId = arrayHistChatId[idx];   // real DB ChatSessionId
-    chatDisplayText = arrayHistText[idx];
-    RefreshChatDisplay();
-    // Restore full session state so the user can continue the conversation
-    currentSessionId            = sessId;
+    currentSessionId = sessId;
     SQL_ReloadSessionMessages(sessId);   // rebuild msgRole/msgContent arrays
     SQL_LoadSessionSummary(sessId);      // restore auto-summary context
     sessionMsgsSinceSummary = 0;
     sessionToksSinceSummary = 0;
+    // Rebuild chat display from reloaded messages
+    ClearChatMessages();
+    for (hi = 0; hi < msgCount; hi++) {
+        oneRole    = msgRole[hi];
+        oneContent = msgContent[hi];
+        if (oneRole == "user") {
+            oneRole = "Vi";
+        } elif (oneRole == "assistant") {
+            oneRole = "AI";
+        }
+        AppendChatMessage(oneRole, oneContent);
+    }
     SetStatus("Nastavljam razgovor od " + arrayHistDate[idx] + ".");
 }
 
@@ -823,6 +870,14 @@ function LoadSettings() {
                 } else {
                     webSearchEnabled = false;
                 }
+            } elif (key == "sttprovider") {
+                sttProvider = val;
+            } elif (key == "sttapikey") {
+                sttApiKey = val;
+            } elif (key == "sttbaseurl") {
+                sttBaseUrl = val;
+            } elif (key == "sttlanguage") {
+                sttLanguage = val;
             }
         }
     } catch (ex) {
@@ -845,6 +900,10 @@ function SaveSettings() {
     content  = content + "websearchapikey|"   + webSearchApiKey                    + "\n";
     webSearchEnabledVal = webSearchEnabled ? "1" : "0";
     content  = content + "websearchenabled|"  + webSearchEnabledVal                + "\n";
+    content  = content + "sttprovider|"  + sttProvider + "\n";
+    content  = content + "sttapikey|"    + sttApiKey   + "\n";
+    content  = content + "sttbaseurl|"   + sttBaseUrl  + "\n";
+    content  = content + "sttlanguage|"  + sttLanguage + "\n";
 
     try {
         SaveFile(content, settingsFilePath, "");

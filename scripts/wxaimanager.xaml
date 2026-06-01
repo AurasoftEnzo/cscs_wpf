@@ -250,22 +250,17 @@
                         <RowDefinition Height="Auto"/>   <!-- Input area   -->
                     </Grid.RowDefinitions>
 
-                    <!-- Chat transcript (read-only) -->
-                    <TextBox Grid.Row="0"
-                             Name="txtChat"
-                             IsReadOnly="True"
-                             TextWrapping="Wrap"
-                             AcceptsReturn="True"
-                             Background="#1A2535"
-                             Foreground="#D0D8E4"
-                             FontFamily="Times New Roman"
-                             FontSize="16"
-                             TextBlock.LineHeight="20"
-                             BorderThickness="0"
-                             Padding="14,10"
-                             VerticalScrollBarVisibility="Auto"
-                             HorizontalScrollBarVisibility="Disabled"
-                             VerticalAlignment="Stretch"/>
+                    <!-- Chat transcript — scrollable panel of message bubbles -->
+                    <ScrollViewer Grid.Row="0"
+                                  Name="chatScrollViewer"
+                                  Background="#1A2535"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  VerticalAlignment="Stretch"
+                                  PanningMode="VerticalOnly">
+                        <StackPanel Name="chatPanel"
+                                    Background="#1A2535"/>
+                    </ScrollViewer>
 
                     <!-- Input area -->
                     <Border Grid.Row="1"
@@ -334,6 +329,16 @@
                                         Height="22"
                                         FontSize="9"
                                         IsEnabled="False"/>
+                                <Button Name="btnVoice"
+                                        Content="&#x1F3A4;"
+                                        Style="{StaticResource FlatBtn}"
+                                        Background="#276A5C"
+                                        Width="90"
+                                        Height="26"
+                                        FontSize="14"
+                                        FontFamily="Segoe UI Emoji"
+                                        Margin="0,6,0,0"
+                                        ToolTip="Kliknite za početak / zaustavljanje snimanja glasa (STT)"/>
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -452,6 +457,34 @@
                                  DataContext="webSearchApiKey"
                                  Style="{StaticResource DarkTextBox}"
                                  ToolTip="Besplatni API ključ za Tavily web pretraživanje. Registracija na: tavily.com"/>
+
+                        <Separator Margin="0,12,0,8" Background="#3D5D75"/>
+                        <TextBlock Text="Govorni unos (STT):" Style="{StaticResource SectionHeader}"/>
+                        <TextBlock Text="Provider (Whisper API / Windows STT):" Style="{StaticResource SectionHeader}"/>
+                        <TextBox Name="txtSttProvider"
+                                 DataContext="sttProvider"
+                                 Style="{StaticResource DarkTextBox}"
+                                 Margin="0,0,0,6"
+                                 ToolTip="Whisper API  (cloud, preporučeno)  ili  Windows STT  (offline)"/>
+                        <TextBlock Text="STT API ključ (prazno = koristi AI API ključ):" Style="{StaticResource SectionHeader}"/>
+                        <TextBox Name="txtSttApiKey"
+                                 DataContext="sttApiKey"
+                                 Style="{StaticResource DarkTextBox}"
+                                 Margin="0,0,0,6"
+                                 ToolTip="Ostavite prazno za korištenje AI API ključa za Whisper"/>
+                        <TextBlock Text="STT Base URL (prazno = koristi AI Base URL):" Style="{StaticResource SectionHeader}"/>
+                        <TextBox Name="txtSttBaseUrl"
+                                 DataContext="sttBaseUrl"
+                                 Style="{StaticResource DarkTextBox}"
+                                 Margin="0,0,0,6"
+                                 ToolTip="Npr. https://api.openai.com/v1 – Ostavite prazno za korištenje AI Base URL"/>
+                        <TextBlock Text="Jezik prepoznavanja (hr, en, de, fr...):" Style="{StaticResource SectionHeader}"/>
+                        <TextBox Name="txtSttLanguage"
+                                 DataContext="sttLanguage"
+                                 Style="{StaticResource DarkTextBox}"
+                                 Width="60"
+                                 HorizontalAlignment="Left"
+                                 ToolTip="BCP-47 jezična oznaka: hr = Hrvatski, en = Engleski, de = Njemački"/>
                     </StackPanel>
 
                     <!-- Column 2: System Prompt -->

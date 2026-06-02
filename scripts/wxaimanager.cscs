@@ -15,8 +15,6 @@ include(DownloadScripts() == true ? Download(ServerAddress() + "wxaimanager_SQL.
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxaimanager_attachments.cscs") : strTrim(tpath()) + "wxaimanager_attachments.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxaimanager_websearch.cscs") : strTrim(tpath()) + "wxaimanager_websearch.cscs");
 
-msg(strTrim(tpath()) + "wxaimanager.xaml");
-
 CreateWindow(strTrim(tpath()) + "wxaimanager.xaml");
 
 // ---- Settings -----------------------------------------------
@@ -31,6 +29,7 @@ DEFINE settingsFilePath type a size 400;
 
 // ---- Current conversation -----------------------------------
 DEFINE msgCount type i;
+DEFINE msgCountOnLoad type i;
 DEFINE msgRole type a size 20  array 200;
 DEFINE msgContent type a size 5000 array 200;
 
@@ -121,6 +120,7 @@ function wxaimanager_OnStart() {
     // --- chat state ---
     chatDisplayText  = "";
     msgCount         = 0;
+    msgCountOnLoad   = 0;
     histCount        = 0;
     histMax          = 50;
     histActive       = 0;
@@ -226,12 +226,14 @@ function btnSend@clicked() {
     // Send to AI
     //msg('User message processed, sending to AI. Current session ID: ' + currentSessionId);
     SendToAI();
+
+    SaveCurrentChatToHistory();
 }
 
 function btnNewChat@clicked() {
-    if (msgCount > 0) {
-        SaveCurrentChatToHistory();
-    }
+    // if (msgCount > 0) {
+    //     SaveCurrentChatToHistory();
+    // }
     StartNewChat();
 }
 
@@ -267,9 +269,9 @@ function btnCancelSettings@clicked() {
 }
 
 function btnClearChat@clicked() {
-    if (msgCount > 0) {
-        SaveCurrentChatToHistory();
-    }
+    // if (msgCount > 0) {
+    //     SaveCurrentChatToHistory();
+    // }
     StartNewChat();
 }
 
@@ -344,6 +346,7 @@ function datagridHistory@select() {
 
         // Fallback: date not matched, use array index directly
         LoadHistoryItem(selectedIndex);
+
     } catch (ex) {
         SetStatus("Greška pri učitavanju razgovora: " + ex);
     }
@@ -742,7 +745,7 @@ function StartNewChat() {
 // =============================================================
 
 function SaveCurrentChatToHistory() {
-    if (msgCount == 0) {
+    if (msgCount <= msgCountOnLoad) {
         return;
     }
     
@@ -799,7 +802,8 @@ function LoadHistoryItem(idx) {
     sessId = arrayHistChatId[idx];   // real DB ChatSessionId
     currentSessionId = sessId;
     SQL_ReloadSessionMessages(sessId);   // rebuild msgRole/msgContent arrays
-    SQL_LoadSessionSummary(sessId);      // restore auto-summary context
+    SQL_LoadSessionSummary(sessId);     // restore auto-summary context
+    msgCountOnLoad = msgCount;
     sessionMsgsSinceSummary = 0;
     sessionToksSinceSummary = 0;
     // Rebuild chat display from reloaded messages

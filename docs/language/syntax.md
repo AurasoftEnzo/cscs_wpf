@@ -38,7 +38,7 @@ Variables can be defined:
 - explicitly via "DEFINE"
 
 The recommended approach for professional code is to define it explicitly.
-## Types
+## Types explicit
 
 Variables types when defined explicitly:
 - typa a - string
@@ -73,6 +73,41 @@ sum = a + b;
 
 MessageBox(sum);
 ```
+
+## Types implicit
+
+You don't need to add any types for implicit variables.
+
+Implicit variables work without type specification — the type is automatically inferred from the value you assign:
+
+name = "John";                                      // inferred as string (type a)
+total = 100.50;                                     // inferred as double (type n)
+count = 5;                                          // inferred as integer (type i)
+isActive = true;                                    // inferred as boolean (type l)
+date = "15/05/2025";                                // inferred as date (type D)
+time = "12:34:56";                                  // inferred as time (type T)
+arrInt[0] = 100;                                    // inferred as array of integer (type R)
+arrString[0] = "Adam";                              // inferred as array of string  (type A)
+arrDouble[0] = 100.59;                              // inferred as array of double (type N)
+arrBool[0] = true;                                  // inferred as array of boolean (type L)
+arrDate2[0] = DateTime("2025-05-15", "yyyy-MM-dd"); // inferred as array of DateTime (type D)
+arrTime2[0] = DateTime("10:00", "HH:mm");           // inferred as array of Time (type T)
+
+
+
+Key point: Implicit variables skip the type declaration entirely. The document's type list (type a, type n, type i, etc.) only applies to explicit DEFINE statements.
+
+In case of change of value type implicitly of an variable type will be changed to the last added value type
+
+## Example: implicit definition
+
+```internal-script
+var1 = "John";
+var1 = 100;
+var2 = var1 + 50 // = 150
+MessageBox(var2);
+```
+var2 will be 150
 
 ## Variable properties
 

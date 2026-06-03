@@ -5351,10 +5351,10 @@ namespace WpfCSCS
             if (VoiceInputState.IsRecording) return Variable.EmptyInstance;
             try
             {
-                //VoiceInputState.mciSendString("close recorder", null, 0, IntPtr.Zero);
-                //VoiceInputState.mciSendString("open new type waveaudio alias recorder", null, 0, IntPtr.Zero);
-                //VoiceInputState.mciSendString("set recorder time format ms", null, 0, IntPtr.Zero);
-                //VoiceInputState.mciSendString("record recorder", null, 0, IntPtr.Zero);
+                VoiceInputState.mciSendString("close recorder", null, 0, IntPtr.Zero);
+                VoiceInputState.mciSendString("open new type waveaudio alias recorder", null, 0, IntPtr.Zero);
+                VoiceInputState.mciSendString("set recorder time format ms", null, 0, IntPtr.Zero);
+                VoiceInputState.mciSendString("record recorder", null, 0, IntPtr.Zero);
                 VoiceInputState.IsRecording = true;
             }
             catch (Exception ex)
@@ -5381,10 +5381,10 @@ namespace WpfCSCS
             if (!VoiceInputState.IsRecording) return Variable.EmptyInstance;
 
             string wavPath = VoiceInputState.TempWavPath;
-            //VoiceInputState.mciSendString("stop recorder", null, 0, IntPtr.Zero);
-            //if (System.IO.File.Exists(wavPath)) System.IO.File.Delete(wavPath);
-            //VoiceInputState.mciSendString("save recorder \"" + wavPath + "\"", null, 0, IntPtr.Zero);
-            //VoiceInputState.mciSendString("close recorder", null, 0, IntPtr.Zero);
+            VoiceInputState.mciSendString("stop recorder", null, 0, IntPtr.Zero);
+            if (System.IO.File.Exists(wavPath)) System.IO.File.Delete(wavPath);
+            VoiceInputState.mciSendString("save recorder \"" + wavPath + "\"", null, 0, IntPtr.Zero);
+            VoiceInputState.mciSendString("close recorder", null, 0, IntPtr.Zero);
             VoiceInputState.IsRecording = false;
 
             // Capture parameters for the async task
@@ -5454,22 +5454,11 @@ namespace WpfCSCS
             if (!System.IO.File.Exists(wavPath)) return "";
             try
             {
-                string endpoint = string.IsNullOrWhiteSpace(baseUrl)
-                    ? "https://api.openai.com/v1/audio/transcriptions"
-                    : baseUrl.TrimEnd('/') + "/audio/transcriptions";
-
-
-
-
-                endpoint = "https://api.openai.com/v1/audio/transcriptions";
-
-
-
+                string endpoint = string.IsNullOrWhiteSpace(baseUrl) ? "https://api.openai.com/v1/audio/transcriptions" : baseUrl;
 
                 using (var client = new System.Net.Http.HttpClient())
                 {
-                    //client.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", "Bearer " + apiKey);
-                    client.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", "Bearer " + "");
+                    client.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", "Bearer " + apiKey);
                     client.Timeout = TimeSpan.FromSeconds(60);
 
                     using (var form = new System.Net.Http.MultipartFormDataContent())

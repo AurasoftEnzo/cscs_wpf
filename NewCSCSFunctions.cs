@@ -214,6 +214,10 @@ namespace WpfCSCS
             interpreter.RegisterFunction("GetDirFiles", new GetDirFilesFunction());
             interpreter.RegisterFunction("AppendChatMessage", new AppendChatMessageFunction());
             interpreter.RegisterFunction("ClearChatMessages",  new ClearChatMessagesFunction());
+            interpreter.RegisterFunction("SearchChatMessages", new SearchChatMessagesFunction());
+            interpreter.RegisterFunction("ClearChatSearch",    new ClearChatSearchFunction());
+            interpreter.RegisterFunction("SearchChatNext",     new SearchChatNextFunction());
+            interpreter.RegisterFunction("SearchChatPrev",     new SearchChatPrevFunction());
             interpreter.RegisterFunction("VoiceInputStart",    new VoiceInputStartFunction());
             interpreter.RegisterFunction("VoiceInputStop",     new VoiceInputStopFunction());
         }
@@ -5312,6 +5316,9 @@ namespace WpfCSCS
         protected override Variable Evaluate(ParsingScript script)
         {
             script.GetFunctionArgs();
+            // Free stale Border refs from any active search before wiping the panel
+            SearchChatMessagesFunction.Matches.Clear();
+            SearchChatMessagesFunction.CurrentIndex = -1;
             Application.Current.Dispatcher.Invoke(() =>
             {
                 var win = CSCS_GUI.MainWindow;
@@ -5320,6 +5327,188 @@ namespace WpfCSCS
                 panel?.Children.Clear();
             });
             return Variable.EmptyInstance;
+        }
+    }
+
+    // =========================================================
+    //  Chat search
+    // =========================================================
+
+    // SearchChatMessages(term)
+    // Highlights all chatPanel bubbles containing term (case-insensitive).
+    // Scrolls to the first match. Returns total match count as integer.
+    class SearchChatMessagesFunction : ParserFunction
+    {
+        internal static readonly List<Border> Matches = new List<Border>();
+        internal static int CurrentIndex = -1;
+
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            var args = script.GetFunctionArgs();
+            string term = Utils.GetSafeString(args, 0);
+
+            Matches.Clear();
+            CurrentIndex = -1;
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                var win     = CSCS_GUI.MainWindow;
+                if (win == null) return;
+                var panel   = win.FindName("chatPanel")         as StackPanel;
+                var scroller = win.FindName("chatScrollViewer") as ScrollViewer;
+                if (panel == null) return;
+
+                foreach (UIElement child in panel.Children)
+                {
+                    var border = child as Border;
+                    if (border == null) continue;
+
+                    RestoreBorder(border);
+                    if (string.IsNullOrEmpty(term)) continue;
+
+                    var cb = GetContentBlock(border);
+                    if (cb == null) continue;
+
+                    if (cb.Text.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        HighlightBorder(border, false);
+                        Matches.Add(border);
+                    }
+                }
+
+                if (Matches.Count > 0)
+                {
+                    CurrentIndex = 0;
+                    ActivateBorder(scroller, Matches[0]);
+                }
+            });
+
+            return new Variable(Matches.Count);
+        }
+
+        internal static TextBlock GetContentBlock(Border border)
+        {
+            var rg = border.Child as Grid;
+            if (rg == null || rg.Children.Count == 0) return null;
+            var tp = rg.Children[0] as StackPanel;
+            if (tp == null || tp.Children.Count < 2) return null;
+            return tp.Children[1] as TextBlock;
+        }
+
+        private static TextBlock GetHeaderBlock(Border border)
+        {
+            var rg = border.Child as Grid;
+            if (rg == null || rg.Children.Count == 0) return null;
+            var tp = rg.Children[0] as StackPanel;
+            if (tp == null || tp.Children.Count == 0) return null;
+            return tp.Children[0] as TextBlock;
+        }
+
+        internal static void HighlightBorder(Border border, bool active)
+        {
+            Color accent = active
+                ? Color.FromRgb(0xF3, 0x9C, 0x12)   // orange – current match
+                : Color.FromRgb(0xD4, 0xAC, 0x0D);  // gold   – other matches
+            border.BorderBrush     = new SolidColorBrush(accent);
+            border.BorderThickness = new Thickness(3, 1, 0, 1);
+            border.Background      = new SolidColorBrush(Color.FromRgb(0x2A, 0x3A, 0x10));
+        }
+
+        internal static void RestoreBorder(Border border)
+        {
+            var hb = GetHeaderBlock(border);
+            bool isUser = hb?.Foreground is SolidColorBrush br
+                          && br.Color == Color.FromRgb(0xF3, 0x9C, 0x12);
+            border.Background      = new SolidColorBrush(
+                isUser ? Color.FromRgb(0x22, 0x3A, 0x52) : Color.FromRgb(0x1A, 0x25, 0x35));
+            border.BorderBrush     = new SolidColorBrush(Color.FromRgb(0x2A, 0x3F, 0x55));
+            border.BorderThickness = new Thickness(0, 0, 0, 1);
+        }
+
+        internal static void ActivateBorder(ScrollViewer scroller, Border border)
+        {
+            HighlightBorder(border, true);
+            if (scroller != null)
+            {
+                border.UpdateLayout();
+                border.BringIntoView();
+            }
+        }
+    }
+
+    // ClearChatSearch() — removes all search highlights
+    class ClearChatSearchFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            script.GetFunctionArgs();
+            SearchChatMessagesFunction.Matches.Clear();
+            SearchChatMessagesFunction.CurrentIndex = -1;
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                var win   = CSCS_GUI.MainWindow;
+                if (win == null) return;
+                var panel = win.FindName("chatPanel") as StackPanel;
+                if (panel == null) return;
+                foreach (UIElement child in panel.Children)
+                {
+                    var b = child as Border;
+                    if (b != null) SearchChatMessagesFunction.RestoreBorder(b);
+                }
+            });
+            return Variable.EmptyInstance;
+        }
+    }
+
+    // SearchChatNext() — advances to the next match; returns 1-based index, 0 if none
+    class SearchChatNextFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            script.GetFunctionArgs();
+            var matches = SearchChatMessagesFunction.Matches;
+            if (matches.Count == 0) return new Variable(0);
+
+            int prev = SearchChatMessagesFunction.CurrentIndex;
+            int next = (prev + 1) % matches.Count;
+            SearchChatMessagesFunction.CurrentIndex = next;
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                var win     = CSCS_GUI.MainWindow;
+                var scroller = win?.FindName("chatScrollViewer") as ScrollViewer;
+                if (prev >= 0 && prev < matches.Count)
+                    SearchChatMessagesFunction.HighlightBorder(matches[prev], false);
+                SearchChatMessagesFunction.ActivateBorder(scroller, matches[next]);
+            });
+
+            return new Variable(next + 1);
+        }
+    }
+
+    // SearchChatPrev() — goes to the previous match; returns 1-based index, 0 if none
+    class SearchChatPrevFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            script.GetFunctionArgs();
+            var matches = SearchChatMessagesFunction.Matches;
+            if (matches.Count == 0) return new Variable(0);
+
+            int prev = SearchChatMessagesFunction.CurrentIndex;
+            int next = prev <= 0 ? matches.Count - 1 : prev - 1;
+            SearchChatMessagesFunction.CurrentIndex = next;
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                var win     = CSCS_GUI.MainWindow;
+                var scroller = win?.FindName("chatScrollViewer") as ScrollViewer;
+                if (prev >= 0 && prev < matches.Count)
+                    SearchChatMessagesFunction.HighlightBorder(matches[prev], false);
+                SearchChatMessagesFunction.ActivateBorder(scroller, matches[next]);
+            });
+
+            return new Variable(next + 1);
         }
     }
 

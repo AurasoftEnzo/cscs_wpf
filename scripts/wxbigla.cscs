@@ -182,11 +182,11 @@ function setKpiData()
     // Exclude year-closing entries (zatv_klas='D') and opening balances (poc_st='D')
     // Separate queries: OG from trenutnaGodinaBaza, LG from proslaGodinaBaza
     plSelect = "SELECT";
-    plSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,1)='6' THEN CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS revenue,";
-    plSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,1)='7' THEN CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS fin_income,";
-    plSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,1)='4' THEN CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS opex,";
+    plSelect += " ROUND(SUM(CASE WHEN substring(gk_pr_konto,1,3) >= '750' AND substring(gk_pr_konto,1,3) <= '799' THEN CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS revenue,"; //prihod
+    plSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,1) ='7' AND LEFT(gk_pr_konto,3) > '710' THEN CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS fin_income,";
+    plSelect += " ROUND(SUM(CASE WHEN (LEFT(gk_pr_konto,1)='4' AND SUBSTRING(gk_pr_konto,1,3) < '490') OR (LEFT(gk_pr_konto,3)='710') THEN CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS opex,";
     plSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,1)='5' THEN CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS fin_exp,";
-    plSelect += " ROUND(SUM(CASE WHEN gk_pr_konto >= '9500' AND gk_pr_konto < '9600' THEN CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS net_income,";
+    plSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,3) = '990' THEN CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS net_income,";
     plSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,2)='51' THEN CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS interest_exp,";
     plSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,2)='42' THEN CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS depreciation";
 
@@ -263,12 +263,13 @@ function setKpiData()
     bsSelect = "SELECT";
     bsSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,1)='1' THEN CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS current_assets,";
     bsSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,1)='2' THEN CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS liabilities,";
-    bsSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,1)='3' THEN CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS equity,";
+    bsSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,1)='9' AND LEFT(gk_pr_konto,3)<>'990' THEN CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS equity,";
     bsSelect += " ROUND(SUM(CASE WHEN gk_pr_konto >= '1000' AND gk_pr_konto < '1300' THEN CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS quick_assets,";
     bsSelect += " ROUND(SUM(CASE WHEN gk_pr_konto >= '1200' AND gk_pr_konto < '1300' THEN CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS ar,";
     bsSelect += " ROUND(SUM(CASE WHEN gk_pr_konto >= '3100' AND gk_pr_konto < '4000' THEN CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS inventory,";
     bsSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,1)='0' THEN CASE WHEN gk_pr_dp='D' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS fixed_assets,";
-    bsSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,2)='22' THEN CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS ap";
+    bsSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,2)='22' THEN CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS ap,";
+    bsSelect += " ROUND(SUM(CASE WHEN LEFT(gk_pr_konto,1)='9' AND LEFT(gk_pr_konto,3)<>'990' AND ISNULL(gk_pr_poc_stanj,'')='D' THEN CASE WHEN gk_pr_dp='P' THEN gk_pr_iznos ELSE -gk_pr_iznos END ELSE 0 END),2) AS equity_start";
 
     // Current year BS
     sql_str = bsSelect;
@@ -311,6 +312,7 @@ function setKpiData()
     bs_inventory_og = 0;      bs_inventory_lg = 0;
     bs_fixed_assets_og = 0;   bs_fixed_assets_lg = 0;
     bs_ap_og = 0;             bs_ap_lg = 0;
+    bs_equity_start_og = 0;   bs_equity_start_lg = 0;
 
     if (Size(bsResultOG) > 1)
     {
@@ -322,6 +324,7 @@ function setKpiData()
         bs_inventory_og      = bsResultOG[1][5];
         bs_fixed_assets_og   = bsResultOG[1][6];
         bs_ap_og             = bsResultOG[1][7];
+        bs_equity_start_og   = bsResultOG[1][8];
     }
     if (Size(bsResultLG) > 1)
     {
@@ -333,6 +336,7 @@ function setKpiData()
         bs_inventory_lg      = bsResultLG[1][5];
         bs_fixed_assets_lg   = bsResultLG[1][6];
         bs_ap_lg             = bsResultLG[1][7];
+        bs_equity_start_lg   = bsResultLG[1][8];
     }
 
     // ---- Compute KPIs ----
@@ -344,15 +348,24 @@ function setKpiData()
     // A2 - Net Profit Margin % = net_income / revenue * 100
     kpi_a2_og = pl_revenue_og != 0 ? Math.Round(pl_net_og / pl_revenue_og * 100, 2) : 0;
     kpi_a2_lg = pl_revenue_lg != 0 ? Math.Round(pl_net_lg / pl_revenue_lg * 100, 2) : 0;
+
     // A3 - Current Ratio = current_assets / liabilities
     kpi_a3_og = bs_liab_og != 0 ? Math.Round(bs_current_assets_og / bs_liab_og, 4) : 0;
     kpi_a3_lg = bs_liab_lg != 0 ? Math.Round(bs_current_assets_lg / bs_liab_lg, 4) : 0;
+//msg("aaaa: kpi_a3_og = " + kpi_a3_og + " .... " + bs_current_assets_og + " / " + bs_liab_og);
+//msg("aaaa: kpi_a3_lg = " + kpi_a3_lg + " .... " + bs_current_assets_lg + " / " + bs_liab_lg);
+
+
     // A4 - Quick Ratio = quick_assets / liabilities
     kpi_a4_og = bs_liab_og != 0 ? Math.Round(bs_quick_og / bs_liab_og, 4) : 0;
     kpi_a4_lg = bs_liab_lg != 0 ? Math.Round(bs_quick_lg / bs_liab_lg, 4) : 0;
-    // A5 - ROE % = net_income / equity * 100
-    kpi_a5_og = bs_equity_og != 0 ? Math.Round(pl_net_og / bs_equity_og * 100, 2) : 0;
-    kpi_a5_lg = bs_equity_lg != 0 ? Math.Round(pl_net_lg / bs_equity_lg * 100, 2) : 0;
+    // A5 - ROE % = net_income / avg_equity * 100
+    // avg_equity = (equity at start of year + equity at end of year) / 2
+    // Net income from account 990*; equity = class 9 excluding 990*
+    bs_avg_equity_og = (bs_equity_start_og + bs_equity_og) / 2;
+    bs_avg_equity_lg = (bs_equity_start_lg + bs_equity_lg) / 2;
+    kpi_a5_og = bs_avg_equity_og != 0 ? Math.Round(pl_net_og / bs_avg_equity_og * 100, 2) : 0;
+    kpi_a5_lg = bs_avg_equity_lg != 0 ? Math.Round(pl_net_lg / bs_avg_equity_lg * 100, 2) : 0;
     // A6 - AR Turnover = revenue / avg_ar  (using single year AR as approximation)
     kpi_a6_og = bs_ar_og != 0 ? Math.Round(pl_revenue_og / bs_ar_og, 2) : 0;
     kpi_a6_lg = bs_ar_lg != 0 ? Math.Round(pl_revenue_lg / bs_ar_lg, 2) : 0;

@@ -169,16 +169,58 @@
                     Padding="8">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>   <!-- Header     -->
+                        <RowDefinition Height="Auto"/>   <!-- Search bar -->
+                        <RowDefinition Height="*"/>      <!-- DataGrid   -->
                     </Grid.RowDefinitions>
 
                     <TextBlock Grid.Row="0"
                                Text="Prošli razgovori"
                                Style="{StaticResource SectionHeader}"
-                               Margin="2,2,0,8"/>
+                               Margin="2,2,0,6"/>
 
-                    <DataGrid Grid.Row="1"
+                    <!-- History search bar -->
+                    <Grid Grid.Row="1" Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Name="txtHistSearch"
+                                 Grid.Column="0"
+                                 Background="#1E2F3D"
+                                 Foreground="#D0D8E4"
+                                 CaretBrush="White"
+                                 BorderBrush="#3D5066"
+                                 BorderThickness="1"
+                                 Padding="6,3"
+                                 Height="24"
+                                 FontFamily="Segoe UI"
+                                 FontSize="11.5"
+                                 VerticalContentAlignment="Center"
+                                 ToolTip="Pretraži sve sesije u bazi"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="3,0,0,0">
+                            <Button Name="btnHistSearch"
+                                    Content="&#x1F50D;"
+                                    Style="{StaticResource FlatBtn}"
+                                    Background="#2980B9"
+                                    Width="26" Height="24"
+                                    FontFamily="Segoe UI Emoji"
+                                    FontSize="12"
+                                    Padding="0"
+                                    Margin="0,0,2,0"
+                                    ToolTip="Traži u svim sesijama"/>
+                            <Button Name="btnHistSearchClear"
+                                    Content="&#x2715;"
+                                    Style="{StaticResource FlatBtn}"
+                                    Background="#555F6A"
+                                    Width="22" Height="24"
+                                    FontSize="10"
+                                    Padding="0"
+                                    ToolTip="Poništi pretragu – vrati puni popis"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <DataGrid Grid.Row="2"
                               Name="datagridHistory"
                               Background="Transparent"
                               IsReadOnly="True"
@@ -246,12 +288,85 @@
                     Padding="1">
                 <Grid>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>   <!-- Search bar   -->
                         <RowDefinition Height="*"/>      <!-- Chat display -->
                         <RowDefinition Height="Auto"/>   <!-- Input area   -->
                     </Grid.RowDefinitions>
 
+                    <!-- Search bar -->
+                    <Border Grid.Row="0"
+                            Background="#1E2F3D"
+                            Padding="6,5"
+                            BorderBrush="#2D4057"
+                            BorderThickness="0,0,0,1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Name="txtChatSearch"
+                                     Grid.Column="0"
+                                     Background="#263646"
+                                     Foreground="#D0D8E4"
+                                     CaretBrush="White"
+                                     BorderBrush="#3D5066"
+                                     BorderThickness="1"
+                                     Padding="8,3"
+                                     Height="26"
+                                     FontFamily="Segoe UI"
+                                     FontSize="12"
+                                     VerticalContentAlignment="Center"
+                                     ToolTip="Pretraži razgovor (tipkajte i kliknite 🔍)"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="5,0,0,0" VerticalAlignment="Center">
+                                <Button Name="btnChatSearch"
+                                        Content="&#x1F50D;"
+                                        Style="{StaticResource FlatBtn}"
+                                        Background="#2980B9"
+                                        Width="28" Height="26"
+                                        FontFamily="Segoe UI Emoji"
+                                        FontSize="13"
+                                        Padding="0"
+                                        Margin="0,0,3,0"
+                                        ToolTip="Traži"/>
+                                <Button Name="btnChatSearchPrev"
+                                        Content="&#x25B2;"
+                                        Style="{StaticResource FlatBtn}"
+                                        Background="#4A6A85"
+                                        Width="24" Height="26"
+                                        FontSize="10"
+                                        Padding="0"
+                                        Margin="0,0,2,0"
+                                        ToolTip="Prethodni rezultat"/>
+                                <Button Name="btnChatSearchNext"
+                                        Content="&#x25BC;"
+                                        Style="{StaticResource FlatBtn}"
+                                        Background="#4A6A85"
+                                        Width="24" Height="26"
+                                        FontSize="10"
+                                        Padding="0"
+                                        Margin="0,0,5,0"
+                                        ToolTip="Sljedeći rezultat"/>
+                                <TextBlock Name="lblSearchCount"
+                                           Foreground="#8A9BAB"
+                                           FontFamily="Segoe UI"
+                                           FontSize="11"
+                                           VerticalAlignment="Center"
+                                           MinWidth="38"
+                                           Margin="0,0,4,0"/>
+                                <Button Name="btnChatSearchClear"
+                                        Content="&#x2715;"
+                                        Style="{StaticResource FlatBtn}"
+                                        Background="#555F6A"
+                                        Width="24" Height="26"
+                                        FontSize="10"
+                                        Padding="0"
+                                        ToolTip="Poništi pretragu"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
                     <!-- Chat transcript — scrollable panel of message bubbles -->
-                    <ScrollViewer Grid.Row="0"
+                    <ScrollViewer Grid.Row="1"
                                   Name="chatScrollViewer"
                                   Background="#1A2535"
                                   VerticalScrollBarVisibility="Auto"
@@ -263,7 +378,7 @@
                     </ScrollViewer>
 
                     <!-- Input area -->
-                    <Border Grid.Row="1"
+                    <Border Grid.Row="2"
                             Background="#1E2F3D"
                             CornerRadius="0,0,7,7"
                             Padding="10,8">

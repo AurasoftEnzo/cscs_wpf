@@ -170,6 +170,24 @@ function SQL_InitDatabaseAndTables(){
     } catch (ex) {
         MSG("SQL migration UserId INT→NVARCHAR error: " + ex);
     }
+
+    // --- Full-Text Search setup (silently skipped if FTS not installed) ---
+    try {
+        ftsSql = "USE " + WXAI_DB + "; "
+               + "IF FULLTEXTSERVICEPROPERTY('IsFullTextInstalled') = 1 "
+               + "BEGIN "
+               + "  IF NOT EXISTS (SELECT * FROM sys.fulltext_catalogs WHERE name = 'ftchat') "
+               + "    CREATE FULLTEXT CATALOG ftchat AS DEFAULT; "
+               + "  IF NOT EXISTS (SELECT * FROM sys.fulltext_indexes "
+               + "                 WHERE object_id = OBJECT_ID('dbo.ChatMessage')) "
+               + "  CREATE FULLTEXT INDEX ON dbo.ChatMessage(MessageText) "
+               + "    KEY INDEX UQ_ChatMessage_Session_Order ON ftchat "
+               + "    WITH CHANGE_TRACKING AUTO; "
+               + "END";
+        sqlNonQuery(ftsSql);
+    } catch (ex) {
+        MSG("FTS setup skipped: " + ex);
+    }
 }
 
 // =============================================================
@@ -507,6 +525,122 @@ function SQL_LoadHistoryFromDB() {
 
     } catch (ex) {
         MSG("SQL_LoadHistoryFromDB error: " + ex);
+    }
+
+    UpdateHistoryGrid();
+}
+
+
+// Searches all sessions for term in Title or any MessageText.
+// Auto-detects FTS availability: uses CONTAINS if FTS index exists,
+// falls back to LIKE otherwise. Re-populates history arrays identically
+// to SQL_LoadHistoryFromDB so the existing grid and click handling work.
+function SQL_SearchHistory(term) {
+    if (!chatSqlEnabled) {
+        return;
+    }
+    if (term == "") {
+        SQL_LoadHistoryFromDB();
+        return;
+    }
+
+    histCount = 0;
+
+    try {
+        // Detect FTS index on ChatMessage
+        ftsCheckSql = "SELECT COUNT(*) "
+                    + "FROM " + WXAI_DB + ".sys.fulltext_indexes "
+                    + "WHERE object_id = OBJECT_ID('" + WXAI_DB + ".dbo.ChatMessage')";
+        ftsCheckRes = sqlQuery(ftsCheckSql);
+        hasFts = false;
+        if (Size(ftsCheckRes) > 1) {
+            hasFts = int(ftsCheckRes[1][0]) > 0;
+        }
+
+        sqlParams = {};
+        sqlParams.Add({"@p1", chatUserId});
+        sqlParams.Add({"@p2", term});
+
+        if (hasFts) {
+            // Option B: FTS CONTAINS – fast, word-boundary aware
+            sessSql = "SELECT TOP " + int(histMax) + " "
+                    + "  s.ChatSessionId, "
+                    + "  ISNULL(s.Title, ''), "
+                    + "  FORMAT(DATEADD(minute, DATEDIFF(minute, GETUTCDATE(), GETDATE()), s.StartedAtUtc), 'dd.MM. HH:mm') "
+                    + "FROM " + WXAI_DB + ".dbo.ChatSession s "
+                    + "WHERE s.UserId = @p1 "
+                    + "  AND (s.Title LIKE N'%' + @p2 + N'%' "
+                    + "   OR EXISTS ( "
+                    + "       SELECT 1 FROM " + WXAI_DB + ".dbo.ChatMessage m "
+                    + "       WHERE m.ChatSessionId = s.ChatSessionId "
+                    + "         AND CONTAINS(m.MessageText, @p2))) "
+                    + "ORDER BY s.LastActivityAtUtc DESC";
+        } else {
+            // Option A: LIKE fallback – works on any SQL Server edition
+            sessSql = "SELECT TOP " + int(histMax) + " "
+                    + "  s.ChatSessionId, "
+                    + "  ISNULL(s.Title, ''), "
+                    + "  FORMAT(DATEADD(minute, DATEDIFF(minute, GETUTCDATE(), GETDATE()), s.StartedAtUtc), 'dd.MM. HH:mm') "
+                    + "FROM " + WXAI_DB + ".dbo.ChatSession s "
+                    + "WHERE s.UserId = @p1 "
+                    + "  AND (s.Title LIKE N'%' + @p2 + N'%' "
+                    + "   OR EXISTS ( "
+                    + "       SELECT 1 FROM " + WXAI_DB + ".dbo.ChatMessage m "
+                    + "       WHERE m.ChatSessionId = s.ChatSessionId "
+                    + "         AND m.MessageText LIKE N'%' + @p2 + N'%')) "
+                    + "ORDER BY s.LastActivityAtUtc DESC";
+        }
+
+        sessResult = sqlQuery(sessSql, sqlParams);
+        sessCount  = Size(sessResult) - 1;
+
+        for (i = 0; i < sessCount; i++) {
+            row          = sessResult[i + 1];
+            sessionId    = int(row[0]);
+            sessionTitle = row[1];
+            sessionDate  = row[2];
+
+            if (sessionTitle == "") {
+                sessionTitle = "(razgovor bez poruke)";
+            }
+            if (sessionTitle.length > 60) {
+                sessionTitle = Substring(sessionTitle, 0, 57) + "...";
+            }
+
+            displayText = "-------------------------------------------\n";
+            displayText = displayText + "  AI Manager  [" + sessionDate + "]\n";
+            displayText = displayText + "-------------------------------------------\n\n";
+
+            msgParams = {};
+            msgParams.Add({"@p1", sessionId});
+            msgSql = "SELECT RoleCode, MessageText "
+                   + "FROM " + WXAI_DB + ".dbo.ChatMessage "
+                   + "WHERE ChatSessionId = @p1 "
+                   + "ORDER BY MessageOrder ASC";
+            msgResult = sqlQuery(msgSql, msgParams);
+            msgRows   = Size(msgResult) - 1;
+
+            for (j = 0; j < msgRows; j++) {
+                msgRow  = msgResult[j + 1];
+                role    = msgRow[0];
+                content = msgRow[1];
+                label = role == "user" ? "Vi" : "AI";
+                displayText = displayText + "[" + label + "]\n" + content + "\n\n";
+                if (displayText.length > 19800) {
+                    displayText = displayText + "...(skraćeno)\n";
+                    break;
+                }
+            }
+
+            arrayHistChatId[histCount] = sessionId;
+            arrayHistDate[histCount]   = sessionDate;
+            arrayHistTitle[histCount]  = sessionTitle;
+            arrayHistText[histCount]   = displayText;
+            histCount++;
+        }
+
+    } catch (ex) {
+        MSG("SQL_SearchHistory error: " + ex);
     }
 
     UpdateHistoryGrid();

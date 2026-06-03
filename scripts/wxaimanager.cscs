@@ -47,6 +47,8 @@ DEFINE arrayHistText type a size 20000 array 50;
 // ---- State --------------------------------------------------
 DEFINE isWaiting type l;
 DEFINE settingsOpen type l;
+DEFINE searchMatchCount type i;
+DEFINE histSearchActive type l;
 
 // ---- Speech-to-Text (STT) settings --------------------------
 DEFINE sttProvider type a size 30;
@@ -735,6 +737,7 @@ function StartNewChat() {
     sessionMsgsSinceSummary = 0;
     sessionToksSinceSummary = 0;
     ClearChatMessages();
+    ResetChatSearch();
     ShowWelcome();
     SetStatus("Novi razgovor pokrenut.");
 }
@@ -808,6 +811,7 @@ function LoadHistoryItem(idx) {
     sessionToksSinceSummary = 0;
     // Rebuild chat display from reloaded messages
     ClearChatMessages();
+    ResetChatSearch();
     for (hi = 0; hi < msgCount; hi++) {
         oneRole    = msgRole[hi];
         oneContent = msgContent[hi];
@@ -962,3 +966,83 @@ function UpdateBaseUrlForProvider() {
 
 // Note: widget values are read via DataContext-bound script variables.
 // SetWidgetOptions is used only for write operations and non-bound controls.
+
+
+// =============================================================
+//  HISTORY (SESSION) SEARCH
+// =============================================================
+
+function btnHistSearch@clicked() {
+    term = GetWidgetOptions("txtHistSearch", "Text");
+    term = term.Trim();
+    if (term == "") {
+        return;
+    }
+    SetStatus("Tražim '" + term + "' u svim sesijama...");
+    SQL_SearchHistory(term);
+    histSearchActive = true;
+    if (histCount == 0) {
+        SetStatus("Nema rezultata za '" + term + "'.");
+    } else {
+        SetStatus("Pronađeno " + histCount + " sesija za '" + term + "'.");
+    }
+}
+
+function btnHistSearchClear@clicked() {
+    SetWidgetOptions("txtHistSearch", "Text", "");
+    histSearchActive = false;
+    SQL_LoadHistoryFromDB();
+    SetStatus("Pretraga poništena – prikazan puni popis.");
+}
+
+
+// =============================================================
+//  CHAT SEARCH
+// =============================================================
+
+function doSearch() {
+    term = GetWidgetOptions("txtChatSearch", "Text");
+    if (term == "") {
+        ClearChatSearch();
+        SetWidgetOptions("lblSearchCount", "Text", "");
+        searchMatchCount = 0;
+        return;
+    }
+    searchMatchCount = SearchChatMessages(term);
+    if (searchMatchCount == 0) {
+        SetWidgetOptions("lblSearchCount", "Text", "0 rezult.");
+    } else {
+        SetWidgetOptions("lblSearchCount", "Text", "1/" + searchMatchCount);
+    }
+}
+
+function ResetChatSearch() {
+    ClearChatSearch();
+    SetWidgetOptions("txtChatSearch", "Text", "");
+    SetWidgetOptions("lblSearchCount", "Text", "");
+    searchMatchCount = 0;
+}
+
+function btnChatSearch@clicked() {
+    doSearch();
+}
+
+function btnChatSearchNext@clicked() {
+    if (searchMatchCount == 0) {
+        return;
+    }
+    idx = SearchChatNext();
+    SetWidgetOptions("lblSearchCount", "Text", idx + "/" + searchMatchCount);
+}
+
+function btnChatSearchPrev@clicked() {
+    if (searchMatchCount == 0) {
+        return;
+    }
+    idx = SearchChatPrev();
+    SetWidgetOptions("lblSearchCount", "Text", idx + "/" + searchMatchCount);
+}
+
+function btnChatSearchClear@clicked() {
+    ResetChatSearch();
+}

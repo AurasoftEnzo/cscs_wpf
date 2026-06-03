@@ -5643,9 +5643,7 @@ namespace WpfCSCS
             if (!System.IO.File.Exists(wavPath)) return "";
             try
             {
-                string endpoint = string.IsNullOrWhiteSpace(baseUrl)
-                    ? "https://api.openai.com/v1/audio/transcriptions"
-                    : baseUrl.TrimEnd('/') + "/audio/transcriptions";
+                string endpoint = string.IsNullOrWhiteSpace(baseUrl) ? "https://api.openai.com/v1/audio/transcriptions" : baseUrl;
 
                 using (var client = new System.Net.Http.HttpClient())
                 {

@@ -80,15 +80,136 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
 
-        <!-- Dark ComboBox -->
+        <!-- Dark ComboBox with custom template (no theme resource references) -->
         <Style TargetType="ComboBox">
             <Setter Property="Background"  Value="#1E2F3D"/>
-            <Setter Property="Foreground"  Value="#D0D8E4"/>
+            <Setter Property="Foreground"  Value="White"/>
             <Setter Property="BorderBrush" Value="#3D5066"/>
             <Setter Property="FontFamily"  Value="Segoe UI"/>
             <Setter Property="FontSize"    Value="12.5"/>
             <Setter Property="Height"      Value="28"/>
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="ComboBoxItem">
+                        <Setter Property="Background"     Value="#1E2F3D"/>
+                        <Setter Property="Foreground"     Value="White"/>
+                        <Setter Property="BorderBrush"    Value="#3D5066"/>
+                        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid x:Name="templateRoot" SnapsToDevicePixels="True">
+                            <!-- Main border – dark in ALL states -->
+                            <Border x:Name="border"
+                                    Background="#1E2F3D"
+                                    BorderBrush="#3D5066"
+                                    BorderThickness="1"
+                                    CornerRadius="2">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <!-- Selected content -->
+                                    <ContentPresenter x:Name="contentPresenter"
+                                                      Content="{TemplateBinding SelectionBoxItem}"
+                                                      ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                                      ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
+                                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                      Margin="{TemplateBinding Padding}"
+                                                      TextElement.Foreground="White"
+                                                      SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                                    <!-- Dropdown arrow toggle -->
+                                    <ToggleButton x:Name="toggleButton"
+                                                  Grid.Column="1"
+                                                  Width="22"
+                                                  IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                                  ClickMode="Press"
+                                                  Focusable="False"
+                                                  IsTabStop="False"
+                                                  Cursor="Hand"
+                                                  Background="Transparent"
+                                                  BorderThickness="1,0,0,0"
+                                                  BorderBrush="#3D5066">
+                                        <ToggleButton.Template>
+                                            <ControlTemplate TargetType="ToggleButton">
+                                                <Grid Background="Transparent">
+                                                    <TextBlock x:Name="arrow"
+                                                               Text="&#x25BC;"
+                                                               Foreground="White"
+                                                               HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center"
+                                                               FontSize="7"
+                                                               Margin="0,1,0,0"/>
+                                                </Grid>
+                                            </ControlTemplate>
+                                        </ToggleButton.Template>
+                                    </ToggleButton>
+                                </Grid>
+                            </Border>
+                            <!-- Dropdown popup -->
+                            <Popup x:Name="popup"
+                                   AllowsTransparency="True"
+                                   IsOpen="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                                   Placement="Bottom"
+                                   PopupAnimation="Slide"
+                                   Focusable="False"
+                                   StaysOpen="False"
+                                   HorizontalOffset="0"
+                                   VerticalOffset="2">
+                                <Border x:Name="dropDownBorder"
+                                        Background="#1E2F3D"
+                                        BorderBrush="#3D5066"
+                                        BorderThickness="1"
+                                        CornerRadius="2"
+                                        MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                        MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}">
+                                    <ScrollViewer x:Name="scrollViewer"
+                                                  Padding="1"
+                                                  SnapsToDevicePixels="True">
+                                        <ItemsPresenter x:Name="itemsPresenter"
+                                                        KeyboardNavigation.DirectionalNavigation="Contained"
+                                                        SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <!-- Blue border when focused or dropdown open -->
+                            <Trigger Property="IsDropDownOpen" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="#569DE5"/>
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsKeyboardFocusWithin" Value="True"/>
+                                    <Condition Property="IsDropDownOpen" Value="False"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#569DE5"/>
+                            </MultiTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
+
+        <!-- Override system highlight colors so ComboBox dropdown items
+             use dark selection instead of default pale blue. -->
+        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}"
+                         Color="#2C3E50"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}"
+                         Color="White"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}"
+                         Color="#3D5066"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}"
+                         Color="White"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.WindowBrushKey}"
+                         Color="#1E2F3D"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.WindowTextBrushKey}"
+                         Color="White"/>
 
     </Window.Resources>
 
@@ -490,13 +611,22 @@
                             Width="104"
                             Height="34"
                             HorizontalAlignment="Center"/>
+                    <Button Name="btnKnowledgeBase"
+                            Content="Baza znanja"
+                            Style="{StaticResource FlatBtn}"
+                            Background="#1ABC9C"
+                            Width="104"
+                            Height="34"
+                            Margin="0,8,0,0"
+                            HorizontalAlignment="Center"
+                            ToolTip="Upravljaj bazama znanja (Knowledge Base)"/>
                     <Button Name="btnAddAttachment"
                             Content="Prilog"
                             Style="{StaticResource FlatBtn}"
                             Background="#8E44AD"
                             Width="104"
                             Height="34"
-                            Margin="0,8,0,0"
+                            Margin="0,6,0,0"
                             HorizontalAlignment="Center"/>
                     <Button Name="btnImportFolder"
                             Content="Uvezi mapu"
@@ -507,6 +637,285 @@
                             Margin="0,6,0,0"
                             HorizontalAlignment="Center"/>
                 </StackPanel>
+            </Border>
+
+            <!-- Knowledge Base panel: overlay (same pattern as Settings) -->
+            <Border Grid.Column="0"
+                    Grid.ColumnSpan="5"
+                    Panel.ZIndex="10"
+                    VerticalAlignment="Top"
+                    Name="panelKnowledgeBase"
+                    Background="#304D65"
+                    CornerRadius="8"
+                    Padding="14,12"
+                    Visibility="Collapsed">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Header -->
+                    <TextBlock Grid.Row="0" Grid.Column="0"
+                               Text="Baze znanja (Knowledge Base)"
+                               Foreground="#E67E22"
+                               FontFamily="Segoe UI" FontSize="14" FontWeight="SemiBold"
+                               Margin="0,0,0,10"/>
+
+                    <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal"
+                                Margin="0,0,0,10">
+                        <Button Name="btnKBNew"
+                                Content="+ Nova baza"
+                                Style="{StaticResource FlatBtn}"
+                                Background="#27AE60"
+                                Width="110" Height="30"
+                                FontSize="11"
+                                Margin="0,0,6,0"/>
+                        <Button Name="btnKBUpload"
+                                Content="+ Dodaj dokument"
+                                Style="{StaticResource FlatBtn}"
+                                Background="#2980B9"
+                                Width="130" Height="30"
+                                FontSize="11"
+                                Margin="0,0,6,0"/>
+                        <Button Name="btnKBRefresh"
+                                Content="&#x21BB;"
+                                Style="{StaticResource FlatBtn}"
+                                Background="#4A6A85"
+                                Width="30" Height="30"
+                                FontSize="14"
+                                Margin="0,0,6,0"
+                                ToolTip="Osvježi popis"/>
+                        <Button Name="btnKBClose"
+                                Content="&#x2715;"
+                                Style="{StaticResource FlatBtn}"
+                                Background="#555F6A"
+                                Width="30" Height="30"
+                                FontSize="12"
+                                ToolTip="Zatvori"/>
+                    </StackPanel>
+
+                    <!-- KB list + detail side by side -->
+                    <Grid Grid.Row="1" Grid.ColumnSpan="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="380"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Left: KB list -->
+                        <Border Grid.Column="0" Background="#263646" CornerRadius="6" Padding="0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="Moje baze znanja"
+                                           Foreground="#7F8C8D"
+                                           FontFamily="Segoe UI" FontSize="11"
+                                           Padding="8,6"/>
+                                <DataGrid Grid.Row="1" Name="datagridKB"
+                                          Background="Transparent"
+                                          IsReadOnly="True"
+                                          AutoGenerateColumns="False"
+                                          HeadersVisibility="Column"
+                                          BorderThickness="0"
+                                          RowHeight="28"
+                                          FontSize="11.5"
+                                          FontFamily="Segoe UI"
+                                          Foreground="#C8D0DA"
+                                          RowBackground="#1E2F3D"
+                                          AlternatingRowBackground="#243444"
+                                          GridLinesVisibility="Horizontal"
+                                          HorizontalGridLinesBrush="#2D4057"
+                                          CanUserAddRows="False"
+                                          CanUserDeleteRows="False"
+                                          CanUserResizeRows="False"
+                                          CanUserResizeColumns="True"
+                                          SelectionMode="Single"
+                                          HorizontalScrollBarVisibility="Disabled"
+                                          VerticalScrollBarVisibility="Auto">
+                                    <DataGrid.Resources>
+                                        <Style TargetType="{x:Type DataGridColumnHeader}">
+                                            <Setter Property="Background" Value="#1A2535"/>
+                                            <Setter Property="Foreground" Value="#E67E22"/>
+                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                            <Setter Property="FontSize" Value="11"/>
+                                            <Setter Property="BorderBrush" Value="#2D4057"/>
+                                        </Style>
+                                    </DataGrid.Resources>
+                                    <DataGrid.Columns>
+                                        <DataGridTemplateColumn Header="Naziv" Width="*" MinWidth="160">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <wcl:ASGridCell FieldName="kbListName"
+                                                                    Editor="edDefault"
+                                                                    EditLength="0"
+                                                                    IsReadOnly="True"/>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTemplateColumn Header="Dok." Width="48" MinWidth="40">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <wcl:ASGridCell FieldName="kbListDocCount"
+                                                                    Editor="edDefault"
+                                                                    EditLength="0"
+                                                                    IsReadOnly="True"
+                                                                    HorizontalContentAlignment="Center"/>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTemplateColumn Header="Ažurirano" Width="90" MinWidth="70">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <wcl:ASGridCell FieldName="kbListDate"
+                                                                    Editor="edDefault"
+                                                                    EditLength="0"
+                                                                    IsReadOnly="True"/>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Grid>
+                        </Border>
+
+                        <!-- Right: selected KB detail / doc list -->
+                        <Border Grid.Column="2" Background="#263646" CornerRadius="6" Padding="8,6">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Name="lblKBDetailTitle"
+                                           Text="Odaberi bazu znanja s lijeve strane"
+                                           Foreground="#7F8C8D"
+                                           FontFamily="Segoe UI" FontSize="11"
+                                           TextWrapping="Wrap"/>
+                                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,6,0,6">
+                                    <Button Name="btnKBSelect"
+                                            Content="Koristi ovu bazu za sesiju"
+                                            Style="{StaticResource FlatBtn}"
+                                            Background="#1ABC9C"
+                                            Height="28" FontSize="11"
+                                            Margin="0,0,6,0"
+                                            Padding="8,2"/>
+                                    <Button Name="btnKBDelete"
+                                            Content="Obriši bazu"
+                                            Style="{StaticResource FlatBtn}"
+                                            Background="#C0392B"
+                                            Height="28" FontSize="11"
+                                            Padding="8,2"/>
+                                    <Button Name="btnKBRemoveDoc"
+                                            Content="Ukloni dokument"
+                                            Style="{StaticResource FlatBtn}"
+                                            Background="#E67E22"
+                                            Height="28" FontSize="11"
+                                            Margin="6,0,0,0"
+                                            Padding="8,2"/>
+                                </StackPanel>
+                                <!-- Document list for selected KB -->
+                                <DataGrid Grid.Row="2" Name="datagridKBDocs"
+                                          Background="Transparent"
+                                          IsReadOnly="True"
+                                          AutoGenerateColumns="False"
+                                          HeadersVisibility="Column"
+                                          BorderThickness="0"
+                                          RowHeight="24"
+                                          FontSize="11"
+                                          FontFamily="Segoe UI"
+                                          Foreground="#C8D0DA"
+                                          RowBackground="#1E2F3D"
+                                          AlternatingRowBackground="#243444"
+                                          GridLinesVisibility="Horizontal"
+                                          HorizontalGridLinesBrush="#2D4057"
+                                          CanUserAddRows="False"
+                                          CanUserDeleteRows="False"
+                                          CanUserResizeRows="False"
+                                          CanUserResizeColumns="True"
+                                          SelectionMode="Single"
+                                          HorizontalScrollBarVisibility="Disabled"
+                                          VerticalScrollBarVisibility="Auto">
+                                    <DataGrid.Resources>
+                                        <Style TargetType="{x:Type DataGridColumnHeader}">
+                                            <Setter Property="Background" Value="#1A2535"/>
+                                            <Setter Property="Foreground" Value="#E67E22"/>
+                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                            <Setter Property="FontSize" Value="11"/>
+                                            <Setter Property="BorderBrush" Value="#2D4057"/>
+                                        </Style>
+                                    </DataGrid.Resources>
+                                    <DataGrid.Columns>
+                                        <DataGridTemplateColumn Header="Dokument" Width="*" MinWidth="120">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <wcl:ASGridCell FieldName="kbDocListTitle"
+                                                                    Editor="edDefault"
+                                                                    EditLength="0"
+                                                                    IsReadOnly="True"/>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTemplateColumn Header="Veličina" Width="70" MinWidth="50">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <wcl:ASGridCell FieldName="kbDocListSize"
+                                                                    Editor="edDefault"
+                                                                    EditLength="0"
+                                                                    IsReadOnly="True"
+                                                                    HorizontalContentAlignment="Right"/>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTemplateColumn Header="Status" Width="80" MinWidth="60">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <wcl:ASGridCell FieldName="kbDocListStatus"
+                                                                    Editor="edDefault"
+                                                                    EditLength="0"
+                                                                    IsReadOnly="True"/>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                                <!-- Web import row -->
+                                <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,4,0,2">
+                                    <TextBox Name="txtWebUrl"
+                                             Width="260" Height="26"
+                                             Background="#1E2F3D"
+                                             Foreground="#C8D0DA"
+                                             BorderBrush="#2D4057"
+                                             FontFamily="Segoe UI"
+                                             FontSize="11"
+                                             VerticalContentAlignment="Center"
+                                             Padding="6,0"
+                                             ToolTip="Unesite URL web stranice za uvoz u bazu znanja"/>
+                                    <Button Name="btnKBWebImport"
+                                            Content="Uvezi web"
+                                            Style="{StaticResource FlatBtn}"
+                                            Background="#8E44AD"
+                                            Height="26" FontSize="11"
+                                            Margin="6,0,0,0"
+                                            Padding="8,2"/>
+                                </StackPanel>
+                                <!-- Status bar inside KB panel -->
+                                <TextBlock Grid.Row="4" Name="lblKBStatus"
+                                           Foreground="#7F8C8D"
+                                           FontFamily="Segoe UI" FontSize="10"
+                                           Margin="0,2,0,0"/>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Grid>
             </Border>
 
             <!-- Settings panel: overlay at top of content row, spanning all columns.
@@ -774,6 +1183,9 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
                 <Label Grid.Column="0"
@@ -785,6 +1197,34 @@
                        Padding="0"/>
 
                 <TextBlock Grid.Column="1"
+                           Name="lblRagStatus"
+                           Text="RAG: -"
+                           Foreground="#7F8C8D"
+                           FontFamily="Segoe UI"
+                           FontSize="11.5"
+                           VerticalAlignment="Center"
+                           Margin="0,0,4,0"/>
+
+                <Button Grid.Column="2"
+                        Name="btnStopRAG"
+                        Content="⏹"
+                        Width="22" Height="20"
+                        FontSize="10"
+                        Padding="0"
+                        Margin="0,0,10,0"
+                        ToolTip="Zaustavi RAG servis"
+                        VerticalAlignment="Center"/>
+
+                <TextBlock Grid.Column="3"
+                           Name="lblKBStatusBar"
+                           Text="KB: -"
+                           Foreground="#7F8C8D"
+                           FontFamily="Segoe UI"
+                           FontSize="11.5"
+                           VerticalAlignment="Center"
+                           Margin="0,0,14,0"/>
+
+                <TextBlock Grid.Column="4"
                            Name="lblProviderInfo"
                            Text="- / -"
                            Foreground="#7F8C8D"

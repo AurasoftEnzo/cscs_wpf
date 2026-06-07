@@ -1,0 +1,173 @@
+// ============================================================
+//  RAGSERVICE.CSCS
+//  RAG Service – background embedding processor
+//  Runs as a separate WpfCSCS process via CHAIN NEWRUNTIME
+//
+//  Parameters (from CHAIN WITH, in order):
+//    pDb      – WXAI_DB database name
+//    pBaseUrl – AI Base URL for embeddings
+//    pApiKey  – AI API key
+//    pModel   – Embedding model name
+//
+//  Heartbeat table: dbo.RAGServiceStatus
+//    Created by wxaimanager_sql.cscs on first run.
+// ============================================================
+
+// --- Includes (shared modules) ---
+include(strTrim(tpath()) + "wxaimanager_sql.cscs");
+include(strTrim(tpath()) + "wxaimanager_embeddings.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxaimanager_attachments.cscs") : strTrim(tpath()) + "wxaimanager_attachments.cscs");
+
+// --- Ovi DEFINE-i su potrebni za Embedding_Generate (inače su u wxaimanager.cscs) ---
+DEFINE aiBaseUrl type a size 300;
+DEFINE aiApiKey type a size 500;
+
+// --- Parameters from CHAIN WITH ---
+DEFINE pDb, pBaseUrl, pApiKey, pModel type a size 500;
+
+PARAM(pDb, pBaseUrl, pApiKey, pModel);
+
+WXAI_DB        = pDb;
+aiBaseUrl      = pBaseUrl;
+aiApiKey       = pApiKey;
+embeddingModel = pModel;
+chatSqlEnabled = true;
+
+//msg ("RAG Service starting with DB: " + WXAI_DB + ", BaseURL: " + aiBaseUrl + ", Model: " + embeddingModel);
+
+CreateWindow(strTrim(tpath()) + "ragservice.xaml");
+
+// ---- Idle timeout (auto-shutdown) --------------------------
+DEFINE idleIterations type i;
+DEFINE maxIdleIterations type i;
+
+function ragservice_OnStart() {
+    // Ensure tables exist (main app already created them, this is safety)
+    SQL_InitAttachmentTables();
+
+    // Record startup heartbeat
+    RAG_WriteHeartbeat("starting");
+
+    // Idle timeout: 10 ciklusa × 30 sekundi = 5 minuta bez posla
+    idleIterations    = 0;
+    maxIdleIterations = 10;
+
+    // Start background processing loop
+   AsyncCall("RAG_MainLoop", "RAG_LoopDone", 0);
+}
+
+function ragservice_OnClose() {
+    RAG_WriteHeartbeat("stopped");
+}
+
+// ============================================================
+//  RAG_MainLoop
+//  Polls for pending chunks every 30 seconds.
+//  Runs on a background thread via AsyncCall.
+// ============================================================
+function RAG_MainLoop() {
+
+
+    while (true) {
+        try {
+            // Process ALL pending ChatChunks (any session)
+
+            Embedding_ProcessPendingAll();
+
+            // Get aggregate stats for heartbeat
+            stats = RAG_GetStats();
+
+            // Update heartbeat with current counts
+            pCnt = int(stats[0]);
+            eCnt = int(stats[1]);
+            fCnt = int(stats[2]);
+            RAG_WriteHeartbeatWithStats("running", pCnt, eCnt, fCnt);
+
+        } catch (ex) {
+            MSG("RAG_MainLoop error: " + ex);
+        }
+
+        // Idle timeout: ako nema pending chunkova N ciklusa za redom,
+        // servis se sam gasi (štedi resurse)
+        if (pCnt == 0) {
+            idleIterations = idleIterations + 1;
+            if (idleIterations >= maxIdleIterations) {
+                // Nema posla duže vrijeme – ugasi se
+                RAG_WriteHeartbeat("stopped_idle");
+                break;
+            }
+        } else {
+            // Ima posla – resetiraj brojač
+            idleIterations = 0;
+        }
+
+        Sleep(30000);   // 30 sekundi pauze
+    }
+
+    // Izadi iz procesa nakon idle timeouta
+    exit(0);
+}
+
+// ============================================================
+//  Heartbeat writers
+//  Uses string concatenation for SQL – all values are from
+//  controlled variables (not user input).
+// ============================================================
+function RAG_WriteHeartbeat(status) {
+    RAG_WriteHeartbeatWithStats(status, 0, 0, 0);
+}
+
+function RAG_WriteHeartbeatWithStats(status, pending, embedded, failed) {
+    try {
+        machName = GetCompName();
+
+        hbSql = "IF NOT EXISTS (SELECT * FROM " + WXAI_DB
+              + ".dbo.RAGServiceStatus WHERE ServiceId = 'rag-main') "
+              + "  INSERT INTO " + WXAI_DB
+              + ".dbo.RAGServiceStatus (ServiceId, Status, PendingCount, EmbeddedCount, "
+              + "    FailedCount, MachineName) "
+              + "  VALUES ('rag-main', '" + status + "', " + pending + ", "
+              + "    " + embedded + ", " + failed + ", '" + machName + "') "
+              + "ELSE "
+              + "  UPDATE " + WXAI_DB
+              + ".dbo.RAGServiceStatus SET Status = '" + status + "', "
+              + "    LastHeartbeatUtc = SYSUTCDATETIME(), "
+              + "    PendingCount = " + pending + ", "
+              + "    EmbeddedCount = " + embedded + ", "
+              + "    FailedCount = " + failed + ", "
+              + "    MachineName = '" + machName + "' "
+              + "  WHERE ServiceId = 'rag-main'";
+
+        sqlNonQuery(hbSql);
+    } catch (ex) {
+        MSG("RAG_WriteHeartbeat error: " + ex);
+    }
+}
+
+// ============================================================
+//  RAG_GetStats
+//  Returns [pending, embedded, failed] counts aggregated
+//  across all ChatChunks in the database.
+// ============================================================
+function RAG_GetStats() {
+    try {
+        statsSql = "SELECT "
+                 + "  ISNULL(SUM(CASE WHEN EmbeddingStatus = 'pending'  THEN 1 ELSE 0 END), 0), "
+                 + "  ISNULL(SUM(CASE WHEN EmbeddingStatus = 'embedded' THEN 1 ELSE 0 END), 0), "
+                 + "  ISNULL(SUM(CASE WHEN EmbeddingStatus = 'failed'   THEN 1 ELSE 0 END), 0) "
+                 + "FROM " + WXAI_DB + ".dbo.ChatChunk";
+
+        statsRes = sqlQuery(statsSql);
+        if (Size(statsRes) > 1) {
+            row = statsRes[1];
+            return {int(row[0]), int(row[1]), int(row[2])};
+        }
+    } catch (ex) {
+        MSG("RAG_GetStats error: " + ex);
+    }
+    return {0, 0, 0};
+}
+
+function RAG_LoopDone(sender, result) {
+    // no-op – loop runs continuously
+}

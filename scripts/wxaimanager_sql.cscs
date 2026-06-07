@@ -27,6 +27,10 @@ DEFINE chatMsgOrder type r;   // MessageOrder counter within the current session
 DEFINE chatUserId type a size 30;   // ChatSession.UserId  (set in OnStart from command-line arg)
 DEFINE chatSqlEnabled type l;   // false after a connection error → silently skip SQL
 
+// ---- Knowledge Base state ----
+DEFINE currentKBId type r;             // KnowledgeBaseId for current session (0 = none)
+DEFINE currentKBName type a size 200;  // cached KB name
+
 // DB name prefix (assigned in wxaimanager_OnStart)
 DEFINE WXAI_DB type a size 50;
 
@@ -121,6 +125,11 @@ function SQL_InitDatabaseAndTables(){
                                         EmbeddingStatus         NVARCHAR(20)    NOT NULL DEFAULT('pending'),
                                         EmbeddingProvider       NVARCHAR(50)    NULL,
                                         EmbeddingModel          NVARCHAR(100)   NULL,
+                                        VectorStore             NVARCHAR(50)    NULL,
+                                        VectorId                NVARCHAR(200)   NULL,
+                                        ChunkHash               VARCHAR(64)     NULL,
+                                        EmbeddedAtUtc           DATETIME2(3)    NULL,
+                                        EmbeddingVectorJson     NVARCHAR(MAX)   NULL,
 
                                         MetaJson                NVARCHAR(MAX)   NULL,
 
@@ -150,7 +159,8 @@ function SQL_InitDatabaseAndTables(){
         sqlNonQuery(createMessageTableSql);
         sqlNonQuery(createChunkTableSql);
     }catch(ex) {
-        MessageBox("SQL_InitDatabaseAndTables error: " + ex);
+        MSG("SQL_InitDatabaseAndTables error: " + ex);
+        chatSqlEnabled = false;
         return;
     }
 
@@ -171,6 +181,32 @@ function SQL_InitDatabaseAndTables(){
         MSG("SQL migration UserId INT→NVARCHAR error: " + ex);
     }
 
+    // --- migrate existing ChatChunk: add embedding columns if missing ---
+    try {
+        embedMigrateSql = "USE " + WXAI_DB + "; "
+            + "IF EXISTS (SELECT * FROM sysobjects WHERE name='ChatChunk' AND xtype='U') "
+            + "BEGIN "
+            + "  IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS "
+            + "    WHERE TABLE_NAME = 'ChatChunk' AND COLUMN_NAME = 'VectorStore') "
+            + "    ALTER TABLE dbo.ChatChunk ADD VectorStore NVARCHAR(50) NULL; "
+            + "  IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS "
+            + "    WHERE TABLE_NAME = 'ChatChunk' AND COLUMN_NAME = 'VectorId') "
+            + "    ALTER TABLE dbo.ChatChunk ADD VectorId NVARCHAR(200) NULL; "
+            + "  IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS "
+            + "    WHERE TABLE_NAME = 'ChatChunk' AND COLUMN_NAME = 'ChunkHash') "
+            + "    ALTER TABLE dbo.ChatChunk ADD ChunkHash VARCHAR(64) NULL; "
+            + "  IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS "
+            + "    WHERE TABLE_NAME = 'ChatChunk' AND COLUMN_NAME = 'EmbeddedAtUtc') "
+            + "    ALTER TABLE dbo.ChatChunk ADD EmbeddedAtUtc DATETIME2(3) NULL; "
+            + "  IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS "
+            + "    WHERE TABLE_NAME = 'ChatChunk' AND COLUMN_NAME = 'EmbeddingVectorJson') "
+            + "    ALTER TABLE dbo.ChatChunk ADD EmbeddingVectorJson NVARCHAR(MAX) NULL; "
+            + "END";
+        sqlNonQuery(embedMigrateSql);
+    } catch (ex) {
+        MSG("ChatChunk embedding columns migration error: " + ex);
+    }
+
     // --- Full-Text Search setup (silently skipped if FTS not installed) ---
     try {
         ftsSql = "USE " + WXAI_DB + "; "
@@ -188,6 +224,125 @@ function SQL_InitDatabaseAndTables(){
     } catch (ex) {
         MSG("FTS setup skipped: " + ex);
     }
+
+    // --- KnowledgeBase table ---
+    try {
+        kbSql = "USE " + WXAI_DB + "; "
+              + "IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='KnowledgeBase' AND xtype='U') "
+              + "BEGIN "
+              + "  CREATE TABLE dbo.KnowledgeBase ( "
+              + "    KBId           INT IDENTITY(1,1) PRIMARY KEY, "
+              + "    Name           NVARCHAR(200)   NOT NULL, "
+              + "    Description    NVARCHAR(MAX)   NULL, "
+              + "    UserId         NVARCHAR(50)    NOT NULL, "
+              + "    CreatedAtUtc   DATETIME2(3)    NOT NULL DEFAULT SYSUTCDATETIME(), "
+              + "    UpdatedAtUtc   DATETIME2(3)    NOT NULL DEFAULT SYSUTCDATETIME() "
+              + "  ); "
+              + "END";
+        sqlNonQuery(kbSql);
+    } catch (ex) {
+        MSG("KnowledgeBase table creation error: " + ex);
+    }
+
+    // --- migrate ChatSession: add KnowledgeBaseId if missing ---
+    try {
+        sessKbMigrate = "USE " + WXAI_DB + "; "
+            + "IF EXISTS (SELECT * FROM sysobjects WHERE name='ChatSession' AND xtype='U') "
+            + "BEGIN "
+            + "  IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS "
+            + "    WHERE TABLE_NAME = 'ChatSession' AND COLUMN_NAME = 'KnowledgeBaseId') "
+            + "    ALTER TABLE dbo.ChatSession ADD KnowledgeBaseId INT NULL "
+            + "      CONSTRAINT FK_ChatSession_KnowledgeBase "
+            + "        FOREIGN KEY (KnowledgeBaseId) REFERENCES dbo.KnowledgeBase(KBId); "
+            + "END";
+        sqlNonQuery(sessKbMigrate);
+    } catch (ex) {
+        MSG("ChatSession KnowledgeBaseId migration error: " + ex);
+    }
+
+    // --- migrate Document: add KnowledgeBaseId if missing ---
+    try {
+        docKbMigrate = "USE " + WXAI_DB + "; "
+            + "IF EXISTS (SELECT * FROM sysobjects WHERE name='Document' AND xtype='U') "
+            + "BEGIN "
+            + "  IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS "
+            + "    WHERE TABLE_NAME = 'Document' AND COLUMN_NAME = 'KnowledgeBaseId') "
+            + "    ALTER TABLE dbo.Document ADD KnowledgeBaseId INT NULL "
+            + "      CONSTRAINT FK_Document_KnowledgeBase "
+            + "        FOREIGN KEY (KnowledgeBaseId) REFERENCES dbo.KnowledgeBase(KBId); "
+            + "  IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS "
+            + "    WHERE TABLE_NAME = 'Document' AND COLUMN_NAME = 'DocumentType') "
+            + "    ALTER TABLE dbo.Document ADD DocumentType NVARCHAR(30) NOT NULL DEFAULT('attachment'); "
+            + "END";
+        sqlNonQuery(docKbMigrate);
+    } catch (ex) {
+        MSG("Document KnowledgeBaseId migration error: " + ex);
+    }
+
+    // --- migrate DocumentChunk: add embedding columns if missing ---
+    try {
+        docChunkMigrate = "USE " + WXAI_DB + "; "
+            + "IF EXISTS (SELECT * FROM sysobjects WHERE name='DocumentChunk' AND xtype='U') "
+            + "BEGIN "
+            + "  IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS "
+            + "    WHERE TABLE_NAME = 'DocumentChunk' AND COLUMN_NAME = 'EmbeddingVectorJson') "
+            + "    ALTER TABLE dbo.DocumentChunk ADD EmbeddingVectorJson NVARCHAR(MAX) NULL; "
+            + "  IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS "
+            + "    WHERE TABLE_NAME = 'DocumentChunk' AND COLUMN_NAME = 'ChatSessionId' "
+            + "    AND IS_NULLABLE = 'NO') "
+            + "    ALTER TABLE dbo.DocumentChunk ALTER COLUMN ChatSessionId BIGINT NULL; "
+            + "END";
+        sqlNonQuery(docChunkMigrate);
+    } catch (ex) {
+        MSG("DocumentChunk embedding columns migration error: " + ex);
+    }
+
+    // --- migrate Document: make ChatAttachmentId nullable (for KB docs) ---
+    try {
+        docAttMigrate = "USE " + WXAI_DB + "; "
+            + "IF EXISTS (SELECT * FROM sysobjects WHERE name='Document' AND xtype='U') "
+            + "BEGIN "
+            + "  IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS "
+            + "    WHERE TABLE_NAME = 'Document' AND COLUMN_NAME = 'ChatAttachmentId' "
+            + "    AND IS_NULLABLE = 'NO') "
+            + "    ALTER TABLE dbo.Document ALTER COLUMN ChatAttachmentId BIGINT NULL; "
+            + "END";
+        sqlNonQuery(docAttMigrate);
+    } catch (ex) {
+        MSG("Document ChatAttachmentId nullable migration error: " + ex);
+    }
+
+    // --- migrate Document: add SourceUrl column (for web imports) ---
+    try {
+        docUrlMigrate = "USE " + WXAI_DB + "; "
+            + "IF EXISTS (SELECT * FROM sysobjects WHERE name='Document' AND xtype='U') "
+            + "BEGIN "
+            + "  IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS "
+            + "    WHERE TABLE_NAME = 'Document' AND COLUMN_NAME = 'SourceUrl') "
+            + "    ALTER TABLE dbo.Document ADD SourceUrl NVARCHAR(2000) NULL; "
+            + "END";
+        sqlNonQuery(docUrlMigrate);
+    } catch (ex) {
+        MSG("Document SourceUrl migration error: " + ex);
+    }
+
+    // --- migrate Document: replace UNIQUE constraint with filtered index (allows multiple NULLs) ---
+    try {
+        docUqMigrate = "USE " + WXAI_DB + "; "
+            + "IF EXISTS (SELECT * FROM sysobjects WHERE name='Document' AND xtype='U') "
+            + "BEGIN "
+            + "  IF EXISTS (SELECT * FROM sys.indexes "
+            + "    WHERE name = 'UQ_Document_ChatAttachment' AND object_id = OBJECT_ID('dbo.Document')) "
+            + "  BEGIN "
+            + "    ALTER TABLE dbo.Document DROP CONSTRAINT UQ_Document_ChatAttachment; "
+            + "    CREATE UNIQUE INDEX IX_Document_ChatAttachment "
+            + "      ON dbo.Document(ChatAttachmentId) WHERE ChatAttachmentId IS NOT NULL; "
+            + "  END "
+            + "END";
+        sqlNonQuery(docUqMigrate);
+    } catch (ex) {
+        MSG("Document ChatAttachmentId filtered index migration error: " + ex);
+    }
 }
 
 // =============================================================
@@ -198,6 +353,8 @@ function SQL_InitDatabaseAndTables(){
 function SQL_InitNewSession() {
     currentSessionId = 0;
     chatMsgOrder     = 0;
+    currentKBId      = 0;
+    currentKBName    = "";
 }
 
 
@@ -243,6 +400,15 @@ function SQL_EnsureSession(titleHint) {
         if (currentSessionId == 0) {
             MSG("SQL_EnsureSession: ChatSessionId not retrieved - disabling SQL.");
             chatSqlEnabled = false;
+        } elif (currentKBId > 0) {
+            // Associate the new session with the active Knowledge Base
+            try {
+                kbp = {}; kbp.Add({"@sess", currentSessionId}); kbp.Add({"@kb", currentKBId});
+                sqlNonQuery("UPDATE " + WXAI_DB + ".dbo.ChatSession "
+                          + "SET KnowledgeBaseId = @kb WHERE ChatSessionId = @sess", kbp);
+            } catch (exKb) {
+                MSG("SQL_EnsureSession KB association error: " + exKb);
+            }
         }
 
     } catch (ex) {
@@ -429,8 +595,9 @@ function SQL_InsertChunk(sessId, msgId, chunkOrd, chunkTxt) {
         sqlParams.Add({"@p4", chunkTxt});
 
         chunkSql = "INSERT INTO " + WXAI_DB + ".dbo.ChatChunk "
-                 + "(ChatSessionId, ChatMessageId, ChunkOrder, ChunkText, ChunkType) "
-                 + "VALUES (@p1, @p2, @p3, @p4, 'message')";
+                 + "(ChatSessionId, ChatMessageId, ChunkOrder, ChunkText, ChunkType, ChunkHash) "
+                 + "VALUES (@p1, @p2, @p3, @p4, 'message', "
+                 + " CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', CONVERT(NVARCHAR(MAX), @p4)), 2))";
 
         sqlQuery(chunkSql, sqlParams);
 
@@ -836,5 +1003,430 @@ function SQL_LoadTokenStats() {
         }
     } catch (ex) {
         MSG("SQL_LoadTokenStats error: " + ex);
+    }
+}
+
+
+// =============================================================
+//  KNOWLEDGE BASE CRUD
+// =============================================================
+
+function SQL_CreateKnowledgeBase(name, desc) {
+    if (!chatSqlEnabled) { return 0; }
+    kbId = 0;
+    try {
+        p = {};
+        p.Add({"@name", name});
+        p.Add({"@desc", desc});
+        p.Add({"@user", chatUserId});
+        res = sqlQuery("INSERT INTO " + WXAI_DB + ".dbo.KnowledgeBase (Name, Description, UserId) "
+                     + "OUTPUT INSERTED.KBId "
+                     + "VALUES (@name, @desc, @user)", p);
+        if (Size(res) > 1) { kbId = int(res[1][0]); }
+    } catch (ex) {
+        MSG("SQL_CreateKnowledgeBase error: " + ex);
+    }
+    return kbId;
+}
+
+function SQL_DeleteKnowledgeBase(kbId) {
+    if (!chatSqlEnabled) { return; }
+    try {
+        p = {}; p.Add({"@id", kbId});
+        sqlNonQuery("DELETE FROM " + WXAI_DB + ".dbo.DocumentChunk "
+                  + "WHERE DocumentId IN ("
+                  + "  SELECT DocumentId FROM " + WXAI_DB + ".dbo.Document WHERE KnowledgeBaseId = @id)", p);
+        sqlNonQuery("DELETE FROM " + WXAI_DB + ".dbo.Document WHERE KnowledgeBaseId = @id", p);
+        sqlNonQuery("DELETE FROM " + WXAI_DB + ".dbo.KnowledgeBase WHERE KBId = @id", p);
+    } catch (ex) {
+        MSG("SQL_DeleteKnowledgeBase error: " + ex);
+    }
+}
+
+function SQL_ListKnowledgeBases() {
+    if (!chatSqlEnabled) { return {}; }
+    res = {};
+    try {
+        p = {}; p.Add({"@user", chatUserId});
+        res = sqlQuery("SELECT KBId, Name, Description, "
+                     + "  (SELECT COUNT(*) FROM " + WXAI_DB + ".dbo.Document d "
+                     + "    WHERE d.KnowledgeBaseId = kb.KBId) AS DocCount, "
+                     + "  FORMAT(DATEADD(minute, DATEDIFF(minute, GETUTCDATE(), GETDATE()), "
+                     + "    kb.UpdatedAtUtc), 'dd.MM. HH:mm') AS LastUpdated "
+                     + "FROM " + WXAI_DB + ".dbo.KnowledgeBase kb "
+                     + "WHERE kb.UserId = @user "
+                     + "ORDER BY kb.UpdatedAtUtc DESC", p);
+    } catch (ex) {
+        MSG("SQL_ListKnowledgeBases error: " + ex);
+    }
+    return res;
+}
+
+function SQL_SetSessionKnowledgeBase(sessId, kbId) {
+    if (!chatSqlEnabled) { return; }
+    try {
+        p = {}; p.Add({"@sess", sessId}); p.Add({"@kb", kbId});
+        sqlNonQuery("UPDATE " + WXAI_DB + ".dbo.ChatSession "
+                  + "SET KnowledgeBaseId = @kb WHERE ChatSessionId = @sess", p);
+    } catch (ex) {
+        MSG("SQL_SetSessionKnowledgeBase error: " + ex);
+    }
+}
+
+function SQL_GetSessionKnowledgeBase(sessId) {
+    if (!chatSqlEnabled || sessId == 0) { return {}; }
+    res = {};
+    try {
+        p = {}; p.Add({"@sess", sessId});
+        res = sqlQuery("SELECT ISNULL(kb.KBId, 0), ISNULL(kb.Name, '') FROM " + WXAI_DB + ".dbo.ChatSession s "
+                     + "LEFT JOIN " + WXAI_DB + ".dbo.KnowledgeBase kb ON s.KnowledgeBaseId = kb.KBId "
+                     + "WHERE s.ChatSessionId = @sess", p);
+    } catch (ex) {
+        MSG("SQL_GetSessionKnowledgeBase error: " + ex);
+    }
+    return res;
+}
+
+function SQL_GetKnowledgeBaseDocuments(kbId) {
+    if (!chatSqlEnabled || kbId == 0) { return {}; }
+    res = {};
+    try {
+        p = {}; p.Add({"@kb", kbId});
+        res = sqlQuery("SELECT d.DocumentId, d.Title, d.DocumentType, "
+                     + "  d.ExtractStatus, d.ExtractedTextLength, "
+                     + "  FORMAT(DATEADD(minute, DATEDIFF(minute, GETUTCDATE(), GETDATE()), "
+                     + "    d.CreatedAtUtc), 'dd.MM. HH:mm') AS Created, "
+                     + "  ISNULL(d.SourceUrl, '') AS SourceUrl "
+                     + "FROM " + WXAI_DB + ".dbo.Document d "
+                     + "WHERE d.KnowledgeBaseId = @kb "
+                     + "ORDER BY d.CreatedAtUtc DESC", p);
+    } catch (ex) {
+        MSG("SQL_GetKnowledgeBaseDocuments error: " + ex);
+    }
+    return res;
+}
+
+function SQL_SetDocumentKnowledgeBase(docId, kbId) {
+    if (!chatSqlEnabled) { return; }
+    try {
+        p = {}; p.Add({"@doc", docId}); p.Add({"@kb", kbId});
+        sqlNonQuery("UPDATE " + WXAI_DB + ".dbo.Document SET KnowledgeBaseId = @kb "
+                  + "WHERE DocumentId = @doc", p);
+        // Touch KB UpdatedAtUtc
+        pu = {}; pu.Add({"@kb", kbId});
+        sqlNonQuery("UPDATE " + WXAI_DB + ".dbo.KnowledgeBase "
+                  + "SET UpdatedAtUtc = SYSUTCDATETIME() WHERE KBId = @kb", pu);
+    } catch (ex) {
+        MSG("SQL_SetDocumentKnowledgeBase error: " + ex);
+    }
+}
+
+
+// =============================================================
+//  KNOWLEDGE BASE – UPLOAD DOCUMENT TO KB
+//  Uploads a file directly into a Knowledge Base (bypasses session attachments).
+// =============================================================
+
+function KB_UploadDocument(kbId) {
+    if (!chatSqlEnabled || kbId == 0) { return 0; }
+
+    srcPath = OpenFile();
+    if (srcPath == "") { return 0; }
+
+    // Extract filename
+    fileName = srcPath;
+    lastSlash = 0;
+    for (k = 0; k < srcPath.length; k++) {
+        ch = Substring(srcPath, k, 1);
+        if (ch == "\\" || ch == "/") { lastSlash = k + 1; }
+    }
+    fileName = Substring(srcPath, lastSlash, srcPath.length - lastSlash);
+
+    fileExt = "";
+    lastDot = -1;
+    for (k = 0; k < fileName.length; k++) {
+        if (Substring(fileName, k, 1) == ".") { lastDot = k; }
+    }
+    if (lastDot >= 0) { fileExt = Substring(fileName, lastDot, fileName.length - lastDot); }
+
+    extLow = StrLower(fileExt);
+    // Only plain-text files for now
+    if (extLow != ".txt" && extLow != ".md" && extLow != ".csv" && extLow != ".log"
+        && extLow != ".xml" && extLow != ".json" && extLow != ".html" && extLow != ".htm") {
+        MSG("KB_UploadDocument: unsupported format " + fileExt);
+        return 0;
+    }
+
+    fileSize = FLSZE(srcPath);      // actual file size in bytes (not text length)
+    if (fileSize <= 0) { fileSize = 1; }
+
+    extractedText = "";
+    try {
+        extractedText = ReadAllText(srcPath);
+    } catch (ex) {
+        MSG("KB_UploadDocument - ReadAllText error: " + ex);
+        return 0;
+    }
+
+    textLen = extractedText.length;
+    if (textLen == 0) { return 0; }
+
+    newDocId = 0;
+    try {
+        p = {};
+        p.Add({"@kb",     kbId});
+        p.Add({"@title",  fileName});
+        p.Add({"@text",   extractedText});
+        p.Add({"@len",    fileSize});
+        docSql = "INSERT INTO " + WXAI_DB + ".dbo.Document "
+               + "  (KnowledgeBaseId, DocumentType, Title, "
+               + "   ExtractStatus, ExtractedText, ExtractedTextLength, "
+               + "   ParserName, PageCount, ExtractedAtUtc) "
+               + "OUTPUT INSERTED.DocumentId "
+               + "VALUES (@kb, 'kb-doc', @title, "
+               + "        'extracted', @text, @len, 'kb-upload', 1, SYSUTCDATETIME())";
+        docRes = sqlQuery(docSql, p);
+        if (Size(docRes) > 1) { newDocId = int(docRes[1][0]); }
+    } catch (ex) {
+        MSG("KB_UploadDocument INSERT error: " + ex);
+    }
+
+    if (newDocId > 0 && textLen > 0) {
+        // Use session 0 for KB docs (not tied to a chat session)
+        Attachment_ChunkDocument(newDocId, 0, extractedText);
+    }
+
+    // Touch KB timestamp
+    try {
+        pu = {}; pu.Add({"@kb", kbId});
+        sqlNonQuery("UPDATE " + WXAI_DB + ".dbo.KnowledgeBase "
+                  + "SET UpdatedAtUtc = SYSUTCDATETIME() WHERE KBId = @kb", pu);
+    } catch (ex) { }
+
+    return newDocId;
+}
+
+
+// =============================================================
+//  KNOWLEDGE BASE – DELETE DOCUMENT
+// =============================================================
+
+function KB_DeleteDocument(docId) {
+    if (!chatSqlEnabled || docId == 0) { return; }
+    try {
+        p = {}; p.Add({"@id", docId});
+        sqlNonQuery("DELETE FROM " + WXAI_DB + ".dbo.DocumentChunk WHERE DocumentId = @id", p);
+        sqlNonQuery("DELETE FROM " + WXAI_DB + ".dbo.Document WHERE DocumentId = @id", p);
+    } catch (ex) {
+        MSG("KB_DeleteDocument error: " + ex);
+    }
+}
+
+
+// =============================================================
+//  WEB IMPORT – KNOWLEDGE BASE
+//  Fetches a web page, extracts text, stores as KB document
+// =============================================================
+
+// --- Helper: strip HTML tags, script, style, decode entities ---
+function StripHtml(html) {
+    result = "";
+    i = 0;
+    len = html.length;
+
+    while (i < len) {
+        ch = Substring(html, i, 1);
+
+        // --- Skip <script...>...</script> blocks ---
+        if (ch == "<") {
+            // Read up to 10 chars after < to detect tag name
+            ahead = "";
+            maxAhead = i + 10;
+            if (maxAhead > len) { maxAhead = len; }
+            j = i + 1;
+            while (j < maxAhead) {
+                ahead = ahead + Substring(html, j, 1);
+                j = j + 1;
+            }
+            tagLow = StrLower(ahead);
+
+            // script or style: skip until closing tag
+            if (tagLow.IndexOf("script") == 0 || tagLow.IndexOf("style") == 0) {
+                tagName = "";
+                if (ahead.length >= 6) {
+                    tagName = Substring(ahead, 0, 6);
+                } else {
+                    tagName = ahead;
+                }
+                closeTag = "</" + tagName + ">";
+                closeLow = StrLower(closeTag);
+                // Find the > of opening tag
+                openEnd = html.IndexOf(">", i);
+                if (openEnd < 0) { i = len; break; }
+                // Find closing </script> or </style>
+                closePos = html.IndexOf(closeLow, openEnd);
+                if (closePos < 0) { i = len; break; }
+                // Find > of closing tag
+                closeEnd = html.IndexOf(">", closePos);
+                if (closeEnd < 0) { i = len; break; }
+                i = closeEnd + 1;
+                continue;
+            }
+
+            // --- Regular HTML tag: skip until > ---
+            closePos = html.IndexOf(">", i);
+            if (closePos < 0) { i = len; break; }
+            i = closePos + 1;
+            continue;
+        }
+
+        // --- Decode HTML entities ---
+        if (ch == "&" && i + 1 < len) {
+            semi = html.IndexOf(";", i);
+            if (semi > i && semi - i < 12) {
+                entity = Substring(html, i, semi - i + 1);
+                if (entity == "&amp;")  { result = result + "&"; i = semi + 1; continue; }
+                if (entity == "&lt;")   { result = result + "<"; i = semi + 1; continue; }
+                if (entity == "&gt;")   { result = result + ">"; i = semi + 1; continue; }
+                if (entity == "&quot;") { result = result + "\""; i = semi + 1; continue; }
+                if (entity == "&nbsp;") { result = result + " "; i = semi + 1; continue; }
+                if (entity == "&#39;")  { result = result + "'"; i = semi + 1; continue; }
+                if (entity == "&apos;") { result = result + "'"; i = semi + 1; continue; }
+            }
+        }
+
+        result = result + ch;
+        i = i + 1;
+    }
+
+    // Collapse whitespace (spaces, tabs, newlines -> single space)
+    clean = "";
+    prevSpace = false;
+    i = 0;
+    while (i < result.length) {
+        ch = Substring(result, i, 1);
+        if (ch == " " || ch == "\t" || ch == "\n" || ch == "\r") {
+            if (!prevSpace) {
+                clean = clean + " ";
+                prevSpace = true;
+            }
+        } else {
+            clean = clean + ch;
+            prevSpace = false;
+        }
+        i = i + 1;
+    }
+
+    return clean.Trim();
+}
+
+// --- Helper: extract <title> from HTML ---
+function ExtractTitle(html) {
+    lowHtml = StrLower(html);
+    tagStart = lowHtml.IndexOf("<title");
+    if (tagStart < 0) { return ""; }
+    closeTag = lowHtml.IndexOf(">", tagStart);
+    if (closeTag < 0) { return ""; }
+    contentStart = closeTag + 1;
+    if (contentStart >= html.length) { return ""; }
+    titleEnd = lowHtml.IndexOf("</title>", contentStart);
+    if (titleEnd < 0) { return ""; }
+    if (titleEnd <= contentStart) { return ""; }
+    title = Substring(html, contentStart, titleEnd - contentStart);
+    return StripHtml(title).Trim();
+}
+
+// --- SQL: insert a web-scraped document ---
+function SQL_InsertWebDocument(kbId, title, url, text) {
+    newDocId = 0;
+    try {
+        p = {};
+        p.Add({"@kb",    kbId});
+        p.Add({"@title", title});
+        p.Add({"@url",   url});
+        p.Add({"@text",  text});
+        p.Add({"@len",   text.length});
+
+        docSql = "INSERT INTO " + WXAI_DB + ".dbo.Document "
+               + "  (KnowledgeBaseId, DocumentType, Title, SourceUrl, "
+               + "   ExtractStatus, ExtractedText, ExtractedTextLength, "
+               + "   ParserName, PageCount, ExtractedAtUtc) "
+               + "OUTPUT INSERTED.DocumentId "
+               + "VALUES (@kb, 'kb-web', @title, @url, "
+               + "        'extracted', @text, @len, 'web-import', 1, SYSUTCDATETIME())";
+        docRes = sqlQuery(docSql, p);
+        if (Size(docRes) > 1) { newDocId = int(docRes[1][0]); }
+    } catch (ex) {
+        MSG("SQL_InsertWebDocument error: " + ex);
+    }
+    return newDocId;
+}
+
+// --- Main: fetch web page -> extract text -> store in KB ---
+function KB_ImportWebPage(kbId, url) {
+    if (!chatSqlEnabled || kbId == 0 || url == "") { return 0; }
+
+    try {
+        SetStatus("Dohvaćam web stranicu: " + url);
+        Cursor("wait");
+
+        html = WebRequest2("GET", url, "", "", "", "",
+                           "text/html", {}, 30000, false);
+
+        if (html == "" || html == null) {
+            MSG("KB_ImportWebPage: empty response from " + url);
+            Cursor("dflt");
+            return 0;
+        }
+
+        // DEBUG: save raw HTML for inspection
+        SaveFile(html, strTrim(tpath()) + "_debug_webimport.html", "");
+
+        title = "";
+        try {
+            title = ExtractTitle(html);
+        } catch (exTitle) {
+            title = "";
+        }
+        if (title == "") {
+            title = url;
+            if (title.length > 200) { title = Substring(title, 0, 200) + "..."; }
+        }
+
+        plainText = "";
+        try {
+            plainText = StripHtml(html);
+        } catch (exStrip) {
+            MSG("KB_ImportWebPage StripHtml error: " + exStrip + " (html len=" + html.length + ")");
+            Cursor("dflt");
+            return 0;
+        }
+        // DEBUG: save stripped text
+        SaveFile(plainText, strTrim(tpath()) + "_debug_webimport_stripped.txt", "");
+
+        if (plainText.length < 20) {
+            MSG("KB_ImportWebPage: extracted text too short from " + url);
+            Cursor("dflt");
+            return 0;
+        }
+
+        if (title.length > 290) { title = Substring(title, 0, 290) + "..."; }
+
+        newDocId = SQL_InsertWebDocument(kbId, title, url, plainText);
+
+        if (newDocId > 0) {
+            Attachment_ChunkDocument(newDocId, 0, plainText);
+            SetStatus("Web stranica uvezena: " + title);
+        } else {
+            SetStatus("Web stranica nije spremljena u bazu.");
+        }
+
+        Cursor("dflt");
+        return newDocId;
+
+    } catch (ex) {
+        Cursor("dflt");
+        MSG("KB_ImportWebPage error: " + ex);
+        return 0;
     }
 }

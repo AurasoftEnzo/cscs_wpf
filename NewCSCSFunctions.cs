@@ -209,6 +209,8 @@ namespace WpfCSCS
             interpreter.RegisterFunction("XmlGetChildAttribute", new XmlGetChildAttributeFunction());
             interpreter.RegisterFunction("XmlGetElementValue", new XmlGetElementValueFunction());
 
+            interpreter.RegisterFunction(Constants.COSINE_SIMILARITY, new CosineSimilarityFunction());
+
             interpreter.RegisterFunction("FileCopy", new FileCopyFunction());
             interpreter.RegisterFunction("FileHash", new FileHashFunction());
             interpreter.RegisterFunction("GetDirFiles", new GetDirFilesFunction());
@@ -290,6 +292,8 @@ namespace WpfCSCS
 
 
             public const string UTF8HRChars = "UTF8HRChars";
+
+            public const string COSINE_SIMILARITY = "CosineSimilarity";
         }
     }
 
@@ -7358,6 +7362,48 @@ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
                 nacinPlacanja);
 
             return resVar;
+        }
+    }
+
+    class CosineSimilarityFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 2, m_name);
+
+            // vecA and vecB must be lists of equal length (float/double arrays)
+            List<Variable> vecA = args[0].Tuple;
+            List<Variable> vecB = args[1].Tuple;
+
+            if (vecA == null || vecB == null)
+            {
+                return new Variable(0.0);
+            }
+
+            int dim = vecA.Count;
+            if (dim != vecB.Count || dim == 0)
+            {
+                return new Variable(0.0);
+            }
+
+            double dot = 0.0, normA = 0.0, normB = 0.0;
+            for (int i = 0; i < dim; i++)
+            {
+                double a = vecA[i].AsDouble();
+                double b = vecB[i].AsDouble();
+                dot   += a * b;
+                normA += a * a;
+                normB += b * b;
+            }
+
+            double divisor = Math.Sqrt(normA) * Math.Sqrt(normB);
+            if (divisor < 1e-12)
+            {
+                return new Variable(0.0);
+            }
+
+            return new Variable(dot / divisor);
         }
     }
 

@@ -14,6 +14,7 @@
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxaimanager_SQL.cscs") : strTrim(tpath()) + "wxaimanager_sql.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxaimanager_attachments.cscs") : strTrim(tpath()) + "wxaimanager_attachments.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxaimanager_websearch.cscs") : strTrim(tpath()) + "wxaimanager_websearch.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxaimanager_embeddings.cscs") : strTrim(tpath()) + "wxaimanager_embeddings.cscs");
 
 CreateWindow(strTrim(tpath()) + "wxaimanager.xaml");
 
@@ -68,6 +69,26 @@ DEFINE sessionSummary type a size 10000;  // SummaryText from ChatSession
 DEFINE sessionMsgsSinceSummary type i;             // messages since last summary
 DEFINE sessionToksSinceSummary type i;             // prompt tokens since last summary
 
+// ---- Knowledge Base (RAG) state ----------------------------
+DEFINE currentKBId type r;
+DEFINE currentKBName type a size 200;
+DEFINE selectedKBId type r;
+DEFINE selectedKBName type a size 200;
+DEFINE kbPanelOpen type l;
+DEFINE kbListCount type i;
+DEFINE kbListId type r array 50;
+DEFINE kbListName type a size 200 array 50;
+DEFINE kbListDocCount type r array 50;
+DEFINE kbListDate type a size 30 array 50;
+DEFINE kbLineCntr type r;
+DEFINE kbDocCount type i;
+DEFINE kbDocListId type r array 200;
+DEFINE kbDocListTitle type a size 300 array 200;
+DEFINE kbDocListSize type a size 20 array 200;
+DEFINE kbDocListStatus type a size 20 array 200;
+DEFINE kbDocLineCntr type r;
+DEFINE kbDocsGridSetup type l;
+
 // ---- Async API temp storage ---------------------------------
 DEFINE apiLastResponse type a size 20000;
 DEFINE apiLastCode type i;
@@ -84,6 +105,7 @@ DEFINE summaryApiCode type i;
 // =============================================================
 
 function wxaimanager_OnStart() {
+    try {
     // --- command-line parameters ---
     userCode = "Nepoznati";
     args = CommandLineArgs();
@@ -103,7 +125,6 @@ function wxaimanager_OnStart() {
 
     SQL_InitDatabaseAndTables();
     SQL_InitAttachmentTables();
-
     chatUserId     = userCode;
     
     SQL_InitNewSession();
@@ -152,7 +173,6 @@ function wxaimanager_OnStart() {
 
     LoadSettings();
 
-
     // --- populate provider ComboBox ---
     comboItems2 = {"OpenAI","Ollama","Azure OpenAI","OpenRouter","Custom"};
     AddWidgetData("cbProvider", comboItems2);
@@ -178,15 +198,36 @@ function wxaimanager_OnStart() {
     // DisplayArray("datagridHistory", "close");
     // DisplayArraySetup("datagridHistory", counterFld: histLineCntr, activeElements: histActive, maxElements: histMax);
 
+    // --- Knowledge Base state ---
+    currentKBId      = 0;
+    currentKBName    = "";
+    selectedKBId     = 0;
+    selectedKBName   = "";
+    kbPanelOpen      = false;
+    kbListCount      = 0;
+    kbDocCount       = 0;
+    kbLineCntr       = 0;
+    kbDocLineCntr    = 0;
+    kbDocsGridSetup  = false;
+
     // --- status ---
     SetStatus("Spreman. Unesite poruku i pritisnite Pošalji.");
     UpdateProviderLabel();
 
+
     // --- welcome ---
     ShowWelcome();
-
     // --- load history from DB ---
     SQL_LoadHistoryFromDB();
+    // --- init embeddings and process any pending chunks ---
+    InitEmbeddings();
+    KB_UpdateStatusBar();
+    // --- periodično osvježavanje RAG statusa (svakih 30s) ---
+    RAG_StartPeriodicRefresh();
+    } catch (ex) {
+        MSG("wxaimanager_OnStart error: " + ex);
+        SetStatus("Greška pri inicijalizaciji: " + ex);
+    }
 }
 
 function wxaimanager_OnDisplay() {
@@ -194,7 +235,8 @@ function wxaimanager_OnDisplay() {
 }
 
 function wxaimanager_OnClose() {
-    // intentionally empty – history is in-memory only
+    // Ugasi RAG servis ako je pokrenut kao zaseban proces
+    RAG_StopService();
 }
 
 
@@ -225,11 +267,8 @@ function btnSend@clicked() {
     SQL_SaveUserMessage(inputText);
     // Clear input
     SetWidgetOptions("txtInput", "Text", "");
-    // Send to AI
-    //msg('User message processed, sending to AI. Current session ID: ' + currentSessionId);
+    // Send to AI (async – UI thread se ne blokira)
     SendToAI();
-
-    SaveCurrentChatToHistory();
 }
 
 function btnNewChat@clicked() {
@@ -285,6 +324,251 @@ function btnImportFolder@clicked() {
     Attachment_ImportFolder();
 }
 
+
+// =============================================================
+//  KNOWLEDGE BASE UI
+// =============================================================
+
+function btnKnowledgeBase@clicked() {
+    if (kbPanelOpen) {
+        SetWidgetOptions("panelKnowledgeBase", "Visible", false);
+        kbPanelOpen = false;
+    } else {
+        // Close settings if open
+        if (settingsOpen) {
+            SetWidgetOptions("panelSettings", "Visible", false);
+            settingsOpen = false;
+            SetWidgetOptions("btnSettings", "Content", "Postavke");
+        }
+        SetWidgetOptions("panelKnowledgeBase", "Visible", true);
+        kbPanelOpen = true;
+        KB_RefreshList();
+    }
+}
+
+function btnKBClose@clicked() {
+    SetWidgetOptions("panelKnowledgeBase", "Visible", false);
+    kbPanelOpen = false;
+}
+
+function btnKBNew@clicked() {
+    kbName = "KB_" + Now("yyyy-MM-dd HH:mm");
+    kbDesc = "";
+    newId = SQL_CreateKnowledgeBase(kbName, kbDesc);
+    if (newId > 0) {
+        SetStatus("Baza znanja '" + kbName + "' kreirana.");
+        KB_RefreshList();
+    } else {
+        SetStatus("Greška pri kreiranju baze znanja.");
+    }
+}
+
+function btnKBRefresh@clicked() {
+    KB_RefreshList();
+}
+
+function btnKBUpload@clicked() {
+    if (selectedKBId == 0) {
+        SetStatus("Prvo odaberite bazu znanja.");
+        return;
+    }
+    docId = KB_UploadDocument(selectedKBId);
+    if (docId > 0) {
+        SetStatus("Dokument dodan u bazu znanja '" + selectedKBName + "'. Generiram embeddinge...");
+        KB_RefreshDocList(selectedKBId);
+        KB_RefreshList();
+        // Process embeddings for this KB
+        if (embeddingAutoEnabled) {
+            Embedding_ProcessPendingDocumentChunks(selectedKBId);
+            SetStatus("Embeddingi generirani za bazu '" + selectedKBName + "'.");
+        } else {
+            SetStatus("Dokument dodan. Uključite embeddinge u postavkama.");
+        }
+    }
+}
+
+function btnKBSelect@clicked() {
+    if (selectedKBId == 0) {
+        SetStatus("Prvo odaberite bazu znanja.");
+        return;
+    }
+    if (currentSessionId == 0) {
+        SQL_EnsureSession("(baza znanja)");
+    }
+    currentKBId = selectedKBId;
+    currentKBName = selectedKBName;
+    SQL_SetSessionKnowledgeBase(currentSessionId, currentKBId);
+    KB_UpdateStatusBar();
+    SetStatus("Baza znanja '" + currentKBName + "' odabrana za ovu sesiju.");
+}
+
+function btnKBDelete@clicked() {
+    if (selectedKBId == 0) { return; }
+    // Simple delete without confirmation dialog
+    SQL_DeleteKnowledgeBase(selectedKBId);
+    if (currentKBId == selectedKBId) {
+        currentKBId = 0; currentKBName = "";
+        KB_UpdateStatusBar();
+    }
+    selectedKBId = 0; selectedKBName = "";
+    KB_RefreshList();
+    KB_ClearDocList();
+    SetStatus("Baza znanja izbrisana: " + selectedKBName);
+}
+
+function btnKBRemoveDoc@clicked() {
+    if (selectedKBId == 0) { return; }
+    selIdx = GetWidgetOptions("datagridKBDocs", "SelectedIndex");
+    if (selIdx < 0 || selIdx >= kbDocCount) { return; }
+    docId = kbDocListId[selIdx];
+    docName = kbDocListTitle[selIdx];
+    KB_DeleteDocument(docId);
+    KB_RefreshDocList(selectedKBId);
+    KB_RefreshList();
+    SetStatus("Dokument uklonjen iz baze znanja: " + docName);
+}
+
+function btnKBWebImport@clicked() {
+    if (selectedKBId == 0) {
+        SetStatus("Prvo odaberite bazu znanja.");
+        return;
+    }
+    url = GetWidgetOptions("txtWebUrl", "Text");
+    url = url.Trim();
+    if (url == "") {
+        SetStatus("Unesite URL web stranice.");
+        return;
+    }
+    // Basic URL validation
+    if (url.IndexOf("http://") != 0 && url.IndexOf("https://") != 0) {
+        url = "https://" + url;
+    }
+
+    SetStatus("Dohvaćam web stranicu: " + url);
+    SetWidgetOptions("txtWebUrl", "Text", "");
+
+    docId = KB_ImportWebPage(selectedKBId, url);
+    if (docId > 0) {
+        KB_RefreshDocList(selectedKBId);
+        KB_RefreshList();
+        SetStatus("Web stranica uvezena u bazu '" + selectedKBName + "'.");
+    } else {
+        SetStatus("Greška pri uvozu web stranice.");
+    }
+}
+
+function datagridKB@select() {
+    try {
+        selIdx = GetWidgetOptions("datagridKB", "SelectedIndex");
+        if (selIdx < 0 || selIdx >= kbListCount) { return; }
+        selectedKBId   = kbListId[selIdx];
+        selectedKBName = kbListName[selIdx];
+        SetWidgetOptions("lblKBDetailTitle", "Text",
+            selectedKBName + " (" + kbListDocCount[selIdx] + " dokumenata)");
+        KB_RefreshDocList(selectedKBId);
+        SetWidgetOptions("lblKBStatus", "Text", "");
+    } catch (ex) {
+        MSG("datagridKB@select error: " + ex);
+    }
+}
+
+function KB_RefreshList() {
+    if (!chatSqlEnabled) { return; }
+    try {
+        kbRes = SQL_ListKnowledgeBases();
+        kbListCount = Size(kbRes) - 1;
+        if (kbListCount < 0) { kbListCount = 0; }
+
+        // Initialize arrays
+        for (i = 0; i < kbListCount; i++) {
+            row = kbRes[i + 1];
+            kbListId[i]       = int(row[0]);
+            kbListName[i]     = row[1];
+            kbListDocCount[i] = int(row[3]);
+            kbListDate[i]     = row[4];
+        }
+
+        // Reset counterFld tracker before setup (grid manages it from 0)
+        kbLineCntr = 0;
+        DisplayArray("datagridKB", "close");
+        DisplayArraySetup("datagridKB", counterFld: kbLineCntr,
+                        activeElements: kbListCount, maxElements: 50);
+
+        if (kbListCount == 0) {
+            SetWidgetOptions("lblKBDetailTitle", "Text", "Nema baza znanja. Kreirajte novu.");
+        }
+    } catch (ex) {
+        MSG("KB_RefreshList error: " + ex);
+    }
+}
+
+function KB_RefreshDocList(kbId) {
+    if (!chatSqlEnabled || kbId == 0) { return; }
+    try {
+        docRes = SQL_GetKnowledgeBaseDocuments(kbId);
+        kbDocCount = Size(docRes) - 1;
+        if (kbDocCount < 0) { kbDocCount = 0; }
+
+        for (i = 0; i < kbDocCount; i++) {
+            row = docRes[i + 1];
+            kbDocListId[i]     = int(row[0]);
+            kbDocListTitle[i]  = row[1];
+            sizeStr = "";
+            rawSize = row[4];              // string from DB (ExtractedTextLength)
+            if (rawSize != "" && rawSize != "0") {
+                len = rawSize.length;
+                if (len > 9) {
+                    // Use 10^9 = GB approximation to avoid arithmetic overflow
+                    sizeStr = Substring(rawSize, 0, len - 9) + " GB";
+                } elif (len > 6) {
+                    sizeStr = Substring(rawSize, 0, len - 6) + " MB";
+                } elif (len > 3) {
+                    sizeStr = Substring(rawSize, 0, len - 3) + " KB";
+                } else {
+                    sizeStr = rawSize + " B";
+                }
+            }
+            kbDocListSize[i]   = sizeStr;
+            kbDocListStatus[i] = row[3];
+        }
+
+        if (!kbDocsGridSetup) {
+            // First time: set up columns + data
+            kbDocLineCntr = 0;
+            DisplayArray("datagridKBDocs", "close");
+            DisplayArraySetup("datagridKBDocs", counterFld: kbDocLineCntr,
+                            activeElements: kbDocCount, maxElements: 200);
+            kbDocsGridSetup = true;
+        } else {
+            // Subsequent: refresh data only (avoids "sealed template" error)
+            kbDocLineCntr = 0;
+            DisplayArray("datagridKBDocs", "redisplayFromTop");
+        }
+    } catch (ex) {
+        MSG("KB_RefreshDocList error: " + ex);
+    }
+}
+
+function KB_ClearDocList() {
+    kbDocCount = 0;
+    kbDocLineCntr = 0;
+    if (kbDocsGridSetup) {
+        kbDocLineCntr = 0;
+        DisplayArray("datagridKBDocs", "redisplayFromTop");
+    }
+}
+
+function KB_UpdateStatusBar() {
+    if (currentKBId > 0 && currentKBName != "") {
+        SetWidgetOptions("lblKBStatusBar", "Text", "KB: " + currentKBName);
+        SetWidgetOptions("lblKBStatusBar", "Color", "#1ABC9C");
+    } else {
+        SetWidgetOptions("lblKBStatusBar", "Text", "KB: -");
+        SetWidgetOptions("lblKBStatusBar", "Color", "#7F8C8D");
+    }
+}
+
+
 function btnVoice@clicked() {
     if (isRecording == false) {
         VoiceInputStart();
@@ -314,6 +598,10 @@ function btnVoice@clicked() {
 function cbProvider@change(sender, args) {
     UpdateBaseUrlForProvider();
     UpdateProviderLabel();
+}
+
+function btnStopRAG@clicked() {
+    RAG_StopService();
 }
 
 
@@ -429,8 +717,28 @@ function SendToAI() {
         // Per-message toggle: reset checkbox after use
         webSearchEnabled = false;
 
+        // ---- RAG: semantic search over embedded chat history ----
+        if (currentSessionId > 0 && msgCount > 2) {
+            ragCtx = Embedding_SearchSimilar(inputText, 5, currentSessionId);
+            if (ragCtx != "") {
+                textContext = textContext + ragCtx;
+            }
+        }
+
+        // ---- Knowledge Base RAG: search across active KB ----
+        if (currentKBId > 0) {
+            kbCtx = Embedding_SearchSimilarAcrossKb(inputText, 5, currentKBId);
+            if (kbCtx != "") {
+                textContext = textContext + "\n\n" + kbCtx;
+            }
+        }
+
         // Build JSON payload (enriched with text context and/or vision items)
         jsonBody = BuildApiPayload(textContext, visionItems);
+        
+        // DEBUG: save payload to file for inspection
+        SaveFile(jsonBody, strTrim(tpath()) + "_debug_payload.txt", "");
+        
         SetUIBusy(true);
         SetStatus("Šaljem zahtjev AI-u...");
 
@@ -453,12 +761,12 @@ function SendToAI() {
             }
             WebRequestMPFD("POST", endpoint, mpBody, "noTrackingId",
                            "SendMessageSuccess", "SendMessageFailure",
-                           "aiBoundary", headers, 120000, false);
+                           "aiBoundary", headers, 120000, true);
         } else {
             // ---- Standard JSON request ----
             WebRequest2("POST", endpoint, jsonBody, "noTrackingId",
                         "SendMessageSuccess", "SendMessageFailure",
-                        "application/json", headers, 120000, false);
+                        "application/json", headers, 120000, true);
         }
 
     } catch (ex) {
@@ -587,10 +895,21 @@ function ProcessAIResponse() {
                 }
                 SQL_SaveAssistantMessage(content, finishReason, promptTokens, completionTokens, totalTokens);
 
+                // Save to history grid (after AI response)
+                SaveCurrentChatToHistory();
+
                 // Accumulate toward summary trigger (user + assistant = 2 messages)
                 sessionMsgsSinceSummary = sessionMsgsSinceSummary + 2;
                 sessionToksSinceSummary = sessionToksSinceSummary + promptTokens;
                 SQL_CheckAndTriggerSummary();
+
+                // Fire background embedding generation for new chunks
+                // (samo ako RAG servis nije aktivan – inače servis radi to)
+                if (embeddingAutoEnabled && currentSessionId > 0 && !ragServiceActive) {
+                    AsyncCall("Embedding_ProcessPendingSession",
+                              "Embedding_ProcessDone",
+                              currentSessionId);
+                }
 
                 SetStatus("Odgovor primljen.");
             }
@@ -643,7 +962,7 @@ function ProcessAIError() {
 //   3. Last 10 previous messages  – sliding window
 //   4+5. RAG document chunks + new user prompt (last message)
 function BuildApiPayload(textContext, visionItems) {
-    payload  = '{"model": "' + aiModel + '", "messages": [';
+    payload  = '{"model": "' + aiModel + '","messages": [';
     firstMsg = true;
 
     // 1. System prompt
@@ -667,8 +986,12 @@ function BuildApiPayload(textContext, visionItems) {
         startIdx = msgLast - 10;
     }
     for (i = startIdx; i < msgLast; i++) {
+        role = msgRole[i];
+        cont = msgContent[i];
+        if (role == "") { role = "user"; }
+        if (cont == "") { cont = "(prazno)"; }
         if (!firstMsg) { payload = payload + ','; }
-        payload  = payload + '{"role": "' + msgRole[i] + '", "content": "' + EscapeForJson(msgContent[i]) + '"}';
+        payload  = payload + '{"role": "' + role + '", "content": "' + EscapeForJson(cont) + '"}';
         firstMsg = false;
     }
 
@@ -739,6 +1062,7 @@ function StartNewChat() {
     ClearChatMessages();
     ResetChatSearch();
     ShowWelcome();
+    KB_UpdateStatusBar();
     SetStatus("Novi razgovor pokrenut.");
 }
 
@@ -796,6 +1120,7 @@ function SaveCurrentChatToHistory() {
     arrayHistText[0]   = chatDisplayText;
 
     UpdateHistoryGrid();
+    msgCountOnLoad = msgCount;  // mark current state as saved
 }
 
 function LoadHistoryItem(idx) {
@@ -809,6 +1134,18 @@ function LoadHistoryItem(idx) {
     msgCountOnLoad = msgCount;
     sessionMsgsSinceSummary = 0;
     sessionToksSinceSummary = 0;
+
+    // Restore Knowledge Base association
+    kbRes = SQL_GetSessionKnowledgeBase(sessId);
+    if (Size(kbRes) > 1) {
+        kbRow = kbRes[1];
+        currentKBId   = int(kbRow[0]);
+        currentKBName = kbRow[1];
+    } else {
+        currentKBId = 0; currentKBName = "";
+    }
+    KB_UpdateStatusBar();
+
     // Rebuild chat display from reloaded messages
     ClearChatMessages();
     ResetChatSearch();
@@ -886,6 +1223,14 @@ function LoadSettings() {
                 sttBaseUrl = val;
             } elif (key == "sttlanguage") {
                 sttLanguage = val;
+            } elif (key == "embeddingmodel") {
+                embeddingModel = val;
+            } elif (key == "embeddingauto") {
+                if(val == "true" || val == "True" || val == "1") {
+                    embeddingAutoEnabled = true;
+                } else {
+                    embeddingAutoEnabled = false;
+                }
             }
         }
     } catch (ex) {
@@ -912,6 +1257,9 @@ function SaveSettings() {
     content  = content + "sttapikey|"    + sttApiKey   + "\n";
     content  = content + "sttbaseurl|"   + sttBaseUrl  + "\n";
     content  = content + "sttlanguage|"  + sttLanguage + "\n";
+    content  = content + "embeddingmodel|"    + embeddingModel          + "\n";
+    embeddingAutoVal = embeddingAutoEnabled ? "1" : "0";
+    content  = content + "embeddingauto|"     + embeddingAutoVal        + "\n";
 
     try {
         SaveFile(content, settingsFilePath, "");
@@ -966,6 +1314,46 @@ function UpdateBaseUrlForProvider() {
 
 // Note: widget values are read via DataContext-bound script variables.
 // SetWidgetOptions is used only for write operations and non-bound controls.
+
+
+// =============================================================
+//  RAG PERIODIC REFRESH
+//  Runs in background via AsyncCall, checks heartbeat every
+//  30 seconds and updates the status bar.
+//  Falls back to local processing if service disappears.
+// =============================================================
+
+function RAG_StartPeriodicRefresh() {
+    AsyncCall("RAG_RefreshLoop", "RAG_RefreshDone", 0);
+}
+
+function RAG_RefreshLoop() {
+    Sleep(30000);  // 30 sekundi
+    try {
+        if (ragServiceActive) {
+            if (!RAG_CheckHeartbeat()) {
+                // Servis je prestao slati heartbeat
+                ragServiceActive = false;
+                RunOnMain("RAG_HandleServiceLost");
+            } else {
+                RunOnMain("RAG_UpdateStatusBar");
+            }
+        }
+    } catch (ex) {
+        MSG("RAG_RefreshLoop error: " + ex);
+    }
+}
+
+function RAG_HandleServiceLost() {
+    RAG_UpdateStatusBar();
+    SetStatus("RAG servis nije dostupan – prelazak na lokalnu obradu.");
+    AsyncCall("Embedding_ProcessPendingAll", "Embedding_ProcessDone", 0);
+}
+
+function RAG_RefreshDone(sender, result) {
+    // Re-schedule the next periodic refresh
+    RAG_StartPeriodicRefresh();
+}
 
 
 // =============================================================

@@ -35,8 +35,8 @@
 
 // ---- Attachment state variables (shared with main script) --
 DEFINE attachmentStorageRoot type a size 500;   // disk folder for stored files
-DEFINE lastAttachmentId      type r;            // ID of most-recently uploaded attachment
-DEFINE ATTACH_CHUNK_SIZE     type r;            // characters per DocumentChunk (set in init)
+DEFINE lastAttachmentId type r;            // ID of most-recently uploaded attachment
+DEFINE ATTACH_CHUNK_SIZE type r;            // characters per DocumentChunk (set in init)
 
 
 // =============================================================
@@ -98,7 +98,8 @@ function SQL_InitAttachmentTables() {
         + "BEGIN "
         + "  CREATE TABLE dbo.Document ( "
         + "    DocumentId             BIGINT IDENTITY(1,1) PRIMARY KEY, "
-        + "    ChatAttachmentId       BIGINT           NOT NULL, "
+        + "    ChatAttachmentId       BIGINT           NULL, "
+        + "    KnowledgeBaseId        INT              NULL, "
         + "    DocumentType           NVARCHAR(30)     NOT NULL DEFAULT('attachment'), "
         + "    Title                  NVARCHAR(300)    NULL, "
         + "    SourceLanguageCode     NVARCHAR(10)     NULL, "
@@ -113,10 +114,14 @@ function SQL_InitAttachmentTables() {
         + "    MetaJson               NVARCHAR(MAX)    NULL, "
         + "    CONSTRAINT FK_Document_ChatAttachment "
         + "      FOREIGN KEY (ChatAttachmentId) REFERENCES dbo.ChatAttachment(ChatAttachmentId), "
+        + "    CONSTRAINT FK_Document_KnowledgeBase "
+        + "      FOREIGN KEY (KnowledgeBaseId) REFERENCES dbo.KnowledgeBase(KBId), "
         + "    CONSTRAINT UQ_Document_ChatAttachment UNIQUE (ChatAttachmentId) "
         + "  ); "
         + "  CREATE INDEX IX_Document_ExtractStatus "
         + "    ON dbo.Document(ExtractStatus, CreatedAtUtc); "
+        + "  CREATE INDEX IX_Document_KnowledgeBase "
+        + "    ON dbo.Document(KnowledgeBaseId, CreatedAtUtc DESC); "
         + "END;";
 
     // ---- DocumentChunk ------------------------------------------
@@ -127,7 +132,7 @@ function SQL_InitAttachmentTables() {
         + "  CREATE TABLE dbo.DocumentChunk ( "
         + "    DocumentChunkId    BIGINT IDENTITY(1,1) PRIMARY KEY, "
         + "    DocumentId         BIGINT           NOT NULL, "
-        + "    ChatSessionId      BIGINT           NOT NULL, "
+        + "    ChatSessionId      BIGINT           NULL, "
         + "    ChunkOrder         INT              NOT NULL, "
         + "    ChunkType          NVARCHAR(30)     NOT NULL DEFAULT('text'), "
         + "    ChunkText          NVARCHAR(MAX)    NOT NULL, "
@@ -142,6 +147,7 @@ function SQL_InitAttachmentTables() {
         + "    VectorStore        NVARCHAR(50)     NULL, "
         + "    VectorId           NVARCHAR(200)    NULL, "
         + "    ChunkHash          VARCHAR(64)      NULL, "
+        + "    EmbeddingVectorJson NVARCHAR(MAX)   NULL, "
         + "    CreatedAtUtc       DATETIME2(3)     NOT NULL DEFAULT SYSUTCDATETIME(), "
         + "    EmbeddedAtUtc      DATETIME2(3)     NULL, "
         + "    MetaJson           NVARCHAR(MAX)    NULL, "
@@ -161,12 +167,31 @@ function SQL_InitAttachmentTables() {
         + "    ON dbo.DocumentChunk(VectorId) WHERE VectorId IS NOT NULL; "
         + "END;";
 
+    // ---- RAGServiceStatus (heartbeat za RAG servis) ----------------
+    createRagStatusSql =
+          "USE " + WXAI_DB + "; "
+        + "IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='RAGServiceStatus' AND xtype='U') "
+        + "BEGIN "
+        + "  CREATE TABLE dbo.RAGServiceStatus ( "
+        + "    ServiceId        NVARCHAR(50)   NOT NULL PRIMARY KEY, "
+        + "    Status           NVARCHAR(30)   NOT NULL DEFAULT('starting'), "
+        + "    LastHeartbeatUtc DATETIME2(3)   NOT NULL DEFAULT SYSUTCDATETIME(), "
+        + "    PendingCount     INT            NULL, "
+        + "    EmbeddedCount    INT            NULL, "
+        + "    FailedCount      INT            NULL, "
+        + "    MachineName      NVARCHAR(100)  NULL, "
+        + "    ProcessId        INT            NULL "
+        + "  ); "
+        + "END;";
+
     try {
         sqlNonQuery(createAttachmentSql);
         sqlNonQuery(createDocumentSql);
         sqlNonQuery(createDocChunkSql);
+        sqlNonQuery(createRagStatusSql);
     } catch (ex) {
         MSG("SQL_InitAttachmentTables error: " + ex);
+        chatSqlEnabled = false;
     }
 }
 
@@ -462,6 +487,21 @@ function Attachment_ChunkDocument(documentId, chatSessionIdArg, extractedText) {
         }
         chunkText = Substring(extractedText, charStart, charEnd - charStart);
         try {
+            // --- Deduplikacija: preskoči chunk ako već postoji za isti dokument ---
+            dupParams = {};
+            dupParams.Add({"@docId", documentId});
+            dupParams.Add({"@text",  chunkText});
+            dupSql = "SELECT COUNT(1) FROM " + WXAI_DB + ".dbo.DocumentChunk "
+                   + "WHERE DocumentId = @docId "
+                   + "  AND ChunkHash = CONVERT(VARCHAR(64), "
+                   + "      HASHBYTES('SHA2_256', CONVERT(NVARCHAR(MAX), @text)), 2)";
+            dupRes = sqlQuery(dupSql, dupParams);
+            if (Size(dupRes) > 1 && int(dupRes[1][0]) > 0) {
+                chunkOrd++;
+                charStart = charEnd;
+                continue;   // duplicate, skip INSERT
+            }
+
             cp = {};
             cp.Add({"@docId",   documentId});
             cp.Add({"@sessId",  chatSessionIdArg});
@@ -471,9 +511,10 @@ function Attachment_ChunkDocument(documentId, chatSessionIdArg, extractedText) {
             cp.Add({"@cend",    charEnd});
             chunkSql = "INSERT INTO " + WXAI_DB + ".dbo.DocumentChunk "
                      + "(DocumentId, ChatSessionId, ChunkOrder, ChunkType, ChunkText, "
-                     + "CharStart, CharEnd, PageFrom, PageTo, SectionPath, EmbeddingStatus) "
-                     + "VALUES (@docId, @sessId, @ord, 'text', @text, "
-                     + "@cstart, @cend, 1, 1, '', 'pending')";
+                     + "CharStart, CharEnd, PageFrom, PageTo, SectionPath, EmbeddingStatus, ChunkHash) "
+                     + "VALUES (@docId, NULLIF(@sessId, 0), @ord, 'text', @text, "
+                     + "@cstart, @cend, 1, 1, '', 'pending', "
+                     + " CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', CONVERT(NVARCHAR(MAX), @text)), 2))";
             sqlNonQuery(chunkSql, cp);
             chunkOrd++;
             charStart = charEnd;

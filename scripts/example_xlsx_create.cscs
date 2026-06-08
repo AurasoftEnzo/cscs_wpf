@@ -1,0 +1,95 @@
+// =============================================
+// Simple Example: Create an XLSX file
+// Creates a product inventory spreadsheet
+// =============================================
+
+outputFile = "c:/cscs_wpf/scripts/example_output.xlsx";
+
+// Step 1: Create a new Excel file on disk (saves a blank workbook with "Sheet1")
+// XFileNew handles overwriting if the file already exists.
+XFileNew(outputFile);
+
+// Step 2: Open it into the global Excel.document (REQUIRED after XFileNew)
+XFileOpen(outputFile);
+
+// Step 3: Rename the default sheet
+XSheetRename(1, "Products");
+
+// ======== Header row (Row 1) ========
+XCellWriteString(1, 1, 1, "Product");
+XCellWriteString(1, 2, 1, "Category");
+XCellWriteString(1, 3, 1, "Price");
+XCellWriteString(1, 4, 1, "Quantity");
+XCellWriteString(1, 5, 1, "In Stock");
+
+// Format the header row — bold text
+XFontFormat(1, 1, 1, true, false, false, false, false, false);
+XFontFormat(1, 2, 1, true, false, false, false, false, false);
+XFontFormat(1, 3, 1, true, false, false, false, false, false);
+XFontFormat(1, 4, 1, true, false, false, false, false, false);
+XFontFormat(1, 5, 1, true, false, false, false, false, false);
+
+// Blue background for header cells
+XBackgroundColor(1, 1, 1, 68, 114, 196);
+XBackgroundColor(1, 2, 1, 68, 114, 196);
+XBackgroundColor(1, 3, 1, 68, 114, 196);
+XBackgroundColor(1, 4, 1, 68, 114, 196);
+XBackgroundColor(1, 5, 1, 68, 114, 196);
+
+// White font color for header text
+XFontColor(1, 1, 1, 255, 255, 255);
+XFontColor(1, 2, 1, 255, 255, 255);
+XFontColor(1, 3, 1, 255, 255, 255);
+XFontColor(1, 4, 1, 255, 255, 255);
+XFontColor(1, 5, 1, 255, 255, 255);
+
+// ======== Data rows ========
+// Row 2 — Laptop
+XCellWriteString(1, 1, 2, "Laptop");
+XCellWriteString(1, 2, 2, "Electronics");
+XCellWriteDouble(1, 3, 2, 899.99, "#,##0.00");
+XCellWriteInteger(1, 4, 2, 15);
+XCellWriteBoolean(1, 5, 2, true);
+
+// Row 3 — Desk Chair
+XCellWriteString(1, 1, 3, "Desk Chair");
+XCellWriteString(1, 2, 3, "Furniture");
+XCellWriteDouble(1, 3, 3, 249.50, "#,##0.00");
+XCellWriteInteger(1, 4, 3, 8);
+XCellWriteBoolean(1, 5, 3, true);
+
+// Row 4 — Notebook
+XCellWriteString(1, 1, 4, "Notebook");
+XCellWriteString(1, 2, 4, "Stationery");
+XCellWriteDouble(1, 3, 4, 3.75, "#,##0.00");
+XCellWriteInteger(1, 4, 4, 200);
+XCellWriteBoolean(1, 5, 4, true);
+
+// Row 5 — Monitor
+XCellWriteString(1, 1, 5, "Monitor");
+XCellWriteString(1, 2, 5, "Electronics");
+XCellWriteDouble(1, 3, 5, 349.00, "#,##0.00");
+XCellWriteInteger(1, 4, 5, 12);
+XCellWriteBoolean(1, 5, 5, true);
+
+// Row 6 — Desk Lamp (out of stock)
+XCellWriteString(1, 1, 6, "Desk Lamp");
+XCellWriteString(1, 2, 6, "Furniture");
+XCellWriteDouble(1, 3, 6, 45.99, "#,##0.00");
+XCellWriteInteger(1, 4, 6, 0);
+XCellWriteBoolean(1, 5, 6, false);
+
+// ======== Totals row (Row 7) ========
+XCellWriteString(1, 1, 7, "TOTAL");
+XFontFormat(1, 1, 7, true, false, false, false, false, false);
+XFontFormat(1, 4, 7, true, false, false, false, false, false);
+XCellWriteFormula(1, 4, 7, "SUM(D2:D6)");
+
+// ======== Auto-fit columns ========
+XColumnsAutoFit(1);
+
+// ======== Save the file ========
+XFileSave();
+
+// Signal completion and terminate the process
+exit();

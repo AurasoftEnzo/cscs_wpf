@@ -405,6 +405,7 @@ function btnKBSelect@clicked() {
 function btnKBDelete@clicked() {
     if (selectedKBId == 0) { return; }
     // Simple delete without confirmation dialog
+    deletingKBName = selectedKBName;
     SQL_DeleteKnowledgeBase(selectedKBId);
     if (currentKBId == selectedKBId) {
         currentKBId = 0; currentKBName = "";
@@ -413,7 +414,7 @@ function btnKBDelete@clicked() {
     selectedKBId = 0; selectedKBName = "";
     KB_RefreshList();
     KB_ClearDocList();
-    SetStatus("Baza znanja izbrisana: " + selectedKBName);
+    SetStatus("Baza znanja izbrisana: " + deletingKBName);
 }
 
 function btnKBRemoveDoc@clicked() {
@@ -542,7 +543,13 @@ function KB_RefreshDocList(kbId) {
         } else {
             // Subsequent: refresh data only (avoids "sealed template" error)
             kbDocLineCntr = 0;
-            DisplayArray("datagridKBDocs", "redisplayFromTop");
+            if (kbDocCount > 0) {
+                DisplayArray("datagridKBDocs", "redisplayFromTop");
+            } else {
+                DisplayArray("datagridKBDocs", "close");
+                DisplayArraySetup("datagridKBDocs", counterFld: kbDocLineCntr,
+                                activeElements: 0, maxElements: 200);
+            }
         }
     } catch (ex) {
         MSG("KB_RefreshDocList error: " + ex);
@@ -554,7 +561,9 @@ function KB_ClearDocList() {
     kbDocLineCntr = 0;
     if (kbDocsGridSetup) {
         kbDocLineCntr = 0;
-        DisplayArray("datagridKBDocs", "redisplayFromTop");
+        DisplayArray("datagridKBDocs", "close");
+        DisplayArraySetup("datagridKBDocs", counterFld: kbDocLineCntr,
+                        activeElements: 0, maxElements: 200);
     }
 }
 

@@ -1,33 +1,64 @@
+DEFINE newValue type a size 100;
+DEFINE newNameValue type a size 100;
+DEFINE newCustomerValue type a size 100;
 
 function btn1@Clicked(sender, load){
-    //MessageBox(varijabla);
     varijabla += "x";
-SetWidgetOptions("tb2", "Visible", "False");
+    SetWidgetOptions("tb2", "Visible", "False");
 }
 
 function tb1@textChange(sender, load){
-    MessageBox("tb1@textChange");
+    // This function is triggered on every text change
+    // You may want to use a button instead for better control
 }
 
 function btn2@Clicked(sender, load){
-SetWidgetOptions("tb2", "IsEnabled", "False");
+    SetWidgetOptions("tb2", "IsEnabled", "False");
+}
 
+// NEW FUNCTION: Add row when button is clicked or Enter key pressed
+function addNewRow@clicked()
+{
+
+    newCustomerValue = GetText("tb2");
+    newNameValue = GetText("tb1");
+
+    
+    if ( newNameValue.length == 0 && newCustomerValue.length == 0)
+    {
+        MessageBox("Please enter a value");
+        return;
+    }
+    
+    try
+    {
+        // Insert into database
+        SqlExecute("INSERT INTO customers (customerNumber,customerName) VALUES ('" + newCustomerValue + "','" + newNameValue + "')");
+        
+        // Add row to grid
+        DataGrid("grid1", "AddRow");
+        
+        // Refresh grid to show new data
+        DisplayTable("grid1", "RedisplayFromEnd");
+        
+        // Clear input field
+        SetText("tb1", "");
+        SetText("tb2", "");
+        
+        MessageBox("Row added successfully");
+    }
+    catch(exc)
+    {
+        MessageBox("Error: " + exc);
+    }
 }
 
 CreateWindow("../../scripts/lalala.xaml");
 
+SQLConnectionString("Server=127.0.0.1,1433;Database=database1;User Id=sa;Password=aura;");
 
-
-
-//SQLConnectionString("Server=192.168.0.58;Database=adictionary;User Id=sa;Password=aura;");
-//BindSQL("grid1", "SY_DATABASES");
-
-
+// Load initial data
+BindSQL("grid1", "customers");
 
 varijabla = "tekst varijable";
-
-SetWidgetOptions("tb1", "Text", "zxcv");
-//SetText("tb1", "asdf");
-
-
-
+SetWidgetOptions("tb1", "Text", "");

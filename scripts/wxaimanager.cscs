@@ -478,7 +478,6 @@ function KB_RefreshList() {
         kbRes = SQL_ListKnowledgeBases();
         kbListCount = Size(kbRes) - 1;
         if (kbListCount < 0) { kbListCount = 0; }
-
         // Initialize arrays
         for (i = 0; i < kbListCount; i++) {
             row = kbRes[i + 1];
@@ -487,13 +486,16 @@ function KB_RefreshList() {
             kbListDocCount[i] = int(row[3]);
             kbListDate[i]     = row[4];
         }
-
         // Reset counterFld tracker before setup (grid manages it from 0)
         kbLineCntr = 0;
         DisplayArray("datagridKB", "close");
+        SetWidgetOptions("lblKBStatus", "Text", "Nema dostupnih baza znanja. Kreirajte novu.");
+
+        if(kbListCount > 0){
+            
         DisplayArraySetup("datagridKB", counterFld: kbLineCntr,
                         activeElements: kbListCount, maxElements: 50);
-
+        }
         if (kbListCount == 0) {
             SetWidgetOptions("lblKBDetailTitle", "Text", "Nema baza znanja. Kreirajte novu.");
         }
@@ -531,18 +533,18 @@ function KB_RefreshDocList(kbId) {
             kbDocListSize[i]   = sizeStr;
             kbDocListStatus[i] = row[3];
         }
-
         if (!kbDocsGridSetup) {
             // First time: set up columns + data
             kbDocLineCntr = 0;
             DisplayArray("datagridKBDocs", "close");
-            DisplayArraySetup("datagridKBDocs", counterFld: kbDocLineCntr,
-                            activeElements: kbDocCount, maxElements: 200);
+            DisplayArraySetup("datagridKBDocs", counterFld: kbDocLineCntr,activeElements: kbDocCount, maxElements: 200);
             kbDocsGridSetup = true;
         } else {
             // Subsequent: refresh data only (avoids "sealed template" error)
             kbDocLineCntr = 0;
-            DisplayArray("datagridKBDocs", "redisplayFromTop");
+            if(kbDocCount > 0){
+                DisplayArraySetup("datagridKBDocs", counterFld: kbDocLineCntr,activeElements: kbDocCount, maxElements: 200);
+            }
         }
     } catch (ex) {
         MSG("KB_RefreshDocList error: " + ex);
@@ -554,7 +556,8 @@ function KB_ClearDocList() {
     kbDocLineCntr = 0;
     if (kbDocsGridSetup) {
         kbDocLineCntr = 0;
-        DisplayArray("datagridKBDocs", "redisplayFromTop");
+        // DisplayArray("datagridKBDocs", "redisplayFromTop");
+        DisplayArray("datagridKBDocs", "close");
     }
 }
 

@@ -75,6 +75,7 @@ DEFINE currentKBName type a size 200;
 DEFINE selectedKBId type r;
 DEFINE selectedKBName type a size 200;
 DEFINE kbPanelOpen type l;
+DEFINE lastselIdx type i; // to prevent redundant refresh on same selection
 DEFINE kbListCount type i;
 DEFINE kbListId type r array 50;
 DEFINE kbListName type a size 200 array 50;
@@ -341,6 +342,7 @@ function btnKnowledgeBase@clicked() {
             SetWidgetOptions("btnSettings", "Content", "Postavke");
         }
         SetWidgetOptions("panelKnowledgeBase", "Visible", true);
+        lastselIdx = -1; // reset to allow selection of first item
         kbPanelOpen = true;
         KB_RefreshList();
     }
@@ -466,8 +468,16 @@ function datagridKB@select() {
         selectedKBName = kbListName[selIdx];
         SetWidgetOptions("lblKBDetailTitle", "Text",
             selectedKBName + " (" + kbListDocCount[selIdx] + " dokumenata)");
-        KB_RefreshDocList(selectedKBId);
         SetWidgetOptions("lblKBStatus", "Text", "");
+        if(selectedKBId == lastselIdx){
+            return;
+        }    
+        lastselIdx = selectedKBId;
+        if(kbListDocCount[selIdx] == 0){
+            KB_ClearDocList();
+            return;
+        }
+        KB_RefreshDocList(selectedKBId);
     } catch (ex) {
         MSG("datagridKB@select error: " + ex);
     }
@@ -491,11 +501,12 @@ function KB_RefreshList() {
         kbLineCntr = 0;
         DisplayArray("datagridKB", "close");
         SetWidgetOptions("lblKBStatus", "Text", "Nema dostupnih baza znanja. Kreirajte novu.");
-
         if(kbListCount > 0){
+
             
         DisplayArraySetup("datagridKB", counterFld: kbLineCntr,
                         activeElements: kbListCount, maxElements: 50);
+  
         }
         if (kbListCount == 0) {
             SetWidgetOptions("lblKBDetailTitle", "Text", "Nema baza znanja. Kreirajte novu.");
@@ -542,7 +553,8 @@ function KB_RefreshDocList(kbId) {
             kbDocsGridSetup = true;
         } else {
             // Subsequent: refresh data only (avoids "sealed template" error)
-            kbDocLineCntr = 0;
+            kbDocLineCntr = 0;           
+            DisplayArray("datagridKBDocs", "close");
             if(kbDocCount > 0){
                 DisplayArraySetup("datagridKBDocs", counterFld: kbDocLineCntr,activeElements: kbDocCount, maxElements: 200);
             }

@@ -1,0 +1,195 @@
+// ====================================================================
+// Trial Balance (Probna Bilanca) - XLSX Export
+// ====================================================================
+// Data-driven approach: each row has Class/Group/Synth classification
+// columns. Use Excel PivotTable (Insert -> PivotTable) on the Excel
+// Table to get interactive subtotals by class/group/synthetic.
+// ====================================================================
+
+include(strTrim(tpath()) + "wxsy_lib.cscs");
+
+CreateWindow(strTrim(tpath()) + "wxgkbrutobil.xaml");
+
+function Wxgkbrutobil_OnClose()
+{
+}
+
+function Wxgkbrutobil_onDisplay()
+{
+    args = CommandLineArgs();
+    if(Size(args) > 2){
+        companyCode = args[2];
+        userCode = args[3];
+        CoSet(companyCode);
+    }else{
+        companyCode = Substring(CoGet(), 1, 2);
+    }
+
+    sqlQueryString = "select SY_CC_USER, SY_CC_YEAR, SY_CC_DBASE from " + strtrim(CommonDBGet()) + ".dbo.NKSYCCYR WHERE SY_CC_CODE = '" + companyCode + "'";
+    try {
+        sqlResult = sqlQuery(sqlQueryString);
+    } catch(exc) {
+        MessageBox(exc);
+    }
+    if (ffile(strTrim(tpath())+"CompanyLogo.jpg",'f') == "CompanyLogo.jpg") {
+        setimage("Logo",strTrim(tpath())+"CompanyLogo.jpg");
+    } else {
+        if (ffile(strTrim(tpath())+"AuraSoftLogo.png",'f') == "AuraSoftLogo.png") {
+           setimage("Logo",strTrim(tpath())+"AuraSoftLogo.png");
+        } else {
+            MessageBox("Molim da postavite logo znak firme kao: "+strTrim(tpath())+"CompanyLogo.jpg");
+        }
+    }
+    outputFolder = "C:\\winx";
+    fileName = "Bruto_bilanca_" + companyCode + "_" + Now("yyyyMMdd_HHmmss") + ".xlsx";
+    trenutnaGodinaBaza = sqlResult[1][2].trim();
+    ovagod_h = sqlResult[1][1].trim();
+}
+
+// ===== Browse button =====
+function btnBrowse@clicked() {
+    folder = BrowseForFolder("Select output folder", outputFolder);
+    if (folder != "") { outputFolder = folder; }
+}
+
+// ===== Generate button =====
+function btnGenerate@clicked() {
+    folderPath = "C:\cscs_wpf\scripts";
+    fileName = "Bruto_bilanca_" + companyCode + "_" + Now("yyyyMMdd_HHmmss") + ".xlsx";
+    compCode = companyCode;
+    year = ovagod_h;
+
+    if (folderPath == "" || fileName == "") {
+        MessageBox("Please enter both folder path and file name.");
+        return;
+    }
+
+    SetText("txtStatus", "Generating Trial Balance...");
+
+    data_konto = {}; data_objed = {}; data_nazivKonto = {}; data_nazivOJ = {};
+    data_pocDug = {}; data_pocPot = {}; data_promDug = {}; data_promPot = {};
+
+    // ===== Live SQL =====
+    sqlResult = sqlQuery("SELECT gk_pr_konto, gk_pr_objed, "
+        + "ISNULL(gk_ac_opis,''), ISNULL(nkgk_oj_naziv,''), "
+        + "ROUND(SUM(CASE WHEN ISNULL(gk_pr_poc_stanj,'')='D' AND gk_pr_dp='D' THEN gk_pr_iznos ELSE 0 END),2), "
+        + "ROUND(SUM(CASE WHEN ISNULL(gk_pr_poc_stanj,'')='D' AND gk_pr_dp='P' THEN gk_pr_iznos ELSE 0 END),2), "
+        + "ROUND(SUM(CASE WHEN (ISNULL(gk_pr_poc_stanj,'')!='D' OR gk_pr_poc_stanj IS NULL) AND gk_pr_dp='D' THEN gk_pr_iznos ELSE 0 END),2), "
+        + "ROUND(SUM(CASE WHEN (ISNULL(gk_pr_poc_stanj,'')!='D' OR gk_pr_poc_stanj IS NULL) AND gk_pr_dp='P' THEN gk_pr_iznos ELSE 0 END),2) "
+        + "FROM " + trenutnaGodinaBaza + ".[dbo].[NKGKPROM] "
+        + "LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[NKGKACCT] ON gk_pr_konto=gk_ac_konto "
+        + "LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkgkoj] ON gk_pr_objed=nkgk_oj_code "
+        + "WHERE gk_pr_konto IS NOT NULL AND gk_pr_konto != '' "
+        + "GROUP BY gk_pr_konto, gk_pr_objed, gk_ac_opis, nkgk_oj_naziv "
+        + "ORDER BY gk_pr_konto, gk_pr_objed");
+    if (sqlResult.length <= 1) { MessageBox("No data!"); return; }
+    for (i = 1; i < sqlResult.length; i++) {
+        r = sqlResult[i]; di = i - 1;
+        pd = r[4]; pp = r[5]; prd = r[6]; prp = r[7];
+        if (pd==0 && pp==0 && prd==0 && prp==0) { continue; }
+        data_konto[di] = strTrim(r[0]); data_objed[di] = strTrim(r[1]);
+        data_nazivKonto[di] = strTrim(r[2]); data_nazivOJ[di] = strTrim(r[3]);
+        data_pocDug[di] = pd; data_pocPot[di] = pp;
+        data_promDug[di] = prd; data_promPot[di] = prp;
+    }
+
+    totalRows = data_konto.length;
+    nazivFirme = "DEMO COMPANY";
+    datumKreiranja = Now("dd.MM.yyyy HH:mm");
+
+    // ===== Build path =====
+    lastCh = Substring(folderPath, folderPath.length-1, 1);
+    if (lastCh != "/" && lastCh != "\\") { folderPath = folderPath + "\\"; }
+    outputFile = folderPath + fileName;
+
+    // ===== Create XLSX =====
+    XFileNew(outputFile); XFileOpen(outputFile);
+    XSheetRename(1, "Trial Balance");
+
+    // ----- Header -----
+    XCellWriteString(1, 1, 1, nazivFirme);
+    XFontSize(1, 1, 1, 14); XFontFormat(1, 1, 1, true, false, false, false, false, false);
+    XCellWriteString(1, 1, 2, "TRIAL BALANCE / PROBNA BILANCA");
+    XFontSize(1, 1, 2, 12); XFontFormat(1, 1, 2, true, false, false, false, false, false);
+    XCellWriteString(1, 1, 3, "Year: " + year + "   Created: " + datumKreiranja);
+    XFontSize(1, 1, 3, 10);
+
+    // ----- 15-column headers -----
+    headerRow = 5;
+    headerLabels = {"Account","Account Name","Dept Code","Dept Name",
+        "Opening Debit","Opening Credit","Turnover Debit","Turnover Credit",
+        "Total Debit","Total Credit","Balance Debit","Balance Credit",
+        "Class","Group","Synth"};
+    numCols = headerLabels.length;
+
+    for (col = 0; col < numCols; col++) {
+        XCellWriteString(1, col+1, headerRow, headerLabels[col]);
+        XFontFormat(1, col+1, headerRow, true, false, false, false, false, false);
+        XBackgroundColor(1, col+1, headerRow, 68, 114, 196);
+        XFontColor(1, col+1, headerRow, 255, 255, 255);
+        XAlign(1, col+1, headerRow, 2, 2);
+    }
+
+    // ----- Data rows (no subtotals - use Excel PivotTable) -----
+    currentRow = headerRow + 1;
+
+    for (i = 0; i < totalRows; i++) {
+        konto=data_konto[i];
+        if (konto=="") { continue; }
+        objed=data_objed[i];
+        nazivKonto=data_nazivKonto[i]; nazivOJ=data_nazivOJ[i];
+        pocDug=data_pocDug[i]; pocPot=data_pocPot[i];
+        promDug=data_promDug[i]; promPot=data_promPot[i];
+
+        ukupnoDug=pocDug+promDug; ukupnoPot=pocPot+promPot;
+        if (ukupnoDug>=ukupnoPot) { saldoDug=ukupnoDug-ukupnoPot; saldoPot=0; }
+        else { saldoDug=0; saldoPot=ukupnoPot-ukupnoDug; }
+
+        XCellWriteString(1,1,currentRow,konto);     XCellWriteString(1,2,currentRow,nazivKonto);
+        XCellWriteString(1,3,currentRow,objed);     XCellWriteString(1,4,currentRow,nazivOJ);
+        XCellWriteDouble(1,5,currentRow,pocDug,"#,##0.00");  XCellWriteDouble(1,6,currentRow,pocPot,"#,##0.00");
+        XCellWriteDouble(1,7,currentRow,promDug,"#,##0.00"); XCellWriteDouble(1,8,currentRow,promPot,"#,##0.00");
+        XCellWriteDouble(1,9,currentRow,ukupnoDug,"#,##0.00");  XCellWriteDouble(1,10,currentRow,ukupnoPot,"#,##0.00");
+        XCellWriteDouble(1,11,currentRow,saldoDug,"#,##0.00");  XCellWriteDouble(1,12,currentRow,saldoPot,"#,##0.00");
+
+        // Classification columns
+        XCellWriteString(1,13,currentRow,Substring(konto,0,1));  // Class
+        XCellWriteString(1,14,currentRow,Substring(konto,0,2));  // Group
+        XCellWriteString(1,15,currentRow,Substring(konto,0,3));  // Synth
+
+        if (i%2==1) {
+            XBackgroundColor(1,1,currentRow,232,241,254); XBackgroundColor(1,2,currentRow,232,241,254);
+            XBackgroundColor(1,3,currentRow,232,241,254); XBackgroundColor(1,4,currentRow,232,241,254);
+        }
+        currentRow++;
+    }
+
+    // ----- Grand Total (SUM formulas) -----
+    dataFirstRow = headerRow + 1;
+    dataLastRow = currentRow - 1;
+    XCellWriteString(1,1,currentRow,"GRAND TOTAL");
+
+    XCellWriteFormula(1,5,currentRow,"SUM(E"+dataFirstRow+":E"+dataLastRow+")");
+    XCellWriteFormula(1,6,currentRow,"SUM(F"+dataFirstRow+":F"+dataLastRow+")");
+    XCellWriteFormula(1,7,currentRow,"SUM(G"+dataFirstRow+":G"+dataLastRow+")");
+    XCellWriteFormula(1,8,currentRow,"SUM(H"+dataFirstRow+":H"+dataLastRow+")");
+    XCellWriteFormula(1,9,currentRow,"SUM(I"+dataFirstRow+":I"+dataLastRow+")");
+    XCellWriteFormula(1,10,currentRow,"SUM(J"+dataFirstRow+":J"+dataLastRow+")");
+    XCellWriteFormula(1,11,currentRow,"SUM(K"+dataFirstRow+":K"+dataLastRow+")");
+    XCellWriteFormula(1,12,currentRow,"SUM(L"+dataFirstRow+":L"+dataLastRow+")");
+
+    for (col=1; col<=numCols; col++) {
+        XFontFormat(1,col,currentRow,true,false,false,false,false,false);
+        XBackgroundColor(1,col,currentRow,68,114,196);
+        XFontColor(1,col,currentRow,255,255,255);
+    }
+    currentRow++;
+
+    // ----- Excel Table + Save -----
+    XSetTable(1, headerRow, 1, currentRow-1, numCols, "TrialBalanceTable");
+    XColumnsAutoFit(1);
+    XFileSave();
+
+    SetText("txtStatus", "Done! Saved to: " + outputFile);
+    MessageBox("Trial Balance created:\n" + outputFile);
+}

@@ -470,9 +470,25 @@ function Attachment_UploadOnePath(srcPath) {
         return;
     }
 
-    fileSizeKb = int(fileSize / 1024);
-    SetStatus("Prilog '" + fileName + "' dodan (" + fileSizeKb + " KB).");
-    AppendToDisplay("Sustav", "Prilog dodan: " + fileName + " (" + fileSizeKb + " KB)");
+    rawSize = string(fileSize);   // fileSize in bytes
+    sizeStr = "";
+
+    if (rawSize != "" && rawSize != "0") {
+        len = rawSize.length;
+
+        if (len > 9) {
+            sizeStr = Substring(rawSize, 0, len - 9) + " GB";
+        } elif (len > 6) {
+            sizeStr = Substring(rawSize, 0, len - 6) + " MB";
+        } elif (len > 3) {
+            sizeStr = Substring(rawSize, 0, len - 3) + " KB";
+        } else {
+            sizeStr = rawSize + " B";
+        }
+    }
+
+    SetStatus("Prilog '" + fileName + "' dodan (" + sizeStr + ").");
+    AppendToDisplay("Sustav", "Prilog dodan: " + fileName + " (" + sizeStr + ")");
 
     // --- Immediate text extraction for plain-text formats ---
     extLow = StrLower(fileExt);

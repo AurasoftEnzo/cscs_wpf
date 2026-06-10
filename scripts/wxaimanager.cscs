@@ -33,6 +33,7 @@ DEFINE msgCount type i;
 DEFINE msgCountOnLoad type i;
 DEFINE msgRole type a size 20  array 200;
 DEFINE msgContent type a size 5000 array 200;
+DEFINE txtInput type a size 10000;
 
 // ---- Conversation history (session) -------------------------
 DEFINE histCount type i;
@@ -143,6 +144,7 @@ function wxaimanager_OnStart() {
 
     // --- chat state ---
     chatDisplayText  = "";
+    txtInput         = "";
     msgCount         = 0;
     msgCountOnLoad   = 0;
     histCount        = 0;
@@ -250,7 +252,8 @@ function btnSend@clicked() {
         return;
     }
     // aiProvider, aiModel and userInput are kept in sync via DataContext bindings
-    userInput= GetWidgetOptions("txtInput", "Text");    
+    // userInput= GetWidgetOptions("txtInput", "Text");  
+    userInput= txtInput;
     inputText = userInput;
     inputText = inputText.Trim();
     if (inputText == "") {
@@ -267,7 +270,8 @@ function btnSend@clicked() {
     // Persist user message to SQL
     SQL_SaveUserMessage(inputText);
     // Clear input
-    SetWidgetOptions("txtInput", "Text", "");
+    // SetWidgetOptions("txtInput", "Text", "");
+    txtInput = "";
     // Send to AI (async – UI thread se ne blokira)
     SendToAI();
 }

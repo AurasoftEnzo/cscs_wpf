@@ -515,23 +515,21 @@
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
-                                <TextBox Grid.Row="0"
-                                         Name="txtInput"
-                                         DataContext="userInput"
-                                         TextWrapping="Wrap"
-                                         AcceptsReturn="True"
+                                <wcl:ASEnterBox Grid.Row="0"
+                                         x:Name="userInput"
+                                         FieldName="txtInput"
                                          MinHeight="62"
                                          MaxHeight="130"
                                          Background="#263646"
+                                         KeyTraps="enter_key|btnSend@clicked"
                                          Foreground="White"
-                                         CaretBrush="White"
                                          BorderBrush="#3D5066"
                                          BorderThickness="1"
+                                         AcceptsReturn="True"
                                          Padding="10,8"
                                          FontFamily="Segoe UI"
                                          FontSize="13"
-                                         VerticalScrollBarVisibility="Auto"
-                                         ToolTip="Unesite poruku i pritisnite Pošalji (ili Ctrl+Enter)"/>
+                                         ToolTip="Unesite poruku i pritisnite Pošalji (ili pretisnite Enter)"/>
 
                                 <CheckBox Grid.Row="1"
                                           Name="cbWebSearch"

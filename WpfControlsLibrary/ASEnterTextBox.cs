@@ -15,6 +15,8 @@ namespace WpfControlsLibrary
         string textBeforeChange;
 
         public bool SkipTextChangedHandler = false;
+        public bool EnterAddsNewLine = true;
+
 
         public Dictionary<string, List<object>> paramsForKeyTraps = new Dictionary<string, List<object>>();
 
@@ -46,7 +48,7 @@ namespace WpfControlsLibrary
         //        // verify that the textbox handled the paste command
         //        if (e.Handled)
         //        {
-                    
+
         //        }
         //    }
         //}
@@ -56,6 +58,22 @@ namespace WpfControlsLibrary
             var etb = e.Source as ASEnterTextBox;
 
             textBeforeChange = etb.Text;
+
+            if (e.Key == Key.Enter && Keyboard.Modifiers == ModifierKeys.None)
+            {
+                // execute whatever enter_key is mapped to
+                if (paramsForKeyTraps.ContainsKey("enter_key"))
+                {
+                    var widget = paramsForKeyTraps["enter_key"][1] as FrameworkElement;
+
+                    if (widget?.CommandBindings.Count > 0)
+                    {
+                        widget.CommandBindings[0].Command.Execute(null);                      
+                    }
+                }
+                e.Handled = true; // Stop processing this key event
+            }
+
         }
 
         private void this_TextChanged(object sender, TextChangedEventArgs e)

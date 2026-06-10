@@ -3507,8 +3507,13 @@ namespace WpfCSCS
 							key = Key.F3;
 							modifier = ModifierKeys.None;
 						}
+                        else if (keyFromXaml.ToLower() == "f4")
+                        {
+                            key = Key.F4;
+                            modifier = ModifierKeys.None;
+                        }
 
-						routedCommand.InputGestures.Add(new KeyGesture(key, modifier, keyFromXaml));
+                        routedCommand.InputGestures.Add(new KeyGesture(key, modifier, keyFromXaml));
 
 						if (!(widget as ASEnterTextBox).paramsForKeyTraps.Any(p => p.Key == keyFromXaml))
 							(widget as ASEnterTextBox).paramsForKeyTraps.Add(keyFromXaml, new List<object>() { funcName, widget, enterBox.Name });

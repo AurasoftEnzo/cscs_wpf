@@ -204,7 +204,18 @@ namespace WpfControlsLibrary
                 base.SetValue(CornerRadiusProperty, value);
             }
         }
-
+        public static readonly DependencyProperty AcceptsReturnProperty = DependencyProperty.Register("AcceptsReturn",typeof(bool),typeof(ASEnterBox),new PropertyMetadata(false));
+        public bool AcceptsReturn
+        {
+            get
+            {
+                return (bool)GetValue(AcceptsReturnProperty);
+            }
+            set
+            {
+                SetValue(AcceptsReturnProperty, value);
+            }
+        }
 
         public ASEnterBox()
         {
@@ -227,6 +238,7 @@ namespace WpfControlsLibrary
                 enterBoxTextBox.FontWeight = FontWeight;
 
                 enterBoxTextBox.IsReadOnly = IsReadOnly;
+                enterBoxTextBox.AcceptsReturn = AcceptsReturn;
 
                 enterBoxTextBox.Background = Background == null ? new SolidColorBrush() { Color = Colors.White } : Background;
                 enterBoxTextBox.Foreground = Foreground == null ? new SolidColorBrush() { Color = Colors.Black } : Foreground;
@@ -248,6 +260,7 @@ namespace WpfControlsLibrary
                 enterBoxButton.Width = ButtonSize;
 
                 enterBoxButton.Background = ButtonBackground == null ? new SolidColorBrush() { Color = Colors.LightGray } : ButtonBackground;
+
 
                 loaded = true;
             }

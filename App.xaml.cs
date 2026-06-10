@@ -97,7 +97,12 @@ namespace WpfCSCS
 
         void Generic_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Enter/* & (sender as TextBox).AcceptsReturn == false*/)
+            if (sender is ASEnterTextBox tb && tb.AcceptsReturn)
+            {
+                return;
+            }
+
+            if (e.Key == Key.Enter)
             {
                 e.Handled = true;
                 MoveToNextUIElement(e);

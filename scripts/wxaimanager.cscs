@@ -14,6 +14,7 @@
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxaimanager_SQL.cscs") : strTrim(tpath()) + "wxaimanager_sql.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxaimanager_attachments.cscs") : strTrim(tpath()) + "wxaimanager_attachments.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxaimanager_websearch.cscs") : strTrim(tpath()) + "wxaimanager_websearch.cscs");
+include(DownloadScripts() == true ? Download(ServerAddress() + "wxaimanager_cache.cscs") : strTrim(tpath()) + "wxaimanager_cache.cscs");
 include(DownloadScripts() == true ? Download(ServerAddress() + "wxaimanager_embeddings.cscs") : strTrim(tpath()) + "wxaimanager_embeddings.cscs");
 
 CreateWindow(strTrim(tpath()) + "wxaimanager.xaml");
@@ -26,6 +27,8 @@ DEFINE aiModel type a size 100;
 DEFINE aiSystemPrompt type a size 3000;
 DEFINE aiTemperatureStr type a size 10;
 DEFINE aiMaxTokensStr type a size 10;
+DEFINE aiContextLimit type r;
+DEFINE aiMaxInlineTokens type r;
 DEFINE settingsFilePath type a size 400;
 
 // ---- Current conversation -----------------------------------
@@ -139,6 +142,8 @@ function wxaimanager_OnStart() {
     aiSystemPrompt   = "You are a helpful assistant.";
     aiTemperatureStr = "0.7";
     aiMaxTokensStr   = "2000";
+    aiContextLimit    = 128000;
+    aiMaxInlineTokens = 4000;
 
     //LoadSettings();
 
@@ -224,6 +229,9 @@ function wxaimanager_OnStart() {
     SQL_LoadHistoryFromDB();
     // --- init embeddings and process any pending chunks ---
     InitEmbeddings();
+    // --- init in-memory vector cache ---
+    Cache_Init();
+    Cache_BuildAll();
     KB_UpdateStatusBar();
     // --- periodično osvježavanje RAG statusa (svakih 30s) ---
     RAG_StartPeriodicRefresh();
@@ -664,6 +672,46 @@ function datagridHistory@select() {
 
 
 // =============================================================
+//  TOKEN ESTIMATION & CONTEXT TRUNCATION
+// =============================================================
+
+function EstimateTokenCount(text) {
+    // Rough estimate: ~4 chars per token for English/CTL,
+    // ~3 chars per token for CJK — use 4 as a safe average.
+    if (text == "") { return 0; }
+    return int(text.length / 4) + 1;
+}
+
+function TruncateContext(ctx, targetTokens) {
+    // Progressively reduce context until it fits within targetTokens.
+    // Returns truncated context string.
+    if (ctx == "") { return ""; }
+    
+    currentEst = EstimateTokenCount(ctx);
+    if (currentEst <= targetTokens) { return ctx; }
+    
+    // Level 1: halve
+    halfLen = int(ctx.length / 2);
+    ctx = Substring(ctx, 0, halfLen) + "\n...[kontekst skraćen na pola]...\n";
+    currentEst = EstimateTokenCount(ctx);
+    if (currentEst <= targetTokens) { return ctx; }
+    
+    // Level 2: quarter
+    qLen = int(ctx.length / 4);
+    ctx = Substring(ctx, 0, qLen) + "\n...[kontekst znatno skraćen]...\n";
+    currentEst = EstimateTokenCount(ctx);
+    if (currentEst <= targetTokens) { return ctx; }
+    
+    // Level 3: minimal (keep only 500 chars)
+    ctx = Substring(ctx, 0, 500) + "\n...[kontekst minimalan]...\n";
+    currentEst = EstimateTokenCount(ctx);
+    if (currentEst <= targetTokens) { return ctx; }
+    
+    // Level 4: remove all context
+    return "";
+}
+
+// =============================================================
 //  API CALL
 // =============================================================
 
@@ -692,6 +740,29 @@ function SendToAI() {
         attachRes = Attachment_QueryForSend(currentSessionId);
         attachCnt = Size(attachRes) - 1;
 
+        // Limit to the most recent attachments to prevent unbounded
+        // accumulation across the session (max 3 text, 2 images).
+        // Attachments are ordered ASC by CreatedAtUtc, so the last
+        // entries in the array are the most recent.
+        MAX_TEXT_ATTACH  = 3;
+        MAX_IMAGE_ATTACH = 2;
+
+        // First pass: count how many of each type we have
+        textTotal = 0;
+        imageTotal = 0;
+        if (attachCnt > 0) {
+            for (ai = 0; ai < attachCnt; ai++) {
+                aRowTmp = attachRes[ai + 1];
+                aKindTmp = Attachment_ClassifyMime(aRowTmp[1]);
+                aTextTmp = aRowTmp[3];
+                if (aKindTmp == "text" && aTextTmp != "") { textTotal++; }
+                elif (aKindTmp == "image")               { imageTotal++; }
+            }
+        }
+
+        // Second pass: include only the last N of each type
+        textSeen = 0;
+        imageSeen = 0;
         if (attachCnt > 0) {
             for (ai = 0; ai < attachCnt; ai++) {
                 aRow   = attachRes[ai + 1];
@@ -704,24 +775,59 @@ function SendToAI() {
                 aKind = Attachment_ClassifyMime(aMime);
 
                 if (aKind == "text" && aText != "") {
-                    // Include extracted text as context block
-                    textContext = textContext + "[Prilog: " + aName + "]\n" + aText + "\n\n";
+                    textSeen++;
+                    // Include if it's among the last MAX_TEXT_ATTACH text attachments
+                    if (textSeen > textTotal - MAX_TEXT_ATTACH) {
+                        textContext = textContext + "[Prilog: " + aName + "]\n" + aText + "\n\n";
+                    }
                 } elif (aKind == "image") {
-                    // Encode image as base64 and add as vision content entry
-                    b64 = File2Base64(aPath);
-                    if (b64 != "") {
-                        visionItems = visionItems
-                            + ',{"type":"image_url","image_url":{"url":"data:'
-                            + aMime + ';base64,' + b64 + '"}}';
+                    imageSeen++;
+                    // Include if it's among the last MAX_IMAGE_ATTACH images
+                    if (imageSeen > imageTotal - MAX_IMAGE_ATTACH) {
+                        b64 = File2Base64(aPath);
+                        if (b64 != "") {
+                            visionItems = visionItems
+                                + ',{"type":"image_url","image_url":{"url":"data:'
+                                + aMime + ';base64,' + b64 + '"}}';
+                        }
                     }
                 } else {
-                    // Binary file – collect for multipart upload
-                    binaryFiles.Add({aName, aPath, "file"});
+                    // Binary file – check if extracted text is available (future parser)
+                    if (aText != "") {
+                        // Extracted text exists – treat as text attachment
+                        textSeen++;
+                        if (textSeen > textTotal - MAX_TEXT_ATTACH) {
+                            textContext = textContext + "[Prilog: " + aName + "]\n" + aText + "\n\n";
+                        }
+                    } else {
+                        // No extracted text – send as multipart file attachment
+                        binaryFiles.Add({aName, aPath, "file"});
+                    }
                 }
             }
 
             if (textContext != "") {
                 textContext = "--- Priloženi dokumenti ---\n" + textContext + "---";
+            }
+        }
+
+        // ---- Truncate inline attachment text if over limit; fall back to RAG chunks ----
+        if (textContext != "" && aiMaxInlineTokens > 0) {
+            estTokens = EstimateTokenCount(textContext);
+            if (estTokens > aiMaxInlineTokens) {
+                // Try RAG over attachment chunks first (requires embedded chunks)
+                ragForAttach = Cache_SearchAttachments(inputText, 5, currentSessionId);
+                if (ragForAttach != "") {
+                    textContext = ragForAttach;
+                    SetStatus("Prilozi su preveliki za inline slanje – koristim RAG pretragu (" + estTokens + " > " + aiMaxInlineTokens + " tokena).");
+                } else {
+                    // Fallback: truncate inline text to fit limit
+                    maxChars = aiMaxInlineTokens * 4;
+                    if (textContext.length > maxChars) {
+                        textContext = Substring(textContext, 0, maxChars) + "\n...[sadržaj priloga skraćen na " + aiMaxInlineTokens + " tokena]...\n---";
+                        SetStatus("Prilozi skraćeni na " + aiMaxInlineTokens + " tokena (RAG nije dostupan za ovu sesiju).");
+                    }
+                }
             }
         }
 
@@ -738,16 +844,24 @@ function SendToAI() {
         webSearchEnabled = false;
 
         // ---- RAG: semantic search over embedded chat history ----
-        if (currentSessionId > 0 && msgCount > 2) {
-            ragCtx = Embedding_SearchSimilar(inputText, 5, currentSessionId);
+        // Skip chat-history RAG when text attachments are already inlined,
+        // because those same chunks exist in the message history and would
+        // duplicate content in the prompt.
+        hasTextAttachments = (textContext != "");
+        if (currentSessionId > 0 && msgCount > 2 && !hasTextAttachments) {
+            ragCtx = Cache_SearchChat(inputText, 5, currentSessionId);
             if (ragCtx != "") {
                 textContext = textContext + ragCtx;
             }
         }
 
         // ---- Knowledge Base RAG: search across active KB ----
+        // KB documents are a separate corpus, so we always search them,
+        // but reduce result count if we already have heavy inline context.
+        kbTopN = 5;
+        if (hasTextAttachments) { kbTopN = 2; }
         if (currentKBId > 0) {
-            kbCtx = Embedding_SearchSimilarAcrossKb(inputText, 5, currentKBId);
+            kbCtx = Cache_SearchKb(inputText, kbTopN, currentKBId);
             if (kbCtx != "") {
                 textContext = textContext + "\n\n" + kbCtx;
             }
@@ -755,10 +869,44 @@ function SendToAI() {
 
         // Build JSON payload (enriched with text context and/or vision items)
         jsonBody = BuildApiPayload(textContext, visionItems);
-        
-        // DEBUG: save payload to file for inspection
-        SaveFile(jsonBody, strTrim(tpath()) + "_debug_payload.txt", "");
-        
+
+        // ---- Token estimation & warning ----
+        estimatedPrompt = EstimateTokenCount(jsonBody);
+        estimatedTotal  = estimatedPrompt + int(aiMaxTokensStr);
+
+        if (estimatedTotal > aiContextLimit) {
+            pctUsed = int(estimatedTotal * 100 / aiContextLimit);
+            msgText = "Procijenjeni tokeni premašuju limit modela:\n\n"
+                    + "  Prompt (ulaz):       " + estimatedPrompt + "\n"
+                    + "  + Output (max_tokens): " + aiMaxTokensStr + "\n"
+                    + "  = Ukupno:              " + estimatedTotal + "\n"
+                    + "  Limit modela:          " + aiContextLimit + " (" + pctUsed + "%)\n\n"
+                    + "Odaberite radnju:\n"
+                    + "  Da (Pošalji)   – pošalji zahtjev bez promjena\n"
+                    + "  Ne (Skrati)    – skrati kontekst pa pošalji\n"
+                    + "  Odustani       – otkaži slanje";
+
+            choice = MessageBox(msgText, "Upozorenje: limit tokena", "yesnocancel", "warning");
+
+            if (choice == "Cancel") {
+                SetUIBusy(false);
+                SetStatus("Slanje otkazano – kontekst prevelik.");
+                return;
+            }
+            elif (choice == "No") {
+                // Truncate: target prompt budget is 75% of context limit
+                targetPrompt = int((aiContextLimit - int(aiMaxTokensStr)) * 0.75);
+                if (targetPrompt < 500) { targetPrompt = 500; }
+                
+                textContext = TruncateContext(textContext, targetPrompt);
+                jsonBody = BuildApiPayload(textContext, visionItems);
+                newEst = EstimateTokenCount(jsonBody);
+                newTotal = newEst + int(aiMaxTokensStr);
+                SetStatus("Kontekst skraćen. Procijenjeni tokeni: " + newEst + " (+" + aiMaxTokensStr + " izlaz = " + newTotal + ")");
+            }
+            // 'Yes' (Pošalji) – fall through, send as-is
+        }
+
         SetUIBusy(true);
         SetStatus("Šaljem zahtjev AI-u...");
 
@@ -982,7 +1130,7 @@ function ProcessAIError() {
 //   3. Last 10 previous messages  – sliding window
 //   4+5. RAG document chunks + new user prompt (last message)
 function BuildApiPayload(textContext, visionItems) {
-    payload  = '{"model": "' + aiModel + '","messages": [';
+    payload  = '{"model": "' + aiModel + '","max_tokens":' + aiMaxTokensStr + ',"messages": [';
     firstMsg = true;
 
     // 1. System prompt
@@ -1095,26 +1243,6 @@ function SaveCurrentChatToHistory() {
     if (msgCount <= msgCountOnLoad) {
         return;
     }
-    
-    // Shift existing history down by 1 (to make room at index 0)
-    if (histCount >= 50) {
-        // Drop oldest (item at position 49)
-        for (i = 49; i > 0; i--) {
-            arrayHistChatId[i] = arrayHistChatId[i-1];
-            arrayHistDate[i]   = arrayHistDate[i-1];
-            arrayHistTitle[i]  = arrayHistTitle[i-1];
-            arrayHistText[i]   = arrayHistText[i-1];
-        }
-    } else {
-        // Shift items down (don't drop anything yet)
-        for (i = histCount; i > 0; i--) {
-            arrayHistChatId[i] = arrayHistChatId[i-1];
-            arrayHistDate[i]   = arrayHistDate[i-1];
-            arrayHistTitle[i]  = arrayHistTitle[i-1];
-            arrayHistText[i]   = arrayHistText[i-1];
-        }
-        histCount++;
-    }
 
     ts    = Now("dd.MM. HH:mm");
     title = "";
@@ -1133,11 +1261,48 @@ function SaveCurrentChatToHistory() {
         title = "(razgovor bez poruke)";
     }
 
-    // Insert at index 0 (top of list)
-    arrayHistChatId[0] = currentSessionId;  // assuming this variable exists
-    arrayHistDate[0]   = ts;
-    arrayHistTitle[0]  = title;
-    arrayHistText[0]   = chatDisplayText;
+    // Check if this session already exists in the history list.
+    // If it does, update the existing entry (refresh title, date, text)
+    // instead of adding a duplicate.
+    existingIdx = -1;
+    for (i = 0; i < histCount; i++) {
+        if (arrayHistChatId[i] == currentSessionId) {
+            existingIdx = i;
+            break;
+        }
+    }
+
+    if (existingIdx >= 0) {
+        // Update existing entry in-place
+        arrayHistDate[existingIdx]  = ts;
+        arrayHistTitle[existingIdx] = title;
+        arrayHistText[existingIdx]  = chatDisplayText;
+    } else {
+        // New session: shift existing entries down to make room at index 0
+        if (histCount >= 50) {
+            // Drop oldest (item at position 49)
+            for (i = 49; i > 0; i--) {
+                arrayHistChatId[i] = arrayHistChatId[i-1];
+                arrayHistDate[i]   = arrayHistDate[i-1];
+                arrayHistTitle[i]  = arrayHistTitle[i-1];
+                arrayHistText[i]   = arrayHistText[i-1];
+            }
+        } else {
+            for (i = histCount; i > 0; i--) {
+                arrayHistChatId[i] = arrayHistChatId[i-1];
+                arrayHistDate[i]   = arrayHistDate[i-1];
+                arrayHistTitle[i]  = arrayHistTitle[i-1];
+                arrayHistText[i]   = arrayHistText[i-1];
+            }
+            histCount++;
+        }
+
+        // Insert at index 0 (top of list)
+        arrayHistChatId[0] = currentSessionId;
+        arrayHistDate[0]   = ts;
+        arrayHistTitle[0]  = title;
+        arrayHistText[0]   = chatDisplayText;
+    }
 
     UpdateHistoryGrid();
     msgCountOnLoad = msgCount;  // mark current state as saved
@@ -1227,6 +1392,10 @@ function LoadSettings() {
                 aiTemperatureStr = val;
             } elif (key == "maxtokens") {
                 aiMaxTokensStr = val;
+            } elif (key == "contextlimit") {
+                aiContextLimit = int(val);
+            } elif (key == "maxinlinetokens") {
+                aiMaxInlineTokens = int(val);
             } elif (key == "websearchapikey") {
                 webSearchApiKey = val;
             } elif (key == "websearchenabled") {
@@ -1270,6 +1439,8 @@ function SaveSettings() {
     content  = content + "systemprompt|" + sysEscaped      + "\n";
     content  = content + "temperature|"  + aiTemperatureStr + "\n";
     content  = content + "maxtokens|"        + aiMaxTokensStr                     + "\n";
+    content  = content + "contextlimit|"     + aiContextLimit                     + "\n";
+    content  = content + "maxinlinetokens|"   + aiMaxInlineTokens                  + "\n";
     content  = content + "websearchapikey|"   + webSearchApiKey                    + "\n";
     webSearchEnabledVal = webSearchEnabled ? "1" : "0";
     content  = content + "websearchenabled|"  + webSearchEnabledVal                + "\n";

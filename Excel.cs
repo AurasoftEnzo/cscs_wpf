@@ -3,6 +3,7 @@ using MiniExcelLibs.Attributes;
 using MiniExcelLibs.OpenXml;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
+using OfficeOpenXml.Table.PivotTable;
 using Spire.Xls;
 using SplitAndMerge;
 using System;
@@ -81,6 +82,7 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.X_ALIGN, new XAlignFunction());
             interpreter.RegisterFunction(Constants.X_FONT_FORMAT, new XFontFormatFunction());
             interpreter.RegisterFunction(Constants.X_BORDER, new XBorderFunction());
+            interpreter.RegisterFunction(Constants.X_PIVOT_TABLE_ADD, new XPivotTableAddFunction());
             interpreter.RegisterFunction(Constants.X_PIVOT_TABLE_REFRESH, new XPivotTableRefreshFunction());
             
             interpreter.RegisterFunction(Constants.X_ERR, new XErrFunction());
@@ -2394,6 +2396,100 @@ namespace WpfCSCS
         }
     }
     
+    class XPivotTableAddFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            Excel.errorNumber = 0;
+
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 5, m_name);
+
+            var destSheetNum = Utils.GetSafeInt(args, 0);
+            var destCell = Utils.GetSafeString(args, 1);
+            var sourceSheetNum = Utils.GetSafeInt(args, 2);
+
+            // rowFields and dataFields are arrays of 1-based column numbers
+            var rowFieldsVar = Utils.GetSafeVariable(args, 3, null);
+            var dataFieldsVar = Utils.GetSafeVariable(args, 4, null);
+            var pivotName = Utils.GetSafeString(args, 5, "PivotTable1");
+
+            // Optional explicit source range (1-based row/col numbers)
+            // If omitted, uses the first Excel Table on the source sheet
+            int srcFirstRow = Utils.GetSafeInt(args, 6, -1);
+            int srcFirstCol = Utils.GetSafeInt(args, 7, -1);
+            int srcLastRow = Utils.GetSafeInt(args, 8, -1);
+            int srcLastCol = Utils.GetSafeInt(args, 9, -1);
+
+            Utils.CheckNotNull(rowFieldsVar, "rowFields", script);
+            Utils.CheckNotNull(dataFieldsVar, "dataFields", script);
+            Utils.CheckArray(rowFieldsVar, "rowFields");
+            Utils.CheckArray(dataFieldsVar, "dataFields");
+
+            try
+            {
+                // Get the source worksheet
+                ExcelWorksheet wsSource = Excel.document.Workbook.Worksheets[sourceSheetNum];
+
+                // Build source range
+                ExcelRangeBase sourceRange;
+                if (srcFirstRow > 0 && srcLastRow > 0)
+                {
+                    int fCol = srcFirstCol > 0 ? srcFirstCol : 1;
+                    int lCol = srcLastCol > 0 ? srcLastCol : wsSource.Dimension.End.Column;
+                    sourceRange = wsSource.Cells[srcFirstRow, fCol, srcLastRow, lCol];
+                }
+                else if (wsSource.Tables.Count > 0)
+                {
+                    var table = wsSource.Tables[0];
+                    sourceRange = wsSource.Cells[table.Address.Start.Address + ":" +
+                                                  table.Address.End.Address];
+                }
+                else
+                {
+                    if (wsSource.Dimension == null)
+                        throw new Exception("Source worksheet has no data.");
+                    sourceRange = wsSource.Cells[wsSource.Dimension.Start.Address + ":" +
+                                                  wsSource.Dimension.End.Address];
+                }
+
+                // EPPlus 4.5.3 PivotTables.Add() requires the source range to be on the
+                // same worksheet as the pivot table. This is a hard constraint.
+                // Place the pivot on the source sheet below the data (same-sheet OK).
+                int pivotRow = sourceRange.End.Row + 3;
+                var pivotAddr = wsSource.Cells[pivotRow, 1, pivotRow + 25, sourceRange.End.Column];
+                var pivotTable = wsSource.PivotTables.Add(pivotAddr, sourceRange, pivotName);
+
+                // Add row fields
+                foreach (var fieldVar in rowFieldsVar.Tuple)
+                {
+                    int colIndex = fieldVar.AsInt() - 1;
+                    if (colIndex >= 0 && colIndex < pivotTable.Fields.Count)
+                        pivotTable.RowFields.Add(pivotTable.Fields[colIndex]);
+                }
+
+                // Add data fields with Sum
+                foreach (var fieldVar in dataFieldsVar.Tuple)
+                {
+                    int colIndex = fieldVar.AsInt() - 1;
+                    if (colIndex >= 0 && colIndex < pivotTable.Fields.Count)
+                    {
+                        var dataField = pivotTable.DataFields.Add(pivotTable.Fields[colIndex]);
+                        dataField.Function = DataFieldFunctions.Sum;
+                    }
+                }
+
+                return new Variable(true);
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show("[TAS2XLSX] Error:" + e.Message, "PivotTableAdd");
+                Excel.errorNumber = 1;
+                return new Variable(false);
+            }
+        }
+    }
+
     class XPivotTableRefreshFunction : ParserFunction
     {
         protected override Variable Evaluate(ParsingScript script)

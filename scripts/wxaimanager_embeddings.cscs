@@ -395,6 +395,8 @@ function Embedding_ProcessPendingSession(sessId) {
                               + "        HASHBYTES('SHA2_256', CONVERT(NVARCHAR(MAX), ChunkText)), 2), "
                               + "    EmbeddedAtUtc = SYSUTCDATETIME() "
                               + "WHERE ChatChunkId = @id", upCache);
+                    // Add to in-memory cache
+                    Embedding_AddToCache(chunkTxt, cachedVec, sessId, "chat", 0, "");
                 } catch (exCache) {
                     MSG("Embedding_ProcessPendingSession cache copy error: " + exCache);
                 }
@@ -440,8 +442,10 @@ function Embedding_ProcessPendingSession(sessId) {
                           + "        HASHBYTES('SHA2_256', CONVERT(NVARCHAR(MAX), ChunkText)), 2), "
                           + "    EmbeddedAtUtc = SYSUTCDATETIME() "
                           + "WHERE ChatChunkId = @id", up3);
+                    // Add to in-memory cache
+                    Embedding_AddToCache(chunkTxt, vecJson, sessId, "chat", 0, "");
             } catch (ex4) {
-                MSG("Embedding_ProcessPendingSession update error: " + ex4);
+                    MSG("Embedding_ProcessPendingSession update error: " + ex4);
             }
         }
 
@@ -499,6 +503,27 @@ function Embedding_ProcessDone(sender, result) {
     } catch (ex) {
         // Silently ignore – status bar update is non-critical
     }
+}
+
+
+// =============================================================
+//  Embedding_AddToCache(text, vecJson, sessId, source, srcId, title)
+//  Local wrapper for adding a chunk to the in-memory cache.
+//  Directly accesses global cache arrays (defined in
+//  wxaimanager_cache.cscs) to avoid cross-file function
+//  resolution issues when called via AsyncCall.
+// =============================================================
+
+function Embedding_AddToCache(text, vecJson, sessId, source, srcId, title) {
+    if (cacheCount >= cacheLimit) { return; }
+    idx = cacheCount;
+    cacheChunkText[idx] = text;
+    cacheChunkVec[idx]  = vecJson;
+    cacheSessionId[idx] = sessId;
+    cacheSource[idx]    = source;
+    cacheSourceId[idx]  = srcId;
+    cacheDocTitle[idx]  = title;
+    cacheCount++;
 }
 
 
@@ -579,7 +604,7 @@ function Embedding_SearchSimilar(query, topN, sessId) {
             simScore = CosineSimilarity(queryVec, storedVec);
 
             // Keep only scores above threshold (ignore very low similarity)
-            if (simScore < 0.15) {
+            if (simScore < 0.50) {
                 continue;
             }
 
@@ -727,7 +752,7 @@ function Embedding_SearchSimilarAcrossKb(query, topN, kbId) {
             if (Size(storedVec) != vecDim) { continue; }
 
             simScore = CosineSimilarity(queryVec, storedVec);
-            if (simScore < 0.15) { continue; }
+            if (simScore < 0.50) { continue; }
 
             if (matchCnt < MAX_CANDIDATES) {
                 scores.Add(simScore);
@@ -789,7 +814,8 @@ function Embedding_ProcessPendingDocumentChunks(kbId) {
             whereClause = " AND d.KnowledgeBaseId = @kb";
         }
 
-        selSql = "SELECT c.DocumentChunkId, c.ChunkText, c.DocumentId "
+        selSql = "SELECT c.DocumentChunkId, c.ChunkText, c.DocumentId, "
+               + "       ISNULL(d.Title, ''), d.KnowledgeBaseId "
                + "FROM " + WXAI_DB + ".dbo.DocumentChunk c "
                + "JOIN " + WXAI_DB + ".dbo.Document d ON c.DocumentId = d.DocumentId "
                + "WHERE c.EmbeddingStatus = 'pending'" + whereClause + " "
@@ -804,6 +830,8 @@ function Embedding_ProcessPendingDocumentChunks(kbId) {
             chunkId  = int(pRow[0]);
             chunkTxt = pRow[1];
             docId    = int(pRow[2]);
+            docTitle = pRow[3];
+            docKbId  = int(pRow[4]);
 
             if (chunkTxt == "") {
                 try {
@@ -846,6 +874,10 @@ function Embedding_ProcessPendingDocumentChunks(kbId) {
                               + "        HASHBYTES('SHA2_256', CONVERT(NVARCHAR(MAX), ChunkText)), 2), "
                               + "    EmbeddedAtUtc = SYSUTCDATETIME() "
                               + "WHERE DocumentChunkId = @id", upCache);
+                    // Add to in-memory cache
+                    srcType = "att";
+                    if (docKbId > 0) { srcType = "kb"; }
+                    Embedding_AddToCache(chunkTxt, cachedVec, 0, srcType, docKbId, docTitle);
                 } catch (exCache) { MSG("Embedding_ProcessPendingDocumentChunks cache error: " + exCache); }
                 continue;
             }
@@ -882,6 +914,10 @@ function Embedding_ProcessPendingDocumentChunks(kbId) {
                           + "        HASHBYTES('SHA2_256', CONVERT(NVARCHAR(MAX), ChunkText)), 2), "
                           + "    EmbeddedAtUtc = SYSUTCDATETIME() "
                           + "WHERE DocumentChunkId = @id", up3);
+                // Add to in-memory cache
+                srcType = "att";
+                if (docKbId > 0) { srcType = "kb"; }
+                Embedding_AddToCache(chunkTxt, vecJson, 0, srcType, docKbId, docTitle);
             } catch (ex4) { MSG("Embedding_ProcessPendingDocumentChunks update error: " + ex4); }
         }
     } catch (ex) {

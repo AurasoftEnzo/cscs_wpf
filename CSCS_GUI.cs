@@ -292,6 +292,7 @@ namespace SplitAndMerge
 	public const string X_ALIGN = "XAlign";
 	public const string X_FONT_FORMAT = "XFontFormat";
 	public const string X_BORDER = "XBorder";
+	public const string X_PIVOT_TABLE_ADD = "XPivotTableAdd";
 	public const string X_PIVOT_TABLE_REFRESH = "XPivotTableRefresh";
 
 	public const string X_ERR = "XErr";

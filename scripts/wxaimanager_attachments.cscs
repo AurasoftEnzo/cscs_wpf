@@ -497,9 +497,18 @@ function Attachment_UploadOnePath(srcPath) {
         || extLow == ".html" || extLow == ".htm") {
         AsyncCall("Attachment_ParseTextFile", "Attachment_ParseDone",
                   lastAttachmentId, destPath, fileName);
+    } elif (extLow == ".pdf") {
+        SetStatus("PDF dodan: '" + fileName + "'. Ekstrakcija teksta nije dostupna za lokalne PDF datoteke. Datoteka će biti poslana kao privitak (multipart).");
+        MSG("Attachment_UploadOnePath: PDF text extraction not implemented for local files. File: " + fileName);
+    } elif (extLow == ".docx" || extLow == ".doc") {
+        SetStatus("WORD dokument dodan: '" + fileName + "'. Ekstrakcija teksta nije dostupna. Datoteka će biti poslana kao privitak (multipart).");
+    } elif (extLow == ".xlsx" || extLow == ".xls") {
+        SetStatus("EXCEL dokument dodan: '" + fileName + "'. Ekstrakcija teksta nije dostupna. Datoteka će biti poslana kao privitak (multipart).");
     }
-    // Binary files (.pdf, .docx, ...): background parser service reads
-    // ChatAttachment rows WHERE AttachmentStatus = 'uploaded'.
+    // Other binary files: sent as multipart file attachments.
+    // Future: implement background parser service that reads
+    // ChatAttachment rows WHERE AttachmentStatus = 'uploaded' and
+    // populates Document.ExtractedText + DocumentChunk rows.
 }
 
 
@@ -673,6 +682,99 @@ function Attachment_ListForSession() {
 // =============================================================
 //  CLASSIFY MIME TYPE
 //  Returns "text", "image", or "binary"
+// =============================================================
+//  ATTACHMENT RAG SEARCH
+//  Searches DocumentChunks that belong to the current session's
+//  text attachments, ranked by cosine similarity to the query.
+//  Returns inline context text or "" if no relevant chunks found.
+// =============================================================
+
+function Attachment_SearchSimilar(query, topN, sessId) {
+    if (!chatSqlEnabled || sessId == 0 || query == "") {
+        return "";
+    }
+
+    queryVec = Embedding_Generate(query);
+    vecDim = Size(queryVec);
+    if (vecDim == 0) { return ""; }
+
+    try {
+        qp = {};
+        qp.Add({"@sid", sessId});
+
+        selSql = "SELECT c.ChunkText, c.EmbeddingVectorJson, c.ChunkOrder, a.OriginalFileName "
+               + "FROM " + WXAI_DB + ".dbo.DocumentChunk c "
+               + "JOIN " + WXAI_DB + ".dbo.Document d ON c.DocumentId = d.DocumentId "
+               + "JOIN " + WXAI_DB + ".dbo.ChatAttachment a ON d.ChatAttachmentId = a.ChatAttachmentId "
+               + "WHERE a.ChatSessionId = @sid AND a.IsDeleted = 0 "
+               + "  AND c.EmbeddingStatus = 'embedded' "
+               + "  AND c.EmbeddingVectorJson IS NOT NULL "
+               + "ORDER BY c.DocumentId, c.ChunkOrder";
+
+        chunksRes = sqlQuery(selSql, qp);
+        chunksCnt = Size(chunksRes) - 1;
+        if (chunksCnt == 0) { return ""; }
+
+        MAX_CANDIDATES = 200;
+        scores = {}; texts = {}; titles = {};
+        matchCnt = 0;
+
+        for (ci = 0; ci < chunksCnt; ci++) {
+            cRow     = chunksRes[ci + 1];
+            cText    = cRow[0];
+            cVecJson = cRow[1];
+            cOrder   = int(cRow[2]);
+            cTitle   = cRow[3];
+
+            storedVec = DeserializeJson(cVecJson);
+            if (Size(storedVec) != vecDim) { continue; }
+
+            simScore = CosineSimilarity(queryVec, storedVec);
+            if (simScore < 0.50) { continue; }
+
+            if (matchCnt < MAX_CANDIDATES) {
+                scores.Add(simScore);
+                texts.Add(cText);
+                titles.Add(cTitle);
+                matchCnt++;
+            }
+        }
+
+        if (matchCnt == 0) { return ""; }
+
+        resultCnt = topN;
+        if (resultCnt > matchCnt) { resultCnt = matchCnt; }
+
+        used = {};
+        resultText = "--- Relevantno iz priloga (semantički) ---\n";
+
+        for (ri = 0; ri < resultCnt; ri++) {
+            bestIdx = -1; bestScore = -1;
+            for (ci = 0; ci < matchCnt; ci++) {
+                isUsed = false;
+                for (ui = 0; ui < Size(used); ui++) {
+                    if (used[ui] == ci) { isUsed = true; break; }
+                }
+                if (isUsed) { continue; }
+                if (scores[ci] > bestScore) { bestScore = scores[ci]; bestIdx = ci; }
+            }
+            if (bestIdx >= 0) {
+                used.Add(bestIdx);
+                srcInfo = "";
+                if (titles[bestIdx] != "") { srcInfo = " [" + titles[bestIdx] + "]"; }
+                resultText = resultText + srcInfo + "\n" + texts[bestIdx] + "\n\n";
+            }
+        }
+        resultText = resultText + "---\n";
+        return resultText;
+
+    } catch (ex) {
+        MSG("Attachment_SearchSimilar error: " + ex);
+        return "";
+    }
+}
+
+
 // =============================================================
 function Attachment_ClassifyMime(mime) {
     mL = StrLower(mime);

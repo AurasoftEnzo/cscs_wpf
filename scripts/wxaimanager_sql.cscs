@@ -503,22 +503,39 @@ function SQL_InsertChunk(sessId, msgId, chunkOrd, chunkTxt) {
     if (!chatSqlEnabled) {
         return;
     }
-    try {
-        sqlParams = {};
-        sqlParams.Add({"@p1", sessId});
-        sqlParams.Add({"@p2", msgId});
-        sqlParams.Add({"@p3", chunkOrd});
-        sqlParams.Add({"@p4", chunkTxt});
 
-        chunkSql = "INSERT INTO " + WXAI_DB + ".dbo.ChatChunk "
-                 + "(ChatSessionId, ChatMessageId, ChunkOrder, ChunkText, ChunkType, ChunkHash) "
-                 + "VALUES (@p1, @p2, @p3, @p4, 'message', "
-                 + " CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', CONVERT(NVARCHAR(MAX), @p4)), 2))";
+    // Split long messages into multiple chunks (~2000 chars / ~500 tokens each)
+    // to improve embedding granularity for long assistant responses and code blocks.
+    CHAT_CHUNK_SIZE = 2000;
+    totalLen = chunkTxt.length;
+    charStart = 0;
 
-        sqlQuery(chunkSql, sqlParams);
+    while (charStart < totalLen) {
+        charEnd = charStart + CHAT_CHUNK_SIZE;
+        if (charEnd > totalLen) {
+            charEnd = totalLen;
+        }
+        oneChunk = Substring(chunkTxt, charStart, charEnd - charStart);
 
-    } catch (ex) {
-        MSG("SQL_InsertChunk error: " + ex);
+        try {
+            sqlParams = {};
+            sqlParams.Add({"@p1", sessId});
+            sqlParams.Add({"@p2", msgId});
+            sqlParams.Add({"@p3", chunkOrd});
+            sqlParams.Add({"@p4", oneChunk});
+
+            chunkSql = "INSERT INTO " + WXAI_DB + ".dbo.ChatChunk "
+                     + "(ChatSessionId, ChatMessageId, ChunkOrder, ChunkText, ChunkType, ChunkHash) "
+                     + "VALUES (@p1, @p2, @p3, @p4, 'message', "
+                     + " CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', CONVERT(NVARCHAR(MAX), @p4)), 2))";
+
+            sqlQuery(chunkSql, sqlParams);
+        } catch (ex) {
+            MSG("SQL_InsertChunk error at chunk " + chunkOrd + ": " + ex);
+        }
+
+        chunkOrd++;
+        charStart = charEnd;
     }
 }
 

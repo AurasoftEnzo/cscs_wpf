@@ -133,7 +133,8 @@ function btnGenerate@clicked() {
     // ----- Data rows (no subtotals - use Excel PivotTable) -----
     currentRow = headerRow + 1;
 
-    for (i = 0; i < totalRows; i++) {
+    //for (i = 0; i < totalRows; i++) {
+    for (i = 0; i < 10; i++) {
         konto=data_konto[i];
         if (konto=="") { continue; }
         objed=data_objed[i];
@@ -185,9 +186,16 @@ function btnGenerate@clicked() {
     }
     currentRow++;
 
-    // ----- Excel Table + Save -----
+    // ----- Excel Table -----
     XSetTable(1, headerRow, 1, currentRow-1, numCols, "TrialBalanceTable");
     XColumnsAutoFit(1);
+
+    // ----- Pivot Table (placed below data on same sheet - EPPlus limitation) -----
+    // Row fields: Class(13), Group(14), Synth(15)
+    // Data fields: Opening Debit(5)..Balance Credit(12) as Sum
+    // Explicit source range = headerRow..dataLastRow (excludes Grand Total)
+    XPivotTableAdd(1, "A1", 1, {13,14,15}, {5,6,7,8,9,10,11,12}, "TrialBalancePivot", headerRow, 1, dataLastRow, numCols);
+
     XFileSave();
 
     SetText("txtStatus", "Done! Saved to: " + outputFile);

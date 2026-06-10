@@ -1,0 +1,270 @@
+// ============================================================
+//  WXAIMANAGER_CACHE.CSCS
+//  In-memory vector cache for fast RAG search.
+//
+//  Loads all embedded chunk vectors + texts into CSCS arrays
+//  once at startup, then searches them in-memory instead of
+//  hitting the database on every query.
+//
+//  The DB remains the source of truth (EmbeddingVectorJson
+//  stays in NVARCHAR columns); the cache is rebuilt on each
+//  app start and incrementally updated as new chunks embed.
+// ============================================================
+
+// ---- Cache state -------------------------------------------
+DEFINE cacheCount type r;
+DEFINE cacheLimit type r;
+
+DEFINE cacheChunkText type a size 3000 array 3000;
+DEFINE cacheChunkVec type a size 12000 array 3000;
+DEFINE cacheDocTitle type a size 300 array 3000;
+DEFINE cacheSource type a size 10 array 3000;
+DEFINE cacheSessionId type r array 3000;
+DEFINE cacheSourceId type r array 3000;
+
+
+// =============================================================
+//  INIT
+// =============================================================
+
+function Cache_Init() {
+    cacheCount = 0;
+    cacheLimit = 3000;
+}
+
+// =============================================================
+//  Cache_BuildAll()
+//  Loads ALL embedded chunks from ChatChunk + DocumentChunk
+//  into memory arrays. Called once from wxaimanager_OnStart().
+// =============================================================
+
+function Cache_BuildAll() {
+    if (!chatSqlEnabled) { return; }
+
+    Cache_Init();
+    loadedChat = 0;
+    loadedDoc  = 0;
+
+    // --- 1. ChatChunk (poruke iz chat sesija) ---
+    try {
+        chatSql = "SELECT ChunkText, EmbeddingVectorJson, ChatSessionId "
+                + "FROM " + WXAI_DB + ".dbo.ChatChunk "
+                + "WHERE EmbeddingStatus = 'embedded' "
+                + "  AND EmbeddingVectorJson IS NOT NULL "
+                + "ORDER BY ChatChunkId";
+
+        chatRes = sqlQuery(chatSql);
+        chatCnt = Size(chatRes) - 1;
+
+        for (ci = 0; ci < chatCnt && cacheCount < cacheLimit; ci++) {
+            cRow      = chatRes[ci + 1];
+            cText     = cRow[0];
+            cVec      = cRow[1];
+            cSessId   = int(cRow[2]);
+
+            idx = cacheCount;
+            cacheChunkText[idx] = cText;
+            cacheChunkVec[idx]  = cVec;
+            cacheDocTitle[idx]  = "";
+            cacheSource[idx]    = "chat";
+            cacheSessionId[idx] = cSessId;
+            cacheSourceId[idx]  = 0;
+            cacheCount++;
+            loadedChat++;
+        }
+    } catch (ex) {
+        MSG("Cache_BuildAll - ChatChunk error: " + ex);
+    }
+
+    // --- 2. DocumentChunk (KB + attachment chunks) ---
+    try {
+        docSql = "SELECT c.ChunkText, c.EmbeddingVectorJson, "
+               + "       ISNULL(d.KnowledgeBaseId, 0) AS SrcId, "
+               + "       CASE WHEN d.KnowledgeBaseId IS NOT NULL THEN 'kb' "
+               + "            ELSE 'att' END AS SrcType, "
+               + "       ISNULL(d.Title, '') AS DocTitle "
+               + "FROM " + WXAI_DB + ".dbo.DocumentChunk c "
+               + "JOIN " + WXAI_DB + ".dbo.Document d ON c.DocumentId = d.DocumentId "
+               + "WHERE c.EmbeddingStatus = 'embedded' "
+               + "  AND c.EmbeddingVectorJson IS NOT NULL "
+               + "ORDER BY c.DocumentChunkId";
+
+        docRes = sqlQuery(docSql);
+        docCnt = Size(docRes) - 1;
+
+        for (di = 0; di < docCnt && cacheCount < cacheLimit; di++) {
+            dRow      = docRes[di + 1];
+            dText     = dRow[0];
+            dVec      = dRow[1];
+            dSrcId    = int(dRow[2]);
+            dSrcType  = dRow[3];
+            dTitle    = dRow[4];
+
+            idx = cacheCount;
+            cacheChunkText[idx] = dText;
+            cacheChunkVec[idx]  = dVec;
+            cacheDocTitle[idx]  = dTitle;
+            cacheSource[idx]    = dSrcType;
+            cacheSessionId[idx] = 0;
+            cacheSourceId[idx]  = dSrcId;
+            cacheCount++;
+            loadedDoc++;
+        }
+    } catch (ex) {
+        MSG("Cache_BuildAll - DocumentChunk error: " + ex);
+    }
+
+    SetStatus("Vektorski keš učitan: " + loadedChat + " chat + " + loadedDoc + " dokumenata = " + cacheCount + " chunkova.");
+}
+
+
+// =============================================================
+//  Cache_AddOne(text, vecJson, sessionId, source, sourceId, docTitle)
+//  Adds a single chunk to the in-memory cache.
+//  Called after a new embedding is generated.
+// =============================================================
+
+function Cache_AddOne(text, vecJson, sessionId, source, sourceId, docTitle) {
+    if (cacheCount >= cacheLimit) {
+        // Cache full – could implement LRU eviction later
+        return;
+    }
+    idx = cacheCount;
+    cacheChunkText[idx] = text;
+    cacheChunkVec[idx]  = vecJson;
+    cacheSessionId[idx] = sessionId;
+    cacheSource[idx]    = source;
+    cacheSourceId[idx]  = sourceId;
+    cacheDocTitle[idx]  = docTitle;
+    cacheCount++;
+}
+
+
+// =============================================================
+//  Cache_Search(query, topN, sourceFilter, sessId, srcId)
+//  Internal: searches cached vectors by cosine similarity.
+//
+//  Parameters:
+//    sourceFilter – 'chat' | 'kb' | 'att' | '' (sve)
+//    sessId       – ChatSessionId for chat chunks (0 = zanemari)
+//    srcId        – KnowledgeBaseId / DocumentId (0 = zanemari)
+//
+//  Returns: formatted context string, or "" if nothing found.
+// =============================================================
+
+function Cache_Search(query, topN, sourceFilter, sessId, srcId) {
+    if (query == "" || cacheCount == 0) { return ""; }
+
+    queryVec = Embedding_Generate(query);
+    vecDim = Size(queryVec);
+    if (vecDim == 0) { return ""; }
+
+    SIM_THRESHOLD = 0.50;
+    MAX_CANDIDATES = 200;
+
+    scores = {};
+    texts  = {};
+    titles = {};
+
+    for (ci = 0; ci < cacheCount; ci++) {
+        // --- Primijeni filtere ---
+        if (sourceFilter != "" && cacheSource[ci] != sourceFilter) {
+            continue;
+        }
+        if (sessId > 0 && cacheSessionId[ci] != sessId) {
+            continue;
+        }
+        if (srcId > 0 && cacheSourceId[ci] != srcId) {
+            continue;
+        }
+
+        storedVec = DeserializeJson(cacheChunkVec[ci]);
+        if (Size(storedVec) != vecDim) { continue; }
+
+        simScore = CosineSimilarity(queryVec, storedVec);
+        if (simScore < SIM_THRESHOLD) { continue; }
+
+        if (Size(scores) < MAX_CANDIDATES) {
+            scores.Add(simScore);
+            texts.Add(cacheChunkText[ci]);
+            titles.Add(cacheDocTitle[ci]);
+        }
+    }
+
+    matchCnt = Size(scores);
+    if (matchCnt == 0) { return ""; }
+
+    resultCnt = topN;
+    if (resultCnt > matchCnt) { resultCnt = matchCnt; }
+
+    // --- Selection sort za top-N ---
+    used = {};
+    resultText = "";
+
+    for (ri = 0; ri < resultCnt; ri++) {
+        bestIdx = -1; bestScore = -1;
+        for (ci = 0; ci < matchCnt; ci++) {
+            isUsed = false;
+            for (ui = 0; ui < Size(used); ui++) {
+                if (used[ui] == ci) { isUsed = true; break; }
+            }
+            if (isUsed) { continue; }
+            if (scores[ci] > bestScore) { bestScore = scores[ci]; bestIdx = ci; }
+        }
+        if (bestIdx >= 0) {
+            used.Add(bestIdx);
+            srcPrefix = "";
+            if (titles[bestIdx] != "") {
+                srcPrefix = " [" + titles[bestIdx] + "]";
+            }
+            resultText = resultText + srcPrefix + "\n" + texts[bestIdx] + "\n\n";
+        }
+    }
+
+    return resultText;
+}
+
+
+// =============================================================
+//  Wrapper funkcije – zamjena za Embedding_SearchSimilar itd.
+//  Ove funkcije imaju ISTI potpis kao originalne, pa se
+//  pozivi u SendToAI() mogu zamijeniti 1:1.
+// =============================================================
+
+function Cache_SearchChat(query, topN, sessionId) {
+    result = Cache_Search(query, topN, "chat", sessionId, 0);
+    if (result == "") { return ""; }
+    return "--- Relevantno iz povijesti razgovora (semantički) ---\n" + result + "---\n";
+}
+
+function Cache_SearchKb(query, topN, kbId) {
+    result = Cache_Search(query, topN, "kb", 0, kbId);
+    if (result == "") { return ""; }
+    return "--- Relevantno iz baze znanja (semantički) ---\n" + result + "---\n";
+}
+
+function Cache_SearchAttachments(query, topN, sessionId) {
+    result = Cache_Search(query, topN, "att", 0, 0);
+    if (result == "") { return ""; }
+    return "--- Relevantno iz priloga (semantički) ---\n" + result + "---\n";
+}
+
+
+// =============================================================
+//  Cache_GetStats()
+//  Returns a formatted string with cache usage stats.
+// =============================================================
+
+function Cache_GetStats() {
+    if (cacheCount == 0) { return "keš prazan"; }
+
+    chatCnt = 0; kbCnt = 0; attCnt = 0;
+    for (ci = 0; ci < cacheCount; ci++) {
+        if (cacheSource[ci] == "chat") { chatCnt++; }
+        elif (cacheSource[ci] == "kb")  { kbCnt++; }
+        elif (cacheSource[ci] == "att") { attCnt++; }
+    }
+
+    return "Keš: " + cacheCount + "/" + cacheLimit
+         + " (chat:" + chatCnt + " kb:" + kbCnt + " att:" + attCnt + ")";
+}

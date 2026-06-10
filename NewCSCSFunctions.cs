@@ -105,6 +105,7 @@ namespace WpfCSCS
             interpreter.RegisterFunction(Constants.ValidateSch, new ValidateSchFunction());
             interpreter.RegisterFunction(Constants.EscapeQuotesInXml, new EscapeQuotesInXmlFunction());
 
+
             //interpreter.RegisterFunction(Constants.FinaTest, new FinaTestFunction());
             //...
             interpreter.RegisterFunction(Constants.XmlToDict, new XmlToDictFunction());
@@ -208,6 +209,8 @@ namespace WpfCSCS
             interpreter.RegisterFunction("XmlGetChild", new XmlGetChildFunction());
             interpreter.RegisterFunction("XmlGetChildAttribute", new XmlGetChildAttributeFunction());
             interpreter.RegisterFunction("XmlGetElementValue", new XmlGetElementValueFunction());
+            interpreter.RegisterFunction("HtmlToPlainTextStrip", new HtmlToPlainTextStripFunction());
+
 
             interpreter.RegisterFunction(Constants.COSINE_SIMILARITY, new CosineSimilarityFunction());
 
@@ -1705,6 +1708,75 @@ namespace WpfCSCS
         }
     }
 
+    class HtmlToPlainTextStripFunction : ParserFunction
+    {
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+
+            if (args.Count < 1)
+            {
+                return Variable.EmptyInstance;
+            }
+
+            string html = args[0].AsString();
+
+            return new Variable(StripHtml(html));
+        }
+
+        public static string StripHtml(string html)
+        {
+            if (string.IsNullOrEmpty(html))
+            {
+                return "";
+            }
+
+            // -----------------------------------------
+            // REMOVE SCRIPT + STYLE
+            // -----------------------------------------
+            html = Regex.Replace(
+                html,
+                @"<(script|style)[^>]*>.*?</\1>",
+                "",
+                RegexOptions.IgnoreCase | RegexOptions.Singleline
+            );
+
+            // -----------------------------------------
+            // REMOVE HTML COMMENTS
+            // -----------------------------------------
+            html = Regex.Replace(
+                html,
+                @"<!--.*?-->",
+                "",
+                RegexOptions.Singleline
+            );
+
+            // -----------------------------------------
+            // REMOVE TAGS
+            // -----------------------------------------
+            html = Regex.Replace(
+                html,
+                @"<[^>]+>",
+                " "
+            );
+
+            // -----------------------------------------
+            // DECODE HTML ENTITIES
+            // -----------------------------------------
+            html = WebUtility.HtmlDecode(html);
+
+            // -----------------------------------------
+            // CLEAN WHITESPACE
+            // -----------------------------------------
+            html = Regex.Replace(
+                html,
+                @"\s+",
+                " "
+            );
+
+            return html.Trim();
+        }
+    }
 
 
 

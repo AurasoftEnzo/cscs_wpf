@@ -1146,96 +1146,170 @@ function KB_DeleteDocument(docId) {
 
 // --- Helper: strip HTML tags, script, style, decode entities ---
 function StripHtml(html) {
+
+    if (html == null) { return ""; }
+    if (html.length <= 0) { return ""; }
+
     result = "";
+
+    inTag = false;
+    inEntity = false;
+
+    entity = "";
+
     i = 0;
     len = html.length;
 
     while (i < len) {
-        ch = Substring(html, i, 1);
 
-        // --- Skip <script...>...</script> blocks ---
+        ch = "";
+
+        try {
+            ch = Substring(html, i, 1);
+        } catch (e) {
+            break;
+        }
+
+        // =========================================
+        // START TAG
+        // =========================================
         if (ch == "<") {
-            // Read up to 10 chars after < to detect tag name
-            ahead = "";
-            maxAhead = i + 10;
-            if (maxAhead > len) { maxAhead = len; }
-            j = i + 1;
-            while (j < maxAhead) {
-                ahead = ahead + Substring(html, j, 1);
-                j = j + 1;
-            }
-            tagLow = StrLower(ahead);
-
-            // script or style: skip until closing tag
-            if (tagLow.IndexOf("script") == 0 || tagLow.IndexOf("style") == 0) {
-                tagName = "";
-                if (ahead.length >= 6) {
-                    tagName = Substring(ahead, 0, 6);
-                } else {
-                    tagName = ahead;
-                }
-                closeTag = "</" + tagName + ">";
-                closeLow = StrLower(closeTag);
-                // Find the > of opening tag
-                openEnd = html.IndexOf(">", i);
-                if (openEnd < 0) { i = len; break; }
-                // Find closing </script> or </style>
-                closePos = html.IndexOf(closeLow, openEnd);
-                if (closePos < 0) { i = len; break; }
-                // Find > of closing tag
-                closeEnd = html.IndexOf(">", closePos);
-                if (closeEnd < 0) { i = len; break; }
-                i = closeEnd + 1;
-                continue;
-            }
-
-            // --- Regular HTML tag: skip until > ---
-            closePos = html.IndexOf(">", i);
-            if (closePos < 0) { i = len; break; }
-            i = closePos + 1;
+            inTag = true;
+            i = i + 1;
             continue;
         }
 
-        // --- Decode HTML entities ---
-        if (ch == "&" && i + 1 < len) {
-            semi = html.IndexOf(";", i);
-            if (semi > i && semi - i < 12) {
-                entity = Substring(html, i, semi - i + 1);
-                if (entity == "&amp;")  { result = result + "&"; i = semi + 1; continue; }
-                if (entity == "&lt;")   { result = result + "<"; i = semi + 1; continue; }
-                if (entity == "&gt;")   { result = result + ">"; i = semi + 1; continue; }
-                if (entity == "&quot;") { result = result + "\""; i = semi + 1; continue; }
-                if (entity == "&nbsp;") { result = result + " "; i = semi + 1; continue; }
-                if (entity == "&#39;")  { result = result + "'"; i = semi + 1; continue; }
-                if (entity == "&apos;") { result = result + "'"; i = semi + 1; continue; }
+        // =========================================
+        // END TAG
+        // =========================================
+        if (ch == ">") {
+
+            if (inTag) {
+                inTag = false;
+                i = i + 1;
+                continue;
             }
         }
 
+        // =========================================
+        // SKIP EVERYTHING INSIDE TAGS
+        // =========================================
+        if (inTag) {
+            i = i + 1;
+            continue;
+        }
+
+        // =========================================
+        // HTML ENTITIES
+        // =========================================
+        if (ch == "&") {
+
+            entity = "";
+            semi = html.IndexOf(";", i);
+
+            if (semi != -1) {
+
+                entityLen = semi - i + 1;
+
+                if (entityLen > 0 && entityLen < 12) {
+
+                    try {
+                        entity = Substring(html, i, entityLen);
+                    } catch (e) {
+                        entity = "";
+                    }
+
+                    if (entity == "&amp;") {
+                        result = result + "&";
+                        i = semi + 1;
+                        continue;
+                    }
+
+                    if (entity == "&lt;") {
+                        result = result + "<";
+                        i = semi + 1;
+                        continue;
+                    }
+
+                    if (entity == "&gt;") {
+                        result = result + ">";
+                        i = semi + 1;
+                        continue;
+                    }
+
+                    if (entity == "&quot;") {
+                        result = result + "\"";
+                        i = semi + 1;
+                        continue;
+                    }
+
+                    if (entity == "&nbsp;") {
+                        result = result + " ";
+                        i = semi + 1;
+                        continue;
+                    }
+
+                    if (entity == "&#39;" || entity == "&apos;") {
+                        result = result + "'";
+                        i = semi + 1;
+                        continue;
+                    }
+                }
+            }
+        }
+
+        // =========================================
+        // NORMAL TEXT
+        // =========================================
         result = result + ch;
+
         i = i + 1;
     }
 
-    // Collapse whitespace (spaces, tabs, newlines -> single space)
+    // =========================================
+    // CLEAN WHITESPACE
+    // =========================================
     clean = "";
+
     prevSpace = false;
+
     i = 0;
-    while (i < result.length) {
-        ch = Substring(result, i, 1);
-        if (ch == " " || ch == "\t" || ch == "\n" || ch == "\r") {
+    len2 = result.length;
+
+    while (i < len2) {
+
+        ch = "";
+
+        try {
+            ch = Substring(result, i, 1);
+        } catch (e) {
+            break;
+        }
+
+        isSpace =
+            ch == " " ||
+            ch == "\n" ||
+            ch == "\r" ||
+            ch == "\t";
+
+        if (isSpace) {
+
             if (!prevSpace) {
                 clean = clean + " ";
                 prevSpace = true;
             }
+
         } else {
+
             clean = clean + ch;
             prevSpace = false;
         }
+
         i = i + 1;
     }
 
     return clean.Trim();
 }
-
 // --- Helper: extract <title> from HTML ---
 function ExtractTitle(html) {
     lowHtml = StrLower(html);
@@ -1311,7 +1385,7 @@ function KB_ImportWebPage(kbId, url) {
 
         plainText = "";
         try {
-            plainText = StripHtml(html);
+            plainText = HtmlToPlainTextStrip(html);
         } catch (exStrip) {
             MSG("KB_ImportWebPage StripHtml error: " + exStrip + " (html len=" + html.length + ")");
             Cursor("dflt");

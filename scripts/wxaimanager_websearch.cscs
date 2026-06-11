@@ -13,17 +13,82 @@
 DEFINE webSearchEnabled type l;
 DEFINE webSearchApiKey type a size 200;
 
+// ---- Web search result cache (in-memory, per-session) ------
+DEFINE webCacheMax type i;        // max entries in cache
+DEFINE webCacheTtlMs type i;      // TTL in milliseconds (5 min)
+DEFINE webCacheCount type i;
+DEFINE webCacheKey type a size 200 array 20;
+DEFINE webCacheVal type a size 10000 array 20;
+DEFINE webCacheTime type r array 20;  // DateTime ticks when cached
+
+// ============================================================
+//  Cache helpers – simple in-memory LRU-ish cache for
+//  web search results so identical queries within a short
+//  window (default 5 min) avoid redundant API calls.
+// ============================================================
+function WebSearch_InitCache() {
+    webCacheMax   = 20;
+    webCacheTtlMs = 300000;  // 5 minutes
+    webCacheCount = 0;
+}
+
+function WebSearch_CacheGet(query) {
+    if (webCacheCount == 0) { return ""; }
+    lowerQ = StrLower(query).Trim();
+    nowTicks = NowAsTicks();
+    for (ci = 0; ci < webCacheCount; ci++) {
+        if (StrLower(webCacheKey[ci]) == lowerQ) {
+            // Check TTL
+            ageMs = (nowTicks - webCacheTime[ci]) / 10000;  // 1 tick = 100 ns → ms
+            if (ageMs < webCacheTtlMs) {
+                return webCacheVal[ci];
+            }
+            // Expired – remove by shifting
+            for (sj = ci; sj < webCacheCount - 1; sj++) {
+                webCacheKey[sj]  = webCacheKey[sj + 1];
+                webCacheVal[sj]  = webCacheVal[sj + 1];
+                webCacheTime[sj] = webCacheTime[sj + 1];
+            }
+            webCacheCount = webCacheCount - 1;
+            return "";
+        }
+    }
+    return "";
+}
+
+function WebSearch_CacheSet(query, result) {
+    if (result == "") { return; }
+    // Evict oldest if full
+    if (webCacheCount >= webCacheMax) {
+        for (sj = 0; sj < webCacheCount - 1; sj++) {
+            webCacheKey[sj]  = webCacheKey[sj + 1];
+            webCacheVal[sj]  = webCacheVal[sj + 1];
+            webCacheTime[sj] = webCacheTime[sj + 1];
+        }
+        webCacheCount = webCacheCount - 1;
+    }
+    webCacheKey[webCacheCount]  = query;
+    webCacheVal[webCacheCount]  = result;
+    webCacheTime[webCacheCount] = NowAsTicks();
+    webCacheCount = webCacheCount + 1;
+}
+
 // ============================================================
 //  WebSearch_HasTemporalKeyword(text)
 //  Returns true if the prompt contains a recency/time keyword
 //  that suggests fresh web data would improve the answer.
-//  Uses Croatian stems to cover all morphological forms, e.g.:
+//  Supports both Croatian and English keywords so that
+//  programming queries (e.g. "latest version of .NET",
+//  "current Python API", "recent changes in React") also
+//  trigger auto web search.
+//
+//  Croatian stems cover morphological forms, e.g.:
 //    "najnovij"  → najnoviji / najnovija / najnovije / najnovijih
 //    "današnj"   → današnji / današnja / današnje
 // ============================================================
 function WebSearch_HasTemporalKeyword(text) {
     lower = StrLower(text);
-    // Sequential checks – avoids any CSCS array-indexing quirks.
+    // ---- Croatian temporal keywords ----
     if (lower.Contains("najnovij"))      { return true; }  // najnoviji/a/e – latest/newest
     if (lower.Contains("najrecentnij"))  { return true; }  // most recent
     if (lower.Contains("danas"))         { return true; }  // today
@@ -40,6 +105,28 @@ function WebSearch_HasTemporalKeyword(text) {
     if (lower.Contains("ova godina"))    { return true; }
     if (lower.Contains("trenutno"))      { return true; }  // currently / right now
     if (lower.Contains("trenutačno"))    { return true; }
+    // ---- English temporal keywords ----
+    if (lower.Contains("latest"))        { return true; }  // latest version / latest API
+    if (lower.Contains("newest"))        { return true; }  // newest release
+    if (lower.Contains("most recent"))   { return true; }  // most recent update
+    if (lower.Contains("recent "))       { return true; }  // recent changes / recent news
+    if (lower.Contains("currently"))     { return true; }  // currently available
+    if (lower.Contains("up-to-date"))    { return true; }  // up-to-date info
+    if (lower.Contains("up to date"))    { return true; }
+    if (lower.Contains("what's new"))    { return true; }  // what's new in X
+    if (lower.Contains("what is new"))   { return true; }
+    if (lower.Contains("today"))         { return true; }
+    if (lower.Contains("this week"))     { return true; }
+    if (lower.Contains("this month"))    { return true; }
+    if (lower.Contains("this year"))     { return true; }
+    if (lower.Contains("as of"))         { return true; }  // "as of 2026" / "as of now"
+    if (lower.Contains("right now"))     { return true; }
+    if (lower.Contains("breaking news")) { return true; }
+    if (lower.Contains("announced"))     { return true; }  // newly announced
+    if (lower.Contains("released"))      { return true; }  // just released
+    if (lower.Contains("changelog"))     { return true; }  // changelog / release notes
+    if (lower.Contains("release notes")) { return true; }
+    if (lower.Contains("deprecat"))      { return true; }  // deprecated / deprecation (implies current status)
     return false;
 }
 
@@ -50,24 +137,36 @@ function WebSearch_HasTemporalKeyword(text) {
 //  even if the "Koristi web pretraživanje" checkbox is off.
 // ============================================================
 function WebSearch_Execute(query) {
-//msg("WebSearch_Execute: query: " + query);    
+    // Lazy-init search result cache
+    if (webCacheMax == 0) {
+        WebSearch_InitCache();
+    }
+
     autoTrigger = WebSearch_HasTemporalKeyword(query);
     wsEnabled = (webSearchEnabled == true || webSearchEnabled == 1);
     if (!wsEnabled && !autoTrigger) {
         return "";
     }
-//msg("WebSearch_Execute: web search enabled, checking API key..." + webSearchApiKey);    
     if (webSearchApiKey == "") {
         SetStatus("Web pretraživanje: Tavily API ključ nije postavljen u Postavkama.");
         return "";
     }
+    // Also quick-check cache for the whole query to avoid
+    // unnecessary "auto activated" status flicker
+    cachedFull = WebSearch_CacheGet(query);
+    if (cachedFull != "") {
+        // Only show status if auto-triggered (checkbox off)
+        if (autoTrigger && !wsEnabled) {
+            SetStatus("Web pretraživanje: korišten keširani rezultat.");
+        }
+        return cachedFull;
+    }
+
     if (autoTrigger && !wsEnabled) {
         SetStatus("Web pretraživanje: automatski aktivirano (ključne riječi za aktualnost)...");
     }
-//msg("WebSearch_Execute: web search enabled, API key present, proceeding with search...");
     // Detect URL in the prompt → use /extract, otherwise /search
     detectedUrl = WebSearch_ExtractUrl(query);
-//msg("WebSearch_Execute: detected URL: " + detectedUrl);
     if (detectedUrl != "") {
         return WebSearch_FetchUrl(detectedUrl, query);
     }
@@ -125,6 +224,14 @@ function WebSearch_ExtractUrl(text) {
 function WebSearch_FetchUrl(url, originalQuery) {
     SetStatus("Dohvaćam stranicu: " + url + "...");
 
+    // --- In-memory cache check for any URL ---
+    urlCacheKey = "URL:" + StrLower(url);
+    cached = WebSearch_CacheGet(urlCacheKey);
+    if (cached != "") {
+        SetStatus("Stranica učitana iz keša: " + url);
+        return cached;
+    }
+
     // --- PDF: check DB cache first ---
     isPdf = StrLower(url).Contains(".pdf");
     if (isPdf && chatSqlEnabled) {
@@ -132,6 +239,8 @@ function WebSearch_FetchUrl(url, originalQuery) {
         if (cachedDocId > 0) {
             cachedCtx = WebSearch_GetChunksFromDb(cachedDocId, url);
             if (cachedCtx != "") {
+                // Also store in fast in-memory cache
+                WebSearch_CacheSet(urlCacheKey, cachedCtx);
                 SetStatus("PDF učitan iz baze: " + url);
                 return cachedCtx;
             }
@@ -194,6 +303,10 @@ function WebSearch_FetchUrl(url, originalQuery) {
         webCtx = "--- Sadržaj stranice: " + url + " ---\n";
         webCtx = webCtx + pageContent + "\n";
         webCtx = webCtx + "---\n";
+
+        // --- Store in in-memory cache ---
+        WebSearch_CacheSet(urlCacheKey, webCtx);
+
         return webCtx;
 
     } catch (ex) {
@@ -211,6 +324,13 @@ function WebSearch_SearchTavily(query) {
     searchQuery = query;
     if (searchQuery.length > 150) {
         searchQuery = Substring(searchQuery, 0, 150);
+    }
+
+    // ---- Check in-memory cache first ----
+    cached = WebSearch_CacheGet(searchQuery);
+    if (cached != "") {
+        SetStatus("Web pretraživanje: korišten keširani rezultat za '" + searchQuery + "'.");
+        return cached;
     }
 
     SetStatus("Pretražujem web: " + searchQuery + "...");
@@ -261,6 +381,10 @@ function WebSearch_SearchTavily(query) {
             webCtx = webCtx + rContent + "\n\n";
         }
         webCtx = webCtx + "---\n";
+
+        // ---- Store in cache ----
+        WebSearch_CacheSet(searchQuery, webCtx);
+
         return webCtx;
 
     } catch (ex) {

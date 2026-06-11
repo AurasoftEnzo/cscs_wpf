@@ -37,6 +37,7 @@
 DEFINE attachmentStorageRoot type a size 500;   // disk folder for stored files
 DEFINE lastAttachmentId type r;            // ID of most-recently uploaded attachment
 DEFINE ATTACH_CHUNK_SIZE type r;            // characters per DocumentChunk (set in init)
+DEFINE ATTACH_CHUNK_OVERLAP type r;      // overlap chars between consecutive chunks
 
 
 // =============================================================
@@ -52,6 +53,8 @@ function SQL_InitAttachmentTables() {
     // Storage directory for attachment files
     attachmentStorageRoot = strTrim(tpath()) + "attachments\\";
     ATTACH_CHUNK_SIZE     = 800;
+    ATTACH_CHUNK_OVERLAP  = 100;     // 12.5% — čuva semantički kontinuitet na granicama
+    ATTACH_MAX_SIZE       = 512 * 1024;   // 512 KB – upozorenje za veće datoteke
 
     if (!DIR_EXISTS(attachmentStorageRoot)) {
         MAKE_DIR(attachmentStorageRoot);
@@ -259,6 +262,26 @@ function SQL_InitAttachmentTables() {
     } catch (ex) {
         MSG("Document ChatAttachmentId filtered index migration error: " + ex);
     }
+
+    // --- migrate Document: add CHECK constraint for DocumentType vs FK consistency ---
+    try {
+        docCheckMigrate = "USE " + WXAI_DB + "; "
+            + "IF EXISTS (SELECT * FROM sysobjects WHERE name='Document' AND xtype='U') "
+            + "BEGIN "
+            + "  IF NOT EXISTS (SELECT * FROM sys.check_constraints "
+            + "    WHERE name = 'CK_Document_TypeOwnership' "
+            + "    AND parent_object_id = OBJECT_ID('dbo.Document')) "
+            + "  BEGIN "
+            + "    ALTER TABLE dbo.Document WITH NOCHECK ADD CONSTRAINT CK_Document_TypeOwnership "
+            + "      CHECK (DocumentType IN ('attachment','kb-doc','kb-web','web') "
+            + "        AND ((DocumentType IN ('kb-doc','kb-web') AND KnowledgeBaseId IS NOT NULL) "
+            + "          OR (DocumentType IN ('attachment','web') AND ChatAttachmentId IS NOT NULL))); "
+            + "  END "
+            + "END";
+        sqlNonQuery(docCheckMigrate);
+    } catch (ex) {
+        MSG("Document CK_Document_TypeOwnership migration error: " + ex);
+    }
     
     // --- migrate DocumentChunk: add embedding columns if missing ---
     try {
@@ -416,34 +439,38 @@ function Attachment_UploadOnePath(srcPath) {
     fileSize = FLSZE(srcPath);
     fileHash = FileHash(srcPath);   // SHA-256 hex via C# function
 
-    // --- Build stored filename: <8-char hash prefix>_<original name> ---
-    hashPrefix = "";
-    if (fileHash.length >= 8) {
-        hashPrefix = Substring(fileHash, 0, 8) + "_";
+    // --- File size warning ---
+    if (fileSize > ATTACH_MAX_SIZE) {
+        rawSize = string(fileSize);
+        sizeStr = "";
+        if (rawSize.length > 6) {
+            sizeStr = Substring(rawSize, 0, rawSize.length - 6) + " MB";
+        } else {
+            sizeStr = Substring(rawSize, 0, rawSize.length - 3) + " KB";
+        }
+        choice = MSG("Upozorenje: datoteka '" + fileName + "' je velika (" + sizeStr
+                   + ").\n\n"
+                   + "Preporučena maksimalna veličina je 512 KB.\n"
+                   + "Želite li svejedno nastaviti?",
+                   "Prilog je velik", "yesno", "warning");
+        if (choice != "Yes") {
+            SetStatus("Prilog '" + fileName + "' nije dodan – odabrano odustajanje.");
+            return;
+        }
     }
-    storedFileName = hashPrefix + fileName;
-    destPath       = attachmentStorageRoot + storedFileName;
 
-    // --- Copy binary file to storage directory ---
-    copyOk = FileCopy(srcPath, destPath);
-    if (!copyOk) {
-        SetStatus("Greška pri kopiranju datoteke: " + fileName);
-        MSG("Attachment_UploadOnePath: FileCopy failed. src=" + srcPath + " dest=" + destPath);
-        return;
-    }
-
-    // --- Insert into ChatAttachment ---
+    // --- Insert into ChatAttachment (referenciramo originalnu datoteku, ne kopiramo je) ---
     lastAttachmentId = 0;
     try {
         p = {};
         p.Add({"@sessId",      currentSessionId});
         p.Add({"@userId",      chatUserId});
         p.Add({"@origName",    fileName});
-        p.Add({"@storedName",  storedFileName});
+        p.Add({"@storedName",  fileName});
         p.Add({"@ext",         fileExt});
         p.Add({"@mime",        mimeType});
         p.Add({"@size",        fileSize});
-        p.Add({"@destPath",    destPath});
+        p.Add({"@srcPath",     srcPath});
         p.Add({"@hash",        fileHash});
 
         insSql = "INSERT INTO " + WXAI_DB + ".dbo.ChatAttachment "
@@ -452,7 +479,7 @@ function Attachment_UploadOnePath(srcPath) {
                + "   StorageProvider, StoragePath, Sha256Hash, AttachmentStatus) "
                + "OUTPUT INSERTED.ChatAttachmentId "
                + "VALUES (@sessId, @userId, @origName, @storedName, "
-               + "        @ext, @mime, @size, 'disk', @destPath, @hash, 'uploaded')";
+               + "        @ext, @mime, @size, 'disk', @srcPath, @hash, 'uploaded')";
 
         insRes = sqlQuery(insSql, p);
         if (Size(insRes) > 1) {
@@ -466,7 +493,7 @@ function Attachment_UploadOnePath(srcPath) {
     }
 
     if (lastAttachmentId == 0) {
-        SetStatus("Prilog kopiran, ali ID nije dobiven.");
+        SetStatus("Prilog zabilježen, ali ID nije dobiven.");
         return;
     }
 
@@ -490,13 +517,13 @@ function Attachment_UploadOnePath(srcPath) {
     SetStatus("Prilog '" + fileName + "' dodan (" + sizeStr + ").");
     AppendToDisplay("Sustav", "Prilog dodan: " + fileName + " (" + sizeStr + ")");
 
-    // --- Immediate text extraction for plain-text formats ---
+    // --- Immediate text extraction for plain-text formats (čita s originalne lokacije) ---
     extLow = StrLower(fileExt);
     if (   extLow == ".txt"  || extLow == ".md"   || extLow == ".csv"
         || extLow == ".log"  || extLow == ".xml"  || extLow == ".json"
         || extLow == ".html" || extLow == ".htm") {
         AsyncCall("Attachment_ParseTextFile", "Attachment_ParseDone",
-                  lastAttachmentId, destPath, fileName);
+                  lastAttachmentId, srcPath, fileName);
     } elif (extLow == ".pdf") {
         SetStatus("PDF dodan: '" + fileName + "'. Ekstrakcija teksta nije dostupna za lokalne PDF datoteke. Datoteka će biti poslana kao privitak (multipart).");
         MSG("Attachment_UploadOnePath: PDF text extraction not implemented for local files. File: " + fileName);
@@ -577,7 +604,9 @@ function Attachment_ParseDone(sender, result) {
 // =============================================================
 //  CHUNKING
 //  Splits extractedText into fixed-size chunks of ATTACH_CHUNK_SIZE
-//  characters (no overlap). Stores each chunk in DocumentChunk with:
+//  characters with ATTACH_CHUNK_OVERLAP overlap between consecutive
+//  chunks (preserves semantic continuity at boundaries).
+//  Stores each chunk in DocumentChunk with:
 //    CharStart / CharEnd  – character offsets in the full text
 //    PageFrom = PageTo = 1  – plain-text has no page structure
 //    SectionPath = ''       – section detection left to external parsers
@@ -607,7 +636,11 @@ function Attachment_ChunkDocument(documentId, chatSessionIdArg, extractedText) {
             dupRes = sqlQuery(dupSql, dupParams);
             if (Size(dupRes) > 1 && int(dupRes[1][0]) > 0) {
                 chunkOrd++;
-                charStart = charEnd;
+                nextStart = charEnd - ATTACH_CHUNK_OVERLAP;
+                if (nextStart <= charStart) {
+                    nextStart = charStart + int(ATTACH_CHUNK_SIZE / 2);
+                }
+                charStart = nextStart;
                 continue;   // duplicate, skip INSERT
             }
 
@@ -626,11 +659,20 @@ function Attachment_ChunkDocument(documentId, chatSessionIdArg, extractedText) {
                      + " CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', CONVERT(NVARCHAR(MAX), @text)), 2))";
             sqlNonQuery(chunkSql, cp);
             chunkOrd++;
-            charStart = charEnd;
+            // Next chunk starts ATTACH_CHUNK_OVERLAP chars before end of current chunk
+            nextStart = charEnd - ATTACH_CHUNK_OVERLAP;
+            if (nextStart <= charStart) {
+                nextStart = charStart + int(ATTACH_CHUNK_SIZE / 2);
+            }
+            charStart = nextStart;
         } catch (ex) {
             MSG("Attachment_ChunkDocument - chunk " + chunkOrd + " error: " + ex);
             chunkOrd++;
-            charStart = charEnd;
+            nextStart = charEnd - ATTACH_CHUNK_OVERLAP;
+            if (nextStart <= charStart) {
+                nextStart = charStart + int(ATTACH_CHUNK_SIZE / 2);
+            }
+            charStart = nextStart;
         }
     }
 }
@@ -730,7 +772,7 @@ function Attachment_SearchSimilar(query, topN, sessId) {
             if (Size(storedVec) != vecDim) { continue; }
 
             simScore = CosineSimilarity(queryVec, storedVec);
-            if (simScore < 0.50) { continue; }
+            if (simScore < float(simThreshold)) { continue; }
 
             if (matchCnt < MAX_CANDIDATES) {
                 scores.Add(simScore);

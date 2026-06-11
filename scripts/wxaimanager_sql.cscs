@@ -291,6 +291,21 @@ function SQL_EnsureSession(titleHint) {
         return;    // session already created
     }
     try {
+        // Serialize session creation across instances via app lock
+        // Only one instance may INSERT a ChatSession row at a time.
+        lockSql = "DECLARE @lockResult INT; "
+                + "EXEC @lockResult = sp_getapplock @Resource = 'WXAI_CreateSession', "
+                + "  @LockMode = 'Exclusive', @LockTimeout = 5000; "
+                + "IF @lockResult < 0 "
+                + "  THROW 50000, 'Could not acquire session creation lock within 5 s', 1;";
+        sqlQuery(lockSql);
+
+        // Double-check after acquiring lock (another instance may have created it)
+        if (currentSessionId != 0) {
+            try { sqlNonQuery("EXEC sp_releaseapplock @Resource = 'WXAI_CreateSession'"); } catch (exRel) { }
+            return;
+        }
+
         title = titleHint;
         if (title.length > 197) {
             title = Substring(title, 0, 197) + "...";
@@ -326,6 +341,11 @@ function SQL_EnsureSession(titleHint) {
                 MSG("SQL_EnsureSession KB association error: " + exKb);
             }
         }
+
+        // Release the app lock
+        try {
+            sqlNonQuery("EXEC sp_releaseapplock @Resource = 'WXAI_CreateSession'");
+        } catch (exRel) { }
 
     } catch (ex) {
         MSG("SQL_EnsureSession error: " + ex);
@@ -400,18 +420,20 @@ function SQL_SaveUserMessage(text) {
         return;
     }
 
-    chatMsgOrder = chatMsgOrder + 1;
-
     try {
         sqlParams = {};
         sqlParams.Add({"@p1", currentSessionId});
-        sqlParams.Add({"@p2", chatMsgOrder});
-        sqlParams.Add({"@p3", text});
+        sqlParams.Add({"@p2", text});
 
+        // Use DB-side MAX(MessageOrder)+1 instead of in-memory chatMsgOrder
+        // to prevent duplicate MessageOrder when multiple instances write
+        // to the same session concurrently.
         msgSql = "INSERT INTO " + WXAI_DB + ".dbo.ChatMessage "
                + "(ChatSessionId, MessageOrder, RoleCode, MessageText, ContentType) "
                + "OUTPUT INSERTED.ChatMessageId "
-               + "VALUES (@p1, @p2, 'user', @p3, 'text')";
+               + "SELECT @p1, ISNULL(MAX(MessageOrder), 0) + 1, 'user', @p2, 'text' "
+               + "FROM " + WXAI_DB + ".dbo.ChatMessage "
+               + "WHERE ChatSessionId = @p1";
 
         msgRes = sqlQuery(msgSql, sqlParams);
 
@@ -425,7 +447,9 @@ function SQL_SaveUserMessage(text) {
             }
         }
 
+        // Sync in-memory order best-effort for subsequent local use
         if (newMsgId > 0) {
+            chatMsgOrder = chatMsgOrder + 1;
             SQL_InsertChunk(currentSessionId, newMsgId, 1, text);
         }
 
@@ -446,26 +470,28 @@ function SQL_SaveAssistantMessage(text, finishReason, promptTok, complTok, total
         return;
     }
 
-    chatMsgOrder = chatMsgOrder + 1;
-
     try {
         sqlParams = {};
         sqlParams.Add({"@p1", currentSessionId});
-        sqlParams.Add({"@p2", chatMsgOrder});
-        sqlParams.Add({"@p3", text});
-        sqlParams.Add({"@p4", finishReason});
-        sqlParams.Add({"@p5", promptTok});
-        sqlParams.Add({"@p6", complTok});
-        sqlParams.Add({"@p7", totalTok});
+        sqlParams.Add({"@p2", text});
+        sqlParams.Add({"@p3", finishReason});
+        sqlParams.Add({"@p4", promptTok});
+        sqlParams.Add({"@p5", complTok});
+        sqlParams.Add({"@p6", totalTok});
 
-        // NULLIF(@p4,'')  converts empty finishReason  -> NULL
-        // NULLIF(@p5,0)   converts 0 token counts      -> NULL
+        // Use DB-side MAX(MessageOrder)+1 instead of in-memory chatMsgOrder
+        // to prevent duplicate MessageOrder when multiple instances write
+        // to the same session concurrently.
+        // NULLIF(@p3,'')  converts empty finishReason  -> NULL
+        // NULLIF(@p4,0)   converts 0 token counts      -> NULL
         msgSql = "INSERT INTO " + WXAI_DB + ".dbo.ChatMessage "
                + "(ChatSessionId, MessageOrder, RoleCode, MessageText, ContentType, "
                + " FinishReason, PromptTokens, CompletionTokens, TotalTokens) "
                + "OUTPUT INSERTED.ChatMessageId "
-               + "VALUES (@p1, @p2, 'assistant', @p3, 'text', "
-               + " NULLIF(@p4,''), NULLIF(@p5,0), NULLIF(@p6,0), NULLIF(@p7,0))";
+               + "SELECT @p1, ISNULL(MAX(MessageOrder), 0) + 1, 'assistant', @p2, 'text', "
+               + " NULLIF(@p3,''), NULLIF(@p4,0), NULLIF(@p5,0), NULLIF(@p6,0) "
+               + "FROM " + WXAI_DB + ".dbo.ChatMessage "
+               + "WHERE ChatSessionId = @p1";
 
         msgRes = sqlQuery(msgSql, sqlParams);
 
@@ -477,6 +503,11 @@ function SQL_SaveAssistantMessage(text, finishReason, promptTok, complTok, total
             if (Size(idRes3) > 1) {
                 newMsgId = int(idRes3[1][0]);
             }
+        }
+
+        // Sync in-memory order best-effort for subsequent local use
+        if (newMsgId > 0) {
+            chatMsgOrder = chatMsgOrder + 1;
         }
 
         // Update session timestamp
@@ -966,11 +997,15 @@ function SQL_DeleteKnowledgeBase(kbId) {
     if (!chatSqlEnabled) { return; }
     try {
         p = {}; p.Add({"@id", kbId});
-        sqlNonQuery("DELETE FROM " + WXAI_DB + ".dbo.DocumentChunk "
+        // All three DELETEs in a single batch with explicit transaction
+        // prevents partial deletion when multiple instances run concurrently.
+        sqlNonQuery("BEGIN TRAN; "
+                  + "DELETE FROM " + WXAI_DB + ".dbo.DocumentChunk "
                   + "WHERE DocumentId IN ("
-                  + "  SELECT DocumentId FROM " + WXAI_DB + ".dbo.Document WHERE KnowledgeBaseId = @id)", p);
-        sqlNonQuery("DELETE FROM " + WXAI_DB + ".dbo.Document WHERE KnowledgeBaseId = @id", p);
-        sqlNonQuery("DELETE FROM " + WXAI_DB + ".dbo.KnowledgeBase WHERE KBId = @id", p);
+                  + "  SELECT DocumentId FROM " + WXAI_DB + ".dbo.Document WHERE KnowledgeBaseId = @id); "
+                  + "DELETE FROM " + WXAI_DB + ".dbo.Document WHERE KnowledgeBaseId = @id; "
+                  + "DELETE FROM " + WXAI_DB + ".dbo.KnowledgeBase WHERE KBId = @id; "
+                  + "COMMIT;", p);
     } catch (ex) {
         MSG("SQL_DeleteKnowledgeBase error: " + ex);
     }
@@ -1043,7 +1078,10 @@ function SQL_SetDocumentKnowledgeBase(docId, kbId) {
     if (!chatSqlEnabled) { return; }
     try {
         p = {}; p.Add({"@doc", docId}); p.Add({"@kb", kbId});
-        sqlNonQuery("UPDATE " + WXAI_DB + ".dbo.Document SET KnowledgeBaseId = @kb "
+        sqlNonQuery("UPDATE " + WXAI_DB + ".dbo.Document "
+                  + "SET KnowledgeBaseId = @kb, "
+                  + "    DocumentType = CASE WHEN DocumentType IN ('attachment','web') "
+                  + "                        THEN 'kb-doc' ELSE DocumentType END "
                   + "WHERE DocumentId = @doc", p);
         // Touch KB UpdatedAtUtc
         pu = {}; pu.Add({"@kb", kbId});
@@ -1148,8 +1186,13 @@ function KB_DeleteDocument(docId) {
     if (!chatSqlEnabled || docId == 0) { return; }
     try {
         p = {}; p.Add({"@id", docId});
-        sqlNonQuery("DELETE FROM " + WXAI_DB + ".dbo.DocumentChunk WHERE DocumentId = @id", p);
-        sqlNonQuery("DELETE FROM " + WXAI_DB + ".dbo.Document WHERE DocumentId = @id", p);
+        // Both DELETEs in a single batch with explicit transaction
+        // prevents orphaned Document rows when multiple instances
+        // insert/delete concurrently.
+        sqlNonQuery("BEGIN TRAN; "
+                  + "DELETE FROM " + WXAI_DB + ".dbo.DocumentChunk WHERE DocumentId = @id; "
+                  + "DELETE FROM " + WXAI_DB + ".dbo.Document WHERE DocumentId = @id; "
+                  + "COMMIT;", p);
     } catch (ex) {
         MSG("KB_DeleteDocument error: " + ex);
     }

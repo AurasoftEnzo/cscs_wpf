@@ -29,6 +29,7 @@ DEFINE aiTemperatureStr type a size 10;
 DEFINE aiMaxTokensStr type a size 10;
 DEFINE aiContextLimit type r;
 DEFINE aiMaxInlineTokens type r;
+DEFINE contextMessageCount type i;
 DEFINE settingsFilePath type a size 400;
 
 // ---- Current conversation -----------------------------------
@@ -144,6 +145,7 @@ function wxaimanager_OnStart() {
     aiMaxTokensStr   = "2000";
     aiContextLimit    = 128000;
     aiMaxInlineTokens = 4000;
+    contextMessageCount = 18;
 
     //LoadSettings();
 
@@ -198,6 +200,13 @@ function wxaimanager_OnStart() {
     SetWidgetOptions("txtSttApiKey",   "Text", sttApiKey);
     SetWidgetOptions("txtSttBaseUrl",  "Text", sttBaseUrl);
     SetWidgetOptions("txtSttLanguage", "Text", sttLanguage);
+
+    // --- embedding/RAG settings ---
+    SetWidgetOptions("txtEmbeddingModel", "Text", embeddingModel);
+    SetWidgetOptions("txtSimThreshold", "Text", simThreshold);
+
+    // --- context sliding window ---
+    SetWidgetOptions("txtContextMessageCount", "Text", contextMessageCount);
 
     // --- hide settings panel initially ---
     SetWidgetOptions("panelSettings", "Visible", false); // should be Collapsed 
@@ -1127,7 +1136,7 @@ function ProcessAIError() {
 // Payload order (per spec):
 //   1. System prompt
 //   2. SummaryText (if available) – as system message
-//   3. Last 10 previous messages  – sliding window
+//   3. Sliding window of previous messages (contextMessageCount items)
 //   4+5. RAG document chunks + new user prompt (last message)
 function BuildApiPayload(textContext, visionItems) {
     payload  = '{"model": "' + aiModel + '","max_tokens":' + aiMaxTokensStr + ',"messages": [';
@@ -1147,11 +1156,14 @@ function BuildApiPayload(textContext, visionItems) {
         firstMsg = false;
     }
 
-    // 3. Last 10 previous messages (sliding window, excludes current user message)
+    // 3. Sliding window of previous messages (excludes current user message)
+    //    contextMessageCount controls how many messages to keep before the current one.
+    //    Default is 18 (total window = contextMessageCount + 1 with current).
     msgLast  = msgCount - 1;
     startIdx = 0;
-    if (msgLast > 10) {
-        startIdx = msgLast - 10;
+    if (contextMessageCount < 1) { contextMessageCount = 1; }
+    if (msgLast > contextMessageCount) {
+        startIdx = msgLast - contextMessageCount;
     }
     for (i = startIdx; i < msgLast; i++) {
         role = msgRole[i];
@@ -1420,6 +1432,10 @@ function LoadSettings() {
                 } else {
                     embeddingAutoEnabled = false;
                 }
+            } elif (key == "simthreshold") {
+                simThreshold = val;
+            } elif (key == "contextmessages") {
+                contextMessageCount = int(val);
             }
         }
     } catch (ex) {
@@ -1451,6 +1467,8 @@ function SaveSettings() {
     content  = content + "embeddingmodel|"    + embeddingModel          + "\n";
     embeddingAutoVal = embeddingAutoEnabled ? "1" : "0";
     content  = content + "embeddingauto|"     + embeddingAutoVal        + "\n";
+    content  = content + "simthreshold|"      + simThreshold            + "\n";
+    content  = content + "contextmessages|"   + contextMessageCount     + "\n";
 
     try {
         SaveFile(content, settingsFilePath, "");

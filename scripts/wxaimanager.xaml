@@ -990,39 +990,35 @@
                                  HorizontalAlignment="Left"
                                  ToolTip="Maksimalan broj tokena iz priloženih dokumenata koji će se poslati inline. Ako je prekoračen, koristi se RAG pretraga (embeddingi). 0 = ne šalji inline tekst, samo RAG"/>
 
+                        <TextBlock Text="RAG prag sličnosti (0.0 – 1.0):" Style="{StaticResource SectionHeader}" Margin="0,10,0,5"/>
+                        <TextBox Name="txtSimThreshold"
+                                 DataContext="simThreshold"
+                                 Style="{StaticResource DarkTextBox}"
+                                 Width="70"
+                                 HorizontalAlignment="Left"
+                                 ToolTip="Minimalna kosinusna sličnost (0-1) za RAG rezultate. 0.50 = preporučeno. Više = strože (manje ali relevantnije). Niže = opuštenije (više ali i šum)."/>
+
+                        <TextBlock Text="Embedding model:" Style="{StaticResource SectionHeader}" Margin="0,10,0,5"/>
+                        <TextBox Name="txtEmbeddingModel"
+                                 DataContext="embeddingModel"
+                                 Style="{StaticResource DarkTextBox}"
+                                 Width="200"
+                                 HorizontalAlignment="Left"
+                                 ToolTip="Model za generiranje embedding vektora.&#x0a;OpenAI: text-embedding-3-small / text-embedding-3-large&#x0a;Ollama: nomic-embed-text / mxbai-embed-large / all-minilm"/>
+
                         <TextBlock Text="Tavily API ključ (web pretraživanje):" Style="{StaticResource SectionHeader}" Margin="0,10,0,5"/>
                         <TextBox Name="txtWebSearchApiKey"
                                  DataContext="webSearchApiKey"
                                  Style="{StaticResource DarkTextBox}"
                                  ToolTip="Besplatni API ključ za Tavily web pretraživanje. Registracija na: tavily.com"/>
 
-                        <Separator Margin="0,12,0,8" Background="#3D5D75"/>
-                        <TextBlock Text="Govorni unos (STT):" Style="{StaticResource SectionHeader}"/>
-                        <TextBlock Text="Provider (Whisper API / Windows STT):" Style="{StaticResource SectionHeader}"/>
-                        <TextBox Name="txtSttProvider"
-                                 DataContext="sttProvider"
+                        <TextBlock Text="Broj poruka u kontekstu:" Style="{StaticResource SectionHeader}" Margin="0,10,0,5"/>
+                        <TextBox Name="txtContextMessageCount"
+                                 DataContext="contextMessageCount"
                                  Style="{StaticResource DarkTextBox}"
-                                 Margin="0,0,0,6"
-                                 ToolTip="Whisper API  (cloud, preporučeno)  ili  Windows STT  (offline)"/>
-                        <TextBlock Text="STT API ključ (prazno = koristi AI API ključ):" Style="{StaticResource SectionHeader}"/>
-                        <TextBox Name="txtSttApiKey"
-                                 DataContext="sttApiKey"
-                                 Style="{StaticResource DarkTextBox}"
-                                 Margin="0,0,0,6"
-                                 ToolTip="Ostavite prazno za korištenje AI API ključa za Whisper"/>
-                        <TextBlock Text="STT Base URL (prazno = koristi AI Base URL):" Style="{StaticResource SectionHeader}"/>
-                        <TextBox Name="txtSttBaseUrl"
-                                 DataContext="sttBaseUrl"
-                                 Style="{StaticResource DarkTextBox}"
-                                 Margin="0,0,0,6"
-                                 ToolTip="Npr. https://api.openai.com/v1 – Ostavite prazno za korištenje AI Base URL"/>
-                        <TextBlock Text="Jezik prepoznavanja (hr, en, de, fr...):" Style="{StaticResource SectionHeader}"/>
-                        <TextBox Name="txtSttLanguage"
-                                 DataContext="sttLanguage"
-                                 Style="{StaticResource DarkTextBox}"
-                                 Width="60"
+                                 Width="80"
                                  HorizontalAlignment="Left"
-                                 ToolTip="BCP-47 jezična oznaka: hr = Hrvatski, en = Engleski, de = Njemački"/>
+                                 ToolTip="Broj prethodnih poruka koje se šalju AI-u kao kontekst. 0 = samo trenutna poruka. 18 = zadano. 50 = više konteksta (veća potrošnja tokena)."/>
                     </StackPanel>
 
                     <!-- Column 2: System Prompt -->
@@ -1047,8 +1043,45 @@
                         </TextBlock>
                     </StackPanel>
 
-                    <!-- Column 4: Save + Cancel buttons -->
-                    <StackPanel Grid.Column="4" VerticalAlignment="Center">
+                    <!-- Column 4: STT + Save/Cancel buttons -->
+                    <StackPanel Grid.Column="4" VerticalAlignment="Top">
+                        <TextBlock Text="Govorni unos (STT):" Style="{StaticResource SectionHeader}" FontSize="12"/>
+                        <Separator Margin="0,2,0,6" Background="#3D5D75"/>
+
+                        <TextBlock Text="Provider:" Style="{StaticResource SectionHeader}" FontSize="11"/>
+                        <TextBox Name="txtSttProvider"
+                                 DataContext="sttProvider"
+                                 Style="{StaticResource DarkTextBox}"
+                                 Width="160"
+                                 Margin="0,0,0,6"
+                                 ToolTip="Whisper API  (cloud, preporučeno)  ili  Windows STT  (offline)"/>
+
+                        <TextBlock Text="API ključ (prazno = AI ključ):" Style="{StaticResource SectionHeader}" FontSize="11"/>
+                        <TextBox Name="txtSttApiKey"
+                                 DataContext="sttApiKey"
+                                 Style="{StaticResource DarkTextBox}"
+                                 Width="160"
+                                 Margin="0,0,0,6"
+                                 ToolTip="Ostavite prazno za korištenje AI API ključa za Whisper"/>
+
+                        <TextBlock Text="Base URL (prazno = AI URL):" Style="{StaticResource SectionHeader}" FontSize="11"/>
+                        <TextBox Name="txtSttBaseUrl"
+                                 DataContext="sttBaseUrl"
+                                 Style="{StaticResource DarkTextBox}"
+                                 Width="160"
+                                 Margin="0,0,0,6"
+                                 ToolTip="Ostavite prazno za korištenje AI Base URL"/>
+
+                        <TextBlock Text="Jezik (hr, en, de...):" Style="{StaticResource SectionHeader}" FontSize="11"/>
+                        <TextBox Name="txtSttLanguage"
+                                 DataContext="sttLanguage"
+                                 Style="{StaticResource DarkTextBox}"
+                                 Width="60"
+                                 HorizontalAlignment="Left"
+                                 ToolTip="BCP-47: hr = Hrvatski, en = Engleski, de = Njemački"/>
+
+                        <Separator Margin="0,10,0,10" Background="#3D5D75"/>
+
                         <Button Name="btnSaveSettings"
                                 Content="Spremi postavke"
                                 Style="{StaticResource FlatBtn}"

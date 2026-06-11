@@ -62,6 +62,16 @@ function Cache_BuildAll() {
             cVec      = cRow[1];
             cSessId   = int(cRow[2]);
 
+            // Cross-source dedup: preskoči ako isti tekst već postoji u cache-u
+            // (provjeri samo zadnjih 20 unosa — dovoljno za rijetke duplikate)
+            textExists = false;
+            dedupStart = cacheCount - 20;
+            if (dedupStart < 0) { dedupStart = 0; }
+            for (__bci = dedupStart; __bci < cacheCount; __bci++) {
+                if (cacheChunkText[__bci] == cText) { textExists = true; break; }
+            }
+            if (textExists) { continue; }
+
             idx = cacheCount;
             cacheChunkText[idx] = cText;
             cacheChunkVec[idx]  = cVec;
@@ -80,7 +90,7 @@ function Cache_BuildAll() {
     try {
         docSql = "SELECT c.ChunkText, c.EmbeddingVectorJson, "
                + "       ISNULL(d.KnowledgeBaseId, 0) AS SrcId, "
-               + "       CASE WHEN d.KnowledgeBaseId IS NOT NULL THEN 'kb' "
+               + "       CASE WHEN d.DocumentType IN ('kb-doc','kb-web') THEN 'kb' "
                + "            ELSE 'att' END AS SrcType, "
                + "       ISNULL(d.Title, '') AS DocTitle "
                + "FROM " + WXAI_DB + ".dbo.DocumentChunk c "
@@ -99,6 +109,16 @@ function Cache_BuildAll() {
             dSrcId    = int(dRow[2]);
             dSrcType  = dRow[3];
             dTitle    = dRow[4];
+
+            // Cross-source dedup: preskoči ako isti tekst već postoji u cache-u
+            // (provjeri samo zadnjih 20 unosa — dovoljno za rijetke duplikate)
+            textExists = false;
+            dedupStart = cacheCount - 20;
+            if (dedupStart < 0) { dedupStart = 0; }
+            for (__bdi = dedupStart; __bdi < cacheCount; __bdi++) {
+                if (cacheChunkText[__bdi] == dText) { textExists = true; break; }
+            }
+            if (textExists) { continue; }
 
             idx = cacheCount;
             cacheChunkText[idx] = dText;
@@ -129,6 +149,12 @@ function Cache_AddOne(text, vecJson, sessionId, source, sourceId, docTitle) {
         // Cache full – could implement LRU eviction later
         return;
     }
+
+    // Cross-source dedup: isti tekst već postoji u cache-u
+    for (__coi = 0; __coi < cacheCount; __coi++) {
+        if (cacheChunkText[__coi] == text) { return; }
+    }
+
     idx = cacheCount;
     cacheChunkText[idx] = text;
     cacheChunkVec[idx]  = vecJson;
@@ -159,7 +185,7 @@ function Cache_Search(query, topN, sourceFilter, sessId, srcId) {
     vecDim = Size(queryVec);
     if (vecDim == 0) { return ""; }
 
-    SIM_THRESHOLD = 0.50;
+    SIM_THRESHOLD = float(simThreshold);
     MAX_CANDIDATES = 200;
 
     scores = {};

@@ -194,6 +194,106 @@ function Grid1move
     }
 }
 ```
+## Exmple how to make datagrid cscs
+
+function KB_RefreshList() {
+    if (!chatSqlEnabled) { return; }
+    try {
+        kbRes = SQL_ListKnowledgeBases();
+        kbListCount = Size(kbRes) - 1;
+        if (kbListCount < 0) { kbListCount = 0; }
+        // Initialize arrays
+        for (i = 0; i < kbListCount; i++) {
+            row = kbRes[i + 1];
+            kbListId[i]       = int(row[0]);
+            kbListName[i]     = row[1];
+            kbListDocCount[i] = int(row[3]);
+            kbListDate[i]     = row[4];
+        }
+        // Reset counterFld tracker before setup (grid manages it from 0)
+        kbLineCntr = 0;
+        DisplayArray("datagridKB", "close");
+        SetWidgetOptions("lblKBStatus", "Text", "Nema dostupnih baza znanja. Kreirajte novu.");
+        if(kbListCount > 0){
+
+            
+        DisplayArraySetup("datagridKB", counterFld: kbLineCntr,
+                        activeElements: kbListCount, maxElements: 50);
+  
+        }
+        if (kbListCount == 0) {
+            SetWidgetOptions("lblKBDetailTitle", "Text", "Nema baza znanja. Kreirajte novu.");
+        }
+    } catch (ex) {
+        MSG("KB_RefreshList error: " + ex);
+    }
+}
+## Example how to make datagrid xaml
+
+<DataGrid Grid.Row="1" Name="datagridKB"
+          Background="Transparent"
+          IsReadOnly="True"
+          AutoGenerateColumns="False"
+          HeadersVisibility="Column"
+          BorderThickness="0"
+          RowHeight="28"
+          FontSize="11.5"
+          FontFamily="Segoe UI"
+          Foreground="#C8D0DA"
+          RowBackground="#1E2F3D"
+          AlternatingRowBackground="#243444"
+          GridLinesVisibility="Horizontal"
+          HorizontalGridLinesBrush="#2D4057"
+          CanUserAddRows="False"
+          CanUserDeleteRows="False"
+          CanUserResizeRows="False"
+          CanUserResizeColumns="True"
+          SelectionMode="Single"
+          HorizontalScrollBarVisibility="Disabled"
+          VerticalScrollBarVisibility="Auto">
+    <DataGrid.Resources>
+        <Style TargetType="{x:Type DataGridColumnHeader}">
+            <Setter Property="Background" Value="#1A2535"/>
+            <Setter Property="Foreground" Value="#E67E22"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="BorderBrush" Value="#2D4057"/>
+        </Style>
+    </DataGrid.Resources>
+    <DataGrid.Columns>
+        <DataGridTemplateColumn Header="Naziv" Width="*" MinWidth="160">
+            <DataGridTemplateColumn.CellTemplate>
+                <DataTemplate>
+                    <wcl:ASGridCell FieldName="kbListName"
+                                    Editor="edDefault"
+                                    EditLength="0"
+                                    IsReadOnly="True"/>
+                </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTemplateColumn Header="Dok." Width="48" MinWidth="40">
+            <DataGridTemplateColumn.CellTemplate>
+                <DataTemplate>
+                    <wcl:ASGridCell FieldName="kbListDocCount"
+                                    Editor="edDefault"
+                                    EditLength="0"
+                                    IsReadOnly="True"
+                                    HorizontalContentAlignment="Center"/>
+                </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTemplateColumn Header="Ažurirano" Width="90" MinWidth="70">
+            <DataGridTemplateColumn.CellTemplate>
+                <DataTemplate>
+                    <wcl:ASGridCell FieldName="kbListDate"
+                                    Editor="edDefault"
+                                    EditLength="0"
+                                    IsReadOnly="True"/>
+                </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+    </DataGrid.Columns>
+</DataGrid>
 
 ## Typical workflow
 1. Define arrays and row counters.

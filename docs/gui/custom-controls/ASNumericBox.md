@@ -29,7 +29,7 @@ The control supports:
 - min/max limits,
 - thousands formatting,
 - pre/post/text-change events,
-- key traps [file:104].
+- key traps.
 
 ## Supported properties
 
@@ -54,7 +54,7 @@ The control supports:
 | `ButtonBackground` | Brush | Button background color |
 
 ## Range behavior
-When the entered value is outside `MinValue` / `MaxValue`, documented behavior states that after losing focus the value is reset to `0` [file:104].
+When the entered value is outside `MinValue` / `MaxValue`, documented behavior states that after losing focus the value is reset to `0`.
 
 ## Event naming
 If the control `Name` is `numbox1`, the following event functions may exist:

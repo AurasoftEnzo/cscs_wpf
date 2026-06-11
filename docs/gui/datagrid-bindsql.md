@@ -154,6 +154,164 @@ Editable table grids may use `FieldName` instead of `Tag`:
 </DataGridTemplateColumn>
 ```
 
+
+## Create datagrid with look up list
+### scrpit.cscs
+include(strTrim(tpath()) + "F2ListLib.cscs");
+
+function ceSkladiste@clicked()
+{
+    F2ListQueryString = "WITH skladista AS("
+    + " SELECT DISTINCT nkpr_ln_loc, pkmk_skl_naziv"
+    + " FROM  " + trenutnaGodinaBaza + ".[dbo].[nkprglnr] "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[nkprlnnr] ON nkpr_gl_sonum = nkpr_ln_invnm "
+    + " LEFT JOIN " + trenutnaGodinaBaza + ".[dbo].[pkmkskla] ON pkmk_skl_code = nkpr_ln_loc"
+    + " WHERE nkpr_ln_loc LIKE '{var1}%' AND pkmk_skl_naziv LIKE '%{var2}%'"
+    + " AND YEAR(nkpr_gl_orddte) = " + ovagod_h
+    + ")"
+    + " SELECT ROW_NUMBER() OVER(ORDER BY nkpr_ln_loc ASC) AS RowNumber, nkpr_ln_loc, pkmk_skl_naziv"
+    + " FROM skladista ORDER BY RowNumber";
+
+    skladiste = "";
+    sifraFieldPointer -> skladiste;
+    NazivFieldPointer -> SkladisteNaziv; 
+    windowTitle = "F2 lista skladišta";
+    headersArray = {"R.br.", "Skladište", "Naziv skladišta"};
+    ShowF2List();--> calls fuction from F2ListLib.cscs
+    ```
+### F2ListLib.cscs
+
+function ShowF2List(){
+    ModalWindow(strTrim(tpath()) + "F2List.xaml");
+}
+
+function F2List_onDisplay(){
+    FormatF2ListDataGrid("dgF2List", windowTitle, headersArray); /// -> gets columns and data 
+    searchSifra = &sifraFieldPointer;
+    search();
+}
+
+### script.xaml
+
+<DataGrid AlternatingRowBackground="LightGray"
+                  GridLinesVisibility="None"
+                  HorizontalAlignment="Left"
+                  VerticalAlignment="Top"
+                  Height="320"
+                  Width="624"
+                  Margin="0,0,0,0"
+                  IsReadOnly="true"
+                  Foreground="Black"
+                  Name="dgF2List"
+                  HorizontalScrollBarVisibility="Auto"
+                  VerticalScrollBarVisibility="Auto"
+                  Background="White"
+                  TabIndex="2"
+                  IsTabStop="True"
+                  SelectionMode="Single"
+                  SelectionUnit="FullRow"
+                  >
+            <DataGrid.Resources>
+                <Style TargetType="{x:Type DataGridColumnHeader}">
+                    <Setter Property="Background"
+                            Value="#FFE7E7CF" />
+                    <Setter Property="Foreground"
+                            Value="black" />
+                </Style>
+            </DataGrid.Resources>
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Header=""
+                                        >
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox Tag="column1Tag" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header=""
+                                        >
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox Tag="column2Tag" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header=""
+                                        >
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox Tag="column3Tag" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header=""
+                                        >
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox Tag="column4Tag" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header=""
+                        >
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox Tag="column5Tag" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header=""
+                                        >
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox Tag="column6Tag" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header=""
+                                        >
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox Tag="column7Tag" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header=""
+                                        >
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox Tag="column8Tag" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+				<DataGridTemplateColumn Header=""
+                                        >
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox Tag="column9Tag" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+### FormatF2ListDatagrid
+
+Description:
+Function for changing “dgF2List” datagrid’s column headers and it’s window’s title.
+
+Usage:
+FormatF2ListDataGrid( {windowTitle}, {headersArray});
+
+Argument details:
+{windowTitle} -> required string
+{headersArray} -> required array
+
+Returns:
+Variable.EmptyInstance
+
+called on display in ShowF2List() and SelectedViewList()
+
 ## Grid display refresh options
 
 ### `DisplayTable(gridName, option)`

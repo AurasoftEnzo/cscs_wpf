@@ -3,8 +3,15 @@ DEFINE newNameValue type a size 100;
 DEFINE newCustomerValue type a size 100;
 
 function btn1@Clicked(sender, load){
-    varijabla += "x";
-    SetWidgetOptions("tb2", "Visible", "False");
+    // varijabla += "x";
+    // SetWidgetOptions("tb2", "Visible", "False");
+
+    // code = "msg('Hello from CSCS!')";
+    
+    path = "C:\Users\Leo\Documents\GitHub\cscs_wpf\scripts\wxgkbrutobil.cscs";
+    
+    code = ReadAllText(path);
+    RunInlineString(code);
 }
 
 function tb1@textChange(sender, load){

@@ -129,6 +129,7 @@ namespace SplitAndMerge
         public const string SHOW = "show";
         public const string SIGNAL = "signal";
         public const string SINGLETON = "singleton";
+        public const string RUNINLINESTRING = "RunInlineString";
         public const string SIZE = "Size";
         public const string SLEEP = "sleep";
         public const string STR_BETWEEN = "StrBetween";

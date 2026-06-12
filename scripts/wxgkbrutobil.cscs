@@ -48,13 +48,13 @@ function Wxgkbrutobil_onDisplay()
 
 // ===== Browse button =====
 function btnBrowse@clicked() {
-    folder = BrowseForFolder("Select output folder", outputFolder);
+    folder = GetPath("", "Select output folder");
     if (folder != "") { outputFolder = folder; }
 }
 
 // ===== Generate button =====
 function btnGenerate@clicked() {
-    folderPath = "C:\cscs_wpf\scripts";
+    folderPath = outputFolder;
     fileName = "Bruto_bilanca_" + companyCode + "_" + Now("yyyyMMdd_HHmmss") + ".xlsx";
     compCode = companyCode;
     year = ovagod_h;

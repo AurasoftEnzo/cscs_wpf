@@ -3248,6 +3248,38 @@ namespace SplitAndMerge
         }
     }
 
+    public class RunInlineStringFunction : ParserFunction
+    {
+        static Dictionary<string, Variable> m_singletons =
+           new Dictionary<string, Variable>();
+
+        protected override Variable Evaluate(ParsingScript script)
+        {
+            List<Variable> args = script.GetFunctionArgs();
+            Utils.CheckArgs(args.Count, 1, m_name);
+
+            string expr = args[0].AsString();
+
+            Variable result;
+            if (m_singletons.TryGetValue(expr, out result))
+            {
+                return result;
+            }
+
+            Dictionary<int, int> char2Line;
+            expr = Utils.ConvertToScript(InterpreterInstance, expr, out char2Line);
+
+            // FIX: Instead of treating the text as an isolated script expression,
+            // we pass it directly to the Interpreter's central execution engine.
+            // This forces the engine to treat the string as a live-executed script block.
+            result = InterpreterInstance.Process(expr);
+
+            m_singletons[expr] = result;
+
+            return result;
+        }
+    }
+
     class GetColumnFunction : ParserFunction, IArrayFunction
     {
         protected override Variable Evaluate(ParsingScript script)

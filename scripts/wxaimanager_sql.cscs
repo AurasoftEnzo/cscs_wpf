@@ -295,7 +295,7 @@ function SQL_EnsureSession(titleHint) {
         // Only one instance may INSERT a ChatSession row at a time.
         lockSql = "DECLARE @lockResult INT; "
                 + "EXEC @lockResult = sp_getapplock @Resource = 'WXAI_CreateSession', "
-                + "  @LockMode = 'Exclusive', @LockTimeout = 5000; "
+                + "  @LockMode = 'Exclusive', @LockTimeout = 15000; "
                 + "IF @lockResult < 0 "
                 + "  THROW 50000, 'Could not acquire session creation lock within 5 s', 1;";
         sqlQuery(lockSql);

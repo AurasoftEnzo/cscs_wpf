@@ -794,10 +794,10 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
         //ako e-računi nisu formirani sa Aura Softovim programima, onda se u NKPR_GL_NUMJCD stavlja slijedeći broj iz table NKPRINV + 1, a u NKPR_GL_DESC se stavlja broj računa iz glDesc (ako je duži od 40 znakova, onda se u NKPR_GL_DESC stavlja samo prvih 40 znakova, a ostatak se dodaje na memoX)
         NKPR_GL_NUMJCD = GetNextRecordId("NKPRINV"); // outgoing invoice number (our number)
         if(glDesc.length > 40){
-            NKPR_GL_DESC = string(Substring(glDesc, 0, 40));
+            NKPR_GL_SIGNATU = string(Substring(glDesc, 0, 40));
             memoX += "Originalni broj izlaznog računa: " + glDesc + "\n";
         }else{
-            NKPR_GL_DESC = string(glDesc);
+            NKPR_GL_SIGNATU = string(glDesc);
         }
 
         copyIndicator = "";
@@ -1064,8 +1064,8 @@ function ExtractHeaderDataFromDict(invoiceDict, docType){
                     pfe   = GetNodeText(paymentMeans["PayeeFinancialAccount"]);
                     pfeId = GetNodeText(pfe["ID"]);
                     pfeId = pfeId.Replace(" ", "");
+                    MemoX += "Žiro-računu (" + pfeId + ")";
                 }
-                NKPR_GL_SIGNATU = pfeId;
 
                 if (Contains(paymentMeans, "PaymentID")) {
                     paymentID = GetNodeText(paymentMeans["PaymentID"]);
